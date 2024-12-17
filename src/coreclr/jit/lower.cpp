@@ -7914,12 +7914,13 @@ PhaseStatus Lowering::DoPhase()
 //
 void Lowering::MapParameterRegisterLocals()
 {
-    comp->m_regParamLocalMappings = new (comp, CMK_ABI) ArrayStack<RegisterParameterLocalMapping>(comp->getAllocator(CMK_ABI));
+    comp->m_regParamLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<RegisterParameterLocalMapping>(comp->getAllocator(CMK_ABI));
 
     // Create initial mappings for promotions.
     for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
     {
-        LclVarDsc* lclDsc = comp->lvaGetDesc(lclNum);
+        LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
 
         if (abiInfo.HasAnyStackSegment())
@@ -7934,8 +7935,8 @@ void Lowering::MapParameterRegisterLocals()
 
         for (int i = 0; i < lclDsc->lvFieldCnt; i++)
         {
-            unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
-            LclVarDsc* fieldDsc = comp->lvaGetDesc(fieldLclNum);
+            unsigned   fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
 
             for (const ABIPassingSegment& segment : abiInfo.Segments())
             {

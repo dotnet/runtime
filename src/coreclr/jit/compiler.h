@@ -8316,7 +8316,7 @@ protected:
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
 private:
-    Lowering*            m_pLowering = nullptr;   // Lowering; needed to Lower IR that's added or modified after Lowering.
+    Lowering*            m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
     LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
 
 public:

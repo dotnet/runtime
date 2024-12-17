@@ -2185,10 +2185,12 @@ void LinearScan::buildIntervals()
                 continue;
             }
 
-            const RegisterParameterLocalMapping* mapping = compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
+            const RegisterParameterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
             LclVarDsc* argDsc = compiler->lvaGetDesc(mapping != nullptr ? mapping->LclNum : lclNum);
-            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) &&
+                !compiler->opts.compDbgCode)
             {
                 // Not live
                 continue;
@@ -2201,7 +2203,7 @@ void LinearScan::buildIntervals()
 
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
-        unsigned lclNum = compiler->lvaTrackedIndexToLclNum(varIndex);
+        unsigned   lclNum = compiler->lvaTrackedIndexToLclNum(varIndex);
         LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
 
         if (!isCandidateVar(lclDsc))
@@ -2223,7 +2225,8 @@ void LinearScan::buildIntervals()
         regNumber paramReg = REG_NA;
         if (lclDsc->lvIsParamRegTarget)
         {
-            const RegisterParameterLocalMapping* mapping = compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
+            const RegisterParameterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
             assert(mapping != nullptr);
             paramReg = mapping->RegisterSegment->GetRegister();
         }

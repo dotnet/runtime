@@ -3258,8 +3258,8 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, const ABIPassingSegmen
 
     if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
     {
-        unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
-        LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
+        unsigned   paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
+        LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
 
         var_types storeType = genParamStackType(paramVarDsc, segment);
         if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
@@ -3396,7 +3396,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
+        LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
 
         for (const ABIPassingSegment& segment : abiInfo.Segments())
@@ -3406,7 +3406,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 continue;
             }
 
-            const RegisterParameterLocalMapping* mapping = compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
+            const RegisterParameterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
 
             unsigned fieldLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
             genSpillOrAddRegisterParam(fieldLclNum, segment, &graph);

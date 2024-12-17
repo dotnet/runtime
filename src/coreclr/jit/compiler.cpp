@@ -4260,7 +4260,8 @@ const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMapping
 // Returns:
 //   The mapping, or nullptr if no mapping was found for this local.
 //
-const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset)
+const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum,
+                                                                                        unsigned offset)
 {
     if (m_regParamLocalMappings == nullptr)
     {
