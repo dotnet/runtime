@@ -29,9 +29,6 @@ internal static class Assert
             throw new Exception("Value is  null");
     }
 
-    public static void SequenceEqual<T>(Span<T> expected, Span<T> actual) =>
-        SequenceEqual((ReadOnlySpan<T>)expected, (ReadOnlySpan<T>)actual);
-
     public static void SequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
     {
         if (!expected.SequenceEqual(actual))
