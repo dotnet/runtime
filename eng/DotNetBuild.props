@@ -107,6 +107,9 @@
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
+
+      <!-- Pass ShortStack to the inner build so we can skip building host-machine components for downstream repos when we're the last repo. -->
+      <InnerBuildArgs Condition="'$(ShortStack)' == 'true'">$(InnerBuildArgs) /p:ShortStack=true</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
