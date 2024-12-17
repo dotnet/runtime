@@ -1107,7 +1107,10 @@ namespace System.Runtime.CompilerServices
             {
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
-                _ => CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE
+
+                // Regular casting does not allow T to be cast to Nullable<T>.
+                // See TypeHandle::CanCastTo()
+                _ => CanCastToWorker(this, destTH, nullableCast: false)
             };
         }
 
@@ -1118,23 +1121,11 @@ namespace System.Runtime.CompilerServices
             {
                 CastResult.CanCast => true,
                 CastResult.CannotCast => false,
-                _ => CanCastToForReflectionWorker(srcTH, destTH)
+
+                 // Reflection allows T to be cast to Nullable<T>.
+                 // See ObjIsInstanceOfCore()
+                _ => CanCastToWorker(srcTH, destTH, nullableCast: true)
             };
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static bool CanCastToForReflectionWorker(TypeHandle srcTH, TypeHandle destTH)
-            {
-                 // Reflection allows T to be cast to Nullable<T>
-                 // see TypeHandle::CanCastTo and ObjIsInstanceOfCore
-                 if (!srcTH.IsTypeDesc
-                    && !destTH.IsTypeDesc
-                    && CastHelpers.IsNullableForType(destTH.AsMethodTable(), srcTH.AsMethodTable()))
-                 {
-                     return true;
-                 }
-
-                 return CanCastTo_NoCacheLookup(srcTH.m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE;
-            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1148,6 +1139,19 @@ namespace System.Runtime.CompilerServices
                 return CastResult.CannotCast;
 
             return CastCache.TryGet(CastHelpers.s_table!, (nuint)srcTH.m_asTAddr, (nuint)destTH.m_asTAddr);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool CanCastToWorker(TypeHandle srcTH, TypeHandle destTH, bool nullableCast)
+        {
+            if (!srcTH.IsTypeDesc
+                && !destTH.IsTypeDesc
+                && CastHelpers.IsNullableForType(destTH.AsMethodTable(), srcTH.AsMethodTable()))
+            {
+                return nullableCast;
+            }
+
+            return CanCastTo_NoCacheLookup(srcTH.m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]

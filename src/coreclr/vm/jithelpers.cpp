@@ -701,7 +701,7 @@ HCIMPLEND_RAW
 //
 //========================================================================
 
-BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
+static BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
 {
     CONTRACTL {
         THROWS;
