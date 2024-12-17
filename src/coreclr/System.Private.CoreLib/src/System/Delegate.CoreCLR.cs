@@ -434,22 +434,9 @@ namespace System
 
         private static MulticastDelegate InternalAlloc(RuntimeType type)
         {
-            MulticastDelegate? d = null;
-            InternalAlloc(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref d));
-            return d!;
+            Debug.Assert(type.IsAssignableTo(typeof(MulticastDelegate)));
+            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc(type));
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAlloc")]
-        private static partial void InternalAlloc(QCallTypeHandle type, ObjectHandleOnStack d);
-
-        internal static MulticastDelegate InternalAllocLike(MulticastDelegate d)
-        {
-            InternalAllocLike(ObjectHandleOnStack.Create(ref d));
-            return d;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAllocLike")]
-        private static partial void InternalAllocLike(ObjectHandleOnStack d);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool InternalEqualTypes(object a, object b)

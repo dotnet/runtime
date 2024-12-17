@@ -603,7 +603,7 @@ namespace System.Reflection.Emit
             _pdbBuilder.AddDocument(
                 name: _pdbBuilder.GetOrAddDocumentName(url),
                 hashAlgorithm: hashAlgorithm == default ? default : _pdbBuilder.GetOrAddGuid(hashAlgorithm),
-                hash: hash == null ? default : _metadataBuilder.GetOrAddBlob(hash),
+                hash: hash == null ? default : _pdbBuilder.GetOrAddBlob(hash),
                 language: language == default ? default : _pdbBuilder.GetOrAddGuid(language));
 
         private void FillMemberReferences(ILGeneratorImpl il)
@@ -1380,6 +1380,20 @@ namespace System.Reflection.Emit
         protected override ISymbolDocumentWriter DefineDocumentCore(string url, Guid language = default)
         {
             return new SymbolDocumentWriter(url, language);
+        }
+
+        internal List<TypeBuilderImpl> GetNestedTypeBuilders(TypeBuilderImpl declaringType)
+        {
+            List<TypeBuilderImpl> nestedTypes = new List<TypeBuilderImpl>();
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
+            {
+                if (typeBuilder.DeclaringType == declaringType)
+                {
+                    nestedTypes.Add(typeBuilder);
+                }
+            }
+
+            return nestedTypes;
         }
     }
 }

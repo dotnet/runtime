@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -639,29 +638,18 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Get a string representation of the tensor.
         /// </summary>
-        private string ToMetadataString()
+        private void ToMetadataString(StringBuilder sb)
         {
-            var sb = new StringBuilder("[");
+            sb.Append('[');
 
-            int n = Rank;
-            if (n == 0)
+            for (int i = 0; i < Rank; i++)
             {
-                sb.Append(']');
+                sb.Append(Lengths[i]);
+                if (i + 1 < Rank)
+                    sb.Append('x');
             }
-            else
-            {
-                for (int i = 0; i < n; i++)
-                {
-                    sb.Append(Lengths[i]);
-                    if (i + 1 < n)
-                        sb.Append('x');
-                }
 
-                sb.Append(']');
-            }
-            sb.Append($", type = {typeof(T)}, isPinned = {IsPinned}");
-
-            return sb.ToString();
+            sb.Append($"], type = {typeof(T)}, isPinned = {IsPinned}");
         }
 
         /// <summary>
@@ -671,12 +659,15 @@ namespace System.Numerics.Tensors
         /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
         public string ToString(params ReadOnlySpan<nint> maximumLengths)
         {
-            if (maximumLengths.Length == 0)
-                maximumLengths = (from number in Enumerable.Range(0, Rank) select (nint)5).ToArray();
+            if (maximumLengths.IsEmpty)
+            {
+                maximumLengths = Rank <= TensorShape.MaxInlineRank ? stackalloc nint[Rank] : new nint[Rank];
+            }
+
             var sb = new StringBuilder();
-            sb.AppendLine(ToMetadataString());
+            ToMetadataString(sb);
             sb.AppendLine("{");
-            sb.Append(AsTensorSpan().ToString(maximumLengths));
+            ((ReadOnlyTensorSpan<T>)AsTensorSpan()).ToString(sb, maximumLengths);
             sb.AppendLine("}");
             return sb.ToString();
         }
