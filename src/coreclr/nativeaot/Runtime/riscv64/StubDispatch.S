@@ -21,7 +21,7 @@
         ld    t0, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) + 8)(t0)
         
         // Jump to the address in t6
-        jalr  zero, 0(t0)
+        jr  t0
         
     0:
     .endm
@@ -97,7 +97,7 @@
         // Load the target address of the vtable into t3
         ld    t3, 0(t3)
 
-        jalr  zero, 0(t3)
+        jr  t3
     LEAF_END RhpVTableOffsetDispatch, _TEXT
 
     //

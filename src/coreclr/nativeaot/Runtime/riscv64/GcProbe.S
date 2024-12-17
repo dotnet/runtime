@@ -109,7 +109,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a3
     andi  t3, a3, 1 << TrapThreadsFlags_TrapThreads_Bit
     bnez  t3, LOCAL_LABEL(WaitForGC)
-    jalr  zero, 0(ra)
+    jr  ra
 
 LOCAL_LABEL(WaitForGC):
     li  t6, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A0 + PTFF_SAVE_A1)
@@ -151,7 +151,7 @@ NESTED_END RhpWaitForGC
 LEAF_ENTRY RhpGcPoll
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a0
     bne   a0, zero, C_FUNC(RhpGcPollRare)
-    jalr  zero, 0(ra)
+    jr  ra
 LEAF_END RhpGcPoll
 
 // Rare GC Poll function
@@ -159,7 +159,7 @@ NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME a0
     call  RhpGcPoll2
     POP_COOP_PINVOKE_FRAME
-    jalr  zero, 0(ra)
+    jr  ra
 NESTED_END RhpGcPollRare
 
 #ifdef FEATURE_GC_STRESS

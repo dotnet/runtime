@@ -244,7 +244,7 @@ NotInHeap:
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         sd    t6, 0(t5)
         addi  t5, t5, 8
-        jalr  ra, 0
+        jalr  ra
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -268,7 +268,7 @@ LEAF_ENTRY RhpAssignRefRiscV64, _TEXT
         INSERT_UNCHECKED_WRITE_BARRIER_CORE t5, t6
 
         addi  t5, t5, 8
-        jalr  ra, 0
+        jalr  ra
 
 LEAF_END RhpAssignRefRiscV64, _TEXT
 
@@ -323,7 +323,7 @@ CmpXchgNoUpdate:
         // t1 still contains the original value.
         mv   a0, t1
 
-        jalr ra, 0
+        jalr ra
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
@@ -359,6 +359,6 @@ DoCardsXchg:
         // t1 still contains the original value.
         mv   a0, t1
 
-        jalr ra, 0
+        jalr ra
 
 LEAF_END RhpCheckedXchg, _TEXT

@@ -47,5 +47,5 @@
     //
     LEAF_ENTRY RhGetCommonStubAddress, _TEXT
         PREPARE_EXTERNAL_VAR RhCommonStub, a0
-        jalr  zero, 0(ra)      // Return address in ra
+        jr  ra                 // Return address in ra
     LEAF_END RhGetCommonStubAddress, _TEXT
