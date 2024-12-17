@@ -191,12 +191,12 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
     {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pTypeUNSAFE));
-        PRECONDITION(!typeHandle.IsGenericVariable());
     }
     CONTRACTL_END;
 
     REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
     TypeHandle typeHandle = refType->GetType();
+    _ASSERTE(!typeHandle.IsGenericVariable());
     if (typeHandle.IsTypeDesc())
         return NULL;
 
