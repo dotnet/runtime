@@ -220,20 +220,27 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
         public static void AdHocSignFileInPlace(string managedSignedPath)
         {
-            var destinationFileName = Path.GetFileName(managedSignedPath);
-            using (FileStream appHostDestinationStream = new FileStream(managedSignedPath, FileMode.Open, FileAccess.ReadWrite))
+            var tmpFile = Path.GetTempFileName();
+            var mode = File.GetUnixFileMode(managedSignedPath);
+            using (FileStream appHostDestinationStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
             {
+                using (FileStream appHostSourceStream = new(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    appHostSourceStream.CopyTo(appHostDestinationStream);
+                }
                 var appHostLength = appHostDestinationStream.Length;
-                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName);
+                var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, tmpFile);
 
                 using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
                 using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
                 {
                     var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, destinationFileName);
+                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, tmpFile);
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }
+            File.Move(tmpFile, managedSignedPath, true);
+            File.SetUnixFileMode(managedSignedPath, mode);
         }
 
         /// <summary>

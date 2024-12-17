@@ -120,7 +120,11 @@ namespace Microsoft.NET.HostModel.AppHost
                 RetryUtil.RetryOnIOError(() =>
                 {
                     bool isMachOImage;
-                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
+                    // MacOS requires a new inode to be created when updating a signed file, so we'll delete the file and create a new one.
+                    if (File.Exists(appHostDestinationFilePath))
+                        File.Delete(appHostDestinationFilePath);
+
+                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.CreateNew, FileAccess.ReadWrite))
                     {
                         using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                         {
@@ -168,24 +172,7 @@ namespace Microsoft.NET.HostModel.AppHost
                         }
                     }
                 });
-
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
-                    const int EINTR = 4;
-                    int chmodReturnCode = 0;
-
-                    do
-                    {
-                        chmodReturnCode = chmod(appHostDestinationFilePath, filePermissionOctal);
-                    }
-                    while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
-
-                    if (chmodReturnCode == -1)
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
-                    }
-                }
+                Chmod755(appHostDestinationFilePath);
             }
             catch (Exception ex)
             {
@@ -228,40 +215,54 @@ namespace Microsoft.NET.HostModel.AppHost
             // Re-write the destination apphost with the proper contents.
             RetryUtil.RetryOnIOError(() =>
             {
-                using (FileStream bundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.ReadWrite))
+                string tmpFile = null;
+                try
                 {
-                    if (!MachObjectFile.IsMachOImage(bundleStream))
-                        return;
-
-                    long bundleSize = bundleStream.Length;
-                    long mmapFileSize = macosCodesign
-                        ? bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
-                        : bundleSize;
-                    using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(bundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
-                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                    tmpFile = Path.GetTempFileName();
+                    using (FileStream newBundleStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
                     {
-                        BinaryUtils.SearchAndReplace(accessor,
-                                                    bundleHeaderPlaceholder,
-                                                    BitConverter.GetBytes(bundleHeaderOffset),
-                                                    pad0s: false);
-                        var machObjectFile = MachObjectFile.Create(accessor);
-                        if (machObjectFile.HasSignature)
-                            throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+                        using (FileStream oldBundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.Read))
+                        {
+                            oldBundleStream.CopyTo(newBundleStream);
+                        }
 
-                        bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
-                        if (!wasBundled)
-                            throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+                        long bundleSize = newBundleStream.Length;
+                        long mmapFileSize = macosCodesign
+                            ? bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
+                            : bundleSize;
+                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(newBundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                        using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                        {
+                            BinaryUtils.SearchAndReplace(accessor,
+                                                        bundleHeaderPlaceholder,
+                                                        BitConverter.GetBytes(bundleHeaderOffset),
+                                                        pad0s: false);
 
-                        if (macosCodesign)
-                            bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
+                            if (MachObjectFile.IsMachOImage(accessor))
+                            {
+                                var machObjectFile = MachObjectFile.Create(accessor);
+                                if (machObjectFile.HasSignature)
+                                    throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
+
+                                bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                                if (!wasBundled)
+                                    throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+
+                                if (macosCodesign)
+                                    bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
+                            }
+                        }
+                        newBundleStream.SetLength(bundleSize);
                     }
-                    bundleStream.SetLength(bundleSize);
+                    File.Copy(tmpFile, appHostPath, overwrite: true);
+                    Chmod755(appHostPath);
+                }
+                finally
+                {
+                    if (tmpFile is not null)
+                        File.Delete(tmpFile);
                 }
             });
-
-            // Memory-mapped write does not updating last write time
-            RetryUtil.RetryOnIOError(() =>
-                File.SetLastWriteTimeUtc(appHostPath, DateTime.UtcNow));
         }
 
         /// <summary>
@@ -325,6 +326,27 @@ namespace Microsoft.NET.HostModel.AppHost
                 pathBytes.CopyTo(searchOptionsBytes, 2);
 
             return searchOptionsBytes;
+        }
+
+        private static void Chmod755(string pathName)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var filePermissionOctal = Convert.ToInt32("755", 8); // -rwxr-xr-x
+                const int EINTR = 4;
+                int chmodReturnCode;
+
+                do
+                {
+                    chmodReturnCode = chmod(pathName, filePermissionOctal);
+                }
+                while (chmodReturnCode == -1 && Marshal.GetLastWin32Error() == EINTR);
+
+                if (chmodReturnCode == -1)
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {pathName}.");
+                }
+            }
         }
 
         [LibraryImport("libc", SetLastError = true)]
