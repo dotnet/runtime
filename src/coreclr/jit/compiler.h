@@ -8277,8 +8277,6 @@ protected:
     */
 
 public:
-    regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
-
     void raMarkStkVars();
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE

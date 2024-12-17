@@ -2188,7 +2188,7 @@ void LinearScan::buildIntervals()
             const RegisterParameterLocalMapping* mapping = compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
             LclVarDsc* argDsc = compiler->lvaGetDesc(mapping != nullptr ? mapping->LclNum : lclNum);
-            if (!compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
             {
                 // Not live
                 continue;
