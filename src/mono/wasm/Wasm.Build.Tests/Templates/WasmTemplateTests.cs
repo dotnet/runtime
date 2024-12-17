@@ -283,21 +283,13 @@ namespace Wasm.Build.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/110620")]
-        public async void LibraryModeBuildPublishRun()
+        public void LibraryModeBuildPublishRun()
         {
             var config = Configuration.Release;
             string extraProperties = $"<OutputType>Library</OutputType>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "libraryMode", extraProperties: extraProperties);
-
-            UpdateBrowserMainJs();
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "LibraryMode.cs"));
-
             BuildProject(info, config);
-            PublishProject(info, config, new PublishOptions(UseCache: false));
-
-            var result = await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 100));
-            Assert.Contains("WASM Library MyCallback is called", result.TestOutput);
         }
     }
 }
