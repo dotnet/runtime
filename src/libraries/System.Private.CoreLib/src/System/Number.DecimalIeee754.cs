@@ -99,12 +99,12 @@ namespace System
                 TSignificand midPoint = divisor >> 1;
                 bool needRounding = remainder > midPoint || (remainder == midPoint && (quotient & TSignificand.One) == TSignificand.One);
 
-                if (needRouding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxDecimalExponent)
+                if (needRounding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxDecimalExponent)
                 {
                     unsignedSignificand = TDecimal.Power10(TDecimal.NumberDigitsPrecision - 1);
                     exponent++;
                 }
-                else if (needRouding && quotient < TDecimal.MaxSignificand)
+                else if (needRounding && quotient < TDecimal.MaxSignificand)
                 {
                     unsignedSignificand = quotient + TSignificand.One;
                 }
