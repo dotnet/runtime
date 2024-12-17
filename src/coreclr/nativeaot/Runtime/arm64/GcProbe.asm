@@ -155,7 +155,8 @@ PROBE_FRAME_SIZE    field 0
         ret
 
 WaitForGC
-        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1 + PTFF_THREAD_HIJACK)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        movk        x12, #PTFF_THREAD_HIJACK_HI, lsl #32
         b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
 
