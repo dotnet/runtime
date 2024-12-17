@@ -14830,7 +14830,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_1BYTE:
 #ifdef TARGET_AMD64
                 assert((ins != INS_lzcnt_evex) && (ins != INS_tzcnt_evex) && (ins != INS_popcnt_evex));
-#endif TARGET_AMD64
+#endif // TARGET_AMD64
                 break;
 
             case EA_2BYTE:
@@ -14846,10 +14846,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case EA_4BYTE:
                 code |= 0x01;
                 break;
+
 #ifdef TARGET_AMD64
             case EA_8BYTE:
-#endif // TARGET_AMD64
-
                 /* Set the 'w' size bit to indicate 32-bit operation
                  * Note that incrementing "code" for INS_call (0xFF) would
                  * overflow, whereas setting the lower bit to 1 just works out
@@ -14860,15 +14859,14 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
                     }
-#ifdef TARGET_AMD64
                     if ((ins != INS_lzcnt_evex) && (ins != INS_tzcnt_evex) && (ins != INS_popcnt_evex))
                     // These instructions do not support 1-byte inputs and the opcode is exact.
-#endif // TARGET_AMD64
                     {
-                    code |= 0x01;
+                        code |= 0x01;
                     }     
                     break;
                 }
+#endif //TARGET_AMD64
 
 #ifdef TARGET_X86
             case EA_8BYTE:
