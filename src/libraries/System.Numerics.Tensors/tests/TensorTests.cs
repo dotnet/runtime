@@ -1111,7 +1111,7 @@ namespace System.Numerics.Tensors.Tests
             fourByFour[[1, 0]] = 1f;
             fourByFour[[1, 1]] = 1f;
             ReadOnlyTensorSpan<float> upperLeft = fourByFour.AsReadOnlyTensorSpan().Slice([0..2, 0..2]);
-            Assert.Equal(1f, Tensor.StdDev(upperLeft));
+            Assert.Equal(0f, Tensor.StdDev(upperLeft));
         }
 
         public static float StdDev(float[] values)
