@@ -28,20 +28,31 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 set (VXSORT_SOURCES
   ../isa_detection.cpp
+  ../do_vxsort.h
+)
+
+if( ${ARCHITECTURE} STREQUAL "x86_64" )
+set (VXSORT_TARGET_SOURCES
   ../do_vxsort_avx2.cpp
   ../do_vxsort_avx512.cpp
-  ../do_vxsort_neon.cpp
   ../machine_traits.avx2.cpp
-  ../machine_traits.neon.cpp
   ../smallsort/bitonic_sort.AVX2.int64_t.generated.cpp
   ../smallsort/bitonic_sort.AVX2.int32_t.generated.cpp
   ../smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
   ../smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
   ../smallsort/avx2_load_mask_tables.cpp
-  ../do_vxsort.h
 )
+endif()
+if( ${ARCHITECTURE} STREQUAL "aarch64" )
+set (VXSORT_TARGET_SOURCES
+  ../do_vxsort_neon.cpp
+  ../machine_traits.neon.cpp
+  ../smallsort/bitonic_sort.NEON.uint64_t.generated.cpp
+)
+endif()
 
-add_library(gc_vxsort STATIC ${VXSORT_SOURCES})
+
+add_library(gc_vxsort STATIC ${VXSORT_SOURCES} ${VXSORT_TARGET_SOURCES})
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/demo/)
 add_subdirectory(${PROJECT_SOURCE_DIR}/simple_bench/)

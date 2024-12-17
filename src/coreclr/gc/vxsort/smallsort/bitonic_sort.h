@@ -18,11 +18,20 @@ using namespace std;
 // In contract, release/optimizing compilers, turn that very specific instruction pair to
 // a more reasonable: vpmovsxbq ymm0, dword [rax*4 + mask_table_4], eliminating the 128-bit
 // load completely and effectively reading 4/8 (depending if the instruction is vpmovsxb[q,d]
-const int M4_SIZE = 16 + 12;
+#if defined(TARGET_AMD64)
+const int M4_SIZE = 64; // 16 + 12; // TODO - fix for both AMD64 and ARM64
 const int M8_SIZE = 64 + 8;
 
 extern "C" const uint8_t mask_table_4[M4_SIZE];
 extern "C" const uint8_t mask_table_8[M8_SIZE];
+
+#elif defined(TARGET_ARM64)
+const int M2_SIZE = (16 * 2);
+const int M4_SIZE = (16 * 5);
+
+extern "C" const uint8_t mask_table_2[M2_SIZE];
+extern "C" const uint8_t mask_table_4[M4_SIZE];
+#endif
 
 template <typename T, vector_machine M>
 struct bitonic {
