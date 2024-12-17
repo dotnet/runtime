@@ -553,8 +553,12 @@ GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
             {
                 unsigned lhsAddrLclNum = m_comp->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
 
-                addSideEffect(m_comp->gtNewTempStore(lhsAddrLclNum, addr));
-                m_store->AsUnOp()->gtOp1 = m_comp->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
+                GenTree* const tempStore = m_comp->gtNewTempStore(lhsAddrLclNum, addr);
+                tempStore->SetMorphed(m_comp);
+                addSideEffect(tempStore);
+                GenTree* const tempRead = m_comp->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
+                tempRead->SetMorphed(m_comp);
+                m_store->AsUnOp()->gtOp1 = tempRead;
                 m_comp->gtUpdateNodeSideEffects(m_store);
             }
         }

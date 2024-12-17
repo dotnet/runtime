@@ -1678,7 +1678,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
 
                 setupArg = comp->gtNewTempStore(tmpVarNum, argx);
-                setupArg->SetMorphed(comp);
+                setupArg->SetMorphed(comp, /* doChildren */ true);
 
                 LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
                 var_types  lclVarType = genActualType(argx->gtType);
@@ -3076,6 +3076,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             {
                 GenTreeLclFld* lclFld = gtNewLclFldNode(argNode->AsLclVarCommon()->GetLclNum(), genActualType(type),
                                                         argNode->AsLclVarCommon()->GetLclOffs() + offset);
+                lclFld->SetMorphed(this);
                 return lclFld;
             }
             else
@@ -3098,11 +3099,13 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
+                indir->SetMorphed(this, /* doChildren*/ true);
                 return indir;
             }
         };
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
+        newArg->SetMorphed(this);
 
         for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
         {
@@ -3167,9 +3170,11 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
+        lclVar->SetMorphed(this);
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
+    fieldList->SetMorphed(this);
     return fieldList;
 }
 
