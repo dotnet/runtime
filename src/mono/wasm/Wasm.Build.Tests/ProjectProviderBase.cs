@@ -26,7 +26,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebcil ? ".wasm" : ".dll";
     protected const string s_dotnetVersionHashRegex = @"\.(?<hash>[a-zA-Z0-9]+)\.";
 
-    private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+    private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^']*)'";
     private static Regex s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
     private static string[] s_dotnetExtensionsToIgnore = new[]
     {
