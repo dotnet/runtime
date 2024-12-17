@@ -307,6 +307,10 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -pack)
+      arguments="$arguments --pack /p:BuildAllConfigurations=true"
+      ;;
+
      -testscope)
       if [ -z ${2+x} ]; then
         echo "No test scope supplied. See help (--help) for supported test scope values." 1>&2
@@ -545,10 +549,6 @@ fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
     arguments="$arguments -warnAsError false"
-fi
-
-if [[ ! -z "$pack" ]]; then
-  arguments="$arguments /p:BuildAllConfigurations=true"
 fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
