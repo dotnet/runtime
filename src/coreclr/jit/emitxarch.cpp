@@ -2180,7 +2180,7 @@ emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
 
 bool isPrefix(BYTE b)
 {
-    assert(b != 0);    // Caller should check this
+    // assert(b != 0);    // Caller should check this
     assert(b != 0x67); // We don't use the address size prefix
     assert(b != 0x65); // The GS segment override prefix is emitted separately
     assert(b != 0x64); // The FS segment override prefix is emitted separately
@@ -2191,8 +2191,8 @@ bool isPrefix(BYTE b)
     assert(b != 0x36); // Or the SS segment override prefix
 
     // That just leaves the size prefixes used in SSE opcodes:
-    //      Scalar Double  Scalar Single  Packed Double
-    return ((b == 0xF2) || (b == 0xF3) || (b == 0x66));
+    //      Scalar Double  Scalar Single  Packed Double   No prefix
+    return ((b == 0xF2) || (b == 0xF3) || (b == 0x66) || (b == 0x00));
 }
 
 //------------------------------------------------------------------------
@@ -2211,16 +2211,16 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
     code_t evexPrefix = (code >> 32) & 0xFFFFFFFF;
     code &= 0x00000000FFFFFFFFLL;
-
+    //code =   (0f 00 D2 38)
     WORD leadingBytes = 0;
-    BYTE check        = (code >> 24) & 0xFF;
+    BYTE check        = (code >> 24) & 0xFF; //0f
 
     if (check != 0)
     {
         // check for a prefix in the 11 position
-        BYTE sizePrefix = (code >> 16) & 0xFF;
+        BYTE sizePrefix = (code >> 16) & 0xFF; //0
 
-        if ((sizePrefix != 0) && isPrefix(sizePrefix))
+        if (isPrefix(sizePrefix))
         {
             // 'pp' bits in byte 1 of EVEX prefix allows us to encode SIMD size prefixes as two bits
             //
@@ -2250,6 +2250,12 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                     break;
                 }
 
+                case 0x00:
+                {
+                    // No SIMD size prefix
+                    break;
+                }
+
                 default:
                 {
                     assert(!"unrecognized SIMD size prefix");
@@ -2258,22 +2264,22 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             }
 
             // Now the byte in the 22 position should be either of the below:
-            //                          1. An escape byte 0F (For isa befpre AVX10.2)
+            //                          1. An escape byte 0F (For isa before AVX10.2)
             //                          2. A map number from 0 to 7 (For AVX10.2 and above)
-            leadingBytes = check;
+            leadingBytes = check; //0x0F
             assert(leadingBytes == 0x0F || (leadingBytes >= 0x00 && leadingBytes <= 0x07));
 
             // Get rid of both sizePrefix and escape byte
-            code &= 0x0000FFFFLL;
+            code &= 0x0000FFFFLL; // 0x00D238
 
             // Check the byte in the 33 position to see if it is 3A or 38.
             // In such a case escape bytes must be 0x0F3A or 0x0F38
-            check = code & 0xFF;
+            check = code & 0xFF; // 0x38
 
             if ((check == 0x3A) || (check == 0x38))
             {
-                leadingBytes = (leadingBytes << 8) | check;
-                code &= 0x0000FF00LL;
+                leadingBytes = (leadingBytes << 8) | check; //0x0F38
+                code &= 0x0000FF00LL;                       // 0x00D200
             }
         }
     }
@@ -19637,6 +19643,36 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvttps2ibs:
         case INS_vcvttps2iubs:
         case INS_vmpsadbw:
+        case INS_vcvttsd2sis32:
+        case INS_vcvttsd2sis64:
+        case INS_vcvttsd2usis32:
+        case INS_vcvttsd2usis64:
+        case INS_vcvttss2sis32:
+        case INS_vcvttss2sis64:
+        case INS_vcvttss2usis32:
+        case INS_vcvttss2usis64:
+        case INS_vcvttps2dqs:
+        case INS_vcvttps2udqs:
+        case INS_vcvttpd2qqs:
+        case INS_vcvttpd2uqqs:
+        case INS_vmovd:
+        case INS_vmovw:
+        case INS_vcomxsd:
+        case INS_vcomxss:
+        case INS_vucomxsd:
+        case INS_vucomxss:
+        case INS_vpdpwsud:
+        case INS_vpdpwsuds:
+        case INS_vpdpwusd:
+        case INS_vpdpwusds:
+        case INS_vpdpwuud:
+        case INS_vpdpwuuds:
+        case INS_vpdpbssd:
+        case INS_vpdpbssds:
+        case INS_vpdpbsud:
+        case INS_vpdpbsuds:
+        case INS_vpdpbuud:
+        case INS_vpdpbuuds:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;
