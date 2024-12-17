@@ -1157,7 +1157,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             fpQueryInterface = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IUnknown_QueryInterface;
-            fpAddRef = RuntimeImports.RhGetIUnknownAddRef();
+            fpAddRef = RuntimeImports.RhGetIUnknownAddRef(); // Implemented in C/C++ to avoid GC transitions
             fpRelease = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_Release;
         }
 
@@ -1302,14 +1302,6 @@ namespace System.Runtime.InteropServices
             return wrapper->QueryInterface(in *guid, out *ppObject);
         }
 
-#if false // Implemented in C/C++ to avoid GC transitions
-        [UnmanagedCallersOnly]
-        internal static unsafe uint IUnknown_AddRef(IntPtr pThis)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->AddRef();
-        }
-#endif
 
         [UnmanagedCallersOnly]
         internal static unsafe uint IUnknown_Release(IntPtr pThis)
