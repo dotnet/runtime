@@ -121,6 +121,6 @@ static uint32_t __stdcall IUnknown_AddRef(void* pComThis)
 
 FCIMPL0(void*, RhGetIUnknownAddRef)
 {
-    return &IUnknown_AddRef;
+    return (void*)&IUnknown_AddRef;
 }
 FCIMPLEND
