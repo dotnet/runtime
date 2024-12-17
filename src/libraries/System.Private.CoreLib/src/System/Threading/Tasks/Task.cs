@@ -6285,7 +6285,7 @@ namespace System.Threading.Tasks
 
             return taskList.Count == 0 ?
                 new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>(taskList.ToArray());
+                new WhenAllPromise<TResult>(CollectionsMarshal.AsMemory(taskList)); // 
         }
 
         /// <summary>
@@ -6391,7 +6391,7 @@ namespace System.Threading.Tasks
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
 
-            internal WhenAllPromise(Task<T>[] tasks)
+            internal WhenAllPromise(ReadOnlyMemory<Task<T>> tasks)
             {
                 Debug.Assert(tasks != null, "Expected a non-null task array");
                 Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
