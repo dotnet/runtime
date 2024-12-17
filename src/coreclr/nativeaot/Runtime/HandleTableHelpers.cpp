@@ -71,7 +71,7 @@ FCIMPL2(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable
 }
 FCIMPLEND
 
-// This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch!
+// This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.ManagedObjectWrapper.
 struct ManagedObjectWrapper
 {
     intptr_t HolderHandle;
@@ -96,7 +96,7 @@ struct ManagedObjectWrapper
     }
 };
 
-// This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.InternalComInterfaceDispatch!
+// This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.InternalComInterfaceDispatch.
 struct InternalComInterfaceDispatch
 {
     void* Vtable;
