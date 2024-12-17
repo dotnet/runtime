@@ -556,7 +556,7 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                // bufferState is initialized last to exlcude any exceptions before entering the try/finally block where bufferState.Dispose call is executed
+                // bufferState is initialized last to exclude any exceptions before entering the try/finally block where bufferState.Dispose call is executed
                 ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
 
                 try
