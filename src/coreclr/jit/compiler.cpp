@@ -4222,6 +4222,60 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 #endif // TARGET_ARMARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
+// FindParameterRegisterLocalMappingByRegister:
+//   Try to find a mapping that maps a particular parameter register to an
+//   incoming defined local.
+//
+// Returns:
+//   The mapping, or nullptr if no mapping was found for this register.
+//
+const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByRegister(regNumber reg)
+{
+    if (m_regParamLocalMappings == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < m_regParamLocalMappings->Height(); i++)
+    {
+        const RegisterParameterLocalMapping& mapping = m_regParamLocalMappings->BottomRef(i);
+        if (mapping.RegisterSegment->GetRegister() == reg)
+        {
+            return &mapping;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// FindParameterRegisterLocalMappingByLocal:
+//   Try to find a mapping that maps a particular local from an incoming
+//   parameter register.
+//
+// Returns:
+//   The mapping, or nullptr if no mapping was found for this local.
+//
+const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum)
+{
+    if (m_regParamLocalMappings == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < m_regParamLocalMappings->Height(); i++)
+    {
+        const RegisterParameterLocalMapping& mapping = m_regParamLocalMappings->BottomRef(i);
+        if (mapping.LclNum == lclNum)
+        {
+            return &mapping;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
 //   for this method
 //

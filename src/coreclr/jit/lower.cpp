@@ -7850,6 +7850,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7900,6 +7905,180 @@ PhaseStatus Lowering::DoPhase()
     comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Lowering::MapParameterRegisterLocals:
+//   Create mappings between parameter registers and locals corresponding to
+//   them.
+//
+void Lowering::MapParameterRegisterLocals()
+{
+    comp->m_regParamLocalMappings = new (comp, CMK_ABI) ArrayStack<RegisterParameterLocalMapping>(comp->getAllocator(CMK_ABI));
+
+    // Create initial mappings for parameters.
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* lclDsc = comp->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+
+        if (abiInfo.HasAnyStackSegment())
+        {
+            continue;
+        }
+
+        if (lclDsc->lvPromoted)
+        {
+            if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+            {
+                continue;
+            }
+
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                unsigned fieldLclNum = comp->lvaGetFieldLocal(lclDsc, segment.Offset);
+                assert(fieldLclNum != BAD_VAR_NUM);
+                assert(segment.Size == lclDsc->lvExactSize());
+                comp->m_regParamLocalMappings->Emplace(&segment, fieldLclNum);
+
+                LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+                assert(!fieldLclDsc->lvIsParamRegTarget);
+                fieldLclDsc->lvIsParamRegTarget = true;
+            }
+        }
+        else
+        {
+            if (!abiInfo.HasExactlyOneRegisterSegment())
+            {
+                continue;
+            }
+
+            const ABIPassingSegment& segment = abiInfo.Segment(0);
+            if (!lclDsc->lvDoNotEnregister)
+            {
+                assert((segment.Size == lclDsc->lvExactSize()) ||
+                       ((lclDsc->lvExactSize() < segment.Size) && lclDsc->lvNormalizeOnLoad()));
+                comp->m_regParamLocalMappings->Emplace(&segment, lclNum);
+                assert(!lclDsc->lvIsParamRegTarget);
+                lclDsc->lvIsParamRegTarget = true;
+            }
+        }
+    }
+
+    JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> storedToLocals(comp->getAllocator(CMK_ABI));
+    // Now look for optimization opportunities in the first block: places where
+    // we read fields out of struct parameters that can be mapped cleanly. This
+    // is frequently created by physical promotion.
+    for (GenTree* node : LIR::AsRange(comp->fgFirstBB))
+    {
+        if (!node->OperIs(GT_STORE_LCL_VAR))
+        {
+            continue;
+        }
+
+        GenTreeLclVarCommon* storeLcl = node->AsLclVarCommon();
+        LclVarDsc* destLclDsc = comp->lvaGetDesc(storeLcl);
+
+        storedToLocals.Emplace(storeLcl->GetLclNum(), true);
+
+        if (destLclDsc->lvIsParamRegTarget)
+        {
+            continue;
+        }
+
+        if (destLclDsc->TypeGet() == TYP_STRUCT)
+        {
+            continue;
+        }
+
+        GenTree* data = storeLcl->Data();
+        if (!data->OperIs(GT_LCL_FLD))
+        {
+            continue;
+        }
+
+        GenTreeLclFld* dataFld = data->AsLclFld();
+        if (dataFld->GetLclNum() >= comp->info.compArgsCount)
+        {
+            continue;
+        }
+
+        // If the store comes with some form of widening/narrowing then we
+        // can't remap (it would require creating a new properly sized local).
+        if (dataFld->TypeGet() != storeLcl->TypeGet())
+        {
+            continue;
+        }
+
+        if (storedToLocals.Lookup(dataFld->GetLclNum()))
+        {
+            // Source is not necessarily the parameter anymore (could be if the
+            // store happened between the LCL_FLD and STORE_LCL_VAR, but we do
+            // not handle that here)
+            continue;
+        }
+
+        const ABIPassingInformation& dataAbiInfo = comp->lvaGetParameterABIInfo(dataFld->GetLclNum());
+        const ABIPassingSegment* regSegment = nullptr;
+        for (const ABIPassingSegment& segment : dataAbiInfo.Segments())
+        {
+            if (!segment.IsPassedInRegister())
+            {
+                continue;
+            }
+
+            if ((segment.Offset != dataFld->GetLclOffs()) || (segment.Size != genTypeSize(dataFld)))
+            {
+                continue;
+            }
+
+            bool hasMappingAlready =
+                (comp->FindParameterRegisterLocalMappingByRegister(segment.GetRegister()) != nullptr) ||
+                (comp->FindParameterRegisterLocalMappingByLocal(storeLcl->GetLclNum()) != nullptr);
+
+            if (hasMappingAlready)
+            {
+                continue;
+            }
+
+            JITDUMP("Store from an unenregisterable parameter induces parameter register remapping. Store:\n");
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), node);
+
+            comp->m_regParamLocalMappings->Emplace(&segment, storeLcl->GetLclNum());
+            destLclDsc->lvIsParamRegTarget = true;
+            node->gtBashToNOP();
+            dataFld->SetUnusedValue();
+
+            JITDUMP("New mapping: ");
+            DBEXEC(VERBOSE, segment.Dump());
+            JITDUMP(" -> V%02u\n", storeLcl->GetLclNum());
+
+            GenTree* regParamValue = comp->gtNewLclvNode(storeLcl->GetLclNum(), dataFld->TypeGet());
+            GenTree* storeField = comp->gtNewStoreLclFldNode(dataFld->GetLclNum(), dataFld->TypeGet(), segment.Offset, regParamValue);
+
+            // Store actual parameter local from new reg local
+            LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeField));
+            LowerNode(regParamValue);
+            LowerNode(storeField);
+
+            JITDUMP("Parameter spill:\n");
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeField);
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("%d parameter register to local mappings\n", comp->m_regParamLocalMappings->Height());
+        for (int i = 0; i < comp->m_regParamLocalMappings->Height(); i++)
+        {
+            const RegisterParameterLocalMapping& mapping = comp->m_regParamLocalMappings->BottomRef(i);
+            printf("  ");
+            mapping.RegisterSegment->Dump();
+            printf(" -> V%02u\n", mapping.LclNum);
+        }
+    }
+#endif
 }
 
 #ifdef DEBUG
