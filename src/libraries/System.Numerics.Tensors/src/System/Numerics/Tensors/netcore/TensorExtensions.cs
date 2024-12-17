@@ -3519,7 +3519,7 @@ namespace System.Numerics.Tensors
             Subtract(x, mean, temp);
             Abs<T>(temp, temp);
             T sum = SumOfSquares<T>(temp);
-            T variance = sum / T.CreateChecked(x._shape._memoryLength);
+            T variance = sum / T.CreateChecked(x.FlattenedLength);
             return T.Sqrt(variance);
         }
         #endregion
