@@ -20,7 +20,6 @@ Abstract:
 #define _PAL_THREAD_HPP_
 
 #include "corunix.hpp"
-#include "shm.hpp"
 #include "cs.hpp"
 
 #include <pthread.h>
@@ -662,24 +661,6 @@ namespace CorUnix
             pThread = CreateCurrentThreadData();
         return pThread;
     }
-
-/***
-
-    $$TODO: These are needed only to support cross-process thread duplication
-
-    class CThreadImmutableData
-    {
-    public:
-        DWORD dwProcessId;
-    };
-
-    class CThreadSharedData
-    {
-    public:
-        DWORD dwThreadId;
-        DWORD dwExitCode;
-    };
-***/
 
     //
     // The process local information for a thread is just a pointer

@@ -83,12 +83,6 @@
     <!-- <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" /> -->
   </ItemGroup>
 
-  <!-- invariant project cannot be tested in hybrid mode; projects using functions that throw PNSE too often to block separate tests (HashCode, CompareOptions) -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(HybridGlobalization)' == 'true'">
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
-  </ItemGroup>
-
   <!-- Projects that don't support code coverage measurement. -->
   <ItemGroup Condition="'$(Coverage)' == 'true'">
     <ProjectExclusions Include="$(CommonTestPath)Common.Tests.csproj" />
@@ -394,12 +388,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Cose\tests\System.Security.Cryptography.Cose.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true' and '$(RunDisabledWasmTests)' != 'true'">
-    <!-- Issue: https://github.com/dotnet/runtime/issues/95795 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
-  </ItemGroup>
-
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
   </ItemGroup>
@@ -605,6 +593,7 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">

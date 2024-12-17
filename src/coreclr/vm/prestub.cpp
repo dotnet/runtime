@@ -2113,11 +2113,11 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
     // Any code build stages that do just in time configuration should
     // be configured now
 #ifdef FEATURE_REJIT
-    if (m_ilCodeVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (m_ilCodeVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         ReJitManager::ConfigureILCodeVersion(m_ilCodeVersion);
     }
-    _ASSERTE(m_ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive);
+    _ASSERTE(m_ilCodeVersion.GetRejitState() == RejitFlags::kStateActive);
 #endif
 
     return S_OK;

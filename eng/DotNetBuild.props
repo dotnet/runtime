@@ -23,6 +23,7 @@
     <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
   </PropertyGroup>
 
+  <!-- Keep this list in sync with https://github.com/dotnet/sdk/blob/main/src/SourceBuild/content/Directory.Build.props#L23 -->
   <PropertyGroup Label="ShortStacks">
     <ShortStack Condition="'$(TargetOS)' == 'wasi'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'browser'">true</ShortStack>
@@ -33,6 +34,11 @@
     <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'linux-bionic'">true</ShortStack>
+    <!-- NativeAOT builds are short -->
+    <ShortStack Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">true</ShortStack>
+    <!-- Mono LLVM builds are short -->
+    <ShortStack Condition="'$(MonoEnableLLVM)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true'">true</ShortStack>
+    <!-- Mono AOT cross compiler builds are short -->
     <ShortStack Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">true</ShortStack>
   </PropertyGroup>
 
@@ -92,7 +98,7 @@
 
       <!-- Handle system libraries -->
       <UseSystemLibs Condition="'$(UseSystemLibs)' != ''">+$(UseSystemLibs)+</UseSystemLibs>
-      <InnerBuildArgs Condition="'$(PortableBuild)' != 'true'">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+brotli+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
       <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+libunwind+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=true</InnerBuildArgs>
       <!-- TODO: llvm-libunwind -->
       <!-- TODO: LinuxTracepoints -->

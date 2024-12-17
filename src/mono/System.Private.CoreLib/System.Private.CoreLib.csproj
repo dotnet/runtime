@@ -142,9 +142,6 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.wasm.singlethread.xml" Condition="'$(Platform)' == 'wasm' and '$(FeatureWasmManagedThreads)' != 'true'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.Intrinsics.x86.xml" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.Intrinsics.Vectors.xml" />
-
-    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.xml" />
-    <ILLinkLinkAttributesXmls Include="$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml" Condition="Exists('$(ILLinkDirectory)ILLink.LinkAttributes.$(Platform).xml')" />
   </ItemGroup>
 
   <!-- Sources -->

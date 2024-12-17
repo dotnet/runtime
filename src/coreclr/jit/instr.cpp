@@ -750,7 +750,7 @@ void CodeGen::inst_RV_SH(
 #elif defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
-    // X64 JB BE insures only encodable values make it here.
+    // X64 JB BE ensures only encodable values make it here.
     // x86 can encode 8 bits, though it masks down to 5 or 6
     // depending on 32-bit or 64-bit registers are used.
     // Here we will allow anything that is encodable.

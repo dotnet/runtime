@@ -86,10 +86,12 @@ internal readonly struct MemberTypeInfo
         // Every class can be a null or a reference and a ClassWithId
         const AllowedRecordTypes Classes = AllowedRecordTypes.ClassWithId
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference
-            | AllowedRecordTypes.MemberPrimitiveTyped
             | AllowedRecordTypes.BinaryLibrary; // Classes may be preceded with a library record (System too!)
         // but System Classes can be expressed only by System records
-        const AllowedRecordTypes SystemClass = Classes | AllowedRecordTypes.SystemClassWithMembersAndTypes;
+        const AllowedRecordTypes SystemClass = Classes | AllowedRecordTypes.SystemClassWithMembersAndTypes
+            // All primitive types can be stored by using one of the interfaces they implement.
+            // Example: `new IEnumerable[1] { "hello" }` or `new IComparable[1] { int.MaxValue }`.
+            | AllowedRecordTypes.BinaryObjectString | AllowedRecordTypes.MemberPrimitiveTyped;
         const AllowedRecordTypes NonSystemClass = Classes |  AllowedRecordTypes.ClassWithMembersAndTypes;
 
         return binaryType switch
@@ -104,43 +106,6 @@ internal readonly struct MemberTypeInfo
             BinaryType.ObjectArray => (ObjectArray, default),
             _ => throw new InvalidOperationException()
         };
-    }
-
-    internal bool ShouldBeRepresentedAsArrayOfClassRecords()
-    {
-        // This library tries to minimize the number of concepts the users need to learn to use it.
-        // Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
-        // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
-        // The goal of this method is to determine whether given array can be represented as SZArrayRecord<ClassRecord>.
-
-        (BinaryType binaryType, object? additionalInfo) = Infos[0];
-
-        if (binaryType == BinaryType.Class)
-        {
-            // An array of arrays can not be represented as SZArrayRecord<ClassRecord>.
-            return !((ClassTypeInfo)additionalInfo!).TypeName.IsArray;
-        }
-        else if (binaryType == BinaryType.SystemClass)
-        {
-            TypeName typeName = (TypeName)additionalInfo!;
-
-            // An array of arrays can not be represented as SZArrayRecord<ClassRecord>.
-            if (typeName.IsArray)
-            {
-                return false;
-            }
-
-            if (!typeName.IsConstructedGenericType)
-            {
-                return true;
-            }
-
-            // Can't use SZArrayRecord<ClassRecord> for Nullable<T>[]
-            // as it consists of MemberPrimitiveTypedRecord and NullsRecord
-            return typeName.GetGenericTypeDefinition().FullName != typeof(Nullable<>).FullName;
-        }
-
-        return false;
     }
 
     internal TypeName GetArrayTypeName(ArrayInfo arrayInfo)

@@ -22,16 +22,16 @@
 // in the GC heap, causing data corruption. This is a 'GC Hole', and is very bad. We have special modes (see
 // code:EEConfig.GetGCStressLevel) called GCStress to help find such issues.
 //
-// In order to find all GC references on the stacks we need insure that no thread is manipulating a GC
-// reference at the time of the scan. This is the job of code:Thread.SuspendRuntime. Logically it suspends
-// every thread in the process. Unfortunately it can not literally simply call the OS SuspendThread API on
-// all threads. The reason is that the other threads MIGHT hold important locks (for example there is a lock
-// that is taken when unmanaged heap memory is requested, or when a DLL is loaded). In general process
+// In order to find all GC references on the stacks, we need to ensure that no thread is manipulating a GC
+// reference at the time of the scan. This is the job of code:Thread.SuspendRuntime. Logically, it suspends
+// every thread in the process. Unfortunately, it can not literally simply call the OS SuspendThread API on
+// all threads. The reason is that the other threads MIGHT hold important locks (for example, there is a lock
+// that is taken when unmanaged heap memory is requested, or when a DLL is loaded). In general, process
 // global structures in the OS will be protected by locks, and if you suspend a thread it might hold that
-// lock. If you happen to need that OS service (eg you might need to allocated unmanaged memory), then
+// lock. If you happen to need that OS service (eg you might need to allocate unmanaged memory), then
 // deadlock will occur (as you wait on the suspended thread, that never wakes up).
 //
-// Luckily, we don't need to actually suspend the threads, we just need to insure that all GC references on
+// Luckily, we don't need to actually suspend the threads, we just need to ensure that all GC references on
 // the stack are stable. This is where the concept of cooperative mode and preemptive mode (a bad name) come
 // from.
 //
@@ -40,14 +40,14 @@
 // The runtime keeps a table of all threads that have ever run managed code in the code:ThreadStore table.
 // The ThreadStore table holds a list of Thread objects (see code:#ThreadClass). This object holds all
 // information about managed threads. Cooperative mode is defined as the mode the thread is in when the field
-// code:Thread.m_fPreemptiveGCDisabled is non-zero. When this field is zero the thread is said to be in
+// code:Thread.m_fPreemptiveGCDisabled is non-zero. When this field is zero, the thread is said to be in
 // Preemptive mode (named because if you preempt the thread in this mode, it is guaranteed to be in a place
 // where a GC can occur).
 //
 // When a thread is in cooperative mode, it is basically saying that it is potentially modifying GC
 // references, and so the runtime must Cooperate with it to get to a 'GC Safe' location where the GC
 // references can be enumerated. This is the mode that a thread is in MOST times when it is running managed
-// code (in fact if the EIP is in JIT compiled code, there is only one place where you are NOT in cooperative
+// code (in fact, if the EIP is in JIT compiled code, there is only one place where you are NOT in cooperative
 // mode (Inlined PINVOKE transition code)). Conversely, any time non-runtime unmanaged code is running, the
 // thread MUST NOT be in cooperative mode (you risk deadlock otherwise). Only code in mscorwks.dll might be
 // running in either cooperative or preemptive mode.
@@ -55,7 +55,7 @@
 // It is easier to describe the invariant associated with being in Preemptive mode. When the thread is in
 // preemptive mode (when code:Thread.m_fPreemptiveGCDisabled is zero), the thread guarantees two things
 //
-//     * That it not currently running code that manipulates GC references.
+//     * That it is not currently running code that manipulates GC references.
 //     * That it has set the code:Thread.m_pFrame pointer in the code:Thread to be a subclass of the class
 //         code:Frame which marks the location on the stack where the last managed method frame is. This
 //         allows the GC to start crawling the stack from there (essentially skip over the unmanaged frames).
@@ -70,8 +70,8 @@
 // the deadlock problem mentioned earlier, because threads that are running unmanaged code are allowed to
 // run. Enumeration of GC references starts at the first managed frame (pointed at by code:Thread.m_pFrame).
 //
-// When a thread is in cooperative mode, it means that GC references might be being manipulated. There are
-// two important possibilities
+// When a thread is in cooperative mode, it means that GC references might be in the process of being
+// manipulated. There are two important possibilities
 //
 //     * The CPU is running JIT compiled code
 //     * The CPU is running code elsewhere (which should only be in mscorwks.dll, because everywhere else a
@@ -87,23 +87,23 @@
 // what is called FullyInterruptible, then we have information for any possible instruction pointer in the
 // method and we can simply stop the thread (however we have to do this carefully TODO explain).
 //
-// However for most methods, we only keep GC information for paticular EIP's, in particular we keep track of
-// GC reference liveness only at call sites. Thus not every location is 'GC Safe' (that is we can enumerate
+// However for most methods, we only keep GC information for particular EIPs, in particular we keep track of
+// GC reference liveness only at call sites. Thus, not every location is 'GC Safe' (that is, we can enumerate
 // all references, but must be 'driven' to a GC safe location).
 //
 // We drive threads to GC safe locations by hijacking. This is a term for updating the return address on the
 // stack so that we gain control when a method returns. If we find that we are in JITTed code but NOT at a GC
-// safe location, then we find the return address for the method and modfiy it to cause the runtime to stop.
+// safe location, then we find the return address for the method and modify it to cause the runtime to stop.
 // We then let the method run. Hopefully the method quickly returns, and hits our hijack, and we are now at a
-// GC-safe location (all call sites are GC-safe). If not we repeat the procedure (possibly moving the
-// hijack). At some point a method returns, and we get control. For methods that have loops that don't make
-// calls, we are forced to make the method FullyInterruptible, so we can be sure to stop the mehod.
+// GC-safe location (all call sites are GC-safe). If not, we repeat the procedure (possibly moving the
+// hijack). At some point, a method returns, and we get control. For methods that have loops that don't make
+// calls, we are forced to make the method FullyInterruptible, so we can be sure to stop the method.
 //
 // This leaves only the case where we are in cooperative modes, but not in JIT compiled code (we should be in
-// clr.dll). In this case we simply let the thread run. The idea is that code in clr.dll makes the
+// clr.dll). In this case, we simply let the thread run. The idea is that code in clr.dll makes the
 // promise that it will not do ANYTHING that will block (which includes taking a lock), while in cooperative
-// mode, or do anything that might take a long time without polling to see if a GC is needed. Thus this code
-// 'cooperates' to insure that GCs can happen in a timely fashion.
+// mode, or do anything that might take a long time without polling to see if a GC is needed. Thus, this code
+// 'cooperates' to ensure that GCs can happen in a timely fashion.
 //
 // If you need to switch the GC mode of the current thread, look for the GCX_COOP() and GCX_PREEMP() macros.
 //
@@ -3188,7 +3188,7 @@ public:
 #endif // HOST_64BIT
 
         // For debugging, you may want to make this number very large, (8K)
-        // should basically insure that no collisions happen
+        // should basically ensure that no collisions happen
 #define OBJREF_TABSIZE              256
         DWORD_PTR dangerousObjRefs[OBJREF_TABSIZE];      // Really objectRefs with lower bit stolen
         // m_allObjRefEntriesBad is TRUE iff dangerousObjRefs are all marked as GC happened

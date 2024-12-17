@@ -1508,20 +1508,17 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         return false;
     }
 
-    // TODO-apx:
-    // there are duplicated stress logics here and in HasExtendedGPReg()
-    // need to clean up later.
+    if (HasExtendedGPReg(id))
+    {
+        return true;
+    }
+
 #if defined(DEBUG)
     if (emitComp->DoJitStressRex2Encoding())
     {
         return true;
     }
 #endif // DEBUG
-
-    if (HasExtendedGPReg(id))
-    {
-        return true;
-    }
 
     return false;
 }
@@ -1554,13 +1551,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-#if defined(DEBUG)
-    if (emitComp->DoJitStressPromotedEvexEncoding())
-    {
-        return true;
-    }
-#endif // DEBUG
-
     if (id->idIsEvexNdContextSet())
     {
         return true;
@@ -1571,8 +1561,13 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    // TODO-XArch-apx:
-    // better keep a table there to confirm the instruction should be emitted with NDD form.
+    
+#if defined(DEBUG)
+    if (emitComp->DoJitStressPromotedEvexEncoding())
+    {
+        return true;
+    }
+#endif // DEBUG
 
     return false;
 }
@@ -1953,6 +1948,12 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
                 return false;
             }
 
+            case INS_gf2p8affineinvqb:
+            case INS_gf2p8affineqb:
+            {
+                return TakesVexPrefix(ins);
+            }
+
             default:
             {
                 unreached();
@@ -2024,7 +2025,7 @@ bool emitter::HasHighSIMDReg(const instrDesc* id) const
 }
 
 //------------------------------------------------------------------------
-// HasExtendedGPReg: Checks if an instruction uses a extended general purpose registers - EGPRs (r16-r31)
+// HasExtendedGPReg: Checks if an instruction uses an extended general-purpose register - EGPR (r16-r31)
 // and will require one of the REX2 EGPR bits (REX2.R4/R3, REX2.B4/B3, REX2.X4/X3)
 //
 // Arguments:
@@ -2115,22 +2116,10 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-// TODO-apx: It would be better to have stress mode on LSRA to forcely allocate EGPRs,
-//           instead of stressing here.
-#if defined(DEBUG)
-    if (emitComp->DoJitStressRex2Encoding())
-    {
-        return true;
-    }
-#endif // DEBUG
-
-    if (UseRex2Encoding())
-    {
-        /*
-            include EGPR checks here.
-        */
-        // return (reg >= REG_R16) && (reg <= REG_31)
-    }
+    // TODO-XArch-APX:
+    // we will eventually check EGPRs here: (reg >= REG_R16) && (reg <= REG_R31).
+    // revisit this part when LSRA is updated.
+    return false;
 #endif
     return false;
 }
@@ -2859,7 +2848,7 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
         if ((code & 0xFF) == 0x0F)
         {
             // some map-1 instructions have opcode in forms like:
-            // XX0F, remove the leading 0x0F byte as it have been recoreded in REX2.
+            // XX0F, remove the leading 0x0F byte as it has been recorded in REX2.
             code = code >> 8;
         }
 
@@ -3149,7 +3138,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         if(TakesApxExtendedEvexPrefix(id))
         {
             prefixAdjustedSize = 4;
-            // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape
+            // If the opcode will be prefixed by EVEX, then all the map-1-legacy instructions can remove the escape
             // prefix
             if (IsLegacyMap1(code))
             {
@@ -3865,8 +3854,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // TODO-XArch-APX:
-            // seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
+            // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x001000000000ULL; // REX2.B4
         }
@@ -3915,8 +3903,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // TODO-XArch-APX:
-            // seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
+            // Seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x004000000000ULL; // REX2.R4
         }
@@ -4045,8 +4032,7 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // TODO-XArch-APX:
-            // seperate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
+            // Seperate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x002000000000ULL; // REX2.X4
         }
@@ -15875,6 +15861,8 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
                 }
             }
 
+            code = AddX86PrefixIfNeeded(id, code, size);
+
             if (TakesRexWPrefix(id))
             {
                 code = AddRexWPrefix(id, code);
@@ -21111,6 +21099,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpdpwssd:
         case INS_vpdpbusds:
         case INS_vpdpwssds:
+        case INS_gf2p8affineinvqb:
+        case INS_gf2p8affineqb:
+        case INS_gf2p8mulb:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;

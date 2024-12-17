@@ -76,6 +76,26 @@
 
 #endif // HOST_ARM64
 
+#elif defined(__HAIKU__)
+
+#define MCREG_Rip(mc)	    ((mc).rip)
+#define MCREG_Rsp(mc)	    ((mc).rsp)
+#define MCREG_Rax(mc)	    ((mc).rax)
+#define MCREG_Rbx(mc)	    ((mc).rbx)
+#define MCREG_Rcx(mc)	    ((mc).rcx)
+#define MCREG_Rdx(mc)	    ((mc).rdx)
+#define MCREG_Rsi(mc)       ((mc).rsi)
+#define MCREG_Rdi(mc)	    ((mc).rdi)
+#define MCREG_Rbp(mc)	    ((mc).rbp)
+#define MCREG_R8(mc)	    ((mc).r8)
+#define MCREG_R9(mc)	    ((mc).r9)
+#define MCREG_R10(mc)	    ((mc).r10)
+#define MCREG_R11(mc)	    ((mc).r11)
+#define MCREG_R12(mc)	    ((mc).r12)
+#define MCREG_R13(mc)	    ((mc).r13)
+#define MCREG_R14(mc)	    ((mc).r14)
+#define MCREG_R15(mc)	    ((mc).r15)
+
 #else
 
 #if HAVE___GREGSET_T

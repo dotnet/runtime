@@ -271,6 +271,16 @@ int minipal_getcpufeatures(void)
                             {
                                 __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
+                                if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                     // GFNI
+                                {
+                                    result |= XArchIntrinsicConstants_Gfni;
+                                }
+
+                                if ((cpuidInfo[CPUID_ECX] & (1 << 10)) != 0)                                    // VPCLMULQDQ
+                                {
+                                    result |= XArchIntrinsicConstants_Vpclmulqdq;
+                                }
+
                                 if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
                                 {
                                     result |= XArchIntrinsicConstants_Avx2;
@@ -321,11 +331,15 @@ int minipal_getcpufeatures(void)
                                         uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
 
                                         if((avx10Version >= 1) &&
-                                           ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                         // Avx10/V128
                                            ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0))                           // Avx10/V256
                                         {
                                             result |= XArchIntrinsicConstants_Evex;
-                                            result |= XArchIntrinsicConstants_Avx10v1;
+                                            result |= XArchIntrinsicConstants_Avx10v1;                          // Avx10.1
+
+                                            if (avx10Version >= 2)                                              // Avx10.2
+                                            {
+                                                result |= XArchIntrinsicConstants_Avx10v2;
+                                            }
                                             
                                             // We assume that the Avx10/V512 support can be inferred from
                                             // both Avx10v1 and Avx512 being present.

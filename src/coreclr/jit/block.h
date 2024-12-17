@@ -23,7 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Defines VARSET_TP
 #include "varset.h"
 
-#include "blockset.h"
 #include "jitstd.h"
 #include "bitvec.h"
 #include "jithashtable.h"
@@ -462,12 +461,14 @@ enum BasicBlockFlags : uint64_t
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(38), // Ok to add pred edge to this block, even when "safe" edge creation disabled
     BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(39), // Block has a node that needs a value probing
 
+    BBF_HAS_NEWARR                     = MAKE_BBFLAG(40), // BB contains 'new' of an array type.
+
     // The following are sets of flags.
 
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
 
     // Flags a block should not have had before it is split.
 
@@ -485,7 +486,7 @@ enum BasicBlockFlags : uint64_t
     // For example, the bottom block might or might not have BBF_HAS_NULLCHECK, but we assume it has BBF_HAS_NULLCHECK.
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
-    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
+    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
                        BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
@@ -493,7 +494,7 @@ enum BasicBlockFlags : uint64_t
     // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
     // we don't know (unless we actually pay close attention during the copy).
 
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
 };
 
 FORCEINLINE
@@ -1668,19 +1669,6 @@ public:
 
     bool bbFallsThrough() const;
 
-    // Our slop fraction is 1/50 of the block weight.
-    static weight_t GetSlopFraction(weight_t weightBlk)
-    {
-        return weightBlk / 50.0;
-    }
-
-    // Given an the edge b1 -> b2, calculate the slop fraction by
-    // using the higher of the two block weights
-    static weight_t GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
-    {
-        return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
-    }
-
 #ifdef DEBUG
     unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
     static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
@@ -1727,6 +1715,12 @@ public:
     {
         return StatementList(FirstNonPhiDef());
     }
+
+    // Simple "size" estimates
+    //
+    unsigned StatementCount();
+    bool     StatementCountExceeds(unsigned limit, unsigned* count = nullptr);
+    bool     ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* lastNode() const;
 
@@ -2204,6 +2198,8 @@ public:
     {
         return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
+
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count = nullptr);
 };
 
 // BBswtDesc -- descriptor for a switch block

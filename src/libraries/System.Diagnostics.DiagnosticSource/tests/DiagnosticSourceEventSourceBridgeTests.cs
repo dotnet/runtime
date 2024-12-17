@@ -455,7 +455,7 @@ namespace System.Diagnostics.Tests
                     }
                     Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
 
-                    // Disable all the listener and insure that no more events come through.
+                    // Disable all the listener and ensure that no more events come through.
                     eventSourceListener.Disable();
 
                     diagnosticSourceListener.Write("TestEvent1", null);

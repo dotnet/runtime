@@ -5,8 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SseFormatterTests.cs" />
     <Compile Include="SseItemTests.cs" />
     <Compile Include="SseParserTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
   <ItemGroup>

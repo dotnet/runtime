@@ -816,7 +816,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	}
 #else
 	/* For POWER5/6 with ICACHE_SNOOPing only one icbi in the range is required.
-	 * The sync is required to insure that the store queue is completely empty.
+	 * The sync is required to ensure that the store queue is completely empty.
 	 * While the icbi performs no cache operations, icbi/isync is required to
 	 * kill local prefetch.
 	 */
