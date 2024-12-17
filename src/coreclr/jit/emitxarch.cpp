@@ -1894,7 +1894,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-    if ((reg >= REG_R16) && (reg <= REG_31))
+    if ((reg >= REG_R16) && (reg <= REG_R31))
     {
         // TODO-XArch-APX: Once eEVEX is supported, this should be 'if APX anabled machine'
         assert(UseRex2Encoding());
