@@ -18,7 +18,12 @@ namespace System.Text
     /// assuming that the underlying <see cref="Rune"/> instance is well-formed.
     /// </remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    public readonly struct Rune : IComparable, IComparable<Rune>, IEquatable<Rune>
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    readonly struct Rune : IComparable, IComparable<Rune>, IEquatable<Rune>
 #if SYSTEM_PRIVATE_CORELIB
 #pragma warning disable SA1001 // Commas should be spaced correctly
         , ISpanFormattable
@@ -102,7 +107,9 @@ namespace System.Text
         /// <exception cref="ArgumentOutOfRangeException">
         /// If <paramref name="value"/> does not represent a value Unicode scalar value.
         /// </exception>
+#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
+#endif
         public Rune(uint value)
         {
             if (!UnicodeUtility.IsValidUnicodeScalar(value))
@@ -135,13 +142,22 @@ namespace System.Text
 
         public static explicit operator Rune(char ch) => new Rune(ch);
 
+#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
+#endif
         public static explicit operator Rune(uint value) => new Rune(value);
 
         public static explicit operator Rune(int value) => new Rune(value);
 
         // Displayed as "'<char>' (U+XXXX)"; e.g., "'e' (U+0065)"
-        private string DebuggerDisplay => string.Create(CultureInfo.InvariantCulture, $"U+{_value:X4} '{(IsValid(_value) ? ToString() : "\uFFFD")}'");
+        private string DebuggerDisplay =>
+#if SYSTEM_PRIVATE_CORELIB
+            string.Create(
+                CultureInfo.InvariantCulture,
+#else
+            FormattableString.Invariant(
+#endif
+                $"U+{_value:X4} '{(IsValid(_value) ? ToString() : "\uFFFD")}'");
 
         /// <summary>
         /// Returns true if and only if this scalar value is ASCII ([ U+0000..U+007F ])
@@ -242,7 +258,6 @@ namespace System.Text
 #else
         private static Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
         {
-            Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
             Debug.Assert(culture != null, "This should've been checked by the caller.");
 
             Span<char> original = stackalloc char[MaxUtf16CharsPerRune]; // worst case scenario = 2 code units (for a surrogate pair)
@@ -795,7 +810,9 @@ namespace System.Text
         /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
         /// </summary>
+#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
+#endif
         public static bool IsValid(uint value) => UnicodeUtility.IsValidUnicodeScalar(value);
 
         // returns a negative number on failure
@@ -978,7 +995,9 @@ namespace System.Text
         /// <summary>
         /// Attempts to create a <see cref="Rune"/> from the provided input value.
         /// </summary>
+#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
+#endif
         public static bool TryCreate(uint value, out Rune result)
         {
             if (UnicodeUtility.IsValidUnicodeScalar(value))
@@ -1375,12 +1394,12 @@ namespace System.Text
             // ASCII characters differently than the invariant culture (e.g., Turkish I). Instead
             // we'll just jump straight to the globalization tables if they're available.
 
+#if SYSTEM_PRIVATE_CORELIB
             if (GlobalizationMode.Invariant)
             {
                 return ToLowerInvariant(value);
             }
 
-#if SYSTEM_PRIVATE_CORELIB
             return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: false);
 #else
             return ChangeCaseCultureAware(value, culture, toUpper: false);
@@ -1399,6 +1418,7 @@ namespace System.Text
                 return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(value._value));
             }
 
+#if SYSTEM_PRIVATE_CORELIB
             if (GlobalizationMode.Invariant)
             {
                 return UnsafeCreate(CharUnicodeInfo.ToLower(value._value));
@@ -1406,7 +1426,6 @@ namespace System.Text
 
             // Non-ASCII data requires going through the case folding tables.
 
-#if SYSTEM_PRIVATE_CORELIB
             return ChangeCaseCultureAware(value, TextInfo.Invariant, toUpper: false);
 #else
             return ChangeCaseCultureAware(value, CultureInfo.InvariantCulture, toUpper: false);
@@ -1424,12 +1443,12 @@ namespace System.Text
             // ASCII characters differently than the invariant culture (e.g., Turkish I). Instead
             // we'll just jump straight to the globalization tables if they're available.
 
+#if SYSTEM_PRIVATE_CORELIB
             if (GlobalizationMode.Invariant)
             {
                 return ToUpperInvariant(value);
             }
 
-#if SYSTEM_PRIVATE_CORELIB
             return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: true);
 #else
             return ChangeCaseCultureAware(value, culture, toUpper: true);
@@ -1448,6 +1467,7 @@ namespace System.Text
                 return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(value._value));
             }
 
+#if SYSTEM_PRIVATE_CORELIB
             if (GlobalizationMode.Invariant)
             {
                 return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
@@ -1455,7 +1475,6 @@ namespace System.Text
 
             // Non-ASCII data requires going through the case folding tables.
 
-#if SYSTEM_PRIVATE_CORELIB
             return ChangeCaseCultureAware(value, TextInfo.Invariant, toUpper: true);
 #else
             return ChangeCaseCultureAware(value, CultureInfo.InvariantCulture, toUpper: true);
