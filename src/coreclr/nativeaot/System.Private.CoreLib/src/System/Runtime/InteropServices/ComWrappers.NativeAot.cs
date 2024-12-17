@@ -1302,7 +1302,6 @@ namespace System.Runtime.InteropServices
             return wrapper->QueryInterface(in *guid, out *ppObject);
         }
 
-
         [UnmanagedCallersOnly]
         internal static unsafe uint IUnknown_Release(IntPtr pThis)
         {
