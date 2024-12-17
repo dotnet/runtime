@@ -6285,7 +6285,7 @@ namespace System.Threading.Tasks
 
             return taskList.Count == 0 ?
                 new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>(CollectionsMarshal.AsMemory(taskList)); // 
+                new WhenAllPromise<TResult>(CollectionsMarshal.AsMemory(taskList)); // No such method, can this be done similar to CollectionsMarshal.AsSpan?
         }
 
         /// <summary>
