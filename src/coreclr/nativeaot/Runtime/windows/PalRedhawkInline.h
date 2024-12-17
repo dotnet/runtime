@@ -14,6 +14,13 @@ FORCEINLINE int32_t PalInterlockedIncrement(_Inout_ int32_t volatile *pDst)
     return _InterlockedIncrement((long volatile *)pDst);
 }
 
+EXTERN_C int64_t __cdecl _InterlockedIncrement64(int64_t volatile *);
+#pragma intrinsic(_InterlockedIncrement64)
+FORCEINLINE int64_t PalInterlockedIncrement64(_Inout_ int64_t volatile *pDst)
+{
+    return _InterlockedIncrement64(pDst);
+}
+
 EXTERN_C long __cdecl _InterlockedDecrement(long volatile *);
 #pragma intrinsic(_InterlockedDecrement)
 FORCEINLINE int32_t PalInterlockedDecrement(_Inout_ int32_t volatile *pDst)

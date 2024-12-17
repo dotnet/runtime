@@ -1157,7 +1157,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             fpQueryInterface = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IUnknown_QueryInterface;
-            fpAddRef = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_AddRef;
+            fpAddRef = RuntimeImports.RhGetIUnknownAddRef();
             fpRelease = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_Release;
         }
 
@@ -1302,12 +1302,14 @@ namespace System.Runtime.InteropServices
             return wrapper->QueryInterface(in *guid, out *ppObject);
         }
 
+#if false // Implemented in C/C++ to avoid GC transitions
         [UnmanagedCallersOnly]
         internal static unsafe uint IUnknown_AddRef(IntPtr pThis)
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
             return wrapper->AddRef();
         }
+#endif
 
         [UnmanagedCallersOnly]
         internal static unsafe uint IUnknown_Release(IntPtr pThis)
@@ -1381,8 +1383,7 @@ namespace System.Runtime.InteropServices
         {
             IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 7 * sizeof(IntPtr));
             vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IReferenceTrackerTarget_QueryInterface;
-            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_AddRef;
-            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_Release;
+            GetIUnknownImpl(out _, out vftbl[1], out vftbl[2]);
             vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_AddRefFromReferenceTracker;
             vftbl[4] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_ReleaseFromReferenceTracker;
             vftbl[5] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_Peg;
