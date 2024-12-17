@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -709,15 +708,6 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsValid(this))
-            {
-                // If its ASCII && one of the 4 main forms, then its already normalized
-                if (normalizationForm == NormalizationForm.FormC ||
-                    normalizationForm == NormalizationForm.FormKC ||
-                    normalizationForm == NormalizationForm.FormD ||
-                    normalizationForm == NormalizationForm.FormKD)
-                    return true;
-            }
             return Normalization.IsNormalized(this, normalizationForm);
         }
 
@@ -728,15 +718,6 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-            if (Ascii.IsValid(this))
-            {
-                // If its ASCII && one of the 4 main forms, then its already normalized
-                if (normalizationForm == NormalizationForm.FormC ||
-                    normalizationForm == NormalizationForm.FormKC ||
-                    normalizationForm == NormalizationForm.FormD ||
-                    normalizationForm == NormalizationForm.FormKD)
-                    return this;
-            }
             return Normalization.Normalize(this, normalizationForm);
         }
 

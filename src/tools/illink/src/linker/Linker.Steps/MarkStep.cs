@@ -2597,6 +2597,7 @@ namespace Mono.Linker.Steps
 			case "ValueType":
 			case "Enum":
 			case "Array":
+			case "RuntimeType": // works around https://github.com/dotnet/runtime/issues/110605
 				return td.Namespace == "System";
 			}
 

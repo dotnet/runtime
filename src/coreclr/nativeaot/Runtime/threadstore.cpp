@@ -162,7 +162,7 @@ void ThreadStore::DetachCurrentThread()
     }
 
     // Unregister from OS notifications
-    // This can return false if detach notification is spurious and does not belong to this thread.
+    // This can return false if a thread did not register for OS notification.
     if (!PalDetachThread(pDetachingThread))
     {
         return;
