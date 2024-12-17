@@ -22,8 +22,18 @@
 
   <ItemGroup>
     <AdditionalRuntimeIdentifiers Include="$(AdditionalRuntimeIdentifiers)" Imports="$(AdditionalRuntimeIdentifierParent)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
+    <OutputRidOS Condition="$(OutputRID.Contains('-'))">$(OutputRID.Split('-')[0])</OutputRidOS>
+    <AdditionalRidParentOS Condition="$(AdditionalRuntimeIdentifierParent.Contains('-'))">$(AdditionalRuntimeIdentifierParent.Split('-')[0])</AdditionalRidParentOS>
+    <AdditionalRidParentOS Condition="!$(AdditionalRuntimeIdentifierParent.Contains('-'))">$(AdditionalRuntimeIdentifierParent)</AdditionalRidParentOS>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
     <!-- When building from source, ensure the RID we're building for is part of the RID graph. -->
-    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+    <AdditionalRuntimeIdentifiers Include="$(OutputRidOS)" Imports="$(AdditionalRidParentOS)" Condition="'$(OutputRidOS)' != ''" />
+    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent);$(OutputRidOS)" />
   </ItemGroup>
 
   <ItemGroup>
