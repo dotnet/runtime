@@ -2591,10 +2591,18 @@ struct RegisterParameterLocalMapping
 {
     const ABIPassingSegment* RegisterSegment;
     unsigned LclNum;
+    // Offset at which the register is inserted into the local. Used e.g. for
+    // HFAs on arm64 that might have been promoted as a single local (e.g.
+    // System.Numerics.Plane is passed in 3 float regs but enregistered as
+    // TYP_SIMD12).
+    // SysV 64 also see similar situations e.g. Vector3 being passed in
+    // xmm0[0..8), xmm1[8..12), but enregistered as one register.
+    unsigned Offset;
 
-    RegisterParameterLocalMapping(const ABIPassingSegment* segment, unsigned lclNum)
+    RegisterParameterLocalMapping(const ABIPassingSegment* segment, unsigned lclNum, unsigned offset)
         : RegisterSegment(segment)
         , LclNum(lclNum)
+        , Offset(offset)
     {
     }
 };
@@ -8315,7 +8323,7 @@ public:
     ArrayStack<RegisterParameterLocalMapping>* m_regParamLocalMappings = nullptr;
 
     const RegisterParameterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
-    const RegisterParameterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum);
+    const RegisterParameterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

@@ -7916,7 +7916,7 @@ void Lowering::MapParameterRegisterLocals()
 {
     comp->m_regParamLocalMappings = new (comp, CMK_ABI) ArrayStack<RegisterParameterLocalMapping>(comp->getAllocator(CMK_ABI));
 
-    // Create initial mappings for parameters.
+    // Create initial mappings for promotions.
     for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
     {
         LclVarDsc* lclDsc = comp->lvaGetDesc(lclNum);
@@ -7927,41 +7927,34 @@ void Lowering::MapParameterRegisterLocals()
             continue;
         }
 
-        if (lclDsc->lvPromoted)
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
         {
-            if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
-            {
-                continue;
-            }
+            continue;
+        }
+
+        for (int i = 0; i < lclDsc->lvFieldCnt; i++)
+        {
+            unsigned fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc = comp->lvaGetDesc(fieldLclNum);
 
             for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                unsigned fieldLclNum = comp->lvaGetFieldLocal(lclDsc, segment.Offset);
-                assert(fieldLclNum != BAD_VAR_NUM);
-                assert(segment.Size == lclDsc->lvExactSize());
-                comp->m_regParamLocalMappings->Emplace(&segment, fieldLclNum);
+                if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
+                {
+                    continue;
+                }
 
-                LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
-                assert(!fieldLclDsc->lvIsParamRegTarget);
-                fieldLclDsc->lvIsParamRegTarget = true;
-            }
-        }
-        else
-        {
-            if (!abiInfo.HasExactlyOneRegisterSegment())
-            {
-                continue;
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                {
+                    continue;
+                }
+
+                comp->m_regParamLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
             }
 
-            const ABIPassingSegment& segment = abiInfo.Segment(0);
-            if (!lclDsc->lvDoNotEnregister)
-            {
-                assert((segment.Size == lclDsc->lvExactSize()) ||
-                       ((lclDsc->lvExactSize() < segment.Size) && lclDsc->lvNormalizeOnLoad()));
-                comp->m_regParamLocalMappings->Emplace(&segment, lclNum);
-                assert(!lclDsc->lvIsParamRegTarget);
-                lclDsc->lvIsParamRegTarget = true;
-            }
+            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+            assert(!fieldLclDsc->lvIsParamRegTarget);
+            fieldLclDsc->lvIsParamRegTarget = true;
         }
     }
 

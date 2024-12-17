@@ -4253,10 +4253,14 @@ const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMapping
 //   Try to find a mapping that maps a particular local from an incoming
 //   parameter register.
 //
+// Parameters:
+//   lclNum - The local to find a mapping for
+//   offset - The offset that the mapping maps to in the local
+//
 // Returns:
 //   The mapping, or nullptr if no mapping was found for this local.
 //
-const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum)
+const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset)
 {
     if (m_regParamLocalMappings == nullptr)
     {
@@ -4266,7 +4270,7 @@ const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMapping
     for (int i = 0; i < m_regParamLocalMappings->Height(); i++)
     {
         const RegisterParameterLocalMapping& mapping = m_regParamLocalMappings->BottomRef(i);
-        if (mapping.LclNum == lclNum)
+        if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
         {
             return &mapping;
         }

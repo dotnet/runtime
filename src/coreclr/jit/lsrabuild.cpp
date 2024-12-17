@@ -2223,22 +2223,35 @@ void LinearScan::buildIntervals()
         regNumber paramReg = REG_NA;
         if (lclDsc->lvIsParamRegTarget)
         {
-            const RegisterParameterLocalMapping* mapping = compiler->FindParameterRegisterLocalMappingByLocal(lclNum);
+            const RegisterParameterLocalMapping* mapping = compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
             assert(mapping != nullptr);
             paramReg = mapping->RegisterSegment->GetRegister();
         }
         else if (lclDsc->lvIsParam)
         {
-            // This is a parameter that is a register candidate but not a
-            // parameter register target. It must be a stack parameter --
-            // lowering ensures all potentially enregisterable register
-            // parameters are marked as lvIsParamRegTarget.
-#ifdef DEBUG
-            unsigned abiLclNum = lclDsc->lvIsStructField ? lclDsc->lvParentLcl : lclNum;
-            assert(!compiler->lvaGetParameterABIInfo(abiLclNum).HasAnyRegisterSegment());
-#endif
+            if (lclDsc->lvIsStructField)
+            {
+                // All promoted fields should be assigned via the
+                // lvIsParamRegTarget mechanism, so this must be a stack
+                // argument.
+                assert(!compiler->lvaGetParameterABIInfo(lclDsc->lvParentLcl).HasAnyRegisterSegment());
 
-            // Fall through with paramReg = REG_NA
+                // Fall through with paramReg == REG_NA
+            }
+            else
+            {
+                // Enregisterable parameter, may or may not be a stack arg.
+                // Prefer the first register if there is one.
+                const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+                for (const ABIPassingSegment& seg : abiInfo.Segments())
+                {
+                    if (seg.IsPassedInRegister())
+                    {
+                        paramReg = seg.GetRegister();
+                        break;
+                    }
+                }
+            }
         }
         else
         {
