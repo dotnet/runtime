@@ -97,7 +97,7 @@ namespace System
                 TSignificand quotient = unsignedSignificand / divisor;
                 TSignificand remainder = unsignedSignificand % divisor;
                 TSignificand midPoint = divisor >> 1;
-                bool needRouding = remainder > midPoint || (remainder == midPoint && (quotient & TSignificand.One) == TSignificand.One);
+                bool needRounding = remainder > midPoint || (remainder == midPoint && (quotient & TSignificand.One) == TSignificand.One);
 
                 if (needRouding && quotient == TDecimal.MaxSignificand && exponent < TDecimal.MaxDecimalExponent)
                 {
