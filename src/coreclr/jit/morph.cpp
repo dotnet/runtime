@@ -248,6 +248,8 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
         tree = fgMorphArgs(call);
     }
 
+    tree->SetMorphed(this);
+
     return tree;
 }
 
@@ -552,6 +554,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Fix the return type to be TYP_DOUBLE
             //
             oper->gtType = TYP_DOUBLE;
+            oper->SetMorphed(this);
 
             // Add a Cast to TYP_FLOAT
             //
@@ -12046,7 +12049,9 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 
     mul->SetAllEffectsFlags(op1, op2);
     op1->SetDoNotCSE();
+    op1->SetMorphed(this);
     op2->SetDoNotCSE();
+    op2->SetMorphed(this);
 
     return mul;
 }
