@@ -832,7 +832,7 @@ namespace System.Text.Json.Tests
             // it is a 2-byte start unit but the second byte is not a continuation.
             // So a replacement character gets written for the first byte. The second and
             // third units are valid and get written as is.
-            JsonTestHelper.AssertContents("\uFFFD\u063F", output);
+            JsonTestHelper.AssertContents(@"""\uFFFD\uFFFD""", output);
         }
 
         // Switch this to use an enum discriminator input when base64 is supported
