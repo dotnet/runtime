@@ -307,8 +307,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RETURNTRAP:
         {
             // This just turns into a compare of its child with an int + a conditional call.
-            RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, true));
-            srcCount                 = BuildOperandUses(tree->gtGetOp1());
+            RefPosition* internalDef =
+                buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, true));
+            srcCount = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildKills(tree, killMask);
@@ -447,8 +448,9 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             // TODO-Xarch-apx: Revisit. This internally creates a float -> int which is a movd
-            RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, true));
-            srcCount                 = BuildOperandUses(tree->gtGetOp1());
+            RefPosition* internalDef =
+                buildInternalIntRegisterDefForNode(tree, BuildApxIncompatibleGPRMask(tree, true));
+            srcCount = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
             BuildDef(tree);
         }
@@ -1970,7 +1972,8 @@ int LinearScan::BuildModDiv(GenTree* tree)
         srcCount            = 1;
     }
     // ToDo-APX : div currently can't access eGPR
-    if (tree->OperGet() == GT_UDIV || tree->OperGet() == GT_UMOD || (op2->isContainedIndir() && varTypeUsesFloatReg(op1)))
+    if (tree->OperGet() == GT_UDIV || tree->OperGet() == GT_UMOD ||
+        (op2->isContainedIndir() && varTypeUsesFloatReg(op1)))
     {
         srcCount += BuildDelayFreeUses(op2, op1, BuildApxIncompatibleGPRMask(op2, true) & ~(SRBM_RAX | SRBM_RDX));
     }
@@ -2219,8 +2222,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // We need two extra reg when lastOp isn't a constant so
                 // the offset into the jump table for the fallback path
                 // can be computed.
-                buildInternalIntRegisterDefForNode(intrinsicTree,
-                                                   BuildApxIncompatibleGPRMask(intrinsicTree, true));
+                buildInternalIntRegisterDefForNode(intrinsicTree, BuildApxIncompatibleGPRMask(intrinsicTree, true));
                 buildInternalIntRegisterDefForNode(intrinsicTree, BuildApxIncompatibleGPRMask(intrinsicTree, true));
             }
         }
@@ -2804,9 +2806,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(!isRMW);
                 // Any pair of the index, mask, or destination registers should be different
-                srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1) == RBM_NONE
-                                                      ? BuildApxIncompatibleGPRMask(op1)
-                                                      : BuildEvexIncompatibleMask(op1));
+                srcCount +=
+                    BuildOperandUses(op1, BuildEvexIncompatibleMask(op1) == RBM_NONE ? BuildApxIncompatibleGPRMask(op1)
+                                                                                     : BuildEvexIncompatibleMask(op1));
                 srcCount +=
                     BuildDelayFreeUses(op2, nullptr,
                                        BuildEvexIncompatibleMask(op2) == RBM_NONE ? BuildApxIncompatibleGPRMask(op2)
@@ -3364,7 +3366,7 @@ inline bool LinearScan::DoesThisUseGPR(GenTree* op)
         return true;
 
 #ifdef FEATURE_HW_INTRINSICS
-    if ( !op->isContained() ||  !op->OperIsHWIntrinsic())
+    if (!op->isContained() || !op->OperIsHWIntrinsic())
     {
         return false;
     }

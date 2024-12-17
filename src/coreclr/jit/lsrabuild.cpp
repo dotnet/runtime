@@ -3927,7 +3927,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 #endif // TARGET_XARCH
     int srcCount = 0;
     if (op1 != nullptr)
-    {        
+    {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
         if (op1->isContainedIndir() &&

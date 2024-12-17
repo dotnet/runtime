@@ -4625,7 +4625,8 @@ inline char* regMaskToString(regMaskTP mask, Compiler* context)
 
 inline void printRegMaskInt(regMaskTP mask)
 {
-    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. These are used by GC exclusively
+    // RBM_ALLINT is not known at compile time on TARGET_AMD64 since it's dependent on APX support. These are used by GC
+    // exclusively
 #if defined(TARGET_AMD64)
     printf(REG_MASK_INT_FMT, (mask & RBM_ALLINT_STATIC_ALL).getLow());
 #else  // !TARGET_X86
