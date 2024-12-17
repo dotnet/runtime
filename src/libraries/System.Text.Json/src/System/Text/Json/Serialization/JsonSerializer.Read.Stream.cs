@@ -556,12 +556,12 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                ReadBufferState bufferState = null;
+                // bufferState is initialized last to exlcude any exceptions before entering the try/finally block where bufferState.Dispose call is executed
+                ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
 
                 try
                 {
                     bool success;
-                    bufferState = new(listTypeInfo.Options.DefaultBufferSize);
                     do
                     {
                         bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
