@@ -85,10 +85,10 @@ REGALIAS(EDI, RDI)
 
 #ifdef TARGET_AMD64
 #define XMMBASE 32
-#define XMMMASK(x) ((int64_t)(1) << ((x)+XMMBASE))
+#define XMMMASK(x) (1ULL << ((x)+XMMBASE))
 
 #define KBASE 64
-#define KMASK(x) ((int64_t)(1) << ((x)))
+#define KMASK(x) (1ULL << ((x)))
 
 #else // !TARGET_AMD64
 #define XMMBASE 8
