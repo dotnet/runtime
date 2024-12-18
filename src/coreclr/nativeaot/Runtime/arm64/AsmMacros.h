@@ -60,10 +60,10 @@ PTFF_SAVE_ALL_SCRATCH   equ 0x3FFFF800  ;; NOTE: X0-X18
 PTFF_SAVE_FP            equ 0x40000000
 PTFF_SAVE_LR            equ 0x80000000
 
-PTFF_THREAD_HIJACK_HI   equ 0x00000020           // upper 32 bits of the PTFF_THREAD_HIJACK
+PTFF_THREAD_HIJACK_HI   equ 0x00000002           // upper 32 bits of the PTFF_THREAD_HIJACK
 
 ;; Bit position for the flags above, to be used with tbz / tbnz instructions
-PTFF_THREAD_ABORT_BIT   equ 36
+PTFF_THREAD_ABORT_BIT   equ 32
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
