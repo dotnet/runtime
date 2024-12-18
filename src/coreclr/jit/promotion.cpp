@@ -1040,7 +1040,7 @@ private:
     {
         assert(lclNum < comp->info.compArgsCount);
 
-        if (comp->lvaGetDesc(lclNum)->lvIsImplicitByRef)
+        if (comp->lvaIsImplicitByRefLocal(lclNum))
         {
             return false;
         }

@@ -8024,7 +8024,7 @@ void Lowering::FindInducedParameterRegisterLocals()
         }
 
         const ABIPassingInformation& dataAbiInfo = comp->lvaGetParameterABIInfo(fld->GetLclNum());
-        const ABIPassingSegment* regSegment = nullptr;
+        const ABIPassingSegment*     regSegment  = nullptr;
         for (const ABIPassingSegment& segment : dataAbiInfo.Segments())
         {
             if (!segment.IsPassedInRegister())
@@ -8032,7 +8032,8 @@ void Lowering::FindInducedParameterRegisterLocals()
                 continue;
             }
 
-            if ((segment.Offset != fld->GetLclOffs()) || (segment.Size != genTypeSize(fld)) || (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
+            if ((segment.Offset != fld->GetLclOffs()) || (segment.Size != genTypeSize(fld)) ||
+                (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
             {
                 continue;
             }
@@ -8071,13 +8072,15 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         if (remappedLclNum == BAD_VAR_NUM)
         {
-            remappedLclNum = comp->lvaGrabTemp(false DEBUGARG(comp->printfAlloc("struct parameter register %s", getRegName(regSegment->GetRegister()))));
+            remappedLclNum                           = comp->lvaGrabTemp(false DEBUGARG(
+                comp->printfAlloc("struct parameter register %s", getRegName(regSegment->GetRegister()))));
             comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
             JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
         }
         else
         {
-            JITDUMP("Reusing local V%02u for store from struct parameter register %s. Store:\n", remappedLclNum, getRegName(regSegment->GetRegister()));
+            JITDUMP("Reusing local V%02u for store from struct parameter register %s. Store:\n", remappedLclNum,
+                    getRegName(regSegment->GetRegister()));
             DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
 
             // The store will be a no-op, so get rid of it
@@ -8093,7 +8096,8 @@ void Lowering::FindInducedParameterRegisterLocals()
         JITDUMP(" -> V%02u\n", remappedLclNum);
 
         GenTree* paramRegValue = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-        GenTree* storeField = comp->gtNewStoreLclFldNode(fld->GetLclNum(), fld->TypeGet(), regSegment->Offset, paramRegValue);
+        GenTree* storeField =
+            comp->gtNewStoreLclFldNode(fld->GetLclNum(), fld->TypeGet(), regSegment->Offset, paramRegValue);
 
         // Store actual parameter local from new reg local
         LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeField));
@@ -8107,8 +8111,8 @@ void Lowering::FindInducedParameterRegisterLocals()
         // are replacing comes with this normalization).
         if (varTypeIsSmall(fld))
         {
-            GenTree* lcl = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-            GenTree* normalizeLcl = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
+            GenTree* lcl                = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
+            GenTree* normalizeLcl       = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
             GenTree* storeNormalizedLcl = comp->gtNewStoreLclVarNode(remappedLclNum, normalizeLcl);
             LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeNormalizedLcl));
             LowerNode(lcl);
