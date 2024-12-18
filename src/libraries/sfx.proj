@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.NoTargets">
+<Project Sdk="Microsoft.Build.Traversal">
 
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
