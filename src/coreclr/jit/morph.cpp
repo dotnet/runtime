@@ -13088,6 +13088,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
             morphedTree = gtCloneExpr(morphedTree);
             noway_assert(morphedTree != nullptr);
+            morphedTree->SetMorphed(this, /* doChildren*/ true);
 
             if (verbose)
             {
