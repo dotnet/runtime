@@ -35,6 +35,7 @@
 //
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System.Runtime
 {
