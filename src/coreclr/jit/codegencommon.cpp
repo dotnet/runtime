@@ -5745,6 +5745,10 @@ void CodeGen::genFnProlog()
 #else
         genEnregisterOSRArgsAndLocals();
 #endif
+        // OSR functions take no parameters in registers. Ensure no mappings
+        // are present.
+        //assert((compiler->m_paramRegLocalMappings == nullptr) || compiler->m_paramRegLocalMappings->Empty());
+
         compiler->lvaUpdateArgsWithInitialReg();
     }
     else

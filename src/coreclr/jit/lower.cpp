@@ -7959,6 +7959,11 @@ void Lowering::MapParameterRegisterLocals()
         }
     }
 
+    if (!comp->opts.IsOSR())
+    {
+        FindInducedParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     if (comp->verbose)
     {
@@ -7972,6 +7977,191 @@ void Lowering::MapParameterRegisterLocals()
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// Lowering::FindInducedParameterRegisterLocals:
+//   Find locals that would be profitable to map from parameter registers,
+//   based on IR in the initialization block.
+//
+void Lowering::FindInducedParameterRegisterLocals()
+{
+    LocalSet storedToLocals(comp->getAllocator(CMK_ABI));
+    // Now look for optimization opportunities in the first block: places where
+    // we read fields out of struct parameters that can be mapped cleanly. This
+    // is frequently created by physical promotion.
+    for (GenTree* node : LIR::AsRange(comp->fgFirstBB))
+    {
+        GenTreeLclVarCommon* storeLcl;
+        if (node->DefinesLocal(comp, &storeLcl))
+        {
+            storedToLocals.Emplace(storeLcl->GetLclNum(), true);
+            continue;
+        }
+
+        if (node->OperIs(GT_LCL_ADDR))
+        {
+            storedToLocals.Emplace(node->AsLclVarCommon()->GetLclNum(), true);
+            continue;
+        }
+
+        if (!node->OperIs(GT_LCL_FLD))
+        {
+            continue;
+        }
+
+        GenTreeLclFld* fld = node->AsLclFld();
+        if (fld->GetLclNum() >= comp->info.compArgsCount)
+        {
+            continue;
+        }
+
+        if (storedToLocals.Lookup(fld->GetLclNum()))
+        {
+            // LCL_FLD does not necessarily take the value of the parameter
+            // anymore.
+            continue;
+        }
+
+        const ABIPassingInformation& dataAbiInfo = comp->lvaGetParameterABIInfo(fld->GetLclNum());
+        const ABIPassingSegment* regSegment = nullptr;
+        for (const ABIPassingSegment& segment : dataAbiInfo.Segments())
+        {
+            if (!segment.IsPassedInRegister())
+            {
+                continue;
+            }
+
+            if ((segment.Offset != fld->GetLclOffs()) || (segment.Size != genTypeSize(fld)) || (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
+            {
+                continue;
+            }
+
+            // This is a match, but check if it is already remapped.
+            // TODO-CQ: If it is already remapped, we can reuse the value from
+            // the remapping.
+            if (comp->FindParameterRegisterLocalMappingByRegister(segment.GetRegister()) == nullptr)
+            {
+                regSegment = &segment;
+            }
+
+            break;
+        }
+
+        if (regSegment == nullptr)
+        {
+            continue;
+        }
+
+        JITDUMP("LCL_FLD use [%06u] of unenregisterable parameter corresponds to ", Compiler::dspTreeID(fld));
+        DBEXEC(VERBOSE, regSegment->Dump());
+        JITDUMP("\n");
+
+        // Now see if we want to introduce a new local for this value, or if we
+        // can reuse one because this is the source of a store (frequently
+        // created by physical promotion).
+        LIR::Use use;
+        if (!LIR::AsRange(comp->fgFirstBB).TryGetUse(fld, &use))
+        {
+            JITDUMP("  ..but no use was found\n");
+            continue;
+        }
+
+        unsigned remappedLclNum = TryReuseLocalForParameterAccess(use, storedToLocals);
+
+        if (remappedLclNum == BAD_VAR_NUM)
+        {
+            remappedLclNum = comp->lvaGrabTemp(false DEBUGARG(comp->printfAlloc("struct parameter register %s", getRegName(regSegment->GetRegister()))));
+            comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
+            JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
+        }
+        else
+        {
+            JITDUMP("Reusing local V%02u for store from struct parameter register %s. Store:\n", remappedLclNum, getRegName(regSegment->GetRegister()));
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
+
+            // The store will be a no-op, so get rid of it
+            LIR::AsRange(comp->fgFirstBB).Remove(use.User(), true);
+            use = LIR::Use();
+        }
+
+        comp->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
+        comp->lvaGetDesc(remappedLclNum)->lvIsParamRegTarget = true;
+
+        JITDUMP("New mapping: ");
+        DBEXEC(VERBOSE, regSegment->Dump());
+        JITDUMP(" -> V%02u\n", remappedLclNum);
+
+        GenTree* paramRegValue = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
+        GenTree* storeField = comp->gtNewStoreLclFldNode(fld->GetLclNum(), fld->TypeGet(), regSegment->Offset, paramRegValue);
+
+        // Store actual parameter local from new reg local
+        LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeField));
+        LowerNode(paramRegValue);
+        LowerNode(storeField);
+
+        JITDUMP("Parameter spill:\n");
+        DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeField);
+
+        // Insert explicit normalization for small types (the LCL_FLD we
+        // are replacing comes with this normalization).
+        if (varTypeIsSmall(fld))
+        {
+            GenTree* lcl = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
+            GenTree* normalizeLcl = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
+            GenTree* storeNormalizedLcl = comp->gtNewStoreLclVarNode(remappedLclNum, normalizeLcl);
+            LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeNormalizedLcl));
+            LowerNode(lcl);
+            LowerNode(normalizeLcl);
+            LowerNode(storeNormalizedLcl);
+
+            JITDUMP("Parameter normalization:\n");
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeNormalizedLcl);
+        }
+
+        // If we still have a valid use, then replace the LCL_FLD with a
+        // LCL_VAR of the remapped parameter register local.
+        if (use.IsInitialized())
+        {
+            GenTree* lcl = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
+            LIR::AsRange(comp->fgFirstBB).InsertAfter(fld, lcl);
+            use.ReplaceWith(lcl);
+            LowerNode(lcl);
+            JITDUMP("New user tree range:\n");
+            DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
+            fld->gtBashToNOP();
+        }
+    }
+}
+
+unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals)
+{
+    GenTree* useNode = use.User();
+
+    if (!useNode->OperIs(GT_STORE_LCL_VAR))
+    {
+        return BAD_VAR_NUM;
+    }
+
+    LclVarDsc* destLclDsc = comp->lvaGetDesc(useNode->AsLclVarCommon());
+
+    if (destLclDsc->lvIsParamRegTarget)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (destLclDsc->TypeGet() == TYP_STRUCT)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (storedToLocals.Lookup(useNode->AsLclVarCommon()->GetLclNum()))
+    {
+        // Destination may change value before this access
+        return BAD_VAR_NUM;
+    }
+
+    return useNode->AsLclVarCommon()->GetLclNum();
 }
 
 #ifdef DEBUG

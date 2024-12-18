@@ -4938,8 +4938,8 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         // that was set by past phases.
         if (!isRecompute)
         {
-            varDsc->lvSingleDef             = varDsc->lvIsParam;
-            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam;
+            varDsc->lvSingleDef             = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
+            varDsc->lvSingleDefRegCandidate = varDsc->lvIsParam || varDsc->lvIsParamRegTarget;
 
             varDsc->lvAllDefsAreNoGc = (varDsc->lvImplicitlyReferenced == false);
         }
@@ -5031,6 +5031,12 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             {
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
+        }
+
+        if (varDsc->lvIsParamRegTarget && (varDsc->lvRefCnt() > 0))
+        {
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
+            varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
         }
 
         // If we have JMP, all arguments must have a location
