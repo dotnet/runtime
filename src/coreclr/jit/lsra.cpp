@@ -808,6 +808,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
     rbmAllInt         = compiler->rbmAllInt;
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
+    rbmAllInt = compiler->rbmAllInt;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
