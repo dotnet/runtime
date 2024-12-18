@@ -82,6 +82,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
       <_LdName>clang</_LdName>
       <_LdOptions>-fuse-ld=lld</_LdOptions>
       <_AsName>clang</_AsName>
@@ -90,7 +91,7 @@
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
         AotModulesTablePath="$(_AotModulesTablePath)"
         AsName="$(_AsName)"
-        AsOptions="-target $(_Triple) -c -x assembler"
+        AsOptions="$(_AsOptions)"
         Assemblies="@(AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         IntermediateOutputPath="$(IntermediateOutputPath)"
