@@ -209,6 +209,7 @@
       <EmccExportedFunction Include="_malloc" />
       <EmccExportedFunction Include="_sbrk" />
       <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_posix_memalign" />
       <EmccExportedFunction Include="_memset" />
       <EmccExportedFunction Include="_ntohs" />
       <EmccExportedFunction Include="stackAlloc" />
@@ -377,8 +378,7 @@
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
                                   $(ICULibDir)/libicui18n.a;
-                                  $(ICULibDir)/libicudata.a;
-                                  $(BrowserProjectRoot)runtime/hybrid-globalization/segmentation-rules.json" />
+                                  $(ICULibDir)/libicudata.a" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
     </ItemGroup>
     <PropertyGroup>
@@ -501,8 +501,7 @@
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
-                       $(NativeBinDir)dotnet.native.wasm;
-                       $(NativeBinDir)dotnet.globalization.js"
+                       $(NativeBinDir)dotnet.native.wasm;"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 
@@ -558,12 +557,19 @@
     <_RollupInputs Include="$(BrowserProjectRoot)runtime/*.js"/>
   </ItemGroup>
 
-  <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
+  <Target Name="SetMonoRollupEnvironment">
+    <!-- Retrieve the runtime pack product version. -->
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+             Targets="ReturnProductVersion"
+             Properties="Crossgen2SdkOverridePropsPath=;
+                         Crossgen2SdkOverrideTargetsPath=">
+      <Output TaskParameter="TargetOutputs" PropertyName="RuntimePackProductVersion" />
+    </MSBuild>
     <ItemGroup>
       <_MonoRollupEnvironmentVariable Include="Configuration:$(Configuration)" />
       <_MonoRollupEnvironmentVariable Include="NativeBinDir:$(NativeBinDir)" />
       <_MonoRollupEnvironmentVariable Include="WasmObjDir:$(WasmObjDir)" />
-      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
+      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(RuntimePackProductVersion)" />
       <_MonoRollupEnvironmentVariable Include="WasmEnableThreads:$(WasmEnableThreads)" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_MonoRollupEnvironmentVariable Include="WASM_ENABLE_SIMD:0" Condition="'$(WasmEnableSIMD)' == 'false'" />

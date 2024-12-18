@@ -642,6 +642,8 @@ namespace CoreclrTestLib
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
+            Console.WriteLine($"Finding all child processes of '{process.ProcessName}' (ID: {process.Id}) with name '{childName}'");
+
             var children = new Stack<Process>();
             Queue<Process> childrenToCheck = new Queue<Process>();
             HashSet<int> seen = new HashSet<int>();
@@ -656,6 +658,7 @@ namespace CoreclrTestLib
                 if (seen.Contains(child.Id))
                     continue;
 
+                Console.WriteLine($"Checking child process: '{child.ProcessName}' (ID: {child.Id})");
                 seen.Add(child.Id);
 
                 foreach (var grandchild in child.GetChildren())
@@ -784,9 +787,19 @@ namespace CoreclrTestLib
                         outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        outputWriter.Flush();
                         errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        errorWriter.Flush();
+
+                        Console.WriteLine("Collecting diagnostic information...");
+                        Console.WriteLine("Snapshot of processes currently running:");
+                        Console.WriteLine($"\t{"ID",-6} ProcessName");
+                        foreach (var activeProcess in Process.GetProcesses())
+                        {
+                            Console.WriteLine($"\t{activeProcess.Id,-6} {activeProcess.ProcessName}");
+                        }
 
                         if (collectCrashDumps)
                         {

@@ -66,55 +66,6 @@ struct  CodeLabel;
 struct CodeRun;
 struct LabelRef;
 struct CodeElement;
-struct IntermediateUnwindInfo;
-
-#if !defined(TARGET_X86) && !defined(TARGET_UNIX)
-#define STUBLINKER_GENERATES_UNWIND_INFO
-#endif // !TARGET_X86 && !TARGET_UNIX
-
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-
-typedef DPTR(struct StubUnwindInfoHeaderSuffix) PTR_StubUnwindInfoHeaderSuffix;
-struct StubUnwindInfoHeaderSuffix
-{
-    UCHAR nUnwindInfoSize;  // Size of unwind info in bytes
-};
-
-// Variable-sized struct that precedes a Stub when the stub requires unwind
-// information.  Followed by a StubUnwindInfoHeaderSuffix.
-typedef DPTR(struct StubUnwindInfoHeader) PTR_StubUnwindInfoHeader;
-struct StubUnwindInfoHeader
-{
-    PTR_StubUnwindInfoHeader pNext;
-    T_RUNTIME_FUNCTION FunctionEntry;
-    UNWIND_INFO UnwindInfo;  // variable length
-
-    // Computes the size needed for this variable-sized struct.
-    static SIZE_T ComputeAlignedSize(UINT nUnwindInfoSize);
-
-    void Init ();
-
-    bool IsRegistered ();
-};
-
-// List of stub address ranges, in increasing address order.
-struct StubUnwindInfoHeapSegment
-{
-    PBYTE pbBaseAddress;
-    SIZE_T cbSegment;
-    StubUnwindInfoHeader *pUnwindHeaderList;
-    StubUnwindInfoHeapSegment *pNext;
-
-#ifdef HOST_64BIT
-    class UnwindInfoTable* pUnwindInfoTable;       // Used to publish unwind info to ETW stack crawler
-#endif
-};
-
-VOID UnregisterUnwindInfoInLoaderHeap (UnlockedLoaderHeap *pHeap);
-
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
 
 //-------------------------------------------------------------------------
 // A non-multithreaded object that fixes up and emits one executable stub.
@@ -185,12 +136,6 @@ class StubLinker
         VOID EmitLabel(CodeLabel* pCodeLabel);
 
         //---------------------------------------------------------------
-        // Emits the patch label for the stub.
-        // Throws exception on failure.
-        //---------------------------------------------------------------
-        void EmitPatchLabel();
-
-        //---------------------------------------------------------------
         // Create a new label to an external address.
         // Throws exception on failure.
         //---------------------------------------------------------------
@@ -225,47 +170,9 @@ class StubLinker
 
 #ifdef TARGET_ARM
         void DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs);
-#elif defined(TARGET_ARM64)
-        void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cCalleeSavedRegs, UINT cbStackFrame);
-        UINT GetSavedRegArgsOffset();
-        UINT GetStackFrameSize();
-#elif defined(TARGET_RISCV64)
-        void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cbStackFrame);
-        UINT GetSavedRegArgsOffset();
-        UINT GetStackFrameSize();
 #endif
 
-        //===========================================================================
-        // Unwind information
-
-        // Records location of preserved or parameter register
-        VOID UnwindSavedReg (UCHAR reg, ULONG SPRelativeOffset);
-        VOID UnwindPushedReg (UCHAR reg);
-
-        // Records "sub rsp, xxx"
-        VOID UnwindAllocStack (SHORT FrameSizeIncrement);
-
-        // Records frame pointer register
-        VOID UnwindSetFramePointer (UCHAR reg);
-
-        // In DEBUG, emits a call to m_pUnwindInfoCheckLabel (via
-        // EmitUnwindInfoCheckWorker).  Code at that label will call to a
-        // helper that will attempt to RtlVirtualUnwind through the stub.  The
-        // helper will preserve ALL registers.
-        VOID EmitUnwindInfoCheck();
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-protected:
-
-        // Injects a call to the given label.
-        virtual VOID EmitUnwindInfoCheckWorker (CodeLabel *pCheckLabel) { _ASSERTE(!"override me"); }
-
-        // Emits a call to a helper that will attempt to RtlVirtualUnwind
-        // through the stub.  The helper will preserve ALL registers.
-        virtual VOID EmitUnwindInfoCheckSubfunction() { _ASSERTE(!"override me"); }
-#endif
-
-public:
+    public:
 
         //---------------------------------------------------------------
         // Generate the actual stub. The returned stub has a refcount of 1.
@@ -280,9 +187,6 @@ public:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
         CodeLabel     *m_pFirstCodeLabel;   // linked list of CodeLabels
         LabelRef      *m_pFirstLabelRef;    // linked list of references
-        CodeLabel     *m_pPatchLabel;       // label of stub patch offset
-                                            // currently just for multicast
-                                            // frames.
         PTR_MethodDesc m_pTargetMethod;     // Used for instantiating stubs.
         SHORT         m_stackSize;          // count of pushes/pops
         CQuickHeap    m_quickHeap;          // throwaway heap for
@@ -291,7 +195,7 @@ public:
         BOOL          m_fDataOnly;          // the stub contains only data - does not need FlushInstructionCache
 
 #ifdef TARGET_ARM
-protected:
+    protected:
         BOOL            m_fProlog;              // True if DescribeProlog has been called
         UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (0 == none, 1 == r4, 2 ==
                                                 // r4-r5 etc. up to 8 == r4-r11)
@@ -299,84 +203,7 @@ protected:
         BOOL            m_fPushArgRegs;         // If true, r0-r3 are saved before callee saved regs
 #endif // TARGET_ARM
 
-#ifdef TARGET_ARM64
-protected:
-        BOOL            m_fProlog;              // True if DescribeProlog has been called
-        UINT            m_cIntRegArgs;          // Count of int register arguments (x0 - x7)
-        UINT            m_cVecRegArgs;          // Count of FP register arguments (v0 - v7)
-        UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (x19 - x28)
-        UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
-#endif // TARGET_ARM64
-
-#ifdef TARGET_RISCV64
-protected:
-        BOOL            m_fProlog;              // True if DescribeProlog has been called
-        UINT            m_cIntRegArgs;          // Count of int register arguments (x10 - x17)
-        UINT            m_cFpRegArgs;           // Count of FP register arguments (f10 - f17)
-        UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
-#endif // TARGET_RISCV64
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-
-#ifdef _DEBUG
-        CodeLabel     *m_pUnwindInfoCheckLabel;  // subfunction to call to unwind info check helper.
-                                                 // On AMD64, the prologue is restricted to 256
-                                                 // bytes, so this reduces the size of the injected
-                                                 // code from 14 to 5 bytes.
-#endif
-
-#ifdef TARGET_AMD64
-        IntermediateUnwindInfo *m_pUnwindInfoList;
-        UINT          m_nUnwindSlots;       // number of slots to allocate at end, == UNWIND_INFO::CountOfCodes
-        BOOL          m_fHaveFramePointer;  // indicates stack operations no longer need to be recorded
-
-        //
-        // Returns total UnwindInfoSize, including RUNTIME_FUNCTION entry
-        //
-        UINT UnwindInfoSize(UINT codeSize)
-        {
-            if (m_nUnwindSlots == 0) return 0;
-
-            return sizeof(T_RUNTIME_FUNCTION) + offsetof(UNWIND_INFO, UnwindCode) + m_nUnwindSlots * sizeof(UNWIND_CODE);
-        }
-#endif // TARGET_AMD64
-
-#ifdef TARGET_ARM
-#define MAX_UNWIND_CODE_WORDS 5  /* maximum number of 32-bit words to store unwind codes */
-        // Cache information about the stack frame set up in the prolog and use it in the generation of the
-        // epilog.
-private:
-        // Reserve fixed size block that's big enough to fit any unwind info we can have
-        static const int c_nUnwindInfoSize = sizeof(T_RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
-
-        //
-        // Returns total UnwindInfoSize, including RUNTIME_FUNCTION entry
-        //
-        UINT UnwindInfoSize(UINT codeSize)
-        {
-            if (!m_fProlog) return 0;
-
-            return c_nUnwindInfoSize;
-        }
-#endif // TARGET_ARM
-
-#ifdef TARGET_ARM64
-#define MAX_UNWIND_CODE_WORDS 5  /* maximum number of 32-bit words to store unwind codes */
-
-private:
-        // Reserve fixed size block that's big enough to fit any unwind info we can have
-        static const int c_nUnwindInfoSize = sizeof(T_RUNTIME_FUNCTION) + sizeof(DWORD) + MAX_UNWIND_CODE_WORDS *4;
-        UINT UnwindInfoSize(UINT codeSize)
-        {
-            if (!m_fProlog) return 0;
-
-            return c_nUnwindInfoSize;
-        }
-
-#endif // TARGET_ARM64
-
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
+    private:
         CodeRun *AppendNewEmptyCodeRun();
 
 
@@ -399,15 +226,9 @@ private:
 
         // Writes out the code element into memory following the
         // stub object.
-        bool EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap);
+        void EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap);
 
         CodeRun *GetLastCodeRunIfAny();
-
-        bool EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, LoaderHeap* pHeap);
-
-#if defined(TARGET_AMD64) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-        UNWIND_CODE *AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots = 0);
-#endif // defined(TARGET_AMD64) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 };
 
 //************************************************************************
@@ -449,10 +270,9 @@ enum NewStubFlags
 {
     NEWSTUB_FL_NONE                 = 0x00000000,
     NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
-    NEWSTUB_FL_MULTICAST            = 0x00000002,
-    NEWSTUB_FL_EXTERNAL             = 0x00000004,
-    NEWSTUB_FL_LOADERHEAP           = 0x00000008,
-    NEWSTUB_FL_THUNK                = 0x00000010
+    NEWSTUB_FL_EXTERNAL             = 0x00000002,
+    NEWSTUB_FL_LOADERHEAP           = 0x00000004,
+    NEWSTUB_FL_SHUFFLE_THUNK        = 0x00000008
 };
 
 
@@ -472,17 +292,15 @@ class Stub
     protected:
     enum
     {
-        MULTICAST_DELEGATE_BIT  = 0x80000000,
-        EXTERNAL_ENTRY_BIT      = 0x40000000,
-        LOADER_HEAP_BIT         = 0x20000000,
-        INSTANTIATING_STUB_BIT  = 0x10000000,
-        UNWIND_INFO_BIT         = 0x08000000,
-        THUNK_BIT               = 0x04000000,
+        EXTERNAL_ENTRY_BIT      = 0x80000000,
+        LOADER_HEAP_BIT         = 0x40000000,
+        INSTANTIATING_STUB_BIT  = 0x20000000,
+        SHUFFLE_THUNK_BIT       = 0x10000000,
 
-        CODEBYTES_MASK          = THUNK_BIT - 1,
+        CODEBYTES_MASK          = SHUFFLE_THUNK_BIT - 1,
         MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-    static_assert_no_msg(CODEBYTES_MASK < THUNK_BIT);
+    static_assert_no_msg(CODEBYTES_MASK < SHUFFLE_THUNK_BIT);
 
     public:
         //-------------------------------------------------------------------
@@ -512,15 +330,6 @@ class Stub
         //-------------------------------------------------------------------
         // Used by the debugger to help step through stubs
         //-------------------------------------------------------------------
-        BOOL IsMulticastDelegate()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & MULTICAST_DELEGATE_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // Used by the debugger to help step through stubs
-        //-------------------------------------------------------------------
         BOOL IsInstantiatingStub()
         {
             LIMITED_METHOD_CONTRACT;
@@ -530,46 +339,10 @@ class Stub
         //-------------------------------------------------------------------
         // Used by the debugger to help step through stubs
         //-------------------------------------------------------------------
-        BOOL IsManagedThunk()
+        BOOL IsShuffleThunk()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & THUNK_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // For stubs which execute user code, a patch offset needs to be set
-        // to tell the debugger how far into the stub code the debugger has
-        // to step until the frame is set up.
-        //-------------------------------------------------------------------
-        void SetPatchOffset(USHORT offset)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!IsInstantiatingStub());
-            m_data.PatchOffset = offset;
-        }
-
-        //-------------------------------------------------------------------
-        // For stubs which execute user code, a patch offset needs to be set
-        // to tell the debugger how far into the stub code the debugger has
-        // to step until the frame is set up.
-        //-------------------------------------------------------------------
-        USHORT GetPatchOffset()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!IsInstantiatingStub());
-            return m_data.PatchOffset;
-        }
-
-        //-------------------------------------------------------------------
-        // For stubs which execute user code, a patch offset needs to be set
-        // to tell the debugger how far into the stub code the debugger has
-        // to step until the frame is set up.
-        //-------------------------------------------------------------------
-        TADDR GetPatchAddress()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(!IsInstantiatingStub());
-            return dac_cast<TADDR>(GetEntryPointInternal()) + GetPatchOffset();
+            return (m_numCodeBytesAndFlags & SHUFFLE_THUNK_BIT) != 0;
         }
 
         //-------------------------------------------------------------------
@@ -595,58 +368,6 @@ class Stub
             _ASSERTE(IsInstantiatingStub());
             return m_data.InstantiatedMethod;
         }
-
-        //-------------------------------------------------------------------
-        // Unwind information.
-        //-------------------------------------------------------------------
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-
-        BOOL HasUnwindInfo()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & UNWIND_INFO_BIT) != 0;
-        }
-
-        StubUnwindInfoHeaderSuffix *GetUnwindInfoHeaderSuffix()
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_NOTRIGGER;
-                FORBID_FAULT;
-            }
-            CONTRACTL_END
-
-            _ASSERTE(HasUnwindInfo());
-
-            TADDR info = dac_cast<TADDR>(this);
-
-            return PTR_StubUnwindInfoHeaderSuffix
-                (info - sizeof(StubUnwindInfoHeaderSuffix));
-        }
-
-        StubUnwindInfoHeader *GetUnwindInfoHeader()
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_NOTRIGGER;
-                FORBID_FAULT;
-            }
-            CONTRACTL_END
-
-            _ASSERTE(HasUnwindInfo());
-
-            StubUnwindInfoHeaderSuffix *pSuffix = GetUnwindInfoHeaderSuffix();
-
-            TADDR suffixEnd = dac_cast<TADDR>(pSuffix) + sizeof(*pSuffix);
-
-            return PTR_StubUnwindInfoHeader(suffixEnd -
-                                            StubUnwindInfoHeader::ComputeAlignedSize(pSuffix->nUnwindInfoSize));
-        }
-
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 
         //-------------------------------------------------------------------
         // Returns pointer to the start of the allocation containing this Stub.
@@ -782,11 +503,7 @@ class Stub
         // This creates stubs.
         //-------------------------------------------------------------------
         static Stub* NewStub(LoaderHeap *pLoaderHeap, UINT numCodeBytes,
-                             DWORD flags = NEWSTUB_FL_NONE
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                             , UINT nUnwindInfoSize = 0
-#endif
-                             );
+                             DWORD flags = NEWSTUB_FL_NONE);
 
         static Stub* NewStub(PTR_VOID pCode, DWORD flags = NEWSTUB_FL_NONE);
         static Stub* NewStub(PCODE pCode, DWORD flags = NEWSTUB_FL_NONE)
@@ -794,18 +511,8 @@ class Stub
             return NewStub((PTR_VOID)pCode, flags);
         }
 
-        //-------------------------------------------------------------------
-        // One-time init
-        //-------------------------------------------------------------------
-        static void Init();
-
     protected:
-        // fMC: Set to true if the stub is a multicast delegate, false otherwise
-        void SetupStub(int numCodeBytes, DWORD flags
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                       , UINT nUnwindInfoSlots
-#endif
-                       );
+        void SetupStub(int numCodeBytes, DWORD flags);
         void DeleteStub();
 
         //-------------------------------------------------------------------
@@ -834,8 +541,8 @@ class Stub
         UINT32 m_numCodeBytesAndFlags;
         union
         {
-            USHORT          PatchOffset;
-            PTR_MethodDesc  InstantiatedMethod;
+            // Stub kind specific data
+            PTR_MethodDesc  InstantiatedMethod; // Valid for IsInstantiatingStub() only
         } m_data;
 
 #ifdef _DEBUG

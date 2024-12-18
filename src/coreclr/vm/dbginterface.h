@@ -19,6 +19,8 @@ typedef DPTR(struct ICorDebugInfo::NativeVarInfo) PTR_NativeVarInfo;
 
 typedef void (*FAVORCALLBACK)(void *);
 
+class DebuggerSteppingInfo;
+
 //
 // The purpose of this object is to serve as an entry point to the
 // debugger, which used to reside in a separate DLL.
@@ -90,12 +92,10 @@ public:
 
     virtual BOOL LoadClass(TypeHandle th,
                            mdTypeDef classMetadataToken,
-                           Module *classModule,
-                           AppDomain *pAppDomain) = 0;
+                           Module *classModule) = 0;
 
     virtual void UnloadClass(mdTypeDef classMetadataToken,
-                             Module *classModule,
-                             AppDomain *pAppDomain) = 0;
+                             Module *classModule) = 0;
 
     // Filter we call in 1st-pass to dispatch a CHF callback.
     // pCatchStackAddress really should be a Frame* onto the stack. That way the CHF stack address
@@ -141,8 +141,7 @@ public:
     virtual void SendUserBreakpoint(Thread *thread) = 0;
 
     // Send an UpdateModuleSyms event, and block waiting for the debugger to continue it.
-    virtual void SendUpdateModuleSymsEventAndBlock(Module *pRuntimeModule,
-                                          AppDomain *pAppDomain) = 0;
+    virtual void SendUpdateModuleSymsEventAndBlock(Module *pRuntimeModule) = 0;
 
     //
     // RequestFavor gets the debugger helper thread to call a function. It's
@@ -195,8 +194,8 @@ public:
                                              SIZE_T *nativeOffset) = 0;
 
 
-    // Used by FixContextAndResume
-    virtual void SendSetThreadContextNeeded(CONTEXT *context) = 0;
+    // Used by EditAndContinueModule::FixContextAndResume
+    virtual void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = nullptr) = 0;
     virtual BOOL IsOutOfProcessSetContextEnabled() = 0;
 #endif // FEATURE_METADATA_UPDATER
 
@@ -411,6 +410,8 @@ public:
 #ifndef DACCESS_COMPILE
     virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
     virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
+    virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
+    virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
 #endif //DACCESS_COMPILE
 };
 

@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.Caching.Distributed
 {
     /// <summary>
-    /// Extension methods for <see cref="DistributedCacheEntryOptions"/> operations.
+    /// Provides extension methods for <see cref="DistributedCacheEntryOptions"/> operations.
     /// </summary>
     public static class DistributedCacheEntryExtensions
     {

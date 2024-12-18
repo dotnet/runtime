@@ -643,10 +643,12 @@ protected:
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
     void genArm64EmitterUnitTestsSve();
+    void genArm64EmitterUnitTestsPac();
 #endif
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsApx();
 #endif
 
 #endif // defined(DEBUG)
@@ -1626,12 +1628,6 @@ public:
     instruction ins_MathOp(genTreeOps oper, var_types type);
 
     void instGen_Return(unsigned stkArgSize);
-
-    enum BarrierKind
-    {
-        BARRIER_FULL,      // full barrier
-        BARRIER_LOAD_ONLY, // load barier
-    };
 
     void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 

@@ -11,17 +11,17 @@ namespace Microsoft.Extensions.FileProviders
     public class NullFileProvider : IFileProvider
     {
         /// <summary>
-        /// Enumerate a non-existent directory.
+        /// Enumerates a nonexistent directory.
         /// </summary>
         /// <param name="subpath">A path under the root directory. This parameter is ignored.</param>
         /// <returns>A <see cref="IDirectoryContents"/> that does not exist and does not contain any contents.</returns>
         public IDirectoryContents GetDirectoryContents(string subpath) => NotFoundDirectoryContents.Singleton;
 
         /// <summary>
-        /// Locate a non-existent file.
+        /// Locates a nonexistent file.
         /// </summary>
         /// <param name="subpath">A path under the root directory.</param>
-        /// <returns>A <see cref="IFileInfo"/> representing a non-existent file at the given path.</returns>
+        /// <returns>A <see cref="IFileInfo"/> representing a nonexistent file at the given path.</returns>
         public IFileInfo GetFileInfo(string subpath) => new NotFoundFileInfo(subpath);
 
         /// <summary>

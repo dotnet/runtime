@@ -30,15 +30,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -80,15 +80,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -151,22 +151,22 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the Integer represents value is between
-        ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise,
+        ///   <see cref="int.MinValue">Int32.MinValue</see> and <see cref="int.MaxValue">Int32.MaxValue</see>, inclusive; otherwise,
         ///   <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -217,22 +217,22 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the Integer represents value is between
-        ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise,
+        ///   <see cref="uint.MinValue">UInt32.MinValue</see> and <see cref="uint.MaxValue">UInt32.MaxValue</see>, inclusive; otherwise,
         ///   <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -284,22 +284,22 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the Integer represents value is between
-        ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise,
+        ///   <see cref="long.MinValue">Int64.MinValue</see> and <see cref="long.MaxValue">Int64.MaxValue</see>, inclusive; otherwise,
         ///   <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -343,22 +343,22 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the Integer represents value is between
-        ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise,
+        ///   <see cref="ulong.MinValue">UInt64.MinValue</see> and <see cref="ulong.MaxValue">UInt64.MaxValue</see>, inclusive; otherwise,
         ///   <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="ruleSet"/> is not defined.
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -528,15 +528,15 @@ namespace System.Formats.Asn1
         ///   The bytes of the Integer value, in signed big-endian form.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -565,15 +565,15 @@ namespace System.Formats.Asn1
         ///   The decoded value.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -600,19 +600,19 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="false"/> and does not advance the reader if the value is not between
-        ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise
+        ///   <see cref="int.MinValue">Int32.MinValue</see> and <see cref="int.MaxValue">Int32.MaxValue</see>, inclusive; otherwise
         ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -639,19 +639,19 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="false"/> and does not advance the reader if the value is not between
-        ///   <see cref="uint.MinValue"/> and <see cref="uint.MaxValue"/>, inclusive; otherwise
+        ///   <see cref="uint.MinValue">UInt32.MinValue</see> and <see cref="uint.MaxValue">UInt32.MaxValue</see>, inclusive; otherwise
         ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -679,19 +679,19 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="false"/> and does not advance the reader if the value is not between
-        ///   <see cref="long.MinValue"/> and <see cref="long.MaxValue"/>, inclusive; otherwise
+        ///   <see cref="long.MinValue">Int64.MinValue</see> and <see cref="long.MaxValue">Int64.MaxValue</see>, inclusive; otherwise
         ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -718,19 +718,19 @@ namespace System.Formats.Asn1
         /// </param>
         /// <returns>
         ///   <see langword="false"/> and does not advance the reader if the value is not between
-        ///   <see cref="ulong.MinValue"/> and <see cref="ulong.MaxValue"/>, inclusive; otherwise
+        ///   <see cref="ulong.MinValue">Int64.MinValue</see> and <see cref="ulong.MaxValue">Int64.MaxValue</see>, inclusive; otherwise
         ///   <see langword="true"/> is returned and the reader advances.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is

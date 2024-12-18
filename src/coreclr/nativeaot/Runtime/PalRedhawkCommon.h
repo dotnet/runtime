@@ -106,7 +106,6 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R29;
     uintptr_t  R30;
     uintptr_t  R31;
-    uintptr_t  R2;
 
     uintptr_t  SP;
     uintptr_t  IP;

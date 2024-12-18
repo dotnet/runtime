@@ -495,10 +495,6 @@ function copy_test_native_bin_to_test_root {
     if [ -z "$testNativeBinDir" ]; then
         exit_with_error "$errorSource" "--testNativeBinDir is required."
     fi
-    testNativeBinDir=$testNativeBinDir/src
-    if [ ! -d "$testNativeBinDir" ]; then
-        exit_with_error "$errorSource" "Directory specified by --testNativeBinDir does not exist: $testNativeBinDir"
-    fi
 
     # Copy native test components from the native test build into the respective test directory in the test root directory
     find "$testNativeBinDir" -type f -iname "*.$libExtension" |
@@ -511,6 +507,7 @@ function copy_test_native_bin_to_test_root {
 # Variables for unsupported and failing tests
 declare -a unsupportedTests
 declare -a failingTests
+declare -a excludedTests
 declare -a playlistTests
 ((runFailingTestsOnly = 0))
 
@@ -545,6 +542,15 @@ function load_failing_tests {
     failingTests+=($(read_array "$(dirname "${BASH_SOURCE[0]}")/testsFailing.$ARCH.txt"))
 }
 
+function load_excluded_tests {
+    # Read the exclusion file and populate the excludedTests array
+    while IFS=, read -r dllPath reasonMessage; do
+        # Extract the directory path from the dllPath and add it to the excludedTests array
+        dirPath=$(dirname "$dllPath")
+        excludedTests+=("$dirPath")
+    done < "${CORE_ROOT}/TestExclusionList.txt"
+}
+
 function load_playlist_tests {
     # Load the list of tests that are enabled as a part of this test playlist.
     playlistTests=($(read_array "${playlistFile}"))
@@ -565,6 +571,16 @@ function is_failing_test {
             return 0
         fi
     done
+    return 1
+}
+
+function is_excluded_test {
+    for excludedTest in "${excludedTests[@]}"; do
+        if [[ "$1" == "$excludedTest"* ]]; then
+            return 0
+        fi
+    done
+
     return 1
 }
 
@@ -670,8 +686,6 @@ function print_info_from_core_file {
         gdb --batch -ex "thread apply all bt full" -ex "quit" $executable_name $core_file_name
     fi
 }
-
-
 
 function inspect_and_delete_core_files {
     # This function prints some basic information from core files in the current
@@ -903,6 +917,8 @@ function start_test {
         skip_unsupported_test "$scriptFilePath" "$outputFilePath" &
     elif ((runFailingTestsOnly == 0)) && is_failing_test "$scriptFilePath"; then
         skip_failing_test "$scriptFilePath" "$outputFilePath" &
+    elif is_excluded_test "$scriptFilePath"; then
+        skip_unsupported_test "$scriptFilePath" "$outputFilePath" &
     else
         run_test "$scriptFilePath" "$outputFilePath" &
     fi
@@ -1277,6 +1293,7 @@ then
 else
     load_unsupported_tests
     load_failing_tests
+    load_excluded_tests
 fi
 
 scriptPath=$(dirname $0)

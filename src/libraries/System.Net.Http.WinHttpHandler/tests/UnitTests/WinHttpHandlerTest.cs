@@ -65,7 +65,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             Assert.Equal(TimeSpan.FromSeconds(1), handler.TcpKeepAliveInterval);
 
             Assert.Equal(64, handler.MaxResponseHeadersLength);
-            Assert.Equal(64 * 1024, handler.MaxResponseDrainSize);
+            Assert.Equal(1024 * 1024, handler.MaxResponseDrainSize);
             Assert.NotNull(handler.Properties);
         }
 

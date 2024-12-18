@@ -86,250 +86,15 @@ struct LabelRef : public CodeElement
     LabelRef            *m_nextLabelRef;
 };
 
-
-//************************************************************************
-// IntermediateUnwindInfo
-//************************************************************************
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-
-
-#ifdef TARGET_AMD64
-// List of unwind operations, queued in StubLinker::m_pUnwindInfoList.
-struct IntermediateUnwindInfo
+#ifdef TARGET_ARM
+void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
 {
-    IntermediateUnwindInfo *pNext;
-    CodeRun *pCodeRun;
-    UINT LocalOffset;
-    UNWIND_CODE rgUnwindCode[1];    // variable length, depends on first entry's UnwindOp
-};
-#endif // TARGET_AMD64
-
-
-StubUnwindInfoHeapSegment *g_StubHeapSegments;
-CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
-#ifdef _DEBUG  // for unit test
-void *__DEBUG__g_StubHeapSegments = &g_StubHeapSegments;
-#endif
-
-
-//
-// Callback registered via RtlInstallFunctionTableCallback.  Called by
-// RtlpLookupDynamicFunctionEntry to locate RUNTIME_FUNCTION entry for a PC
-// found within a portion of a heap that contains stub code.
-//
-T_RUNTIME_FUNCTION*
-FindStubFunctionEntry (
-   BIT64_ONLY(IN ULONG64    ControlPc)
-    NOT_BIT64(IN ULONG      ControlPc),
-              IN PVOID      Context
-    )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    CONSISTENCY_CHECK(DYNFNTABLE_STUB == IdentifyDynamicFunctionTableTypeFromContext(Context));
-
-    StubUnwindInfoHeapSegment *pStubHeapSegment = (StubUnwindInfoHeapSegment*)DecodeDynamicFunctionTableContext(Context);
-
-    //
-    // The RUNTIME_FUNCTION entry contains ULONG offsets relative to the
-    // segment base.  Stub::EmitUnwindInfo ensures that this cast is valid.
-    //
-    ULONG RelativeAddress = (ULONG)((BYTE*)ControlPc - pStubHeapSegment->pbBaseAddress);
-
-    LOG((LF_STUBS, LL_INFO100000, "ControlPc %p, RelativeAddress 0x%x, pStubHeapSegment %p, pStubHeapSegment->pbBaseAddress %p\n",
-            ControlPc,
-            RelativeAddress,
-            pStubHeapSegment,
-            pStubHeapSegment->pbBaseAddress));
-
-    //
-    // Search this segment's list of stubs for an entry that includes the
-    // segment-relative offset.
-    //
-    for (StubUnwindInfoHeader *pHeader = pStubHeapSegment->pUnwindHeaderList;
-         pHeader;
-         pHeader = pHeader->pNext)
-    {
-        // The entry points are in increasing address order.
-        if (RelativeAddress >= RUNTIME_FUNCTION__BeginAddress(&pHeader->FunctionEntry))
-        {
-            T_RUNTIME_FUNCTION *pCurFunction = &pHeader->FunctionEntry;
-            T_RUNTIME_FUNCTION *pPrevFunction = NULL;
-
-            LOG((LF_STUBS, LL_INFO100000, "pCurFunction %p, pCurFunction->BeginAddress 0x%x, pCurFunction->EndAddress 0x%x\n",
-                    pCurFunction,
-                    RUNTIME_FUNCTION__BeginAddress(pCurFunction),
-                    RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress)));
-
-            CONSISTENCY_CHECK((RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress) > RUNTIME_FUNCTION__BeginAddress(pCurFunction)));
-            CONSISTENCY_CHECK((!pPrevFunction || RUNTIME_FUNCTION__EndAddress(pPrevFunction, (TADDR)pStubHeapSegment->pbBaseAddress) <= RUNTIME_FUNCTION__BeginAddress(pCurFunction)));
-
-            // The entry points are in increasing address order.  They're
-            // also contiguous, so after we're sure it's after the start of
-            // the first function (checked above), we only need to test
-            // the end address.
-            if (RelativeAddress < RUNTIME_FUNCTION__EndAddress(pCurFunction, (TADDR)pStubHeapSegment->pbBaseAddress))
-            {
-                CONSISTENCY_CHECK((RelativeAddress >= RUNTIME_FUNCTION__BeginAddress(pCurFunction)));
-
-                return pCurFunction;
-            }
-        }
-    }
-
-    //
-    // Return NULL to indicate that there is no RUNTIME_FUNCTION/unwind
-    // information for this offset.
-    //
-    return NULL;
+    m_fProlog = TRUE;
+    m_cCalleeSavedRegs = cCalleeSavedRegs;
+    m_cbStackFrame = cbStackFrame;
+    m_fPushArgRegs = fPushArgRegs;
 }
-
-
-bool UnregisterUnwindInfoInLoaderHeapCallback (PVOID pvArgs, PVOID pvAllocationBase, SIZE_T cbReserved)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    //
-    // There may be multiple StubUnwindInfoHeapSegment's associated with a region.
-    //
-
-    LOG((LF_STUBS, LL_INFO1000, "Looking for stub unwind info for LoaderHeap segment %p size %p\n", pvAllocationBase, cbReserved));
-
-    CrstHolder crst(&g_StubUnwindInfoHeapSegmentsCrst);
-
-    StubUnwindInfoHeapSegment *pStubHeapSegment;
-    for (StubUnwindInfoHeapSegment **ppPrevStubHeapSegment = &g_StubHeapSegments;
-            (pStubHeapSegment = *ppPrevStubHeapSegment); )
-    {
-        LOG((LF_STUBS, LL_INFO10000, "    have unwind info for address %p size %p\n", pStubHeapSegment->pbBaseAddress, pStubHeapSegment->cbSegment));
-
-        // If heap region ends before stub segment
-        if ((BYTE*)pvAllocationBase + cbReserved <= pStubHeapSegment->pbBaseAddress)
-        {
-            // The list is ordered, so address range is between segments
-            break;
-        }
-
-        // The given heap segment base address may fall within a prereserved
-        // region that was given to the heap when the heap was constructed, so
-        // pvAllocationBase may be > pbBaseAddress.  Also, there could be
-        // multiple segments for each heap region, so pvAllocationBase may be
-        // < pbBaseAddress.  So...there is no meaningful relationship between
-        // pvAllocationBase and pbBaseAddress.
-
-        // If heap region starts before end of stub segment
-        if ((BYTE*)pvAllocationBase < pStubHeapSegment->pbBaseAddress + pStubHeapSegment->cbSegment)
-        {
-            _ASSERTE((BYTE*)pvAllocationBase + cbReserved <= pStubHeapSegment->pbBaseAddress + pStubHeapSegment->cbSegment);
-
-            DeleteEEFunctionTable(pStubHeapSegment);
-#ifdef TARGET_AMD64
-            if (pStubHeapSegment->pUnwindInfoTable != 0)
-                delete pStubHeapSegment->pUnwindInfoTable;
-#endif
-            *ppPrevStubHeapSegment = pStubHeapSegment->pNext;
-
-            delete pStubHeapSegment;
-        }
-        else
-        {
-            ppPrevStubHeapSegment = &pStubHeapSegment->pNext;
-        }
-    }
-
-    return false; // Keep enumerating
-}
-
-
-VOID UnregisterUnwindInfoInLoaderHeap (UnlockedLoaderHeap *pHeap)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        PRECONDITION(pHeap->m_fPermitStubsWithUnwindInfo);
-    }
-    CONTRACTL_END;
-
-    pHeap->EnumPageRegions(&UnregisterUnwindInfoInLoaderHeapCallback, NULL /* pvArgs */);
-
-#ifdef _DEBUG
-    pHeap->m_fStubUnwindInfoUnregistered = TRUE;
-#endif // _DEBUG
-}
-
-
-class StubUnwindInfoSegmentBoundaryReservationList
-{
-    struct ReservationList
-    {
-        ReservationList *pNext;
-
-        static ReservationList *FromStub (Stub *pStub)
-        {
-            return (ReservationList*)(pStub+1);
-        }
-
-        Stub *GetStub ()
-        {
-            return (Stub*)this - 1;
-        }
-    };
-
-    ReservationList *m_pList;
-
-public:
-
-    StubUnwindInfoSegmentBoundaryReservationList ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_pList = NULL;
-    }
-
-    ~StubUnwindInfoSegmentBoundaryReservationList ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        ReservationList *pList = m_pList;
-        while (pList)
-        {
-            ReservationList *pNext = pList->pNext;
-
-            ExecutableWriterHolder<Stub> stubWriterHolder(pList->GetStub(), sizeof(Stub));
-            stubWriterHolder.GetRW()->DecRef();
-
-            pList = pNext;
-        }
-    }
-
-    void AddStub (Stub *pStub)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        ReservationList *pList = ReservationList::FromStub(pStub);
-
-        ExecutableWriterHolder<ReservationList> listWriterHolder(pList, sizeof(ReservationList));
-        listWriterHolder.GetRW()->pNext = m_pList;
-        m_pList = pList;
-    }
-};
-
-
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
+#endif // TARGET_ARM
 
 //************************************************************************
 // StubLinker
@@ -350,7 +115,6 @@ StubLinker::StubLinker()
     m_pCodeElements     = NULL;
     m_pFirstCodeLabel   = NULL;
     m_pFirstLabelRef    = NULL;
-    m_pPatchLabel       = NULL;
     m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
@@ -360,29 +124,6 @@ StubLinker::StubLinker()
     m_cbStackFrame      = 0;
     m_fPushArgRegs      = FALSE;
 #endif
-#ifdef TARGET_RISCV64
-    m_fProlog           = FALSE;
-    m_cIntRegArgs       = 0;
-    m_cFpRegArgs        = 0;
-    m_cbStackSpace      = 0;
-#endif
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-#ifdef _DEBUG
-    m_pUnwindInfoCheckLabel = NULL;
-#endif
-#ifdef TARGET_AMD64
-    m_pUnwindInfoList   = NULL;
-    m_nUnwindSlots      = 0;
-    m_fHaveFramePointer = FALSE;
-#endif
-#ifdef TARGET_ARM64
-    m_fProlog           = FALSE;
-    m_cIntRegArgs       = 0;
-    m_cVecRegArgs       = 0;
-    m_cCalleeSavedRegs  = 0;
-    m_cbStackSpace      = 0;
-#endif
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 }
 
 
@@ -623,26 +364,6 @@ CodeLabel* StubLinker::EmitNewCodeLabel()
 
 
 //---------------------------------------------------------------
-// Creates & emits the patch offset label for the stub
-//---------------------------------------------------------------
-VOID StubLinker::EmitPatchLabel()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //
-    // Note that it's OK to have re-emit the patch label,
-    // just use the later one.
-    //
-
-    m_pPatchLabel = EmitNewCodeLabel();
-}
-
-//---------------------------------------------------------------
 // Returns final location of label as an offset from the start
 // of the stub. Can only be called after linkage.
 //---------------------------------------------------------------
@@ -846,40 +567,13 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
 
     _ASSERTE(!pHeap || pHeap->IsExecutable());
 
-    StubHolder<Stub> pStub;
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    StubUnwindInfoSegmentBoundaryReservationList ReservedStubs;
-
-    for (;;)
-#endif
-    {
-        pStub = Stub::NewStub(
+    StubHolder<Stub> pStub = Stub::NewStub(
                 pHeap,
                 size,
-                flags
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                , UnwindInfoSize(globalsize)
-#endif
-                );
-        ASSERT(pStub != NULL);
+                flags);
+    ASSERT(pStub != NULL);
 
-        bool fSuccess = EmitStub(pStub, globalsize, size, pHeap);
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        if (fSuccess)
-        {
-            break;
-        }
-        else
-        {
-            ReservedStubs.AddStub(pStub);
-            pStub.SuppressRelease();
-        }
-#else
-        CONSISTENCY_CHECK_MSG(fSuccess, ("EmitStub should always return true"));
-#endif
-    }
+    EmitStub(pStub, globalsize, size, pHeap);
 
     return pStub.Extract();
 }
@@ -894,15 +588,6 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     CONTRACTL_END;
 
     _ASSERTE(pGlobalSize);
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    if (m_pUnwindInfoCheckLabel)
-    {
-        EmitLabel(m_pUnwindInfoCheckLabel);
-        EmitUnwindInfoCheckSubfunction();
-        m_pUnwindInfoCheckLabel = NULL;
-    }
-#endif
 
 #ifdef _DEBUG
     // Don't want any undefined labels
@@ -1025,7 +710,7 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     return globalsize + datasize;
 }
 
-bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap)
+void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1099,39 +784,15 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
             ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
-    // Set additional stub data.
-    // - Fill in the target method for the Instantiating stub.
-    //
-    // - Fill in patch offset, if we have one
-    //      Note that these offsets are relative to the start of the stub,
-    //      not the code, so you'll have to add sizeof(Stub) to get to the
-    //      right spot.
+    // Fill in the target method for the Instantiating stub.
     if (pStubRW->IsInstantiatingStub())
     {
         _ASSERTE(m_pTargetMethod != NULL);
-        _ASSERTE(m_pPatchLabel == NULL);
         pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
             pStub->GetInstantiatedMethodDesc()));
     }
-    else if (m_pPatchLabel != NULL)
-    {
-        UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
-        _ASSERTE(FitsIn<USHORT>(uLabelOffset));
-        pStubRW->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
-
-        LOG((LF_CORDB, LL_INFO100, "SL::ES: patch offset:0x%x\n",
-            pStub->GetPatchOffset()));
-    }
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (pStub->HasUnwindInfo())
-    {
-        if (!EmitUnwindInfo(pStub, pStubRW, globalsize, pHeap))
-            return false;
-    }
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 
     if (!m_fDataOnly)
     {
@@ -1139,788 +800,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
     }
 
     _ASSERTE(m_fDataOnly || DbgIsExecutable(pCode, globalsize));
-
-    return true;
 }
-
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-#if defined(TARGET_AMD64)
-
-// See RtlVirtualUnwind in base\ntos\rtl\amd64\exdsptch.c
-
-static_assert_no_msg(kRAX == (offsetof(CONTEXT, Rax) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRCX == (offsetof(CONTEXT, Rcx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRDX == (offsetof(CONTEXT, Rdx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRBX == (offsetof(CONTEXT, Rbx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRBP == (offsetof(CONTEXT, Rbp) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRSI == (offsetof(CONTEXT, Rsi) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRDI == (offsetof(CONTEXT, Rdi) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR8  == (offsetof(CONTEXT, R8 ) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR9  == (offsetof(CONTEXT, R9 ) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR10 == (offsetof(CONTEXT, R10) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR11 == (offsetof(CONTEXT, R11) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR12 == (offsetof(CONTEXT, R12) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR13 == (offsetof(CONTEXT, R13) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR14 == (offsetof(CONTEXT, R14) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR15 == (offsetof(CONTEXT, R15) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
-
-VOID StubLinker::UnwindSavedReg (UCHAR reg, ULONG SPRelativeOffset)
-{
-    USHORT FrameOffset = (USHORT)(SPRelativeOffset / 8);
-
-    if ((ULONG)FrameOffset == SPRelativeOffset)
-    {
-        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_SAVE_NONVOL);
-        pUnwindCode->OpInfo = reg;
-        pUnwindCode[1].FrameOffset = FrameOffset;
-    }
-    else
-    {
-        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_SAVE_NONVOL_FAR);
-        pUnwindCode->OpInfo = reg;
-        pUnwindCode[1].FrameOffset = (USHORT)SPRelativeOffset;
-        pUnwindCode[2].FrameOffset = (USHORT)(SPRelativeOffset >> 16);
-    }
-}
-
-VOID StubLinker::UnwindPushedReg (UCHAR reg)
-{
-    m_stackSize += sizeof(void*);
-
-    if (m_fHaveFramePointer)
-        return;
-
-    UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_PUSH_NONVOL);
-    pUnwindCode->OpInfo = reg;
-}
-
-VOID StubLinker::UnwindAllocStack (SHORT FrameSizeIncrement)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    if (! ClrSafeInt<SHORT>::addition(m_stackSize, FrameSizeIncrement, m_stackSize))
-        COMPlusThrowArithmetic();
-
-    if (m_fHaveFramePointer)
-        return;
-
-    UCHAR OpInfo = (UCHAR)((FrameSizeIncrement - 8) / 8);
-
-    if (OpInfo*8 + 8 == FrameSizeIncrement)
-    {
-        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_ALLOC_SMALL);
-        pUnwindCode->OpInfo = OpInfo;
-    }
-    else
-    {
-        USHORT FrameOffset = (USHORT)FrameSizeIncrement;
-        bool fNeedExtraSlot = ((ULONG)FrameOffset != (ULONG)FrameSizeIncrement);
-
-        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_ALLOC_LARGE, fNeedExtraSlot ? 1 : 0);
-
-        pUnwindCode->OpInfo = fNeedExtraSlot ? 1 : 0;
-
-        pUnwindCode[1].FrameOffset = FrameOffset;
-
-        if (fNeedExtraSlot)
-            pUnwindCode[2].FrameOffset = (USHORT)(FrameSizeIncrement >> 16);
-    }
-}
-
-VOID StubLinker::UnwindSetFramePointer (UCHAR reg)
-{
-    _ASSERTE(!m_fHaveFramePointer);
-
-    UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_SET_FPREG);
-    pUnwindCode->OpInfo = reg;
-
-    m_fHaveFramePointer = TRUE;
-}
-
-UNWIND_CODE *StubLinker::AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots /*= 0*/)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    _ASSERTE(Op < sizeof(UnwindOpExtraSlotTable));
-
-    UCHAR nSlotsAlloc = UnwindOpExtraSlotTable[Op] + nExtraSlots;
-
-    IntermediateUnwindInfo *pUnwindInfo = (IntermediateUnwindInfo*)m_quickHeap.Alloc(  sizeof(IntermediateUnwindInfo)
-                                                                                     + nSlotsAlloc * sizeof(UNWIND_CODE));
-    m_nUnwindSlots += 1 + nSlotsAlloc;
-
-    pUnwindInfo->pNext = m_pUnwindInfoList;
-                         m_pUnwindInfoList = pUnwindInfo;
-
-    UNWIND_CODE *pUnwindCode = &pUnwindInfo->rgUnwindCode[0];
-
-    pUnwindCode->UnwindOp = Op;
-
-    CodeRun *pCodeRun = GetLastCodeRunIfAny();
-    _ASSERTE(pCodeRun != NULL);
-
-    pUnwindInfo->pCodeRun = pCodeRun;
-    pUnwindInfo->LocalOffset = pCodeRun->m_numcodebytes;
-
-    EmitUnwindInfoCheck();
-
-    return pUnwindCode;
-}
-#endif // defined(TARGET_AMD64)
-
-struct FindBlockArgs
-{
-    BYTE *pCode;
-    BYTE *pBlockBase;
-    SIZE_T cbBlockSize;
-};
-
-bool FindBlockCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbReserved)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    FindBlockArgs* pArgs = (FindBlockArgs*)pvArgs;
-    if (pArgs->pCode >= pvAllocationBase && (pArgs->pCode < ((BYTE *)pvAllocationBase + cbReserved)))
-    {
-        pArgs->pBlockBase = (BYTE*)pvAllocationBase;
-        pArgs->cbBlockSize = cbReserved;
-        return true;
-    }
-
-    return false;
-}
-
-bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, LoaderHeap* pHeap)
-{
-    STANDARD_VM_CONTRACT;
-
-    BYTE *pCode = (BYTE*)(pStubRX->GetEntryPoint());
-
-    //
-    // Determine the lower bound of the address space containing the stub.
-    //
-
-    FindBlockArgs findBlockArgs;
-    findBlockArgs.pCode = pCode;
-    findBlockArgs.pBlockBase = NULL;
-
-    pHeap->EnumPageRegions(&FindBlockCallback, &findBlockArgs);
-
-    if (findBlockArgs.pBlockBase == NULL)
-    {
-        // REVISIT_TODO better exception
-        COMPlusThrowOM();
-    }
-
-    BYTE *pbRegionBaseAddress = findBlockArgs.pBlockBase;
-
-#ifdef _DEBUG
-    static SIZE_T MaxSegmentSize = -1;
-    if (MaxSegmentSize == (SIZE_T)-1)
-        MaxSegmentSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MaxStubUnwindInfoSegmentSize, DYNAMIC_FUNCTION_TABLE_MAX_RANGE);
-#else
-    const SIZE_T MaxSegmentSize = DYNAMIC_FUNCTION_TABLE_MAX_RANGE;
-#endif
-
-    //
-    // The RUNTIME_FUNCTION offsets are ULONGs.  If the region size is >
-    // UINT32_MAX, then we'll shift the base address to the next 4gb and
-    // register a separate function table.
-    //
-    // But...RtlInstallFunctionTableCallback has a 2gb restriction...so
-    // make that INT32_MAX.
-    //
-
-    StubUnwindInfoHeader *pHeader = pStubRW->GetUnwindInfoHeader();
-    _ASSERTE(IS_ALIGNED(pHeader, sizeof(void*)));
-
-    BYTE *pbBaseAddress = pbRegionBaseAddress;
-
-    while ((size_t)((BYTE*)pHeader - pbBaseAddress) > MaxSegmentSize)
-    {
-        pbBaseAddress += MaxSegmentSize;
-    }
-
-    //
-    // If the unwind info/code straddle a 2gb boundary, then we're stuck.
-    // Rather than add a lot more bit twiddling code to deal with this
-    // exceptionally rare case, we'll signal the caller to keep this allocation
-    // temporarily and allocate another.  This repeats until we eventually get
-    // an allocation that doesn't straddle a 2gb boundary.  Afterwards the old
-    // allocations are freed.
-    //
-
-    if ((size_t)(pCode + globalsize - pbBaseAddress) > MaxSegmentSize)
-    {
-        return false;
-    }
-
-    // Ensure that the first RUNTIME_FUNCTION struct ends up pointer aligned,
-    // so that the StubUnwindInfoHeader struct is aligned.  UNWIND_INFO
-    // includes one UNWIND_CODE.
-    _ASSERTE(IS_ALIGNED(pStubRX, sizeof(void*)));
-    _ASSERTE(0 == (offsetof(StubUnwindInfoHeader, FunctionEntry) % sizeof(void*)));
-
-    StubUnwindInfoHeader * pUnwindInfoHeader = pStubRW->GetUnwindInfoHeader();
-
-#ifdef TARGET_AMD64
-
-    UNWIND_CODE *pDestUnwindCode = &pUnwindInfoHeader->UnwindInfo.UnwindCode[0];
-#ifdef _DEBUG
-    UNWIND_CODE *pDestUnwindCodeLimit = (UNWIND_CODE*)pStubRW->GetUnwindInfoHeaderSuffix();
-#endif
-
-    UINT FrameRegister = 0;
-
-    //
-    // Resolve the unwind operation offsets, and fill in the UNWIND_INFO and
-    // RUNTIME_FUNCTION structs preceding the stub.  The unwind codes are recorded
-    // in decreasing address order.
-    //
-
-    for (IntermediateUnwindInfo *pUnwindInfoList = m_pUnwindInfoList; pUnwindInfoList != NULL; pUnwindInfoList = pUnwindInfoList->pNext)
-    {
-        UNWIND_CODE *pUnwindCode = &pUnwindInfoList->rgUnwindCode[0];
-        UCHAR op = pUnwindCode[0].UnwindOp;
-
-        if (UWOP_SET_FPREG == op)
-        {
-            FrameRegister = pUnwindCode[0].OpInfo;
-        }
-
-        //
-        // Compute number of slots used by this encoding.
-        //
-
-        UINT nSlots;
-
-        if (UWOP_ALLOC_LARGE == op)
-        {
-            nSlots = 2 + pUnwindCode[0].OpInfo;
-        }
-        else
-        {
-            _ASSERTE(UnwindOpExtraSlotTable[op] != (UCHAR)-1);
-            nSlots = 1 + UnwindOpExtraSlotTable[op];
-        }
-
-        //
-        // Compute offset and ensure that it will fit in the encoding.
-        //
-
-        SIZE_T CodeOffset =   pUnwindInfoList->pCodeRun->m_globaloffset
-                            + pUnwindInfoList->LocalOffset;
-
-        if (CodeOffset != (SIZE_T)(UCHAR)CodeOffset)
-        {
-            // REVISIT_TODO better exception
-            COMPlusThrowOM();
-        }
-
-        //
-        // Copy the encoding data, overwrite the new offset, and advance
-        // to the next encoding.
-        //
-
-        _ASSERTE(pDestUnwindCode + nSlots <= pDestUnwindCodeLimit);
-
-        CopyMemory(pDestUnwindCode, pUnwindCode, nSlots * sizeof(UNWIND_CODE));
-
-        pDestUnwindCode->CodeOffset = (UCHAR)CodeOffset;
-
-        pDestUnwindCode += nSlots;
-    }
-
-    //
-    // Fill in the UNWIND_INFO struct
-    //
-    UNWIND_INFO *pUnwindInfo = &pUnwindInfoHeader->UnwindInfo;
-    _ASSERTE(IS_ALIGNED(pUnwindInfo, sizeof(ULONG)));
-
-    // PrologueSize may be 0 if all unwind directives at offset 0.
-    SIZE_T PrologueSize =   m_pUnwindInfoList->pCodeRun->m_globaloffset
-                            + m_pUnwindInfoList->LocalOffset;
-
-    UINT nEntryPointSlots = m_nUnwindSlots;
-
-    if (   PrologueSize != (SIZE_T)(UCHAR)PrologueSize
-        || nEntryPointSlots > UCHAR_MAX)
-    {
-        // REVISIT_TODO better exception
-        COMPlusThrowOM();
-    }
-
-    _ASSERTE(nEntryPointSlots);
-
-    pUnwindInfo->Version = 1;
-    pUnwindInfo->Flags = 0;
-    pUnwindInfo->SizeOfProlog = (UCHAR)PrologueSize;
-    pUnwindInfo->CountOfUnwindCodes = (UCHAR)nEntryPointSlots;
-    pUnwindInfo->FrameRegister = FrameRegister;
-    pUnwindInfo->FrameOffset = 0;
-
-    //
-    // Fill in the RUNTIME_FUNCTION struct for this prologue.
-    //
-    PT_RUNTIME_FUNCTION pCurFunction = &pUnwindInfoHeader->FunctionEntry;
-    _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(ULONG)));
-
-    S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
-    if (sBeginAddress.IsOverflow())
-        COMPlusThrowArithmetic();
-    pCurFunction->BeginAddress = sBeginAddress.Value();
-
-    S_UINT32 sEndAddress = S_BYTEPTR(pCode) + S_BYTEPTR(globalsize) - S_BYTEPTR(pbBaseAddress);
-    if (sEndAddress.IsOverflow())
-        COMPlusThrowArithmetic();
-    pCurFunction->EndAddress = sEndAddress.Value();
-
-    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
-    if (sTemp.IsOverflow())
-        COMPlusThrowArithmetic();
-    RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
-#elif defined(TARGET_ARM)
-    //
-    // Fill in the RUNTIME_FUNCTION struct for this prologue.
-    //
-    UNWIND_INFO *pUnwindInfo = &pUnwindInfoHeader->UnwindInfo;
-
-    PT_RUNTIME_FUNCTION pCurFunction = &pUnwindInfoHeader->FunctionEntry;
-    _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(ULONG)));
-
-    S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
-    if (sBeginAddress.IsOverflow())
-        COMPlusThrowArithmetic();
-    RUNTIME_FUNCTION__SetBeginAddress(pCurFunction, sBeginAddress.Value());
-
-    S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
-    if (sTemp.IsOverflow())
-        COMPlusThrowArithmetic();
-    RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
-
-    //Get the exact function Length. Cannot use globalsize as it is explicitly made to be
-    // 4 byte aligned
-    CodeRun *pLastCodeElem = GetLastCodeRunIfAny();
-    _ASSERTE(pLastCodeElem != NULL);
-
-    int functionLength = pLastCodeElem->m_numcodebytes + pLastCodeElem->m_globaloffset;
-
-    // cannot encode functionLength greater than (2 * 0xFFFFF)
-    if (functionLength > 2 * 0xFFFFF)
-        COMPlusThrowArithmetic();
-
-    _ASSERTE(functionLength <= globalsize);
-
-    BYTE * pUnwindCodes = (BYTE *)pUnwindInfo + sizeof(DWORD);
-
-    // Not emitting compact unwind info as there are very few (4) dynamic stubs with unwind info.
-    // Benefit of the optimization does not outweigh the cost of adding the code for it.
-
-    //UnwindInfo for prolog
-    if (m_cbStackFrame != 0)
-    {
-        if(m_cbStackFrame < 512)
-        {
-            *pUnwindCodes++ = (BYTE)0xF8;                     // 16-bit sub/add sp,#x
-            *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 18);
-            *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 10);
-            *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 2);
-        }
-        else
-        {
-            *pUnwindCodes++ = (BYTE)0xFA;                     // 32-bit sub/add sp,#x
-            *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 18);
-            *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 10);
-            *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 2);
-        }
-
-        if(m_cbStackFrame >= 4096)
-        {
-            // r4 register is used as param to checkStack function and must have been saved in prolog
-            _ASSERTE(m_cCalleeSavedRegs > 0);
-            *pUnwindCodes++ = (BYTE)0xFB; // nop 16 bit for bl r12
-            *pUnwindCodes++ = (BYTE)0xFC; // nop 32 bit for movt r12, checkStack
-            *pUnwindCodes++ = (BYTE)0xFC; // nop 32 bit for movw r12, checkStack
-
-            // Ensure that mov r4, m_cbStackFrame fits in a 32-bit instruction
-            if(m_cbStackFrame > 65535)
-                COMPlusThrow(kNotSupportedException);
-            *pUnwindCodes++ = (BYTE)0xFC; // nop 32 bit for mov r4, m_cbStackFrame
-        }
-    }
-
-    // Unwind info generated will be incorrect when m_cCalleeSavedRegs = 0.
-    // The unwind code will say that the size of push/pop instruction
-    // size is 16bits when actually the opcode generated by
-    // ThumbEmitPop & ThumbEMitPush will be 32bits.
-    // Currently no stubs has m_cCalleeSavedRegs as 0
-    // therefore just adding the assert.
-    _ASSERTE(m_cCalleeSavedRegs > 0);
-
-    if (m_cCalleeSavedRegs <= 4)
-    {
-        *pUnwindCodes++ = (BYTE)(0xD4 + (m_cCalleeSavedRegs - 1)); // push/pop {r4-rX}
-    }
-    else
-    {
-        _ASSERTE(m_cCalleeSavedRegs <= 8);
-        *pUnwindCodes++ = (BYTE)(0xDC + (m_cCalleeSavedRegs - 5)); // push/pop {r4-rX}
-    }
-
-    if (m_fPushArgRegs)
-    {
-        *pUnwindCodes++ = (BYTE)0x04; // push {r0-r3} / add sp,#16
-        *pUnwindCodes++ = (BYTE)0xFD; // bx lr
-    }
-    else
-    {
-        *pUnwindCodes++ = (BYTE)0xFF; // end
-    }
-
-    ptrdiff_t epilogUnwindCodeIndex = 0;
-
-    //epilog differs from prolog
-    if(m_cbStackFrame >= 4096)
-    {
-        //Index of the first unwind code of the epilog
-        epilogUnwindCodeIndex = pUnwindCodes - (BYTE *)pUnwindInfo - sizeof(DWORD);
-
-        *pUnwindCodes++ = (BYTE)0xF8;                     // sub/add sp,#x
-        *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 18);
-        *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 10);
-        *pUnwindCodes++ = (BYTE)(m_cbStackFrame >> 2);
-
-        if (m_cCalleeSavedRegs <= 4)
-        {
-            *pUnwindCodes++ = (BYTE)(0xD4 + (m_cCalleeSavedRegs - 1)); // push/pop {r4-rX}
-        }
-        else
-        {
-            *pUnwindCodes++ = (BYTE)(0xDC + (m_cCalleeSavedRegs - 5)); // push/pop {r4-rX}
-        }
-
-        if (m_fPushArgRegs)
-        {
-            *pUnwindCodes++ = (BYTE)0x04; // push {r0-r3} / add sp,#16
-            *pUnwindCodes++ = (BYTE)0xFD; // bx lr
-        }
-        else
-        {
-            *pUnwindCodes++ = (BYTE)0xFF; // end
-        }
-
-    }
-
-    // Number of 32-bit unwind codes
-    size_t codeWordsCount = (ALIGN_UP((size_t)pUnwindCodes, sizeof(void*)) - (size_t)pUnwindInfo - sizeof(DWORD))/4;
-
-    _ASSERTE(epilogUnwindCodeIndex < 32);
-
-    //Check that MAX_UNWIND_CODE_WORDS is sufficient to store all unwind Codes
-    _ASSERTE(codeWordsCount <= MAX_UNWIND_CODE_WORDS);
-
-    *(DWORD *)pUnwindInfo =
-        ((functionLength) / 2) |
-        (1 << 21) |
-        ((int)epilogUnwindCodeIndex << 23)|
-        ((int)codeWordsCount << 28);
-
-#elif defined(TARGET_ARM64)
-    if (!m_fProlog)
-    {
-        // If EmitProlog isn't called. This is a leaf function which doesn't need any unwindInfo
-        T_RUNTIME_FUNCTION *pCurFunction = NULL;
-    }
-    else
-    {
-
-        //
-        // Fill in the RUNTIME_FUNCTION struct for this prologue.
-        //
-        UNWIND_INFO *pUnwindInfo = &(pUnwindInfoHeader->UnwindInfo);
-
-        T_RUNTIME_FUNCTION *pCurFunction = &(pUnwindInfoHeader->FunctionEntry);
-
-        _ASSERTE(IS_ALIGNED(pCurFunction, sizeof(void*)));
-
-        S_UINT32 sBeginAddress = S_BYTEPTR(pCode) - S_BYTEPTR(pbBaseAddress);
-        if (sBeginAddress.IsOverflow())
-            COMPlusThrowArithmetic();
-
-        S_UINT32 sTemp = S_BYTEPTR(pUnwindInfo) - S_BYTEPTR(pbBaseAddress);
-        if (sTemp.IsOverflow())
-            COMPlusThrowArithmetic();
-
-        RUNTIME_FUNCTION__SetBeginAddress(pCurFunction, sBeginAddress.Value());
-        RUNTIME_FUNCTION__SetUnwindInfoAddress(pCurFunction, sTemp.Value());
-
-        CodeRun *pLastCodeElem = GetLastCodeRunIfAny();
-        _ASSERTE(pLastCodeElem != NULL);
-
-        int functionLength = pLastCodeElem->m_numcodebytes + pLastCodeElem->m_globaloffset;
-
-        // .xdata has 18 bits for function length and it is to store the total length of the function in bytes, divided by 4
-        // If the function is larger than 1M, then multiple pdata and xdata records must be used, which we don't support right now.
-        if (functionLength > 4 * 0x3FFFF)
-            COMPlusThrowArithmetic();
-
-        _ASSERTE(functionLength <= globalsize);
-
-        // No support for extended code words and/or extended epilog.
-        // ASSERTION: first 10 bits of the pUnwindInfo, which holds the #codewords and #epilogcount, cannot be 0
-        // And no space for exception scope data also means that no support for exceptions for the stubs
-        // generated with this stublinker.
-        BYTE * pUnwindCodes = (BYTE *)pUnwindInfo + sizeof(DWORD);
-
-
-        // Emitting the unwind codes:
-        // The unwind codes are emitted in Epilog order.
-        //
-        // 6. Integer argument registers
-        // Although we might be saving the argument registers in the prolog we don't need
-        // to report them to the OS. (they are not expressible anyways)
-
-        // 5. Floating point argument registers:
-        // Similar to Integer argument registers, no reporting
-        //
-
-        // 4. Set the frame pointer
-        // ASSUMPTION: none of the Stubs generated with this stublinker change SP value outside of epilog and prolog
-        // when that is the case we can skip reporting setting up the frame pointer
-
-        // With skiping Step #4, #5 and #6 Prolog and Epilog becomes reversible. so they can share the unwind codes
-        int epilogUnwindCodeIndex = 0;
-
-        unsigned cStackFrameSizeInQWORDs = GetStackFrameSize()/16;
-        // 3. Store FP/LR
-        // save_fplr
-        *pUnwindCodes++ = (BYTE)(0x40 | (m_cbStackSpace>>3));
-
-        // 2. Callee-saved registers
-        //
-        if (m_cCalleeSavedRegs > 0)
-        {
-            unsigned offset = 2 + m_cbStackSpace/8; // 2 is for fp,lr
-            if ((m_cCalleeSavedRegs %2) ==1)
-            {
-                // save_reg
-                *pUnwindCodes++ = (BYTE) (0xD0 | ((m_cCalleeSavedRegs-1)>>2));
-                *pUnwindCodes++ = (BYTE) ((BYTE)((m_cCalleeSavedRegs-1) << 6) | ((offset + m_cCalleeSavedRegs - 1) & 0x3F));
-            }
-            for (int i=(m_cCalleeSavedRegs/2)*2-2; i>=0; i-=2)
-            {
-                if (i!=0)
-                {
-                    // save_next
-                    *pUnwindCodes++ = 0xE6;
-                }
-                else
-                {
-                    // save_regp
-                    *pUnwindCodes++ = 0xC8;
-                    *pUnwindCodes++ = (BYTE)(offset & 0x3F);
-                }
-            }
-        }
-
-        // 1. SP Relocation
-        //
-        // EmitProlog is supposed to reject frames larger than 504 bytes.
-        // Assert that here.
-        _ASSERTE(cStackFrameSizeInQWORDs <= 0x3F);
-        if (cStackFrameSizeInQWORDs <= 0x1F)
-        {
-            // alloc_s
-            *pUnwindCodes++ = (BYTE)(cStackFrameSizeInQWORDs);
-        }
-        else
-        {
-            // alloc_m
-            *pUnwindCodes++ = (BYTE)(0xC0 | (cStackFrameSizeInQWORDs >> 8));
-            *pUnwindCodes++ = (BYTE)(cStackFrameSizeInQWORDs);
-        }
-
-        // End
-        *pUnwindCodes++ = 0xE4;
-
-        // Number of 32-bit unwind codes
-        int codeWordsCount = (int)(ALIGN_UP((size_t)pUnwindCodes, sizeof(DWORD)) - (size_t)pUnwindInfo - sizeof(DWORD))/4;
-
-        //Check that MAX_UNWIND_CODE_WORDS is sufficient to store all unwind Codes
-        _ASSERTE(codeWordsCount <= MAX_UNWIND_CODE_WORDS);
-
-        *(DWORD *)pUnwindInfo =
-            ((functionLength) / 4) |
-            (1 << 21) |     // E bit
-            (epilogUnwindCodeIndex << 22)|
-            (codeWordsCount << 27);
-    } // end else (!m_fProlog)
-#else
-    PORTABILITY_ASSERT("StubLinker::EmitUnwindInfo");
-    T_RUNTIME_FUNCTION *pCurFunction = NULL;
-#endif
-
-    //
-    // Get a StubUnwindInfoHeapSegment for this base address
-    //
-
-    CrstHolder crst(&g_StubUnwindInfoHeapSegmentsCrst);
-
-    StubUnwindInfoHeapSegment *pStubHeapSegment;
-    StubUnwindInfoHeapSegment **ppPrevStubHeapSegment;
-    for (ppPrevStubHeapSegment = &g_StubHeapSegments;
-         (pStubHeapSegment = *ppPrevStubHeapSegment);
-         (ppPrevStubHeapSegment = &pStubHeapSegment->pNext))
-    {
-        if (pbBaseAddress < pStubHeapSegment->pbBaseAddress)
-        {
-            // The list is ordered, so address is between segments
-            pStubHeapSegment = NULL;
-            break;
-        }
-
-        if (pbBaseAddress == pStubHeapSegment->pbBaseAddress)
-        {
-            // Found an existing segment
-            break;
-        }
-    }
-
-    if (!pStubHeapSegment)
-    {
-        //
-        // RtlInstallFunctionTableCallback will only accept a ULONG for the
-        // region size.  We've already checked above that the RUNTIME_FUNCTION
-        // offsets will work relative to pbBaseAddress.
-        //
-
-        SIZE_T cbSegment = findBlockArgs.cbBlockSize;
-
-        if (cbSegment > MaxSegmentSize)
-            cbSegment = MaxSegmentSize;
-
-        NewHolder<StubUnwindInfoHeapSegment> pNewStubHeapSegment = new StubUnwindInfoHeapSegment();
-
-
-        pNewStubHeapSegment->pbBaseAddress = pbBaseAddress;
-        pNewStubHeapSegment->cbSegment = cbSegment;
-        pNewStubHeapSegment->pUnwindHeaderList = NULL;
-#ifdef TARGET_AMD64
-        pNewStubHeapSegment->pUnwindInfoTable = NULL;
-#endif
-
-        // Insert the new stub into list
-        pNewStubHeapSegment->pNext = *ppPrevStubHeapSegment;
-        *ppPrevStubHeapSegment = pNewStubHeapSegment;
-        pNewStubHeapSegment.SuppressRelease();
-
-        // Use new segment for the stub
-        pStubHeapSegment = pNewStubHeapSegment;
-
-        InstallEEFunctionTable(
-                pNewStubHeapSegment,
-                pbBaseAddress,
-                (ULONG)cbSegment,
-                &FindStubFunctionEntry,
-                pNewStubHeapSegment,
-                DYNFNTABLE_STUB);
-    }
-
-    //
-    // Link the new stub into the segment.
-    //
-
-    pHeader->pNext = pStubHeapSegment->pUnwindHeaderList;
-                     pStubHeapSegment->pUnwindHeaderList = pHeader;
-
-#ifdef TARGET_AMD64
-    // Publish Unwind info to ETW stack crawler
-    UnwindInfoTable::AddToUnwindInfoTable(
-        &pStubHeapSegment->pUnwindInfoTable, pCurFunction,
-        (TADDR) pStubHeapSegment->pbBaseAddress,
-        (TADDR) pStubHeapSegment->pbBaseAddress + pStubHeapSegment->cbSegment);
-#endif
-
-#ifdef _DEBUG
-    _ASSERTE(pHeader->IsRegistered());
-    _ASSERTE(   &pHeader->FunctionEntry
-             == FindStubFunctionEntry((ULONG64)pCode,                  EncodeDynamicFunctionTableContext(pStubHeapSegment, DYNFNTABLE_STUB)));
-#endif
-
-    return true;
-}
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
-#ifdef TARGET_ARM
-void StubLinker::DescribeProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
-{
-    m_fProlog = TRUE;
-    m_cCalleeSavedRegs = cCalleeSavedRegs;
-    m_cbStackFrame = cbStackFrame;
-    m_fPushArgRegs = fPushArgRegs;
-}
-#elif defined(TARGET_ARM64)
-void StubLinker::DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cCalleeSavedRegs, UINT cbStackSpace)
-{
-    m_fProlog               = TRUE;
-    m_cIntRegArgs           = cIntRegArgs;
-    m_cVecRegArgs           = cVecRegArgs;
-    m_cCalleeSavedRegs      = cCalleeSavedRegs;
-    m_cbStackSpace          = cbStackSpace;
-}
-
-UINT StubLinker::GetSavedRegArgsOffset()
-{
-    _ASSERTE(m_fProlog);
-    // This is the offset from SP
-    // We're assuming that the stublinker will push the arg registers to the bottom of the stack frame
-    return m_cbStackSpace +  (2+ m_cCalleeSavedRegs)*sizeof(void*); // 2 is for FP and LR
-}
-
-UINT StubLinker::GetStackFrameSize()
-{
-    _ASSERTE(m_fProlog);
-    return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
-}
-
-#elif defined(TARGET_RISCV64)
-void StubLinker::DescribeProlog(UINT cIntRegArgs, UINT cFpRegArgs, UINT cbStackSpace)
-{
-    m_fProlog               = TRUE;
-    m_cIntRegArgs           = cIntRegArgs;
-    m_cFpRegArgs            = cFpRegArgs;
-    m_cbStackSpace          = cbStackSpace;
-}
-
-UINT StubLinker::GetSavedRegArgsOffset()
-{
-    _ASSERTE(m_fProlog);
-    // This is the offset from SP
-    // We're assuming that the stublinker will push the arg registers to the bottom of the stack frame
-    return m_cbStackSpace + 2 * sizeof(void*); // 2 is for FP and LR
-}
-
-UINT StubLinker::GetStackFrameSize()
-{
-    _ASSERTE(m_fProlog);
-    return m_cbStackSpace + (2 + m_cIntRegArgs + m_cFpRegArgs) * sizeof(void*);
-}
-
-#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64), elif defined(TARGET_RISCV64)
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1979,89 +859,6 @@ VOID Stub::DeleteStub()
     }
     CONTRACTL_END;
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (HasUnwindInfo())
-    {
-        StubUnwindInfoHeader *pHeader = GetUnwindInfoHeader();
-
-        //
-        // Check if the stub has been linked into a StubUnwindInfoHeapSegment.
-        //
-        if (pHeader->IsRegistered())
-        {
-            CrstHolder crst(&g_StubUnwindInfoHeapSegmentsCrst);
-
-            //
-            // Find the segment containing the stub.
-            //
-            StubUnwindInfoHeapSegment **ppPrevSegment = &g_StubHeapSegments;
-            StubUnwindInfoHeapSegment *pSegment = *ppPrevSegment;
-
-            if (pSegment)
-            {
-                PBYTE pbCode = (PBYTE)GetEntryPointInternal();
-#ifdef TARGET_AMD64
-                UnwindInfoTable::RemoveFromUnwindInfoTable(&pSegment->pUnwindInfoTable,
-                    (TADDR) pSegment->pbBaseAddress, (TADDR) pbCode);
-#endif
-                for (StubUnwindInfoHeapSegment *pNextSegment = pSegment->pNext;
-                     pNextSegment;
-                     ppPrevSegment = &pSegment->pNext, pSegment = pNextSegment, pNextSegment = pSegment->pNext)
-                {
-                    // The segments are sorted by pbBaseAddress.
-                    if (pbCode < pNextSegment->pbBaseAddress)
-                        break;
-                }
-            }
-
-            // The stub was marked as registered, so a segment should exist.
-            _ASSERTE(pSegment);
-
-            if (pSegment)
-            {
-
-                //
-                // Find this stub's location in the segment's list.
-                //
-                StubUnwindInfoHeader *pCurHeader;
-                StubUnwindInfoHeader **ppPrevHeaderList;
-                for (ppPrevHeaderList = &pSegment->pUnwindHeaderList;
-                     (pCurHeader = *ppPrevHeaderList);
-                     (ppPrevHeaderList = &pCurHeader->pNext))
-                {
-                    if (pHeader == pCurHeader)
-                        break;
-                }
-
-                // The stub was marked as registered, so we should find it in the segment's list.
-                _ASSERTE(pCurHeader);
-
-                if (pCurHeader)
-                {
-                    //
-                    // Remove the stub from the segment's list.
-                    //
-                    *ppPrevHeaderList = pHeader->pNext;
-
-                    //
-                    // If the segment's list is now empty, delete the segment.
-                    //
-                    if (!pSegment->pUnwindHeaderList)
-                    {
-                        DeleteEEFunctionTable(pSegment);
-#ifdef TARGET_AMD64
-                        if (pSegment->pUnwindInfoTable != 0)
-                            delete pSegment->pUnwindInfoTable;
-#endif
-                        *ppPrevSegment = pSegment->pNext;
-                        delete pSegment;
-                    }
-                }
-            }
-        }
-    }
-#endif
-
     if ((m_numCodeBytesAndFlags & LOADER_HEAP_BIT) == 0)
     {
 #ifdef _DEBUG
@@ -2085,17 +882,6 @@ TADDR Stub::GetAllocationBase()
 
     TADDR info = dac_cast<TADDR>(this);
     SIZE_T cbPrefix = 0;
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (HasUnwindInfo())
-    {
-        StubUnwindInfoHeaderSuffix *pSuffix =
-            PTR_StubUnwindInfoHeaderSuffix(info - cbPrefix -
-                                           sizeof(*pSuffix));
-
-        cbPrefix += StubUnwindInfoHeader::ComputeAlignedSize(pSuffix->nUnwindInfoSize);
-    }
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 
     if (!HasExternalEntryPoint())
     {
@@ -2130,11 +916,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 /*static*/ Stub* Stub::NewStub(
         LoaderHeap *pHeap,
         UINT numCodeBytes,
-        DWORD flags
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        , UINT nUnwindInfoSize
-#endif
-        )
+        DWORD flags)
 {
     CONTRACTL
     {
@@ -2152,17 +934,6 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     //      optional: external pointer | padding + code
     size_t stubPayloadOffset = 0;
     S_SIZE_T size = S_SIZE_T(sizeof(Stub));
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    _ASSERTE(!nUnwindInfoSize || !pHeap || pHeap->m_fPermitStubsWithUnwindInfo);
-
-    if (nUnwindInfoSize != 0)
-    {
-        // The Unwind info precedes the Stub itself.
-        stubPayloadOffset = StubUnwindInfoHeader::ComputeAlignedSize(nUnwindInfoSize);
-        size += stubPayloadOffset;
-    }
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 
     if (flags & NEWSTUB_FL_EXTERNAL)
     {
@@ -2209,22 +980,14 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     pStubRW->SetupStub(
             numCodeBytes,
-            flags
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-            , nUnwindInfoSize
-#endif
-            );
+            flags);
 
     _ASSERTE((BYTE *)pStubRX->GetAllocationBase() == pBlock);
 
     return pStubRX;
 }
 
-void Stub::SetupStub(int numCodeBytes, DWORD flags
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                     , UINT nUnwindInfoSize
-#endif
-                     )
+void Stub::SetupStub(int numCodeBytes, DWORD flags)
 {
     CONTRACTL
     {
@@ -2254,45 +1017,13 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
     {
         if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
             m_numCodeBytesAndFlags |= LOADER_HEAP_BIT;
-        if((flags & NEWSTUB_FL_MULTICAST) != 0)
-            m_numCodeBytesAndFlags |= MULTICAST_DELEGATE_BIT;
         if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
             m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
         if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
             m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
-        if ((flags & NEWSTUB_FL_THUNK) != 0)
-            m_numCodeBytesAndFlags |= THUNK_BIT;
+        if ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0)
+            m_numCodeBytesAndFlags |= SHUFFLE_THUNK_BIT;
     }
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    if (nUnwindInfoSize)
-    {
-        m_numCodeBytesAndFlags |= UNWIND_INFO_BIT;
-
-        StubUnwindInfoHeaderSuffix * pSuffix = GetUnwindInfoHeaderSuffix();
-        pSuffix->nUnwindInfoSize = (BYTE)nUnwindInfoSize;
-
-        StubUnwindInfoHeader * pHeader = GetUnwindInfoHeader();
-        pHeader->Init();
-    }
-#endif
-}
-
-//-------------------------------------------------------------------
-// One-time init
-//-------------------------------------------------------------------
-/*static*/ void Stub::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    g_StubUnwindInfoHeapSegmentsCrst.Init(CrstStubUnwindInfoHeapSegments);
-#endif
 }
 
 #endif // #ifndef DACCESS_COMPILE

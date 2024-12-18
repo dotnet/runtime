@@ -266,15 +266,15 @@ C_FUNC(\Name):
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 #define PTFF_SAVE_SP            0x00000200
-#define PTFF_SAVE_R4            0x00001000
-#define PTFF_SAVE_R5            0x00002000
+#define PTFF_SAVE_R4            0x00000800
+#define PTFF_SAVE_R5            0x00001000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
 
-    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x80 // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 0x78 // Push down stack pointer and store FP and RA
 
     // 0x10 bytes reserved for Thread* and flags
 
@@ -283,11 +283,11 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR   25, 26, 0x30
     PROLOG_SAVE_REG_PAIR   27, 28, 0x40
     PROLOG_SAVE_REG_PAIR   29, 30, 0x50
-    PROLOG_SAVE_REG_PAIR   31,  2, 0x60
+    PROLOG_SAVE_REG        31,     0x60
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
-    addi.d  \trashReg, $sp, 0x80
-    st.d  \trashReg, $sp, 0x70
+    addi.d  \trashReg, $sp, 0x78
+    st.d  \trashReg, $sp, 0x68
 
     // Record the bitmask of saved registers in the frame (slot #3)
     ori  \trashReg, $zero, DEFAULT_FRAME_SAVE_FLAGS
@@ -304,12 +304,12 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR  25, 26, 0x30
     EPILOG_RESTORE_REG_PAIR  27, 28, 0x40
     EPILOG_RESTORE_REG_PAIR  29, 30, 0x50
-    EPILOG_RESTORE_REG_PAIR  31,  2, 0x60
-    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x80
+    EPILOG_RESTORE_REG       31,     0x60
+    EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 0x78
 .endm
 
-// Bit position for the flags above, to be used with andi+beq/bne instructions
-#define PTFF_THREAD_ABORT_BIT 36
+// Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
+#define PTFF_THREAD_ABORT_BIT 35
 
 //
 // CONSTANTS -- INTEGER
@@ -319,7 +319,7 @@ C_FUNC(\Name):
 #define TSF_DoNotTriggerGc              0x10
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
-// Bit position for the flags above, to be used with andi+beq/bne instructions
+// Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
 #define TrapThreadsFlags_AbortInProgress_Bit 0
 #define TrapThreadsFlags_TrapThreads_Bit     1
 

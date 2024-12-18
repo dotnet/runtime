@@ -528,11 +528,9 @@ public:
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     bool IsSafePoint();
-    bool AreSafePointsInterruptible();
-    bool IsInterruptibleSafePoint();
-    bool CouldBeInterruptibleSafePoint();
+    bool CouldBeSafePoint();
 
-    // This is used for gccoverage
+    // This is used for gcinfodumper
     bool IsSafePoint(UINT32 codeOffset);
 
     typedef void EnumerateSafePointsCallback (GcInfoDecoder* decoder, UINT32 offset, void * hCallback);

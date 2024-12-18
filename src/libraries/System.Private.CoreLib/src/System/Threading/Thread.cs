@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -69,18 +70,25 @@ namespace System.Threading
                     AutoreleasePool.CreateAutoreleasePool();
 #endif
 
-                if (start is ThreadStart threadStart)
+                try
                 {
-                    threadStart();
+                    if (start is ThreadStart threadStart)
+                    {
+                        threadStart();
+                    }
+                    else
+                    {
+                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                        object? startArg = _startArg;
+                        _startArg = null;
+
+                        parameterizedThreadStart(startArg);
+                    }
                 }
-                else
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
-                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                    object? startArg = _startArg;
-                    _startArg = null;
-
-                    parameterizedThreadStart(startArg);
+                    // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
                 }
 
 #if FEATURE_OBJCMARSHAL
@@ -298,8 +306,6 @@ namespace System.Threading
             }
         }
 
-        partial void ThreadNameChanged(string? value);
-
         public CultureInfo CurrentCulture
         {
             get
@@ -403,7 +409,7 @@ namespace System.Threading
 
         internal void SetThreadPoolWorkerThreadName()
         {
-            Debug.Assert(this == CurrentThread);
+            Debug.Assert(ThreadState.HasFlag(ThreadState.Unstarted) || this == CurrentThread);
             Debug.Assert(IsThreadPoolThread);
 
             lock (this)

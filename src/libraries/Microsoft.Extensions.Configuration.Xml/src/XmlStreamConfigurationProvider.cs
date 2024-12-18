@@ -12,7 +12,7 @@ using System.Xml;
 namespace Microsoft.Extensions.Configuration.Xml
 {
     /// <summary>
-    /// An XML file based <see cref="IConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from an XML stream.
     /// </summary>
     [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
     [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
@@ -25,17 +25,17 @@ namespace Microsoft.Extensions.Configuration.Xml
         }
 
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="XmlStreamConfigurationProvider"/> class.
         /// </summary>
         /// <param name="source">The <see cref="XmlStreamConfigurationSource"/>.</param>
         public XmlStreamConfigurationProvider(XmlStreamConfigurationSource source) : base(source) { }
 
         /// <summary>
-        /// Read a stream of XML values into a key/value dictionary.
+        /// Reads a stream of XML values into a key/value dictionary.
         /// </summary>
         /// <param name="stream">The stream of XML data.</param>
         /// <param name="decryptor">The <see cref="XmlDocumentDecryptor"/> to use to decrypt.</param>
-        /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
+        /// <returns>The <see cref="IDictionary{String, String}"/> that was read from the stream.</returns>
         public static IDictionary<string, string?> Read(Stream stream, XmlDocumentDecryptor decryptor)
         {
             var readerSettings = new XmlReaderSettings()

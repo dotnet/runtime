@@ -26,26 +26,6 @@ namespace Microsoft.Win32.SafeHandles
         }
     }
 
-    internal sealed class SafeAsn1BitStringHandle : SafeHandle
-    {
-        public SafeAsn1BitStringHandle() :
-            base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.Crypto.Asn1BitStringFree(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
-
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
-    }
-
     internal sealed class SafeAsn1OctetStringHandle : SafeHandle
     {
         public SafeAsn1OctetStringHandle() :

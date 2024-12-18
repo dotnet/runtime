@@ -156,10 +156,6 @@ void CodeGen::genCodeForBBlist()
 
     genMarkLabelsForCodegen();
 
-    assert(!compiler->fgFirstBBScratch ||
-           compiler->fgFirstBB == compiler->fgFirstBBScratch); // compiler->fgFirstBBScratch
-                                                               // has to be first.
-
     /* Initialize structures used in the block list iteration */
     genInitialize();
 
@@ -367,9 +363,9 @@ void CodeGen::genCodeForBBlist()
         siBeginBlock(block);
 
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
-        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) &&
-            !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
-                                             // emit a NO_MAPPING entry, immediately after the prolog.
+        // Add a NoMapping entry unless this is right after the prolog where it
+        // is unnecessary.
+        if (compiler->opts.compDbgInfo && block->HasFlag(BBF_INTERNAL) && !block->IsFirst())
         {
             genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
@@ -388,17 +384,17 @@ void CodeGen::genCodeForBBlist()
 
 #ifdef SWIFT_SUPPORT
         // Reassemble Swift struct parameters on the local stack frame in the
-        // scratch BB right after the prolog. There can be arbitrary amounts of
+        // init BB right after the prolog. There can be arbitrary amounts of
         // codegen related to doing this, so it cannot be done in the prolog.
-        if (compiler->fgBBisScratch(block) && compiler->lvaHasAnySwiftStackParamToReassemble())
+        if (block->IsFirst() && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
             genHomeSwiftStructParameters(/* handleStack */ true);
         }
 #endif
 
-        // Emit poisoning into scratch BB that comes right after prolog.
+        // Emit poisoning into the init BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
-        if (compiler->compShouldPoisonFrame() && compiler->fgBBisScratch(block))
+        if (compiler->compShouldPoisonFrame() && block->IsFirst())
         {
             genPoisonFrame(newLiveRegSet);
         }
@@ -2526,7 +2522,7 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
                 break;
 
 #ifdef TARGET_64BIT
-            case ZERO_EXTEND_INT: // ubyte/ushort/int -> long.
+            case ZERO_EXTEND_INT: // ubyte/ushort/uint -> long.
                 assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                 m_extendKind    = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                 m_extendSrcSize = genTypeSize(srcLoadType);
@@ -2678,7 +2674,7 @@ void CodeGen::genEmitterUnitTests()
         return;
     }
 
-    const WCHAR* unitTestSection = JitConfig.JitEmitUnitTestsSections();
+    const char* unitTestSection = JitConfig.JitEmitUnitTestsSections();
 
     if (unitTestSection == nullptr)
     {
@@ -2695,26 +2691,34 @@ void CodeGen::genEmitterUnitTests()
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
 
-    bool unitTestSectionAll = (u16_strstr(unitTestSection, W("all")) != nullptr);
+    bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sse2")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "apx") != nullptr))
+    {
+        genAmd64EmitterUnitTestsApx();
+    }
 
 #elif defined(TARGET_ARM64)
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("general")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))
     {
         genArm64EmitterUnitTestsGeneral();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("advsimd")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "advsimd") != nullptr))
     {
         genArm64EmitterUnitTestsAdvSimd();
     }
-    if (unitTestSectionAll || (u16_strstr(unitTestSection, W("sve")) != nullptr))
+    if (unitTestSectionAll || (strstr(unitTestSection, "sve") != nullptr))
     {
         genArm64EmitterUnitTestsSve();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "pac") != nullptr))
+    {
+        genArm64EmitterUnitTestsPac();
     }
 #endif
 

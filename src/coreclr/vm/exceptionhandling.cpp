@@ -2054,6 +2054,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         {
             pGSCookie = (GSCookie*)cfThisFrame.GetCodeManager()->GetGSCookieAddr(cfThisFrame.pRD,
                                                                                           &cfThisFrame.codeInfo,
+                                                                                          0 /* CodeManFlags */,
                                                                                           &cfThisFrame.codeManState);
             if (pGSCookie)
             {
@@ -5635,7 +5636,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 void FirstChanceExceptionNotification()
 {
 #ifndef TARGET_UNIX
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         PAL_TRY(VOID *, unused, NULL)
         {

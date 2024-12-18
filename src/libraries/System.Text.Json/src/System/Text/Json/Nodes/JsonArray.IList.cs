@@ -114,6 +114,78 @@ namespace System.Text.Json.Nodes
             DetachParent(item);
         }
 
+        /// <summary>
+        ///   Removes all the elements that match the conditions defined by the specified predicate.
+        /// </summary>
+        /// <param name="match">The predicate that defines the conditions of the elements to remove.</param>
+        /// <returns>The number of elements removed from the <see cref="JsonArray"/>.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="match"/> is <see langword="null"/>.
+        /// </exception>
+        public int RemoveAll(Func<JsonNode?, bool> match)
+        {
+            if (match == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(match));
+            }
+
+            return List.RemoveAll(node =>
+            {
+                if (match(node))
+                {
+                    DetachParent(node);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
+        }
+
+        /// <summary>
+        ///   Removes a range of elements from the <see cref="JsonArray"/>.
+        /// </summary>
+        /// <param name="index">The zero-based starting index of the range of elements to remove.</param>
+        /// <param name="count">The number of elements to remove.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="index"/> or <paramref name="count"/> is less than 0.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="index"/> and <paramref name="count"/> do not denote a valid range of elements in the <see cref="JsonArray"/>.
+        /// </exception>
+        public void RemoveRange(int index, int count)
+        {
+            if (index < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(index));
+            }
+
+            if (count < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedNonNegNum(nameof(count));
+            }
+
+            List<JsonNode?> list = List;
+
+            if (list.Count - index < count)
+            {
+                ThrowHelper.ThrowArgumentException_InvalidOffLen();
+            }
+
+            if (count > 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    DetachParent(list[index + i]);
+                    // There's no need to assign nulls because List<>.RemoveRange calls
+                    // Array.Clear on the removed partition.
+                }
+
+                list.RemoveRange(index, count);
+            }
+        }
+
         #region Explicit interface implementation
 
         /// <summary>

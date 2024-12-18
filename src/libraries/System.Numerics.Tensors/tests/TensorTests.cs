@@ -684,7 +684,7 @@ namespace System.Numerics.Tensors.Tests
             Tensor<int> t1 = Tensor.Create(Enumerable.Range(0, 3), [3, 1]);
             Tensor<int> t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
 
-            Assert.Equal([3,3], t2.Lengths.ToArray());
+            Assert.Equal([3,3], t2.Lengths);
             Assert.Equal(0, t2[0, 0]);
             Assert.Equal(0, t2[0, 1]);
             Assert.Equal(0, t2[0, 2]);
@@ -697,7 +697,7 @@ namespace System.Numerics.Tensors.Tests
 
             t2 = Tensor.Multiply(t1.AsReadOnlyTensorSpan(), t0);
 
-            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal([3, 3], t2.Lengths);
             Assert.Equal(0, t2[0, 0]);
             Assert.Equal(0, t2[0, 1]);
             Assert.Equal(0, t2[0, 2]);
@@ -711,7 +711,7 @@ namespace System.Numerics.Tensors.Tests
             t1 = Tensor.Create(Enumerable.Range(0, 9), [3, 3]);
             t2 = Tensor.Multiply(t0.AsReadOnlyTensorSpan(), t1);
 
-            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal([3, 3], t2.Lengths);
             Assert.Equal(0, t2[0, 0]);
             Assert.Equal(1, t2[0, 1]);
             Assert.Equal(4, t2[0, 2]);
@@ -729,7 +729,7 @@ namespace System.Numerics.Tensors.Tests
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 3), [1, 3, 1, 1, 1]);
             Tensor<int> t1 = Tensor.Broadcast<int>(t0, [1, 3, 1, 2, 1]);
 
-            Assert.Equal([1, 3, 1, 2, 1], t1.Lengths.ToArray());
+            Assert.Equal([1, 3, 1, 2, 1], t1.Lengths);
 
             Assert.Equal(0, t1[0, 0, 0, 0, 0]);
             Assert.Equal(0, t1[0, 0, 0, 1, 0]);
@@ -739,7 +739,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, t1[0, 2, 0, 1, 0]);
 
             t1 = Tensor.Broadcast<int>(t0, [1, 3, 2, 1, 1]);
-            Assert.Equal([1, 3, 2, 1, 1], t1.Lengths.ToArray());
+            Assert.Equal([1, 3, 2, 1, 1], t1.Lengths);
 
             Assert.Equal(0, t1[0, 0, 0, 0, 0]);
             Assert.Equal(0, t1[0, 0, 1, 0, 0]);
@@ -751,7 +751,7 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create(Enumerable.Range(0, 3), [1, 3]);
             t1 = Tensor.Create(Enumerable.Range(0, 3), [3, 1]);
             var t2 = Tensor.Broadcast<int>(t0, [3, 3]);
-            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal([3, 3], t2.Lengths);
 
             Assert.Equal(0, t2[0, 0]);
             Assert.Equal(1, t2[0, 1]);
@@ -765,7 +765,7 @@ namespace System.Numerics.Tensors.Tests
 
             t1 = Tensor.Create(Enumerable.Range(0, 3), [3, 1]);
             t2 = Tensor.Broadcast<int>(t1, [3, 3]);
-            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal([3, 3], t2.Lengths);
 
             Assert.Equal(0, t2[0, 0]);
             Assert.Equal(0, t2[0, 1]);
@@ -789,11 +789,11 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, s1[2, 2]);
 
             var t3 = t2.Slice(0..1, ..);
-            Assert.Equal([1, 3], t3.Lengths.ToArray());
+            Assert.Equal([1, 3], t3.Lengths);
 
             t1 = Tensor.Create(Enumerable.Range(0, 3), default);
             t2 = Tensor.Broadcast<int>(t1, [3, 3]);
-            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal([3, 3], t2.Lengths);
 
             Assert.Equal(0, t2[0, 0]);
             Assert.Equal(1, t2[0, 1]);
@@ -811,15 +811,15 @@ namespace System.Numerics.Tensors.Tests
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 8), [2, 2, 2]);
             var t1 = Tensor.Resize(t0, [1]);
-            Assert.Equal([1], t1.Lengths.ToArray());
+            Assert.Equal([1], t1.Lengths);
             Assert.Equal(0, t1[0]);
 
             t1 = Tensor.Resize(t0, [1, 1]);
-            Assert.Equal([1, 1], t1.Lengths.ToArray());
+            Assert.Equal([1, 1], t1.Lengths);
             Assert.Equal(0, t1[0, 0]);
 
             t1 = Tensor.Resize(t0, [6]);
-            Assert.Equal([6], t1.Lengths.ToArray());
+            Assert.Equal([6], t1.Lengths);
             Assert.Equal(0, t1[0]);
             Assert.Equal(1, t1[1]);
             Assert.Equal(2, t1[2]);
@@ -828,7 +828,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[5]);
 
             t1 = Tensor.Resize(t0, [10]);
-            Assert.Equal([10], t1.Lengths.ToArray());
+            Assert.Equal([10], t1.Lengths);
             Assert.Equal(0, t1[0]);
             Assert.Equal(1, t1[1]);
             Assert.Equal(2, t1[2]);
@@ -841,7 +841,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, t1[9]);
 
             t1 = Tensor.Resize(t0, [2, 5]);
-            Assert.Equal([2, 5], t1.Lengths.ToArray());
+            Assert.Equal([2, 5], t1.Lengths);
             Assert.Equal(0, t1[0, 0]);
             Assert.Equal(1, t1[0, 1]);
             Assert.Equal(2, t1[0, 2]);
@@ -859,8 +859,8 @@ namespace System.Numerics.Tensors.Tests
         {
             Tensor<int> t0 = Tensor.Create(Enumerable.Range(0, 8), [2, 2, 2]);
             var t1 = Tensor.Split<int>(t0, 2, 0);
-            Assert.Equal([1, 2, 2], t1[0].Lengths.ToArray());
-            Assert.Equal([1, 2, 2], t1[1].Lengths.ToArray());
+            Assert.Equal([1, 2, 2], t1[0].Lengths);
+            Assert.Equal([1, 2, 2], t1[1].Lengths);
             Assert.Equal(0, t1[0][0, 0, 0]);
             Assert.Equal(1, t1[0][0, 0, 1]);
             Assert.Equal(2, t1[0][0, 1, 0]);
@@ -871,8 +871,8 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(7, t1[1][0, 1, 1]);
 
             t1 = Tensor.Split<int>(t0, 2, 1);
-            Assert.Equal([2, 1, 2], t1[0].Lengths.ToArray());
-            Assert.Equal([2, 1, 2], t1[1].Lengths.ToArray());
+            Assert.Equal([2, 1, 2], t1[0].Lengths);
+            Assert.Equal([2, 1, 2], t1[1].Lengths);
             Assert.Equal(0, t1[0][0, 0, 0]);
             Assert.Equal(1, t1[0][0, 0, 1]);
             Assert.Equal(4, t1[0][1, 0, 0]);
@@ -883,8 +883,8 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(7, t1[1][1, 0, 1]);
 
             t1 = Tensor.Split<int>(t0, 2, 2);
-            Assert.Equal([2, 2, 1], t1[0].Lengths.ToArray());
-            Assert.Equal([2, 2, 1], t1[1].Lengths.ToArray());
+            Assert.Equal([2, 2, 1], t1[0].Lengths);
+            Assert.Equal([2, 2, 1], t1[1].Lengths);
             Assert.Equal(0, t1[0][0, 0, 0]);
             Assert.Equal(2, t1[0][0, 1, 0]);
             Assert.Equal(4, t1[0][1, 0, 0]);
@@ -1074,6 +1074,27 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, resultTensor[1, 3, 1]);
             Assert.Equal(9, resultTensor[1, 4, 0]);
             Assert.Equal(9, resultTensor[1, 4, 1]);
+
+            // stacking 2x2 tensors along dimention 1
+            Tensor<int> v1 = Tensor.Create([1, 2, 3, 4], [2, 2]);
+            Tensor<int> v2 = Tensor.Create([10, 20, 30, 40], [2, 2]);
+            
+            resultTensor = Tensor.StackAlongDimension(1, [v1, v2]);
+            
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(2, resultTensor.Lengths[2]);
+            
+            Assert.Equal(1, resultTensor[0, 0, 0]);
+            Assert.Equal(2, resultTensor[0, 0, 1]);
+            Assert.Equal(10, resultTensor[0, 1, 0]);
+            Assert.Equal(20, resultTensor[0, 1, 1]);
+            
+            Assert.Equal(3, resultTensor[1, 0, 0]);
+            Assert.Equal(4, resultTensor[1, 0, 1]);
+            Assert.Equal(30, resultTensor[1, 1, 0]);
+            Assert.Equal(40, resultTensor[1, 1, 1]);
         }
 
         [Fact]
@@ -1092,7 +1113,7 @@ namespace System.Numerics.Tensors.Tests
             {
                 sum += MathF.Pow(values[i] - mean, 2);
             }
-            return sum / values.Length;
+            return MathF.Sqrt(sum / values.Length);
         }
 
         [Fact]
@@ -1788,23 +1809,16 @@ namespace System.Numerics.Tensors.Tests
             Assert.NotEqual(leftSpan[0, 0], rightSpan[0, 0]);
             Assert.NotEqual(leftSpan[0, 0], tensor[0, 0]);
 
-            leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-            dims = [15];
-            leftSpan = leftData.AsTensorSpan(9);
-            tensor = Tensor.Create<int>(dims.AsSpan(), false);
-            leftSpan.CopyTo(tensor);
-            leftEnum = leftSpan.GetEnumerator();
-            tensorEnum = tensor.GetEnumerator();
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
-            {
-                Assert.Equal(leftEnum.Current, tensorEnum.Current);
-            }
-            // The rest of the slots shouldn't have been touched.
-            while (tensorEnum.MoveNext())
-            {
-                Assert.Equal(0, tensorEnum.Current);
-            }
+            // Can't copy if data is not same shape or broadcastable to.
+            Assert.Throws<ArgumentException>(() =>
+                {
+                    leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                    dims = [15];
+                    TensorSpan<int> leftSpan = leftData.AsTensorSpan(9);
+                    tensor = Tensor.Create<int>(dims.AsSpan(), false);
+                    leftSpan.CopyTo(tensor);
+                }
+            );
 
             Assert.Throws<ArgumentException>(() =>
             {
@@ -1845,19 +1859,7 @@ namespace System.Numerics.Tensors.Tests
             leftSpan = leftData.AsTensorSpan(9);
             tensor = Tensor.Create<int>(dims.AsSpan(), false);
             success = leftSpan.TryCopyTo(tensor);
-            leftEnum = leftSpan.GetEnumerator();
-            tensorEnum = tensor.GetEnumerator();
-            Assert.True(success);
-            // Make sure the first 9 spots are equal after copy
-            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
-            {
-                Assert.Equal(leftEnum.Current, tensorEnum.Current);
-            }
-            // The rest of the slots shouldn't have been touched.
-            while (tensorEnum.MoveNext())
-            {
-                Assert.Equal(0, tensorEnum.Current);
-            }
+            Assert.False(success);
 
             leftData = [.. Enumerable.Range(0, 27)];
             var l = leftData.AsTensorSpan(3, 3, 3);
@@ -1867,6 +1869,9 @@ namespace System.Numerics.Tensors.Tests
             success = l.TryCopyTo(tensor);
             Assert.False(success);
             success = tensor.TryCopyTo(r);
+            Assert.False(success);
+
+            success = new TensorSpan<double>(new double[1]).TryCopyTo(Array.Empty<double>());
             Assert.False(success);
         }
 
@@ -2034,6 +2039,32 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(9, tensor[2, 2]);
 
             Assert.Throws<ArgumentException>(() => Tensor.Reshape(tensor, [1, 2, 3, 4, 5]));
+
+            // Make sure reshape works correctly with 0 strides.
+            tensor = Tensor.Create<int>((ReadOnlySpan<nint>)[2], [0], false);
+            tensor = Tensor.Reshape(tensor, [1, 2]);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+
+            tensor = Tensor.Create<int>((ReadOnlySpan<nint>)[2], [0], false);
+            tensor = Tensor.Reshape(tensor, [2, 1]);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+
+            tensor = Tensor.Reshape(tensor, [1, 2, 1]);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+            Assert.Equal(0, tensor.Strides[2]);
         }
 
         [Fact]
@@ -2098,14 +2129,45 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public static void TensorUnsqueezeTest()
         {
-            var tensor = Tensor.Create<int>([2], false);
+            var tensor = Tensor.Create<int>((ReadOnlySpan<nint>)[2], [0], false);
+            tensor = Tensor.Unsqueeze(tensor, 0);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(0, tensor.Strides[0]);
+            Assert.Equal(0, tensor.Strides[1]);
+
+            tensor = Tensor.Create<int>([2], false);
             Assert.Equal(1, tensor.Rank);
             Assert.Equal(2, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides[0]);
 
             tensor = Tensor.Unsqueeze(tensor, 0);
             Assert.Equal(2, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+
+            tensor = Tensor.Unsqueeze(tensor, 0);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Lengths[2]);
+            Assert.Equal(2, tensor.Strides[0]);
+            Assert.Equal(2, tensor.Strides[1]);
+            Assert.Equal(1, tensor.Strides[2]);
+
+            tensor = Tensor.Unsqueeze(tensor, 0);
+            Assert.Equal(4, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+            Assert.Equal(2, tensor.Lengths[3]);
+            Assert.Equal(2, tensor.Strides[0]);
+            Assert.Equal(2, tensor.Strides[1]);
+            Assert.Equal(2, tensor.Strides[2]);
+            Assert.Equal(1, tensor.Strides[3]);
 
             tensor = Tensor.Create<int>([2], false);
             Assert.Equal(1, tensor.Rank);
