@@ -2211,14 +2211,14 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
     code_t evexPrefix = (code >> 32) & 0xFFFFFFFF;
     code &= 0x00000000FFFFFFFFLL;
-    //code =   (0f 00 D2 38)
+
     WORD leadingBytes = 0;
-    BYTE check        = (code >> 24) & 0xFF; //0f
+    BYTE check        = (code >> 24) & 0xFF;
 
     if (check != 0)
     {
         // check for a prefix in the 11 position
-        BYTE sizePrefix = (code >> 16) & 0xFF; //0
+        BYTE sizePrefix = (code >> 16) & 0xFF;
 
         if (isPrefix(sizePrefix))
         {
@@ -2266,20 +2266,20 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             // Now the byte in the 22 position should be either of the below:
             //                          1. An escape byte 0F (For isa before AVX10.2)
             //                          2. A map number from 0 to 7 (For AVX10.2 and above)
-            leadingBytes = check; //0x0F
+            leadingBytes = check;
             assert(leadingBytes == 0x0F || (leadingBytes >= 0x00 && leadingBytes <= 0x07));
 
             // Get rid of both sizePrefix and escape byte
-            code &= 0x0000FFFFLL; // 0x00D238
+            code &= 0x0000FFFFLL;
 
             // Check the byte in the 33 position to see if it is 3A or 38.
             // In such a case escape bytes must be 0x0F3A or 0x0F38
-            check = code & 0xFF; // 0x38
+            check = code & 0xFF;
 
             if ((check == 0x3A) || (check == 0x38))
             {
-                leadingBytes = (leadingBytes << 8) | check; //0x0F38
-                code &= 0x0000FF00LL;                       // 0x00D200
+                leadingBytes = (leadingBytes << 8) | check;
+                code &= 0x0000FF00LL;
             }
         }
     }
