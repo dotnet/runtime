@@ -47,7 +47,7 @@ elseif(EXISTS ${CROSS_ROOTFS}/boot/system/develop/headers/config/HaikuConfig.h)
   set(CLR_CMAKE_TARGET_OS haiku)
 endif()
 
-if(DARWIN)
+if(DARWIN AND NOT DEFINED ANDROID_PLATFORM)
   if(TARGET_ARCH_NAME MATCHES "^(arm64|x64)$")
     set_cache_value(HAS_POSIX_SEMAPHORES_EXITCODE 1)
     set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
