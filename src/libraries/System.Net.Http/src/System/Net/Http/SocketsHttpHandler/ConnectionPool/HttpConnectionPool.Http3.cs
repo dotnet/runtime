@@ -127,7 +127,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    http3ConnectionWaiter?.CancelIfNecessary(this, cancellationToken.IsCancellationRequested);
+                    http3ConnectionWaiter?.SetTimeoutToPendingConnectionAttempt(this, cancellationToken.IsCancellationRequested);
                 }
             }
         }
