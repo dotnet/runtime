@@ -212,7 +212,7 @@ namespace System.Runtime
             *((IntPtr*)(nextAvailableThunkPtr + IntPtr.Size)) = IntPtr.Zero;
 #endif
 
-            int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.ThunkCodeBlockSizeMask));
+            int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.ThunkDataBlockSizeMask));
             Debug.Assert((thunkIndex % Constants.ThunkDataSize) == 0);
             thunkIndex /= Constants.ThunkDataSize;
 
