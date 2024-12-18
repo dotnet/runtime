@@ -1,21 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
-    <RuntimeIdentifier Condition="'$(_IsPublishing)' != 'true'">$(PackageRID)</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(_IsPublishing)' == 'true'">$(OutputRID)</RuntimeIdentifier>
-    <UseLocalTargetingRuntimePack Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)' and '$(TargetsMobile)' != 'true'">true</UseLocalTargetingRuntimePack>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
 
   <Import Project="ILCompiler.props" />
 
+
+  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
     <SysRoot Condition="'$(UseNativeAotForComponents)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-    <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true' and '$(UseLocalTargetingRuntimePack)' != 'true'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
     <PublishTrimmed Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishTrimmed>
   </PropertyGroup>
@@ -85,6 +82,15 @@
   <Target Name="PublishCompiler"
           Condition="'$(BuildingInsideVisualStudio)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish" />
+          DependsOnTargets="Publish;StompSingleFileHostPath" />
 
+  <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
+        That's unfortunate because it's not the host we're supposed to use here. -->
+  <Target Name="StompSingleFileHostPath"
+          BeforeTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <SingleFileHostSourcePath></SingleFileHostSourcePath>
+    </PropertyGroup>
+  </Target>
+  <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
 </Project>
