@@ -1701,125 +1701,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 #endif // !defined(CORECLR_EMBEDDED)
 
-static void RuntimeThreadShutdown(void* thread)
-{
-    Thread* pThread = (Thread*)thread;
-    _ASSERTE(pThread == GetThreadNULLOk());
-
-    if (pThread)
-    {
-#ifdef FEATURE_COMINTEROP
-        // reset the CoInitialize state
-        // so we don't call CoUninitialize during thread detach
-        pThread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-        // For case where thread calls ExitThread directly, we need to reset the
-        // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-        // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-        if (pThread->m_pFrame != FRAME_TOP)
-        {
-#ifdef _DEBUG
-            pThread->m_GCOnTransitionsOK = FALSE;
-#endif
-            GCX_COOP_NO_DTOR();
-            pThread->m_pFrame = FRAME_TOP;
-            GCX_COOP_NO_DTOR_END();
-        }
-
-        pThread->DetachThread(TRUE);
-    }
-    else
-    {
-        // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
-        AssertThreadStaticDataFreed();
-    }
-
-    ThreadDetaching();
-}
-
-#ifdef TARGET_WINDOWS
-
-// Index for the fiber local storage of the attached thread pointer
-static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
-
-// This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
-// it means that the thread itself is destroyed.
-// Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
-// the ThreadStore lock in the RuntimeThreadShutdown.
-static void __stdcall FiberDetachCallback(void* lpFlsData)
-{
-    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
-    ASSERT(lpFlsData == FlsGetValue(g_flsIndex));
-
-    if (lpFlsData != NULL)
-    {
-        // The current fiber is the home fiber of a thread, so the thread is shutting down
-        RuntimeThreadShutdown(lpFlsData);
-    }
-}
-
-void InitFlsSlot()
-{
-    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
-    // callback is made without the OS loader lock
-    g_flsIndex = FlsAlloc(FiberDetachCallback);
-    if (g_flsIndex == FLS_OUT_OF_INDEXES)
-    {
-        COMPlusThrowWin32();
-    }
-}
-
-// Register the thread with OS to be notified when thread is about to be destroyed
-// It fails fast if a different thread was already registered with the current fiber.
-// Parameters:
-//  thread        - thread to attach
-static void OsAttachThread(void* thread)
-{
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber != NULL)
-    {
-        _ASSERTE_ALL_BUILDS(!"Multiple threads encountered from a single fiber");
-    }
-
-    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
-    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
-    // is destroyed, we consider the thread to be destroyed.
-    FlsSetValue(g_flsIndex, thread);
-}
-
-// Detach thread from OS notifications.
-// It fails fast if some other thread value was attached to the current fiber.
-// Parameters:
-//  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
-void OsDetachThread(void* thread)
-{
-    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber == NULL)
-    {
-        // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was
-        // borrowing this thread.
-        return;
-    }
-
-    if (threadFromCurrentFiber != thread)
-    {
-        _ASSERTE_ALL_BUILDS(!"Detaching a thread from the wrong fiber");
-    }
-
-    FlsSetValue(g_flsIndex, NULL);
-}
-
-void EnsureTlsDestructionMonitor()
-{
-    OsAttachThread(GetThread());
-}
-
-#else
 struct TlsDestructionMonitor
 {
     bool m_activated = false;
@@ -1833,7 +1714,36 @@ struct TlsDestructionMonitor
     {
         if (m_activated)
         {
-            RuntimeThreadShutdown(GetThreadNULLOk());
+            Thread* thread = GetThreadNULLOk();
+            if (thread)
+            {
+#ifdef FEATURE_COMINTEROP
+                // reset the CoInitialize state
+                // so we don't call CoUninitialize during thread detach
+                thread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+                // For case where thread calls ExitThread directly, we need to reset the
+                // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+                // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+                if (thread->m_pFrame != FRAME_TOP)
+                {
+#ifdef _DEBUG
+                    thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                    GCX_COOP_NO_DTOR();
+                    thread->m_pFrame = FRAME_TOP;
+                    GCX_COOP_NO_DTOR_END();
+                }
+
+                thread->DetachThread(TRUE);
+            }
+            else
+            {
+                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+                AssertThreadStaticDataFreed();
+            }
+
+            ThreadDetaching();
         }
     }
 };
@@ -1846,8 +1756,6 @@ void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
 }
-
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
 //
