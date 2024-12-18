@@ -206,7 +206,7 @@ namespace System.Net
                 Vector128<ushort> ushorts = Vector128.Create(address).AsUInt16();
                 // Reverse endianness of each ushort
                 ushorts = (ushorts << 8) | (ushorts >> 8);
-                ushorts.StoreUnsafe(ref numbers[0]);
+                ushorts.CopyTo(numbers);
             }
             else
             {
@@ -346,11 +346,21 @@ namespace System.Net
             ushort[]? numbers = _numbers;
             Debug.Assert(numbers is { Length: NumberOfLabels });
 
-            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated)
+            if (BitConverter.IsLittleEndian)
             {
-                Vector128<ushort> ushorts = Vector128.Create(numbers).AsUInt16();
-                ushorts = (ushorts << 8) | (ushorts >> 8);
-                ushorts.AsByte().StoreUnsafe(ref destination[0]);
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    Vector128<ushort> ushorts = Vector128.Create(numbers).AsUInt16();
+                    ushorts = (ushorts << 8) | (ushorts >> 8);
+                    ushorts.AsByte().CopyTo(destination);
+                }
+                else
+                {
+                    for (int i = 0; i < numbers.Length; i++)
+                    {
+                        BinaryPrimitives.WriteUInt16BigEndian(destination.Slice(i * 2), numbers[i]);
+                    }
+                }
             }
             else
             {
