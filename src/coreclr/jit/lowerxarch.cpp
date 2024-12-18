@@ -9259,10 +9259,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     // We will allow containment only if the immediate is constant and the element selection bits are
                     // explicitly zero.
 
-                    if (parentNode->GetSimdBaseType() == TYP_FLOAT)
+                    if (ins == INS_insertps)
                     {
-                        assert(parentIntrinsicId == NI_SSE41_Insert);
-
                         supportsMemoryOp = false;
 
                         GenTree* op3 = parentNode->Op(3);
@@ -9465,10 +9463,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         return canBeContained;
     }
 
-    GenTreeHWIntrinsic* hwintrinsic = childNode->AsHWIntrinsic();
-    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+    GenTreeHWIntrinsic* hwintrinsic   = childNode->AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
+    var_types           childBaseType = hwintrinsic->GetSimdBaseType();
 
-    bool supportsSIMDScalarLoad = supportsSIMDLoad && (expectedSize <= genTypeSize(hwintrinsic->GetSimdBaseType()));
+    bool supportsSIMDScalarLoad = supportsSIMDLoad && (expectedSize <= genTypeSize(childBaseType));
 
     switch (intrinsicId)
     {
@@ -9546,9 +9545,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 return false;
             }
 
-            var_types parentBaseType = parentNode->GetSimdBaseType();
-            var_types childBaseType  = hwintrinsic->GetSimdBaseType();
-
             if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
             {
                 // early return if either base type is not embedded broadcast compatible.
@@ -9597,9 +9593,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 return false;
             }
-
-            var_types parentBaseType = parentNode->GetSimdBaseType();
-            var_types childBaseType  = hwintrinsic->GetSimdBaseType();
 
             // These take only pointer operands.
             assert(hwintrinsic->OperIsMemoryLoad());
