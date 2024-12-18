@@ -7898,9 +7898,11 @@ void DebuggerStepper::TriggerGenericPInvokeCalli(PCODE target)
     TraceDestination trace;
     FramePointer fp = LEAF_MOST_FRAME;
     trace.InitForStub(target);
-    g_pEEInterface->FollowTrace(&trace);
+    bool hasTraceType = g_pEEInterface->FollowTrace(&trace);
     //fStopInUnmanaged only matters for TRACE_UNMANAGED
-    PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
+    _ASSERTE(hasTraceType);
+    bool setPatch = PatchTrace(&trace, fp, /*fStopInUnmanaged*/false);
+    _ASSERTE(setPatch);
     this->DisableGenericPInvokeCalli();
 }
 
