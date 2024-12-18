@@ -14,7 +14,6 @@
 #if HOST_WINDOWS
 
 #include <Windows.h>
-#include <versionhelpers.h>
 
 #ifndef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
 #define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
@@ -194,6 +193,34 @@ static bool IsApxEnabled()
 }
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
+
+#if defined(HOST_ARM64)
+static bool IsWindows11OrGreater()
+{
+    // Using RtlGetVersion since GetVersion call can be shimmed on Win8.1+.
+    typedef NTSTATUS (WINAPI *pFuncRtlGetVersion)(PRTL_OSVERSIONINFOW);
+
+    HMODULE hmodNtdll = LoadLibraryA("ntdll.dll");
+    if (hmodNtdll != NULL)
+    {
+        pFuncRtlGetVersion pRtlGetVersion = (pFuncRtlGetVersion)GetProcAddress(hmodNtdll, "RtlGetVersion");
+        if (pRtlGetVersion)
+        {
+            RTL_OSVERSIONINFOW osinfo;
+
+            ZeroMemory(&osinfo, sizeof(osinfo));
+            osinfo.dwOSVersionInfoSize = sizeof(osinfo);
+            if ((*pRtlGetVersion)(&osinfo) == 0)
+            {
+                return osinfo.dwMajorVersion >= 10 && osinfo.dwBuildNumber >= 22000;
+            }
+        }
+    }
+
+    return false;
+}
+
+#endif // HOST_ARM64
 #endif // HOST_WINDOWS
 
 int minipal_getcpufeatures(void)
@@ -477,7 +504,7 @@ int minipal_getcpufeatures(void)
     result |= ARM64IntrinsicConstants_AdvSimd;
 
     // RDM does not have an IsProcessorFeaturePresent flag, but it is a requirement for Windows 11
-    if (IsWindowsVersionOrGreater(10, 0, 22000))
+    if (IsWindows11OrGreater())
     {
         result |= ARM64IntrinsicConstants_Rdm;
     }
