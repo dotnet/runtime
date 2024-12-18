@@ -740,8 +740,9 @@ namespace System.Reflection.Emit
                             declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
                         }
 
+                        Type fieldType = ((FieldInfo)GetOriginalMemberIfConstructedType(field)).FieldType;
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
-                            MetadataSignatureHelper.GetFieldSignature(GetFieldType(field), field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+                            MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
 
                         break;
                     case ConstructorInfo ctor:
@@ -772,26 +773,6 @@ namespace System.Reflection.Emit
             }
 
             return memberHandle;
-
-            // The field type has to be the original open generic field type, not the closed type.
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern", Justification = "Internal reflection implementation")]
-            static Type GetFieldType(FieldInfo fieldInfo)
-            {
-                if (fieldInfo.DeclaringType!.IsGenericType)
-                {
-                    fieldInfo = fieldInfo.DeclaringType!.GetGenericTypeDefinition().GetField(fieldInfo.Name, GetBindingFlags(fieldInfo))!;
-                }
-
-                return fieldInfo.FieldType;
-
-                static BindingFlags GetBindingFlags(FieldInfo fieldInfo)
-                {
-                    BindingFlags flags = BindingFlags.Default;
-                    flags |= fieldInfo.IsPublic ? BindingFlags.Public : BindingFlags.NonPublic;
-                    flags |= fieldInfo.IsStatic ? BindingFlags.Static : BindingFlags.Instance;
-                    return flags;
-                }
-            }
         }
 
         private EntityHandle GetMethodReference(MethodInfo methodInfo, Type[] optionalParameterTypes)
@@ -831,17 +812,17 @@ namespace System.Reflection.Emit
             return convention;
         }
 
-        private MemberInfo GetOriginalMemberIfConstructedType(MethodBase methodBase)
+        private MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
         {
-            Type declaringType = methodBase.DeclaringType!;
+            Type declaringType = memberInfo.DeclaringType!;
             if (declaringType.IsConstructedGenericType &&
                 declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl &&
                 !ContainsTypeBuilder(declaringType.GetGenericArguments()))
             {
-                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
             }
 
-            return methodBase;
+            return memberInfo;
         }
 
         private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
