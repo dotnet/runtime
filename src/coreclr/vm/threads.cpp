@@ -353,7 +353,6 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
-    Thread* origThread = gCurrentThreadInfo.m_pThread;
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
@@ -361,14 +360,6 @@ void SetThread(Thread* t)
         EnsureTlsDestructionMonitor();
         t->InitRuntimeThreadLocals();
     }
-#ifdef TARGET_WINDOWS
-    else if (origThread != NULL)
-    {
-        // Unregister from OS notifications
-        // This can return false if a thread did not register for OS notification.
-        OsDetachThread(origThread);
-    }
-#endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
@@ -1047,10 +1038,6 @@ void InitThreadManager()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-
-#ifdef TARGET_WINDOWS
-    InitFlsSlot();
-#endif
 
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
