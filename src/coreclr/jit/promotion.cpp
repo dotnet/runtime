@@ -774,10 +774,9 @@ public:
             countReadBacks++;
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
-
-        // For parameters, the backend may be able to map it directly from a register.
-        if (lcl->lvIsParam)
+        else if (lcl->lvIsParam)
         {
+            // For parameters, the backend may be able to map it directly from a register.
             if (MapsToRegister(comp, access, lclNum))
             {
                 // No promotion will result in a store to stack in the prolog.
