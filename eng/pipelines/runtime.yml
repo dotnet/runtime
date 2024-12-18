@@ -512,8 +512,11 @@ extends:
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked
+            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked -p:StageOneBuild=true
             timeoutInMinutes: 120
+            postBuildSteps:
+              - script: $(Build.SourcesDirectory)/build$(scriptExt) ${{ variables.debugOnPrReleaseOnRolling }} -s clr.tools+packs -c $(_BuildConfig) -rc Checked -cross -os freebsd -p:StageTwoBuild=true
+                displayName: Build clr.tools and packs
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
