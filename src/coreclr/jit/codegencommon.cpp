@@ -3374,7 +3374,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             }
         }
 
-        if (compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
+        if (compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE) &&
+            compiler->lvaGetDesc(compiler->lvaStubArgumentVar)->lvOnFrame)
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
                                       compiler->lvaStubArgumentVar, 0);
@@ -5701,14 +5702,16 @@ void CodeGen::genFnProlog()
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
     {
         if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) &&
-            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
+            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0) &&
+            compiler->lvaGetDesc(compiler->lvaSwiftSelfArg)->lvOnFrame)
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
         }
 
         if ((compiler->lvaSwiftIndirectResultArg != BAD_VAR_NUM) &&
-            ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0))
+            ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0) &&
+            compiler->lvaGetDesc(compiler->lvaSwiftIndirectResultArg)->lvOnFrame)
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
                                       theFixedRetBuffReg(CorInfoCallConvExtension::Swift),

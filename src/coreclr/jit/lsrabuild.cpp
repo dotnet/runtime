@@ -2188,7 +2188,9 @@ void LinearScan::buildIntervals()
             const RegisterParameterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
-            LclVarDsc* argDsc = compiler->lvaGetDesc(mapping != nullptr ? mapping->LclNum : lclNum);
+            unsigned mappedLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
+            JITDUMP("Arg V%02u in reg %s\n", mappedLclNum, getRegName(seg.GetRegister()));
+            LclVarDsc* argDsc = compiler->lvaGetDesc(mappedLclNum);
             if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) &&
                 !compiler->opts.compDbgCode)
             {
