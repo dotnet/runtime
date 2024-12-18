@@ -2140,6 +2140,11 @@ public:
         gtFlags &= ~GTF_MUL_64RSLT;
     }
 
+    bool IsPartOfAddressMode()
+    {
+        return OperIs(GT_ADD, GT_MUL, GT_LSH) && ((gtFlags & GTF_ADDRMODE_NO_CSE) != 0);
+    }
+
     void SetAllEffectsFlags(GenTree* source)
     {
         SetAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);

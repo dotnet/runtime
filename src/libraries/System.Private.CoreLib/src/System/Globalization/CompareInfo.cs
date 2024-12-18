@@ -488,10 +488,7 @@ namespace System.Globalization
         private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                JsCompareString(string1, string2, options) :
-#elif TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             GlobalizationMode.Hybrid ?
                 CompareStringNative(string1, string2, options) :
 #endif
@@ -616,7 +613,7 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -633,10 +630,6 @@ namespace System.Globalization
         private unsafe bool StartsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsStartsWith(source, prefix, options, matchLengthPtr) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                JsStartsWith(source, prefix, options) :
-#endif
                 IcuStartsWith(source, prefix, options, matchLengthPtr);
 
         public bool IsPrefix(string source, string prefix)
@@ -763,7 +756,7 @@ namespace System.Globalization
             else
             {
                 // Linguistic comparison requested and we don't need to special-case any args.
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -785,10 +778,6 @@ namespace System.Globalization
         private unsafe bool EndsWithCore(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr) =>
             GlobalizationMode.UseNls ?
                 NlsEndsWith(source, suffix, options, matchLengthPtr) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                JsEndsWith(source, suffix, options) :
-#endif
                 IcuEndsWith(source, suffix, options, matchLengthPtr);
 
         /// <summary>
@@ -1058,7 +1047,7 @@ namespace System.Globalization
         {
             Debug.Assert(matchLengthPtr != null);
             *matchLengthPtr = 0;
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMatchLength);
@@ -1128,10 +1117,6 @@ namespace System.Globalization
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
-#if TARGET_BROWSER
-            GlobalizationMode.Hybrid ?
-                JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
-#endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         /// <summary>
@@ -1617,7 +1602,7 @@ namespace System.Globalization
                     }
                     else
                     {
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
                     throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
@@ -1633,7 +1618,7 @@ namespace System.Globalization
 
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
 
-#if TARGET_BROWSER || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
         private static string GetPNSEText(string funcName) => SR.Format(SR.PlatformNotSupported_HybridGlobalization, funcName);
         private static string GetPNSEWithReason(string funcName, string reason) => SR.Format(SR.PlatformNotSupportedWithReason_HybridGlobalization, funcName, reason);
 #endif

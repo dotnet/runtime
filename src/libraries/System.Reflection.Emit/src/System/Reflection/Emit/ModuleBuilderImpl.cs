@@ -1381,5 +1381,19 @@ namespace System.Reflection.Emit
         {
             return new SymbolDocumentWriter(url, language);
         }
+
+        internal List<TypeBuilderImpl> GetNestedTypeBuilders(TypeBuilderImpl declaringType)
+        {
+            List<TypeBuilderImpl> nestedTypes = new List<TypeBuilderImpl>();
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
+            {
+                if (typeBuilder.DeclaringType == declaringType)
+                {
+                    nestedTypes.Add(typeBuilder);
+                }
+            }
+
+            return nestedTypes;
+        }
     }
 }
