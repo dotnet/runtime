@@ -701,7 +701,7 @@ HCIMPLEND_RAW
 //
 //========================================================================
 
-BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
+static BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
 {
     CONTRACTL {
         THROWS;
@@ -1625,7 +1625,7 @@ HCIMPL1(Object*, JIT_GetRuntimeMethodStub, CORINFO_METHOD_HANDLE method)
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
     MethodDesc *pMethod = (MethodDesc *)method;
-    stubRuntimeMethod = (OBJECTREF)pMethod->GetStubMethodInfo();
+    stubRuntimeMethod = (OBJECTREF)pMethod->AllocateStubMethodInfo();
 
     HELPER_METHOD_FRAME_END();
 
@@ -4049,7 +4049,7 @@ bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
     {
         return false;
     }
-    
+
     return true;
 }
 

@@ -368,6 +368,11 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, "EnableMultiRegLocals", 1)
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for legacy instructions.
+CONFIG_INTEGER(JitBypassAPXCheck, "JitBypassAPXCheck", 0)         // Bypass APX CPUID check.
+#endif
+
 // clang-format off
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
