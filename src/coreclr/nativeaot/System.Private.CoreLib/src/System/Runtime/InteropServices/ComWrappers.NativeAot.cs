@@ -968,21 +968,40 @@ namespace System.Runtime.InteropServices
                             _rcwCache.Remove(identity);
                         }
                     }
+                }
 
-                    if (wrapperMaybe is not null)
+                if (wrapperMaybe is not null)
+                {
+                    retValue = wrapperMaybe;
+
+                    using (_lock.EnterScope())
                     {
-                        retValue = wrapperMaybe;
-                        NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
-                            identity,
-                            inner,
-                            this,
-                            retValue,
-                            flags);
-                        if (!s_rcwTable.TryAdd(retValue, wrapper))
+                        if (!s_rcwTable.TryGetValue(retValue, out NativeObjectWrapper? wrapper))
                         {
-                            wrapper.Release();
-                            throw new NotSupportedException();
+                            // Exit the lock before we create the native object wrapper
+                            // as we may execute arbitrary user code.
+                            _lock.Exit();
+                            try
+                            {
+                                NativeObjectWrapper newWrapper = NativeObjectWrapper.Create(
+                                    identity,
+                                    inner,
+                                    this,
+                                    retValue,
+                                    flags);
+
+                                wrapper = s_rcwTable.GetValue(retValue, _ => newWrapper);
+                                if (wrapper != newWrapper)
+                                {
+                                    newWrapper.Release();
+                                }
+                            }
+                            finally
+                            {
+                                _lock.Enter();
+                            }
                         }
+
                         _rcwCache.Add(identity, wrapper._proxyHandle);
                         AddWrapperToReferenceTrackerHandleCache(wrapper);
                         return true;
@@ -1026,16 +1045,17 @@ namespace System.Runtime.InteropServices
 
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
+                NativeObjectWrapper newWrapper = NativeObjectWrapper.Create(
                     identity,
                     inner,
                     null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
                     retValue,
                     flags);
-                if (!s_rcwTable.TryAdd(retValue, wrapper))
+
+                NativeObjectWrapper wrapper = s_rcwTable.GetValue(retValue, _ => newWrapper);
+                if (wrapper != newWrapper)
                 {
-                    wrapper.Release();
-                    throw new NotSupportedException();
+                    newWrapper.Release();
                 }
                 AddWrapperToReferenceTrackerHandleCache(wrapper);
                 return true;
@@ -1061,17 +1081,19 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    NativeObjectWrapper wrapper = NativeObjectWrapper.Create(
+                    NativeObjectWrapper newWrapper = NativeObjectWrapper.Create(
                         identity,
                         inner,
                         this,
                         retValue,
                         flags);
-                    if (!s_rcwTable.TryAdd(retValue, wrapper))
+
+                    NativeObjectWrapper wrapper = s_rcwTable.GetValue(retValue, _ => newWrapper);
+                    if (wrapper != newWrapper)
                     {
-                        wrapper.Release();
-                        throw new NotSupportedException();
+                        newWrapper.Release();
                     }
+
                     _rcwCache.Add(identity, wrapper._proxyHandle);
                     AddWrapperToReferenceTrackerHandleCache(wrapper);
                 }
