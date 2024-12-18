@@ -871,11 +871,13 @@ namespace System.IO.Compression.Tests
             Assert.Null(exception);
         }
 
-        [Theory]
-        [InlineData("HuffmanTreeException.zip")]
-        public static async Task ZipArchive_InvalidHuffmanData(string zipname)
+        /// <summary>
+        /// This test checks that an InvalidDataException will be thrown when consuming a zip with bad Huffman data.
+        /// </summary>
+        [Fact]
+        public static async Task ZipArchive_InvalidHuffmanData()
         {
-            string filename = bad(zipname);
+            string filename = bad("HuffmanTreeException.zip");
             using (ZipArchive archive = new ZipArchive(await StreamHelpers.CreateTempCopyStream(filename), ZipArchiveMode.Read))
             {
                 ZipArchiveEntry e = archive.Entries[0];
