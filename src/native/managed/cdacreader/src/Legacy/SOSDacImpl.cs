@@ -610,7 +610,6 @@ internal sealed unsafe partial class SOSDacImpl
             hr = ex.HResult;
         }
 
-
 #if DEBUG
         if (_legacyImpl is not null)
         {
