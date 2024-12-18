@@ -674,7 +674,7 @@ namespace System.Net
             if (IsIPv6)
             {
                 // For IPv6 addresses, we must compare the full 128-bit representation and the scope IDs.
-                return _numbers.AsSpan(0, 16).SequenceEqual(comparand._numbers.AsSpan(0, 16)) &&
+                return _numbers.AsSpan(0, 8).SequenceEqual(comparand._numbers.AsSpan(0, 8)) &&
                     PrivateScopeId == comparand.PrivateScopeId;
             }
 
