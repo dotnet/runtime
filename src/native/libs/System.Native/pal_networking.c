@@ -1780,6 +1780,11 @@ int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t so
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+#if defined(__linux__) && !defined(TCP_FASTOPEN_CONNECT)
+// fixup if compiled against old Kernel headers.
+// Can be removed once we have at least 4.11
+#define TCP_FASTOPEN_CONNECT 30
+#endif
 int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* data, int32_t dataLen, int32_t tfo, int* sent)
 {
     if (socketAddress == NULL || socketAddressLen < 0 || sent == NULL)

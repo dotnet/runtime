@@ -91,6 +91,8 @@
                              message="$(string.RuntimePublisher.ProfilerKeywordMessage)" symbol="CLR_PROFILER_KEYWORD" />
                     <keyword name="WaitHandleKeyword" mask="0x40000000000"
                              message="$(string.RuntimePublisher.WaitHandleKeywordMessage)" symbol="CLR_WAITHANDLE_KEYWORD"/>
+                    <keyword name="AllocationSamplingKeyword" mask="0x80000000000"
+                             message="$(string.RuntimePublisher.AllocationSamplingKeywordMessage)" symbol="CLR_ALLOCATIONSAMPLING_KEYWORD"/>
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -461,7 +463,13 @@
                         <opcodes>
                         </opcodes>
                     </task>
-                <!--Next available ID is 40-->
+                    <task name="AllocationSampling" symbol="CLR_ALLOCATIONSAMPLING_TASK"
+                              value="40" eventGUID="{CC82530E-A21C-4EB0-A68A-FA4F7E66498F}"
+                              message="$(string.RuntimePublisher.AllocationSamplingTaskMessage)">
+                        <opcodes>
+                        </opcodes>
+                    </task>
+                    <!--Next available ID is 41-->
                 </tasks>
                 <!--Maps-->
                 <maps>
@@ -3164,6 +3172,28 @@
                         </UserData>
                     </template>
 
+                    <template tid="AllocationSampled">
+                        <data name="AllocationKind" inType="win:UInt32" map="GCAllocationKindMap" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="TypeID" inType="win:Pointer" />
+                        <data name="TypeName" inType="win:UnicodeString" />
+                        <data name="Address" inType="win:Pointer" />
+                        <data name="ObjectSize" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="SampledByteOffset" inType="win:UInt64" outType="win:HexInt64" />
+
+                        <UserData>
+                            <AllocationSampled xmlns="myNs">
+                                <AllocationKind> %1 </AllocationKind>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <TypeID> %3 </TypeID>
+                                <TypeName> %4 </TypeName>
+                                <Address> %5 </Address>
+                                <ObjectSize> %6 </ObjectSize>
+                                <SampledByteOffset> %7 </SampledByteOffset>
+                            </AllocationSampled>
+                        </UserData>
+                    </template>
+                    
                 </templates>
 
                 <events>
@@ -4256,7 +4286,11 @@
                            keywords="WaitHandleKeyword" opcode="win:Stop"
                            task="WaitHandleWait"
                            symbol="WaitHandleWaitStop" message="$(string.RuntimePublisher.WaitHandleWaitStopEventMessage)"/>
-
+                    <!-- Allocation sampling events -->
+                    <event value="303" version="0" level="win:Informational" template="AllocationSampled"
+                           keywords="AllocationSamplingKeyword"
+                           task="AllocationSampling"
+                           symbol="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledEventMessage)"/>
                 </events>
             </provider>
 
@@ -8616,7 +8650,8 @@
                 <string id="RuntimePublisher.ExecutionCheckpointEventMessage" value="ClrInstanceID=%1;Checkpoint=%2;Timestamp=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStartEventMessage" value="WaitSource=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
                 <string id="RuntimePublisher.WaitHandleWaitStopEventMessage" value="ClrInstanceID=%1"/>
-
+                <string id="RuntimePublisher.AllocationSampledEventMessage" value="%nKind=%1;%nClrInstanceID=%2;%nTypeID=%3;%nTypeName=%4;%nAddress=%5;%nObjectSize=%6;%nSampledByteOffset=%7" />
+                
                 <string id="RundownPublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RundownPublisher.MethodDCStart_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RundownPublisher.MethodDCStart_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
@@ -8791,7 +8826,8 @@
                 <string id="RuntimePublisher.ProfilerTaskMessage" value="Profiler" />
                 <string id="RuntimePublisher.YieldProcessorMeasurementTaskMessage" value="YieldProcessorMeasurement" />
                 <string id="RuntimePublisher.WaitHandleWaitTaskMessage" value="WaitHandleWait" />
-
+                <string id="RuntimePublisher.AllocationSamplingTaskMessage" value="AllocationSampling" />
+                
                 <string id="RundownPublisher.GCTaskMessage" value="GC" />
                 <string id="RundownPublisher.EEStartupTaskMessage" value="Runtime" />
                 <string id="RundownPublisher.MethodTaskMessage" value="Method" />
@@ -9155,7 +9191,8 @@
                 <string id="RundownPublisher.StackKeywordMessage" value="Stack" />
                 <string id="RundownPublisher.CompilationKeywordMessage" value="Compilation" />
                 <string id="RuntimePublisher.WaitHandleKeywordMessage" value="WaitHandle" />
-
+                <string id="RuntimePublisher.AllocationSamplingKeywordMessage" value="AllocationSampling" />
+                
                 <string id="PrivatePublisher.GCPrivateKeywordMessage" value="GC" />
                 <string id="PrivatePublisher.StartupKeywordMessage" value="Startup" />
                 <string id="PrivatePublisher.StackKeywordMessage" value="Stack" />

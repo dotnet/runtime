@@ -468,6 +468,12 @@ public:
     //
     BYTE* Emit();
 
+    //
+    // Return the size in bytes of the constructed GC info. This is the size passed
+    // to the VM via `allocGCInfo`. It is only valid after `Emit` is called.
+    //
+    size_t GetEncodedGCInfoSize() const;
+
 private:
 
     friend struct CompareLifetimeTransitionsByOffsetThenSlot;
@@ -533,6 +539,8 @@ private:
     BYTE* m_pCallSiteSizes;
     UINT32 m_NumCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+
+    size_t m_BlockSize; // The byte size passed to the `allocGCInfo` call
 
     void GrowSlotTable();
 

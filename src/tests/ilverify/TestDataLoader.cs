@@ -36,7 +36,7 @@ namespace ILVerification.Tests
         ///  [FriendlyName]_ValidType_Valid
         /// </summary>
         /// <returns></returns>
-        public static TheoryData<TestCase> GetTypesWithValidType()
+        public static IEnumerable<TestCase[]> GetTypesWithValidType()
         {
             var typeSelector = new Func<string[], TypeDefinitionHandle, TestCase>((mparams, typeDefinitionHandle) =>
             {
@@ -54,7 +54,7 @@ namespace ILVerification.Tests
         ///  [FriendlyName]_InvalidType_[ExpectedVerifierError1]@[ExpectedVerifierError2]....[ExpectedVerifierErrorN]
         /// </summary>
         /// <returns></returns>
-        public static TheoryData<TestCase> GetTypesWithInvalidType()
+        public static IEnumerable<TestCase[]> GetTypesWithInvalidType()
         {
             var typeSelector = new Func<string[], TypeDefinitionHandle, TestCase>((mparams, typeDefinitionHandle) =>
             {
@@ -74,9 +74,9 @@ namespace ILVerification.Tests
             return GetTestTypeFromDll(typeSelector);
         }
 
-        private static TheoryData<TestCase> GetTestTypeFromDll(Func<string[], TypeDefinitionHandle, TestCase> typeSelector)
+        private static List<TestCase[]> GetTestTypeFromDll(Func<string[], TypeDefinitionHandle, TestCase> typeSelector)
         {
-            var retVal = new TheoryData<TestCase>();
+            var retVal = new List<TestCase[]>();
 
             foreach (var testDllName in GetAllTestDlls())
             {
@@ -95,7 +95,7 @@ namespace ILVerification.Tests
                             newItem.TestName = mparams[0];
                             newItem.TypeName = typeName;
                             newItem.ModuleName = testDllName;
-                            retVal.Add(newItem);
+                            retVal.Add(new[] { newItem });
                         }
                     }
                 }
@@ -110,7 +110,7 @@ namespace ILVerification.Tests
         /// The word after the '_' has to be 'Valid' (Case sensitive)
         /// E.g.: 'SimpleAdd_Valid'
         /// </summary>
-        public static TheoryData<TestCase> GetMethodsWithValidIL()
+        public static IEnumerable<TestCase[]> GetMethodsWithValidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
@@ -132,7 +132,7 @@ namespace ILVerification.Tests
         /// 3. part: the expected VerifierErrors as string separated by '.'.
         /// E.g.: SimpleAdd_Invalid_ExpectedNumericType
         /// </summary>
-        public static TheoryData<TestCase> GetMethodsWithInvalidIL()
+        public static IEnumerable<TestCase[]> GetMethodsWithInvalidIL()
         {
             var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
@@ -163,9 +163,9 @@ namespace ILVerification.Tests
             return GetTestMethodsFromDll(methodSelector);
         }
 
-        private static TheoryData<TestCase> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
+        private static List<TestCase[]> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
         {
-            var retVal = new TheoryData<TestCase>();
+            var retVal = new List<TestCase[]>();
 
             foreach (var testDllName in GetAllTestDlls())
             {
@@ -206,7 +206,7 @@ namespace ILVerification.Tests
                         newItem.MethodName = methodName;
                         newItem.ModuleName = testDllName;
 
-                        retVal.Add(newItem);
+                        retVal.Add(new[] { newItem });
                     }
                 }
             }

@@ -99,6 +99,11 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(
           CORINFO_METHOD_HANDLE ftn,
           bool* requiresInstMethodTableArg) override;
 
+CORINFO_METHOD_HANDLE getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg) override;
+
 CORINFO_CLASS_HANDLE getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType) override;
 
@@ -182,6 +187,10 @@ const char* getClassNameFromMetadata(
 
 CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
+          unsigned index) override;
+
+CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
           unsigned index) override;
 
 size_t printClassName(
@@ -491,8 +500,6 @@ void getEEInfo(
 
 void getAsync2Info(
           CORINFO_ASYNC2_INFO* pAsync2InfoOut) override;
-
-const char16_t* getJitTimeLogFilename() override;
 
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;

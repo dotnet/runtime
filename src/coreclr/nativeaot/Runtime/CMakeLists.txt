@@ -49,6 +49,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
+    ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
 set(SERVER_GC_SOURCES

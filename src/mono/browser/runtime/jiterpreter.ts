@@ -3,8 +3,8 @@
 
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { getU16 } from "./memory";
+import { mono_assert, runtimeHelpers } from "./globals";
+import { free, getU16 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -1004,7 +1004,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     ) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
         methodFullName = utf8ToString(pMethodName);
-        Module._free(<any>pMethodName);
+        free(<any>pMethodName);
     }
     const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
@@ -1148,7 +1148,7 @@ export function jiterpreter_dump_stats (concise?: boolean): void {
                 const pMethodName = cwraps.mono_wasm_method_get_full_name(<any>targetMethod);
                 const targetMethodName = utf8ToString(pMethodName);
                 const hitCount = callTargetCounts[<any>targetMethod];
-                Module._free(<any>pMethodName);
+                free(<any>pMethodName);
                 mono_log_info(`${targetMethodName} ${hitCount}`);
             }
         }

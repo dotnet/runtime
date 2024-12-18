@@ -184,17 +184,24 @@ namespace DebuggerTests
             try {
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
-            catch (TaskCanceledException exc) //if timed out for some reason let's try again
+            catch (Exception exc) //if failed some reason let's try again
             {
                 if (!retry)
-                    throw exc;
+                    throw new Exception($"Debugger inspector session opening failed and will not be retried: {exc}");
                 retry = false;
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
-                Id = Interlocked.Increment(ref s_idCounter);
-                insp = new Inspector(Id, _testOutput);
-                cli = insp.Client;
-                scripts = SubscribeToScripts(insp);
-                await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+                try
+                {
+                    Id = Interlocked.Increment(ref s_idCounter);
+                    insp = new Inspector(Id, _testOutput);
+                    cli = insp.Client;
+                    scripts = SubscribeToScripts(insp);
+                    await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
+                }
+                catch (Exception secondEx)
+                {
+                    throw new Exception($"Debugger inspector session opening failed: {secondEx}");
+                }
             }
         }
 

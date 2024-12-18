@@ -7,7 +7,7 @@
     <TestFramework>xunit</TestFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
+    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(DefineConstants);TEST_DEBUG_CONFIG_ALSO</DefineConstants>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
@@ -21,7 +21,7 @@
     <UseDefaultTestHost>true</UseDefaultTestHost>
 
     <EnableRunSettingsSupport>false</EnableRunSettingsSupport>
-    <DefineConstants>TARGET_WASI</DefineConstants>
+    <DefineConstants>$(DefineConstants);TARGET_WASI</DefineConstants>
     <_MonoSrcWasmDir>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</_MonoSrcWasmDir>
 
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and
@@ -95,10 +95,19 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PATH=$(WasmtimeDir)%3B%PATH%" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. Copy & paste to Wasm.Build.Tests -->
+      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' != 'true'">$(PackageVersion)</_RuntimePackCurrentVersion>
+    </PropertyGroup>
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" />
+
+      <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' == ''" />
+
       <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />

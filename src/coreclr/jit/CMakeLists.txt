@@ -157,6 +157,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  optimizemaskconversions.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -201,7 +202,6 @@ set( JIT_AMD64_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
-  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetamd64.cpp
   unwindamd64.cpp
@@ -228,7 +228,6 @@ set( JIT_I386_SOURCES
   lowerxarch.cpp
   lsraxarch.cpp
   simd.cpp
-  simdashwintrinsic.cpp
   simdcodegenxarch.cpp
   targetx86.cpp
   unwindx86.cpp
@@ -246,7 +245,6 @@ set( JIT_ARM64_SOURCES
   lsraarmarch.cpp
   lsraarm64.cpp
   simd.cpp
-  simdashwintrinsic.cpp
   targetarm64.cpp
   unwindarmarch.cpp
   unwindarm64.cpp
@@ -303,7 +301,6 @@ set( JIT_HEADERS
   bitsetops.h
   bitvec.h
   block.h
-  blockset.h
   codegen.h
   codegeninterface.h
   compiler.h
@@ -363,6 +360,7 @@ set( JIT_HEADERS
   opcode.h
   optcse.h
   phase.h
+  priorityqueue.h
   promotion.h
   rangecheck.h
   rationalize.h
@@ -373,7 +371,6 @@ set( JIT_HEADERS
   scev.h
   sideeffects.h
   simd.h
-  simdashwintrinsic.h
   sm.h
   smallhash.h
   smcommon.h
@@ -407,7 +404,6 @@ set( JIT_AMD64_HEADERS
   hwintrinsiclistxarch.h
   hwintrinsic.h
   instrsxarch.h
-  simdashwintrinsiclistxarch.h
 )
 
 set( JIT_I386_HEADERS ${JIT_AMD64_HEADERS} )
@@ -421,7 +417,6 @@ set( JIT_ARM64_HEADERS
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h
-    simdashwintrinsiclistarm64.h
 )
 
 set( JIT_ARM_HEADERS

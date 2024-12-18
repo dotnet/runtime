@@ -62,6 +62,7 @@ enum TraceType
     TRACE_FRAME_PUSH,                // Don't know where stub goes, stop at address, and then ask the frame that is on the stack
     TRACE_MGR_PUSH,                  // Don't know where stub goes, stop at address then call TraceManager() below to find out
     TRACE_MULTICAST_DELEGATE_HELPER, // Stub goes to a multicast delegate helper
+    TRACE_EXTERNAL_METHOD_FIXUP,     // Stub goes to an external method fixup helper
 
     TRACE_OTHER                      // We are going somewhere you can't step into (eg. ee helper function)
 };
@@ -152,6 +153,13 @@ public:
     void InitForMulticastDelegateHelper()
     {
         this->type = TRACE_MULTICAST_DELEGATE_HELPER;
+        this->address = (PCODE)NULL;
+        this->stubManager = NULL;
+    }
+
+    void InitForExternalMethodFixup()
+    {
+        this->type = TRACE_EXTERNAL_METHOD_FIXUP;
         this->address = (PCODE)NULL;
         this->stubManager = NULL;
     }
@@ -612,13 +620,6 @@ class RangeSectionStubManager : public StubManager
   private:
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-#ifndef DACCESS_COMPILE
-    virtual BOOL TraceManager(Thread *thread,
-                              TraceDestination *trace,
-                              T_CONTEXT *pContext,
-                              BYTE **pRetAddr);
-#endif
 
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);

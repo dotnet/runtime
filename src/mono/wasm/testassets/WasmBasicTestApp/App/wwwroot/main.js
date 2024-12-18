@@ -26,6 +26,16 @@ dotnet
     .withExitCodeLogging()
     .withExitOnUnhandledError();
 
+const logLevel = params.get("MONO_LOG_LEVEL");
+const logMask = params.get("MONO_LOG_MASK");
+if (logLevel !== null && logMask !== null) {
+    dotnet.withDiagnosticTracing(true); // enable JavaScript tracing
+    dotnet.withConfig({environmentVariables: {
+        "MONO_LOG_LEVEL": logLevel,
+        "MONO_LOG_MASK": logMask,
+    }});
+}
+
 // Modify runtime start based on test case
 switch (testCase) {
     case "SatelliteAssembliesTest":
@@ -127,6 +137,19 @@ switch (testCase) {
         };
         dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
         break;
+    case "AllocateLargeHeapThenInterop":
+        dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+        dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+        dotnet.withModuleConfig({
+            preRun: (Module) => {
+                // wasting 2GB of memory
+                for (let i = 0; i < 210; i++) {
+                    testOutput(`wasting 10m ${Module._malloc(10 * 1024 * 1024)}`);
+                }
+                testOutput(`WASM ${Module.HEAP32.byteLength} bytes.`);
+            }
+        })
+        break;
     case "ProfilerTest":
         dotnet.withConfig({
             logProfilerOptions: {
@@ -137,6 +160,9 @@ switch (testCase) {
         break;
     case "OverrideBootConfigName":
         dotnet.withConfigSrc("boot.json");
+        break;
+    case "MainWithArgs":
+        dotnet.withApplicationArgumentsFromQuery();
         break;
 }
 
@@ -186,6 +212,8 @@ try {
             exit(0);
             break;
         case "OutErrOverrideWorks":
+        case "DotnetRun":
+        case "MainWithArgs":
             dotnet.run();
             break;
         case "DebugLevelTest":

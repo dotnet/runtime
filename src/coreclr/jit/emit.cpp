@@ -6852,6 +6852,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
+    comp->Metrics.AllocatedHotCodeBytes  = args.hotCodeSize;
+    comp->Metrics.AllocatedColdCodeBytes = args.coldCodeSize;
+    comp->Metrics.ReadOnlyDataBytes      = args.roDataSize;
+
     emitComp->eeAllocMem(&args, emitConsDsc.alignment);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
@@ -7685,6 +7689,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *prologSize = emitCodeOffset(emitPrologIG, emitPrologEndPos);
 
     /* Return the amount of code we've generated */
+
+    comp->Metrics.ActualCodeBytes = actualCodeSize;
 
     return actualCodeSize;
 }

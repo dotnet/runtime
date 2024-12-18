@@ -7,11 +7,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Runtime
-{
-    internal sealed class BypassReadyToRunAttribute : Attribute {}
-}
-
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers

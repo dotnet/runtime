@@ -11,6 +11,22 @@
   <comClass
     clsid="{CCFF894B-A27C-45E0-9B30-6C88D722E843}"
     threadingModel="Both" />
+  <!-- ClassInterfaceNotSetTesting -->
+  <comClass
+    clsid="{B8314D5A-DE70-435B-AD97-8F88820D1F3C}"
+    threadingModel="Both" />
+  <!-- ClassInterfaceNoneTesting -->
+  <comClass
+    clsid="{ED4D9C70-1C9F-406B-B51F-87DD977AF3B2}"
+    threadingModel="Both" />
+  <!-- ClassInterfaceAutoDispatchTesting -->
+  <comClass
+    clsid="{C1A0AE72-791B-4380-946E-B7BABDEA1701}"
+    threadingModel="Both" />
+  <!-- ClassInterfaceAutoDualTesting -->
+  <comClass
+    clsid="{95696E2C-742F-4639-A9D4-5D36EE021C49}"
+    threadingModel="Both" />
 </file>
 
 </assembly>
