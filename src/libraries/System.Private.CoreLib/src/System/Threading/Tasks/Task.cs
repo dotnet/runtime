@@ -773,10 +773,9 @@ namespace System.Threading.Tasks
         /// <summary>Returns true if any of the supplied tasks require wait notification.</summary>
         /// <param name="tasks">The tasks to check.</param>
         /// <returns>true if any of the tasks require notification; otherwise, false.</returns>
-        internal static bool AnyTaskRequiresNotifyDebuggerOfWaitCompletion(Task?[] tasks)
+        internal static bool AnyTaskRequiresNotifyDebuggerOfWaitCompletion(Memory<Task?> tasks)
         {
-            Debug.Assert(tasks != null, "Expected non-null array of tasks");
-            foreach (Task? task in tasks)
+            foreach (Task? task in tasks.Span)
             {
                 if (task != null &&
                     task.IsWaitNotificationEnabled &&
@@ -6272,7 +6271,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
-            List<Task<TResult>> taskList = new List<Task<TResult>>();
+            var taskList = new List<Task<TResult>>();
             foreach (Task<TResult> task in tasks)
             {
                 if (task is null)
@@ -6284,8 +6283,8 @@ namespace System.Threading.Tasks
             }
 
             return taskList.Count == 0 ?
-                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>(CollectionsMarshal.AsMemory(taskList)); // No such method, can this be done similar to CollectionsMarshal.AsSpan?
+                new Task<TResult[]>(false, [], TaskCreationOptions.None, default) :
+                new WhenAllPromise<TResult>(taskList._items);
         }
 
         /// <summary>
@@ -6387,13 +6386,12 @@ namespace System.Threading.Tasks
             /// Stores all of the constituent tasks.  Tasks clear themselves out of this
             /// array as they complete, but only if they don't have their wait notification bit set.
             /// </summary>
-            private readonly Task<T>?[] m_tasks;
+            private readonly Memory<Task<T>?> m_tasks;
             /// <summary>The number of tasks remaining to complete.</summary>
             private int m_count;
 
-            internal WhenAllPromise(ReadOnlyMemory<Task<T>> tasks)
+            internal WhenAllPromise(Memory<Task<T>> tasks)
             {
-                Debug.Assert(tasks != null, "Expected a non-null task array");
                 Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
 
                 m_tasks = tasks;
@@ -6405,7 +6403,7 @@ namespace System.Threading.Tasks
                 if (s_asyncDebuggingEnabled)
                     AddToActiveTasks(this);
 
-                foreach (Task<T> task in tasks)
+                foreach (Task<T> task in tasks.Span)
                 {
                     if (task.IsCompleted) this.Invoke(task); // short-circuit the completion action, if possible
                     else task.AddCompletionAction(this); // simple completion action
@@ -6424,6 +6422,7 @@ namespace System.Threading.Tasks
                     T[] results = new T[m_tasks.Length];
                     List<ExceptionDispatchInfo>? observedExceptions = null;
                     Task? canceledTask = null;
+                    var tasksSpan = m_tasks.Span;
 
                     // Loop through antecedents:
                     //   If any one of them faults, the result will be faulted
@@ -6431,7 +6430,7 @@ namespace System.Threading.Tasks
                     //   If none fault or are canceled, then result will be RanToCompletion
                     for (int i = 0; i < m_tasks.Length; i++)
                     {
-                        Task<T>? task = m_tasks[i];
+                        Task<T>? task = tasksSpan[i];
                         Debug.Assert(task != null, "Constituent task in WhenAll should never be null");
 
                         if (task.IsFaulted)
@@ -6452,7 +6451,7 @@ namespace System.Threading.Tasks
                         // Regardless of completion state, if the task has its debug bit set, transfer it to the
                         // WhenAll task.  We must do this before we complete the task.
                         if (task.IsWaitNotificationEnabled) this.SetNotificationForWaitCompletion(enabled: true);
-                        else m_tasks[i] = null; // avoid holding onto tasks unnecessarily
+                        else tasksSpan[i] = null; // avoid holding onto tasks unnecessarily
                     }
 
                     if (observedExceptions != null)
@@ -6489,7 +6488,7 @@ namespace System.Threading.Tasks
             /// </summary>
             private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
                 base.ShouldNotifyDebuggerOfWaitCompletion &&
-                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
+                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks); // Thinking what to do here
         }
         #endregion
 
