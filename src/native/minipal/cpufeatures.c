@@ -193,6 +193,34 @@ static bool IsApxEnabled()
 }
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
+
+#if defined(HOST_ARM64)
+static bool IsWindows11OrGreater()
+{
+    // Using RtlGetVersion since GetVersion call can be shimmed on Win8.1+.
+    typedef NTSTATUS (WINAPI *pFuncRtlGetVersion)(PRTL_OSVERSIONINFOW);
+
+    HMODULE hmodNtdll = LoadLibraryA("ntdll.dll");
+    if (hmodNtdll != NULL)
+    {
+        pFuncRtlGetVersion pRtlGetVersion = (pFuncRtlGetVersion)GetProcAddress(hmodNtdll, "RtlGetVersion");
+        if (pRtlGetVersion)
+        {
+            RTL_OSVERSIONINFOW osinfo;
+
+            ZeroMemory(&osinfo, sizeof(osinfo));
+            osinfo.dwOSVersionInfoSize = sizeof(osinfo);
+            if ((*pRtlGetVersion)(&osinfo) == 0)
+            {
+                return osinfo.dwMajorVersion >= 10 && osinfo.dwBuildNumber >= 22000;
+            }
+        }
+    }
+
+    return false;
+}
+
+#endif // HOST_ARM64
 #endif // HOST_WINDOWS
 
 int minipal_getcpufeatures(void)
@@ -475,6 +503,12 @@ int minipal_getcpufeatures(void)
     // FP and SIMD support are enabled by default
     result |= ARM64IntrinsicConstants_AdvSimd;
 
+    // RDM does not have an IsProcessorFeaturePresent flag, but it is a requirement for Windows 11
+    if (IsWindows11OrGreater())
+    {
+        result |= ARM64IntrinsicConstants_Rdm;
+    }
+
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Aes;
@@ -495,7 +529,6 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Dp;
-        result |= ARM64IntrinsicConstants_Rdm;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
