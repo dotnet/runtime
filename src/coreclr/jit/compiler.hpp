@@ -5128,60 +5128,6 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 }
 
 //------------------------------------------------------------------------------
-// FlowGraphNaturalLoop::VisitLoopBlocksLexical: Visit the loop's blocks in
-// lexical order.
-//
-// Type parameters:
-//   TFunc - Callback functor type
-//
-// Arguments:
-//   func - Callback functor that takes a BasicBlock* and returns a
-//   BasicBlockVisit.
-//
-// Returns:
-//    BasicBlockVisit that indicated whether the visit was aborted by the
-//    callback or whether all blocks were visited.
-//
-template <typename TFunc>
-BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
-{
-    BasicBlock* top           = m_header;
-    unsigned    numLoopBlocks = 0;
-    VisitLoopBlocks([&](BasicBlock* block) {
-        if (block->bbNum < top->bbNum)
-        {
-            top = block;
-        }
-
-        numLoopBlocks++;
-        return BasicBlockVisit::Continue;
-    });
-
-    INDEBUG(BasicBlock* prev = nullptr);
-    BasicBlock* cur = top;
-    while (numLoopBlocks > 0)
-    {
-        // If we run out of blocks the blocks aren't sequential.
-        assert(cur != nullptr);
-
-        if (ContainsBlock(cur))
-        {
-            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
-
-            if (func(cur) == BasicBlockVisit::Abort)
-                return BasicBlockVisit::Abort;
-
-            INDEBUG(prev = cur);
-            numLoopBlocks--;
-        }
-
-        cur = cur->Next();
-    }
-
-    return BasicBlockVisit::Continue;
-}
-
-//------------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit non-handler blocks that
 // are outside the loop but that may have regular predecessors inside the loop.
 //

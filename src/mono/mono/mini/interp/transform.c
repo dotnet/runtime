@@ -760,8 +760,6 @@ handle_branch (TransformData *td, int long_op, int offset)
 	init_bb_stack_state (td, target_bb);
 
 	if (long_op != MINT_CALL_HANDLER) {
-		if (td->cbb->no_inlining)
-			target_bb->jump_targets--;
 		// We don't link finally blocks into the cfg (or other handler blocks for that matter)
 		interp_link_bblocks (td, td->cbb, target_bb);
 	}
@@ -803,8 +801,6 @@ one_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 				return FALSE;
 			} else {
 				// branch condition always false, it is a NOP
-				int target = GPTRDIFF_TO_INT (td->ip + offset + inst_size - td->il_code);
-				td->offset_to_bb [target]->jump_targets--;
 				return TRUE;
 			}
 		} else {
@@ -901,8 +897,6 @@ two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 				return FALSE;
 			} else {
 				// branch condition always false, it is a NOP
-				int target = GPTRDIFF_TO_INT (td->ip + offset + inst_size - td->il_code);
-				td->offset_to_bb [target]->jump_targets--;
 				return TRUE;
 			}
 		} else {
@@ -2691,8 +2685,6 @@ static MonoMethod*
 interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean is_virtual)
 {
 	if (((method->wrapper_type == MONO_WRAPPER_NONE) || (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)) && target_method != NULL) {
-		if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
 		if (!is_virtual && target_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 
@@ -2884,9 +2876,6 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	MonoMethodHeaderSummary header;
 
 	if (td->disable_inlining)
-		return FALSE;
-
-	if (td->cbb->no_inlining)
 		return FALSE;
 
 	// Exception handlers are always uncommon, with the exception of finally.
@@ -3748,8 +3737,18 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	if (op == -1)
+	if (op == -1) {
 		target_method = interp_transform_internal_calls (method, target_method, csignature, is_virtual);
+
+		if (((method->wrapper_type == MONO_WRAPPER_NONE) || (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)) && target_method != NULL) {
+			if (target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				// Avoid calling mono_marshal_get_native_wrapper () too early, it might call managed callbacks.
+				csignature = mono_metadata_signature_dup_mempool (td->mempool, csignature);
+				csignature->pinvoke = FALSE;
+				native = FALSE;
+			}
+		}
+	}
 
 	if (csignature->call_convention == MONO_CALL_VARARG)
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
@@ -4143,7 +4142,6 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 	unsigned char *target;
 	ptrdiff_t cli_addr;
 	const MonoOpcode *opcode;
-	InterpBasicBlock *bb;
 
 	td->offset_to_bb = (InterpBasicBlock**)mono_mempool_alloc0 (td->mempool, (unsigned int)(sizeof (InterpBasicBlock*) * (end - start + 1)));
 	get_bb (td, start, make_list);
@@ -4152,21 +4150,18 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 		MonoExceptionClause *c = header->clauses + i;
 		if (start + c->try_offset > end || start + c->try_offset + c->try_len > end)
 			return FALSE;
-		bb = get_bb (td, start + c->try_offset, make_list);
-		bb->jump_targets++;
+		get_bb (td, start + c->try_offset, make_list);
 		mono_bitset_set (il_targets, c->try_offset);
 		mono_bitset_set (il_targets, c->try_offset + c->try_len);
 		if (start + c->handler_offset > end || start + c->handler_offset + c->handler_len > end)
 			return FALSE;
-		bb = get_bb (td, start + c->handler_offset, make_list);
-		bb->jump_targets++;
+		get_bb (td, start + c->handler_offset, make_list);
 		mono_bitset_set (il_targets, c->handler_offset);
 		mono_bitset_set (il_targets, c->handler_offset + c->handler_len);
 		if (c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			if (start + c->data.filter_offset > end)
 				return FALSE;
-			bb = get_bb (td, start + c->data.filter_offset, make_list);
-			bb->jump_targets++;
+			get_bb (td, start + c->data.filter_offset, make_list);
 			mono_bitset_set (il_targets, c->data.filter_offset);
 		}
 	}
@@ -4199,8 +4194,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			target = start + cli_addr + 2 + (signed char)ip [1];
 			if (target > end)
 				return FALSE;
-			bb = get_bb (td, target, make_list);
-			bb->jump_targets++;
+			get_bb (td, target, make_list);
 			ip += 2;
 			get_bb (td, ip, make_list);
 			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
@@ -4209,8 +4203,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			target = start + cli_addr + 5 + (gint32)read32 (ip + 1);
 			if (target > end)
 				return FALSE;
-			bb = get_bb (td, target, make_list);
-			bb->jump_targets++;
+			get_bb (td, target, make_list);
 			ip += 5;
 			get_bb (td, ip, make_list);
 			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
@@ -4223,15 +4216,13 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 			target = start + cli_addr;
 			if (target > end)
 				return FALSE;
-			bb = get_bb (td, target, make_list);
-			bb->jump_targets++;
+			get_bb (td, target, make_list);
 			mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			for (j = 0; j < n; ++j) {
 				target = start + cli_addr + (gint32)read32 (ip);
 				if (target > end)
 					return FALSE;
-				bb = get_bb (td, target, make_list);
-				bb->jump_targets++;
+				get_bb (td, target, make_list);
 				ip += 4;
 				mono_bitset_set (il_targets, GPTRDIFF_TO_UINT32 (target - start));
 			}
@@ -5438,13 +5429,6 @@ retry_emit:
 
 			/* We are starting a new basic block. Change cbb and link them together */
 			if (link_bblocks) {
-				if (!new_bb->jump_targets && td->cbb->no_inlining) {
-					// This is a bblock that is not branched to and falls through from
-					// a dead predecessor. It means it is dead.
-					new_bb->no_inlining = TRUE;
-					if (td->verbose_level)
-						g_print ("Disable inlining in BB%d\n", new_bb->index);
-				}
 				/*
 				 * By default we link cbb with the new starting bblock, unless the previous
 				 * instruction is an unconditional branch (BR, LEAVE, ENDFINALLY)
@@ -5464,16 +5448,6 @@ retry_emit:
 				}
 				// link_bblocks remains true, which is the default
 			} else {
-				if (!new_bb->jump_targets) {
-					// This is a bblock that is not branched to and it is not linked to the
-					// predecessor. It means it is dead.
-					new_bb->no_inlining = TRUE;
-					if (td->verbose_level)
-						g_print ("Disable inlining in BB%d\n", new_bb->index);
-				} else {
-					g_assert (new_bb->jump_targets > 0);
-				}
-
 				if (new_bb->stack_height >= 0) {
 					// This is relevant only for copying the vars associated with the values on the stack
 					memcpy (td->stack, new_bb->stack_state, new_bb->stack_height * sizeof(td->stack [0]));
@@ -9898,7 +9872,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			generic_context = &generic_container->context;
 	}
 
-	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
+	if ((method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) ||
+			(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 		MonoMethod *nm = NULL;
 		if (imethod->transformed) {
 			MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
@@ -9906,8 +9881,11 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		}
 
 		/* assumes all internal calls with an array this are built in... */
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) {
+		if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) ||
+				(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
 			nm = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
+			if (context->has_resume_state)
+				return;
 		} else {
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {

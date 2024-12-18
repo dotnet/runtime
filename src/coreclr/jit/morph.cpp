@@ -51,7 +51,6 @@ PhaseStatus Compiler::fgMorphInit()
                                     impTokenLookupContextHandle /* context */) &
         CORINFO_INITCLASS_USE_HELPER)
     {
-        fgEnsureFirstBBisScratch();
         fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
         madeChanges = true;
     }
@@ -67,8 +66,7 @@ PhaseStatus Compiler::fgMorphInit()
                 GenTree* op = gtNewLclvNode(i, TYP_REF);
                 op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
-                fgEnsureFirstBBisScratch();
-                fgNewStmtAtEnd(fgFirstBB, op);
+                fgNewStmtAtBeg(fgFirstBB, op);
                 madeChanges = true;
                 if (verbose)
                 {
@@ -3402,7 +3400,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
         }
 
         // Check for GTF_ADDRMODE_NO_CSE flag on add/mul Binary Operators
-        if (((oper == GT_ADD) || (oper == GT_MUL)) && ((tree->gtFlags & GTF_ADDRMODE_NO_CSE) != 0))
+        if (tree->IsPartOfAddressMode())
         {
             return;
         }
@@ -6744,24 +6742,19 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     if (opts.IsOSR())
     {
         // Todo: this may not look like a viable loop header.
-        // Might need the moral equivalent of a scratch BB.
+        // Might need the moral equivalent of an init BB.
         FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
         block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
     else
     {
-        // We should have ensured the first BB was scratch
-        // in morph init...
-        //
         assert(doesMethodHaveRecursiveTailcall());
-        assert(fgFirstBBisScratch());
 
-        // Loop detection needs to see a pred out of the loop,
-        // so mark the scratch block BBF_DONT_REMOVE to prevent empty
-        // block removal on it.
-        //
-        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        FlowEdge* const newEdge = fgAddRefPred(fgFirstBB->Next(), block);
+        // TODO-Cleanup: We should really be expanding tailcalls into loops
+        // much earlier than this, at a place where we do not need to have
+        // hacky workarounds to figure out what the actual IL entry block is.
+        BasicBlock*     firstILBB = fgGetFirstILBlock();
+        FlowEdge* const newEdge   = fgAddRefPred(firstILBB, block);
         block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     }
 
@@ -7538,8 +7531,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     {
         // Since 'tree->gtGetOp1()' can have complex structure (e.g. COMMA(..(COMMA(..,op1)))
         // don't run the optimization for such trees outside of global morph.
-        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
-        // that is an active CSE candidate.
+        // Otherwise, there is a chance of violating VNs invariants.
         return nullptr;
     }
 
@@ -8395,7 +8387,6 @@ DONE_MORPHING_CHILDREN:
 
         case GT_EQ:
         case GT_NE:
-            // It is not safe to reorder/delete CSE's
             if (op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
@@ -8430,7 +8421,6 @@ DONE_MORPHING_CHILDREN:
                 op2  = tree->gtGetOp2();
             }
 
-            // op2's value may be changed, so it cannot be a CSE candidate.
             if (op2->IsIntegralConst())
             {
                 tree = fgOptimizeRelationalComparisonWithConst(tree->AsOp());
@@ -8483,9 +8473,6 @@ DONE_MORPHING_CHILDREN:
                 goto CM_OVF_OP;
             }
 
-            // TODO #4104: there are a lot of other places where
-            // this condition is not checked before transformations.
-            noway_assert(op2);
             if (fgGlobalMorph && !op2->TypeIs(TYP_BYREF))
             {
                 /* Check for "op1 - cns2" , we change it to "op1 + (-cns2)" */
@@ -8668,10 +8655,6 @@ DONE_MORPHING_CHILDREN:
         case GT_NOT:
         case GT_NEG:
             // Remove double negation/not.
-            // Note: this is not a safe transformation if "tree" is a CSE candidate.
-            // Consider for example the following expression: NEG(NEG(OP)), where any
-            // NEG is a CSE candidate. Were we to morph this to just OP, CSE would fail to find
-            // the original NEG in the statement.
             if (op1->OperIs(oper) && opts.OptimizationEnabled())
             {
                 JITDUMP("Remove double negation/not\n")
@@ -8959,9 +8942,7 @@ DONE_MORPHING_CHILDREN:
 
     assert(oper == tree->gtOper);
 
-    // Propagate comma throws.
-    // If we are in the Valuenum CSE phase then don't morph away anything as these
-    // nodes may have CSE defs/uses in them.
+    // Propagate comma throws. Only done in global morph since this does not preserve VNs.
     if (fgGlobalMorph && (oper != GT_COLON) &&
         /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
     {
@@ -10358,8 +10339,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* tree)
     {
         // Since 'tree->Op(1)' can have complex structure; e.g. `(.., (.., op1))`
         // don't run the optimization for such trees outside of global morph.
-        // Otherwise, there is a chance of violating VNs invariants and/or modifying a tree
-        // that is an active CSE candidate.
+        // Otherwise, there is a chance of violating VNs invariants.
         return nullptr;
     }
 
@@ -13523,14 +13503,6 @@ PhaseStatus Compiler::fgMorphBlocks()
         lvSetMinOptsDoNotEnreg();
     }
 
-    // Ensure the first BB is scratch if we might need it as a pred for
-    // the recursive tail call to loop optimization.
-    //
-    if (doesMethodHaveRecursiveTailcall())
-    {
-        fgEnsureFirstBBisScratch();
-    }
-
     // Morph all blocks.
     //
     if (!optLocalAssertionProp)
@@ -13557,17 +13529,16 @@ PhaseStatus Compiler::fgMorphBlocks()
         MorphUnreachableInfo unreachableInfo(this);
 
         // Allow edge creation to genReturnBB (target of return merging)
-        // and the scratch block successor (target for tail call to loop).
+        // and the first IL BB (target for tail call to loop).
         // This will also disallow dataflow into these blocks.
         //
         if (genReturnBB != nullptr)
         {
             genReturnBB->SetFlags(BBF_CAN_ADD_PRED);
         }
-        if (fgFirstBBisScratch())
-        {
-            fgFirstBB->Next()->SetFlags(BBF_CAN_ADD_PRED);
-        }
+        // TODO-Cleanup: Remove this by transforming tailcalls to loops earlier.
+        BasicBlock* firstILBB = opts.IsOSR() ? fgEntryBB : fgGetFirstILBlock();
+        firstILBB->SetFlags(BBF_CAN_ADD_PRED);
 
         // Remember this so we can sanity check that no new blocks will get created.
         //
@@ -13592,10 +13563,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         {
             genReturnBB->RemoveFlags(BBF_CAN_ADD_PRED);
         }
-        if (fgFirstBBisScratch())
-        {
-            fgFirstBB->Next()->RemoveFlags(BBF_CAN_ADD_PRED);
-        }
+        firstILBB->RemoveFlags(BBF_CAN_ADD_PRED);
     }
 
     // Under OSR, we no longer need to specially protect the original method entry
@@ -13643,7 +13611,33 @@ PhaseStatus Compiler::fgMorphBlocks()
         Metrics.MorphLocals            = lvaCount;
     }
 
+    // We may have converted a tailcall into a loop, in which case the first BB
+    // may no longer be canonical.
+    fgCanonicalizeFirstBB();
+
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgGetFirstILBB: Obtain the first basic block that was created due to IL.
+//
+// Returns:
+//   The basic block, skipping the init BB.
+//
+// Remarks:
+//   TODO-Cleanup: Refactor users to be able to remove this function.
+//
+BasicBlock* Compiler::fgGetFirstILBlock()
+{
+    BasicBlock* firstILBB = fgFirstBB;
+    while (firstILBB->HasFlag(BBF_INTERNAL))
+    {
+        assert(firstILBB->KindIs(BBJ_ALWAYS));
+        firstILBB = firstILBB->GetTarget();
+        assert((firstILBB != nullptr) && (firstILBB != fgFirstBB));
+    }
+
+    return firstILBB;
 }
 
 //------------------------------------------------------------------------

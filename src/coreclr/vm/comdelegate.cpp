@@ -2024,36 +2024,6 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     }
 }
 
-extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(pType.AsTypeHandle().AsMethodTable()->IsDelegate());
-
-    d.Set(pType.AsTypeHandle().AsMethodTable()->Allocate());
-
-    END_QCALL;
-}
-
-extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    _ASSERTE(d.Get()->GetMethodTable()->IsDelegate());
-
-    d.Set(d.Get()->GetMethodTable()->AllocateNoChecks());
-
-    END_QCALL;
-}
-
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
     CONTRACTL
@@ -2157,7 +2127,7 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
 
     MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    retMethodInfo.Set(pMD->GetStubMethodInfo());
+    retMethodInfo.Set(pMD->AllocateStubMethodInfo());
 
     END_QCALL;
 }
