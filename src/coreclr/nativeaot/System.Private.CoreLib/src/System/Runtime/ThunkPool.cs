@@ -44,7 +44,9 @@ namespace System.Runtime
         public static readonly int ThunkCodeSize = RuntimeImports.RhpGetThunkSize();
         public static readonly int NumThunksPerBlock = RuntimeImports.RhpGetNumThunksPerBlock();
         public static readonly int NumThunkBlocksPerMapping = RuntimeImports.RhpGetNumThunkBlocksPerMapping();
-        public static readonly uint ThunkDataBlockSize = (uint)RuntimeImports.RhpGetThunkDataBlockSize();
+        public static readonly uint ThunkCodeBlockSize = BitOperations.RoundUpToPowerOf2((uint)(ThunkCodeSize * NumThunksPerBlock));
+        public static readonly nuint ThunkCodeBlockSizeMask = ThunkCodeBlockSize - 1;
+        public static readonly uint ThunkDataBlockSize = BitOperations.RoundUpToPowerOf2((uint)(ThunkDataSize * NumThunksPerBlock));
         public static readonly nuint ThunkDataBlockSizeMask = ThunkDataBlockSize - 1;
     }
 
@@ -210,7 +212,7 @@ namespace System.Runtime
             *((IntPtr*)(nextAvailableThunkPtr + IntPtr.Size)) = IntPtr.Zero;
 #endif
 
-            int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.ThunkDataBlockSizeMask));
+            int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.ThunkCodeBlockSizeMask));
             Debug.Assert((thunkIndex % Constants.ThunkDataSize) == 0);
             thunkIndex /= Constants.ThunkDataSize;
 
@@ -266,7 +268,7 @@ namespace System.Runtime
             nuint thunkAddressValue = (nuint)(nint)ClearThumbBit(thunkAddress);
 
             // Compute the base address of the thunk's mapping
-            nuint currentThunksBlockAddress = thunkAddressValue & ~Constants.ThunkDataBlockSizeMask;
+            nuint currentThunksBlockAddress = thunkAddressValue & ~Constants.ThunkCodeBlockSizeMask;
 
             // Make sure the thunk address is valid by checking alignment
             if ((thunkAddressValue - currentThunksBlockAddress) % (nuint)Constants.ThunkCodeSize != 0)

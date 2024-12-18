@@ -287,12 +287,5 @@ LEAF_ENTRY RhpGetThunkStubsBlockAddress, _TEXT
         ret
 LEAF_END RhpGetThunkStubsBlockAddress, _TEXT
 
-;;
-;; int RhpGetThunkDataBlockSize()
-;;
-LEAF_ENTRY RhpGetThunkDataBlockSize, _TEXT
-        mov     rax, PAGE_SIZE
-        ret
-LEAF_END RhpGetThunkDataBlockSize, _TEXT
 
 end

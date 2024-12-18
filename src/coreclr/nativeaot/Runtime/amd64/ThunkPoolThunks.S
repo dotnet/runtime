@@ -117,11 +117,3 @@ LEAF_ENTRY RhpGetThunkStubsBlockAddress
     sub     rax, THUNKS_MAP_SIZE
     ret
 LEAF_END RhpGetThunkStubsBlockAddress
-
-//
-// int RhpGetThunkDataBlockSize
-//
-LEAF_ENTRY RhpGetThunkDataBlockSize
-    mov     rax, PAGE_SIZE
-    ret
-LEAF_END RhpGetThunkDataBlockSize

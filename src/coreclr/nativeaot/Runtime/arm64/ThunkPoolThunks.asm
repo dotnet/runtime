@@ -331,12 +331,4 @@ label_$groupIndex_$index_P$pageIndex
         ret
     LEAF_END_NO_PDATA RhpGetThunkStubsBlockAddress
 
-    ;;
-    ;; int RhpGetThunkDataBlockSize
-    ;;
-    LEAF_ENTRY_NO_PDATA RhpGetThunkDataBlockSize
-        mov     x0, PAGE_SIZE
-        ret
-    LEAF_END_NO_PDATA RhpGetThunkDataBlockSize
-
     END

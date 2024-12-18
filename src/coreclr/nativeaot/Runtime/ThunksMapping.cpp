@@ -98,12 +98,6 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-FCIMPL0(int, RhpGetThunkDataBlockSize)
-{
-    return OS_PAGE_SIZE;
-}
-FCIMPLEND
-
 EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 {
 #ifdef WIN32
