@@ -5,8 +5,7 @@
     <TargetFrameworks Condition="'$(NetCoreAppPrevious)' != ''">$(TargetFrameworks);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS3011: Only CLS-compliant members can be abstract -->
-    <!-- CS3019: CLS attributes on internal types. Some shared source files are internal in this project. -->
-    <NoWarn>$(NoWarn);CS3011;CS3019</NoWarn>
+    <NoWarn>$(NoWarn);CS3011</NoWarn>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides types for encoding and escaping strings for use in JavaScript, HyperText Markup Language (HTML), and uniform resource locators (URL).

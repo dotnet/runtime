@@ -8,6 +8,10 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 
+#if !SYSTEM_PRIVATE_CORELIB
+#pragma warning disable CS3019 // CLS compliance checking will not be performed because it is not visible from outside this assembly
+#endif
+
 namespace System.Text
 {
     /// <summary>
@@ -107,9 +111,7 @@ namespace System.Text
         /// <exception cref="ArgumentOutOfRangeException">
         /// If <paramref name="value"/> does not represent a value Unicode scalar value.
         /// </exception>
-#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
-#endif
         public Rune(uint value)
         {
             if (!UnicodeUtility.IsValidUnicodeScalar(value))
@@ -142,9 +144,7 @@ namespace System.Text
 
         public static explicit operator Rune(char ch) => new Rune(ch);
 
-#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
-#endif
         public static explicit operator Rune(uint value) => new Rune(value);
 
         public static explicit operator Rune(int value) => new Rune(value);
@@ -810,9 +810,7 @@ namespace System.Text
         /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
         /// </summary>
-#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
-#endif
         public static bool IsValid(uint value) => UnicodeUtility.IsValidUnicodeScalar(value);
 
         // returns a negative number on failure
@@ -995,9 +993,7 @@ namespace System.Text
         /// <summary>
         /// Attempts to create a <see cref="Rune"/> from the provided input value.
         /// </summary>
-#if SYSTEM_PRIVATE_CORELIB // CS3019: CLS compliance checking will not be performed on 'Rune.explicit operator Rune(uint)' because it is not visible from outside this assembly
         [CLSCompliant(false)]
-#endif
         public static bool TryCreate(uint value, out Rune result)
         {
             if (UnicodeUtility.IsValidUnicodeScalar(value))
