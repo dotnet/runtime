@@ -468,14 +468,15 @@ int verbMerge::AppendAllInDir(HANDLE              hFileOut,
         struct stat fileStat;
         char *fileFullPathUtf8 = ConvertWideCharToMultiByte(fileFullPath);
         int st = stat(fileFullPathUtf8, &fileStat);
-        delete [] fileFullPathUtf8;
         if (st != 0)
         {
             LogError("Failed to stat file '%s'. errno=%d", fileFullPathUtf8, errno);
             result = -1;
             delete[] fileFullPath;
+            delete[] fileFullPathUtf8;
             goto CLEAN_UP;
         }
+        delete[] fileFullPathUtf8;
         uint64_t fileSize = fileStat.st_size;
 #endif // TARGET_WINDOWS
 
