@@ -588,7 +588,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 }
 
 void
-mono_chain_signal_to_default_sigsegv_handler ()
+mono_chain_signal_to_default_sigsegv_handler (void)
 {
 	g_error ("mono_chain_signal_to_default_sigsegv_handler not supported on WASM");
 }

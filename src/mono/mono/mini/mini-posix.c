@@ -218,7 +218,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
  * sigaction.sa_handler == SIG_DFL. This is used to propagate the crash to the OS.
  */
 void
-mono_chain_signal_to_default_sigsegv_handler ()
+mono_chain_signal_to_default_sigsegv_handler (void)
 {
 	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (SIGSEGV);
 
