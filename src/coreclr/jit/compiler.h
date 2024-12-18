@@ -2582,12 +2582,12 @@ struct CloneTryInfo
 };
 
 //------------------------------------------------------------------------
-// RegisterParameterLocalMapping:
+// ParameterRegisterLocalMapping:
 //   Contains mappings between a parameter register segment and a corresponding
 //   local. Used by the backend to know which locals are expected to contain
 //   which register parameters after the prolog.
 //
-struct RegisterParameterLocalMapping
+struct ParameterRegisterLocalMapping
 {
     const ABIPassingSegment* RegisterSegment;
     unsigned LclNum;
@@ -2599,7 +2599,7 @@ struct RegisterParameterLocalMapping
     // xmm0[0..8), xmm1[8..12), but enregistered as one register.
     unsigned Offset;
 
-    RegisterParameterLocalMapping(const ABIPassingSegment* segment, unsigned lclNum, unsigned offset)
+    ParameterRegisterLocalMapping(const ABIPassingSegment* segment, unsigned lclNum, unsigned offset)
         : RegisterSegment(segment)
         , LclNum(lclNum)
         , Offset(offset)
@@ -8320,10 +8320,10 @@ private:
     LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
 
 public:
-    ArrayStack<RegisterParameterLocalMapping>* m_regParamLocalMappings = nullptr;
+    ArrayStack<ParameterRegisterLocalMapping>* m_paramRegLocalMappings = nullptr;
 
-    const RegisterParameterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
-    const RegisterParameterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
+    const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
+    const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

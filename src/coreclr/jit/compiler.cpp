@@ -4229,16 +4229,16 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 // Returns:
 //   The mapping, or nullptr if no mapping was found for this register.
 //
-const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByRegister(regNumber reg)
+const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMappingByRegister(regNumber reg)
 {
-    if (m_regParamLocalMappings == nullptr)
+    if (m_paramRegLocalMappings == nullptr)
     {
         return nullptr;
     }
 
-    for (int i = 0; i < m_regParamLocalMappings->Height(); i++)
+    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
     {
-        const RegisterParameterLocalMapping& mapping = m_regParamLocalMappings->BottomRef(i);
+        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if (mapping.RegisterSegment->GetRegister() == reg)
         {
             return &mapping;
@@ -4260,17 +4260,17 @@ const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMapping
 // Returns:
 //   The mapping, or nullptr if no mapping was found for this local.
 //
-const RegisterParameterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum,
+const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum,
                                                                                         unsigned offset)
 {
-    if (m_regParamLocalMappings == nullptr)
+    if (m_paramRegLocalMappings == nullptr)
     {
         return nullptr;
     }
 
-    for (int i = 0; i < m_regParamLocalMappings->Height(); i++)
+    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
     {
-        const RegisterParameterLocalMapping& mapping = m_regParamLocalMappings->BottomRef(i);
+        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
         {
             return &mapping;

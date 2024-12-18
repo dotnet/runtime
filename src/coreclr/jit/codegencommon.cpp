@@ -3407,7 +3407,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 continue;
             }
 
-            const RegisterParameterLocalMapping* mapping =
+            const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
 
             unsigned fieldLclNum = mapping != nullptr ? mapping->LclNum : lclNum;

@@ -7914,8 +7914,8 @@ PhaseStatus Lowering::DoPhase()
 //
 void Lowering::MapParameterRegisterLocals()
 {
-    comp->m_regParamLocalMappings =
-        new (comp, CMK_ABI) ArrayStack<RegisterParameterLocalMapping>(comp->getAllocator(CMK_ABI));
+    comp->m_paramRegLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(comp->getAllocator(CMK_ABI));
 
     // Create initial mappings for promotions.
     for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
@@ -7950,7 +7950,7 @@ void Lowering::MapParameterRegisterLocals()
                     continue;
                 }
 
-                comp->m_regParamLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
+                comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
             }
 
             LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
@@ -7962,10 +7962,10 @@ void Lowering::MapParameterRegisterLocals()
 #ifdef DEBUG
     if (comp->verbose)
     {
-        printf("%d parameter register to local mappings\n", comp->m_regParamLocalMappings->Height());
-        for (int i = 0; i < comp->m_regParamLocalMappings->Height(); i++)
+        printf("%d parameter register to local mappings\n", comp->m_paramRegLocalMappings->Height());
+        for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
         {
-            const RegisterParameterLocalMapping& mapping = comp->m_regParamLocalMappings->BottomRef(i);
+            const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
             printf("  ");
             mapping.RegisterSegment->Dump();
             printf(" -> V%02u\n", mapping.LclNum);

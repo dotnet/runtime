@@ -2185,7 +2185,7 @@ void LinearScan::buildIntervals()
                 continue;
             }
 
-            const RegisterParameterLocalMapping* mapping =
+            const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
             unsigned mappedLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
@@ -2227,7 +2227,7 @@ void LinearScan::buildIntervals()
         regNumber paramReg = REG_NA;
         if (lclDsc->lvIsParamRegTarget)
         {
-            const RegisterParameterLocalMapping* mapping =
+            const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
             assert(mapping != nullptr);
             paramReg = mapping->RegisterSegment->GetRegister();
