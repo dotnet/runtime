@@ -518,11 +518,15 @@ namespace System.IO.Compression
                     numberOfEntries++;
                 }
 
-                // Sort _entries by each archive entry's position
-                _entries.Sort(ZipArchiveEntry.LocalHeaderOffsetComparer.Instance);
-
                 if (numberOfEntries != _expectedNumberOfEntries)
                     throw new InvalidDataException(SR.NumEntriesWrong);
+
+                // Sort _entries by each archive entry's position. This supports the algorithm in WriteFile, so is only
+                // necessary when the ZipArchive has been opened in Update mode.
+                if (Mode == ZipArchiveMode.Update)
+                {
+                    _entries.Sort(ZipArchiveEntry.LocalHeaderOffsetComparer.Instance);
+                }
             }
             catch (EndOfStreamException ex)
             {
