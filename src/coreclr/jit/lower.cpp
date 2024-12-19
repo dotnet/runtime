@@ -7835,6 +7835,11 @@ PhaseStatus Lowering::DoPhase()
         comp->lvSetMinOptsDoNotEnreg();
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
     for (BasicBlock* const block : comp->Blocks())
     {
         /* Make the block publicly available */
@@ -7848,11 +7853,6 @@ PhaseStatus Lowering::DoPhase()
 #endif //! TARGET_64BIT
 
         LowerBlock(block);
-    }
-
-    if (comp->opts.OptimizationEnabled())
-    {
-        MapParameterRegisterLocals();
     }
 
 #ifdef DEBUG
