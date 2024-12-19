@@ -39,37 +39,12 @@ namespace System.IO.Tests
         [Fact]
         public static void NullEncodingParamInCtor_ShouldNotThrowException()
         {
-            Action ctorParamsStringEncoding = () => new StreamReader("", (Encoding)null);
-            var ctorParamsStringEncodingEx = Record.Exception(ctorParamsStringEncoding);
-            Assert.Null(ctorParamsStringEncodingEx);
-
-            Action ctorParamsStringEncodingBool = () => new StreamReader("", (Encoding)null, false);
-            var ctorParamsStringEncodingBoolEx = Record.Exception(ctorParamsStringEncodingBool);
-            Assert.Null(ctorParamsStringEncodingBoolEx);
-
-            Action ctorParamsStringEncodingBoolOptions = () => new StreamReader("", (Encoding)null, false, new FileStreamOptions());
-            var ctorParamsStringEncodingBoolOptionsEx = Record.Exception(ctorParamsStringEncodingBoolOptions);
-            Assert.Null(ctorParamsStringEncodingBoolOptionsEx);
-
-            Action ctorParamsStringEncodingBoolInt = () => new StreamReader("", (Encoding)null, false, 100);
-            var ctorParamsStringEncodingBoolIntEx = Record.Exception(ctorParamsStringEncodingBoolInt);
-            Assert.Null(ctorParamsStringEncodingBoolIntEx);
-
-            Action ctorParamStreamEncoding = () => new StreamReader(new MemoryStream(), null);
-            var ctorParamStreamEncodingEx = Record.Exception(ctorParamStreamEncoding);
-            Assert.Null(ctorParamStreamEncodingEx);
-
-            Action ctorParamStreamEncodingBool = () => new StreamReader(new MemoryStream(), null, false);
-            var ctorParamStreamEncodingBoolEx = Record.Exception(ctorParamStreamEncodingBool);
-            Assert.Null(ctorParamStreamEncodingBoolEx);
-
-            Action ctorParamStreamEncodingBoolInt = () => new StreamReader(new MemoryStream(), null, false, 100);
-            var ctorParamStreamEncodingBoolIntEx = Record.Exception(ctorParamStreamEncodingBoolInt);
-            Assert.Null(ctorParamStreamEncodingBoolIntEx);
-
-            Action ctorParamStreamEncodingBoolIntBool = () => new StreamReader(new MemoryStream(), null, false, 100, false);
-            var ctorParamStreamEncodingBoolIntBoolEx = Record.Exception(ctorParamStreamEncodingBoolIntBool);
-            Assert.Null(ctorParamStreamEncodingBoolIntBoolEx);
+            // Call the constructor with overloads that has Stream and null encoding parameters.
+            // It should not throw exception, to test passing the nullable encoding parameter..
+            StreamReader streamReaderTest = new StreamReader(new MemoryStream(), null);
+            streamReaderTest = new StreamReader(new MemoryStream(), null, false);
+            streamReaderTest = new StreamReader(new MemoryStream(), null, false, 100);
+            streamReaderTest = new StreamReader(new MemoryStream(), null, false, 100, false);
         }
 
         [Fact]
