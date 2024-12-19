@@ -5032,8 +5032,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
         }
-
-        if (varDsc->lvIsParamRegTarget && (varDsc->lvRefCnt() > 0))
+        else if (varDsc->lvIsParamRegTarget && (varDsc->lvRefCnt() > 0))
         {
             varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             varDsc->incRefCnts(BB_UNITY_WEIGHT, this);

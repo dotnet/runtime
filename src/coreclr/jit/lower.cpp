@@ -7973,7 +7973,7 @@ void Lowering::MapParameterRegisterLocals()
             const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
             printf("  ");
             mapping.RegisterSegment->Dump();
-            printf(" -> V%02u\n", mapping.LclNum);
+            printf(" -> V%02u+%u\n", mapping.LclNum, mapping.Offset);
         }
     }
 #endif
@@ -8016,6 +8016,11 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
+        if (fld->TypeIs(TYP_STRUCT))
+        {
+            continue;
+        }
+
         if (storedToLocals.Lookup(fld->GetLclNum()))
         {
             // LCL_FLD does not necessarily take the value of the parameter
@@ -8032,7 +8037,10 @@ void Lowering::FindInducedParameterRegisterLocals()
                 continue;
             }
 
-            if ((segment.Offset != fld->GetLclOffs()) || (segment.Size != genTypeSize(fld)) ||
+            assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
+            unsigned structAccessedSize =
+                min(genTypeSize(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
+            if ((segment.Offset != fld->GetLclOffs()) || (structAccessedSize > segment.Size) ||
                 (varTypeUsesIntReg(fld) != genIsValidIntReg(segment.GetRegister())))
             {
                 continue;
@@ -8094,18 +8102,6 @@ void Lowering::FindInducedParameterRegisterLocals()
         JITDUMP("New mapping: ");
         DBEXEC(VERBOSE, regSegment->Dump());
         JITDUMP(" -> V%02u\n", remappedLclNum);
-
-        GenTree* paramRegValue = comp->gtNewLclvNode(remappedLclNum, genActualType(fld));
-        GenTree* storeField =
-            comp->gtNewStoreLclFldNode(fld->GetLclNum(), fld->TypeGet(), regSegment->Offset, paramRegValue);
-
-        // Store actual parameter local from new reg local
-        LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeField));
-        LowerNode(paramRegValue);
-        LowerNode(storeField);
-
-        JITDUMP("Parameter spill:\n");
-        DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeField);
 
         // Insert explicit normalization for small types (the LCL_FLD we
         // are replacing comes with this normalization).
