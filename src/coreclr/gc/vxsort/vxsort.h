@@ -200,8 +200,12 @@ private:
             vxsort_stats<T>::bump_small_sorts();
             vxsort_stats<T>::record_small_sort_size(length);
 #endif
-            // bitonic<T, M>::sort(left, length);
-            introsort::sort((uint8_t**)left, (uint8_t**)right, length);
+#if defined(TARGET_AMD64)
+            bitonic<T, M>::sort(left, length);
+#else
+            // Default to the scalar version
+            bitonic<T, vector_machine::scalar>::sort(left, length);
+#endif
             return;
         }
 

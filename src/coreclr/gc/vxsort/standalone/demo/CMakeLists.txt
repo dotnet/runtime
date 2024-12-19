@@ -1,5 +1,8 @@
 set(TARGET_NAME ${CMAKE_PROJECT_NAME}_demo)
 
+SET(CMAKE_CXX_FLAGS "-O0")
+SET(CMAKE_C_FLAGS "-O0")
+
 include_directories("../..")
 
 set(demo_SOURCES

@@ -18,6 +18,7 @@ enum vector_machine {
     AVX512,
     NEON,
     SVE,
+    scalar,
 };
 
 template <typename T, vector_machine M>

@@ -21,10 +21,12 @@ from avx2 import AVX2BitonicISA
 from avx512 import AVX512BitonicISA
 from bitonic_isa import BitonicISA
 from neon import NEONBitonicISA
+from scalar import ScalarBitonicISA
 
 BitonicISA.register(AVX2BitonicISA)
 BitonicISA.register(AVX512BitonicISA)
 BitonicISA.register(NEONBitonicISA)
+BitonicISA.register(ScalarBitonicISA)
 
 
 def get_generator_supported_types(vector_isa):
@@ -36,6 +38,8 @@ def get_generator_supported_types(vector_isa):
         return AVX512BitonicISA.supported_types()
     elif vector_isa == VectorISA.NEON:
         return NEONBitonicISA.supported_types()
+    elif vector_isa == VectorISA.scalar:
+        return ScalarBitonicISA.supported_types()
     else:
         raise Exception(f"Non-supported vector machine-type: {vector_isa}")
 
@@ -49,6 +53,8 @@ def get_generator(vector_isa, type):
         return AVX512BitonicISA(type)
     elif vector_isa == VectorISA.NEON:
         return NEONBitonicISA(type)
+    elif vector_isa == VectorISA.scalar:
+        return ScalarBitonicISA(type)
     else:
         raise Exception(f"Non-supported vector machine-type: {vector_isa}")
 
@@ -91,6 +97,7 @@ class VectorISA(Enum):
     AVX512 = 'AVX512'
     SVE = 'SVE'
     NEON = 'NEON'
+    scalar = 'scalar'
 
     def __str__(self):
         return self.value
