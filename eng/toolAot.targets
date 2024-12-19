@@ -1,10 +1,5 @@
 <Project>
   <!-- Settings for tools that publish as AOT -->
-  <PropertyGroup>
-    <UseLocalTargetingRuntimePack Condition="'$(StageTwoBuild)' == 'true'">true</UseLocalTargetingRuntimePack>
-  </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(StageTwoBuild)' == 'true'" />
 
   <PropertyGroup Condition="'$(AotOrSingleFile)' == 'true' and '$(UseNativeAotForComponents)' == 'true'">
     <PublishAot>true</PublishAot>
