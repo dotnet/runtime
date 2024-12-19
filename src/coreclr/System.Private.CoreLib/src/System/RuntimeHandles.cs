@@ -1658,6 +1658,27 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern void* GetEnCFieldAddr(object? tgt, void* pFD);
+
+        // implementation of CORINFO_HELP_GETFIELDADDR
+        internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
+        {
+            void* addr = GetEnCFieldAddr(tgt, pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
+
+        // implementation of CORINFO_HELP_GETSTATICFIELDADDR
+        internal static unsafe void* GetStaticFieldAddr(void* pFD)
+        {
+            void* addr = GetEnCFieldAddr(null, pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
     }
 
     public unsafe partial struct ModuleHandle : IEquatable<ModuleHandle>

@@ -367,6 +367,8 @@ DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_HANDLE,          System,                 RuntimeFieldHandle)
 DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
+DEFINE_METHOD(FIELD_HANDLE,         GETFIELDADDR,           GetFieldAddr,       SM_Obj_VoidPtr_RetVoidPtr)
+DEFINE_METHOD(FIELD_HANDLE,         GETSTATICFIELDADDR,     GetStaticFieldAddr, SM_VoidPtr_RetVoidPtr)
 
 DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 

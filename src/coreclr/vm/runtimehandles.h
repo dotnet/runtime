@@ -256,6 +256,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsFastPathSupported, ReflectFieldObject *pField);
     static FCDECL1(INT32, GetInstanceFieldOffset, ReflectFieldObject *pField);
     static FCDECL1(void*, GetStaticFieldAddress, ReflectFieldObject *pField);
+    static FCDECL2(void*, GetEnCFieldAddr, Object* obj, FieldDesc* pFD);
     static FCDECL1(LPCUTF8, GetUtf8Name, FieldDesc *pField);
 
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
