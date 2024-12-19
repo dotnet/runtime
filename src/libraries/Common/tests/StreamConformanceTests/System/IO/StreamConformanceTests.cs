@@ -1915,7 +1915,7 @@ namespace System.IO.Tests
                         }
 
                         Assert.Equal(writerBytes.Length, n);
-                        AssertExtensions.SequenceEqual(writerBytes, readerBytes.AsSpan(0, writerBytes.Length));
+                        AssertExtensions.SequenceEqual(writerBytes.AsSpan(), readerBytes.AsSpan(0, writerBytes.Length));
 
                         await writes;
                     }
@@ -3069,7 +3069,7 @@ namespace System.IO.Tests
 
                 if (FlushGuaranteesAllDataWritten)
                 {
-                    AssertExtensions.SequenceEqual(data, buffer.AsSpan(0, bytesRead));
+                    AssertExtensions.SequenceEqual(data.AsSpan(), buffer.AsSpan(0, bytesRead));
                 }
             }
         }

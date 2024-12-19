@@ -3320,9 +3320,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         {
                             assert(tree->gtType == TYP_INT);
                             GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
-#ifdef DEBUG
-                            castOp->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+                            castOp->SetMorphed(this);
                             *otherOpPtr = castOp;
                         }
                     }
@@ -5135,33 +5133,6 @@ void Compiler::fgSetEHRegionForNewPreheaderOrExit(BasicBlock* block)
     {
         fgExtendEHRegionBefore(next);
     }
-}
-
-//------------------------------------------------------------------------------
-// fgCanonicalizeFirstBB: Canonicalize the method entry for loop and dominator
-// purposes.
-//
-// Returns:
-//   Suitable phase status.
-//
-PhaseStatus Compiler::fgCanonicalizeFirstBB()
-{
-    if (fgFirstBB->hasTryIndex())
-    {
-        JITDUMP("Canonicalizing entry because it currently is the beginning of a try region\n");
-    }
-    else if (fgFirstBB->bbPreds != nullptr)
-    {
-        JITDUMP("Canonicalizing entry because it currently has predecessors\n");
-    }
-    else
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    assert(!fgFirstBBisScratch());
-    fgEnsureFirstBBisScratch();
-    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 LoopSideEffects::LoopSideEffects()

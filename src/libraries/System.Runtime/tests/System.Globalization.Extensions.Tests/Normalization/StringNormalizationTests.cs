@@ -68,6 +68,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
+	[ActiveIssue("https://github.com/dotnet/runtime/issues/110720", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         [MemberData(nameof(NormalizeTestData))]
         public void Normalize(string value, NormalizationForm normalizationForm, string expected)
         {
