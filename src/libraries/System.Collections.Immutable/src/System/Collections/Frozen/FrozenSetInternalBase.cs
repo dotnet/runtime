@@ -187,12 +187,15 @@ namespace System.Collections.Frozen
         ///    than _count; i.e. everything in other was in this and this had at least one element
         ///    not contained in other.
         /// </remarks>
-        private unsafe KeyValuePair<int, int> CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
+        private protected virtual KeyValuePair<int, int> CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound) =>
+            CheckUniqueAndUnfoundElements(other, returnIfUnfound, _thisSet.Count);
+
+        private protected KeyValuePair<int, int> CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound, int itemCount)
         {
-            Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
+            Debug.Assert(itemCount != 0, "EmptyFrozenSet should have been used.");
 
             const int BitsPerInt32 = 32;
-            int intArrayLength = (_thisSet.Count / BitsPerInt32) + 1;
+            int intArrayLength = (itemCount / BitsPerInt32) + 1;
 
             int[]? rentedArray = null;
             Span<int> seenItems = intArrayLength <= 128 ?

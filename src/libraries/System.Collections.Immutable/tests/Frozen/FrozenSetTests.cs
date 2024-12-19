@@ -34,7 +34,7 @@ namespace System.Collections.Frozen.Tests
         protected override ISet<T> GenericISetFactory(int count)
         {
             var s = new HashSet<T>();
-            for (int i = 0; i < count; i++)
+            for (int i = 0; s.Count < count; i++)
             {
                 s.Add(CreateT(i));
             }
@@ -45,6 +45,12 @@ namespace System.Collections.Frozen.Tests
         [InlineData(100_000)]
         public void CreateVeryLargeSet_Success(int largeCount)
         {
+            if (typeof(T) == typeof(char))
+            {
+                // 100_000 exceeds the number of unique values representable by a char.
+                largeCount = 50_000;
+            }
+
             if (TestLargeSizes)
             {
                 GenericISetFactory(largeCount);
@@ -430,6 +436,24 @@ namespace System.Collections.Frozen.Tests
         protected override bool DefaultValueAllowed => true;
 
         protected override int CreateT(int seed) => new Random(seed).Next();
+    }
+
+    public class FrozenSet_Generic_Tests_byte : FrozenSet_Generic_Tests<byte>
+    {
+        protected override bool DefaultValueAllowed => true;
+
+        protected override bool TestLargeSizes => false; // Number of unique values for byte is too low for some tests
+
+        protected override int ISet_Large_Capacity => 100;
+
+        protected override byte CreateT(int seed) => (byte)new Random(seed).Next(0, byte.MaxValue + 1);
+    }
+
+    public class FrozenSet_Generic_Tests_char : FrozenSet_Generic_Tests<char>
+    {
+        protected override bool DefaultValueAllowed => true;
+
+        protected override char CreateT(int seed) => (char)new Random(seed).Next(0, char.MaxValue + 1);
     }
 
     public class FrozenSet_Generic_Tests_SimpleClass : FrozenSet_Generic_Tests<SimpleClass>
