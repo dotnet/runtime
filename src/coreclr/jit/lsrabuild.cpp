@@ -2177,6 +2177,7 @@ void LinearScan::buildIntervals()
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
+        LclVarDsc* lcl = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
@@ -2188,18 +2189,34 @@ void LinearScan::buildIntervals()
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
-            unsigned mappedLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
-            JITDUMP("Arg V%02u in reg %s\n", mappedLclNum, getRegName(seg.GetRegister()));
-            LclVarDsc* argDsc = compiler->lvaGetDesc(mappedLclNum);
-            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) &&
-                !compiler->opts.compDbgCode)
+            JITDUMP("Arg V%02u in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum, getRegName(seg.GetRegister()));
+
+            bool isParameterLive = !lcl->lvTracked || compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
+            bool isLive;
+            if (mapping != nullptr)
             {
-                // Not live
-                continue;
+                LclVarDsc* mappedLcl = compiler->lvaGetDesc(mapping->LclNum);
+                bool isMappedLclLive = !mappedLcl->lvTracked || compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
+                if (mappedLcl->lvIsStructField)
+                {
+                    // Struct fields are not saved into their parameter local
+                    isLive = isMappedLclLive;
+                }
+                else
+                {
+                    isLive = isParameterLive || isMappedLclLive;
+                }
+            }
+            else
+            {
+                isLive = isParameterLive;
             }
 
-            RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-            regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            if (isLive)
+            {
+                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+                regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            }
         }
     }
 
