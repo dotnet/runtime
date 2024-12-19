@@ -8016,6 +8016,14 @@ void Lowering::FindInducedParameterRegisterLocals()
             continue;
         }
 
+        LclVarDsc* paramDsc = comp->lvaGetDesc(fld);
+        if (paramDsc->lvPromoted)
+        {
+            // These are complicated to reason about since they may be
+            // defined/used through their fields, so just skip them.
+            continue;
+        }
+
         if (fld->TypeIs(TYP_STRUCT))
         {
             continue;
@@ -8158,6 +8166,11 @@ unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const Lo
     LclVarDsc* destLclDsc = comp->lvaGetDesc(useNode->AsLclVarCommon());
 
     if (destLclDsc->lvIsParamRegTarget)
+    {
+        return BAD_VAR_NUM;
+    }
+
+    if (destLclDsc->lvIsStructField)
     {
         return BAD_VAR_NUM;
     }
