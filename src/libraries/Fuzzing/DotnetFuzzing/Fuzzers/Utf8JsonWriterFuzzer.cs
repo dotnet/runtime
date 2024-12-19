@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -22,13 +23,21 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
 
     public string[] TargetCoreLibPrefixes => [];
 
+    // One of the bytes in the input is used to set various test options.
+    // Each bit in that byte represents a different option as indicated here.
+
+    // Options for JsonWriterOptions
     private const byte IndentFlag = 1;
     private const byte EncoderFlag = 1 << 1;
     private const byte MaxDepthFlag = 1 << 2;
     private const byte NewLineFlag = 1 << 3;
     private const byte SkipValidationFlag = 1 << 4;
+
+    // Options for choosing between UTF-8 and UTF-16 encoding
     private const byte EncodingFlag = 1 << 5;
-    private const byte PoisonFlag = 1 << 5;
+
+    // Options for choosing whether to poison previous or next page
+    private const byte PoisonFlag = 1 << 6;
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
@@ -38,6 +47,7 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
             return;
         }
 
+        // First 2 ints are used as indices to slice the input and the following byte is used for options
         ReadOnlySpan<int> ints = MemoryMarshal.Cast<byte, int>(bytes);
         int slice1 = ints[0];
         int slice2 = ints[1];
@@ -45,6 +55,7 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
         bytes = bytes.Slice(minLength);
         ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(bytes);
 
+        // Validate that the indices are within bounds of the input
         bool utf8 = (optionsByte & EncodingFlag) == 0;
         if (!(0 <= slice1 && slice1 <= slice2 && slice2 <= (utf8 ? bytes.Length : chars.Length)))
         {
@@ -63,57 +74,36 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
         };
 
         // Compute the expected result by using the encoder directly and the input
-        
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(6 * bytes.Length + 2);
+        int maxExpandedSizeBytes = 6 * bytes.Length + 2;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(maxExpandedSizeBytes);
         int written;
         Span<byte> expected = utf8
             ? EncodeToUtf8(bytes, buffer, options.Encoder, out written)
             : EncodeToUtf8(chars, buffer, options.Encoder, out written);
 
-        for (int i = 1; i <= 3; i++)
+        // Compute the actual result by using Utf8JsonWriter. Each iteration is a different slice of the input, but the result should be the same.
+        foreach (ReadOnlySpan<Range> ranges in new[]
         {
+            new[] { 0.. },
+            new[] { 0..slice1, slice1.. },
+            new[] { 0..slice1, slice1..slice2, slice2.. },
+        })
+        {
+            // Use a stream backed by bounded memory to detect out-of-bounds accesses
             using PooledBoundedMemory<byte> memory = PooledBoundedMemory<byte>.Rent(expected.Length, (optionsByte & PoisonFlag) == 0 ? PoisonPagePlacement.After : PoisonPagePlacement.Before);
             using MemoryBackedStream stream = new(memory.Memory);
             using Utf8JsonWriter writer = new(stream, options);
-            try
+            
+            if (utf8)
             {
-                int start = 0;
-                if (utf8)
-                {
-                    if (i == 3)
-                    {
-                        writer.WriteStringValueSegment(bytes.Slice(start, slice1), false);
-                        start = slice1;
-                    }
-
-                    if (i >= 2)
-                    {
-                        writer.WriteStringValueSegment(bytes.Slice(start, slice2 - start), false);
-                        start = slice2;
-                    }
-
-                    writer.WriteStringValueSegment(bytes.Slice(start), true);
-                    writer.Flush();
-                }
-                else
-                {
-                    if (i == 3)
-                    {
-                        writer.WriteStringValueSegment(chars.Slice(0, slice1), false);
-                        start = slice1;
-                    }
-
-                    if (i >= 2)
-                    {
-                        writer.WriteStringValueSegment(chars.Slice(start, slice2 - start), false);
-                        start = slice2;
-                    }
-
-                    writer.WriteStringValueSegment(chars.Slice(start), true);
-                    writer.Flush();
-                }
+                WriteStringValueSegments(writer, bytes, ranges);
+                writer.Flush();
             }
-            catch (JsonException) { return; }
+            else
+            {
+                WriteStringValueSegments(writer, chars, ranges);
+                writer.Flush();
+            }
 
             ReadOnlySpan<byte> actual = memory.Span;
 
@@ -121,7 +111,47 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
             Assert.SequenceEqual(expected, actual);
         }
 
+        // Additional test for mixing UTF-8 and UTF-16 encoding. The alignment math is easier in UTF-16 mode so just run it for that.
+        if (!utf8)
+        {
+            {
+                using PooledBoundedMemory<byte> memory = PooledBoundedMemory<byte>.Rent(maxExpandedSizeBytes, PoisonPagePlacement.Before);
+                using MemoryBackedStream stream = new(memory.Memory);
+                using Utf8JsonWriter writer = new(stream, options);
+
+                writer.WriteStringValueSegment(chars[0..slice1], false);
+                writer.WriteStringValueSegment(bytes[(2 * slice1)..], true);
+                writer.Flush();
+            }
+
+            {
+                using PooledBoundedMemory<byte> memory = PooledBoundedMemory<byte>.Rent(maxExpandedSizeBytes, PoisonPagePlacement.Before);
+                using MemoryBackedStream stream = new(memory.Memory);
+                using Utf8JsonWriter writer = new(stream, options);
+
+                writer.WriteStringValueSegment(bytes[0..(2 * slice1)], false);
+                writer.WriteStringValueSegment(chars[slice1..], true);
+                writer.Flush();
+            }
+        }
+
         ArrayPool<byte>.Shared.Return(buffer);
+    }
+
+    private static void WriteStringValueSegments(Utf8JsonWriter writer, ReadOnlySpan<byte> bytes, ReadOnlySpan<Range> ranges)
+    {
+        for (int i = 0; i < ranges.Length; i++)
+        {
+            writer.WriteStringValueSegment(bytes[ranges[i]], i == ranges.Length - 1);
+        }
+    }
+
+    private static void WriteStringValueSegments(Utf8JsonWriter writer, ReadOnlySpan<char> chars, ReadOnlySpan<Range> ranges)
+    {
+        for (int i = 0; i < ranges.Length; i++)
+        {
+            writer.WriteStringValueSegment(chars[ranges[i]], i == ranges.Length - 1);
+        }
     }
 
     private static Span<byte> EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> destBuffer, JavaScriptEncoder encoder, out int written)

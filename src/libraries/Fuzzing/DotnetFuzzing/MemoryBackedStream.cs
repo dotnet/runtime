@@ -10,6 +10,11 @@ using System.Threading.Tasks;
 
 namespace DotnetFuzzing;
 
+/// <summary>
+/// A stream implementation that is backed by <see cref="Memory{T}"/> instead of a byte array.
+/// This is particularly useful in tests where we need a stream but we also want to detect
+/// out-of-bounds accesses with <see cref="BoundedMemory{T}"/>.
+/// </summary>
 public class MemoryBackedStream : Stream
 {
     private Memory<byte> _memory;
