@@ -15,7 +15,7 @@ PhaseStatus Compiler::fgSsaBuild()
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
     {
-        fgResetForSsa();
+        fgResetForSsa(/* deepClean */ true);
     }
 
     SsaBuilder builder(this);
@@ -29,21 +29,36 @@ PhaseStatus Compiler::fgSsaBuild()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-void Compiler::fgResetForSsa()
+//------------------------------------------------------------------------
+// fgResetForSsa: remove SSA artifacts
+//
+// Arguments:
+//   deepClean - if true, remove all SSA artifacts
+//               if false, just remove PHIs
+//
+// Notes:
+//   deepCleaning is needed in order to rebuild SSA.
+//
+void Compiler::fgResetForSsa(bool deepClean)
 {
-    for (unsigned i = 0; i < lvaCount; ++i)
-    {
-        lvaTable[i].lvPerSsaData.Reset();
-    }
-    lvMemoryPerSsaData.Reset();
-    for (MemoryKind memoryKind : allMemoryKinds())
-    {
-        m_memorySsaMap[memoryKind] = nullptr;
-    }
+    JITDUMP("Removing %s\n", deepClean ? "all SSA artifacts" : "PHI functions");
 
-    if (m_outlinedCompositeSsaNums != nullptr)
+    if (deepClean)
     {
-        m_outlinedCompositeSsaNums->Reset();
+        for (unsigned i = 0; i < lvaCount; ++i)
+        {
+            lvaTable[i].lvPerSsaData.Reset();
+        }
+        lvMemoryPerSsaData.Reset();
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            m_memorySsaMap[memoryKind] = nullptr;
+        }
+
+        if (m_outlinedCompositeSsaNums != nullptr)
+        {
+            m_outlinedCompositeSsaNums->Reset();
+        }
     }
 
     for (BasicBlock* const blk : Blocks())
@@ -63,13 +78,16 @@ void Compiler::fgResetForSsa()
             }
         }
 
-        for (Statement* const stmt : blk->Statements())
+        if (deepClean)
         {
-            for (GenTree* const tree : stmt->TreeList())
+            for (Statement* const stmt : blk->Statements())
             {
-                if (tree->IsAnyLocal())
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    if (tree->IsAnyLocal())
+                    {
+                        tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+                    }
                 }
             }
         }
@@ -1737,12 +1755,10 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     for (int i = 0; i < m_defs.Height(); i++)
     {
         UseDefLocation& def = m_defs.BottomRef(i);
-        if (!m_comp->m_dfsTree->Contains(def.Block))
+        if (m_comp->m_dfsTree->Contains(def.Block))
         {
-            continue;
+            BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
         }
-
-        BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);
 
         unsigned ssaNum = dsc->lvPerSsaData.AllocSsaNum(m_comp->getAllocator(CMK_SSA), def.Block, def.Tree);
         def.Tree->SetSsaNum(ssaNum);
@@ -1763,17 +1779,13 @@ bool IncrementalSsaBuilder::FinalizeDefs()
 // Parameters:
 //   use - Location of the use
 //
-// Returns:
-//   True if the use was in a reachable block and thus has a reaching def;
-//   otherwise false.
-//
 // Remarks:
 //   All uses are required to never read an uninitialized value of the local.
 //   That is, this function requires that all paths through the function go
 //   through one of the defs in "defs" before any use in "uses" for uses that
 //   are statically reachable.
 //
-bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
+void IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 {
     assert(m_finalizedDefs);
 
@@ -1788,11 +1800,14 @@ bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
     {
         if (!m_comp->m_dfsTree->Contains(use.Block))
         {
-            JITDUMP("  Use is in unreachable block " FMT_BB "\n", use.Block->bbNum);
-            return false;
+            reachingDef = m_defs.Bottom(0);
+            JITDUMP("  Use is in unreachable block " FMT_BB ", using first def [%06u] in " FMT_BB "\n",
+                    use.Block->bbNum, Compiler::dspTreeID(reachingDef.Tree), reachingDef.Block->bbNum);
         }
-
-        reachingDef = FindOrCreateReachingDef(use);
+        else
+        {
+            reachingDef = FindOrCreateReachingDef(use);
+        }
     }
 
     JITDUMP("  Reaching def is [%06u] d:%d\n", Compiler::dspTreeID(reachingDef.Tree), reachingDef.Tree->GetSsaNum());
@@ -1802,5 +1817,4 @@ bool IncrementalSsaBuilder::InsertUse(const UseDefLocation& use)
 
     LclVarDsc* dsc = m_comp->lvaGetDesc(m_lclNum);
     dsc->GetPerSsaData(reachingDef.Tree->GetSsaNum())->AddUse(use.Block);
-    return true;
 }

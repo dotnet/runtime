@@ -6262,6 +6262,9 @@ method_make_alwaysthrow_typeloadfailure (MonoCompile* cfg, MonoClass* klass)
 	mono_link_bblock (cfg, bb, cfg->bb_exit);
 
 	cfg->disable_inline = TRUE;
+
+	for (guint i = 0; i < cfg->header->num_clauses; i++)
+		cfg->clause_is_dead [i] = TRUE;
 }
 
 typedef union _MonoOpcodeParameter {
@@ -12111,13 +12114,12 @@ mono_ldptr:
 			break;
 		case MONO_CEE_INITOBJ:
 			klass = mini_get_class (method, token, generic_context);
+			--sp;
 			if (CLASS_HAS_FAILURE (klass)) {
 				HANDLE_TYPELOAD_ERROR (cfg, klass);
 				inline_costs += 10;
 				break; // reached only in AOT
 			}
-
-			--sp;
 
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);
