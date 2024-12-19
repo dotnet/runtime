@@ -797,9 +797,13 @@ protected:
         unsigned _idCustom5 : 1;
         unsigned _idCustom6 : 1;
 
-#define _idEvexbContext   (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, embedded rounding, embedded SAE */
-#define _idEvexNdContext  _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
-#define _idEvexNfContext  _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+#define _idEvexbContext                                                                                                \
+    (_idCustom6 << 1) | _idCustom5  /* Evex.b: embedded broadcast, embedded rounding, embedded SAE                     \
+                                     */
+#define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
+#define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+#define _idEvexDFV       (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
+
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -1015,6 +1019,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
+
 #elif defined(TARGET_LOONGARCH64)
             struct
             {
@@ -1674,7 +1679,6 @@ protected:
 
             _idCustom5 = ((value >> 0) & 1);
             _idCustom6 = ((value >> 1) & 1);
-            
         }
 
         unsigned idGetEvexbContext() const
@@ -1735,6 +1739,21 @@ protected:
         {
             assert(!idIsEvexNfContextSet());
             _idEvexNfContext = 1;
+        }
+
+        unsigned idGetEvexDFV() const
+        {
+            return _idEvexDFV;
+        }
+
+        void idSetEvexDFV(insOpts instOptions)
+        {
+            unsigned value = static_cast<unsigned>((instOptions & INS_OPTS_EVEX_dfv_MASK) >> 8);
+
+            _idCustom1 = ((value >> 0) & 1);
+            _idCustom2 = ((value >> 1) & 1);
+            _idCustom3 = ((value >> 2) & 1);
+            _idCustom4 = ((value >> 3) & 1);
         }
 #endif
 
