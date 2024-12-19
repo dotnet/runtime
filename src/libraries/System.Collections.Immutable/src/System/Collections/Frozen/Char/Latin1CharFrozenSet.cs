@@ -12,7 +12,7 @@ namespace System.Collections.Frozen
     /// This should practically always be used with ASCII-only values, but since we're using the <see cref="BitVector256"/> helper,
     /// we might as well use it for values between 128-255 too (hence Latin1 instead of Ascii in the name).
     /// </remarks>
-    internal sealed partial class Latin1CharFrozenSet : FrozenSetInternalBase<char, Latin1CharFrozenSet.GSW>
+    internal sealed class Latin1CharFrozenSet : FrozenSetInternalBase<char, Latin1CharFrozenSet.GSW>
     {
         private readonly BitVector256 _values;
         private readonly int _count;

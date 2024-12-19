@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen set to use when the values are <see cref="byte"/>s and the default comparer is used.</summary>
-    internal sealed partial class ByteFrozenSet : FrozenSetInternalBase<byte, ByteFrozenSet.GSW>
+    internal sealed class ByteFrozenSet : FrozenSetInternalBase<byte, ByteFrozenSet.GSW>
     {
         private readonly BitVector256 _values;
         private readonly int _count;

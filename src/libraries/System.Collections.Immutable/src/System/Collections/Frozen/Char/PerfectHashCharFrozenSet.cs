@@ -13,7 +13,7 @@ namespace System.Collections.Frozen
     /// <see cref="PerfectHashLookup"/> is not, so we can avoid some indirection during lookups.
     /// The latter is also specialized for <see cref="char"/> values, with lower memory consumption and a slightly cheaper FastMod.
     /// </remarks>
-    internal sealed partial class PerfectHashCharFrozenSet : FrozenSetInternalBase<char, PerfectHashCharFrozenSet.GSW>
+    internal sealed class PerfectHashCharFrozenSet : FrozenSetInternalBase<char, PerfectHashCharFrozenSet.GSW>
     {
         private readonly uint _multiplier;
         private readonly char[] _hashEntries;
