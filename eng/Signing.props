@@ -74,7 +74,7 @@
       <ChecksumPath>%(FullPath).sha512</ChecksumPath>
     </Installers>
 
-    <Artifact Include="@(VerticalVisibilityNuGetPackages);@(NuGetPackages);@(Archives);@(WixPacks);@(Installers)"
+    <Artifact Include="@(NuGetPackages);@(Archives);@(WixPacks);@(Installers)"
               IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))" />
   </ItemGroup>
 
