@@ -39,12 +39,6 @@
     </ItemGroup>
   </Target>
 
-  <PropertyGroup>
-    <TargetOSComponent>unix</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
-  </PropertyGroup>
-
   <Target Name="AddCrossgen2SymbolFilesToPackage" BeforeTargets="GetFilesToPackage" DependsOnTargets="PublishCrossgen">
     <ItemGroup>
       <_Crossgen2SymbolFilesToPackage Include="@(_CrossgenPublishFiles)" Condition="'%(Extension)' == '.pdb'" />

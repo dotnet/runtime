@@ -47,13 +47,15 @@
 
   <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
     <VerticalVisibilityNuGetPackages Condition="'$(RuntimeFlavor)' != 'Mono' and '$(ShortStack)' != 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
-                                     Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
-                                     Visibility="Vertical" />
+                                     Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg" />
   </ItemGroup>
 
   <!-- In build signing and publishing without a join point -->
   <ItemGroup Condition="'$(DotNetBuild)' == 'true'">
-    <NuGetPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(VerticalVisibilityNuGetPackages)" />
+    <NuGetPackages Include="@(VerticalVisibilityNuGetPackages)" Visibility="Vertical" />
+    <NuGetPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(NuGetPackages)" />
+
+    <NuGetPackages PublishFlatContainer="false" />
 
     <Archives Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip"
