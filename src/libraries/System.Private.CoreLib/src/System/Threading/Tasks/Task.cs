@@ -6291,7 +6291,8 @@ namespace System.Threading.Tasks
             }
             while (enumerator.MoveNext());
 
-            return new WhenAllPromise<TResult>(taskList._items);
+            // Can this be done similar to CollectionsMarshal.AsSpan? There's no Memory-based counterpart
+            return new WhenAllPromise<TResult>(CollectionsMarshal.AsMemory(taskList));
         }
 
         /// <summary>
