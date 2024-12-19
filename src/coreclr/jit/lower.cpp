@@ -8111,9 +8111,6 @@ void Lowering::FindInducedParameterRegisterLocals()
             GenTree* normalizeLcl       = comp->gtNewCastNode(TYP_INT, lcl, false, fld->TypeGet());
             GenTree* storeNormalizedLcl = comp->gtNewStoreLclVarNode(remappedLclNum, normalizeLcl);
             LIR::AsRange(comp->fgFirstBB).InsertAtBeginning(LIR::SeqTree(comp, storeNormalizedLcl));
-            LowerNode(lcl);
-            LowerNode(normalizeLcl);
-            LowerNode(storeNormalizedLcl);
 
             JITDUMP("Parameter normalization:\n");
             DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), storeNormalizedLcl);
@@ -8129,8 +8126,9 @@ void Lowering::FindInducedParameterRegisterLocals()
             LowerNode(lcl);
             JITDUMP("New user tree range:\n");
             DISPTREERANGE(LIR::AsRange(comp->fgFirstBB), use.User());
-            fld->gtBashToNOP();
         }
+
+        fld->gtBashToNOP();
     }
 }
 
