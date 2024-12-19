@@ -684,8 +684,15 @@ namespace System.Net
             if (IsIPv6)
             {
                 // For IPv6 addresses, we must compare the full 128-bit representation and the scope IDs.
-                return _numbers.AsSpan(0, 8).SequenceEqual(comparand._numbers.AsSpan(0, 8)) &&
-                    PrivateScopeId == comparand.PrivateScopeId;
+                // We give JIT a hint that the arrays are always of length IPv6AddressShorts, so it
+                // can unroll the comparison. JIT probably could do it on its own, but that requires
+                // complex inter-procedural optimizations.
+                Debug.Assert(_numbers.Length == IPAddressParserStatics.IPv6AddressShorts);
+                Debug.Assert(comparand._numbers!.Length == IPAddressParserStatics.IPv6AddressShorts);
+
+                ReadOnlySpan<ushort> left = _numbers.AsSpan(0, IPAddressParserStatics.IPv6AddressShorts);
+                ReadOnlySpan<ushort> right = comparand._numbers.AsSpan(0, IPAddressParserStatics.IPv6AddressShorts);
+                return left.SequenceEqual(right) && PrivateScopeId == comparand.PrivateScopeId;
             }
 
             // For IPv4 addresses, compare the integer representation.
@@ -726,7 +733,10 @@ namespace System.Net
             }
 
             uint address = (uint)NetworkToHostOrder(unchecked((int)PrivateAddress));
-            ReadOnlySpan<ushort> labels = [0, 0, 0, 0, 0, 0xFFFF, (ushort)(address >> 16), (ushort)address];
+            ushort[] labels = new ushort[NumberOfLabels];
+            labels[5] = 0xFFFF;
+            labels[6] = (ushort)(address >> 16);
+            labels[7] = (ushort)address;
             return new IPAddress(labels, 0);
         }
 
