@@ -8153,6 +8153,11 @@ unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const Lo
         return BAD_VAR_NUM;
     }
 
+    if (destLclDsc->lvDoNotEnregister)
+    {
+        return BAD_VAR_NUM;
+    }
+
     if (storedToLocals.Lookup(useNode->AsLclVarCommon()->GetLclNum()))
     {
         // Destination may change value before this access
