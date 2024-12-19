@@ -53,7 +53,7 @@ namespace System.Globalization
                 return s;
             }
 
-            string result = string.Alloc(s.Length, out Span<char> resultSpan);
+            string result = string.AllocateInternal(s.Length, out Span<char> resultSpan);
             ReadOnlySpan<char> src = s.GetSpan();
             src.Slice(0, i).CopyTo(resultSpan);
             ToLower(src.Slice(i), resultSpan.Slice(i));
@@ -98,7 +98,7 @@ namespace System.Globalization
                 return s;
             }
 
-            string result = string.Alloc(s.Length, out Span<char> resultSpan);
+            string result = string.AllocateInternal(s.Length, out Span<char> resultSpan);
             ReadOnlySpan<char> src = s.GetSpan();
             src.Slice(0, i).CopyTo(resultSpan);
             ToUpper(src.Slice(i), resultSpan.Slice(i));

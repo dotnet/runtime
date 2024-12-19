@@ -798,7 +798,7 @@ namespace System
             // (int.MaxValue / 3) == 715,827,882 Bytes == 699 MB
             ArgumentOutOfRangeException.ThrowIfGreaterThan(length, int.MaxValue / 3);
 
-            string result = string.Alloc(length * 3 - 1, out Span<char> resultSpan);
+            string result = string.AllocateInternal(length * 3 - 1, out Span<char> resultSpan);
 
             var src = new ReadOnlySpan<byte>(value, startIndex, length);
             int i = 0;

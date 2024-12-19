@@ -931,14 +931,14 @@ namespace System
                 {
                     if (IsTimeOnlySpecialCase(dateTime, dtfi))
                     {
-                        result = string.Alloc(FormatSLength, out resultSpan);
+                        result = string.AllocateInternal(FormatSLength, out resultSpan);
                         TryFormatS(dateTime, resultSpan, out int charsWritten);
                         Debug.Assert(charsWritten == FormatSLength);
                         return result;
                     }
                     else if (ReferenceEquals(dtfi, DateTimeFormatInfo.InvariantInfo))
                     {
-                        result = string.Alloc(FormatInvariantGMinLength, out resultSpan);
+                        result = string.AllocateInternal(FormatInvariantGMinLength, out resultSpan);
                         TryFormatInvariantG(dateTime, offset, resultSpan, out int charsWritten);
                         Debug.Assert(charsWritten == FormatInvariantGMinLength);
                         return result;
@@ -957,7 +957,7 @@ namespace System
                     }
                     else if (ReferenceEquals(dtfi, DateTimeFormatInfo.InvariantInfo))
                     {
-                        result = string.Alloc(FormatInvariantGMaxLength, out resultSpan);
+                        result = string.AllocateInternal(FormatInvariantGMaxLength, out resultSpan);
                         TryFormatInvariantG(dateTime, offset, resultSpan, out int charsWritten);
                         Debug.Assert(charsWritten == FormatInvariantGMaxLength);
                         return result;
@@ -982,21 +982,21 @@ namespace System
 
                     // RFC1123 format
                     case 'r' or 'R':
-                        result = string.Alloc(FormatRLength, out resultSpan);
+                        result = string.AllocateInternal(FormatRLength, out resultSpan);
                         TryFormatR(dateTime, offset, resultSpan, out charsWritten);
                         Debug.Assert(charsWritten == result.Length);
                         return result;
 
                     // Sortable format
                     case 's':
-                        result = string.Alloc(FormatSLength, out resultSpan);
+                        result = string.AllocateInternal(FormatSLength, out resultSpan);
                         TryFormatS(dateTime, resultSpan, out charsWritten);
                         Debug.Assert(charsWritten == result.Length);
                         return result;
 
                     // Universal time in sortable format
                     case 'u':
-                        result = string.Alloc(FormatuLength, out resultSpan);
+                        result = string.AllocateInternal(FormatuLength, out resultSpan);
                         TryFormatu(dateTime, offset, resultSpan, out charsWritten);
                         Debug.Assert(charsWritten == result.Length);
                         return result;

@@ -1176,7 +1176,7 @@ namespace System
                 };
             }
 
-            string result = string.Alloc(guidSize, out Span<char> resultSpan);
+            string result = string.AllocateInternal(guidSize, out Span<char> resultSpan);
 
             bool success = TryFormatCore(resultSpan, out int bytesWritten, format);
             Debug.Assert(success && bytesWritten == result.Length, "Formatting guid should have succeeded.");

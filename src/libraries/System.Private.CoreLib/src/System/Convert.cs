@@ -2355,7 +2355,7 @@ namespace System
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
             int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
 
-            string result = string.Alloc(outputLength, out Span<char> resultSpan);
+            string result = string.AllocateInternal(outputLength, out Span<char> resultSpan);
 
             if (Vector128.IsHardwareAccelerated && !insertLineBreaks && bytes.Length >= Base64VectorizationLengthThreshold)
             {

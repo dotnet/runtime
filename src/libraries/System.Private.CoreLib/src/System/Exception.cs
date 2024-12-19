@@ -148,7 +148,7 @@ namespace System
             }
 
             // Create the string
-            string result = string.Alloc(length, out Span<char> resultSpan);
+            string result = string.AllocateInternal(length, out Span<char> resultSpan);
 
             // Fill it in
             Write(className, ref resultSpan);

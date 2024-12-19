@@ -3860,7 +3860,7 @@ namespace System.Globalization
 
         private static string GetString(ReadOnlySpan<byte> buffer)
         {
-            string result = string.Alloc(buffer.Length, out Span<char> resultSpan);
+            string result = string.AllocateInternal(buffer.Length, out Span<char> resultSpan);
             for (int i = 0; i < buffer.Length; i++)
             {
                 resultSpan[i] = (char)buffer[i];

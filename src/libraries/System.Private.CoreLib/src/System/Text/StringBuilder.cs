@@ -368,7 +368,7 @@ namespace System.Text
             }
 
             AssertInvariants();
-            string result = string.Alloc(length, out Span<char> resultSpan);
+            string result = string.AllocateInternal(length, out Span<char> resultSpan);
             CopyTo(startIndex, resultSpan, resultSpan.Length);
             return result;
         }

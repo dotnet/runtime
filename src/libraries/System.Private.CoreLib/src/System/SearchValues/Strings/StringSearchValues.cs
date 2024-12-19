@@ -88,7 +88,7 @@ namespace System.Buffers
 
                 if (ignoreCase && value.AsSpan().ContainsAnyExcept(s_allAsciiExceptLowercase))
                 {
-                    result = string.Alloc(value.Length, out Span<char> resultSpan);
+                    result = string.AllocateInternal(value.Length, out Span<char> resultSpan);
                     int charsWritten = Ordinal.ToUpperOrdinal(value, resultSpan);
                     Debug.Assert(charsWritten == result.Length);
                 }
