@@ -8132,6 +8132,20 @@ void Lowering::FindInducedParameterRegisterLocals()
     }
 }
 
+//------------------------------------------------------------------------
+// Lowering::TryReuseLocalForParameterAccess:
+//   Try to figure out if a LCL_FLD that corresponds to a parameter register is
+//   being stored directly to a LCL_VAR, and in that case whether it would be
+//   profitable to reuse that local as the parameter register.
+//
+// Parameters:
+//   use - The use of the LCL_FLD
+//   storedToLocals - Map of locals that have had potential definitions to them
+//                    up until the use
+//
+// Returns:
+//   The local number to reuse, or BAD_VAR_NUM to create a new local instead.
+//
 unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals)
 {
     GenTree* useNode = use.User();
