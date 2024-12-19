@@ -23,7 +23,6 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 
 #include "pal/thread.hpp"
 #include "pal/cs.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/seh.hpp"
 #include "pal/virtual.h"

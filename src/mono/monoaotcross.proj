@@ -43,19 +43,22 @@
       <MonoAotTargetArchitecture>$(MonoAotTargetRid.Substring($([MSBuild]::Add(1, $(MonoAotTargetRid.LastIndexOf('-'))))))</MonoAotTargetArchitecture>
       <MonoAotHostOS>$(TargetOS)</MonoAotHostOS>
       <MonoAotHostOS Condition="'$(TargetsLinuxMusl)' == 'true'">linux-musl</MonoAotHostOS>
+      <MonoAotHostArchitecture>$(TargetArchitecture)</MonoAotHostArchitecture>
     </PropertyGroup>
 
     <MSBuild Targets="Build"
              Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
-             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);AotHostArchitecture=$(TargetArchitecture)" />
+             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(MonoAotHostArchitecture)" />
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(MonoAotHostArchitecture);BuildMonoAOTCrossCompilerOnly=true;TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
     </ItemGroup>
+
+    <Error Condition="'@(_MonoAOTCrossFiles)' == '' and '$(MonoGenerateOffsetsOSGroups)' == ''" Text="No AOT cross files found for $(MonoAotTargetRid)" />
 
     <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(TargetOS)-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())" Importance="High" />
 

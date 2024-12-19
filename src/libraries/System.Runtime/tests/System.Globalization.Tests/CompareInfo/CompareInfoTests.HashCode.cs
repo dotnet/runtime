@@ -59,14 +59,20 @@ namespace System.Globalization.Tests
             }
         }
 
-        public static IEnumerable<object[]> GetHashCodeTestData => new[]
+        public static IEnumerable<object[]> GetHashCodeTestData()
         {
-            new object[] { "abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true },
-            new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false },
-            new object[] { "abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true },
-            new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true },
-            new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
-        };
+            yield return new object[] { "abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true };
+            yield return new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false };
+            yield return new object[] { "abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true };
+            yield return new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true };
+            yield return new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }; // see comment at bottom of SortKey_TestData
+
+            if (PlatformDetection.IsNumericComparisonSupported)
+            {
+                yield return new object[] { "1", CompareOptions.NumericOrdering, "01", CompareOptions.NumericOrdering, PlatformDetection.IsNlsGlobalization ? false : true };
+                yield return new object[] { "1", CompareOptions.NumericOrdering, "\u0661", CompareOptions.NumericOrdering, PlatformDetection.IsNlsGlobalization ? false : true };
+            }
+        }
 
         [Theory]
         [MemberData(nameof(GetHashCodeTestData))]
@@ -99,7 +105,10 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("source", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode(null, CompareOptions.None));
 
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreSymbols));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.OrdinalIgnoreCase | CompareOptions.NumericOrdering));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", CompareOptions.Ordinal | CompareOptions.NumericOrdering));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test", (CompareOptions)(-1)));
         }
 
@@ -118,6 +127,8 @@ namespace System.Globalization.Tests
         {
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.IgnoreCase));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.Ordinal | CompareOptions.IgnoreSymbols));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.OrdinalIgnoreCase | CompareOptions.NumericOrdering));
+            AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), CompareOptions.Ordinal | CompareOptions.NumericOrdering));
             AssertExtensions.Throws<ArgumentException>("options", () => CultureInfo.InvariantCulture.CompareInfo.GetHashCode("Test".AsSpan(), (CompareOptions)(-1)));
         }
     }

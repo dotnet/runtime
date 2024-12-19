@@ -352,6 +352,30 @@ public static unsafe class UnsafeAccessorsTests
         extern static ref int GetVolatileInt(ref FieldsWithModifiers f);
     }
 
+    // Contains fields that are readonly
+    readonly struct ReadOnlyFields
+    {
+        public static readonly int s_rInt;
+        public readonly int _rInt;
+    }
+
+    [Fact]
+    public static void Verify_AccessFieldsWithReadOnlyRefs()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldsWithReadOnlyRefs)}");
+
+        ReadOnlyFields readOnlyFields = default;
+
+        Assert.True(Unsafe.AreSame(in GetStaticReadOnlyInt(in readOnlyFields), in ReadOnlyFields.s_rInt));
+        Assert.True(Unsafe.AreSame(in GetReadOnlyInt(in readOnlyFields), in readOnlyFields._rInt));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="s_rInt")]
+        extern static ref readonly int GetStaticReadOnlyInt(ref readonly ReadOnlyFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_rInt")]
+        extern static ref readonly int GetReadOnlyInt(ref readonly ReadOnlyFields f);
+    }
+
     [Fact]
     public static void Verify_AccessStaticMethodClass()
     {

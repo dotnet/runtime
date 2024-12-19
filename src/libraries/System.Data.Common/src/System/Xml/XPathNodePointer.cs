@@ -298,6 +298,7 @@ namespace System.Xml
         internal string? Value
         {
             [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
             get
             {
                 RealFoliate();
@@ -339,6 +340,7 @@ namespace System.Xml
         internal string InnerText
         {
             [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
             get
             {
                 RealFoliate();
@@ -1052,6 +1054,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private XmlNodeOrder CompareNamespacePosition(XPathNodePointer other)
         {
             XPathNodePointer xp1 = Clone((DataDocumentXPathNavigator)(_owner.Target!));
@@ -1078,6 +1081,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal XmlNodeOrder ComparePosition(XPathNodePointer other)
         {
             RealFoliate();
@@ -1222,6 +1226,7 @@ namespace System.Xml
         internal XmlNode? Node
         {
             [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+            [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
             get
             {
                 RealFoliate();
@@ -1315,6 +1320,7 @@ namespace System.Xml
         //The function only helps to find out if there is a namespace declaration of given name is defined on the given node
         //It will not check the ancestor of the given node.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private string? GetNamespace(XmlBoundElement be, string name)
         {
             if (be == null)
@@ -1349,6 +1355,7 @@ namespace System.Xml
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal string GetNamespace(string name)
         {
             //we are checking the namespace nodes backwards comparing its normal order in DOM tree
@@ -1444,6 +1451,7 @@ namespace System.Xml
         //the function will find the next namespace node on the given bound element starting with the given column or attribute
         // whether to use column or attribute depends on if the bound element is foliated or not.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private bool MoveToNextNamespace(XmlBoundElement? be, DataColumn? col, XmlAttribute? curAttr)
         {
             if (be != null)
@@ -1497,6 +1505,7 @@ namespace System.Xml
 
         //Caller( DataDocumentXPathNavigator will make sure that the node is at the right position for this call )
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();
@@ -1533,6 +1542,7 @@ namespace System.Xml
 
         //endElem is on the path from startElem to root is enforced by the caller
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         private bool DuplicateNS(XmlBoundElement endElem, string lname)
         {
             if (_parentOfNS == null || endElem == null)
@@ -1555,6 +1565,7 @@ namespace System.Xml
 
         //Caller( DataDocumentXPathNavigator will make sure that the node is at the right position for this call )
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();

@@ -8454,6 +8454,20 @@ namespace System.Runtime.Intrinsics.X86
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
         }
+        public abstract partial class V256
+        {
+            internal V256() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<long> CarrylessMultiply(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> CarrylessMultiply(System.Runtime.Intrinsics.Vector256<ulong> left, System.Runtime.Intrinsics.Vector256<ulong> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<long> CarrylessMultiply(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<ulong> CarrylessMultiply(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
+        }
     }
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Popcnt : System.Runtime.Intrinsics.X86.Sse42
@@ -9160,6 +9174,37 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
+        }
+    }
+
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Gfni : System.Runtime.Intrinsics.X86.Sse41
+    {
+        internal Gfni() { }
+        public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<byte> GaloisFieldAffineTransformInverse(System.Runtime.Intrinsics.Vector128<byte> x, System.Runtime.Intrinsics.Vector128<byte> a, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte b) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> GaloisFieldAffineTransform(System.Runtime.Intrinsics.Vector128<byte> x, System.Runtime.Intrinsics.Vector128<byte> a, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte b) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> GaloisFieldMultiply(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
+        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Sse41.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+        public abstract partial class V256
+        {
+            internal V256() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<byte> GaloisFieldAffineTransformInverse(System.Runtime.Intrinsics.Vector256<byte> x, System.Runtime.Intrinsics.Vector256<byte> a, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte b) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> GaloisFieldAffineTransform(System.Runtime.Intrinsics.Vector256<byte> x, System.Runtime.Intrinsics.Vector256<byte> a, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte b) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> GaloisFieldMultiply(System.Runtime.Intrinsics.Vector256<byte> left, System.Runtime.Intrinsics.Vector256<byte> right) { throw null; }
+        }
+        public abstract partial class V512
+        {
+            internal V512() { }
+            public static bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<byte> GaloisFieldAffineTransformInverse(System.Runtime.Intrinsics.Vector512<byte> x, System.Runtime.Intrinsics.Vector512<byte> a, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte b) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> GaloisFieldAffineTransform(System.Runtime.Intrinsics.Vector512<byte> x, System.Runtime.Intrinsics.Vector512<byte> a, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte b) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> GaloisFieldMultiply(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> right) { throw null; }
         }
     }
 }

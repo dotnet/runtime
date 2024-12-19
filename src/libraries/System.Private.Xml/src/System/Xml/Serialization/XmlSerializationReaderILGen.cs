@@ -16,6 +16,8 @@ using System.Xml.Schema;
 
 namespace System.Xml.Serialization
 {
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+    [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
     internal sealed partial class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
@@ -29,6 +31,8 @@ namespace System.Xml.Serialization
         private static readonly string[] s_checkTypeString = new string[] { "checkType" };
         private static readonly Type[] s_boolType = new Type[] { typeof(bool) };
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private sealed class Member
         {
             private readonly string _source;
@@ -173,13 +177,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("Creates XmlSerializationILGen")]
         internal XmlSerializationReaderILGen(TypeScope[] scopes, string access, string className)
             : base(scopes, access, className)
         {
         }
 
-        [RequiresUnreferencedCode("calls WriteReflectionInit")]
         internal void GenerateBegin()
         {
             this.typeBuilder = CodeGenerator.CreateTypeBuilder(
@@ -199,7 +201,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteStructMethod")]
         internal override void GenerateMethod(TypeMapping mapping)
         {
             if (!GeneratedMethods.Add(mapping))
@@ -219,7 +220,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
         internal void GenerateEnd()
         {
             GenerateReferencedMethods();
@@ -262,7 +262,6 @@ namespace System.Xml.Serialization
             CreatedTypes.Add(readerType.Name, readerType);
         }
 
-        [RequiresUnreferencedCode("calls GenerateMembersElement")]
         internal string? GenerateElement(XmlMapping xmlMapping)
         {
             if (!xmlMapping.IsReadable)
@@ -277,7 +276,6 @@ namespace System.Xml.Serialization
                 throw new ArgumentException(SR.XmlInternalError, nameof(xmlMapping));
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         private void WriteIsStartTag(string? name, string? ns)
         {
             WriteID(name);
@@ -302,7 +300,6 @@ namespace System.Xml.Serialization
             ilg.If();
         }
 
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WriteUnknownNode(string func, string node, ElementAccessor? e, bool anyIfs)
         {
             if (anyIfs)
@@ -349,7 +346,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls GenerateLiteralMembersElement")]
         private string GenerateMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             return GenerateLiteralMembersElement(xmlMembersMapping);
@@ -384,7 +380,6 @@ namespace System.Xml.Serialization
             return ReflectionAwareILGen.GetStringForMember(parent, mapping.ChoiceIdentifier.MemberName);
         }
 
-        [RequiresUnreferencedCode("calls InitializeValueTypes")]
         private string GenerateLiteralMembersElement(XmlMembersMapping xmlMembersMapping)
         {
             ElementAccessor element = xmlMembersMapping.Accessor;
@@ -614,7 +609,6 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void InitializeValueTypes(string arrayName, MemberMapping[] mappings)
         {
             for (int i = 0; i < mappings.Length; i++)
@@ -630,7 +624,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberElements")]
         private string GenerateTypeElement(XmlTypeMapping xmlTypeMapping)
         {
             ElementAccessor element = xmlTypeMapping.Accessor;
@@ -682,7 +675,6 @@ namespace System.Xml.Serialization
         private string NextIdName(string name) =>
             string.Create(CultureInfo.InvariantCulture, $"id{++_nextIdNumber}_{CodeIdentifier.MakeValidInternal(name)}");
 
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WritePrimitive(TypeMapping mapping, string source)
         {
             System.Diagnostics.Debug.Assert(source == "Reader.ReadElementString()" || source == "Reader.ReadString()"
@@ -943,7 +935,6 @@ namespace System.Xml.Serialization
             return uniqueName;
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         private string WriteHashtable(EnumMapping mapping, string typeName, out MethodBuilder? get_TableName)
         {
             get_TableName = null;
@@ -1021,7 +1012,6 @@ namespace System.Xml.Serialization
             return propName;
         }
 
-        [RequiresUnreferencedCode("calls WriteHashtable")]
         private void WriteEnumMethod(EnumMapping mapping)
         {
             MethodBuilder? get_TableName = null;
@@ -1138,7 +1128,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls WriteQNameEqual")]
         private void WriteDerivedTypes(StructMapping mapping, bool isTypedReturn, string returnTypeName)
         {
             for (StructMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
@@ -1178,7 +1167,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteEnumAndArrayTypes()
         {
             foreach (TypeScope scope in Scopes)
@@ -1283,7 +1271,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteElement")]
         private void WriteNullableMethod(NullableMapping nullableMapping)
         {
             string? methodName;
@@ -1329,13 +1316,11 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls WriteLiteralStructMethod")]
         private void WriteStructMethod(StructMapping structMapping)
         {
             WriteLiteralStructMethod(structMapping);
         }
 
-        [RequiresUnreferencedCode("calls WriteEnumAndArrayTypes")]
         private void WriteLiteralStructMethod(StructMapping structMapping)
         {
             string? methodName;
@@ -1706,7 +1691,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         private void WriteQNameEqual(string source, string? name, string? ns)
         {
             WriteID(name);
@@ -1742,12 +1726,10 @@ namespace System.Xml.Serialization
             ilg.MarkLabel(labelEnd);
         }
 
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WriteXmlNodeEqual(string source, string name, string? ns)
         {
             WriteXmlNodeEqual(source, name, ns, true);
         }
-        [RequiresUnreferencedCode("XmlSerializationReader methods have RequiresUnreferencedCode")]
         private void WriteXmlNodeEqual(string source, string name, string? ns, bool doAndIf)
         {
             bool isNameNullOrEmpty = string.IsNullOrEmpty(name);
@@ -1816,7 +1798,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteAttributes(Member[] members, Member? anyAttribute, string elseCall, LocalBuilder firstParam)
         {
             int count = 0;
@@ -2047,7 +2028,6 @@ namespace System.Xml.Serialization
             ilg.WhileEnd();
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteAttribute(Member member)
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
@@ -2138,7 +2118,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteMemberBegin(Member[] members)
         {
             for (int i = 0; i < members.Length; i++)
@@ -2245,7 +2224,6 @@ namespace System.Xml.Serialization
             return ReflectionAwareILGen.GetQuotedCSharpString(qnames);
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberElementsIf")]
         private void WriteMemberElements(Member[] members, string elementElseString, string elseString, Member? anyElement, Member? anyText)
         {
             if (anyText != null)
@@ -2281,7 +2259,6 @@ namespace System.Xml.Serialization
             ilg.EndIf();
         }
 
-        [RequiresUnreferencedCode("calls WriteText")]
         private void WriteMemberText(Member anyText)
         {
             ilg.InitElseIf();
@@ -2333,7 +2310,6 @@ namespace System.Xml.Serialization
             Debug.Assert(anyText != null);
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteText(Member member)
         {
             TextAccessor text = member.Mapping.Text!;
@@ -2440,7 +2416,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteElement")]
         private void WriteMemberElementsElse(Member? anyElement, string elementElseString)
         {
             if (anyElement != null)
@@ -2472,7 +2447,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [RequiresUnreferencedCode("calls WriteElement")]
         private void WriteMemberElementsIf(Member[] members, Member? anyElement, string elementElseString)
         {
             int count = 0;
@@ -2635,13 +2609,11 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberEnd")]
         private void WriteMemberEnd(Member[] members)
         {
             WriteMemberEnd(members, false);
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteMemberEnd(Member[] members, bool soapRefs)
         {
             for (int i = 0; i < members.Length; i++)
@@ -2790,12 +2762,10 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {source}");
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void WriteSourceEnd(string source, Type elementType)
         {
             WriteSourceEnd(source, elementType, elementType);
         }
-        [RequiresUnreferencedCode("string-based IL generation")]
         private void WriteSourceEnd(string source, Type elementType, Type stackType)
         {
             object? variable;
@@ -2874,7 +2844,6 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {source}");
         }
 
-        [RequiresUnreferencedCode("calls WriteMemberBegin")]
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
@@ -2991,7 +2960,6 @@ namespace System.Xml.Serialization
             ilg.EndIf();
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteElement(string source, string? arrayName, string? choiceSource, ElementAccessor element, ChoiceIdentifierAccessor? choice, string? checkSpecified, bool checkForNull, bool readOnly, int fixupIndex, int elementIndex)
         {
             if (checkSpecified != null && checkSpecified.Length > 0)
@@ -3296,7 +3264,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteDerivedSerializable(SerializableMapping head, SerializableMapping? mapping, string source, bool isWrappedAny)
         {
             if (mapping == null)
@@ -3458,7 +3425,6 @@ namespace System.Xml.Serialization
             ilg.Stloc(paramsRead);
         }
 
-        [RequiresUnreferencedCode("calls ILGenForCreateInstance")]
         private void WriteCreateMapping(TypeMapping mapping, string local)
         {
             string fullTypeName = mapping.TypeDesc!.CSharpName;
@@ -3509,19 +3475,16 @@ namespace System.Xml.Serialization
             ilg.Pop();
         }
 
-        [RequiresUnreferencedCode("calls WriteArrayLocalDecl")]
         private void WriteArrayLocalDecl(string typeName, string variableName, string initValue, TypeDesc arrayTypeDesc)
         {
             ReflectionAwareILGen.WriteArrayLocalDecl(typeName, variableName, new SourceInfo(initValue, initValue, null, arrayTypeDesc.Type, ilg), arrayTypeDesc);
         }
 
-        [RequiresUnreferencedCode("calls WriteCreateInstance")]
         private void WriteCreateInstance(string source, bool ctorInaccessible, Type type)
         {
             ReflectionAwareILGen.WriteCreateInstance(source, ctorInaccessible, type, ilg);
         }
 
-        [RequiresUnreferencedCode("calls WriteLocalDecl")]
         private static void WriteLocalDecl(string variableName, SourceInfo initValue)
         {
             ReflectionAwareILGen.WriteLocalDecl(variableName, initValue);
@@ -3650,7 +3613,6 @@ namespace System.Xml.Serialization
             throw Globals.NotSupported($"Unexpected: {elementElseString}");
         }
 
-        [RequiresUnreferencedCode("calls WriteSourceEnd")]
         private void ILGenSet(string source, object value)
         {
             WriteSourceBegin(source);

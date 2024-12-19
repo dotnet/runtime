@@ -131,7 +131,6 @@ struct JitInterfaceCallbacks
     bool (* runWithErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
-    const char16_t* (* getJitTimeLogFilename)(void * thisHandle, CorInfoExceptionClass** ppException);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames);
@@ -1359,14 +1358,6 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getEEInfo(_thisHandle, &pException, pEEInfoOut);
     if (pException != nullptr) throw pException;
-}
-
-    virtual const char16_t* getJitTimeLogFilename()
-{
-    CorInfoExceptionClass* pException = nullptr;
-    const char16_t* temp = _callbacks->getJitTimeLogFilename(_thisHandle, &pException);
-    if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual mdMethodDef getMethodDefFromMethod(

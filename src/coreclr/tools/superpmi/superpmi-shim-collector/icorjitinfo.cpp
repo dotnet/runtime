@@ -1365,15 +1365,6 @@ void interceptor_ICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     mc->recGetEEInfo(pEEInfoOut);
 }
 
-// Returns name of the JIT timer log
-const char16_t* interceptor_ICJI::getJitTimeLogFilename()
-{
-    mc->cr->AddCall("getJitTimeLogFilename");
-    const char16_t* temp = original_ICorJitInfo->getJitTimeLogFilename();
-    mc->recGetJitTimeLogFilename((LPCWSTR)temp);
-    return temp;
-}
-
 /*********************************************************************************/
 //
 // Diagnostic methods

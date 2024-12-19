@@ -1,7 +1,7 @@
 # Requirements to Set Up the Build Environment on Linux
 
 - [Using your Linux Environment](#using-your-linux-environment)
-  - [Debian/Ubuntu](#debian/ubuntu)
+  - [Debian and Ubuntu](#debian-and-ubuntu)
     - [CMake on Older Versions of Ubuntu and Debian](#cmake-on-older-versions-of-ubuntu-and-debian)
     - [Clang for WASM](#clang-for-wasm)
     - [Additional Tools for Cross Building](#additional-tools-for-cross-building)
@@ -28,7 +28,7 @@ eng/common/native/install-dependencies.sh
 
 Note that it is always a good idea to manually double check that all the dependencies were installed correctly if you opt to use the script.
 
-### Debian/Ubuntu
+### Debian and Ubuntu
 
 These instructions are written assuming the current *Ubuntu LTS*.
 

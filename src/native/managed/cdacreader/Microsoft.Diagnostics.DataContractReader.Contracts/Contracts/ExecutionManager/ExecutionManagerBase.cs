@@ -31,28 +31,20 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     }
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
-    // TODO: rethink whether this makes sense. We don't need to copy the runtime's notion of EECodeInfo verbatim
     private class CodeBlock
     {
-        private readonly int _codeHeaderOffset;
-
         public TargetCodePointer StartAddress { get; }
-        // note: this is the address of the pointer to the "real code header", you need to
-        // dereference it to get the address of _codeHeaderData
-        public TargetPointer CodeHeaderAddress => StartAddress.Value - (ulong)_codeHeaderOffset;
-        private Data.RealCodeHeader _codeHeaderData;
+        public TargetPointer MethodDescAddress { get; }
         public TargetPointer JitManagerAddress { get; }
         public TargetNUInt RelativeOffset { get; }
-        public CodeBlock(TargetCodePointer startAddress, int codeHeaderOffset, TargetNUInt relativeOffset, Data.RealCodeHeader codeHeaderData, TargetPointer jitManagerAddress)
+        public CodeBlock(TargetCodePointer startAddress, TargetPointer methodDesc, TargetNUInt relativeOffset, TargetPointer jitManagerAddress)
         {
-            _codeHeaderOffset = codeHeaderOffset;
             StartAddress = startAddress;
-            _codeHeaderData = codeHeaderData;
+            MethodDescAddress = methodDesc;
             RelativeOffset = relativeOffset;
             JitManagerAddress = jitManagerAddress;
         }
 
-        public TargetPointer MethodDescAddress => _codeHeaderData.MethodDesc;
         public bool Valid => JitManagerAddress != TargetPointer.Null;
     }
 
@@ -62,6 +54,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
         CodeHeap = 0x02,
         RangeList = 0x04,
     }
+
     private abstract class JitManager
     {
         public Target Target { get; }
@@ -72,18 +65,6 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
         }
 
         public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info);
-
-    }
-
-    private class ReadyToRunJitManager : JitManager
-    {
-        public ReadyToRunJitManager(Target target) : base(target)
-        {
-        }
-        public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
-        {
-            throw new NotImplementedException(); // TODO(cdac): ReadyToRunJitManager::JitCodeToMethodInfo
-        }
     }
 
     private sealed class RangeSection
@@ -185,18 +166,16 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-        {
-            throw new InvalidOperationException("EECodeInfo not found");
-        }
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
         return info.MethodDescAddress;
     }
 
     TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
         if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-        {
-            throw new InvalidOperationException("EECodeInfo not found");
-        }
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
         return info.StartAddress;
     }
 }

@@ -2259,14 +2259,12 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         BYTE*  dumpAddr = (BYTE*)codePtrRW;
         size_t dumpSize = finalHotCodeSize;
 
-        const WCHAR* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
+        const char* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
         if (rawHexCodeFilePath)
         {
-            FILE*   hexDmpf;
-            errno_t ec = _wfopen_s(&hexDmpf, rawHexCodeFilePath, W("at")); // NOTE: file append mode
-            if (ec == 0)
+            FILE* hexDmpf = fopen_utf8(rawHexCodeFilePath, "at"); // NOTE: file append mode
+            if (hexDmpf != nullptr)
             {
-                assert(hexDmpf);
                 hexDump(hexDmpf, dumpAddr, dumpSize);
                 fclose(hexDmpf);
             }
@@ -4965,7 +4963,7 @@ void CodeGen::genFinalizeFrame()
 
     // We currently only expect to push/pop consecutive FP registers
     // and these have to be double-sized registers as well.
-    // Here we will insure that maskPushRegsFloat obeys these requirements.
+    // Here we will ensure that maskPushRegsFloat obeys these requirements.
     //
     if (maskPushRegsFloat != RBM_NONE)
     {
@@ -6823,7 +6821,7 @@ void CodeGen::genReportRichDebugInfoToFile()
     static CritSecObject s_critSect;
     CritSecHolder        holder(s_critSect);
 
-    FILE* file = _wfopen(JitConfig.WriteRichDebugInfoFile(), W("a"));
+    FILE* file = fopen(JitConfig.WriteRichDebugInfoFile(), "a");
     if (file == nullptr)
     {
         return;

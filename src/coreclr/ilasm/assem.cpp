@@ -328,7 +328,7 @@ BOOL Assembler::AddMethod(Method *pMethod)
     unsigned codeSize = m_CurPC;
     unsigned codeSizeAligned = codeSize;
     if (moreSections)
-        codeSizeAligned = (codeSizeAligned + 3) & ~3;    // to insure EH section aligned
+        codeSizeAligned = (codeSizeAligned + 3) & ~3;    // to ensure EH section aligned
 
     unsigned headerSize = COR_ILMETHOD::Size(&fatHeader, moreSections);
     unsigned ehSize     = COR_ILMETHOD_SECT_EH::Size(pMethod->m_dwNumExceptions, pMethod->m_ExceptionList);

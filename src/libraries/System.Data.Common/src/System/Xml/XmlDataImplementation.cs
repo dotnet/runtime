@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Xml
 {
     [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     internal sealed class XmlDataImplementation : XmlImplementation
     {
         public XmlDataImplementation() : base() { }

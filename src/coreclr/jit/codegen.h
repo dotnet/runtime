@@ -643,10 +643,12 @@ protected:
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
     void genArm64EmitterUnitTestsSve();
+    void genArm64EmitterUnitTestsPac();
 #endif
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsApx();
 #endif
 
 #endif // defined(DEBUG)

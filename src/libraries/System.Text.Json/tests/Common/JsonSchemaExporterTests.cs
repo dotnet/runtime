@@ -99,6 +99,32 @@ namespace System.Text.Json.Schema.Tests
         }
 
         [Fact]
+        public void TransformSchemaNode_PropertiesWithCustomConverters()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109868
+            List<(Type? ParentType, string? PropertyName, Type type)> visitedNodes = new();
+            JsonSchemaExporterOptions exporterOptions = new()
+            {
+                TransformSchemaNode = (ctx, schema) =>
+                {
+                    visitedNodes.Add((ctx.PropertyInfo?.DeclaringType, ctx.PropertyInfo?.Name, ctx.TypeInfo.Type));
+                    return schema;
+                }
+            };
+
+            List<(Type? ParentType, string? PropertyName, Type type)> expectedNodes =
+            [
+                (typeof(ClassWithPropertiesUsingCustomConverters), "Prop1", typeof(ClassWithPropertiesUsingCustomConverters.ClassWithCustomConverter1)),
+                (typeof(ClassWithPropertiesUsingCustomConverters), "Prop2", typeof(ClassWithPropertiesUsingCustomConverters.ClassWithCustomConverter2)),
+                (null, null, typeof(ClassWithPropertiesUsingCustomConverters)),
+            ];
+
+            Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(ClassWithPropertiesUsingCustomConverters), exporterOptions);
+
+            Assert.Equal(expectedNodes, visitedNodes);
+        }
+
+        [Fact]
         public void TypeWithDisallowUnmappedMembers_AdditionalPropertiesFailValidation()
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(PocoDisallowingUnmappedMembers));
