@@ -1006,3 +1006,25 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
+#ifdef TARGET_AMD64
+uintptr_t GetSSP(CONTEXT *pContext)
+{
+    XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(pContext, XSTATE_CET_U, NULL);
+    if ((pCET != NULL) && (pCET->Ia32CetUMsr != 0))
+    {
+        return pCET->Ia32Pl3SspMsr;
+    }
+
+    return 0;
+}
+
+void SetSSP(CONTEXT *pContext, uintptr_t ssp)
+{
+    XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(pContext, XSTATE_CET_U, NULL);
+    if (pCET != NULL)
+    {
+        pCET->Ia32Pl3SspMsr = ssp;
+        pCET->Ia32CetUMsr = 1;
+    }
+}
+#endif // TARGET_AMD64
