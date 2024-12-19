@@ -8081,7 +8081,7 @@ void Lowering::FindInducedParameterRegisterLocals()
         if (remappedLclNum == BAD_VAR_NUM)
         {
             remappedLclNum                           = comp->lvaGrabTemp(false DEBUGARG(
-                comp->printfAlloc("struct parameter register %s", getRegName(regSegment->GetRegister()))));
+                comp->printfAlloc("parameter register V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
             comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
             JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
         }
