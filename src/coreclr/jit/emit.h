@@ -797,10 +797,12 @@ protected:
         unsigned _idCustom5 : 1;
         unsigned _idCustom6 : 1;
 
-#define _idEvexbContext   (_idCustom6 << 1) | _idCustom5 /* Evex.b: embedded broadcast, embedded rounding, embedded SAE */
-#define _idEvexNdContext  _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
-#define _idEvexNfContext  _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
-#endif //  TARGET_XARCH
+#define _idEvexbContext                                                                                                \
+    (_idCustom6 << 1) | _idCustom5  /* Evex.b: embedded broadcast, embedded rounding, embedded SAE                     \
+                                     */
+#define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
+#define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+#endif                              //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         unsigned _idLclVar     : 1; // access a local on stack
@@ -1674,7 +1676,6 @@ protected:
 
             _idCustom5 = ((value >> 0) & 1);
             _idCustom6 = ((value >> 1) & 1);
-            
         }
 
         unsigned idGetEvexbContext() const

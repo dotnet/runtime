@@ -306,7 +306,7 @@ bool emitter::IsRex2EncodableInstruction(instruction ins) const
 //
 bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
 {
-    if(!UsePromotedEVEXEncoding())
+    if (!UsePromotedEVEXEncoding())
     {
         return false;
     }
@@ -325,7 +325,7 @@ bool emitter::IsApxNDDEncodableInstruction(instruction ins) const
 //
 bool emitter::IsApxNFEncodableInstruction(instruction ins) const
 {
-    if(!UsePromotedEVEXEncoding())
+    if (!UsePromotedEVEXEncoding())
     {
         return false;
     }
@@ -344,7 +344,7 @@ bool emitter::IsApxNFEncodableInstruction(instruction ins) const
 //
 bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
 {
-    if(!UsePromotedEVEXEncoding())
+    if (!UsePromotedEVEXEncoding())
     {
         return false;
     }
@@ -1540,7 +1540,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
     // as the latter ones are relatively simple, providing EGPRs functionality,
     // (VEX has NF, this case needs to be investigated)
     instruction ins = id->idIns();
-    if(!IsApxExtendedEvexInstruction(ins))
+    if (!IsApxExtendedEvexInstruction(ins))
     {
         return false;
     }
@@ -1561,7 +1561,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return true;
     }
 
-    
 #if defined(DEBUG)
     if (emitComp->DoJitStressPromotedEvexEncoding())
     {
@@ -1606,10 +1605,10 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
 
-#define MAP4_IN_BYTE_EVEX_PREFIX 0x4000000000000ULL
+#define MAP4_IN_BYTE_EVEX_PREFIX  0x4000000000000ULL
 #define NDBIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
 #define NFBIT_IN_BYTE_EVEX_PREFIX 0x400000000ULL
-#define EXTENDED_EVEX_PP_BITS 0x10000000000ULL
+#define EXTENDED_EVEX_PP_BITS     0x10000000000ULL
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //
@@ -1672,7 +1671,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         if (instrIsExtendedReg3opImul(ins))
         {
             // EVEX.R3
-            // TODO-XArch-APX: 
+            // TODO-XArch-APX:
             // A few sidenotes: based on how JIT defined IMUL, we may need to extend
             // the definition to `IMUL_31` to cover EGPRs. And it can be defined in a
             // similar way that opcodes comes with built-in REX2 prefix, and convert
@@ -2508,8 +2507,6 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                 }
             }
 
-
-
             // Now the byte in the 22 position must be an escape byte 0F
             leadingBytes = check;
             assert(leadingBytes == 0x0F);
@@ -3135,7 +3132,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
     else if (IsRex2EncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins))
     {
         unsigned prefixAdjustedSize = 0;
-        if(TakesApxExtendedEvexPrefix(id))
+        if (TakesApxExtendedEvexPrefix(id))
         {
             prefixAdjustedSize = 4;
             // If the opcode will be prefixed by EVEX, then all the map-1-legacy instructions can remove the escape
@@ -3148,8 +3145,9 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
         else if (TakesRex2Prefix(id))
         {
             prefixAdjustedSize = 2;
-            // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape prefix
-            if(IsLegacyMap1(code))
+            // If the opcode will be prefixed by REX2, then all the map-1-legacy instructions can remove the escape
+            // prefix
+            if (IsLegacyMap1(code))
             {
                 prefixAdjustedSize -= 1;
             }
@@ -3979,7 +3977,8 @@ inline emitter::code_t emitter::insEncodeReg3456(const instrDesc* id, regNumber 
             return code ^ regBits;
         }
     }
-    else {
+    else
+    {
         assert(TakesApxExtendedEvexPrefix(id));
         assert(hasEvexPrefix(code));
 #if defined(TARGET_AMD64)
@@ -4428,7 +4427,9 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += (IsAvx512OrPriorInstruction(ins) || TakesApxExtendedEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
+        sz += (IsAvx512OrPriorInstruction(ins) || TakesApxExtendedEvexPrefix(id))
+                  ? emitInsSize(id, code, includeRexPrefixSize)
+                  : 5;
     }
     else
     {
@@ -5884,7 +5885,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                     assert(id != nullptr);
 
                     id->idIns(ins); // Set the instruction.
-                    if(useNDD)
+                    if (useNDD)
                     {
                         assert(memOp == src);
                         id->idReg1(targetReg);
@@ -6022,7 +6023,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             }
             else
             {
-                if(useNDD)
+                if (useNDD)
                 {
                     emitIns_R_R_S(ins, attr, targetReg, dst->GetRegNum(), varNum, offset, INS_OPTS_EVEX_nd);
                     return targetReg;
@@ -6071,8 +6072,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         {
             assert(!dst->isContained());
             GenTreeIntConCommon* intCns = src->AsIntConCommon();
-            
-            if(useNDD)
+
+            if (useNDD)
             {
                 emitIns_R_R_I(ins, attr, targetReg, dst->GetRegNum(), (int)intCns->IconValue(), INS_OPTS_EVEX_nd);
                 return targetReg;
@@ -6412,10 +6413,10 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
  *  Add an instruction referencing a register and a constant.
  */
 
-void emitter::emitIns_R_I(instruction ins,
-                          emitAttr    attr,
-                          regNumber   reg,
-                          ssize_t val,
+void emitter::emitIns_R_I(instruction         ins,
+                          emitAttr            attr,
+                          regNumber           reg,
+                          ssize_t             val,
                           insOpts instOptions DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     emitAttr size = EA_SIZE(attr);
@@ -7368,7 +7369,6 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     }
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
 
@@ -7431,7 +7431,7 @@ void emitter::emitIns_R_R_I(
             case INS_rol_N:
                 fmt = IF_RWR_RRD_SHF;
                 break;
-        
+
             default:
                 fmt = IF_RWR_RRD_CNS;
                 break;
@@ -13020,13 +13020,12 @@ void emitter::emitDispIns(
         {
             assert(IsApxExtendedEvexInstruction(id->idIns()));
             printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
-            
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
 
             emitDispShift(ins, (BYTE)val);
-            
+
             break;
         }
 
@@ -14573,7 +14572,7 @@ DONE:
                        ((id->idGCref() == GCT_GCREF) && insIsCMOV(ins)));
                 emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
                 break;
-            
+
             case IF_RWR_RRD_ARD:
                 assert(((id->idGCref() == GCT_BYREF) &&
                         (ins == INS_add || ins == INS_sub || ins == INS_sub_hide || insIsCMOV(ins))) ||
@@ -14863,10 +14862,10 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                     // These instructions do not support 1-byte inputs and the opcode is exact.
                     {
                         code |= 0x01;
-                    }     
+                    }
                     break;
                 }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 #ifdef TARGET_X86
             case EA_8BYTE:
@@ -15999,7 +15998,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #ifdef TARGET_AMD64
              || (ins == INS_lzcnt_evex) || (ins == INS_tzcnt_evex) || (ins == INS_popcnt_evex)
 #endif // TARGET_AMD64
-            )
+    )
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
@@ -16113,7 +16112,6 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         }
     }
 
-    
     unsigned regCode;
     if (!id->idIsEvexNdContextSet() || !IsApxNDDEncodableInstruction(ins))
     {
@@ -16123,7 +16121,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else
     {
         // unary ins with NDD form use Evex.vvvvv for dst, and ModRM.rm for src
-        code = insEncodeReg3456(id, reg1, size, code);
+        code    = insEncodeReg3456(id, reg1, size, code);
         regCode = insEncodeReg012(id, reg2, size, &code);
     }
 
@@ -16187,7 +16185,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         dst += emitOutputByte(dst, (code & 0xFF));
         dst += emitOutputByte(dst, (0xC0 | regCode | (code >> 8)));
-    }    
+    }
     else
     {
         dst += emitOutputWord(dst, code);
@@ -16391,7 +16389,8 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     instruction ins = id->idIns();
     assert(IsVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins) ||
+           IsApxExtendedEvexInstruction(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();
@@ -16409,14 +16408,14 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
         // op2 - MODRM.REG
         // op3 - MODRM.R/M
         regNumber tmp = src1;
-        src1 = targetReg;
-        targetReg = tmp;
+        src1          = targetReg;
+        targetReg     = tmp;
 
         switch (size)
         {
             case EA_1BYTE:
-                // TODO-APX : verify  We should never end up here. Atleast for instructions I have looked into, we promote to int
-                // to do operation
+                // TODO-APX : verify  We should never end up here. Atleast for instructions I have looked into, we
+                // promote to int to do operation
                 noway_assert(RBM_BYTE_REGS & genRegMask(src1));
                 noway_assert(RBM_BYTE_REGS & genRegMask(src2));
                 noway_assert(RBM_BYTE_REGS & genRegMask(targetReg));
@@ -16425,16 +16424,17 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
             case EA_2BYTE:
             case EA_4BYTE:
                 // Set the 'w' bit to get the large version
-                code = insIsCMOV(ins)? code : (code | (0x01));
+                code = insIsCMOV(ins) ? code : (code | (0x01));
                 break;
 
 #ifdef TARGET_AMD64
             case EA_8BYTE:
                 // TODO-AMD64-CQ: Better way to not emit REX.W when we don't need it
                 // Don't need to zero out the high bits explicitly
-                code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled differently? see emitOutputRR
+                code = AddRexWPrefix(id, code); // TODO-APX : Revisit. does xor or other cases need to be handled
+                                                // differently? see emitOutputRR
                 // Set the 'w' bit to get the large version
-                code = insIsCMOV(ins)? code : (code | (0x01));
+                code = insIsCMOV(ins) ? code : (code | (0x01));
                 break;
 
 #endif // TARGET_AMD64
@@ -18278,15 +18278,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (IsApxExtendedEvexInstruction(ins))
             {
                 assert(hasCodeMI(ins));
-                code = insCodeMI(ins);
-                code = AddX86PrefixIfNeeded(id, code, size);
-                code = insEncodeReg3456(id, id->idReg1(), size, code);
-                mReg = id->idReg2();
-                code = insEncodeMIreg(id, mReg, size, code);
-                rReg = REG_NA;
-                ssize_t val = emitGetInsSC(id);
-                bool valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
-                
+                code              = insCodeMI(ins);
+                code              = AddX86PrefixIfNeeded(id, code, size);
+                code              = insEncodeReg3456(id, id->idReg1(), size, code);
+                mReg              = id->idReg2();
+                code              = insEncodeMIreg(id, mReg, size, code);
+                rReg              = REG_NA;
+                ssize_t val       = emitGetInsSC(id);
+                bool    valInByte = ((signed char)val == (target_ssize_t)val) && (ins != INS_mov) && (ins != INS_test);
+
                 switch (size)
                 {
                     case EA_1BYTE:
@@ -18306,7 +18306,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         code |= 1;
                         break;
 #endif // TARGET_AMD64
-                    
+
                     default:
                         assert(!"unexpected size");
                 }
@@ -18616,10 +18616,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // need revisit.
                 id->idInsFmt(IF_RWR_RRD_ARD);
 
-                code = AddX86PrefixIfNeeded(id, code, size);
-                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                code    = AddX86PrefixIfNeeded(id, code, size);
+                code    = insEncodeReg3456(id, id->idReg1(), size, code);
                 regcode = (insEncodeReg345(id, id->idReg2(), size, &code) << 8);
-                dst = emitOutputAM(dst, id, code | regcode);
+                dst     = emitOutputAM(dst, id, code | regcode);
 
                 sz = emitSizeOfInsDsc_AMD(id);
                 break;
@@ -18897,12 +18897,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (id->idIsEvexNdContextSet() && IsApxNDDEncodableInstruction(ins))
             {
                 // EVEX.vvvv has different semantic for APX-EVEX NDD instructions.
-                code = insCodeRM(ins);
-                code = AddX86PrefixIfNeeded(id, code, size);
-                code = insEncodeReg3456(id, id->idReg1(), size, code);
+                code    = insCodeRM(ins);
+                code    = AddX86PrefixIfNeeded(id, code, size);
+                code    = insEncodeReg3456(id, id->idReg1(), size, code);
                 regcode = (insEncodeReg345(id, id->idReg2(), size, &code) << 8);
-                dst = emitOutputSV(dst, id, code | regcode);
-                sz = sizeof(instrDesc);
+                dst     = emitOutputSV(dst, id, code | regcode);
+                sz      = sizeof(instrDesc);
                 break;
             }
 
