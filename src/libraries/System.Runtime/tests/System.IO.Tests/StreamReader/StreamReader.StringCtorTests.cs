@@ -37,6 +37,42 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public static void NullEncodingParamInCtor_ShouldNotThrowException()
+        {
+            Action ctorParamsStringEncoding = () => new StreamReader("path", (Encoding)null);
+            var ctorParamsStringEncodingEx = Record.Exception(ctorParamsStringEncoding);
+            Assert.Null(ctorParamsStringEncodingEx);
+
+            Action ctorParamsStringEncodingBool = () => new StreamReader("path", (Encoding)null, false);
+            var ctorParamsStringEncodingBoolEx = Record.Exception(ctorParamsStringEncodingBool);
+            Assert.Null(ctorParamsStringEncodingBoolEx);
+
+            Action ctorParamsStringEncodingBoolOptions = () => new StreamReader("path", (Encoding)null, false, new FileStreamOptions());
+            var ctorParamsStringEncodingBoolOptionsEx = Record.Exception(ctorParamsStringEncodingBoolOptions);
+            Assert.Null(ctorParamsStringEncodingBoolOptionsEx);
+
+            Action ctorParamsStringEncodingBoolInt = () => new StreamReader("path", (Encoding)null, false, 100);
+            var ctorParamsStringEncodingBoolIntEx = Record.Exception(ctorParamsStringEncodingBoolInt);
+            Assert.Null(ctorParamsStringEncodingBoolIntEx);
+
+            Action ctorParamStreamEncoding = () => new StreamReader(new MemoryStream(), null);
+            var ctorParamStreamEncodingEx = Record.Exception(ctorParamStreamEncoding);
+            Assert.Null(ctorParamStreamEncodingEx);
+
+            Action ctorParamStreamEncodingBool = () => new StreamReader(new MemoryStream(), null, false);
+            var ctorParamStreamEncodingBoolEx = Record.Exception(ctorParamStreamEncodingBool);
+            Assert.Null(ctorParamStreamEncodingBoolEx);
+
+            Action ctorParamStreamEncodingBoolInt = () => new StreamReader(new MemoryStream(), null, false, 100);
+            var ctorParamStreamEncodingBoolIntEx = Record.Exception(ctorParamStreamEncodingBoolInt);
+            Assert.Null(ctorParamStreamEncodingBoolIntEx);
+
+            Action ctorParamStreamEncodingBoolIntBool = () => new StreamReader(new MemoryStream(), null, false, 100, false);
+            var ctorParamStreamEncodingBoolIntBoolEx = Record.Exception(ctorParamStreamEncodingBoolIntBool);
+            Assert.Null(ctorParamStreamEncodingBoolIntBoolEx);
+        }
+
+        [Fact]
         public static void NegativeBufferSize_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, -1));
