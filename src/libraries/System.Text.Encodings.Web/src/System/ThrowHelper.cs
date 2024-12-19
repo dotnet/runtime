@@ -46,11 +46,6 @@ namespace System
             throw new ArgumentOutOfRangeException(GetArgumentName(argument));
         }
 
-        private static ArgumentException GetArgumentException(ExceptionResource resource)
-        {
-            return new ArgumentException(GetResourceString(resource));
-        }
-
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
         {
             return new ArgumentOutOfRangeException(GetArgumentName(argument), GetResourceString(resource));
