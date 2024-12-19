@@ -2011,29 +2011,23 @@ namespace System
 
         internal static void ValidateGenericArguments(MemberInfo definition, RuntimeType[] genericArguments, Exception? e)
         {
-            RuntimeType[]? typeContext = null;
-            RuntimeType[]? methodContext = null;
+            RuntimeType? typeContext;
+            RuntimeMethodInfo? methodContext = null;
             RuntimeType[] genericParameters;
 
             if (definition is Type)
             {
-                RuntimeType genericTypeDefinition = (RuntimeType)definition;
-                genericParameters = genericTypeDefinition.GetGenericArgumentsInternal();
-                typeContext = genericArguments;
+                typeContext = (RuntimeType)definition;
+                genericParameters = typeContext.GetGenericArgumentsInternal();
             }
             else
             {
-                RuntimeMethodInfo genericMethodDefinition = (RuntimeMethodInfo)definition;
-                genericParameters = genericMethodDefinition.GetGenericArgumentsInternal();
-                methodContext = genericArguments;
-
-                RuntimeType? declaringType = (RuntimeType?)genericMethodDefinition.DeclaringType;
-                if (declaringType != null)
-                {
-                    typeContext = declaringType.TypeHandle.GetInstantiationInternal();
-                }
+                methodContext = (RuntimeMethodInfo)definition;
+                typeContext = (RuntimeType?)methodContext.DeclaringType;
+                genericParameters = methodContext.GetGenericArgumentsInternal();
             }
 
+            Debug.Assert(genericArguments.Length == genericParameters.Length);
             for (int i = 0; i < genericArguments.Length; i++)
             {
                 Type genericArgument = genericArguments[i];
@@ -3276,8 +3270,7 @@ namespace System
                 if (!IsGenericParameter)
                     throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
-                IRuntimeMethodInfo declaringMethod = RuntimeTypeHandle.GetDeclaringMethod(this);
-
+                IRuntimeMethodInfo? declaringMethod = RuntimeTypeHandle.GetDeclaringMethodForGenericParameter(this);
                 if (declaringMethod == null)
                     return null;
 

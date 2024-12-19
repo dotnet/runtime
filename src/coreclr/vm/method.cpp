@@ -3724,7 +3724,7 @@ PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
+REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
 {
     CONTRACTL
     {
