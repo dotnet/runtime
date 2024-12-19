@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			SealedConstructorAsSource.Test ();
 			InstantiatedGenericAsSource.Test ();
+			InstantiatedGenericAsSourceInstantiated.Test ();
 			EnumTypeSatisfiesPublicFields.Test ();
 			EnumConstraintSatisfiesPublicFields.Test ();
 			InstantiatedTypeParameterAsSource.Test ();
@@ -50,15 +51,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			class Generic<T> {
-				[ExpectedWarning ("IL2112")]
+				[ExpectedWarning ("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
 				[RequiresUnreferencedCode (nameof (KeptForMethodParameter))]
 				public void KeptForMethodParameter () {}
 
-				[ExpectedWarning ("IL2112")]
+				[ExpectedWarning ("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
 				[RequiresUnreferencedCode (nameof (KeptForField))]
 				public void KeptForField () {}
 
-				[ExpectedWarning ("IL2112")]
+				[ExpectedWarning ("IL2112", Tool.Trimmer | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/110563")]
 				[RequiresUnreferencedCode (nameof (KeptJustBecause))]
 				public void KeptJustBecause () {}
 			}
@@ -69,6 +70,43 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			static Generic<int> field = null;
+
+			static void TestField ()
+			{
+				field.GetType ().GetMethod ("KeptForField");
+			}
+
+			public static void Test ()
+			{
+				TestMethodParameter (null);
+				TestField ();
+			}
+		}
+
+		class InstantiatedGenericAsSourceInstantiated
+		{
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			class Generic<T>
+			{
+				[ExpectedWarning ("IL2112")]
+				[RequiresUnreferencedCode (nameof (KeptForMethodParameter))]
+				public void KeptForMethodParameter () { }
+
+				[ExpectedWarning ("IL2112")]
+				[RequiresUnreferencedCode (nameof (KeptForField))]
+				public void KeptForField () { }
+
+				[ExpectedWarning ("IL2112")]
+				[RequiresUnreferencedCode (nameof (KeptJustBecause))]
+				public void KeptJustBecause () { }
+			}
+
+			static void TestMethodParameter (Generic<int> instance)
+			{
+				instance.GetType ().GetMethod ("KeptForMethodParameter");
+			}
+
+			static Generic<int> field = new Generic<int> ();
 
 			static void TestField ()
 			{

@@ -330,7 +330,6 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     }
     else
     {
-#if defined(HOST_AMD64)
         bool fSetFilename = true;
         // Since realpath implementation cannot handle inexistent filenames,
         // check if we are going to truncate the "/" corresponding to the
@@ -354,8 +353,9 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             fSetFilename = false;
         }
         else
-#endif // defined(HOST_AMD64)
+        {
             *pchSeparator = '\0';
+        }
 
         if (!RealPathHelper(lpExistingPath, lpBuffer))
         {
@@ -364,16 +364,12 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             goto LExit;
         }
 
-#if defined(HOST_AMD64)
         if (fSetFilename == true)
-#endif // defined(HOST_AMD64)
             lpFilename = pchSeparator + 1;
     }
 
-#if defined(HOST_AMD64)
     if (lpFilename == NULL)
         goto LExit;
-#endif // HOST_AMD64
 
     if (!lpBuffer.Append("/",1) || !lpBuffer.Append(lpFilename, strlen(lpFilename)))
     {

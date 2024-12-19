@@ -648,6 +648,7 @@ protected:
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsApx();
 #endif
 
 #endif // defined(DEBUG)
