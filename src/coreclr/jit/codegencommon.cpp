@@ -3293,7 +3293,7 @@ void CodeGen::genSpillOrAddRegisterParam(
 #ifdef TARGET_ARM
         if (edgeType == TYP_DOUBLE)
         {
-            assert(segment.Offset == baseOffset);
+            assert(offset == 0);
             graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
 
             sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
