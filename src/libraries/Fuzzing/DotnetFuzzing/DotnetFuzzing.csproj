@@ -29,7 +29,9 @@
     <Compile Include="Fuzzers\TextEncodingFuzzer.cs" />
     <Compile Include="Fuzzers\TypeNameFuzzer.cs" />
     <Compile Include="Fuzzers\UTF8Fuzzer.cs" />
+    <Compile Include="Fuzzers\Utf8JsonWriterFuzzer.cs" />
     <Compile Include="IFuzzer.cs" />
+    <Compile Include="MemoryBackedStream.cs" />
     <Compile Include="PooledBoundedMemory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
@@ -40,6 +42,10 @@
     <None Include="Dictionaries\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="MemoryBackedStream.cs" />
   </ItemGroup>
 
   <ItemGroup>

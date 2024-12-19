@@ -79,20 +79,22 @@ namespace System.Text.Json.Tests
 
                 // 3-byte sequence containing < 3 bytes
                 [0b1110_1111],
-                // For some reason an invalid 3-byte code point is only replaced
-                // by one replacement character unlike in the 4-byte case
                 [0b1110_1111, 0b10_111111],
                 
                 // 3-byte overlong
                 [0b1110_0000, 0b10_000000, 0b10_000000],
 
                 // 4-byte sequence containing < 4 bytes
-                [0b11110_111],
-                [0b11110_111, 0b10_111111],
-                [0b11110_111, 0b10_111111, 0b10_111111],
+                [0b11110_100],
+                [0b11110_100, 0b10_001111],
+                [0b11110_100, 0b10_001111, 0b10_111111],
                 
                 // 4-byte overlong
                 [0b11110_000, 0b10_000000, 0b10_000000, 0b10_000000],
+
+                // Greater than Unicode max value
+                [0b11110_111, 0b10_000000],
+                [0b11110_100, 0b10_100000, 0b10_000000],
             ];
 
             // Separate each case with a character
@@ -887,6 +889,80 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
                 jsonUtf8.Flush();
                 JsonTestHelper.AssertContents(@"""\uFFFD", output);
+            }
+        }
+
+        [Fact]
+        public static void WriteStringValueSegment_Empty()
+        {
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false);
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
             }
         }
 
