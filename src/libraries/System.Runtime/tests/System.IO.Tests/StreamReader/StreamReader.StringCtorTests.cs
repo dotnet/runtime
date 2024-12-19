@@ -39,19 +39,19 @@ namespace System.IO.Tests
         [Fact]
         public static void NullEncodingParamInCtor_ShouldNotThrowException()
         {
-            Action ctorParamsStringEncoding = () => new StreamReader("path", (Encoding)null);
+            Action ctorParamsStringEncoding = () => new StreamReader("", (Encoding)null);
             var ctorParamsStringEncodingEx = Record.Exception(ctorParamsStringEncoding);
             Assert.Null(ctorParamsStringEncodingEx);
 
-            Action ctorParamsStringEncodingBool = () => new StreamReader("path", (Encoding)null, false);
+            Action ctorParamsStringEncodingBool = () => new StreamReader("", (Encoding)null, false);
             var ctorParamsStringEncodingBoolEx = Record.Exception(ctorParamsStringEncodingBool);
             Assert.Null(ctorParamsStringEncodingBoolEx);
 
-            Action ctorParamsStringEncodingBoolOptions = () => new StreamReader("path", (Encoding)null, false, new FileStreamOptions());
+            Action ctorParamsStringEncodingBoolOptions = () => new StreamReader("", (Encoding)null, false, new FileStreamOptions());
             var ctorParamsStringEncodingBoolOptionsEx = Record.Exception(ctorParamsStringEncodingBoolOptions);
             Assert.Null(ctorParamsStringEncodingBoolOptionsEx);
 
-            Action ctorParamsStringEncodingBoolInt = () => new StreamReader("path", (Encoding)null, false, 100);
+            Action ctorParamsStringEncodingBoolInt = () => new StreamReader("", (Encoding)null, false, 100);
             var ctorParamsStringEncodingBoolIntEx = Record.Exception(ctorParamsStringEncodingBoolInt);
             Assert.Null(ctorParamsStringEncodingBoolIntEx);
 
