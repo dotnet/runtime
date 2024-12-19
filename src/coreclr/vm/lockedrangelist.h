@@ -31,6 +31,14 @@ class LockedRangeList : public RangeList
         return RangeList::IsInRangeWorker(address, pID);
     }
 
+    template<class F>
+    void ForEachInRangeWorker_Unlocked(TADDR address, F func) const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+        return RangeList::ForEachInRangeWorker(address, func);
+    }
+
   protected:
 
     virtual BOOL AddRangeWorker(const BYTE *start, const BYTE *end, void *id)

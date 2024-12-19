@@ -66,7 +66,8 @@ void PromoteCarefully(promote_func   fn,
                       uint32_t       flags = GC_CALL_INTERIOR);
 
 class LoaderAllocator;
-void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator *pLoaderAllocator);
+bool GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator *pLoaderAllocator
+    DEBUG_ARG(bool checkCollectibleObjRef = true));
 
 //---------------------------------------------------------------------------------------
 //

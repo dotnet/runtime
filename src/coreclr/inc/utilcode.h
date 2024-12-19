@@ -3127,6 +3127,31 @@ class RangeList
 
     virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL);
 
+    template<class F>
+    void ForEachInRangeWorker(TADDR address, F func) const
+    {
+        CONTRACTL
+        {
+            INSTANCE_CHECK;
+            NOTHROW;
+            FORBID_FAULT;
+            GC_NOTRIGGER;
+        }
+        CONTRACTL_END
+
+        SUPPORTS_DAC;
+
+        for (const RangeListBlock* b = &m_starterBlock; b != nullptr; b = b->next)
+        {
+            for (const Range r : b->ranges)
+            {
+                if (r.id != (TADDR)nullptr && address >= r.start && address < r.end)
+                    func(r.id);
+            }
+        }
+    }
+
+
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
 #endif
