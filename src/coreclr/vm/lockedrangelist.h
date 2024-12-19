@@ -24,11 +24,11 @@ class LockedRangeList : public RangeList
         LIMITED_METHOD_CONTRACT;
     }
 
-    BOOL IsInRangeWorker_Unlocked(TADDR address, TADDR *pID = NULL)
+    BOOL IsInRangeWorker_Unlocked(TADDR address)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return RangeList::IsInRangeWorker(address, pID);
+        return RangeList::IsInRangeWorker(address);
     }
 
     template<class F>
@@ -55,12 +55,12 @@ class LockedRangeList : public RangeList
         RangeList::RemoveRangesWorker(id);
     }
 
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL)
+    virtual BOOL IsInRangeWorker(TADDR address)
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         SimpleReadLockHolder lh(&m_RangeListRWLock);
-        return RangeList::IsInRangeWorker(address, pID);
+        return RangeList::IsInRangeWorker(address);
     }
 
     SimpleRWLock m_RangeListRWLock;
