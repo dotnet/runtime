@@ -1029,67 +1029,66 @@ namespace System.Runtime.InteropServices
                 flags);
 
             object actualProxy = comProxy;
+            NativeObjectWrapper actualWrapper = nativeObjectWrapper;
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
                 // Add our entry to the cache here, using an already existing entry if someone else beat us to it.
-                actualProxy = _rcwCache.GetOrAddProxyForComInstance(identity, nativeObjectWrapper);
-
-                // Explicitly keep alive our proxy instance while inserting the wrapper (which only keeps a weak reference)
-                // into the cache. This ensures that the proxy instance is kept alive until we have the actualProxy instance
-                // updated to whatever object we are going to use.
-                GC.KeepAlive(comProxy);
+                (actualWrapper, actualProxy) = _rcwCache.GetOrAddProxyForComInstance(identity, nativeObjectWrapper, comProxy);
+                if (actualWrapper != nativeObjectWrapper)
+                {
+                    // We raced with another thread to map identity to nativeObjectWrapper
+                    // and lost the race. We will use the other thread's nativeObjectWrapper, so we can release ours.
+                    nativeObjectWrapper.Release();
+                }
             }
 
-            // At this point, actualProxy is the RCW object for the identity.
+            // At this point, actualProxy is the RCW object for the identity
+            // and actualWrapper is the NativeObjectWrapper that is in the RCW cache that associates the identity with actualProxy.
             // Register the NativeObjectWrapper to handle lifetime tracking of the references to the COM object.
-            RegisterWrapperForObject(actualProxy, nativeObjectWrapper, _rcwCache);
+            RegisterWrapperForObject(actualWrapper, actualProxy);
 
             return actualProxy;
         }
 
-        private static void RegisterWrapperForObject(object comProxy, NativeObjectWrapper newWrapper, RCWCache rcwCache)
+        private void RegisterWrapperForObject(NativeObjectWrapper wrapper, object comProxy)
         {
-            if (s_nativeObjectWrapperTable.TryGetValue(comProxy, out NativeObjectWrapper? registeredWrapper))
+            // When we call into RegisterWrapperForObject, there is only one valid wrapper for a given
+            // COM instance. If we find a wrapper in the table that is a different NativeObjectWrapper instance
+            // then it must be for a different COM instance.
+            // It's possible that we could race here with another thread that is trying to register the same comProxy
+            // for the same COM instance, but in that case we'll be pased the same NativeObjectWrapper instance
+            // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
+            // as the entry is always the same pair.
+            Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+            Debug.Assert(_rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
+
+            if (s_nativeObjectWrapperTable.TryGetValue(comProxy, out NativeObjectWrapper? registeredWrapper)
+                && registeredWrapper != wrapper)
             {
-                // A native wrapper already exists for this managed object.
-                // Make sure it is for the same COM instance.
-                CheckForDifferentComInstances(registeredWrapper, newWrapper, rcwCache);
-                return;
+                Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
+                _rcwCache.Remove(wrapper.ExternalComObject, wrapper);
+                wrapper.Release();
+                throw new NotSupportedException();
             }
 
-            registeredWrapper = GetValueFromRcwTable(comProxy, newWrapper);
-            if (registeredWrapper != newWrapper)
+            registeredWrapper = GetValueFromRcwTable(comProxy, wrapper);
+            if (registeredWrapper != wrapper)
             {
-                // We can race here if the user is trying to register the same managed object as the managed wrapper
-                // on two different threads. This is okay only if the managed object is being registered as wrapper
-                // for the same COM instance.
-                CheckForDifferentComInstances(registeredWrapper, newWrapper, rcwCache);
+                Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
+                _rcwCache.Remove(wrapper.ExternalComObject, wrapper);
+                wrapper.Release();
+                throw new NotSupportedException();
             }
 
             // Always register our wrapper to the reference tracker handle cache here.
             // We may not be the thread that registered the handle, but we need to ensure that the wrapper
-            // is registered before we return to user code. Otherwise the wrapper won't be walked by the GC
-            // and we could end up missing a section of the object graph.
-            // This cache handles duplicates, so it is okay that the wrapper will be registered multiple times.
+            // is registered before we return to user code. Otherwise the wrapper won't be walked by the
+            // TrackerObjectManager and we could end up missing a section of the object graph.
+            // This cache deduplicates, so it is okay that the wrapper will be registered multiple times.
             AddWrapperToReferenceTrackerHandleCache(registeredWrapper);
 
             // Separate out into a local function to avoid the closure and delegate allocation unless we need it.
             static NativeObjectWrapper GetValueFromRcwTable(object userObject, NativeObjectWrapper newWrapper) => s_nativeObjectWrapperTable.GetValue(userObject, _ => newWrapper);
-
-            static void CheckForDifferentComInstances(NativeObjectWrapper registeredWrapper, NativeObjectWrapper newWrapper, RCWCache rcwCache)
-            {
-                if (registeredWrapper.ExternalComObject != newWrapper.ExternalComObject)
-                {
-                    // We can only race here if the user is trying to register the same managed object as the managed wrapper
-                    // for two different COM instances.
-                    // In this case, we need to throw an exception.
-
-                    // Remove this entry from the cache as comProxy won't be the RCW for externalComObject.
-                    rcwCache.Remove(newWrapper.ExternalComObject, newWrapper);
-                    newWrapper.Release();
-                    throw new NotSupportedException();
-                }
-            }
         }
 
         private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)
@@ -1100,17 +1099,23 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        internal sealed class RCWCache
+        private sealed class RCWCache
         {
             private readonly Lock _lock = new Lock(useTrivialWaits: true);
             private readonly Dictionary<object, WeakReference<NativeObjectWrapper>> _cache = [];
 
-            public object GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper)
+            /// <summary>
+            /// Gets the current RCW proxy object for <paramref name="comPointer"/> if it exists in the cache or inserts a new entry with <paramref name="comProxy"/>.
+            /// </summary>
+            /// <param name="comPointer">The com instance we want to get or record an RCW for.</param>
+            /// <param name="wrapper">The <see cref="NativeObjectWrapper"/> for <paramref name="comProxy"/>.</param>
+            /// <param name="comProxy">The proxy object that is associated with <paramref name="wrapper"/>.</param>
+            /// <returns>The proxy object currently in the cache for <paramref name="comPointer"/> or the proxy object owned by <paramref name="wrapper"/> if no entry exists and the corresponding native wrapper.</returns>
+            public (NativeObjectWrapper actualWrapper, object actualProxy) GetOrAddProxyForComInstance(IntPtr comPointer, NativeObjectWrapper wrapper, object comProxy)
             {
                 lock (_lock)
                 {
-                    object targetObject = wrapper.ProxyHandle.Target!;
-                    Debug.Assert(targetObject is not null, "targetObject should be kept alive in the caller.");
+                    Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
                     ref WeakReference<NativeObjectWrapper>? rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
                     if (!exists)
                     {
@@ -1131,7 +1136,7 @@ namespace System.Runtime.InteropServices
                         if (existingProxy is not null)
                         {
                             // The existing proxy object is still alive, we will use that.
-                            return existingProxy;
+                            return (cachedWrapper, existingProxy);
                         }
 
                         // The proxy object was collected, so we need to update the cache entry.
@@ -1140,7 +1145,7 @@ namespace System.Runtime.InteropServices
 
                     // We either added an entry to the cache or updated an existing entry that was dead.
                     // Return our target object.
-                    return targetObject;
+                    return (wrapper, comProxy);
                 }
             }
 
