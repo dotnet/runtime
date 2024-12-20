@@ -41,15 +41,13 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.320.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
+        - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.320.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
-        - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
+        - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.320.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
-      - (Alpine.318.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-arm64v8
+      - (Alpine.321.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -66,7 +64,6 @@ jobs:
             - (Fedora.41.Amd64.Open)ubuntu.2204.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-41-helix
             - Ubuntu.2204.Amd64.Open
             - (Debian.12.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
-            - (Mariner.2.0.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix-amd64
             - (AzureLinux.3.0.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
             - (openSUSE.15.2.Amd64.Open)Ubuntu.2204.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
