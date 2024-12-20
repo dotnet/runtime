@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Frozen
 {
@@ -17,7 +18,6 @@ namespace System.Collections.Frozen
     {
         private readonly uint _multiplier;
         private readonly char[] _hashEntries;
-        private char[]? _items;
 
         internal PerfectHashCharFrozenSet(ReadOnlySpan<char> values) : base(EqualityComparer<char>.Default)
         {
@@ -32,17 +32,11 @@ namespace System.Collections.Frozen
             PerfectHashLookup.Initialize(values, max, out _multiplier, out _hashEntries);
         }
 
-        private char[] AllocateItemsArray()
-        {
-            var set = new HashSet<char>(_hashEntries);
-            char[] items = new char[set.Count];
-            set.CopyTo(items);
-            _items = items;
-            return items;
-        }
+        private char[] AllocateItemsArray() => [.. new HashSet<char>(_hashEntries)];
 
         /// <inheritdoc />
-        private protected override char[] ItemsCore => _items ?? AllocateItemsArray();
+        [field: MaybeNull]
+        private protected override char[] ItemsCore => field ??= AllocateItemsArray();
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(ItemsCore);

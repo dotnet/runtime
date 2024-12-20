@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Frozen
 {
@@ -12,7 +13,6 @@ namespace System.Collections.Frozen
     {
         private readonly BitVector256 _values;
         private readonly int _count;
-        private byte[]? _items;
 
         internal ByteFrozenSet(ReadOnlySpan<byte> values) : base(EqualityComparer<byte>.Default)
         {
@@ -39,7 +39,8 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected override byte[] ItemsCore => _items ??= _values.GetByteValues();
+        [field: MaybeNull]
+        private protected override byte[] ItemsCore => field ??= _values.GetByteValues();
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(ItemsCore);

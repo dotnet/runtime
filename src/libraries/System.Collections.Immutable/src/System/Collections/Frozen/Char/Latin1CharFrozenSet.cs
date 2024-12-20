@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Frozen
 {
@@ -16,7 +17,6 @@ namespace System.Collections.Frozen
     {
         private readonly BitVector256 _values;
         private readonly int _count;
-        private char[]? _items;
 
         internal Latin1CharFrozenSet(ReadOnlySpan<char> values) : base(EqualityComparer<char>.Default)
         {
@@ -37,7 +37,8 @@ namespace System.Collections.Frozen
         }
 
         /// <inheritdoc />
-        private protected override char[] ItemsCore => _items ??= _values.GetCharValues();
+        [field: MaybeNull]
+        private protected override char[] ItemsCore => field ??= _values.GetCharValues();
 
         /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(ItemsCore);
