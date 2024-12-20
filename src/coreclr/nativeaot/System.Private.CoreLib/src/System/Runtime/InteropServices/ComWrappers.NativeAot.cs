@@ -484,9 +484,6 @@ namespace System.Runtime.InteropServices
                     // There are still outstanding references on the COM side.
                     // This case should only be hit when an outstanding
                     // tracker refcount exists from AddRefFromReferenceTracker.
-                    // When implementing IReferenceTrackerHost, this should be
-                    // reconsidered.
-                    // https://github.com/dotnet/runtime/issues/85137
                     GC.ReRegisterForFinalize(this);
                 }
             }
