@@ -86,7 +86,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
 
             // We cannot use the new keyword just yet, so stackalloc the array first
-            TypeManagerHandle* pHandles = stackalloc TypeManagerHandle[moduleCount];
+            Span<TypeManagerHandle> pHandles = stackalloc TypeManagerHandle[moduleCount];
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {

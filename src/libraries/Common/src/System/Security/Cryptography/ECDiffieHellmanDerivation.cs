@@ -97,6 +97,9 @@ namespace System.Security.Cryptography
             }
         }
 
+        private const int Sha1Size = 20;
+        private const int Md5Size = 16;
+
         internal static unsafe byte[] DeriveKeyTls(
             ECDiffieHellmanPublicKey otherPartyPublicKey,
             ReadOnlySpan<byte> prfLabel,
@@ -112,9 +115,6 @@ namespace System.Security.Cryptography
 
             // Windows produces a 48-byte output, so that's what we do, too.
             byte[] ret = new byte[48];
-
-            const int Sha1Size = 20;
-            const int Md5Size = 16;
 
             byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, null);
             Debug.Assert(secretAgreement != null);
@@ -147,7 +147,8 @@ namespace System.Security.Cryptography
                         Md5Size,
                         ret);
 
-                    Span<byte> part2 = stackalloc byte[ret.Length];
+                    Debug.Assert(ret.Length == 48);
+                    Span<byte> part2 = stackalloc byte[48];
 
                     PHash(
                         HashAlgorithmName.SHA1,
@@ -193,6 +194,7 @@ namespace System.Security.Cryptography
 
             using (IncrementalHash hasher = IncrementalHash.CreateHMAC(algorithmName, secret))
             {
+                Debug.Assert(hashOutputSize is Sha1Size or Md5Size);
                 Span<byte> a = stackalloc byte[hashOutputSize];
                 Span<byte> p = stackalloc byte[hashOutputSize];
 

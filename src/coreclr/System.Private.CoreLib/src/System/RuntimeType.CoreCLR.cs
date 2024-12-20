@@ -346,17 +346,9 @@ namespace System
                             // allocating on the stack is faster than allocating on the GC heap
                             // but we surely don't want to cause a stack overflow
                             // no one should be looking for a member whose name is longer than 1024
-                            if (cUtf8Name > MAXNAMELEN)
+                            Span<byte> utf8Name = (uint)cUtf8Name > MAXNAMELEN ? new byte[cUtf8Name] : stackalloc byte[cUtf8Name];
+                            fixed (byte* pUtf8Name = utf8Name)
                             {
-                                byte[] utf8Name = new byte[cUtf8Name];
-                                fixed (byte* pUtf8Name = &utf8Name[0])
-                                {
-                                    list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
-                                }
-                            }
-                            else
-                            {
-                                byte* pUtf8Name = stackalloc byte[cUtf8Name];
                                 list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
                             }
                         }
@@ -650,8 +642,8 @@ namespace System
 
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                        bool* overrides = stackalloc bool[numVirtuals];
-                        new Span<bool>(overrides, numVirtuals).Clear();
+                        Span<bool> overrides = (uint)numVirtuals > 512 ? new bool[numVirtuals] : stackalloc bool[numVirtuals];
+                        overrides.Clear();
 
                         bool isValueType = declaringType.IsActualValueType;
 
@@ -1235,16 +1227,8 @@ namespace System
 
                         // All elements initialized to false.
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
-                        scoped Span<bool> usedSlots;
-                        if (numVirtuals <= 128) // arbitrary stack limit
-                        {
-                            usedSlots = stackalloc bool[numVirtuals];
-                            usedSlots.Clear();
-                        }
-                        else
-                        {
-                            usedSlots = new bool[numVirtuals];
-                        }
+                        Span<bool> usedSlots = (uint)numVirtuals > 128 ? new bool[numVirtuals] : stackalloc bool[numVirtuals];
+                        usedSlots.Clear(); // we don't have to clear it for > 128, but we assume it's a rare case.
 
                         // Populate associates off of the class hierarchy
                         RuntimeType? populatingType = declaringType;

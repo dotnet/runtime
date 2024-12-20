@@ -158,7 +158,7 @@ internal static partial class Interop
                 notNullOutput = (stackalloc byte[1]).Slice(1);
             }
 
-            fixed (byte* pOutput = &MemoryMarshal.GetReference(notNullOutput))
+            fixed (byte* pOutput = notNullOutput)
             {
                 return EvpAeadCipherFinalEx(ctx, pOutput, out bytesWritten, out authTagMismatch);
             }
