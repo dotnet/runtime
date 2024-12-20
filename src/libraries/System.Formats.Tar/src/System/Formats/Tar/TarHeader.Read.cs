@@ -572,7 +572,7 @@ namespace System.Formats.Tar
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = (uint)size <= 256 ?
+                Span<byte> span = (ulong)size <= 256 ?
                     stackalloc byte[256] :
                     (buffer = ArrayPool<byte>.Shared.Rent((int)size));
                 span = span.Slice(0, (int)size);
@@ -643,7 +643,7 @@ namespace System.Formats.Tar
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = (uint)size <= 256 ?
+                Span<byte> span = (ulong)size <= 256 ?
                     stackalloc byte[256] :
                     (buffer = ArrayPool<byte>.Shared.Rent((int)size));
                 span = span.Slice(0, (int)size);
