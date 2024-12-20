@@ -55,7 +55,7 @@
     <NuGetPackages Include="@(VerticalVisibilityNuGetPackages)" Visibility="Vertical" />
     <NuGetPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(NuGetPackages)" />
 
-    <NuGetPackages PublishFlatContainer="false" />
+    <NuGetPackages Update="@(NuGetPackages)" PublishFlatContainer="false" />
 
     <Archives Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                        $(ArtifactsPackagesDir)**\*.zip"
