@@ -76,6 +76,7 @@ endm
 ;;
 ;; Register state on exit:
 ;;  RDX: thread pointer
+;;  RCX: return value flags
 ;;  RAX: preserved, other volatile regs trashed
 ;;
 FixupHijackedCallstack macro
@@ -86,10 +87,14 @@ FixupHijackedCallstack macro
         mov         rcx, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
+        ;; Fetch the return address flags
+        mov         rcx, [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
+
         ;; Clear hijack state
-        xor         ecx, ecx
-        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
-        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
+        xor         r9, r9
+        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
+        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
+        mov         [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
 endm
 
 EXTERN RhpPInvokeExceptionGuard : PROC
@@ -105,7 +110,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         jnz         @f
         ret
 @@:
-        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_THREAD_HIJACK
+        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
         jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 
