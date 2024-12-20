@@ -248,8 +248,6 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
         tree = fgMorphArgs(call);
     }
 
-    tree->SetMorphed(this);
-
     return tree;
 }
 
@@ -554,12 +552,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Fix the return type to be TYP_DOUBLE
             //
             oper->gtType = TYP_DOUBLE;
-            oper->SetMorphed(this);
 
             // Add a Cast to TYP_FLOAT
             //
             tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
-            tree->SetMorphed(this);
+            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
             return tree;
         }
         else
@@ -653,6 +651,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 // of cases we can handle.
                 shiftAmount         = gtFoldExpr(shiftAmount);
                 oper->AsOp()->gtOp2 = shiftAmount;
+
+#if DEBUG
+                // We may remorph the shift amount tree again later, so clear any morphed flag.
+                shiftAmount->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
 
                 if (shiftAmount->IsIntegralConst())
                 {
@@ -1657,7 +1660,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 {
                     unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
                     GenTree* store     = comp->gtNewTempStore(tmpVarNum, use.GetNode());
-                    store->SetMorphed(comp);
+
+                    INDEBUG(store->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                     if (setupArg == nullptr)
                     {
@@ -1666,12 +1670,10 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     else
                     {
                         setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, store);
-                        setupArg->SetMorphed(comp);
+                        INDEBUG(setupArg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                     }
 
-                    GenTree* setupUse = comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode()));
-                    setupUse->SetMorphed(comp);
-                    use.SetNode(setupUse);
+                    use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
                     fieldList->AddAllEffectsFlags(use.GetNode());
                 }
 
@@ -1683,7 +1685,8 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
 
                 setupArg = comp->gtNewTempStore(tmpVarNum, argx);
-                setupArg->SetMorphed(comp, /* doChildren */ true);
+
+                INDEBUG(setupArg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                 LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
                 var_types  lclVarType = genActualType(argx->gtType);
@@ -1712,7 +1715,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     // Create a copy of the temp to go to the late argument list
                     defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
                 }
-                defArg->SetMorphed(comp);
             }
 
 #ifdef DEBUG
@@ -1966,8 +1968,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         GenTree* offsetNode = comp->gtNewIconNode(comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell, TYP_I_IMPL);
         GenTree* newArg     = comp->gtNewOperNode(GT_ADD, TYP_BYREF, cloned, offsetNode);
-
-        newArg->SetMorphed(comp, /* doChildren */ true);
 
         // Append newArg as the last arg
         PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
@@ -3081,7 +3081,6 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             {
                 GenTreeLclFld* lclFld = gtNewLclFldNode(argNode->AsLclVarCommon()->GetLclNum(), genActualType(type),
                                                         argNode->AsLclVarCommon()->GetLclOffs() + offset);
-                lclFld->SetMorphed(this);
                 return lclFld;
             }
             else
@@ -3104,13 +3103,11 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
-                indir->SetMorphed(this, /* doChildren*/ true);
                 return indir;
             }
         };
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
-        newArg->SetMorphed(this);
 
         for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
         {
@@ -3175,11 +3172,9 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
-        lclVar->SetMorphed(this);
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
-    fieldList->SetMorphed(this);
     return fieldList;
 }
 
@@ -3348,20 +3343,16 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     // For fixed out args we create the setup node here; EvalArgsToTemps knows
     // to handle the case of "already have a setup node" properly.
     arg->SetEarlyNode(copyBlk);
-    GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
-    argNode->SetMorphed(this);
-    arg->SetLateNode(argNode);
+    arg->SetLateNode(call->gtArgs.MakeTmpArgNode(this, arg, tmp));
 
 #else // !FEATURE_FIXED_OUT_ARGS
 
     // Structs are always on the stack, and thus never need temps
     // so we have to put the copy and temp all into one expression.
     GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
-    argNode->SetMorphed(this);
 
     // Change the expression to "(tmp=val),tmp"
     argNode = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
-    argNode->SetMorphed(this);
 
     arg->SetEarlyNode(argNode);
 
@@ -3798,6 +3789,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     DISPTREE(tree)
 
     tree = fgMorphTree(tree);
+    DBEXEC(tree == indexAddr, tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     JITDUMP("fgMorphIndexAddr (after remorph):\n")
     DISPTREE(tree)
@@ -3822,6 +3814,7 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     if (expandedTree != nullptr)
     {
         expandedTree = fgMorphTree(expandedTree);
+        DBEXEC(expandedTree == lclNode, expandedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
         return expandedTree;
     }
 
@@ -4199,7 +4192,7 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
     if (tree->OperIsSimple())
     {
         result = fgMorphSmpOp(tree, mac);
-        result->SetMorphed(this);
+        DBEXEC(result != fieldNode, result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         // Quirk: preserve previous behavior with this NO_CSE.
         if (isAddr && result->OperIs(GT_COMMA))
@@ -4210,6 +4203,7 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
     else
     {
         result = fgMorphTree(tree, mac);
+        DBEXEC(result == fieldNode, result->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
     }
 
     JITDUMP("\nFinal value of Compiler::fgMorphFieldAddr after morphing:\n");
@@ -5590,8 +5584,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
         if (isRootReplaced)
         {
-            call->SetMorphed(this);
-
             // We have replaced the root node of this stmt and deleted the rest,
             // but we still have the deleted, dead nodes on the `fgMorph*` stack
             // if the root node was a store, `RET` or `CAST`.
@@ -6676,11 +6668,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // block won't be in the loop (it's assumed to have no predecessors), we need to update the special local here.
     if (!info.compIsStatic && (lvaArg0Var != info.compThisArg))
     {
-        GenTree* const thisArg = gtNewLclVarNode(info.compThisArg);
-        thisArg->SetMorphed(this);
-        GenTree* const arg0Store = gtNewStoreLclVarNode(lvaArg0Var, thisArg);
-        arg0Store->SetMorphed(this);
-        Statement* const arg0StoreStmt = gtNewStmt(arg0Store, callDI);
+        GenTree*   arg0Store     = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
+        Statement* arg0StoreStmt = gtNewStmt(arg0Store, callDI);
         fgInsertStmtBefore(block, paramAssignmentInsertionPoint, arg0StoreStmt);
     }
 
@@ -6733,13 +6722,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
             {
                 GenTree* zero = (lclType == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclType);
-                zero->SetMorphed(this);
                 GenTree* init = gtNewStoreLclVarNode(varNum, zero);
-
-                // No need for assertion prop here since the first block is now an (opaque) join
-                // and has already been morphed.
-                init->SetMorphed(this);
-                init->gtType = lclType; // TODO-ASG: delete this zero-diff quirk.
+                init->gtType  = lclType; // TODO-ASG: delete this zero-diff quirk.
                 if (lclType == TYP_STRUCT)
                 {
                     init = fgMorphInitBlock(init);
@@ -6844,27 +6828,17 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*         arg,
             // The argument is not assigned to a temp. We need to create a new temp and insert a store.
             unsigned tmpNum         = lvaGrabTemp(true DEBUGARG("arg temp"));
             lvaTable[tmpNum].lvType = arg->gtType;
-            GenTree* tempSrc        = arg;
-            GenTree* tmpStoreNode   = gtNewStoreLclVarNode(tmpNum, tempSrc);
-            tmpStoreNode->SetMorphed(this);
+            GenTree*   tempSrc      = arg;
+            GenTree*   tmpStoreNode = gtNewStoreLclVarNode(tmpNum, tempSrc);
             Statement* tmpStoreStmt = gtNewStmt(tmpStoreNode, callDI);
             fgInsertStmtBefore(block, tmpAssignmentInsertionPoint, tmpStoreStmt);
             argInTemp = gtNewLclvNode(tmpNum, tempSrc->gtType);
-
-            // No need for assertion prop here since the first block is now an opqaque join
-            // and has laready been morphed
-            argInTemp->SetMorphed(this);
         }
 
         // Now assign the temp to the parameter.
         assert(lvaGetDesc(lclParamNum)->lvIsParam);
         GenTree* paramStoreNode = gtNewStoreLclVarNode(lclParamNum, argInTemp);
-
-        // No need for assertion prop here since the first block is now an opqaque join
-        // and has laready been morphed
-        paramStoreNode->SetMorphed(this);
-
-        paramAssignStmt = gtNewStmt(paramStoreNode, callDI);
+        paramAssignStmt         = gtNewStmt(paramStoreNode, callDI);
 
         fgInsertStmtBefore(block, paramAssignmentInsertionPoint, paramAssignStmt);
     }
@@ -6925,7 +6899,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
             JITDUMP("\nInserting store of a multi-reg call result to a temp:\n");
             DISPSTMT(storeStmt);
-            result->SetMorphed(this);
+            INDEBUG(result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             return result;
         }
@@ -7117,18 +7091,32 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 else
                 {
                     argSetup = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, setupArgNode);
-                    argSetup->SetMorphed(this);
+#if DEBUG
+                    argSetup->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
                 }
             }
+
+#ifdef DEBUG
+            auto resetMorphedFlag = [](GenTree** slot, fgWalkData* data) -> fgWalkResult {
+                (*slot)->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+                return WALK_CONTINUE;
+            };
+
+            fgWalkTreePost(&arr, resetMorphedFlag);
+            fgWalkTreePost(&index, resetMorphedFlag);
+            fgWalkTreePost(&value, resetMorphedFlag);
+#endif // DEBUG
 
             GenTree* indexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, NO_CLASS_HANDLE);
             GenTree* store     = gtNewStoreIndNode(TYP_REF, indexAddr, value);
             GenTree* result    = fgMorphTree(store);
-
             if (argSetup != nullptr)
             {
                 result = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, result);
-                result->SetMorphed(this);
+#if DEBUG
+                result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
             }
 
             return result;
@@ -7580,7 +7568,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     DEBUG_DESTROY_NODE(tree);
     DEBUG_DESTROY_NODE(cns2);
     DEBUG_DESTROY_NODE(foldedCns);
-    cns1->SetMorphed(this);
+    INDEBUG(cns1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
     return op1->AsOp();
 }
@@ -7647,7 +7635,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             GenTree* expandedTree = fgMorphExpandLocal(tree->AsLclVarCommon());
             if (expandedTree != nullptr)
             {
-                expandedTree->SetMorphed(this);
+                DBEXEC(tree != expandedTree, expandedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 tree = expandedTree;
                 oper = tree->OperGet();
                 op1  = tree->gtGetOp1();
@@ -7751,7 +7739,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
                 if (iconNode != nullptr)
                 {
-                    iconNode->SetMorphed(this);
+                    INDEBUG(iconNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                     return iconNode;
                 }
             }
@@ -7764,7 +7752,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 if (constNode != nullptr)
                 {
                     assert(constNode->OperIsConst()); // No further morphing required.
-                    constNode->SetMorphed(this);
+                    INDEBUG(constNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                     return constNode;
                 }
             }
@@ -7896,7 +7884,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
                     op2->AsIntConCommon()->LngValue() <= 0x3fffffff)
                 {
-                    op2->SetMorphed(this);
                     tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
                     noway_assert(op1->TypeIs(TYP_LONG));
 
@@ -8694,7 +8681,6 @@ DONE_MORPHING_CHILDREN:
                     {
                         GenTree* newOp1 = op1op1;                                                  // a
                         GenTree* newOp2 = gtNewIconNodeWithVN(this, -constVal, op1op2->TypeGet()); // -C
-                        newOp2->SetMorphed(this);
                         mulOrDiv->gtOp1 = newOp1;
                         mulOrDiv->gtOp2 = newOp2;
                         mulOrDiv->SetVNsFromNode(tree);
@@ -8755,8 +8741,9 @@ DONE_MORPHING_CHILDREN:
                 commaNode->gtFlags     = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
                                                                          // dangerous, clear the GTF_REVERSE_OPS at
                                                                          // least.
-                commaNode->SetMorphed(this);
-
+#ifdef DEBUG
+                commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
                 while (commaNode->AsOp()->gtOp2->gtOper == GT_COMMA)
                 {
                     commaNode         = commaNode->AsOp()->gtOp2;
@@ -8767,7 +8754,9 @@ DONE_MORPHING_CHILDREN:
                     // least.
                     commaNode->gtFlags |= ((commaNode->AsOp()->gtOp1->gtFlags | commaNode->AsOp()->gtOp2->gtFlags) &
                                            (GTF_ASG | GTF_CALL));
-                    commaNode->SetMorphed(this);
+#ifdef DEBUG
+                    commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
                 }
 
                 tree          = op1;
@@ -8792,7 +8781,10 @@ DONE_MORPHING_CHILDREN:
                 }
 
                 op1->gtFlags |= treeFlags & GTF_GLOB_REF;
-                op1->SetMorphed(this);
+
+#ifdef DEBUG
+                op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
                 commaNode->AsOp()->gtOp2 = op1;
                 commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
                 return tree;
@@ -8807,7 +8799,7 @@ DONE_MORPHING_CHILDREN:
                 if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
                     tree = gtUnusedValNode(op1);
-                    tree->SetMorphed(this, /* doChildren */ true);
+                    INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 }
                 else
                 {
@@ -8925,7 +8917,7 @@ DONE_MORPHING_CHILDREN:
                     JITDUMP("false\n");
                     tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
                 }
-                tree->SetMorphed(this);
+                INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return tree;
             }
             break;
@@ -9532,9 +9524,7 @@ SKIP:
         }
         else
         {
-            GenTree* const newOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
-            newOp1->SetMorphed(this);
-            andOp->gtOp1 = newOp1;
+            andOp->gtOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
         }
 
         assert(andMask == andOp->gtGetOp2());
@@ -9661,7 +9651,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
         fgUpdateConstTreeValueNumber(ret);
 
         DEBUG_DESTROY_NODE(cmp);
-        ret->SetMorphed(this);
+
+        INDEBUG(ret->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         return ret;
     }
@@ -9793,12 +9784,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         if (optimizedTree != node)
         {
             assert(!fgIsCommaThrow(optimizedTree));
-            optimizedTree->SetMorphed(this);
+            INDEBUG(optimizedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return optimizedTree;
         }
         else if (!optimizedTree->OperIsHWIntrinsic())
         {
-            optimizedTree->SetMorphed(this);
+            INDEBUG(optimizedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return optimizedTree;
         }
     }
@@ -9920,7 +9911,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 node = hwop1;
             }
-            node->SetMorphed(this);
+
+            INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
 
@@ -10068,9 +10060,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     DEBUG_DESTROY_NODE(actualOp2);
                 }
 
-                node->SetMorphed(this);
                 node = gtNewSimdCvtMaskToVectorNode(retType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
-                node->SetMorphed(this);
+
+                INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return node;
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -10170,7 +10162,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 DEBUG_DESTROY_NODE(op1);
                 DEBUG_DESTROY_NODE(node);
-                negNode->SetMorphed(this);
+                INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                 return negNode;
 #elif defined(TARGET_XARCH)
@@ -10227,7 +10219,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(node);
-                notNode->SetMorphed(this);
+                INDEBUG(notNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                 return notNode;
             }
@@ -10239,7 +10231,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(node);
-                negNode->SetMorphed(this);
+                INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
                 return negNode;
             }
@@ -10630,7 +10622,8 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         {
             op2          = fgMakeMultiUse(&op1);
             GenTree* add = gtNewOperNode(GT_ADD, mul->TypeGet(), op1, op2);
-            add->SetMorphed(this, /* doChildren */ true);
+            INDEBUG(add->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
             return add;
         }
     }
@@ -10719,9 +10712,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                 }
 
                 // change the multiplication into a smaller multiplication (by 3, 5 or 9) and a shift
-                GenTree* const factorNode = gtNewIconNodeWithVN(this, factor, mul->TypeGet());
-                factorNode->SetMorphed(this);
-                op1        = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, factorNode);
+                op1 = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, gtNewIconNodeWithVN(this, factor, mul->TypeGet()));
                 mul->gtOp1 = op1;
                 fgMorphTreeDone(op1);
 
@@ -11474,7 +11465,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
         {
-            morphedTree->SetMorphed(this);
+            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }
         else
         {
@@ -11543,15 +11534,19 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     if (op1SideEffects != nullptr)
     {
         GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
-        comma->SetMorphed(this);
+        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
         DEBUG_DESTROY_NODE(tree);
+
         return comma;
     }
     else
     {
-        zero->SetMorphed(this);
+        INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
         DEBUG_DESTROY_NODE(tree->gtOp1);
         DEBUG_DESTROY_NODE(tree);
+
         return zero;
     }
 }
@@ -11677,9 +11672,14 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         result = gtNewOperNode(GT_COMMA, type, tempInfos[i].store, result);
     }
 
-    result->SetMorphed(this);
+#ifdef DEBUG
+    result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif
+
     optRecordSsaUses(result, compCurBB);
+
     div->CheckDivideByConstOptimized(this);
+
     return result;
 }
 
@@ -11710,9 +11710,11 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
     GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, cnsValue, type));
 
-    newTree->SetMorphed(this);
+    INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
     DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
+
     return newTree;
 }
 
@@ -12051,9 +12053,7 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 
     mul->SetAllEffectsFlags(op1, op2);
     op1->SetDoNotCSE();
-    op1->SetMorphed(this);
     op2->SetDoNotCSE();
-    op2->SetMorphed(this);
 
     return mul;
 }
@@ -12067,7 +12067,6 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree);
-    tree->ClearMorphed();
 
 #ifdef DEBUG
     if (verbose)
@@ -12130,6 +12129,9 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     if (fgGlobalMorph)
     {
+        /* Ensure that we haven't morphed this node already */
+        assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
+
         /* Before morphing the tree, we try to propagate any active assertions */
         if (optLocalAssertionProp)
         {
@@ -12149,6 +12151,10 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
         }
         PREFAST_ASSUME(tree != nullptr);
     }
+
+    /* Save the original un-morphed tree for fgMorphTreeDone */
+
+    GenTree* const oldTree = tree;
 
     /* Figure out what kind of a node we have */
 
@@ -12273,7 +12279,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     }
 DONE:
 
-    fgMorphTreeDone(tree, optAssertionPropDone DEBUGARG(thisMorphNum));
+    const bool isNewTree = (oldTree != tree);
+    fgMorphTreeDone(tree, optAssertionPropDone, isNewTree DEBUGARG(thisMorphNum));
 
     return tree;
 }
@@ -12520,11 +12527,12 @@ void Compiler::fgAssertionGen(GenTree* tree)
 //    tree - the tree after morphing
 //
 // Notes:
-//    Simple version where assertion kill/gen has not yet been done.
+//    Simple version where the tree has not been marked
+//    as morphed, and where assertion kill/gen has not yet been done.
 //
 void Compiler::fgMorphTreeDone(GenTree* tree)
 {
-    fgMorphTreeDone(tree, false);
+    fgMorphTreeDone(tree, false, false);
 }
 
 //------------------------------------------------------------------------
@@ -12537,13 +12545,15 @@ void Compiler::fgMorphTreeDone(GenTree* tree)
 //   morphNum - counts invocations of fgMorphTree
 //
 // Notes:
-//  This function is called to complete the morphing of a tree node.
+//  This function is called to complete the morphing of a tree node
 //  It should only be called once for each node.
+//  If DEBUG is defined the flag GTF_DEBUG_NODE_MORPHED is checked and updated,
+//  to enforce the invariant that each node is only morphed once.
 //
 //  When local assertion prop is active assertions are killed and generated
 //  based on tree (unless optAssertionPropDone is true).
 //
-void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum))
+void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum))
 {
 #ifdef DEBUG
     if (verbose && treesBeforeAfterMorph)
@@ -12559,7 +12569,19 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
         return;
     }
 
-    tree->SetMorphed(this);
+    if (isMorphedTree)
+    {
+        // caller should have set the morphed flag
+        //
+        assert((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) && "ERROR: Did not morph this node!");
+    }
+    else
+    {
+        // caller should not have set the morphed flag
+        //
+        assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
+        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    }
 
     // Note "tree" may generate new assertions that we
     // miss if we did them early... perhaps we should skip
@@ -13058,6 +13080,16 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
                 morphedTree = stmt->GetRootNode();
             }
+            else
+            {
+                /* This must be a tailcall that caused a GCPoll to get
+                injected. We haven't actually morphed the call yet
+                but the flag still got set, clear it here...  */
+
+#ifdef DEBUG
+                morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif
+            }
 
             noway_assert(compTailCallUsed);
             noway_assert(morphedTree->gtOper == GT_CALL);
@@ -13088,7 +13120,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
             morphedTree = gtCloneExpr(morphedTree);
             noway_assert(morphedTree != nullptr);
-            morphedTree->SetMorphed(this, /* doChildren*/ true);
 
             if (verbose)
             {
@@ -13584,50 +13615,8 @@ PhaseStatus Compiler::fgMorphBlocks()
     // may no longer be canonical.
     fgCanonicalizeFirstBB();
 
-    INDEBUG(fgPostGlobalMorphChecks();)
-
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
-
-#ifdef DEBUG
-
-//------------------------------------------------------------------------
-// fgPostGlobalMorphChecks: Make sure all nodes were morphed
-//
-void Compiler::fgPostGlobalMorphChecks()
-{
-    struct Visitor : GenTreeVisitor<Visitor>
-    {
-        enum
-        {
-            DoPostOrder = true,
-        };
-
-        Visitor(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-        {
-            assert((*use)->WasMorphed());
-            assert((*use)->gtMorphCount <= 5);
-            return WALK_CONTINUE;
-        }
-    };
-
-    Visitor v(this);
-
-    for (BasicBlock* const block : Blocks())
-    {
-        for (Statement* const stmt : block->Statements())
-        {
-            v.WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
-    }
-}
-
-#endif
 
 //------------------------------------------------------------------------
 // fgGetFirstILBB: Obtain the first basic block that was created due to IL.
@@ -13818,8 +13807,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             assert(genReturnErrorLocal != BAD_VAR_NUM);
             const DebugInfo& di              = lastStmt->GetDebugInfo();
             GenTree*         swiftErrorStore = gtNewTempStore(genReturnErrorLocal, ret->gtGetOp1());
-            swiftErrorStore->SetMorphed(this);
-            Statement* const newStmt = gtNewStmt(swiftErrorStore, di);
+            Statement* const newStmt         = gtNewStmt(swiftErrorStore, di);
             fgInsertStmtBefore(block, lastStmt, newStmt);
         }
 #endif // SWIFT_SUPPORT
@@ -13845,8 +13833,6 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             Statement*       pAfterStatement = lastStmt;
             const DebugInfo& di              = lastStmt->GetDebugInfo();
             GenTree* tree = gtNewTempStore(genReturnLocal, retVal, CHECK_SPILL_NONE, &pAfterStatement, di, block);
-            // TODO: assertion gen/kill?
-            tree->SetMorphed(this);
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);
