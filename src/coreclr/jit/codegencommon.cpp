@@ -3239,26 +3239,25 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
 // to stack immediately, or by adding it to the register graph.
 //
 // Parameters:
-//   lclNum  - Parameter local (or field of it)
-//   segment - Register segment to either spill or put in the register graph
-//   graph   - The register graph to add to
+//   lclNum      - Target local
+//   offset      - Offset into the target local
+//   paramLclNum - Local that is the actual parameter that has the incoming register
+//   segment     - Register segment to either spill or put in the register graph
+//   graph       - The register graph to add to
 //
-void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, const ABIPassingSegment& segment, RegGraph* graph)
+void CodeGen::genSpillOrAddRegisterParam(
+    unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment, RegGraph* graph)
 {
-    regMaskTP  paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
-    LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
-
-    unsigned baseOffset = varDsc->lvIsStructField ? varDsc->lvFldOffset : 0;
-    unsigned size       = varDsc->lvExactSize();
+    regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
 
     if (!segment.IsPassedInRegister() || ((paramRegs & genRegMask(segment.GetRegister())) == 0))
     {
         return;
     }
 
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
     if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
     {
-        unsigned   paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
         LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
 
         var_types storeType = genParamStackType(paramVarDsc, segment);
@@ -3269,7 +3268,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, const ABIPassingSegmen
         }
 
         GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), segment.GetRegister(), lclNum,
-                                  segment.Offset - baseOffset);
+                                  offset);
     }
 
     if (!varDsc->lvIsInReg())
@@ -3289,12 +3288,12 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, const ABIPassingSegmen
     RegNode* sourceReg = graph->GetOrAdd(segment.GetRegister());
     RegNode* destReg   = graph->GetOrAdd(varDsc->GetRegNum());
 
-    if ((sourceReg != destReg) || (baseOffset != segment.Offset))
+    if ((sourceReg != destReg) || (offset != 0))
     {
 #ifdef TARGET_ARM
         if (edgeType == TYP_DOUBLE)
         {
-            assert(segment.Offset == baseOffset);
+            assert(offset == 0);
             graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
 
             sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
@@ -3303,7 +3302,7 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, const ABIPassingSegmen
             return;
         }
 #endif
-        graph->AddEdge(sourceReg, destReg, edgeType, segment.Offset - baseOffset);
+        graph->AddEdge(sourceReg, destReg, edgeType, offset);
     }
 }
 
@@ -3410,8 +3409,14 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
 
-            unsigned fieldLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
-            genSpillOrAddRegisterParam(fieldLclNum, segment, &graph);
+            if (mapping != nullptr)
+            {
+                genSpillOrAddRegisterParam(mapping->LclNum, mapping->Offset, lclNum, segment, &graph);
+            }
+            else
+            {
+                genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
+            }
         }
     }
 

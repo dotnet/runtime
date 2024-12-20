@@ -2175,6 +2175,8 @@ void LinearScan::buildIntervals()
     regsInUseThisLocation                   = RBM_NONE;
     regsInUseNextLocation                   = RBM_NONE;
 
+    // Compute live incoming parameter registers. The liveness is based on the
+    // locals we are expecting to store the registers into in the prolog.
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
@@ -2203,6 +2205,8 @@ void LinearScan::buildIntervals()
         }
     }
 
+    // Now build initial definitions for all parameters, preferring their ABI
+    // register if passed in one.
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
         unsigned   lclNum = compiler->lvaTrackedIndexToLclNum(varIndex);
@@ -2227,6 +2231,7 @@ void LinearScan::buildIntervals()
         regNumber paramReg = REG_NA;
         if (lclDsc->lvIsParamRegTarget)
         {
+            // Prefer the first ABI register.
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
             assert(mapping != nullptr);
@@ -2236,7 +2241,7 @@ void LinearScan::buildIntervals()
         {
             if (lclDsc->lvIsStructField)
             {
-                // All promoted fields should be assigned via the
+                // All fields passed in registers should be assigned via the
                 // lvIsParamRegTarget mechanism, so this must be a stack
                 // argument.
                 assert(!compiler->lvaGetParameterABIInfo(lclDsc->lvParentLcl).HasAnyRegisterSegment());
@@ -2260,6 +2265,7 @@ void LinearScan::buildIntervals()
         }
         else
         {
+            // Not a parameter or target of a parameter register
             continue;
         }
 

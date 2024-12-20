@@ -7923,15 +7923,24 @@ void Lowering::MapParameterRegisterLocals()
         LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
 
-        if (abiInfo.HasAnyStackSegment())
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
         {
+            // If not promoted, then we do not need to create any mappings.
+            // If dependently promoted then the fields are never enregistered
+            // by LSRA, so no reason to try to create any mappings.
             continue;
         }
 
-        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        if (!abiInfo.HasAnyRegisterSegment())
         {
+            // If the parameter is not passed in any registers, then there are
+            // no mappings to create.
             continue;
         }
+
+        // Currently we do not support promotion of split parameters, so we
+        // should not see any split parameters here.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
 
         for (int i = 0; i < lclDsc->lvFieldCnt; i++)
         {
@@ -7942,13 +7951,22 @@ void Lowering::MapParameterRegisterLocals()
             {
                 if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
                 {
+                    // This register does not map to this field (ends before the field starts)
                     continue;
                 }
 
                 if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
                 {
+                    // This register does not map to this field (starts after the field ends)
                     continue;
                 }
+
+                // Register is inside the field. We always expect it to be
+                // fully contained; we do not promote when it isn't. However,
+                // we may promote in cases where multiple registers map to the
+                // same field.
+                assert((segment.Offset >= fieldDsc->lvFldOffset) &&
+                       (segment.Offset + segment.Size <= fieldDsc->lvFldOffset + genTypeSize(fieldDsc)));
 
                 comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
             }
