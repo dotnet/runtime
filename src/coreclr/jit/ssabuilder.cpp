@@ -15,7 +15,7 @@ PhaseStatus Compiler::fgSsaBuild()
     // If this is not the first invocation, reset data structures for SSA.
     if (fgSsaPassesCompleted > 0)
     {
-        fgResetForSsa(/* deepClean */ true);
+        fgResetForSsa();
     }
 
     SsaBuilder builder(this);
@@ -29,36 +29,21 @@ PhaseStatus Compiler::fgSsaBuild()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-//------------------------------------------------------------------------
-// fgResetForSsa: remove SSA artifacts
-//
-// Arguments:
-//   deepClean - if true, remove all SSA artifacts
-//               if false, just remove PHIs
-//
-// Notes:
-//   deepCleaning is needed in order to rebuild SSA.
-//
-void Compiler::fgResetForSsa(bool deepClean)
+void Compiler::fgResetForSsa()
 {
-    JITDUMP("Removing %s\n", deepClean ? "all SSA artifacts" : "PHI functions");
-
-    if (deepClean)
+    for (unsigned i = 0; i < lvaCount; ++i)
     {
-        for (unsigned i = 0; i < lvaCount; ++i)
-        {
-            lvaTable[i].lvPerSsaData.Reset();
-        }
-        lvMemoryPerSsaData.Reset();
-        for (MemoryKind memoryKind : allMemoryKinds())
-        {
-            m_memorySsaMap[memoryKind] = nullptr;
-        }
+        lvaTable[i].lvPerSsaData.Reset();
+    }
+    lvMemoryPerSsaData.Reset();
+    for (MemoryKind memoryKind : allMemoryKinds())
+    {
+        m_memorySsaMap[memoryKind] = nullptr;
+    }
 
-        if (m_outlinedCompositeSsaNums != nullptr)
-        {
-            m_outlinedCompositeSsaNums->Reset();
-        }
+    if (m_outlinedCompositeSsaNums != nullptr)
+    {
+        m_outlinedCompositeSsaNums->Reset();
     }
 
     for (BasicBlock* const blk : Blocks())
@@ -78,16 +63,13 @@ void Compiler::fgResetForSsa(bool deepClean)
             }
         }
 
-        if (deepClean)
+        for (Statement* const stmt : blk->Statements())
         {
-            for (Statement* const stmt : blk->Statements())
+            for (GenTree* const tree : stmt->TreeList())
             {
-                for (GenTree* const tree : stmt->TreeList())
+                if (tree->IsAnyLocal())
                 {
-                    if (tree->IsAnyLocal())
-                    {
-                        tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
-                    }
+                    tree->AsLclVarCommon()->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
                 }
             }
         }

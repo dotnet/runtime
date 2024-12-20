@@ -5725,7 +5725,7 @@ public:
     PhaseStatus fgSsaBuild();
 
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
-    void fgResetForSsa(bool deepClean);
+    void fgResetForSsa();
 
     unsigned fgSsaPassesCompleted = 0; // Number of times fgSsaBuild has been run.
     bool     fgSsaValid = false;           // True if SSA info is valid and can be cross-checked versus IR
