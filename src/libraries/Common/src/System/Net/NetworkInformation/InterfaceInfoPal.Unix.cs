@@ -43,7 +43,7 @@ namespace System.Net.NetworkInformation
             try
             {
                 Span<byte> buffer = ((uint)bufferSize <= StackAllocationThreshold
-                    ? stackalloc byte[bufferSize]
+                    ? stackalloc byte[StackAllocationThreshold]
                     : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize)))
                     .Slice(0, bufferSize);
 

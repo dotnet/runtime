@@ -502,7 +502,7 @@ namespace System.IO
         {
             int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
             var vsb = (uint)estimatedLength <= 256 ?
-                new ValueStringBuilder(stackalloc char[estimatedLength]) :
+                new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(estimatedLength);
 
             vsb.AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format

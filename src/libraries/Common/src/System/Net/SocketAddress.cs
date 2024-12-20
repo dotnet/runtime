@@ -166,7 +166,7 @@ namespace System.Net
                 1; // }
 
             Span<char> result = (uint)maxLength <= 256 ? // arbitrary limit that should be large enough for the vast majority of cases
-                stackalloc char[maxLength] :
+                stackalloc char[256] :
                 new char[maxLength];
 
             familyString.CopyTo(result);

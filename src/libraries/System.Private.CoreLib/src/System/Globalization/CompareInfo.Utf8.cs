@@ -85,7 +85,7 @@ namespace System.Globalization
             if ((uint)sourceMaxCharCount <= 256)
             {
                 sourceUtf16Array = null;
-                sourceUtf16 = stackalloc char[sourceMaxCharCount];
+                sourceUtf16 = stackalloc char[256];
             }
             else
             {
@@ -116,7 +116,7 @@ namespace System.Globalization
             if ((uint)prefixMaxCharCount < 256)
             {
                 prefixUtf16Array = null;
-                prefixUtf16 = stackalloc char[prefixMaxCharCount];
+                prefixUtf16 = stackalloc char[256];
             }
             else
             {
