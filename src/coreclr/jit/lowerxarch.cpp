@@ -9532,7 +9532,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             // These take only pointer operands.
             assert(hwintrinsic->OperIsMemoryLoad());
 
-            return (supportsSIMDScalarLoad);
+            return supportsSIMDScalarLoad;
         }
 
         case NI_SSE3_MoveAndDuplicate:
