@@ -950,50 +950,63 @@ namespace System.Runtime.InteropServices
 
             using ComHolder releaseIdentity = new ComHolder(identity);
 
-            if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            // If the user has requested a unique instance,
+            // we will immediately create the object, register it,
+            // and return.
+            if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                // If we have a live cached wrapper currently,
-                // return that.
-                if (_rcwCache.FindProxyForComInstance(identity) is object liveCachedWrapper)
+                retValue = CreateObject(identity, flags);
+                if (retValue == null)
                 {
-                    retValue = liveCachedWrapper;
-                    return true;
+                    // If ComWrappers instance cannot create wrapper, we can do nothing here.
+                    return false;
                 }
 
-                // If the user tried to provide a pre-created managed wrapper, try to register
-                // that object as the wrapper.
-                if (wrapperMaybe is not null)
-                {
-                    retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags);
-                    return true;
-                }
+                retValue = RegisterObjectForComInstance(identity, inner, retValue, flags);
+                return true;
+            }
 
-                // Check if the provided COM instance is actually a managed object wrapper from this
-                // ComWrappers instance, and use it if it is.
-                if (flags.HasFlag(CreateObjectFlags.Unwrap))
+            // If we have a live cached wrapper currently,
+            // return that.
+            if (_rcwCache.FindProxyForComInstance(identity) is object liveCachedWrapper)
+            {
+                retValue = liveCachedWrapper;
+                return true;
+            }
+
+            // If the user tried to provide a pre-created managed wrapper, try to register
+            // that object as the wrapper.
+            if (wrapperMaybe is not null)
+            {
+                retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags);
+                return true;
+            }
+
+            // Check if the provided COM instance is actually a managed object wrapper from this
+            // ComWrappers instance, and use it if it is.
+            if (flags.HasFlag(CreateObjectFlags.Unwrap))
+            {
+                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
+                if (comInterfaceDispatch != null)
                 {
-                    ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
-                    if (comInterfaceDispatch != null)
+                    // If we found a managed object wrapper in this ComWrappers instance
+                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                    //
+                    // A managed object can have multiple managed object wrappers, with a max of one per context.
+                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                    // managed object wrappers for A created with C1 and C2 respectively.
+                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                    if (_managedObjectWrapperTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
                     {
-                        // If we found a managed object wrapper in this ComWrappers instance
-                        // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
-                        // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
-                        //
-                        // A managed object can have multiple managed object wrappers, with a max of one per context.
-                        // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                        // managed object wrappers for A created with C1 and C2 respectively.
-                        // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                        // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                        object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                        if (_managedObjectWrapperTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        // The unwrapped object has a CCW in this context. Compare with identity
+                        // so we can see if it's the CCW for the unwrapped object in this context.
+                        if (unwrappedWrapperInThisContext.ComIp == identity)
                         {
-                            // The unwrapped object has a CCW in this context. Compare with identity
-                            // so we can see if it's the CCW for the unwrapped object in this context.
-                            if (unwrappedWrapperInThisContext.ComIp == identity)
-                            {
-                                retValue = unwrapped;
-                                return true;
-                            }
+                            retValue = unwrapped;
+                            return true;
                         }
                     }
                 }
@@ -1009,7 +1022,7 @@ namespace System.Runtime.InteropServices
             // Now that we've called into user code to create the user object wrapper,
             // another thread may have beaten us to creating a cached wrapper for the same identity.
             // Check the cache again to avoid creating a NativeObjectWrapper when we don't need to.
-            if (!flags.HasFlag(CreateObjectFlags.UniqueInstance) && _rcwCache.FindProxyForComInstance(identity) is object cachedWrapper)
+            if (_rcwCache.FindProxyForComInstance(identity) is object cachedWrapper)
             {
                 retValue = cachedWrapper;
                 return true;
@@ -1043,7 +1056,7 @@ namespace System.Runtime.InteropServices
             }
 
             // At this point, actualProxy is the RCW object for the identity
-            // and actualWrapper is the NativeObjectWrapper that is in the RCW cache that associates the identity with actualProxy.
+            // and actualWrapper is the NativeObjectWrapper that is in the RCW cache (if not unique) that associates the identity with actualProxy.
             // Register the NativeObjectWrapper to handle lifetime tracking of the references to the COM object.
             RegisterWrapperForObject(actualWrapper, actualProxy);
 
@@ -1060,7 +1073,6 @@ namespace System.Runtime.InteropServices
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
             Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
-            Debug.Assert(_rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
 
             if (s_nativeObjectWrapperTable.TryGetValue(comProxy, out NativeObjectWrapper? registeredWrapper)
                 && registeredWrapper != wrapper)
