@@ -2122,7 +2122,7 @@ size_t EECodeManager::GetFunctionSize(GCInfoToken gcInfoToken)
 *  returns true.
 *  If hijacking is not possible for some reason, it return false.
 */
-bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKind * returnKind)
+bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken X86_ARG(ReturnKind * returnKind))
 {
     CONTRACTL{
         NOTHROW;
@@ -2145,7 +2145,7 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
     return true;
 #else // !USE_GC_INFO_DECODER
 
-    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_RETURN_KIND | DECODE_REVERSE_PINVOKE_VAR));
+    GcInfoDecoder gcInfoDecoder(gcInfoToken, GcInfoDecoderFlags(DECODE_REVERSE_PINVOKE_VAR));
 
     if (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME)
     {
@@ -2153,7 +2153,6 @@ bool EECodeManager::GetReturnAddressHijackInfo(GCInfoToken gcInfoToken, ReturnKi
         return false;
     }
 
-    *returnKind = gcInfoDecoder.GetReturnKind();
     return true;
 #endif // USE_GC_INFO_DECODER
 }
