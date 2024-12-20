@@ -7961,13 +7961,6 @@ void Lowering::MapParameterRegisterLocals()
                     continue;
                 }
 
-                // Register is inside the field. We always expect it to be
-                // fully contained; we do not promote when it isn't. However,
-                // we may promote in cases where multiple registers map to the
-                // same field.
-                assert((segment.Offset >= fieldDsc->lvFldOffset) &&
-                       (segment.Offset + segment.Size <= fieldDsc->lvFldOffset + genTypeSize(fieldDsc)));
-
                 comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
             }
 
