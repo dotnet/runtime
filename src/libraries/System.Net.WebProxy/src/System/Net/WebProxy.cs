@@ -175,7 +175,7 @@ namespace System.Net
                 }
 
                 int charsWritten;
-                Span<char> url = lengthRequired <= 256 ? stackalloc char[256] : new char[lengthRequired];
+                Span<char> url = (uint)lengthRequired <= 256 ? stackalloc char[lengthRequired] : new char[lengthRequired];
                 bool formatted = isDefaultPort ?
                     url.TryWrite($"{input.Scheme}://{input.Host}", out charsWritten) :
                     url.TryWrite($"{input.Scheme}://{input.Host}:{(uint)input.Port}", out charsWritten);

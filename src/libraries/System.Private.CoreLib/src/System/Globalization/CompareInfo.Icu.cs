@@ -921,7 +921,7 @@ namespace System.Globalization
             int sortKeyLength = (source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length;
 
             byte[]? borrowedArray = null;
-            Span<byte> sortKey = sortKeyLength <= 1024
+            Span<byte> sortKey = (uint)sortKeyLength <= 1024
                 ? stackalloc byte[1024]
                 : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 

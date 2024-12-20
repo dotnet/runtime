@@ -92,7 +92,7 @@ namespace System.Globalization
         {
             string decimalSeparator = dtfi.DecimalSeparator;
             int maxLength = 25 + decimalSeparator.Length; // large enough for any "g"/"G" TimeSpan
-            Span<char> destination = maxLength < 128 ?
+            Span<char> destination = (uint)maxLength < 128 ?
                 stackalloc char[maxLength] :
                 new char[maxLength]; // the chances of needing this case are almost 0, as DecimalSeparator.Length will basically always == 1
             TryFormatStandard(value, format, decimalSeparator, destination, out int charsWritten);

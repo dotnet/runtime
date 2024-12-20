@@ -17,7 +17,7 @@ namespace System.Globalization
             ReadOnlySpan<char> localeNameSpan = localeName.AsSpan();
             fixed (char* pLocaleName = &MemoryMarshal.GetReference(localeNameSpan))
             {
-                char* buffer = stackalloc char[CALENDAR_INFO_BUFFER_LEN];
+                char* buffer = stackalloc char[CALENDAR_INFO_BUFFER_LEN]; // 2KB
                 nint exceptionPtr = Interop.JsGlobalization.GetCalendarInfo(pLocaleName, localeNameSpan.Length, calendarId, buffer, CALENDAR_INFO_BUFFER_LEN, out int resultLength);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
                 string result = new string(buffer, 0, resultLength);

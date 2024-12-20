@@ -82,10 +82,10 @@ namespace System.Globalization
             scoped Span<char> sourceUtf16;
             int sourceMaxCharCount = Encoding.UTF8.GetMaxCharCount(source.Length);
 
-            if (sourceMaxCharCount <= 256)
+            if ((uint)sourceMaxCharCount <= 256)
             {
                 sourceUtf16Array = null;
-                sourceUtf16 = stackalloc char[256];
+                sourceUtf16 = stackalloc char[sourceMaxCharCount];
             }
             else
             {
@@ -113,10 +113,10 @@ namespace System.Globalization
             scoped Span<char> prefixUtf16;
             int prefixMaxCharCount = Encoding.UTF8.GetMaxCharCount(prefix.Length);
 
-            if (prefixMaxCharCount < 256)
+            if ((uint)prefixMaxCharCount < 256)
             {
                 prefixUtf16Array = null;
-                prefixUtf16 = stackalloc char[256];
+                prefixUtf16 = stackalloc char[prefixMaxCharCount];
             }
             else
             {

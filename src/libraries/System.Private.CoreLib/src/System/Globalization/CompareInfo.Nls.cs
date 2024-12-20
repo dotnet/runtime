@@ -153,8 +153,8 @@ namespace System.Globalization
                 // See https://learn.microsoft.com/windows/desktop/api/winnls/nf-winnls-lcmapstringex.
 
                 byte[]? borrowedArr = null;
-                Span<byte> span = sortKeyLength <= 512 ?
-                    stackalloc byte[512] :
+                Span<byte> span = (uint)sortKeyLength <= 512 ?
+                    stackalloc byte[sortKeyLength] :
                     (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 
                 fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))

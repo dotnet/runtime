@@ -305,8 +305,8 @@ namespace System.IO
             else
             {
                 int maxBytesForCharPos = _encoding.GetMaxByteCount(_charPos);
-                byteBuffer = maxBytesForCharPos <= 1024 ? // arbitrary threshold
-                    stackalloc byte[1024] :
+                byteBuffer = (uint)maxBytesForCharPos <= 1024 ? // arbitrary threshold
+                    stackalloc byte[maxBytesForCharPos] :
                     (_byteBuffer = new byte[_encoding.GetMaxByteCount(_charBuffer.Length)]);
             }
 
@@ -501,8 +501,8 @@ namespace System.IO
         private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
             int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
-            var vsb = estimatedLength <= 256 ?
-                new ValueStringBuilder(stackalloc char[256]) :
+            var vsb = (uint)estimatedLength <= 256 ?
+                new ValueStringBuilder(stackalloc char[estimatedLength]) :
                 new ValueStringBuilder(estimatedLength);
 
             vsb.AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format

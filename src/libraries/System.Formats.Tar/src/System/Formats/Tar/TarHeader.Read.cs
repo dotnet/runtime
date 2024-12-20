@@ -566,7 +566,7 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached or if an attribute is malformed.
         private void ReadExtendedAttributesBlock(Stream archiveStream)
         {
-            int size = _size;
+            long size = _size;
             if (size != 0)
             {
                 ValidateSize();
@@ -637,7 +637,7 @@ namespace System.Formats.Tar
         // Throws if end of stream is reached.
         private void ReadGnuLongPathDataBlock(Stream archiveStream)
         {
-            int size = _size;
+            long size = _size;
             if (size != 0)
             {
                 ValidateSize();
