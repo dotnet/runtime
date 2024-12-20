@@ -36,9 +36,6 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
     // Options for choosing between UTF-8 and UTF-16 encoding
     private const byte EncodingFlag = 1 << 5;
 
-    // Options for choosing whether to poison previous or next page
-    private const byte PoisonFlag = 1 << 6;
-
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
         const int minLength = 10; // 2 ints, 1 byte, and 1 padding to align chars
@@ -75,13 +72,14 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
 
         // Compute the expected result by using the encoder directly and the input
         int maxExpandedSizeBytes = 6 * bytes.Length + 2;
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(maxExpandedSizeBytes);
-        int written;
-        Span<byte> expected = utf8
-            ? EncodeToUtf8(bytes, buffer, options.Encoder, out written)
-            : EncodeToUtf8(chars, buffer, options.Encoder, out written);
+        byte[] expectedBuffer = ArrayPool<byte>.Shared.Rent(maxExpandedSizeBytes);
+        Span<byte> expected =
+            expectedBuffer.AsSpan(0, utf8
+                ? EncodeToUtf8(bytes, expectedBuffer, options.Encoder)
+                : EncodeToUtf8(chars, expectedBuffer, options.Encoder));
 
         // Compute the actual result by using Utf8JsonWriter. Each iteration is a different slice of the input, but the result should be the same.
+        byte[] actualBuffer = new byte[expected.Length];
         foreach (ReadOnlySpan<Range> ranges in new[]
         {
             new[] { 0.. },
@@ -89,53 +87,75 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
             new[] { 0..slice1, slice1..slice2, slice2.. },
         })
         {
-            // Use a stream backed by bounded memory to detect out-of-bounds accesses
-            using PooledBoundedMemory<byte> memory = PooledBoundedMemory<byte>.Rent(expected.Length, (optionsByte & PoisonFlag) == 0 ? PoisonPagePlacement.After : PoisonPagePlacement.Before);
-            using MemoryBackedStream stream = new(memory.Memory);
+            using MemoryStream stream = new(actualBuffer);
             using Utf8JsonWriter writer = new(stream, options);
             
             if (utf8)
             {
                 WriteStringValueSegments(writer, bytes, ranges);
-                writer.Flush();
             }
             else
             {
                 WriteStringValueSegments(writer, chars, ranges);
-                writer.Flush();
             }
 
-            ReadOnlySpan<byte> actual = memory.Span;
+            writer.Flush();
 
             // Compare the expected and actual results
-            Assert.SequenceEqual(expected, actual);
+            Assert.SequenceEqual(expected, actualBuffer);
+            Assert.Equal(expected.Length, writer.BytesCommitted);
+            Assert.Equal(0, writer.BytesPending);
+
+            Array.Clear(actualBuffer);
         }
 
         // Additional test for mixing UTF-8 and UTF-16 encoding. The alignment math is easier in UTF-16 mode so just run it for that.
         if (!utf8)
         {
+            Array.Clear(expectedBuffer);
+
             {
-                using PooledBoundedMemory<byte> memory = PooledBoundedMemory<byte>.Rent(maxExpandedSizeBytes, PoisonPagePlacement.Before);
-                using MemoryBackedStream stream = new(memory.Memory);
+                ReadOnlySpan<char> firstSegment = chars[slice1..];
+                ReadOnlySpan<byte> secondSegment = bytes[0..(2 * slice1)];
+
+                expected = expectedBuffer.AsSpan(0, EncodeToUtf8(firstSegment, secondSegment, expectedBuffer, options.Encoder));
+
+                actualBuffer = new byte[expected.Length];
+                using MemoryStream stream = new(actualBuffer);
                 using Utf8JsonWriter writer = new(stream, options);
 
-                writer.WriteStringValueSegment(chars[0..slice1], false);
-                writer.WriteStringValueSegment(bytes[(2 * slice1)..], true);
+                writer.WriteStringValueSegment(firstSegment, false);
+                writer.WriteStringValueSegment(secondSegment, true);
                 writer.Flush();
+
+                Assert.SequenceEqual(expected, actualBuffer);
+                Assert.Equal(expected.Length, writer.BytesCommitted);
+                Assert.Equal(0, writer.BytesPending);
             }
 
+            Array.Clear(expectedBuffer);
+
             {
-                using PooledBoundedMemory<byte> memory = PooledBoundedMemory<byte>.Rent(maxExpandedSizeBytes, PoisonPagePlacement.Before);
-                using MemoryBackedStream stream = new(memory.Memory);
+                ReadOnlySpan<byte> firstSegment = bytes[0..(2 * slice1)];
+                ReadOnlySpan<char> secondSegment = chars[slice1..];
+
+                expected = expectedBuffer.AsSpan(0, EncodeToUtf8(firstSegment, secondSegment, expectedBuffer, options.Encoder));
+
+                actualBuffer = new byte[expected.Length];
+                using MemoryStream stream = new(actualBuffer);
                 using Utf8JsonWriter writer = new(stream, options);
 
-                writer.WriteStringValueSegment(bytes[0..(2 * slice1)], false);
-                writer.WriteStringValueSegment(chars[slice1..], true);
+                writer.WriteStringValueSegment(firstSegment, false);
+                writer.WriteStringValueSegment(secondSegment, true);
                 writer.Flush();
+
+                Assert.SequenceEqual(expected, actualBuffer);
+                Assert.Equal(expected.Length, writer.BytesCommitted);
+                Assert.Equal(0, writer.BytesPending);
             }
         }
 
-        ArrayPool<byte>.Shared.Return(buffer);
+        ArrayPool<byte>.Shared.Return(expectedBuffer);
     }
 
     private static void WriteStringValueSegments(Utf8JsonWriter writer, ReadOnlySpan<byte> bytes, ReadOnlySpan<Range> ranges)
@@ -154,23 +174,50 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
         }
     }
 
-    private static Span<byte> EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> destBuffer, JavaScriptEncoder encoder, out int written)
+    private static int EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> destBuffer, JavaScriptEncoder encoder)
     {
         destBuffer[0] = (byte)'"';
-        encoder.EncodeUtf8(bytes, destBuffer[1..], out _, out written, isFinalBlock: true);
-        destBuffer[written + 1] = (byte)'"';
-        return destBuffer.Slice(0, written + 2);
+        encoder.EncodeUtf8(bytes, destBuffer[1..], out _, out int written, isFinalBlock: true);
+        destBuffer[++written] = (byte)'"';
+        return written + 1;
     }
 
-    private static Span<byte> EncodeToUtf8(ReadOnlySpan<char> chars, Span<byte> destBuffer, JavaScriptEncoder encoder, out int written)
+    private static int EncodeToUtf8(ReadOnlySpan<char> chars, Span<byte> destBuffer, JavaScriptEncoder encoder)
     {
-        var utf16buffer = ArrayPool<char>.Shared.Rent(6 * chars.Length + 2);
-        utf16buffer[0] = '"';
-        encoder.Encode(chars, utf16buffer.AsSpan(1), out _, out written, isFinalBlock: true);
-        utf16buffer[written + 1] = '"';
+        int written = 1;
+        destBuffer[0] = (byte)'"';
+        destBuffer[written += EncodeTranscode(chars, destBuffer[1..], encoder)] = (byte)'"';
+        return written + 1;
+    }
 
-        Utf8.FromUtf16(utf16buffer.AsSpan(0, written + 2), destBuffer, out _, out written, isFinalBlock: true);
+    private static int EncodeToUtf8(ReadOnlySpan<byte> bytes, ReadOnlySpan<char> chars, Span<byte> destBuffer, JavaScriptEncoder encoder)
+    {
+        int written = 1;
+        destBuffer[0] = (byte)'"';
+        encoder.EncodeUtf8(bytes, destBuffer[1..], out _, out int writtenTemp, isFinalBlock: true);
+        written += writtenTemp;
+        destBuffer[written += EncodeTranscode(chars, destBuffer[written..], encoder, isFinalBlock: true)] = (byte)'"';
+        return written + 1;
+    }
+
+    private static int EncodeToUtf8(ReadOnlySpan<char> chars, ReadOnlySpan<byte> bytes, Span<byte> destBuffer, JavaScriptEncoder encoder)
+    {
+        int written = 1;
+        destBuffer[0] = (byte)'"';
+        written += EncodeTranscode(chars, destBuffer[1..], encoder, isFinalBlock: true);
+        encoder.EncodeUtf8(bytes, destBuffer[written..], out _, out int writtenTemp, isFinalBlock: true);
+        written += writtenTemp;
+        destBuffer[written] = (byte)'"';
+        return written + 1;
+    }
+
+    private static int EncodeTranscode(ReadOnlySpan<char> chars, Span<byte> destBuffer, JavaScriptEncoder encoder, bool isFinalBlock = true)
+    {
+        var utf16buffer = ArrayPool<char>.Shared.Rent(6 * chars.Length);
+        encoder.Encode(chars, utf16buffer, out _, out int written, isFinalBlock: true);
+
+        Utf8.FromUtf16(utf16buffer.AsSpan(0, written), destBuffer, out _, out written, isFinalBlock);
         ArrayPool<char>.Shared.Return(utf16buffer);
-        return destBuffer[0..written];
+        return written;
     }
 }

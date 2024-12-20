@@ -11,24 +11,24 @@ namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
-        private const byte LengthMask =         0b000_000_11;
-        private const byte EncodingMask =       0b000_111_00;
+        private const byte PartialCodePointLengthMask =         0b000_000_11;
+        private const byte PartialCodePointEncodingMask =       0b000_111_00;
 
-        private const byte Utf8EncodingFlag =   0b000_001_00;
-        private const byte Utf16EncodingFlag =  0b000_010_00;
+        private const byte PartialCodePointUtf8EncodingFlag =   0b000_001_00;
+        private const byte PartialCodePointUtf16EncodingFlag =  0b000_010_00;
 
         private bool TryGetPartialUtf8CodePoint(out ReadOnlySpan<byte> codePointBytes)
         {
-            ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
-            Debug.Assert(partialCodePointBytes.Length == 4);
-
-            if ((partialCodePointBytes[3] & Utf8EncodingFlag) == 0)
+            if ((_partialCodePointFlags & PartialCodePointUtf8EncodingFlag) == 0)
             {
-                codePointBytes = ReadOnlySpan<byte>.Empty;
+                codePointBytes = [];
                 return false;
             }
 
-            int length = partialCodePointBytes[3] & LengthMask;
+            ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
+            Debug.Assert(partialCodePointBytes.Length == 3);
+
+            int length = _partialCodePointFlags & PartialCodePointLengthMask;
             Debug.Assert((uint)length < 4);
 
             codePointBytes = partialCodePointBytes.Slice(0, length);
@@ -37,17 +37,17 @@ namespace System.Text.Json
 
         private bool TryGetPartialUtf16CodePoint(out ReadOnlySpan<char> codePointChars)
         {
-            ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
-            Debug.Assert(partialCodePointBytes.Length == 4);
-
-            if ((partialCodePointBytes[3] & Utf16EncodingFlag) == 0)
+            if ((_partialCodePointFlags & PartialCodePointUtf16EncodingFlag) == 0)
             {
-                codePointChars = ReadOnlySpan<char>.Empty;
+                codePointChars = [];
                 return false;
             }
 
-            int length = partialCodePointBytes[3] & LengthMask;
-            Debug.Assert(length == 2 || length == 0);
+            ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
+            Debug.Assert(partialCodePointBytes.Length == 3);
+
+            int length = _partialCodePointFlags & PartialCodePointLengthMask;
+            Debug.Assert(length is 2 or 0);
 
             codePointChars = MemoryMarshal.Cast<byte, char>(partialCodePointBytes.Slice(0, length));
             return true;
@@ -60,7 +60,7 @@ namespace System.Text.Json
             Span<byte> partialCodePointBytes = PartialCodePointRaw;
 
             bytes.CopyTo(partialCodePointBytes);
-            partialCodePointBytes[3] = (byte)(bytes.Length | Utf8EncodingFlag);
+            _partialCodePointFlags = (byte)(bytes.Length | PartialCodePointUtf8EncodingFlag);
         }
 
         private void SetPartialUtf16CodePoint(ReadOnlySpan<char> bytes)
@@ -70,28 +70,28 @@ namespace System.Text.Json
             Span<byte> partialCodePointBytes = PartialCodePointRaw;
 
             bytes.CopyTo(MemoryMarshal.Cast<byte, char>(partialCodePointBytes));
-            partialCodePointBytes[3] = (byte)((2 * bytes.Length) | Utf16EncodingFlag);
+            _partialCodePointFlags = (byte)((2 * bytes.Length) | PartialCodePointUtf16EncodingFlag);
         }
 
-        private bool HasPartialCodePoint => (PartialCodePointRaw[3] & LengthMask) != 0;
+        private bool HasPartialCodePoint => (_partialCodePointFlags & PartialCodePointLengthMask) != 0;
 
-        private void ClearPartialCodePoint() => PartialCodePointRaw[3] = 0;
+        private void ClearPartialCodePoint() => _partialCodePointFlags = 0;
 
         private void WriteInvalidPartialCodePoint()
         {
             ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
-            Debug.Assert(partialCodePointBytes.Length == 4);
+            Debug.Assert(partialCodePointBytes.Length == 3);
 
-            int length = partialCodePointBytes[3] & LengthMask;
+            int length = _partialCodePointFlags & PartialCodePointLengthMask;
 
-            switch (partialCodePointBytes[3] & EncodingMask)
+            switch (_partialCodePointFlags & PartialCodePointEncodingMask)
             {
-                case Utf8EncodingFlag:
+                case PartialCodePointUtf8EncodingFlag:
                     Debug.Assert((uint)length < 4);
                     WriteStringSegmentEscape(partialCodePointBytes.Slice(0, length), true);
                     break;
-                case Utf16EncodingFlag:
-                    Debug.Assert(length == 0 || length == 2);
+                case PartialCodePointUtf16EncodingFlag:
+                    Debug.Assert(length is 0 or 2);
                     WriteStringSegmentEscape(MemoryMarshal.Cast<byte, char>(partialCodePointBytes.Slice(0, length)), true);
                     break;
                 default:

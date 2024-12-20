@@ -53,24 +53,27 @@ namespace System.Text.Json
         private BitStack _bitStack;
 
         /// <summary>
-        /// This 4-byte array stores the partial code point leftover when writing a string value
-        /// segment that is split across multiple write calls. The first 3 bytes provide space
-        /// to store the leftover bytes using the source encoding and the last byte is the number
-        /// of bytes used to store the partial code point.
+        /// This 3-byte array stores the partial code point leftover when writing a string value
+        /// segment that is split across multiple write calls.
         /// </summary>
 #if !NET
         private byte[]? _partialCodePoint;
-        private Span<byte> PartialCodePointRaw => _partialCodePoint ??= new byte[4];
+        private Span<byte> PartialCodePointRaw => _partialCodePoint ??= new byte[3];
 #else
-        private Inline4ByteArray _partialCodePoint;
+        private Inline3ByteArray _partialCodePoint;
         private Span<byte> PartialCodePointRaw => _partialCodePoint;
 
-        [InlineArray(4)]
-        private struct Inline4ByteArray
+        [InlineArray(3)]
+        private struct Inline3ByteArray
         {
             public byte byte0;
         }
 #endif
+
+        /// <summary>
+        /// Stores the length and encoding of the partial code point.
+        /// </summary>
+        private byte _partialCodePointFlags;
 
         // The highest order bit of _currentDepth is used to discern whether we are writing the first item in a list or not.
         // if (_currentDepth >> 31) == 1, add a list separator before writing the item
