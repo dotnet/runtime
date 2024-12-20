@@ -791,7 +791,8 @@ namespace ILCompiler
                 .UseVersion()
                 .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableDefaultExceptionHandler = false,
             }.Invoke(args);
     }
 }

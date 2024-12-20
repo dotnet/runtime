@@ -309,7 +309,7 @@ C_FUNC(\Name):
 .endm
 
 // Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
-#define PTFF_THREAD_ABORT_BIT 35
+#define PTFF_THREAD_ABORT_BIT 31
 
 //
 // CONSTANTS -- INTEGER

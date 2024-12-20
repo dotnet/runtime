@@ -69,36 +69,40 @@
       <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
     </PropertyGroup>
 
-    <NdkToolFinderTask
-      Condition="'$(AOTWithLibraryFiles)' == 'true'"
-      Architecture="$(TargetArchitecture)"
-      HostOS="$(_HostOS)"
-      MinApiLevel="$(AndroidLibraryMinApiLevel)">
-      <Output TaskParameter="AsPrefixPath" PropertyName="_AsPrefixPath" />
-      <Output TaskParameter="ToolPrefixPath" PropertyName="_ToolPrefixPath" />
-      <Output TaskParameter="Triple" PropertyName="_Triple" />
-      <Output TaskParameter="LdName" PropertyName="_LdName" />
-      <Output TaskParameter="LdPath" PropertyName="_LdPath" />
-      <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
-    </NdkToolFinderTask>
-
     <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
       <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
       <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
+      <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
+      <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
+      <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
+      <_LdName>clang</_LdName>
+      <_LdOptions>-fuse-ld=lld</_LdOptions>
+      <_AsName>clang</_AsName>
+    </PropertyGroup>
+
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"
         AotModulesTablePath="$(_AotModulesTablePath)"
-        AsPrefix="$(_AsPrefixPath)"
+        AsName="$(_AsName)"
+        AsOptions="$(_AsOptions)"
         Assemblies="@(AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))"
         IntermediateOutputPath="$(IntermediateOutputPath)"
+        LdName="$(_LdName)"
+        LdOptions="$(_LdOptions)"
         LibraryFormat="$(_AotLibraryFormat)"
         LLVMPath="$(MonoAotCrossDir)"
         Mode="$(_AotMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="$(_AotOutputType)"
-        ToolPrefix="$(_ToolPrefixPath)"
+        Triple="$(_Triple)"
         UseAotDataFile="false"
         UseLLVM="$(UseLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />

@@ -169,7 +169,7 @@ FCFuncEnd()
 FCFuncStart(gRuntimeAssemblyFuncs)
     FCFuncElement("GetIsDynamic", AssemblyNative::GetIsDynamic)
     FCFuncElement("GetManifestModule", AssemblyHandle::GetManifestModule)
-    FCFuncElement("GetToken", AssemblyHandle::GetToken)
+    FCFuncElement("GetTokenInternal", AssemblyHandle::GetTokenInternal)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyLoadContextFuncs)
