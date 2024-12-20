@@ -4220,11 +4220,6 @@
         "ubuntu-x86"
       ]
     },
-    "ubuntu.24.04": {
-      "#import": [
-        "ubuntu"
-      ]
-    },
     "unix": {
       "#import": [
         "any"
