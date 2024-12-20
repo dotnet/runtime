@@ -340,8 +340,8 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
 
-            string result = FastAllocateString(length);
-            action(new Span<char>(ref result.GetRawStringData(), length), state);
+            string result = AllocateInternal(length, out Span<char> resultSpan);
+            action(resultSpan, state);
             return result;
         }
 
@@ -526,6 +526,13 @@ namespace System
 
         internal ref char GetRawStringData() => ref _firstChar;
         internal ref ushort GetRawStringDataAsUInt16() => ref Unsafe.As<char, ushort>(ref _firstChar);
+
+        internal static string AllocateInternal(int length, out Span<char> resultSpan)
+        {
+            string result = FastAllocateString(length);
+            resultSpan = new Span<char>(ref result._firstChar, result.Length);
+            return result;
+        }
 
         // Helper for encodings so they can talk to our buffer directly
         // stringLength must be the exact size we'll expect

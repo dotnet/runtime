@@ -3860,11 +3860,10 @@ namespace System.Globalization
 
         private static string GetString(ReadOnlySpan<byte> buffer)
         {
-            string result = string.FastAllocateString(buffer.Length);
-            var s = new Span<char>(ref result.GetRawStringData(), buffer.Length);
+            string result = string.AllocateInternal(buffer.Length, out Span<char> resultSpan);
             for (int i = 0; i < buffer.Length; i++)
             {
-                s[i] = (char)buffer[i];
+                resultSpan[i] = (char)buffer[i];
             }
 
             return result;

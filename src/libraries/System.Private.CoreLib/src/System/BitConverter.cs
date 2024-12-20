@@ -798,21 +798,20 @@ namespace System
             // (int.MaxValue / 3) == 715,827,882 Bytes == 699 MB
             ArgumentOutOfRangeException.ThrowIfGreaterThan(length, int.MaxValue / 3);
 
-            string result = string.FastAllocateString(length * 3 - 1);
+            string result = string.AllocateInternal(length * 3 - 1, out Span<char> resultSpan);
 
-            var dst = new Span<char>(ref result.GetRawStringData(), result.Length);
             var src = new ReadOnlySpan<byte>(value, startIndex, length);
             int i = 0;
             int j = 0;
             byte b = src[i++];
-            dst[j++] = HexConverter.ToCharUpper(b >> 4);
-            dst[j++] = HexConverter.ToCharUpper(b);
+            resultSpan[j++] = HexConverter.ToCharUpper(b >> 4);
+            resultSpan[j++] = HexConverter.ToCharUpper(b);
             while (i < src.Length)
             {
                 b = src[i++];
-                dst[j++] = '-';
-                dst[j++] = HexConverter.ToCharUpper(b >> 4);
-                dst[j++] = HexConverter.ToCharUpper(b);
+                resultSpan[j++] = '-';
+                resultSpan[j++] = HexConverter.ToCharUpper(b >> 4);
+                resultSpan[j++] = HexConverter.ToCharUpper(b);
             }
 
             return result;

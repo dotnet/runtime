@@ -324,10 +324,9 @@ namespace System.Globalization
                         // This will necessarily allocate a new string, but let's try to stay within the managed (non-localization tables)
                         // conversion code path if we can.
 
-                        string result = string.FastAllocateString(source.Length); // changing case uses simple folding: doesn't change UTF-16 code unit count
+                        string result = string.AllocateInternal(source.Length, out Span<char> resultSpan); // changing case uses simple folding: doesn't change UTF-16 code unit count
 
                         // copy existing known-good data into the result
-                        Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
                         source.AsSpan(0, (int)currIdx).CopyTo(resultSpan);
 
                         // and re-run the fast span-based logic over the remainder of the data
@@ -341,12 +340,11 @@ namespace System.Globalization
                     // We reached non-ASCII data *or* the requested culture doesn't map ASCII data the same way as the invariant culture.
                     // In either case we need to fall back to the localization tables.
 
-                    string result = string.FastAllocateString(source.Length); // changing case uses simple folding: doesn't change UTF-16 code unit count
+                    string result = string.AllocateInternal(source.Length, out Span<char> resultSpan); // changing case uses simple folding: doesn't change UTF-16 code unit count
 
                     if (currIdx > 0)
                     {
                         // copy existing known-good data into the result
-                        Span<char> resultSpan = new Span<char>(ref result.GetRawStringData(), result.Length);
                         source.AsSpan(0, (int)currIdx).CopyTo(resultSpan);
                     }
 

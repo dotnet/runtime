@@ -2355,11 +2355,11 @@ namespace System
             bool insertLineBreaks = (options == Base64FormattingOptions.InsertLineBreaks);
             int outputLength = ToBase64_CalculateAndValidateOutputLength(bytes.Length, insertLineBreaks);
 
-            string result = string.FastAllocateString(outputLength);
+            string result = string.AllocateInternal(outputLength, out Span<char> resultSpan);
 
             if (Vector128.IsHardwareAccelerated && !insertLineBreaks && bytes.Length >= Base64VectorizationLengthThreshold)
             {
-                ToBase64CharsLargeNoLineBreaks(bytes, new Span<char>(ref result.GetRawStringData(), result.Length), result.Length);
+                ToBase64CharsLargeNoLineBreaks(bytes, resultSpan, result.Length);
             }
             else
             {

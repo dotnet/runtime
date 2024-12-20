@@ -84,15 +84,16 @@ namespace System.Buffers
 
             static string NormalizeIfNeeded(string value, bool ignoreCase)
             {
+                string result = value;
+
                 if (ignoreCase && value.AsSpan().ContainsAnyExcept(s_allAsciiExceptLowercase))
                 {
-                    string upperCase = string.FastAllocateString(value.Length);
-                    int charsWritten = Ordinal.ToUpperOrdinal(value, new Span<char>(ref upperCase.GetRawStringData(), upperCase.Length));
-                    Debug.Assert(charsWritten == upperCase.Length);
-                    value = upperCase;
+                    result = string.AllocateInternal(value.Length, out Span<char> resultSpan);
+                    int charsWritten = Ordinal.ToUpperOrdinal(value, resultSpan);
+                    Debug.Assert(charsWritten == result.Length);
                 }
 
-                return value;
+                return result;
             }
 
             static Span<string> RemoveUnreachableValues(Span<string> values, HashSet<string> unreachableValues)
