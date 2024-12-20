@@ -196,10 +196,10 @@ public static partial class XmlSerializerTests
         Assert.Equal((string)x[1], (string)y[1]);
     }
 
-// ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
-// pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
-// but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
-// horizon that it's not worth the trouble.
+    // ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
+    // pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
+    // but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
+    // horizon that it's not worth the trouble.
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
@@ -1094,7 +1094,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             ms.Position = 0;
             string nl = Environment.NewLine;
             string actualFormatting = new StreamReader(ms).ReadToEnd();
-            string expectedFormatting = WithXmlHeader($"<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{ nl}</SimpleType>");
+            string expectedFormatting = WithXmlHeader($"<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{nl}</SimpleType>");
             Assert.Equal(expectedFormatting, actualFormatting);
         }
     }
@@ -1391,6 +1391,24 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
+    public static void Xml_TypeWithArrayPropertyHavingComplexChoice()
+    {
+        object[] choices = new object[] { new ComplexChoiceB { Name = "Beef" }, 5 };
+
+        // For each item in the choices array, add an enumeration value.
+        MoreChoices[] itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+
+        var value = new TypeWithPropertyHavingComplexChoice() { ManyChoices = choices, ChoiceArray = itemChoices };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithPropertyHavingComplexChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Item xsi:type=\"ComplexChoiceB\">\r\n    <Name>Beef</Name>\r\n  </Item>\r\n  <Amount>5</Amount>\r\n</TypeWithPropertyHavingComplexChoice>"));
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.ManyChoices);
+        Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
+        Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
+    }
+
+    [Fact]
     public static void XML_TypeWithTypeNameInXmlTypeAttribute_WithValue()
     {
         var value = new TypeWithTypeNameInXmlTypeAttribute() { XmlAttributeForm = "SomeValue" };
@@ -1588,6 +1606,54 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Null(actual.value);
         Assert.Null(((DerivedClass)actual).Value);
         Assert.Equal(value.value, ((DerivedClass)actual).value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInCollection()
+    {
+        var value = new MyList() {
+            new BaseClass() { Value = "base class" },
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<MyList>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <anyType xsi:type=""BaseClass"">
+    <Value>base class</Value>
+  </anyType>
+  <anyType xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </anyType>
+</ArrayOfAnyType>",
+() => { return new XmlSerializer(typeof(MyList), new Type[] { typeof(BaseClass) }); });
+
+        Assert.NotNull(actual);
+        Assert.Equal(2, actual.Count);
+        Assert.IsType<BaseClass>(actual[0]);
+        Assert.Equal("base class", ((BaseClass)actual[0]).Value);
+        Assert.IsType<DerivedClass>(actual[1]);
+        Assert.Equal("derived class", ((DerivedClass)actual[1]).Value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInCollectionSingle()
+    {
+        var value = new MyList() {
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<MyList>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <anyType xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </anyType>
+</ArrayOfAnyType>",
+() => { return new XmlSerializer(typeof(MyList), new Type[] { typeof(BaseClass) }); });
+
+        Assert.NotNull(actual);
+        Assert.Single(actual);
+        Assert.IsType<DerivedClass>(actual[0]);
+        Assert.Equal("derived class", ((DerivedClass)actual[0]).Value);
     }
 
     [Fact]
@@ -2383,6 +2449,16 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         {
             Assert.True(e is ExceptionType, $"Assert.True failed for {typeof(T)}. Expected: {typeof(ExceptionType)}; Actual: {e.GetType()}");
         }
+    }
+
+    private static Exception AssertTypeAndUnwrap<T>(object exception, string? message = null) where T : Exception
+    {
+        Assert.IsType<T>(exception);
+        var ex = exception as Exception;
+        if (message != null)
+            Assert.Contains(message, ex.Message);
+        Assert.NotNull((T)ex.InnerException);
+        return ex.InnerException;
     }
 
     private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,

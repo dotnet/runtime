@@ -931,12 +931,50 @@ namespace SerializationTypes
         public MoreChoices[] ChoiceArray;
     }
 
+    public class TypeWithPropertyHavingComplexChoice
+    {
+        // The ManyChoices field can contain an array
+        // of choices. Each choice must be matched to
+        // an array item in the ChoiceArray field.
+        [XmlChoiceIdentifier("ChoiceArray")]
+        [XmlElement("Item", typeof(ComplexChoiceA))]
+        [XmlElement("Amount", typeof(int))]
+        public object[] ManyChoices;
+
+        // TheChoiceArray field contains the enumeration
+        // values, one for each item in the ManyChoices array.
+        [XmlIgnore]
+        public MoreChoices[] ChoiceArray;
+    }
+
     public enum MoreChoices
     {
         None,
-        Item,
-        Amount
+        Item = 12,
+        Amount = 27
     }
+
+    [XmlInclude(typeof(ComplexChoiceB))]
+    public class ComplexChoiceA
+    {
+        public string Name { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is ComplexChoiceA a)
+            {
+                return a.Name == Name;
+            }
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            //return HashCode.Combine(Name);
+            return Name.GetHashCode();
+        }
+    }
+    public class ComplexChoiceB : ComplexChoiceA { }
 
     public class TypeWithFieldsOrdered
     {

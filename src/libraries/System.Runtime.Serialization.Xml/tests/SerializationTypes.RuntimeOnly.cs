@@ -2049,15 +2049,16 @@ namespace SerializationTypes
         public int IntField;
     }
 
-    public class TypeWithPropertyHavingChoice
+    public class TypeWithPropertyHavingChoiceError
     {
         // The ManyChoices field can contain an array
         // of choices. Each choice must be matched to
         // an array item in the ChoiceArray field.
         [XmlChoiceIdentifier("ChoiceArray")]
-        [XmlElement("Item", typeof(string))]
+        [XmlElement("Item", typeof(ComplexChoiceA))]
         [XmlElement("Amount", typeof(int))]
-        public object[] ManyChoices { get; set; }
+        [XmlElement("NotAChoice", typeof(string))]
+        public object[] ManyChoices;
 
         // TheChoiceArray field contains the enumeration
         // values, one for each item in the ManyChoices array.
