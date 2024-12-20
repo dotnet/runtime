@@ -734,13 +734,16 @@ namespace System.Reflection.Emit
                 {
                     case FieldInfo field:
                         Type declaringType = field.DeclaringType!;
-                        if (field.DeclaringType!.IsGenericTypeDefinition)
+                        if (declaringType.IsGenericTypeDefinition)
                         {
                             //The type of the field has to be fully instantiated type.
                             declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
                         }
+
+                        Type fieldType = ((FieldInfo)GetOriginalMemberIfConstructedType(field)).FieldType;
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
-                            MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+                            MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+
                         break;
                     case ConstructorInfo ctor:
                         ctor = (ConstructorInfo)GetOriginalMemberIfConstructedType(ctor);
@@ -809,17 +812,17 @@ namespace System.Reflection.Emit
             return convention;
         }
 
-        private MemberInfo GetOriginalMemberIfConstructedType(MethodBase methodBase)
+        private MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
         {
-            Type declaringType = methodBase.DeclaringType!;
+            Type declaringType = memberInfo.DeclaringType!;
             if (declaringType.IsConstructedGenericType &&
                 declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl &&
                 !ContainsTypeBuilder(declaringType.GetGenericArguments()))
             {
-                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
             }
 
-            return methodBase;
+            return memberInfo;
         }
 
         private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)

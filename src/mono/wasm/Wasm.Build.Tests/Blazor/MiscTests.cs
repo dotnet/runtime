@@ -40,7 +40,7 @@ public class MiscTests : BlazorWasmTestBase
         // build with -p:DeployOnBuild=true, and that will trigger a publish
         (string _, string buildOutput) = BlazorBuild(info,
             config,
-            new BuildOptions(ExtraMSBuildArgs: "-p:DeployBuild=true"),
+            new BuildOptions(ExtraMSBuildArgs: "-p:DeployBuild=true -p:CompressionEnabled=false"),
             isNativeBuild: true);
 
         // double check relinking!

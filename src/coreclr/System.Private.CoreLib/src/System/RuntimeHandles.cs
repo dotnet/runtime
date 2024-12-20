@@ -659,8 +659,13 @@ namespace System
             return new MdUtf8String(name);
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool CanCastTo(RuntimeType type, RuntimeType target);
+        internal static bool CanCastTo(RuntimeType type, RuntimeType target)
+        {
+            bool ret = TypeHandle.CanCastToForReflection(type.GetNativeTypeHandle(), target.GetNativeTypeHandle());
+            GC.KeepAlive(type);
+            GC.KeepAlive(target);
+            return ret;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable")]
         private static partial IntPtr GetDeclaringTypeHandleForGenericVariable(IntPtr typeHandle);
@@ -695,8 +700,17 @@ namespace System
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringMethodForGenericParameter")]
+        private static partial void GetDeclaringMethodForGenericParameter(QCallTypeHandle typeHandle, ObjectHandleOnStack result);
+
+        internal static IRuntimeMethodInfo? GetDeclaringMethodForGenericParameter(RuntimeType type)
+        {
+            Debug.Assert(IsGenericVariable(type));
+
+            IRuntimeMethodInfo? method = null;
+            GetDeclaringMethodForGenericParameter(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref method));
+            return method;
+        }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInstantiation")]
         internal static partial void GetInstantiation(QCallTypeHandle type, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
@@ -819,23 +833,15 @@ namespace System
             return ContainsGenericVariables(GetRuntimeTypeChecked());
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool SatisfiesConstraints(RuntimeType paramType, IntPtr* pTypeContext, int typeContextLength, IntPtr* pMethodContext, int methodContextLength, RuntimeType toType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_SatisfiesConstraints")]
+        private static partial Interop.BOOL SatisfiesConstraints(QCallTypeHandle paramType, QCallTypeHandle pTypeContext, RuntimeMethodHandleInternal pMethodContext, QCallTypeHandle toType);
 
-        internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[]? typeContext, RuntimeType[]? methodContext, RuntimeType toType)
+        internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType? typeContext, RuntimeMethodInfo? methodContext, RuntimeType toType)
         {
-            IntPtr[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out int typeContextLength);
-            IntPtr[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out int methodContextLength);
-
-            fixed (IntPtr* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
-            {
-                bool result = SatisfiesConstraints(paramType, pTypeContextHandles, typeContextLength, pMethodContextHandles, methodContextLength, toType);
-
-                GC.KeepAlive(typeContext);
-                GC.KeepAlive(methodContext);
-
-                return result;
-            }
+            RuntimeMethodHandleInternal methodContextRaw = ((IRuntimeMethodInfo?)methodContext)?.Value ?? RuntimeMethodHandleInternal.EmptyHandle;
+            bool result = SatisfiesConstraints(new QCallTypeHandle(ref paramType), new QCallTypeHandle(ref typeContext!), methodContextRaw, new QCallTypeHandle(ref toType)) != Interop.BOOL.FALSE;
+            GC.KeepAlive(methodContext);
+            return result;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
@@ -1087,7 +1093,16 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetMethodDef(IRuntimeMethodInfo method);
+        private static extern int GetMethodDef(RuntimeMethodHandleInternal method);
+
+        internal static int GetMethodDef(IRuntimeMethodInfo method)
+        {
+            Debug.Assert(method != null);
+
+            int token = GetMethodDef(method.Value);
+            GC.KeepAlive(method);
+            return token;
+        }
 
         internal static string GetName(RuntimeMethodHandleInternal method)
             => GetUtf8Name(method).ToString();
@@ -1208,7 +1223,26 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodHandleInternal GetStubIfNeeded(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation);
+        private static extern RuntimeMethodHandleInternal GetStubIfNeededInternal(RuntimeMethodHandleInternal method, RuntimeType declaringType);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetStubIfNeededSlow")]
+        private static partial RuntimeMethodHandleInternal GetStubIfNeededSlow(RuntimeMethodHandleInternal method, QCallTypeHandle declaringTypeHandle, ObjectHandleOnStack methodInstantiation);
+
+        internal static RuntimeMethodHandleInternal GetStubIfNeeded(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation)
+        {
+            if (methodInstantiation is null)
+            {
+                RuntimeMethodHandleInternal handle = GetStubIfNeededInternal(method, declaringType);
+                if (!handle.IsNullHandle())
+                    return handle;
+            }
+
+            return GetStubIfNeededWorker(method, declaringType, methodInstantiation);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static RuntimeMethodHandleInternal GetStubIfNeededWorker(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation)
+                => GetStubIfNeededSlow(method, new QCallTypeHandle(ref declaringType), ObjectHandleOnStack.Create(ref methodInstantiation));
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodFromCanonical(RuntimeMethodHandleInternal method, RuntimeType declaringType);
@@ -1224,7 +1258,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsTypicalMethodDefinition(IRuntimeMethodInfo method);
+        private static extern bool IsTypicalMethodDefinition(IRuntimeMethodInfo method);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetTypicalMethodDefinition")]
         private static partial void GetTypicalMethodDefinition(RuntimeMethodHandleInternal method, ObjectHandleOnStack outMethod);
@@ -1267,8 +1301,16 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Resolver GetResolver(RuntimeMethodHandleInternal method);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodBody? GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodBody")]
+        private static partial void GetMethodBody(RuntimeMethodHandleInternal method, QCallTypeHandle declaringType, ObjectHandleOnStack result);
+
+        internal static RuntimeMethodBody? GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType)
+        {
+            RuntimeMethodBody? result = null;
+            GetMethodBody(method.Value, new QCallTypeHandle(ref declaringType), ObjectHandleOnStack.Create(ref result));
+            GC.KeepAlive(method);
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
@@ -1584,7 +1626,14 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType);
+        private static extern unsafe RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, MethodTable* pMT);
+
+        internal static RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType)
+        {
+            TypeHandle th = declaringType.GetNativeTypeHandle();
+            Debug.Assert(!th.IsTypeDesc);
+            return GetStaticFieldForGenericType(field, th.AsMethodTable());
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool AcquiresContextFromThis(RuntimeFieldHandleInternal field);
@@ -1895,68 +1944,97 @@ namespace System
 
     internal sealed unsafe partial class Signature
     {
-        #region FCalls
-        [MemberNotNull(nameof(m_arguments))]
-        [MemberNotNull(nameof(m_declaringType))]
-        [MemberNotNull(nameof(m_returnTypeORfieldType))]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void GetSignature(
-            void* pCorSig, int cCorSig,
-            RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
-        #endregion
-
         #region Private Data Members
         //
         // Keep the layout in sync with SignatureNative in the VM
         //
-        internal RuntimeType[] m_arguments;
-        internal RuntimeType m_declaringType;
-        internal RuntimeType m_returnTypeORfieldType;
-        internal object? m_keepalive;
-        internal void* m_sig;
-        internal int m_managedCallingConventionAndArgIteratorFlags; // lowest byte is CallingConvention, upper 3 bytes are ArgIterator flags
-        internal int m_nSizeOfArgStack;
-        internal int m_csig;
-        internal RuntimeMethodHandleInternal m_pMethod;
+        private RuntimeType[]? _arguments;
+        private RuntimeType _declaringType;
+        private RuntimeType _returnTypeORfieldType;
+#pragma warning disable CA1823, 169
+        private object? _keepAlive;
+#pragma warning restore CA1823, 169
+        private void* _sig;
+        private int _csig;
+        private int _managedCallingConventionAndArgIteratorFlags; // lowest byte is CallingConvention, upper 3 bytes are ArgIterator flags
+#pragma warning disable CA1823, 169
+        private int _nSizeOfArgStack;
+#pragma warning restore CA1823, 169
+        private RuntimeMethodHandleInternal _pMethod;
         #endregion
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_Init")]
+        private static partial void Init(
+            ObjectHandleOnStack _this,
+            void* pCorSig, int cCorSig,
+            RuntimeFieldHandleInternal fieldHandle,
+            RuntimeMethodHandleInternal methodHandle);
+
+        [MemberNotNull(nameof(_returnTypeORfieldType))]
+        private void Init(
+            void* pCorSig, int cCorSig,
+            RuntimeFieldHandleInternal fieldHandle,
+            RuntimeMethodHandleInternal methodHandle)
+        {
+            Signature _this = this;
+            Init(ObjectHandleOnStack.Create(ref _this),
+                pCorSig, cCorSig,
+                fieldHandle,
+                methodHandle);
+            Debug.Assert(_returnTypeORfieldType != null);
+        }
 
         #region Constructors
         public Signature(
-            IRuntimeMethodInfo method,
+            IRuntimeMethodInfo methodHandle,
             RuntimeType[] arguments,
             RuntimeType returnType,
             CallingConventions callingConvention)
         {
-            m_pMethod = method.Value;
-            m_arguments = arguments;
-            m_returnTypeORfieldType = returnType;
-            m_managedCallingConventionAndArgIteratorFlags = (byte)callingConvention;
+            _arguments = arguments;
+            _returnTypeORfieldType = returnType;
+            _managedCallingConventionAndArgIteratorFlags = (int)callingConvention;
+            Debug.Assert((_managedCallingConventionAndArgIteratorFlags & 0xffffff00) == 0);
+            _pMethod = methodHandle.Value;
 
-            GetSignature(null, 0, default, method, null);
+            _declaringType = RuntimeMethodHandle.GetDeclaringType(_pMethod);
+            Init(null, 0, default, _pMethod);
+            GC.KeepAlive(methodHandle);
         }
 
         public Signature(IRuntimeMethodInfo methodHandle, RuntimeType declaringType)
         {
-            GetSignature(null, 0, default, methodHandle, declaringType);
+            _declaringType = declaringType;
+            Init(null, 0, default, methodHandle.Value);
+            GC.KeepAlive(methodHandle);
         }
 
         public Signature(IRuntimeFieldInfo fieldHandle, RuntimeType declaringType)
         {
-            GetSignature(null, 0, fieldHandle.Value, null, declaringType);
+            _declaringType = declaringType;
+            Init(null, 0, fieldHandle.Value, default);
             GC.KeepAlive(fieldHandle);
         }
 
         public Signature(void* pCorSig, int cCorSig, RuntimeType declaringType)
         {
-            GetSignature(pCorSig, cCorSig, default, null, declaringType);
+            _declaringType = declaringType;
+            Init(pCorSig, cCorSig, default, default);
         }
         #endregion
 
         #region Internal Members
-        internal CallingConventions CallingConvention => (CallingConventions)(byte)m_managedCallingConventionAndArgIteratorFlags;
-        internal RuntimeType[] Arguments => m_arguments;
-        internal RuntimeType ReturnType => m_returnTypeORfieldType;
-        internal RuntimeType FieldType => m_returnTypeORfieldType;
+        internal CallingConventions CallingConvention => (CallingConventions)(_managedCallingConventionAndArgIteratorFlags & 0xff);
+        internal RuntimeType[] Arguments
+        {
+            get
+            {
+                Debug.Assert(_arguments != null);
+                return _arguments;
+            }
+        }
+        internal RuntimeType ReturnType => _returnTypeORfieldType;
+        internal RuntimeType FieldType => _returnTypeORfieldType;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_AreEqual")]
         private static partial Interop.BOOL AreEqual(
@@ -1966,19 +2044,16 @@ namespace System
         internal static bool AreEqual(Signature sig1, Signature sig2)
         {
             return AreEqual(
-                sig1.m_sig, sig1.m_csig, new QCallTypeHandle(ref sig1.m_declaringType),
-                sig2.m_sig, sig2.m_csig, new QCallTypeHandle(ref sig2.m_declaringType)) != Interop.BOOL.FALSE;
+                sig1._sig, sig1._csig, new QCallTypeHandle(ref sig1._declaringType),
+                sig2._sig, sig2._csig, new QCallTypeHandle(ref sig2._declaringType)) != Interop.BOOL.FALSE;
         }
-
-        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
-            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe int GetParameterOffsetInternal(void* sig, int csig, int parameterIndex);
 
         internal int GetParameterOffset(int parameterIndex)
         {
-            int offsetMaybe = GetParameterOffsetInternal(m_sig, m_csig, parameterIndex);
+            int offsetMaybe = GetParameterOffsetInternal(_sig, _csig, parameterIndex);
             // If the result is negative, it is an error code.
             if (offsetMaybe < 0)
                 Marshal.ThrowExceptionForHR(offsetMaybe, new IntPtr(-1));
@@ -1986,13 +2061,62 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetTypeParameterOffset(int offset, int index);
+        private static extern unsafe int GetTypeParameterOffsetInternal(void* sig, int csig, int offset, int index);
+
+        internal int GetTypeParameterOffset(int offset, int index)
+        {
+            if (offset < 0)
+            {
+                Debug.Assert(offset == -1);
+                return offset;
+            }
+
+            int offsetMaybe = GetTypeParameterOffsetInternal(_sig, _csig, offset, index);
+            // If the result is negative and not -1, it is an error code.
+            if (offsetMaybe < 0 && offsetMaybe != -1)
+                Marshal.ThrowExceptionForHR(offsetMaybe, new IntPtr(-1));
+            return offsetMaybe;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);
+        private static extern unsafe int GetCallingConventionFromFunctionPointerAtOffsetInternal(void* sig, int csig, int offset);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern Type[] GetCustomModifiersAtOffset(int offset, bool required);
+        internal SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset)
+        {
+            if (offset < 0)
+            {
+                Debug.Assert(offset == -1);
+                return SignatureCallingConvention.Default;
+            }
+
+            int callConvMaybe = GetCallingConventionFromFunctionPointerAtOffsetInternal(_sig, _csig, offset);
+            // If the result is negative, it is an error code.
+            if (callConvMaybe < 0)
+                Marshal.ThrowExceptionForHR(callConvMaybe, new IntPtr(-1));
+            return (SignatureCallingConvention)callConvMaybe;
+        }
+
+        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Signature_GetCustomModifiersAtOffset")]
+        private static partial void GetCustomModifiersAtOffset(
+            ObjectHandleOnStack sigObj,
+            int offset,
+            Interop.BOOL required,
+            ObjectHandleOnStack result);
+
+        internal Type[] GetCustomModifiersAtOffset(int offset, bool required)
+        {
+            Signature _this = this;
+            Type[]? result = null;
+            GetCustomModifiersAtOffset(
+                ObjectHandleOnStack.Create(ref _this),
+                offset,
+                required ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
+                ObjectHandleOnStack.Create(ref result));
+            return result!;
+        }
         #endregion
     }
 
