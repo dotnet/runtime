@@ -23,7 +23,7 @@ namespace Internal
 
         private static unsafe void WriteCore(IntPtr handle, string s)
         {
-            int bufferSize = s.Length * 4;
+            int bufferSize = checked(s.Length * 4);
             Span<byte> bytes = (uint)bufferSize < 1024 ? stackalloc byte[bufferSize] : new byte[bufferSize];
             int cbytes;
 

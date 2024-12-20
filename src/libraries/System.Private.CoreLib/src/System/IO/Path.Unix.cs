@@ -101,7 +101,7 @@ namespace System.IO
             // that'll result in a unique file name.
             string tempPath = Path.GetTempPath();
             int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
-            int totalByteCount = tempPathByteCount + fileTemplate.Length + 1;
+            int totalByteCount = checked(tempPathByteCount + fileTemplate.Length + 1);
 
             Span<byte> path = (uint)totalByteCount <= 256 ? stackalloc byte[totalByteCount] : new byte[totalByteCount];
             int pos = Encoding.UTF8.GetBytes(tempPath, path);

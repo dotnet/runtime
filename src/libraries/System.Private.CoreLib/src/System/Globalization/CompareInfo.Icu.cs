@@ -860,7 +860,7 @@ namespace System.Globalization
             // (The ArrayPool used to have a limit on the length of buffers it would cache; this code was avoiding
             // exceeding that limit to avoid a per-operation allocation, and the performance implications here
             // were not re-evaluated when the limit was lifted.)
-            int sortKeyLength = (source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length;
+            int sortKeyLength = checked((source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length);
 
             byte[]? borrowedArray = null;
             Span<byte> sortKey = (uint)sortKeyLength <= 1024

@@ -91,7 +91,7 @@ namespace System.Globalization
         private static string FormatG(TimeSpan value, DateTimeFormatInfo dtfi, StandardFormat format)
         {
             string decimalSeparator = dtfi.DecimalSeparator;
-            int maxLength = 25 + decimalSeparator.Length; // large enough for any "g"/"G" TimeSpan
+            int maxLength = checked(25 + decimalSeparator.Length); // large enough for any "g"/"G" TimeSpan
             Span<char> destination = (uint)maxLength < 128 ?
                 stackalloc char[maxLength] :
                 new char[maxLength]; // the chances of needing this case are almost 0, as DecimalSeparator.Length will basically always == 1

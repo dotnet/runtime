@@ -500,7 +500,7 @@ namespace System.IO
 
         private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
-            int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
+            int estimatedLength = checked((format?.Length ?? 0) + args.Length * 8);
             var vsb = (uint)estimatedLength <= 256 ?
                 new ValueStringBuilder(stackalloc char[256]) :
                 new ValueStringBuilder(estimatedLength);

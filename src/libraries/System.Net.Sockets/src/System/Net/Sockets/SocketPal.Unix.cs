@@ -289,7 +289,7 @@ namespace System.Net.Sockets
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
-            int maxBuffers = buffers.Count - startIndex;
+            int maxBuffers = checked(buffers.Count - startIndex);
             if (OperatingSystem.IsWasi())
             {
                 // WASI doesn't have iovecs and recvmsg in preview2
