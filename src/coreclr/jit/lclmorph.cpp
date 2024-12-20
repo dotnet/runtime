@@ -1359,8 +1359,8 @@ public:
                 assert(TopValue(1).Node() == node->gtGetOp1());
                 assert(TopValue(0).Node() == node->gtGetOp2());
 
-                // We only expect TopValue(1).IsAddress() to be true for stack allocated arrays
-                if (node->gtGetOp2()->IsCnsIntOrI() && TopValue(1).IsAddress())
+                if (node->gtGetOp2()->IsCnsIntOrI() && TopValue(1).IsAddress() &&
+                    m_compiler->lvaGetDesc(TopValue(1).LclNum())->lvStackAllocatedArray == 1)
                 {
                     ssize_t offset = node->AsIndexAddr()->gtElemOffset +
                                      node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
@@ -1406,7 +1406,7 @@ public:
                 assert(TopValue(1).Node() == node);
                 assert(TopValue(0).Node() == node->gtGetOp1());
 
-                if (TopValue(0).IsAddress())
+                if (TopValue(0).IsAddress() && m_compiler->lvaGetDesc(TopValue(0).LclNum())->lvStackAllocatedArray == 1)
                 {
                     GenTree* gtLclFld =
                         m_compiler->gtNewLclFldNode(TopValue(0).LclNum(), TYP_INT,

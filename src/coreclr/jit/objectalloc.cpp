@@ -784,6 +784,8 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     Statement* lenStmt = comp->gtNewStmt(len);
     comp->fgInsertStmtBefore(block, stmt, lenStmt);
 
+    comp->lvaGetDesc(lclNum)->lvStackAllocatedArray = 1;
+
     return lclNum;
 }
 

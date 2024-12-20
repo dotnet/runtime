@@ -690,8 +690,9 @@ public:
     unsigned char lvSingleDefDisqualifyReason = 'H';
 #endif
 
-    unsigned char lvAllDefsAreNoGc    : 1; // For pinned locals: true if all defs of this local are no-gc
-    unsigned char lvStackAllocatedBox : 1; // Local is a stack allocated box
+    unsigned char lvAllDefsAreNoGc      : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvStackAllocatedBox   : 1; // Local is a stack allocated box
+    unsigned char lvStackAllocatedArray : 1; // Local is a stack allocated array
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
