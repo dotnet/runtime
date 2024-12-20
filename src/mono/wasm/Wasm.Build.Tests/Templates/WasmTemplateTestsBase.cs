@@ -20,14 +20,17 @@ namespace Wasm.Build.Tests;
 public class WasmTemplateTestsBase : BuildTestBase
 {
     private readonly WasmSdkBasedProjectProvider _provider;
-    protected readonly PublishOptions _defaultPublishOptions = new PublishOptions();
-    protected readonly BuildOptions _defaultBuildOptions = new BuildOptions();
+    private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false";
+    protected readonly PublishOptions _defaultPublishOptions;
+    protected readonly BuildOptions _defaultBuildOptions;
     protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
     public WasmTemplateTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext, ProjectProviderBase? provider = null)
         : base(provider ?? new WasmSdkBasedProjectProvider(output, DefaultTargetFramework), output, buildContext)
     {
         _provider = GetProvider<WasmSdkBasedProjectProvider>();
+        _defaultPublishOptions = new PublishOptions(ExtraMSBuildArgs: _extraBuildArgsPublish);
+        _defaultBuildOptions = new BuildOptions();
     }
 
     private Dictionary<string, string> browserProgramReplacements = new Dictionary<string, string>
@@ -117,22 +120,34 @@ public class WasmTemplateTestsBase : BuildTestBase
         ProjectInfo info,
         Configuration configuration,
         bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProject(info, configuration, _defaultPublishOptions, isNativeBuild);
+        BuildProjectCore(info, configuration, _defaultPublishOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
         PublishOptions publishOptions,
         bool? isNativeBuild = null) =>
-        BuildProject(info, configuration, publishOptions, isNativeBuild);
+        BuildProjectCore(
+            info,
+            configuration,
+            publishOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsPublish} {publishOptions.ExtraMSBuildArgs}" },
+            isNativeBuild
+        );
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
         bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProject(info, configuration, _defaultBuildOptions, isNativeBuild);
+        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
+        ProjectInfo info,
+        Configuration configuration,
+        BuildOptions buildOptions,
+        bool? isNativeBuild = null) =>
+        BuildProjectCore(info, configuration, buildOptions, isNativeBuild);
+
+    private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,
         Configuration configuration,
         MSBuildOptions buildOptions,
@@ -146,8 +161,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (buildOptions.ExtraBuildEnvironmentVariables is null)
             buildOptions = buildOptions with { ExtraBuildEnvironmentVariables = new Dictionary<string, string>() };
 
-        // TODO: reenable this when the SDK supports targetting net10.0
-        //buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
+        buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
@@ -215,17 +229,18 @@ public class WasmTemplateTestsBase : BuildTestBase
     {
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
         string mainJsContent = File.ReadAllText(mainJsPath);
+        Version targetFrameworkVersion = new Version(targetFramework.Replace("net", ""));
 
         string updatedMainJsContent = StringReplaceWithAssert(
             mainJsContent,
             ".create()",
-            (targetFramework == "net8.0" || targetFramework == "net9.0")
+            (targetFrameworkVersion.Major >= 8)
                     ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
                     : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
             );
 
-        // dotnet.run() is already used in <= net8.0
-        if (targetFramework != "net8.0")
+        // dotnet.run() is used instead of runMain() in net9.0+
+        if (targetFrameworkVersion.Major >= 9)
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
 
         updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
