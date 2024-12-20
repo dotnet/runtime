@@ -2531,7 +2531,7 @@ public static partial class XmlSerializerTests
         string ns = s_defaultNs;
         string memberName1 = "items";
         XmlReflectionMember member1 = GetReflectionMemberNoXmlElement<object[]>(memberName1, ns);
-        PropertyInfo itemProperty = typeof(TypeWithPropertyHavingChoice).GetProperty("ManyChoices");
+        FieldInfo itemProperty = typeof(TypeWithArrayPropertyHavingChoice).GetField("ManyChoices");
         member1.XmlAttributes = new XmlAttributes(itemProperty);
 
         string memberName2 = "ChoiceArray";
@@ -2554,6 +2554,202 @@ public static partial class XmlSerializerTests
         var actualItems = actual[0] as object[];
         Assert.NotNull(actualItems);
         Assert.True(items.SequenceEqual(actualItems));
+    }
+
+    [Fact]
+    public static void XmlMembersMapping_With_ComplexChoiceIdentifier()
+    {
+        string ns = s_defaultNs;
+        string memberName1 = "items";
+        XmlReflectionMember member1 = GetReflectionMemberNoXmlElement<object[]>(memberName1, ns);
+        FieldInfo itemProperty = typeof(TypeWithPropertyHavingComplexChoice).GetField("ManyChoices");
+        member1.XmlAttributes = new XmlAttributes(itemProperty);
+
+        string memberName2 = "ChoiceArray";
+        XmlReflectionMember member2 = GetReflectionMemberNoXmlElement<MoreChoices[]>(memberName2, ns);
+        member2.XmlAttributes.XmlIgnore = true;
+
+        var members = new XmlReflectionMember[] { member1, member2 };
+
+        object[] items = { new ComplexChoiceB { Name = "Beef" }, 5 };
+        var itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+        object[] value = { items, itemChoices };
+
+        object[] actual = RoundTripWithXmlMembersMapping(value,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<wrapper xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://tempuri.org/\">\r\n  <Item xsi:type=\"ComplexChoiceB\">\r\n    <Name>Beef</Name>\r\n  </Item>\r\n  <Amount>5</Amount>\r\n</wrapper>",
+            false,
+            members,
+            wrapperName: "wrapper");
+
+        Assert.NotNull(actual);
+        var actualItems = actual[0] as object[];
+        Assert.NotNull(actualItems);
+        Assert.True(items.SequenceEqual(actualItems));
+
+        object[] itemsWithNull = { null, 5 };
+        object[] valueWithNull = { itemsWithNull, itemChoices };
+
+        actual = RoundTripWithXmlMembersMapping(valueWithNull,
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<wrapper xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://tempuri.org/\">\r\n  <Amount>5</Amount>\r\n</wrapper>",
+            false,
+            members,
+            wrapperName: "wrapper");
+
+        Assert.NotNull(actual);
+        actualItems = actual[0] as object[];
+        // TODO: Ugh. Is losing a 'null' element of the choice array data loss?
+        // Probably. But that's what NetFx and ILGen do. :(
+        Assert.Single(actualItems);
+        Assert.Equal(5, actualItems[0]);
+        Assert.NotNull(actualItems);
+    }
+
+    [Fact]
+    public static void XmlMembersMapping_With_ChoiceErrors()
+    {
+        string ns = s_defaultNs;
+        string memberName1 = "items";
+        XmlReflectionMember member1 = GetReflectionMemberNoXmlElement<object[]>(memberName1, ns);
+        FieldInfo itemProperty = typeof(TypeWithPropertyHavingComplexChoice).GetField("ManyChoices");
+        member1.XmlAttributes = new XmlAttributes(itemProperty);
+
+        string memberName2 = "ChoiceArray";
+        XmlReflectionMember member2 = GetReflectionMemberNoXmlElement<MoreChoices[]>(memberName2, ns);
+        member2.XmlAttributes.XmlIgnore = true;
+
+        var members = new XmlReflectionMember[] { member1, member2 };
+
+        // XmlChoiceMismatchChoiceException
+        object[] items = { new ComplexChoiceB { Name = "Beef" }, "not integer 5" };
+        var itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+        object[] value = { items, itemChoices };
+
+        var ex = Record.Exception(() => {
+            RoundTripWithXmlMembersMapping(value, null, true, members, wrapperName: "wrapper");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("mismatches the type of ", ex.Message);
+
+        // XmlChoiceMissingValue
+        object[] newItems = { "random string", new ComplexChoiceB { Name = "Beef" }, 5 };
+        object[] newValue = { newItems, itemChoices };
+
+        ex = Record.Exception(() => {
+            RoundTripWithXmlMembersMapping(newValue, null, true, members, wrapperName: "wrapper");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("Invalid or missing value of the choice identifier", ex.Message);
+
+        // XmlChoiceMissingValue
+        FieldInfo missingItemProperty = typeof(TypeWithPropertyHavingChoiceError).GetField("ManyChoices");
+        member1.XmlAttributes = new XmlAttributes(missingItemProperty);
+
+        object[] missingItems = { new ComplexChoiceB { Name = "Beef" }, 5, "not_a_choice" };
+        var missingItemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount, MoreChoices.None };
+        object[] missingValue = { missingItems, missingItemChoices };
+
+        ex = Record.Exception(() => {
+            RoundTripWithXmlMembersMapping(missingValue, null, true, members, wrapperName: "wrapper");
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("is missing enumeration value", ex.Message);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithArrayPropertyHavingChoiceErrors()
+    {
+        MoreChoices[] itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+
+        // XmlChoiceMismatchChoiceException
+        object[] mismatchedChoices = new object[] { new ComplexChoiceB { Name = "Beef" }, "not integer 5" };
+        var mismatchedValue = new TypeWithPropertyHavingComplexChoice() { ManyChoices = mismatchedChoices, ChoiceArray = itemChoices };
+        var ex = Record.Exception(() => {
+            Serialize(mismatchedValue, null);
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("mismatches the type of ", ex.Message);
+
+        // XmlChoiceMissingValue
+        object[] missingChoice = { "random string", new ComplexChoiceB { Name = "Beef" }, 5 };
+        var missingValue = new TypeWithPropertyHavingComplexChoice() { ManyChoices = missingChoice, ChoiceArray = itemChoices };
+        ex = Record.Exception(() => {
+            Serialize(missingValue, null);
+        });
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex);
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("Invalid or missing value of the choice identifier", ex.Message);
+
+        // XmlChoiceMissingValue
+        object[] invalidChoiceValues = { new ComplexChoiceB { Name = "Beef" }, 5, "not_a_choice" };
+        MoreChoices[] invalidChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount, MoreChoices.None };
+        var invalidChoiceValue = new TypeWithPropertyHavingChoiceError() { ManyChoices = invalidChoiceValues, ChoiceArray = invalidChoices };
+        ex = Record.Exception(() => {
+            Serialize(invalidChoiceValue, null);
+        });
+#if ReflectionOnly
+        // The ILGen Serializer does XmlMapping during serializer ctor and lets the exception out cleanly.
+        // The Reflection Serializer does XmlMapping in the Serialize() call and wraps the resulting exception
+        //      inside a catch-all IOE in Serialize().
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "There was an error generating the XML document");
+#endif
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "TypeWithPropertyHavingChoiceError");   // There was an error reflecting type...
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "ManyChoices"); // There was an error reflecting field...
+        Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("is missing enumeration value", ex.Message);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInTypedCollection()
+    {
+        var value = new List<BaseClass>() {
+            new BaseClass() { Value = "base class" },
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<List<BaseClass>>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfBaseClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <BaseClass>
+    <Value>base class</Value>
+  </BaseClass>
+  <BaseClass xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </BaseClass>
+</ArrayOfBaseClass>");
+
+        Assert.NotNull(actual);
+        Assert.Equal(2, actual.Count);
+        Assert.Equal("base class", actual[0].Value);
+        Assert.IsType<BaseClass>(actual[0]);
+        Assert.IsType<DerivedClass>(actual[1]);
+        // BaseClass.Value is hidden - not overridden - by DerivedClass.Value, so it shows when accessed as a BaseClass.
+        Assert.Null(actual[1].Value);
+        Assert.Equal("derived class", ((DerivedClass)actual[1]).Value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInTypedCollectionSingle()
+    {
+        var value = new List<BaseClass>() {
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<List<BaseClass>>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfBaseClass xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <BaseClass xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </BaseClass>
+</ArrayOfBaseClass>");
+
+        Assert.NotNull(actual);
+        Assert.Single(actual);
+        Assert.IsType<DerivedClass>(actual[0]);
+        // BaseClass.Value is hidden - not overridden - by DerivedClass.Value, so it shows when accessed as a BaseClass.
+        Assert.Null(actual[0].Value);
+        Assert.Equal("derived class", ((DerivedClass)actual[0]).Value);
     }
 
     [Fact]
