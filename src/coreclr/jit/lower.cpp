@@ -7971,9 +7971,7 @@ void Lowering::MapParameterRegisterLocals()
         for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
         {
             const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
-            printf("  ");
-            mapping.RegisterSegment->Dump();
-            printf(" -> V%02u+%u\n", mapping.LclNum, mapping.Offset);
+            printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum, mapping.Offset);
         }
     }
 #endif
@@ -8044,6 +8042,15 @@ void Lowering::FindInducedParameterRegisterLocals()
             {
                 continue;
             }
+
+#ifdef TARGET_ARM
+            if ((comp->codeGen->regSet.rsMaskPreSpillRegs(true) & segment.GetRegisterMask()) != 0)
+            {
+                // Parameter registers that are prespilled on arm32 are
+                // currently not supported
+                continue;
+            }
+#endif
 
             assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
             unsigned structAccessedSize =
