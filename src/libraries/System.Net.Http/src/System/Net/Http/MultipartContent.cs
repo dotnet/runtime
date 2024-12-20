@@ -647,7 +647,7 @@ namespace System.Net.Http
 
             byte[]? rentedBuffer = null;
             Span<byte> buffer = maxLength <= StackallocThreshold
-                ? stackalloc byte[maxLength]
+                ? stackalloc byte[StackallocThreshold]
                 : (rentedBuffer = ArrayPool<byte>.Shared.Rent(maxLength));
 
             try

@@ -864,7 +864,7 @@ namespace System.Globalization
 
             byte[]? borrowedArray = null;
             Span<byte> sortKey = (uint)sortKeyLength <= 1024
-                ? stackalloc byte[sortKeyLength]
+                ? stackalloc byte[1024]
                 : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
 
             fixed (char* pSource = &MemoryMarshal.GetNonNullPinnableReference(source))

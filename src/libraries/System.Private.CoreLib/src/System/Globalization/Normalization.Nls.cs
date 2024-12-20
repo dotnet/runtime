@@ -50,7 +50,7 @@ namespace System.Globalization
                 const int StackallocThreshold = 512;
 
                 Span<char> buffer = strInput.Length <= StackallocThreshold
-                    ? stackalloc char[strInput.Length]
+                    ? stackalloc char[StackallocThreshold]
                     : (toReturn = ArrayPool<char>.Shared.Rent(strInput.Length));
 
                 while (true)

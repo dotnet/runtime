@@ -1517,7 +1517,7 @@ namespace System.IO
 
             int bytesNeeded = preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize));
             byte[]? rentedBytes = null;
-            Span<byte> bytes = (uint)bytesNeeded <= 1024 ? stackalloc byte[bytesNeeded] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
+            Span<byte> bytes = (uint)bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
 
             try
             {

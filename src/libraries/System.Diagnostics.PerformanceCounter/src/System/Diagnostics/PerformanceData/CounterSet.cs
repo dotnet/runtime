@@ -205,8 +205,8 @@ namespace System.Diagnostics.PerformanceData
 
                         unsafe
                         {
-                            uint CounterSetInfoSize = (uint)sizeof(Interop.PerfCounter.PerfCounterSetInfoStruct)
-                                            + (uint)_idToCounter.Count * (uint)sizeof(Interop.PerfCounter.PerfCounterInfoStruct);
+                            uint CounterSetInfoSize = checked((uint)sizeof(Interop.PerfCounter.PerfCounterSetInfoStruct)
+                                            + (uint)_idToCounter.Count * (uint)sizeof(Interop.PerfCounter.PerfCounterInfoStruct));
                             uint CounterSetInfoUsed = 0;
                             Span<byte> CounterSetBuffer = CounterSetInfoSize > 512 ? new byte[(int)CounterSetInfoSize] : stackalloc byte[(int)CounterSetInfoSize];
                             fixed (byte* pCounterSetBuffer = CounterSetBuffer)
