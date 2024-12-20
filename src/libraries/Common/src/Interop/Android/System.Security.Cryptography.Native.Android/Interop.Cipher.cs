@@ -150,15 +150,14 @@ internal static partial class Interop
             out int bytesWritten,
             out bool authTagMismatch)
         {
-            scoped Span<byte> notNullOutput = output;
-
-            // We can't pass null down to the native shim, so create a valid pointer if we have an empty span.
-            if (notNullOutput.IsEmpty)
+            if (output.IsEmpty)
             {
-                notNullOutput = (stackalloc byte[1]).Slice(1);
+                // We can't pass null down to the native shim, so create a valid pointer if we have an empty span.
+                byte dummy = 0;
+                return EvpAeadCipherFinalEx(ctx, &dummy, out bytesWritten, out authTagMismatch);
             }
 
-            fixed (byte* pOutput = notNullOutput)
+            fixed (byte* pOutput = output)
             {
                 return EvpAeadCipherFinalEx(ctx, pOutput, out bytesWritten, out authTagMismatch);
             }
