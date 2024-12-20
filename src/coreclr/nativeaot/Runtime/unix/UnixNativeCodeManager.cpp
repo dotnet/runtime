@@ -1281,8 +1281,7 @@ GCRefKind GetGcRefKind(ReturnKind returnKind)
 
 bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                        REGDISPLAY *    pRegisterSet,       // in
-                                                       PTR_PTR_VOID *  ppvRetAddrLocation, // out
-                                                       GCRefKind *     pRetValueKind)      // out
+                                                       PTR_PTR_VOID *  ppvRetAddrLocation) // out
 {
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
@@ -1298,21 +1297,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // with the GC on the way back to native code.
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
         return false;
-
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
-
-    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
-        p += sizeof(int32_t);
-
-    // Decode the GC info for the current method to determine its return type
-    GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
-#endif
-
-    GcInfoDecoder decoder(GCInfoToken(p), flags);
-    *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
 #if defined(TARGET_ARM)
     // Ensure that PC doesn't have the Thumb bit set. Prolog and epilog
@@ -1360,8 +1344,17 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() - sizeof(TADDR));
     return true;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    // Decode the GC info for the current method to determine if there are tailcalls
+    GcInfoDecoderFlags flags = DECODE_HAS_TAILCALLS;
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
     if (decoder.HasTailCalls())
     {
         // Do not hijack functions that have tail calls, since there are two problems:
@@ -1376,6 +1369,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     PTR_uintptr_t pLR = pRegisterSet->pLR;
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
@@ -1393,24 +1387,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
-    return true;
-
-#elif defined(TARGET_LOONGARCH64)
-
-    if (decoder.HasTailCalls())
-    {
-        // Do not hijack functions that have tail calls, since there are two problems:
-        // 1. When a function that tail calls another one is hijacked, the RA may be
-        //    stored at a different location in the stack frame of the tail call target.
-        //    So just by performing tail call, the hijacked location becomes invalid and
-        //    unhijacking would corrupt stack by writing to that location.
-        // 2. There is a small window after the caller pops RA from the stack in its
-        //    epilog and before the tail called function pushes RA in its prolog when
-        //    the hijacked return address would not be not on the stack and so we would
-        //    not be able to unhijack.
-        return false;
-    }
-
+#else
     PTR_uintptr_t pRA = pRegisterSet->pRA;
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
@@ -1428,43 +1405,9 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pRA;
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+
     return true;
-
-#elif defined(TARGET_RISCV64)
-
-    if (decoder.HasTailCalls())
-    {
-        // Do not hijack functions that have tail calls, since there are two problems:
-        // 1. When a function that tail calls another one is hijacked, the RA may be
-        //    stored at a different location in the stack frame of the tail call target.
-        //    So just by performing tail call, the hijacked location becomes invalid and
-        //    unhijacking would corrupt stack by writing to that location.
-        // 2. There is a small window after the caller pops RA from the stack in its
-        //    epilog and before the tail called function pushes RA in its prolog when
-        //    the hijacked return address would not be on the stack and so we would
-        //    not be able to unhijack.
-        return false;
-    }
-
-    PTR_uintptr_t pRA = pRegisterSet->pRA;
-    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
-    {
-        return false;
-    }
-
-    if (pRegisterSet->pRA == pRA)
-    {
-        // This is the case when we are either:
-        //
-        // 1) In a leaf method that does not push RA on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed RA on stack
-        //    or has RA already popped off.
-        return false;
-    }
-
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pRA;
-    return true;
-
 #else
     return false;
 #endif // defined(TARGET_AMD64)

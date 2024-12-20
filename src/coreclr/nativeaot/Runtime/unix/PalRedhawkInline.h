@@ -30,6 +30,13 @@ FORCEINLINE int32_t PalInterlockedIncrement(_Inout_ int32_t volatile *pDst)
     return result;
 }
 
+FORCEINLINE int64_t PalInterlockedIncrement64(_Inout_ int64_t volatile *pDst)
+{
+    int64_t result = __sync_add_and_fetch(pDst, 1);
+    PalInterlockedOperationBarrier();
+    return result;
+}
+
 FORCEINLINE int32_t PalInterlockedDecrement(_Inout_ int32_t volatile *pDst)
 {
     int32_t result = __sync_sub_and_fetch(pDst, 1);

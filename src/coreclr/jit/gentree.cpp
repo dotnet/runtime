@@ -4903,7 +4903,6 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
  *      1. GetCostEx() to the execution complexity estimate
  *      2. GetCostSz() to the code size estimate
  *      3. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
- *      4. DEBUG-only: clears GTF_DEBUG_NODE_MORPHED.
  */
 
 #ifdef _PREFAST_
@@ -14388,10 +14387,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     // Helper function that creates a new IntCon node and morphs it, if required
     auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
-        if (fgGlobalMorph)
-        {
-            INDEBUG(icon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
+        icon->SetMorphed(this);
         return icon;
     };
 
@@ -14402,18 +14398,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         assert(varTypeIsUnsigned(castToType));
 
         GenTreeCast* cast = gtNewCastNode(TYP_INT, op1, false, castToType);
-        if (fgGlobalMorph)
-        {
-            fgMorphTreeDone(cast);
-        }
+        cast->SetMorphed(this);
+        fgMorphTreeDone(cast);
 
         if (type == TYP_LONG)
         {
             cast = gtNewCastNode(TYP_LONG, cast, true, TYP_LONG);
-            if (fgGlobalMorph)
-            {
-                fgMorphTreeDone(cast);
-            }
+            cast->SetMorphed(this);
+            fgMorphTreeDone(cast);
         }
 
         return cast;
@@ -14680,14 +14672,7 @@ DONE_FOLD:
     DISPTREE(tree);
     JITDUMP("Transformed into:\n");
     DISPTREE(op);
-
-    if (fgGlobalMorph)
-    {
-        // We can sometimes produce a comma over the constant if the original op
-        // had a side effect, so just ensure we set the flag (which will be already
-        // set for the operands otherwise).
-        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    }
+    op->SetMorphed(this);
     return op;
 }
 
@@ -14742,10 +14727,9 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
     // Helper function that creates a new IntCon node and morphs it, if required
     auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
-        if (fgGlobalMorph)
-        {
-            INDEBUG(icon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
+
+        icon->SetMorphed(this);
+
         return icon;
     };
 
@@ -14907,14 +14891,8 @@ DONE_FOLD:
     DISPTREE(tree);
     JITDUMP("Transformed into:\n");
     DISPTREE(op);
+    op->SetMorphed(this);
 
-    if (fgGlobalMorph)
-    {
-        // We can sometimes produce a comma over the constant if the original op
-        // had a side effect, so just ensure we set the flag (which will be already
-        // set for the operands otherwise).
-        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    }
     return op;
 }
 
@@ -15435,6 +15413,11 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
         Statement*     thisStoreStmt = thisOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
         thisStoreStmt->SetRootNode(thisStore);
         thisValOpt = gtNewLclvNode(thisTmp, type);
+
+        // If this is invoked during global morph we are adding code to a remote tree
+        // Despite this being a store, we can't meaningfully add assertions
+        //
+        thisStore->SetMorphed(this);
     }
 
     if (flagVal->IsIntegralConst())
@@ -15452,6 +15435,11 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
         flagStoreStmt->SetRootNode(flagStore);
         flagValOpt     = gtNewLclvNode(flagTmp, type);
         flagValOptCopy = gtNewLclvNode(flagTmp, type);
+
+        // If this is invoked during global morph we are adding code to a remote tree
+        // Despite this being a store, we can't meaningfully add assertions
+        //
+        flagStore->SetMorphed(this);
     }
 
     // Turn the call into (thisValTmp & flagTmp) == flagTmp.
@@ -17436,16 +17424,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             }
 
             GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
-
-#ifdef DEBUG
-            if (m_compiler->fgGlobalMorph)
-            {
-                // Either both should be morphed or neither should be.
-                assert((m_result->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) ==
-                       (node->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
-                comma->gtDebugFlags |= node->gtDebugFlags & GTF_DEBUG_NODE_MORPHED;
-            }
-#endif
+            comma->SetMorphed(m_compiler);
 
             // Both should have valuenumbers defined for both or for neither
             // one (unless we are remorphing, in which case a prior transform
@@ -30762,12 +30741,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
 
         vecCon->gtSimdVal = simdVal;
-
-        if (fgGlobalMorph)
-        {
-            INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
-
+        vecCon->SetMorphed(this);
         fgUpdateConstTreeValueNumber(vecCon);
         return vecCon;
     }
@@ -30829,11 +30803,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
                     DEBUG_DESTROY_NODE(op, tree);
-
-                    if (fgGlobalMorph)
-                    {
-                        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                    }
+                    vectorNode->SetMorphed(this);
                     return vectorNode;
                 }
             }
@@ -32018,17 +31988,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (resultNode != tree)
     {
-        if (fgGlobalMorph)
+        resultNode->SetMorphed(this);
+        if (resultNode->OperIs(GT_COMMA))
         {
-            // We can sometimes produce a comma over the constant if the original op
-            // had a side effect or even a new constant node, so just ensure we set
-            // the flag (which will be already set for the operands otherwise).
-            INDEBUG(resultNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            if (resultNode->OperIs(GT_COMMA))
-            {
-                INDEBUG(resultNode->AsOp()->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            }
+            resultNode->AsOp()->gtGetOp2()->SetMorphed(this);
         }
 
         if (resultNode->OperIsConst())
@@ -32155,3 +32118,65 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
 
     return false;
 }
+
+#if defined(DEBUG)
+//------------------------------------------------------------------------
+// SetMorphed: mark a node as having been morphed
+//
+// Arguments:
+//   compiler - compiler instance
+//   doChildren - recursive mark child nodes
+//
+// Notes:
+//   Does nothing outside of global morph.
+//
+//   Useful for morph post-order expansions / optimizations.
+//
+//   Use care when invoking this on an assignment (or when doChildren is true,
+//   on trees containing assignments) as those usually will also require
+//   local assertion updates.
+//
+void GenTree::SetMorphed(Compiler* compiler, bool doChildren /* = false */)
+{
+    if (!compiler->fgGlobalMorph)
+    {
+        return;
+    }
+
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        Visitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+            if (!node->WasMorphed())
+            {
+                node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+                node->gtMorphCount++;
+            }
+            return Compiler::WALK_CONTINUE;
+        }
+    };
+
+    if (doChildren)
+    {
+        Visitor  v(compiler);
+        GenTree* node = this;
+        v.WalkTree(&node, nullptr);
+    }
+    else if (!WasMorphed())
+    {
+        gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+        gtMorphCount++;
+    }
+}
+#endif
