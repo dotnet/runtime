@@ -492,11 +492,11 @@ namespace System.Runtime.InteropServices
         {
             private IntPtr _externalComObject;
             private IntPtr _inner;
-            private readonly ComWrappers _comWrappers;
+            private ComWrappers _comWrappers;
             private GCHandle _proxyHandle;
             private GCHandle _proxyHandleTrackingResurrection;
             internal readonly bool _aggregatedManagedObjectWrapper;
-            private bool _maybeCached;
+            private readonly bool _uniqueInstance;
 
             static NativeObjectWrapper()
             {
@@ -524,7 +524,7 @@ namespace System.Runtime.InteropServices
                 _externalComObject = externalComObject;
                 _inner = inner;
                 _comWrappers = comWrappers;
-                _maybeCached = !flags.HasFlag(CreateObjectFlags.UniqueInstance);
+                _uniqueInstance = !flags.HasFlag(CreateObjectFlags.UniqueInstance);
                 _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
 
                 // We have a separate handle tracking resurrection as we want to make sure
@@ -549,13 +549,14 @@ namespace System.Runtime.InteropServices
             internal IntPtr ExternalComObject => _externalComObject;
             internal ComWrappers ComWrappers => _comWrappers;
             internal GCHandle ProxyHandle => _proxyHandle;
+            internal bool IsUniqueInstance => _uniqueInstance;
 
             public virtual void Release()
             {
-                if (_maybeCached)
+                if (!_uniqueInstance && _comWrappers is not null)
                 {
                     _comWrappers._rcwCache.Remove(_externalComObject, this);
-                    _maybeCached = false;
+                    _comWrappers = null;
                 }
 
                 if (_proxyHandle.IsAllocated)
@@ -955,15 +956,8 @@ namespace System.Runtime.InteropServices
             // and return.
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                retValue = CreateObject(identity, flags);
-                if (retValue == null)
-                {
-                    // If ComWrappers instance cannot create wrapper, we can do nothing here.
-                    return false;
-                }
-
-                retValue = RegisterObjectForComInstance(identity, inner, retValue, flags);
-                return true;
+                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags);
+                return retValue is not null;
             }
 
             // If we have a live cached wrapper currently,
@@ -1012,24 +1006,22 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            retValue = CreateObject(identity, flags);
-            if (retValue == null)
+            // If the user didn't provide a wrapper and couldn't unwrap a managed object wrapper,
+            // create a new wrapper.
+            retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags);
+            return retValue is not null;
+        }
+
+        private object? CreateAndRegisterObjectForComInstance(IntPtr identity, IntPtr inner, CreateObjectFlags flags)
+        {
+            object? retValue = CreateObject(identity, flags);
+            if (retValue is null)
             {
                 // If ComWrappers instance cannot create wrapper, we can do nothing here.
-                return false;
+                return null;
             }
 
-            // Now that we've called into user code to create the user object wrapper,
-            // another thread may have beaten us to creating a cached wrapper for the same identity.
-            // Check the cache again to avoid creating a NativeObjectWrapper when we don't need to.
-            if (_rcwCache.FindProxyForComInstance(identity) is object cachedWrapper)
-            {
-                retValue = cachedWrapper;
-                return true;
-            }
-
-            retValue = RegisterObjectForComInstance(identity, inner, retValue, flags);
-            return true;
+            return RegisterObjectForComInstance(identity, inner, retValue, flags);
         }
 
         private object RegisterObjectForComInstance(IntPtr identity, IntPtr inner, object comProxy, CreateObjectFlags flags)
@@ -1043,7 +1035,7 @@ namespace System.Runtime.InteropServices
 
             object actualProxy = comProxy;
             NativeObjectWrapper actualWrapper = nativeObjectWrapper;
-            if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
+            if (!nativeObjectWrapper.IsUniqueInstance)
             {
                 // Add our entry to the cache here, using an already existing entry if someone else beat us to it.
                 (actualWrapper, actualProxy) = _rcwCache.GetOrAddProxyForComInstance(identity, nativeObjectWrapper, comProxy);
@@ -1065,20 +1057,21 @@ namespace System.Runtime.InteropServices
 
         private void RegisterWrapperForObject(NativeObjectWrapper wrapper, object comProxy)
         {
-            // When we call into RegisterWrapperForObject, there is only one valid wrapper for a given
-            // COM instance. If we find a wrapper in the table that is a different NativeObjectWrapper instance
+            // When we call into RegisterWrapperForObject, there is only one valid non-"unique instance" wrapper for a given
+            // COM instance, which is already registered in the RCW cache.
+            // If we find a wrapper in the table that is a different NativeObjectWrapper instance
             // then it must be for a different COM instance.
             // It's possible that we could race here with another thread that is trying to register the same comProxy
             // for the same COM instance, but in that case we'll be pased the same NativeObjectWrapper instance
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
             Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+            Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
 
             if (s_nativeObjectWrapperTable.TryGetValue(comProxy, out NativeObjectWrapper? registeredWrapper)
                 && registeredWrapper != wrapper)
             {
                 Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
-                _rcwCache.Remove(wrapper.ExternalComObject, wrapper);
                 wrapper.Release();
                 throw new NotSupportedException();
             }
@@ -1087,7 +1080,6 @@ namespace System.Runtime.InteropServices
             if (registeredWrapper != wrapper)
             {
                 Debug.Assert(registeredWrapper.ExternalComObject != wrapper.ExternalComObject);
-                _rcwCache.Remove(wrapper.ExternalComObject, wrapper);
                 wrapper.Release();
                 throw new NotSupportedException();
             }
