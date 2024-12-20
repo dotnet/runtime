@@ -20,12 +20,10 @@ from enum import Enum
 from avx2 import AVX2BitonicISA
 from avx512 import AVX512BitonicISA
 from bitonic_isa import BitonicISA
-from neon import NEONBitonicISA
 from scalar import ScalarBitonicISA
 
 BitonicISA.register(AVX2BitonicISA)
 BitonicISA.register(AVX512BitonicISA)
-BitonicISA.register(NEONBitonicISA)
 BitonicISA.register(ScalarBitonicISA)
 
 
@@ -36,8 +34,6 @@ def get_generator_supported_types(vector_isa):
         return AVX2BitonicISA.supported_types()
     elif vector_isa == VectorISA.AVX512:
         return AVX512BitonicISA.supported_types()
-    elif vector_isa == VectorISA.NEON:
-        return NEONBitonicISA.supported_types()
     elif vector_isa == VectorISA.scalar:
         return ScalarBitonicISA.supported_types()
     else:
@@ -51,8 +47,6 @@ def get_generator(vector_isa, type):
         return AVX2BitonicISA(type)
     elif vector_isa == VectorISA.AVX512:
         return AVX512BitonicISA(type)
-    elif vector_isa == VectorISA.NEON:
-        return NEONBitonicISA(type)
     elif vector_isa == VectorISA.scalar:
         return ScalarBitonicISA(type)
     else:
@@ -96,7 +90,6 @@ class VectorISA(Enum):
     AVX2 = 'AVX2'
     AVX512 = 'AVX512'
     SVE = 'SVE'
-    NEON = 'NEON'
     scalar = 'scalar'
 
     def __str__(self):
