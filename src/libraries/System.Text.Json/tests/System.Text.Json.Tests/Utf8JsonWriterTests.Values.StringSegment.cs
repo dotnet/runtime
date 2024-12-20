@@ -820,7 +820,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output);
 
-                // Becuase the first code point is a surrogate pair, it will be
+                // Because the first code point is a surrogate pair, it will be
                 // saved until the next write to complete it. It is saved in the
                 // original encoding, UTF-16, so it will be 0b1101_1000 0b1101_1000
                 jsonUtf8.WriteStringValueSegment("\uD8D8".AsSpan(), false);
