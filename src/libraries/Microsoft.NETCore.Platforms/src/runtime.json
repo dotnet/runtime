@@ -1156,12 +1156,6 @@
         "linux-arm64"
       ]
     },
-    "debian-riscv64": {
-      "#import": [
-        "debian",
-        "linux-riscv64"
-      ]
-    },
     "debian-armel": {
       "#import": [
         "debian",
@@ -1265,12 +1259,6 @@
       "#import": [
         "debian.12",
         "debian-arm64"
-      ]
-    },
-    "debian.12-riscv64": {
-      "#import": [
-        "debian.12",
-        "debian-riscv64"
       ]
     },
     "debian.12-armel": {
@@ -1381,12 +1369,6 @@
       "#import": [
         "fedora",
         "linux-arm64"
-      ]
-    },
-    "fedora-riscv64": {
-      "#import": [
-        "fedora",
-        "linux-riscv64"
       ]
     },
     "fedora-x64": {
@@ -1676,12 +1658,6 @@
       "#import": [
         "fedora.39",
         "fedora-arm64"
-      ]
-    },
-    "fedora.39-riscv64": {
-      "#import": [
-        "fedora.39",
-        "fedora-riscv64"
       ]
     },
     "fedora.39-x64": {
@@ -2153,12 +2129,6 @@
         "linux-ppc64le"
       ]
     },
-    "linux-musl-riscv64": {
-      "#import": [
-        "linux-musl",
-        "linux-riscv64"
-      ]
-    },
     "linux-musl-loongarch64": {
       "#import": [
         "linux-musl",
@@ -2187,12 +2157,6 @@
       "#import": [
         "linux",
         "unix-ppc64le"
-      ]
-    },
-    "linux-riscv64": {
-      "#import": [
-        "linux",
-        "unix-riscv64"
       ]
     },
     "linux-s390x": {
@@ -3283,12 +3247,6 @@
         "linux-arm64"
       ]
     },
-    "tizen-riscv64": {
-      "#import": [
-        "tizen",
-        "linux-riscv64"
-      ]
-    },
     "tizen-armel": {
       "#import": [
         "tizen",
@@ -3310,12 +3268,6 @@
       "#import": [
         "tizen.4.0.0",
         "tizen-arm64"
-      ]
-    },
-    "tizen.4.0.0-riscv64": {
-      "#import": [
-        "tizen.4.0.0",
-        "tizen-riscv64"
       ]
     },
     "tizen.4.0.0-armel": {
@@ -3341,12 +3293,6 @@
         "tizen.4.0.0-arm64"
       ]
     },
-    "tizen.5.0.0-riscv64": {
-      "#import": [
-        "tizen.5.0.0",
-        "tizen.4.0.0-riscv64"
-      ]
-    },
     "tizen.5.0.0-armel": {
       "#import": [
         "tizen.5.0.0",
@@ -3368,12 +3314,6 @@
       "#import": [
         "tizen.5.5.0",
         "tizen.5.0.0-arm64"
-      ]
-    },
-    "tizen.5.5.0-riscv64": {
-      "#import": [
-        "tizen.5.5.0",
-        "tizen.5.0.0-riscv64"
       ]
     },
     "tizen.5.5.0-armel": {
@@ -3399,12 +3339,6 @@
         "tizen.5.5.0-arm64"
       ]
     },
-    "tizen.6.0.0-riscv64": {
-      "#import": [
-        "tizen.6.0.0",
-        "tizen.5.5.0-riscv64"
-      ]
-    },
     "tizen.6.0.0-armel": {
       "#import": [
         "tizen.6.0.0",
@@ -3428,12 +3362,6 @@
         "tizen.6.0.0-arm64"
       ]
     },
-    "tizen.6.5.0-riscv64": {
-      "#import": [
-        "tizen.6.5.0",
-        "tizen.6.0.0-riscv64"
-      ]
-    },
     "tizen.6.5.0-armel": {
       "#import": [
         "tizen.6.5.0",
@@ -3455,12 +3383,6 @@
       "#import": [
         "tizen.7.0.0",
         "tizen.6.5.0-arm64"
-      ]
-    },
-    "tizen.7.0.0-riscv64": {
-      "#import": [
-        "tizen.7.0.0",
-        "tizen.6.5.0-riscv64"
       ]
     },
     "tizen.7.0.0-armel": {
@@ -3728,12 +3650,6 @@
       "#import": [
         "ubuntu",
         "debian-arm64"
-      ]
-    },
-    "ubuntu-riscv64": {
-      "#import": [
-        "ubuntu",
-        "debian-riscv64"
       ]
     },
     "ubuntu-x64": {
@@ -4263,12 +4179,6 @@
         "ubuntu-arm64"
       ]
     },
-    "ubuntu.23.04-riscv64": {
-      "#import": [
-        "ubuntu.23.04",
-        "ubuntu-riscv64"
-      ]
-    },
     "ubuntu.23.04-x64": {
       "#import": [
         "ubuntu.23.04",
@@ -4315,12 +4225,6 @@
         "ubuntu"
       ]
     },
-    "ubuntu.24.04-riscv64": {
-      "#import": [
-        "ubuntu.24.04",
-        "ubuntu-riscv64"
-      ]
-    },
     "unix": {
       "#import": [
         "any"
@@ -4332,11 +4236,6 @@
       ]
     },
     "unix-arm64": {
-      "#import": [
-        "unix"
-      ]
-    },
-    "unix-riscv64": {
       "#import": [
         "unix"
       ]
@@ -4362,11 +4261,6 @@
       ]
     },
     "unix-ppc64le": {
-      "#import": [
-        "unix"
-      ]
-    },
-    "unix-riscv64": {
       "#import": [
         "unix"
       ]
