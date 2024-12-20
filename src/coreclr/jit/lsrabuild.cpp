@@ -2177,7 +2177,7 @@ void LinearScan::buildIntervals()
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        LclVarDsc* lcl = compiler->lvaGetDesc(lclNum);
+        LclVarDsc*                   lcl     = compiler->lvaGetDesc(lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
@@ -2189,7 +2189,8 @@ void LinearScan::buildIntervals()
             const ParameterRegisterLocalMapping* mapping =
                 compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
 
-            JITDUMP("Arg V%02u in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum, getRegName(seg.GetRegister()));
+            JITDUMP("Arg V%02u in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
+                    getRegName(seg.GetRegister()));
 
             bool isParameterLive = !lcl->lvTracked || compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
             bool isLive;
