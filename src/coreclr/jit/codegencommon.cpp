@@ -5696,6 +5696,8 @@ void CodeGen::genFnProlog()
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
     {
+        // The error arg is not actually a parameter in the ABI, so no reason to
+        // consider it to be live
         if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
         {
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
