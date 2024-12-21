@@ -47,6 +47,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         }
 
         private const int MIN_GCINFO_VERSION_WITH_RETURN_KIND = 2;
+        private const int MAX_GCINFO_VERSION_WITH_RETURN_KIND = 3;
         private const int MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME = 2;
         private const int MIN_GCINFO_VERSION_WITH_NORMALIZED_CODE_OFFSETS = 3;
 
@@ -107,7 +108,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             ParseHeaderFlags(image, ref bitOffset);
 
-            if (Version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND) // IsReturnKindAvailable
+            if (Version >= MIN_GCINFO_VERSION_WITH_RETURN_KIND && Version <= MAX_GCINFO_VERSION_WITH_RETURN_KIND) // IsReturnKindAvailable
             {
                 int returnKindBits = (_slimHeader) ? _gcInfoTypes.SIZE_OF_RETURN_KIND_SLIM : _gcInfoTypes.SIZE_OF_RETURN_KIND_FAT;
                 ReturnKind = (ReturnKinds)NativeReader.ReadBits(image, returnKindBits, ref bitOffset);
@@ -405,7 +406,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             // R2R 11.0+ uses GCInfo v4
             if (readyToRunMajorVersion < 11)
-            return 3;
+                return 3;
 
             return 4;
         }

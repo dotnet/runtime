@@ -38,7 +38,7 @@
 //                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
 // R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis, disable support for LogMethodEnter helper
 // R2R Version 10.1 adds Unbox_TypeTest helper
-// R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset
+// R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset and does not track return kinds in GCInfo
 
 struct READYTORUN_CORE_HEADER
 {

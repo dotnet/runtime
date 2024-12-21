@@ -494,8 +494,6 @@ GcInfoEncoder::GcInfoEncoder(
     // If the compiler doesn't set the GCInfo, report RT_Unset.
     // This is used for compatibility with JITs that aren't updated to use the new API.
     m_ReturnKind = RT_Unset;
-#else
-    m_ReturnKind = RT_Illegal;
 #endif // TARGET_X86
     m_CodeLength = 0;
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
@@ -776,12 +774,14 @@ void GcInfoEncoder::SetReversePInvokeFrameSlot(INT32 spOffset)
     m_ReversePInvokeFrameSlot = spOffset;
 }
 
+#ifndef TARGET_X86
 void GcInfoEncoder::SetReturnKind(ReturnKind returnKind)
 {
     _ASSERTE(IsValidReturnKind(returnKind));
 
     m_ReturnKind = returnKind;
 }
+#endif
 
 struct GcSlotDescAndId
 {
@@ -1045,16 +1045,15 @@ void GcInfoEncoder::Build()
     BOOL slimHeader = (!m_IsVarArg && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
         ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
-        (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) &&
 #ifdef TARGET_AMD64
         !m_WantsReportOnlyLeaf &&
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         !m_HasTailCalls &&
 #endif // TARGET_AMD64
-        !IsStructReturnKind(m_ReturnKind);
+        (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA);
 
     // All new code is generated for the latest GCINFO_VERSION.
-    // So, always encode RetunrKind and encode ReversePInvokeFrameSlot where applicable.
+    // So, always encode ReversePInvokeFrameSlot where applicable.
     if (slimHeader)
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
@@ -1065,8 +1064,6 @@ void GcInfoEncoder::Build()
         assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
 #endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
-
-        GCINFO_WRITE(m_Info1, m_ReturnKind, SIZE_OF_RETURN_KIND_IN_SLIM_HEADER, RetKindSize);
     }
     else
     {
@@ -1089,8 +1086,6 @@ void GcInfoEncoder::Build()
 #endif // TARGET_AMD64
         GCINFO_WRITE(m_Info1, ((m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasReversePInvokeFrame ? 1 : 0), 1, FlagsSize);
-
-        GCINFO_WRITE(m_Info1, m_ReturnKind, SIZE_OF_RETURN_KIND_IN_FAT_HEADER, RetKindSize);
     }
 
     _ASSERTE( m_CodeLength > 0 );

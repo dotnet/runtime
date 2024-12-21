@@ -91,9 +91,6 @@ bool GcInfoDecoder::PredecodeFatHeader(int remainingFlags)
     int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
     m_headerFlags = (GcInfoHeaderFlags)m_Reader.Read(numFlagBits);
 
-    // skip over the unused return kind.
-    m_Reader.Read(SIZE_OF_RETURN_KIND_IN_FAT_HEADER);
-
     remainingFlags &= ~DECODE_VARARG;
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     remainingFlags &= ~DECODE_HAS_TAILCALLS;
@@ -298,9 +295,6 @@ GcInfoDecoder::GcInfoDecoder(
             m_headerFlags = (GcInfoHeaderFlags)0;
             m_StackBaseRegister = NO_STACK_BASE_REGISTER;
         }
-
-        // skip over the unused return kind.
-        m_Reader.Read(SIZE_OF_RETURN_KIND_IN_SLIM_HEADER);
 
         remainingFlags &= ~DECODE_VARARG;
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

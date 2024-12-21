@@ -3709,6 +3709,7 @@ public:
         }
     }
 
+#ifndef TARGET_X86
     void SetReturnKind(ReturnKind returnKind)
     {
         m_gcInfoEncoder->SetReturnKind(returnKind);
@@ -3717,6 +3718,7 @@ public:
             printf("Set ReturnKind to %s.\n", ReturnKindToString(returnKind));
         }
     }
+#endif
 
     void SetStackBaseRegister(UINT32 registerNumber)
     {
@@ -3832,7 +3834,9 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 
     gcInfoEncoderWithLog->SetCodeLength(methodSize);
 
+#ifndef TARGET_X86
     gcInfoEncoderWithLog->SetReturnKind(getReturnKind());
+#endif
 
     if (compiler->isFramePointerUsed())
     {
