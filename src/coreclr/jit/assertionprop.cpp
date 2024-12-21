@@ -170,15 +170,21 @@ bool IntegralRange::Contains(int64_t value) const
         {
             GenTree* const addr = node->AsIndir()->Addr();
 
-            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR) &&
-                addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length))
+            if (node->TypeIs(TYP_INT) && addr->OperIs(GT_ADD) && addr->gtGetOp1()->OperIs(GT_LCL_VAR))
             {
                 GenTreeLclVar* const lclVar = addr->gtGetOp1()->AsLclVar();
 
-                if (compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
+                if (addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Span__length) &&
+                    compiler->lvaGetDesc(lclVar->GetLclNum())->IsSpan())
                 {
                     assert(compiler->lvaIsImplicitByRefLocal(lclVar->GetLclNum()));
                     return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+
+                if (addr->gtGetOp2()->IsIntegralConst(OFFSETOF__CORINFO_Array__length) &&
+                    compiler->lvaGetDesc(lclVar->GetLclNum())->lvStackAllocatedArray == 1)
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
                 }
             }
             break;
@@ -189,9 +195,17 @@ bool IntegralRange::Contains(int64_t value) const
             GenTreeLclFld* const lclFld = node->AsLclFld();
             LclVarDsc* const     varDsc = compiler->lvaGetDesc(lclFld);
 
-            if (node->TypeIs(TYP_INT) && varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
+            if (node->TypeIs(TYP_INT))
             {
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                if (varDsc->IsSpan() && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Span__length)
+                {
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+
+                if (varDsc->lvStackAllocatedArray == 1 && lclFld->GetLclOffs() == OFFSETOF__CORINFO_Array__length)
+                {
+                    return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
+                }
             }
 
             break;
