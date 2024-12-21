@@ -3548,6 +3548,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
     noway_assert(!varTypeIsStruct(elemTyp) || (elemStructType != NO_CLASS_HANDLE));
 
+    indexAddr->Arr()   = fgMorphTree(indexAddr->Arr());
+    indexAddr->Index() = fgMorphTree(indexAddr->Index());
+
     // In minopts, we will not be expanding GT_INDEX_ADDR in order to minimize the size of the IR. As minopts
     // compilation time is roughly proportional to the size of the IR, this helps keep compilation times down.
     // Furthermore, this representation typically saves on code size in minopts w.r.t. the complete expansion
@@ -3569,8 +3572,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // for more straightforward bounds-check removal, CSE, etc.
     if (opts.MinOpts())
     {
-        indexAddr->Arr()   = fgMorphTree(indexAddr->Arr());
-        indexAddr->Index() = fgMorphTree(indexAddr->Index());
         indexAddr->AddAllEffectsFlags(indexAddr->Arr(), indexAddr->Index());
 
         // Mark the indirection node as needing a range check if necessary.
@@ -3601,6 +3602,29 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     GenTree*          arrRefDefn  = nullptr; // non-NULL if we need to allocate a temp for the arrRef expression
     GenTree*          indexDefn   = nullptr; // non-NULL if we need to allocate a temp for the index expression
     GenTreeBoundsChk* boundsCheck = nullptr;
+
+    if (index->IsCnsIntOrI() && arrRef->IsAnyLocal() &&
+        lvaGetDesc(arrRef->AsLclVarCommon()->GetLclNum())->lvStackAllocatedArray == 1)
+    {
+        ssize_t offset = static_cast<ssize_t>(elemOffs) + index->AsIntCon()->IconValue() * elemSize;
+
+        // For stack allocated arrays the local size is the size of the entire array
+        if (!indexAddr->IsBoundsChecked() ||
+            (static_cast<ssize_t>(elemOffs) <= offset &&
+             offset < static_cast<ssize_t>(lvaLclExactSize(arrRef->AsLclVarCommon()->GetLclNum()))))
+        {
+            if (FitsIn<unsigned>(offset))
+            {
+                return fgMorphTree(gtNewOperNode(GT_ADD, indexAddr->TypeGet(), arrRef, gtNewIconNode(offset)));
+            }
+        }
+        else
+        {
+            return fgMorphTree(gtNewOperNode(GT_COMMA, indexAddr->TypeGet(),
+                                             gtNewHelperCallNode(CORINFO_HELP_RNGCHKFAIL, TYP_VOID),
+                                             gtNewIconNode(0, TYP_BYREF)));
+        }
+    }
 
     // If we're doing range checking, introduce a GT_BOUNDS_CHECK node for the address.
     if (indexAddr->IsBoundsChecked())
@@ -3633,7 +3657,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 
         if (((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(index, MAX_ARR_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
+            gtComplexityExceeds(index, MAX_INDEX_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
             (index->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(index->AsLclVar()->GetLclNum())))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
@@ -7754,6 +7778,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                     iconNode->SetMorphed(this);
                     return iconNode;
                 }
+            }
+            if (op1->IsAnyLocal() && lvaGetDesc(op1->AsLclVarCommon())->lvStackAllocatedArray == 1)
+            {
+                return fgMorphTree(
+                    gtNewLclFldNode(op1->AsLclVarCommon()->GetLclNum(), tree->TypeGet(),
+                                    op1->AsLclVarCommon()->GetLclOffs() + OFFSETOF__CORINFO_Array__length));
             }
             break;
 
