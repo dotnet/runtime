@@ -261,7 +261,7 @@ public:
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
     static FCDECL1(MethodTable*, GetApproxDeclaringMethodTable, FieldDesc *pField);
     static FCDECL1(INT32, GetToken, FieldDesc* pField);
-    static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
+    static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, MethodTable *pMT);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
     static FCDECL1(Object*, GetLoaderAllocatorInternal, FieldDesc *pField);
 };
@@ -292,7 +292,7 @@ class AssemblyHandle
 {
 public:
     static FCDECL1(ReflectModuleBaseObject*, GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
-    static FCDECL1(INT32, GetToken, AssemblyBaseObject *pAssemblyUNSAFE);
+    static FCDECL1(INT32, GetTokenInternal, AssemblyBaseObject *pAssemblyUNSAFE);
 };
 
 extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module);

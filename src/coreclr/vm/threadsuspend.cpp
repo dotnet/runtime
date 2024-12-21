@@ -4546,15 +4546,13 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-
-    _ASSERTE(IsValidReturnKind(returnKind));
 
     VOID *pvHijackAddr = reinterpret_cast<VOID *>(OnHijackTripThread);
 
@@ -4567,10 +4565,13 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
 #endif // TARGET_WINDOWS
 
 #ifdef TARGET_X86
+    _ASSERTE(IsValidReturnKind(returnKind));
     if (returnKind == RT_Float)
     {
         pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
+
+    SetHijackReturnKind(returnKind);
 #endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
@@ -4589,8 +4590,6 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
         STRESS_LOG3(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p to %p): Early out - !hijackLockHolder.Acquired. State=%x.\n", this, pvHijackAddr, (ThreadState)m_State);
         return;
     }
-
-    SetHijackReturnKind(returnKind);
 
     if (m_State & TS_Hijacked)
         UnhijackThread();
@@ -4909,10 +4908,10 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo, ReturnKind *pReturnKind)
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind))
 {
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken, pReturnKind);
+    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind));
 }
 
 #ifndef TARGET_UNIX
@@ -5312,11 +5311,10 @@ BOOL Thread::HandledJITCase()
             // it or not.
             EECodeInfo codeInfo(ip);
 
-            ReturnKind returnKind;
-
-            if (GetReturnAddressHijackInfo(&codeInfo, &returnKind))
+            X86_ONLY(ReturnKind returnKind;)
+            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
             {
-                HijackThread(returnKind, &esb);
+                HijackThread(&esb X86_ARG(returnKind));
             }
         }
     }
@@ -5852,9 +5850,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         if (executionState.m_ppvRetAddrPtr == NULL)
             return;
 
-        ReturnKind returnKind;
-
-        if (!GetReturnAddressHijackInfo(&codeInfo, &returnKind))
+        X86_ONLY(ReturnKind returnKind;)
+        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
         {
             return;
         }
@@ -5868,7 +5865,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(returnKind, &executionState);
+        pThread->HijackThread(&executionState X86_ARG(returnKind));
     }
 }
 
