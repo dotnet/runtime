@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices
         private static readonly GCHandleSet s_referenceTrackerNativeObjectWrapperCache = new GCHandleSet();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _managedObjectWrapperTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
-        private readonly RCWCache _rcwCache = new();
+        private readonly RcwCache _rcwCache = new();
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
         {
@@ -1103,7 +1103,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private sealed class RCWCache
+        private sealed class RcwCache
         {
             private readonly Lock _lock = new Lock(useTrivialWaits: true);
             private readonly Dictionary<object, WeakReference<NativeObjectWrapper>> _cache = [];
