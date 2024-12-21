@@ -3155,19 +3155,20 @@ bool Compiler::fgCanCloneTryRegion(BasicBlock* tryEntry)
 {
     assert(bbIsTryBeg(tryEntry));
 
-    CloneTryInfo      info(this);
+    BitVecTraits      traits(compBasicBlockID, this);
+    CloneTryInfo      info(traits);
     BasicBlock* const result = fgCloneTryRegion(tryEntry, info);
     return result != nullptr;
 }
 
 //------------------------------------------------------------------------
-// CloneTryInfo::CloneTryInfo
+// CloneTryInfo::CloneTryInfo: construct an object for cloning a try region
 //
 // Arguments:
-//    construct an object for cloning a try region
+//    traits - bbID based traits to use for the Visited set
 //
-CloneTryInfo::CloneTryInfo(Compiler* comp)
-    : Traits(comp->compBasicBlockID, comp)
+CloneTryInfo::CloneTryInfo(BitVecTraits& traits)
+    : Traits(traits)
     , Visited(BitVecOps::MakeEmpty(&Traits))
 {
 }

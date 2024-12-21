@@ -6212,7 +6212,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
         //
         if (comp->bbIsTryBeg(blk))
         {
-            CloneTryInfo info(comp);
+            CloneTryInfo info(traits);
             info.Map          = map;
             info.AddEdges     = false;
             info.ProfileScale = weightScale;

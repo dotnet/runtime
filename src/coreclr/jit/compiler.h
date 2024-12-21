@@ -2566,7 +2566,7 @@ struct RelopImplicationInfo
 //
 struct CloneTryInfo
 {
-    CloneTryInfo(Compiler* comp);
+    CloneTryInfo(BitVecTraits& traits);
 
     // bbID based traits and vector
     //
