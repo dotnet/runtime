@@ -2129,6 +2129,12 @@
         "linux-ppc64le"
       ]
     },
+    "linux-musl-riscv64": {
+      "#import": [
+        "linux-musl",
+        "linux-riscv64"
+      ]
+    },
     "linux-musl-loongarch64": {
       "#import": [
         "linux-musl",
@@ -2157,6 +2163,12 @@
       "#import": [
         "linux",
         "unix-ppc64le"
+      ]
+    },
+    "linux-riscv64": {
+      "#import": [
+        "linux",
+        "unix-riscv64"
       ]
     },
     "linux-s390x": {
@@ -4256,6 +4268,11 @@
       ]
     },
     "unix-ppc64le": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-riscv64": {
       "#import": [
         "unix"
       ]
