@@ -3605,7 +3605,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
     if (arrRef->IsAnyLocal() && lvaGetDesc(arrRef->AsLclVarCommon()->GetLclNum())->lvStackAllocatedArray == 1)
     {
-        indexAddr->Index() = fgMorphTree(indexAddr->Index());
+        index = fgMorphTree(index);
         if (index->IsCnsIntOrI())
         {
             ssize_t offset = static_cast<ssize_t>(elemOffs) + index->AsIntCon()->IconValue() * elemSize;
