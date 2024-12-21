@@ -403,7 +403,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             if (readyToRunMajorVersion < 9 || (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2))
                 return 2;
 
+            // R2R 11.0+ uses GCInfo v4
+            if (readyToRunMajorVersion < 11)
             return 3;
+
+            return 4;
         }
 
         private List<List<BaseGcSlot>> GetLiveSlotsAtSafepoints(byte[] image, ref int bitOffset)
