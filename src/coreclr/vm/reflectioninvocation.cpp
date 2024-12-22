@@ -116,6 +116,36 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCall::ObjectHandleOnStack allocated)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pMT != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    allocated.Set(pMT->Allocate());
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* pMT, QCall::ObjectHandleOnStack allocated)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(pMT != NULL);
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    allocated.Set(pMT->AllocateNoChecks());
+
+    END_QCALL;
+}
+
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
     CONTRACTL
@@ -279,28 +309,34 @@ public:
     }
 };
 
-FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
-    Object *target,
+extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
+    QCall::ObjectHandleOnStack target,
     PVOID* args, // An array of byrefs
-    SignatureNative* pSigUNSAFE,
-    FC_BOOL_ARG fConstructor)
+    QCall::ObjectHandleOnStack pSig,
+    BOOL fConstructor,
+    QCall::ObjectHandleOnStack result)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    struct {
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    struct
+    {
         OBJECTREF target;
         SIGNATURENATIVEREF pSig;
         OBJECTREF retVal;
     } gc;
-
-    gc.target = ObjectToOBJECTREF(target);
-    gc.pSig = (SIGNATURENATIVEREF)pSigUNSAFE;
+    gc.target = NULL;
+    gc.pSig = NULL;
     gc.retVal = NULL;
+    GCPROTECT_BEGIN(gc);
+    gc.target = target.Get();
+    gc.pSig = (SIGNATURENATIVEREF)pSig.Get();
 
     MethodDesc* pMeth = gc.pSig->GetMethod();
     TypeHandle ownerType = gc.pSig->GetDeclaringType();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     if (ownerType.IsSharedByGenericInstantiations())
     {
@@ -316,7 +352,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     BOOL fCtorOfVariableSizedObject = FALSE;
 
-    if (FC_ACCESS_BOOL(fConstructor))
+    if (fConstructor)
     {
         // If we are invoking a constructor on an array then we must
         // handle this specially.
@@ -423,7 +459,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     if (!pMeth->IsStatic() && !fCtorOfVariableSizedObject) {
         PVOID pThisPtr;
 
-        if (FC_ACCESS_BOOL(fConstructor))
+        if (fConstructor)
         {
             // Copy "this" pointer: only unbox if type is value type and method is not unboxing stub
             if (ownerType.IsValueType() && !pMeth->IsUnboxingStub()) {
@@ -545,7 +581,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     CallDescrWorkerWithHandler(&callDescrData);
 
     // It is still illegal to do a GC here.  The return type might have/contain GC pointers.
-    if (FC_ACCESS_BOOL(fConstructor))
+    if (fConstructor)
     {
         // We have a special case for Strings...The object is returned...
         if (fCtorOfVariableSizedObject) {
@@ -618,74 +654,12 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
     }
 
 Done:
-    ;
-    HELPER_METHOD_FRAME_END();
+    result.Set(gc.retVal);
 
-    return OBJECTREFToObject(gc.retVal);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
-
-/// <summary>
-/// Convert a boxed value of {T} (which is either {T} or null) to a true boxed Nullable{T}.
-/// </summary>
-FCIMPL2(Object*, RuntimeMethodHandle::ReboxToNullable, Object* pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct {
-        OBJECTREF pBoxed;
-        REFLECTCLASSBASEREF destType;
-        OBJECTREF retVal;
-    } gc;
-
-    gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
-    gc.destType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pDestUNSAFE);
-    gc.retVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    MethodTable* destMT = gc.destType->GetType().AsMethodTable();
-
-    gc.retVal = destMT->Allocate();
-    void* buffer = gc.retVal->GetData();
-    BOOL result = Nullable::UnBox(buffer, gc.pBoxed, destMT);
-    _ASSERTE(result == TRUE);
-
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
-
-/// <summary>
-/// For a true boxed Nullable{T}, re-box to a boxed {T} or null, otherwise just return the input.
-/// </summary>
-FCIMPL1(Object*, RuntimeMethodHandle::ReboxFromNullable, Object* pBoxedValUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct {
-        OBJECTREF pBoxed;
-        OBJECTREF retVal;
-    } gc;
-
-    if (pBoxedValUNSAFE == NULL)
-        return NULL;
-
-    gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
-    MethodTable* retMT = gc.pBoxed->GetMethodTable();
-    if (!Nullable::IsNullableType(retMT))
-        return pBoxedValUNSAFE;
-
-    gc.retVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    gc.retVal = Nullable::Box(gc.pBoxed->GetData(), retMT);
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(gc.retVal);
-}
-FCIMPLEND
 
 struct SkipStruct {
     StackCrawlMark* pStackMark;

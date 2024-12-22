@@ -5819,8 +5819,11 @@ namespace System
     {
         public static bool IsNormalized(this string strInput) { throw null; }
         public static bool IsNormalized(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static bool IsNormalized(this ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static string Normalize(this string strInput) { throw null; }
+        public static bool TryNormalize(this ReadOnlySpan<char> source, Span<char> destination, out int charsWritten, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static string Normalize(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static int GetNormalizedLength(this ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
     }
     [System.FlagsAttribute]
     public enum StringSplitOptions
@@ -6014,7 +6017,8 @@ namespace System
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
         public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromMilliseconds(double value) { throw null; }
-        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = (long)0) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds) { throw null; }
         public static System.TimeSpan FromMinutes(double value) { throw null; }
         public static System.TimeSpan FromMinutes(long minutes) { throw null; }
         public static System.TimeSpan FromMinutes(long minutes, long seconds = (long)0, long milliseconds = (long)0, long microseconds = (long)0) { throw null; }
@@ -13974,7 +13978,7 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
-        public static void SetUnhandledExceptionHandler(System.Runtime.ExceptionServices.UnhandledExceptionHandler handler) { }
+        public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
@@ -13987,7 +13991,6 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public delegate bool UnhandledExceptionHandler(System.Exception exception);
 }
 namespace System.Runtime.InteropServices
 {
