@@ -2600,6 +2600,95 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
     return NO_ASSERTION_INDEX;
 }
 
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
+{
+    CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* valArg = call->gtArgs.GetUserArgByIndex(2);
+
+    // Fill might be generic, so the lengthScale doesn't have to be 1.
+    unsigned lengthScale = genTypeSize(valArg->GetSignatureType());
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    ValueNum valVN = vnStore->VNConservativeNormalValue(valArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN) || !vnStore->IsVNConstant(valVN))
+    {
+        JITDUMP("...length or value is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+    if (len == 0)
+    {
+        // Memmove(dst, src, 0) -> no-op.
+        // Memmove doesn't dereference src/dst pointers if length is 0.
+        JITDUMP("...length is 0 -> optimize to no-op.\n");
+        return gtWrapWithSideEffects(gtNewNothingNode(), call, GTF_ALL_EFFECT, true);
+    }
+
+    if (CheckedOps::MulOverflows(((int64_t)len), ((int64_t)lengthScale), true))
+    {
+        return nullptr;
+    }
+
+    int64_t scaledLen = (int64_t)len * (int64_t)lengthScale;
+    if ((uint64_t)scaledLen > getUnrollThreshold(Memset))
+    {
+        JITDUMP("...length is too big to unroll - bail out.\n");
+        return nullptr;
+    }
+
+    if (scaledLen > 64 || genTypeSize(roundDownMaxType(64)) < lengthScale)
+    {
+        return nullptr;
+    }
+
+    size_t val = vnStore->CoercedConstantValue<size_t>(valVN);
+
+    // Extract "lengthScale" bytes from val and repeat this sequence to fill the buffer.
+    uint8_t buffer[64];
+    for (unsigned i = 0; i < 64 / lengthScale; i++)
+    {
+        memcpy(buffer + i * lengthScale, &val, lengthScale);
+    }
+
+    // if dstArg is not simple, we replace the arg directly with a temp assignment and
+    // continue using that temp - it allows us reliably extract all side effects.
+    GenTree* dst = fgMakeMultiUse(&dstArg->NodeRef());
+
+    // Now we're going to emit a chain of STOREIND via COMMA nodes.
+    // the very first tree is expected to be side-effects from the original call (including all args)
+    GenTree* result = nullptr;
+    gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
+
+    unsigned lenRemaining = (unsigned)scaledLen;
+    while (lenRemaining > 0)
+    {
+        const ssize_t offset = (ssize_t)scaledLen - (ssize_t)lenRemaining;
+
+        // Clone dst and add offset if necessary.
+        GenTree* currDst = gtCloneExpr(dst);
+        if (offset != 0)
+        {
+            currDst = gtNewOperNode(GT_ADD, dst->TypeGet(), currDst, gtNewIconNode(offset, TYP_I_IMPL));
+        }
+
+        // Create an unaligned STOREIND node using the largest possible word size.
+        var_types        type     = roundDownMaxType(lenRemaining);
+        GenTree*         srcCns   = gtNewGenericCon(type, buffer + offset);
+        GenTreeStoreInd* storeInd = gtNewStoreIndNode(type, currDst, srcCns, GTF_IND_UNALIGNED);
+        fgUpdateConstTreeValueNumber(srcCns);
+
+        //// Merge with the previous result.
+        result = result == nullptr ? storeInd : gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
+        lenRemaining -= genTypeSize(type);
+    }
+
+    JITDUMP("...optimized into STOREIND(s)!:\n");
+    DISPTREE(result);
+    return result;
+}
+
 //------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove/CORINFO_HELP_MEMCPY
 //    if possible. This function effectively duplicates LowerCallMemmove.
@@ -2756,6 +2845,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill) || call->IsHelperCall(this, CORINFO_HELP_MEMSET))
+    {
+        return optVNBasedFoldExpr_Call_Memset(call);
     }
 
     return nullptr;
