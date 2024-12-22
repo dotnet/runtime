@@ -490,11 +490,6 @@ GcInfoEncoder::GcInfoEncoder(
     m_IsSlotTableFrozen = FALSE;
 #endif //_DEBUG
 
-#ifndef TARGET_X86
-    // If the compiler doesn't set the GCInfo, report RT_Unset.
-    // This is used for compatibility with JITs that aren't updated to use the new API.
-    m_ReturnKind = RT_Unset;
-#endif // TARGET_X86
     m_CodeLength = 0;
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     m_SizeOfStackOutgoingAndScratchArea = -1;
@@ -773,15 +768,6 @@ void GcInfoEncoder::SetReversePInvokeFrameSlot(INT32 spOffset)
 {
     m_ReversePInvokeFrameSlot = spOffset;
 }
-
-#ifndef TARGET_X86
-void GcInfoEncoder::SetReturnKind(ReturnKind returnKind)
-{
-    _ASSERTE(IsValidReturnKind(returnKind));
-
-    m_ReturnKind = returnKind;
-}
-#endif
 
 struct GcSlotDescAndId
 {
