@@ -2600,91 +2600,78 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
     return NO_ASSERTION_INDEX;
 }
 
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memset: Unrolls NI_System_SpanHelpers_Fill for constant length.
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_Fill call to unroll
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 {
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
+
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(1);
     CallArg* valArg = call->gtArgs.GetUserArgByIndex(2);
 
-    // Fill might be generic, so the lengthScale doesn't have to be 1.
-    unsigned lengthScale = genTypeSize(valArg->GetSignatureType());
+    var_types valType     = valArg->GetSignatureType();
+    unsigned  lengthScale = genTypeSize(valType);
+
+    if (varTypeIsStruct(valType) || varTypeIsGC(valType))
+    {
+        JITDUMP("...value's type is not supported - bail out.\n");
+        return nullptr;
+    }
 
     ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
-    ValueNum valVN = vnStore->VNConservativeNormalValue(valArg->GetNode()->gtVNPair);
-    if (!vnStore->IsVNConstant(lenVN) || !vnStore->IsVNConstant(valVN))
+    if (!vnStore->IsVNConstant(lenVN))
     {
-        JITDUMP("...length or value is not a constant - bail out.\n");
+        JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
     }
 
     size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
-    if (len == 0)
-    {
-        // Memmove(dst, src, 0) -> no-op.
-        // Memmove doesn't dereference src/dst pointers if length is 0.
-        JITDUMP("...length is 0 -> optimize to no-op.\n");
-        return gtWrapWithSideEffects(gtNewNothingNode(), call, GTF_ALL_EFFECT, true);
-    }
-
-    if (CheckedOps::MulOverflows(((int64_t)len), ((int64_t)lengthScale), true))
-    {
-        return nullptr;
-    }
-
-    int64_t scaledLen = (int64_t)len * (int64_t)lengthScale;
-    if ((uint64_t)scaledLen > getUnrollThreshold(Memset))
+    if ((len > getUnrollThreshold(Memset)) ||
+        // The first condition prevents the overflow in the second condition.
+        // since both len and lengthScale are expected to be small at this point.
+        (len * lengthScale) > getUnrollThreshold(Memset))
     {
         JITDUMP("...length is too big to unroll - bail out.\n");
         return nullptr;
     }
 
-    if (scaledLen > 64 || genTypeSize(roundDownMaxType(64)) < lengthScale)
+    // Some arbitrary threshold if the value is not a constant,
+    // since it is unlikely that we can optimize it further.
+    if (!valArg->GetNode()->OperIsConst() && (len >= 8))
     {
+        JITDUMP("...length is too big to unroll for non-constant value - bail out.\n");
         return nullptr;
     }
 
-    size_t val = vnStore->CoercedConstantValue<size_t>(valVN);
-
-    // Extract "lengthScale" bytes from val and repeat this sequence to fill the buffer.
-    uint8_t buffer[64];
-    for (unsigned i = 0; i < 64 / lengthScale; i++)
-    {
-        memcpy(buffer + i * lengthScale, &val, lengthScale);
-    }
-
-    // if dstArg is not simple, we replace the arg directly with a temp assignment and
-    // continue using that temp - it allows us reliably extract all side effects.
+    // Spill the side effects directly in the args, we're going to
+    // pick them up in the following gtExtractSideEffList
     GenTree* dst = fgMakeMultiUse(&dstArg->NodeRef());
+    GenTree* val = fgMakeMultiUse(&valArg->NodeRef());
 
-    // Now we're going to emit a chain of STOREIND via COMMA nodes.
-    // the very first tree is expected to be side-effects from the original call (including all args)
     GenTree* result = nullptr;
     gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
 
-    unsigned lenRemaining = (unsigned)scaledLen;
-    while (lenRemaining > 0)
+    for (size_t offset = 0; offset < len; offset++)
     {
-        const ssize_t offset = (ssize_t)scaledLen - (ssize_t)lenRemaining;
-
         // Clone dst and add offset if necessary.
-        GenTree* currDst = gtCloneExpr(dst);
-        if (offset != 0)
-        {
-            currDst = gtNewOperNode(GT_ADD, dst->TypeGet(), currDst, gtNewIconNode(offset, TYP_I_IMPL));
-        }
+        GenTree*         offsetNode = gtNewIconNode((ssize_t)(offset * lengthScale), TYP_I_IMPL);
+        GenTree*         currDst    = gtNewOperNode(GT_ADD, dst->TypeGet(), gtCloneExpr(dst), offsetNode);
+        GenTreeStoreInd* storeInd =
+            gtNewStoreIndNode(valType, currDst, gtCloneExpr(val), GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
 
-        // Create an unaligned STOREIND node using the largest possible word size.
-        var_types        type     = roundDownMaxType(lenRemaining);
-        GenTree*         srcCns   = gtNewGenericCon(type, buffer + offset);
-        GenTreeStoreInd* storeInd = gtNewStoreIndNode(type, currDst, srcCns, GTF_IND_UNALIGNED);
-        fgUpdateConstTreeValueNumber(srcCns);
-
-        //// Merge with the previous result.
+        // Merge with the previous result.
         result = result == nullptr ? storeInd : gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
-        lenRemaining -= genTypeSize(type);
     }
 
-    JITDUMP("...optimized into STOREIND(s)!:\n");
+    JITDUMP("...optimized into STOREIND(s):\n");
     DISPTREE(result);
     return result;
 }
@@ -2847,7 +2834,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
         return optVNBasedFoldExpr_Call_Memmove(call);
     }
 
-    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill) || call->IsHelperCall(this, CORINFO_HELP_MEMSET))
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
     {
         return optVNBasedFoldExpr_Call_Memset(call);
     }
