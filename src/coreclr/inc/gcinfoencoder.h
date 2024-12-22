@@ -409,13 +409,6 @@ public:
                                     GcSlotState slotState
                                     );
 
-
-    //------------------------------------------------------------------------
-    // ReturnKind
-    //------------------------------------------------------------------------
-
-    void SetReturnKind(ReturnKind returnKind);
-
     //------------------------------------------------------------------------
     // Miscellaneous method information
     //------------------------------------------------------------------------
@@ -509,7 +502,6 @@ private:
     INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
-    ReturnKind m_ReturnKind;
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
