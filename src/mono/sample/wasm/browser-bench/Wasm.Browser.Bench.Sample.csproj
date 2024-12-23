@@ -43,13 +43,15 @@
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
-    <ArtifactsDotnetLatestSdks Include="$(ArtifactsDir)bin/dotnet-latest/sdk/*/*" />
   </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
   <UsingTask TaskName="GetNugetConfigTask" AssemblyFile="$(OutputPath)Wasm.Browser.Bench.Sample.dll" />
 
-  <Target Name="SetWBTSdksPath">
+  <Target Name="SetWBTSdksPath" DependsOnTargets="BuildWBT">
+    <ItemGroup>
+      <ArtifactsDotnetLatestSdks Include="$(ArtifactsDir)bin/dotnet-latest/sdk/*/*" />
+    </ItemGroup>
     <PropertyGroup>
       <WBTSdksPath>%(ArtifactsDotnetLatestSdks.RootDir)%(ArtifactsDotnetLatestSdks.Directory)Sdks</WBTSdksPath>
     </PropertyGroup>
@@ -68,7 +70,7 @@
     <NugetPackagesPath>$(MSBuildThisFileDirectory)nugetPackages</NugetPackagesPath>
   </PropertyGroup>
 
-  <Target Name="BuildWBT">
+  <Target Name="BuildWBT" Condition="!Exists('$(ArtifactsDir)bin/dotnet-latest')">
     <PropertyGroup>
       <_ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</_ScriptExt>
       <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
@@ -104,7 +106,7 @@
     <Exec EnvironmentVariables="MSBuildSDKsPath=$(WBTSdksPath);NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-      <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/*/publish/wwwroot/blazor-template/**/*.*"/>
+      <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/blazor-template/**/*.*"/>
     </ItemGroup>
 
     <Copy
@@ -141,7 +143,7 @@
     <Exec EnvironmentVariables="MSBuildSDKsPath=$(WBTSdksPath);NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame" Command="dotnet publish browser-frame.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-      <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/bin/$(Configuration)/*/publish/wwwroot/**/*.*"/>
+      <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/**/*.*"/>
     </ItemGroup>
 
     <Copy

@@ -341,7 +341,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
             Path.Combine(paths.BinFrameworkDir, "dotnet.native.wasm"),
             Path.Combine(paths.BinFrameworkDir, "dotnet.native.js"),
-            Path.Combine(paths.BinFrameworkDir, "dotnet.globalization.js"),
         };
 
         if (isAOT)
@@ -365,7 +364,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         dict["dotnet.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.js.map"), true);
         dict["dotnet.runtime.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js"), true);
         dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.runtime.js.map"), true);
-        dict["dotnet.globalization.js"]=(Path.Combine(paths.BinFrameworkDir, "dotnet.globalization.js"), true);
 
         if (IsFingerprintingEnabled)
         {
@@ -435,10 +433,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             case GlobalizationMode.FullIcu:
                 expected.Add("icudt.dat");
                 break;
-            case GlobalizationMode.Hybrid:
-                expected.Add("icudt_hybrid.dat");
-                expected.Add("segmentation-rules.json");
-                break;
             case GlobalizationMode.Custom:
                 if (string.IsNullOrEmpty(assertOptions.BuildOptions.CustomIcuFile))
                     throw new ArgumentException("WasmBuildTest is invalid, value for Custom globalization mode is required when GlobalizationMode=Custom.");
@@ -457,8 +451,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
-        if (assertOptions.BuildOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules*json"));
 
         if (IsFingerprintingEnabled)
         {

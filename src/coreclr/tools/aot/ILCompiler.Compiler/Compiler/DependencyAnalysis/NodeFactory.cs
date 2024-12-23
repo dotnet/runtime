@@ -377,6 +377,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericStaticBaseInfoNode(type);
             });
 
+            _objectGetTypeCalled = new NodeCache<MetadataType, ObjectGetTypeCalledNode>(type =>
+            {
+                return new ObjectGetTypeCalledNode(type);
+            });
+
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
             {
                 return new ObjectGetTypeFlowDependenciesNode(type);
@@ -1145,6 +1150,12 @@ namespace ILCompiler.DependencyAnalysis
         internal GenericStaticBaseInfoNode GenericStaticBaseInfo(MetadataType type)
         {
             return _genericStaticBaseInfos.GetOrAdd(type);
+        }
+
+        private NodeCache<MetadataType, ObjectGetTypeCalledNode> _objectGetTypeCalled;
+        internal ObjectGetTypeCalledNode ObjectGetTypeCalled(MetadataType type)
+        {
+            return _objectGetTypeCalled.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;
