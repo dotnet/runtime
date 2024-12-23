@@ -90,7 +90,7 @@ private:
     void ContainCheckReturnTrap(GenTreeOp* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
     bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
@@ -162,7 +162,10 @@ private:
     GenTree*   LowerCompare(GenTree* cmp);
     GenTree*   LowerJTrue(GenTreeOp* jtrue);
     GenTree*   LowerSelect(GenTreeConditional* cond);
-    bool       TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
+    bool       TryLowerConditionToFlagsNode(GenTree*      parent,
+                                            GenTree*      condition,
+                                            GenCondition* code,
+                                            bool          allowMultipleFlagChecks = true);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
     void       LowerRet(GenTreeOp* ret);

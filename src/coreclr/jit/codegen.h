@@ -969,7 +969,7 @@ protected:
     void genIntToFloatCast(GenTree* treeNode);
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
     void genCodeForCCMP(GenTreeCCMP* ccmp);
 #endif
     void genCodeForSelect(GenTreeOp* select);
@@ -1708,6 +1708,8 @@ public:
     static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
+    static instruction JumpKindToCcmp(emitJumpKind condition);
+    static insOpts     OptsFromCFlags(insCflags flags);
 #endif
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
