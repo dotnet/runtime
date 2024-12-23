@@ -524,7 +524,7 @@ namespace System.Runtime.InteropServices
                 _externalComObject = externalComObject;
                 _inner = inner;
                 _comWrappers = comWrappers;
-                _uniqueInstance = !flags.HasFlag(CreateObjectFlags.UniqueInstance);
+                _uniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance);
                 _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
 
                 // We have a separate handle tracking resurrection as we want to make sure
