@@ -5456,6 +5456,12 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                     continue;
                 }
 
+                // Don't consider any cut points that would move try/handler entries
+                if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
+                {
+                    continue;
+                }
+
                 // Compute the cost delta of this partition
                 const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);
                 const weight_t newCost =
