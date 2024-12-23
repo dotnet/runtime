@@ -423,40 +423,18 @@ namespace System
             input = input.Trim();
 
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
-            bool success = false;
-            switch ((char)(format[0] | 0x20))
+            bool success = (char)(format[0] | 0x20) switch
             {
-                case 'd':
-                    success = TryParseExactD(input, ref parseResult);
-                    break;
+                'd' => TryParseExactD(input, ref parseResult),
+                'n' => TryParseExactN(input, ref parseResult),
+                'b' => TryParseExactB(input, ref parseResult),
+                'p' => TryParseExactP(input, ref parseResult),
+                'x' => TryParseExactX(input, ref parseResult),
+                _ => false
+            };
 
-                case 'n':
-                    success = TryParseExactN(input, ref parseResult);
-                    break;
-
-                case 'b':
-                    success = TryParseExactB(input, ref parseResult);
-                    break;
-
-                case 'p':
-                    success = TryParseExactP(input, ref parseResult);
-                    break;
-
-                case 'x':
-                    success = TryParseExactX(input, ref parseResult);
-                    break;
-            }
-
-            if (success)
-            {
-                result = parseResult.ToGuid();
-                return true;
-            }
-            else
-            {
-                result = default;
-                return false;
-            }
+            result = success ? parseResult.ToGuid() : default;
+            return success;
         }
 
         private static bool TryParseGuid(ReadOnlySpan<char> guidString, ref GuidResult result)
@@ -469,7 +447,7 @@ namespace System
                 return false;
             }
 
-            return (guidString[0]) switch
+            return guidString[0] switch
             {
                 '(' => TryParseExactP(guidString, ref result),
                 '{' => guidString[9] == '-' ?
@@ -1108,24 +1086,6 @@ namespace System
             return 4;
         }
 
-        private static unsafe int HexsToCharsHexOutput<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            guidChars[0] = TChar.CastFrom('0');
-            guidChars[1] = TChar.CastFrom('x');
-
-            guidChars[2] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
-            guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(a));
-
-            guidChars[4] = TChar.CastFrom(',');
-            guidChars[5] = TChar.CastFrom('0');
-            guidChars[6] = TChar.CastFrom('x');
-
-            guidChars[7] = TChar.CastFrom(HexConverter.ToCharLower(b >> 4));
-            guidChars[8] = TChar.CastFrom(HexConverter.ToCharLower(b));
-
-            return 9;
-        }
-
         // Returns the guid in "registry" format.
         public override string ToString() => ToString("d", null);
 
@@ -1379,48 +1339,64 @@ namespace System
             return true;
         }
 
-        private unsafe bool TryFormatX<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        private bool TryFormatX<TChar>(Span<TChar> dest, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (destination.Length < 68)
+            if (dest.Length < 68)
             {
                 charsWritten = 0;
                 return false;
             }
-            charsWritten = 68;
 
-            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
+            // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
+            dest[0]  = TChar.CastFrom('{');
+            dest[1]  = TChar.CastFrom('0');
+            dest[2]  = TChar.CastFrom('x');
+            dest[3]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 28));
+            dest[4]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 24));
+            dest[5]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 20));
+            dest[6]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 16));
+            dest[7]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 12));
+            dest[8]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 8));
+            dest[9]  = TChar.CastFrom(HexConverter.ToCharLower(_a >> 4));
+            dest[10] = TChar.CastFrom(HexConverter.ToCharLower(_a));
+            dest[11] = TChar.CastFrom(',');
+            dest[12] = TChar.CastFrom('0');
+            dest[13] = TChar.CastFrom('x');
+            dest[14] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 12));
+            dest[15] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 8));
+            dest[16] = TChar.CastFrom(HexConverter.ToCharLower(_b >> 4));
+            dest[17] = TChar.CastFrom(HexConverter.ToCharLower(_b));
+            dest[18] = TChar.CastFrom(',');
+            dest[19] = TChar.CastFrom('0');
+            dest[20] = TChar.CastFrom('x');
+            dest[21] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 12));
+            dest[22] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 8));
+            dest[23] = TChar.CastFrom(HexConverter.ToCharLower(_c >> 4));
+            dest[24] = TChar.CastFrom(HexConverter.ToCharLower(_c));
+            dest[25] = TChar.CastFrom(',');
+            dest[26] = TChar.CastFrom('{');
+
+            // Write trailing "}}" here:
+            dest[66] = TChar.CastFrom('}');
+            dest[67] = TChar.CastFrom('}');
+
+            // Write _d to _k bytes:
+            dest = dest[27..];
+            var dkBytes = new Span<byte>(ref Unsafe.AsRef(in _d), 8);
+            for (int i = 0; i < dkBytes.Length; i++)
             {
-                TChar* p = guidChars;
-
-                // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-                *p++ = TChar.CastFrom('{');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _a >> 24, _a >> 16);
-                p += HexsToChars(p, _a >> 8, _a);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _b >> 8, _b);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('0');
-                *p++ = TChar.CastFrom('x');
-                p += HexsToChars(p, _c >> 8, _c);
-                *p++ = TChar.CastFrom(',');
-                *p++ = TChar.CastFrom('{');
-                p += HexsToCharsHexOutput(p, _d, _e);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _f, _g);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _h, _i);
-                *p++ = TChar.CastFrom(',');
-                p += HexsToCharsHexOutput(p, _j, _k);
-                *p++ = TChar.CastFrom('}');
-                *p = TChar.CastFrom('}');
-
-                Debug.Assert(p == guidChars + charsWritten - 1);
+                dest[0] = TChar.CastFrom('0');
+                dest[1] = TChar.CastFrom('x');
+                dest[2] = TChar.CastFrom(HexConverter.ToCharLower(dkBytes[i] >> 4));
+                dest[3] = TChar.CastFrom(HexConverter.ToCharLower(dkBytes[i]));
+                if (i != dkBytes.Length - 1)
+                {
+                    dest[4] = TChar.CastFrom(',');
+                    dest = dest[5..];
+                }
             }
 
+            charsWritten = 68;
             return true;
         }
 
