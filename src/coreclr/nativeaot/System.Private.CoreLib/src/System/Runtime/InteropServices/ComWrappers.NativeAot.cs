@@ -1106,7 +1106,7 @@ namespace System.Runtime.InteropServices
         private sealed class RcwCache
         {
             private readonly Lock _lock = new Lock(useTrivialWaits: true);
-            private readonly Dictionary<object, WeakReference<NativeObjectWrapper>> _cache = [];
+            private readonly Dictionary<object, GCHandle> _cache = [];
 
             /// <summary>
             /// Gets the current RCW proxy object for <paramref name="comPointer"/> if it exists in the cache or inserts a new entry with <paramref name="comProxy"/>.
@@ -1120,17 +1120,18 @@ namespace System.Runtime.InteropServices
                 lock (_lock)
                 {
                     Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
-                    ref WeakReference<NativeObjectWrapper>? rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
+                    ref GCHandle rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
                     if (!exists)
                     {
                         // Someone else didn't beat us to adding the entry to the cache.
                         // Add our entry here.
-                        rcwEntry = new WeakReference<NativeObjectWrapper>(wrapper);
+                        rcwEntry = GCHandle.Alloc(wrapper, GCHandleType.Weak);
                     }
-                    else if (!rcwEntry.TryGetTarget(out NativeObjectWrapper? cachedWrapper))
+                    else if (rcwEntry.Target is not (NativeObjectWrapper cachedWrapper))
                     {
+                        Debug.Assert(rcwEntry.IsAllocated);
                         // The target was collected, so we need to update the cache entry.
-                        rcwEntry.SetTarget(wrapper);
+                        rcwEntry.Target = wrapper;
                     }
                     else
                     {
@@ -1144,7 +1145,7 @@ namespace System.Runtime.InteropServices
                         }
 
                         // The proxy object was collected, so we need to update the cache entry.
-                        rcwEntry.SetTarget(wrapper);
+                        rcwEntry.Target = wrapper;
                     }
 
                     // We either added an entry to the cache or updated an existing entry that was dead.
@@ -1157,16 +1158,17 @@ namespace System.Runtime.InteropServices
             {
                 lock (_lock)
                 {
-                    if (_cache.TryGetValue(comPointer, out WeakReference<NativeObjectWrapper>? existingHandle))
+                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle))
                     {
-                        if (!existingHandle.TryGetTarget(out NativeObjectWrapper? cachedWrapper)
-                            || cachedWrapper.ProxyHandle.Target == null)
+                        if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
                         {
-                            // The target was collected, so we need to remove the entry from the cache.
-                            _cache.Remove(comPointer);
-                            return null;
+                            // The target exists and is still alive. Return it.
+                            return cachedProxy;
                         }
-                        return cachedWrapper.ProxyHandle.Target;
+
+                        // The target was collected, so we need to remove the entry from the cache.
+                        _cache.Remove(comPointer);
+                        existingHandle.Free();
                     }
 
                     return null;
@@ -1180,11 +1182,14 @@ namespace System.Runtime.InteropServices
                     // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                     // in the time between the GC cleared the contents of the GC handle but before the
                     // NativeObjectWrapper finalizer ran.
-                    if (_cache.TryGetValue(comPointer, out WeakReference<NativeObjectWrapper>? cachedRef)
-                        && cachedRef.TryGetTarget(out NativeObjectWrapper? cachedValue)
-                        && wrapper == cachedValue)
+                    // Only remove the entry if the target of the GC handle is the NativeObjectWrapper
+                    // or is null (indicating that the corresponding NativeObjectWrapper has been scheduled for finalization).
+                    if (_cache.TryGetValue(comPointer, out GCHandle cachedRef)
+                        && (wrapper == cachedRef.Target
+                            || cachedRef.Target is null))
                     {
                         _cache.Remove(comPointer);
+                        cachedRef.Free();
                     }
                 }
             }
