@@ -339,6 +339,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pClass->SetRank (Rank);
         pClass->SetMethodTable (pMT);
 
+        // this only reflects the fields declared in IL, not actual layout
+        // only used for debug asserts
+        INDEBUG(pClass->SetNumInstanceFields(ARRAY_ILFIELDS));
+
         // Fill In the method table
         pClass->SetNumMethods(static_cast<WORD>(numVirtuals + numNonVirtualSlots));
 

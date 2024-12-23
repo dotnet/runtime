@@ -23,6 +23,25 @@ namespace System
         // Large value types may benefit from a smaller number.
         internal const int IntrosortSizeThreshold = 16;
 
+        // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
+        // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
+        //                 ^               ^                 ^                  ^ returned reference
+        //                 |               |                 \-- ref array.RawData
+        //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
+        // The BaseSize of an array includes all the fields before the array data,
+        // including the sync block and method table. The reference to RawData.Data
+        // points at the number of components, skipping over these two pointer-sized fields.
+
+        // Mono arrays instead contain the bounds in the first field for all cases
+#if MONO
+        internal IntPtr RawBounds;
+#endif
+        internal uint RawLength; // Array._numComponents padded to IntPtr
+#if TARGET_64BIT
+        internal uint RawPadding;
+#endif
+        internal byte RawData;
+
         // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area.
         private protected Array() { }
 
@@ -369,8 +388,8 @@ namespace System
                 (uint)length <= destinationArray.NativeLength)
             {
                 nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
-                ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
+                ref byte src = ref sourceArray.RawData;
+                ref byte dst = ref destinationArray.RawData;
 
                 if (pMT->ContainsGCPointers)
                     Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -400,8 +419,8 @@ namespace System
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
+                    ref byte src = ref Unsafe.AddByteOffset(ref sourceArray.RawData, (uint)sourceIndex * elementSize);
+                    ref byte dst = ref Unsafe.AddByteOffset(ref destinationArray.RawData, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);

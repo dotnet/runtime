@@ -109,6 +109,11 @@ DEFINE_METHOD(ARG_ITERATOR,         CTOR2,                  .ctor,              
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
+DEFINE_FIELD(ARRAY,                 LENGTH,                 RawLength)
+#ifdef TARGET_64BIT
+DEFINE_FIELD(ARRAY,                 PADDING,                RawPadding)
+#endif
+DEFINE_FIELD(ARRAY,                 DATA,                   RawData)
 
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
@@ -721,13 +726,6 @@ DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_LONG,  CompareExchange, SM_
 
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
-
-DEFINE_CLASS(RAW_ARRAY_DATA,        CompilerServices,       RawArrayData)
-DEFINE_FIELD(RAW_ARRAY_DATA,        LENGTH,                 Length)
-#ifdef TARGET_64BIT
-DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
-#endif
-DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
 
 DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)

@@ -394,10 +394,10 @@ namespace System.Runtime.CompilerServices
         {
             MethodTable* pMT = GetMethodTable(obj);
 
-            // See comment on RawArrayData for details
+            // See comment on Array for details
             nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
             if (pMT->HasComponentSize)
-                rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
+                rawSize += Unsafe.As<Array>(obj).RawLength * (nuint)pMT->ComponentSize;
 
             GC.KeepAlive(obj); // Keep MethodTable alive
 
@@ -417,8 +417,8 @@ namespace System.Runtime.CompilerServices
         internal static unsafe ref int GetMultiDimensionalArrayBounds(Array array)
         {
             Debug.Assert(GetMultiDimensionalArrayRank(array) > 0);
-            // See comment on RawArrayData for details
-            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(array).Data);
+            // See comment on Array for details
+            return ref Unsafe.As<byte, int>(ref array.RawData);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -592,24 +592,6 @@ namespace System.Runtime.CompilerServices
     [NonVersionable] // This only applies to field layout
     internal sealed class RawData
     {
-        public byte Data;
-    }
-
-    // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
-    // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
-    //                 ^               ^                 ^                  ^ returned reference
-    //                 |               |                 \-- ref Unsafe.As<RawArrayData>(array).Data
-    //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
-    // The BaseSize of an array includes all the fields before the array data,
-    // including the sync block and method table. The reference to RawData.Data
-    // points at the number of components, skipping over these two pointer-sized fields.
-    [NonVersionable] // This only applies to field layout
-    internal sealed class RawArrayData
-    {
-        public uint Length; // Array._numComponents padded to IntPtr
-#if TARGET_64BIT
-        public uint Padding;
-#endif
         public byte Data;
     }
 
@@ -825,7 +807,7 @@ namespace System.Runtime.CompilerServices
             get
             {
                 Debug.Assert(HasComponentSize);
-                // See comment on RawArrayData for details
+                // See comment on Array for details
                 return BaseSize > (uint)(3 * sizeof(IntPtr));
             }
         }
@@ -837,7 +819,7 @@ namespace System.Runtime.CompilerServices
             get
             {
                 Debug.Assert(HasComponentSize);
-                // See comment on RawArrayData for details
+                // See comment on Array for details
                 return (int)((BaseSize - (uint)(3 * sizeof(IntPtr))) / (uint)(2 * sizeof(int)));
             }
         }

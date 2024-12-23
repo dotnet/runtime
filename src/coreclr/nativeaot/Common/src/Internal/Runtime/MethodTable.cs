@@ -433,7 +433,7 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(HasComponentSize);
-                // See comment on RawArrayData for details
+                // See comment on Array for details
                 return BaseSize > (uint)(3 * sizeof(IntPtr));
             }
         }

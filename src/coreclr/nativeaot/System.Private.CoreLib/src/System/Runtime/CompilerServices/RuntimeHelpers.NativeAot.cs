@@ -195,10 +195,10 @@ namespace System.Runtime.CompilerServices
         {
             MethodTable* pMT = GetMethodTable(obj);
 
-            // See comment on RawArrayData for details
+            // See comment on Array for details
             nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
             if (pMT->HasComponentSize)
-                rawSize += (uint)Unsafe.As<RawArrayData>(obj).Length * (nuint)pMT->ComponentSize;
+                rawSize += (uint)Unsafe.As<Array>(obj).RawLength * (nuint)pMT->ComponentSize;
 
             GC.KeepAlive(obj); // Keep MethodTable alive
 
@@ -412,24 +412,6 @@ namespace System.Runtime.CompilerServices
 
             return nint.Size;
         }
-    }
-
-    // CLR arrays are laid out in memory as follows (multidimensional array bounds are optional):
-    // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
-    //                 ^               ^                 ^                  ^ returned reference
-    //                 |               |                 \-- ref Unsafe.As<RawArrayData>(array).Data
-    //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
-    // The BaseSize of an array includes all the fields before the array data,
-    // including the sync block and method table. The reference to RawData.Data
-    // points at the number of components, skipping over these two pointer-sized fields.
-    [StructLayout(LayoutKind.Sequential)]
-    internal class RawArrayData
-    {
-        public uint Length; // Array._numComponents padded to IntPtr
-#if TARGET_64BIT
-        public uint Padding;
-#endif
-        public byte Data;
     }
 
     [StructLayout(LayoutKind.Sequential)]

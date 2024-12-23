@@ -761,9 +761,6 @@ namespace System.Runtime
             // This will throw NullReferenceException if obj is null.
             if ((nuint)index >= (uint)array.Length)
                 ThrowIndexOutOfRangeException(array);
-
-            Debug.Assert(index >= 0);
-            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
 #else
             if (array is null)
             {
@@ -773,9 +770,11 @@ namespace System.Runtime
             {
                 throw elementType->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            ref object element = ref Unsafe.Add(ref rawData, index);
 #endif
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
+
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
 
             if (elementType != arrayElemType)
@@ -793,9 +792,6 @@ namespace System.Runtime
             // This will throw NullReferenceException if obj is null.
             if ((nuint)index >= (uint)array.Length)
                 ThrowIndexOutOfRangeException(array);
-
-            Debug.Assert(index >= 0);
-            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
 #else
             if (array is null)
             {
@@ -807,9 +803,10 @@ namespace System.Runtime
             {
                 throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.IndexOutOfRange);
             }
-            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
-            ref object element = ref Unsafe.Add(ref rawData, index);
 #endif
+
+            Debug.Assert(index >= 0);
+            ref object? element = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
 
             MethodTable* elementType = array.GetMethodTable()->RelatedParameterType;
 

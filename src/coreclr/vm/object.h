@@ -100,6 +100,12 @@ struct RCW;
 #define ARRAYBASE_SIZE      (OBJECT_SIZE /* m_pMethTab */ + sizeof(DWORD) /* m_NumComponents */)
 #endif
 
+#ifdef TARGET_64BIT
+#define ARRAY_ILFIELDS      3
+#else
+#define ARRAY_ILFIELDS      2
+#endif
+
 #define ARRAYBASE_BASESIZE  (OBJHEADER_SIZE + ARRAYBASE_SIZE)
 
 //
