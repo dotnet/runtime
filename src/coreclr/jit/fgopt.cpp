@@ -4473,11 +4473,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
-// Parameters:
-//    dfsTree - The depth-first traversal of the flowgraph
-//
 template <bool hasEH>
-void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
+void Compiler::fgMoveHotJumps()
 {
 #ifdef DEBUG
     if (verbose)
@@ -4490,8 +4487,8 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
     }
 #endif // DEBUG
 
-    assert(dfsTree != nullptr);
-    BitVecTraits traits(dfsTree->PostOrderTraits());
+    assert(m_dfsTree != nullptr);
+    BitVecTraits traits(m_dfsTree->PostOrderTraits());
     BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
     // If we have a funclet region, don't bother reordering anything in it.
@@ -4500,7 +4497,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
-        if (!dfsTree->Contains(block))
+        if (!m_dfsTree->Contains(block))
         {
             continue;
         }
@@ -4553,7 +4550,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
 
         BasicBlock* target         = targetEdge->getDestinationBlock();
         bool        isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
-        assert(dfsTree->Contains(target));
+        assert(m_dfsTree->Contains(target));
 
         if (isBackwardJump)
         {
@@ -4573,7 +4570,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
                 targetEdge     = unlikelyEdge;
                 target         = targetEdge->getDestinationBlock();
                 isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
-                assert(dfsTree->Contains(target));
+                assert(m_dfsTree->Contains(target));
 
                 if (isBackwardJump)
                 {
@@ -4689,22 +4686,22 @@ void Compiler::fgDoReversePostOrderLayout()
     // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
     // Then, identify any loops in the DFS tree so we can keep their bodies compact.
     //
-    FlowGraphDfsTree* const      dfsTree       = fgComputeDfs</* useProfile */ true>();
-    FlowGraphNaturalLoops* const loops         = FlowGraphNaturalLoops::Find(dfsTree);
-    BasicBlock** const           rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
-    unsigned                     index         = dfsTree->GetPostOrderCount();
-    auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+    m_dfsTree                        = fgComputeDfs</* useProfile */ true>();
+    m_loops                          = FlowGraphNaturalLoops::Find(m_dfsTree);
+    BasicBlock** const rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+    unsigned           index         = m_dfsTree->GetPostOrderCount();
+    auto               addToSequence = [rpoSequence, &index](BasicBlock* block) {
         assert(index != 0);
         rpoSequence[--index] = block;
     };
 
-    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
     //
     if (compHndBBtabCount == 0)
     {
-        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        for (unsigned i = m_dfsTree->GetPostOrderCount() - 1; i != 0; i--)
         {
             BasicBlock* const block       = rpoSequence[i];
             BasicBlock* const blockToMove = rpoSequence[i - 1];
@@ -4716,7 +4713,7 @@ void Compiler::fgDoReversePostOrderLayout()
             }
         }
 
-        fgMoveHotJumps</* hasEH */ false>(dfsTree);
+        fgMoveHotJumps</* hasEH */ false>();
 
         return;
     }
@@ -4756,7 +4753,7 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Reorder blocks
     //
-    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+    for (unsigned i = m_dfsTree->GetPostOrderCount() - 1; i != 0; i--)
     {
         BasicBlock* const block       = rpoSequence[i];
         BasicBlock* const blockToMove = rpoSequence[i - 1];
@@ -4789,7 +4786,7 @@ void Compiler::fgDoReversePostOrderLayout()
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
 
-    fgMoveHotJumps</* hasEH */ true>(dfsTree);
+    fgMoveHotJumps</* hasEH */ true>();
 }
 
 //-----------------------------------------------------------------------------
