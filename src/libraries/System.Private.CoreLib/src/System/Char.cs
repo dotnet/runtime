@@ -1286,6 +1286,7 @@ namespace System
                 bytesWritten = sizeof(char);
                 return true;
             }
+
             bytesWritten = 0;
             return false;
         }
@@ -1298,6 +1299,7 @@ namespace System
                 bytesWritten = sizeof(char);
                 return true;
             }
+
             bytesWritten = 0;
             return false;
         }
