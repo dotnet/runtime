@@ -4428,7 +4428,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 // Return Value:
 //     True if relop was transformed and is now right before 'parent'; otherwise false.
 //
-bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond)
+bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
+                                            GenTree*      condition,
+                                            GenCondition* cond,
+                                            bool          allowMultipleFlagsChecks)
 {
     JITDUMP("Lowering condition:\n");
     DISPTREERANGE(BlockRange(), condition);
@@ -4450,6 +4453,11 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
         GenTree* relopOp2 = relop->gtGetOp2();
 
 #ifdef TARGET_XARCH
+        if (!allowMultipleFlagsChecks && cond->IsFloat())
+        {
+            return false;
+        }
+
         // Optimize FP x != x to only check parity flag. This is a common way of
         // checking NaN and avoids two branches that we would otherwise emit.
         if (optimizing && (cond->GetCode() == GenCondition::FNEU) && relopOp1->OperIsLocal() &&
