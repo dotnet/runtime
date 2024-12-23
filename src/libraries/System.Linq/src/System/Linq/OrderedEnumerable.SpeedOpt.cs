@@ -91,7 +91,7 @@ namespace System.Linq
                 TElement[] buffer = _source.ToArray();
                 if (buffer.Length <= minIdx)
                 {
-                    return new List<TElement>();
+                    return [];
                 }
 
                 if (buffer.Length <= maxIdx)
@@ -104,7 +104,7 @@ namespace System.Linq
                     return new List<TElement>(1) { GetEnumerableSorter().ElementAt(buffer, buffer.Length, minIdx) };
                 }
 
-                List<TElement> list = new();
+                List<TElement> list = [];
                 Fill(minIdx, maxIdx, buffer, SetCountAndGetSpan(list, maxIdx - minIdx + 1));
                 return list;
             }

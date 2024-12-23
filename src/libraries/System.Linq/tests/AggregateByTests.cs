@@ -13,8 +13,8 @@ namespace System.Linq.Tests
         {
             Assert.All(IdentityTransforms<int>(), transform =>
             {
-                Assert.Equal(Enumerable.Empty<KeyValuePair<int, int>>(), transform(Enumerable.Empty<int>()).AggregateBy(i => i, i => i, (a, i) => a + i));
-                Assert.Equal(Enumerable.Empty<KeyValuePair<int, int>>(), transform(Enumerable.Empty<int>()).AggregateBy(i => i, 0, (a, i) => a + i));
+                Assert.Equal([], transform([]).AggregateBy(i => i, i => i, (a, i) => a + i));
+                Assert.Equal([], transform([]).AggregateBy(i => i, 0, (a, i) => a + i));
             });
         }
 
@@ -102,7 +102,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Empty<KeyValuePair<int,int>>());
+                expected: []);
 
             Validate(
                 source: Enumerable.Range(0, 10),
@@ -137,7 +137,7 @@ namespace System.Linq.Tests
                 expected: Enumerable.Repeat(5, 1).Select(x => new KeyValuePair<int, int>(x, 100)));
 
             Validate(
-                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+                source: ["Bob", "bob", "tim", "Bob", "Tim"],
                 keySelector: x => x,
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
@@ -151,7 +151,7 @@ namespace System.Linq.Tests
                 ]);
 
             Validate(
-                source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
+                source: ["Bob", "bob", "tim", "Bob", "Tim"],
                 keySelector: x => x,
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
@@ -224,7 +224,7 @@ namespace System.Linq.Tests
                     (group, element) => { group.Add(element); return group; });
 
             IEnumerable<KeyValuePair<bool, List<int>>> oddsEvens = GroupBy(
-                new int[] { 1, 2, 3, 4 },
+                [1, 2, 3, 4],
                 i => i % 2 == 0);
 
             var e = oddsEvens.GetEnumerator();
@@ -258,7 +258,7 @@ namespace System.Linq.Tests
                     (count, _) => ++count);
 
             IEnumerable<KeyValuePair<bool, long>> oddsEvens = LongCountBy(
-                new int[] { 1, 2, 3, 4 },
+                [1, 2, 3, 4],
                 i => i % 2 == 0);
 
             var e = oddsEvens.GetEnumerator();

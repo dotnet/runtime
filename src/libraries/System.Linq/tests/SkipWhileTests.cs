@@ -11,15 +11,15 @@ namespace System.Linq.Tests
         [Fact]
         public void Empty()
         {
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<int>().SkipWhile(i => i < 40));
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Empty<int>().SkipWhile((i, index) => i < 40));
+            Assert.Equal([], Enumerable.Empty<int>().SkipWhile(i => i < 40));
+            Assert.Equal([], Enumerable.Empty<int>().SkipWhile((i, index) => i < 40));
         }
 
         [Fact]
         public void SkipWhileAllTrue()
         {
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Range(0, 20).SkipWhile(i => i < 40));
-            Assert.Equal(Enumerable.Empty<int>(), Enumerable.Range(0, 20).SkipWhile((i, idx) => i == idx));
+            Assert.Equal([], Enumerable.Range(0, 20).SkipWhile(i => i < 40));
+            Assert.Equal([], Enumerable.Range(0, 20).SkipWhile((i, idx) => i == idx));
         }
 
         [Fact]
@@ -95,8 +95,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateManyFalseOnSecond()
         {
-            int[] source = { 8, 3, 12, 4, 6, 10 };
-            int[] expected = { 3, 12, 4, 6, 10 };
+            int[] source = [8, 3, 12, 4, 6, 10];
+            int[] expected = [3, 12, 4, 6, 10];
 
             Assert.Equal(expected, source.SkipWhile(e => e % 2 == 0));
         }
@@ -104,8 +104,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateManyFalseOnSecondIndex()
         {
-            int[] source = { 8, 3, 12, 4, 6, 10 };
-            int[] expected = { 3, 12, 4, 6, 10 };
+            int[] source = [8, 3, 12, 4, 6, 10];
+            int[] expected = [3, 12, 4, 6, 10];
 
             Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
         }
@@ -113,8 +113,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueOnSecondFalseOnFirstAndOthers()
         {
-            int[] source = { 3, 2, 4, 12, 6 };
-            int[] expected = { 3, 2, 4, 12, 6 };
+            int[] source = [3, 2, 4, 12, 6];
+            int[] expected = [3, 2, 4, 12, 6];
 
             Assert.Equal(expected, source.SkipWhile(e => e % 2 == 0));
         }
@@ -122,8 +122,8 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueOnSecondFalseOnFirstAndOthersIndex()
         {
-            int[] source = { 3, 2, 4, 12, 6 };
-            int[] expected = { 3, 2, 4, 12, 6 };
+            int[] source = [3, 2, 4, 12, 6];
+            int[] expected = [3, 2, 4, 12, 6];
 
             Assert.Equal(expected, source.SkipWhile((e, i) => e % 2 == 0));
         }
@@ -131,8 +131,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstExcludedByIndex()
         {
-            int[] source = { 6, 2, 5, 3, 8 };
-            int[] expected = { 2, 5, 3, 8 };
+            int[] source = [6, 2, 5, 3, 8];
+            int[] expected = [2, 5, 3, 8];
 
             Assert.Equal(expected, source.SkipWhile((element, index) => index == 0));
         }
@@ -140,8 +140,8 @@ namespace System.Linq.Tests
         [Fact]
         public void AllButLastExcludedByIndex()
         {
-            int[] source = { 6, 2, 5, 3, 8 };
-            int[] expected = { 8 };
+            int[] source = [6, 2, 5, 3, 8];
+            int[] expected = [8];
 
             Assert.Equal(expected, source.SkipWhile((element, index) => index < source.Length - 1));
         }
