@@ -198,7 +198,7 @@ namespace System.Runtime.CompilerServices
             // See comment on Array for details
             nuint rawSize = pMT->BaseSize - (nuint)(2 * sizeof(IntPtr));
             if (pMT->HasComponentSize)
-                rawSize += (uint)Unsafe.As<Array>(obj).RawLength * (nuint)pMT->ComponentSize;
+                rawSize += Unsafe.As<Array>(obj).RawLength * (nuint)pMT->ComponentSize;
 
             GC.KeepAlive(obj); // Keep MethodTable alive
 
