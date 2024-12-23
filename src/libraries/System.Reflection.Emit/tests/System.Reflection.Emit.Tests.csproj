@@ -71,6 +71,7 @@
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTypeBuilderAPIsTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveModuleBuilderTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySavePropertyBuilderTests.cs" />
+    <Compile Include="PersistedAssemblyBuilder\AssemblySaveResourceTests.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTools.cs" />
     <Compile Include="PersistedAssemblyBuilder\AssemblySaveTypeBuilderTests.cs" />
     <Compile Include="PortablePdb\ILGeneratorScopesAndSequencePointsTests.cs" />
