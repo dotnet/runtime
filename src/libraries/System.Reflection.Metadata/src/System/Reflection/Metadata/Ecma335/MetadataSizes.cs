@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Ecma335
     /// </summary>
     public sealed class MetadataSizes
     {
-        private const int StreamAlignment = 4;
+        internal const int StreamAlignment = 4;
 
         // Call the length of the string (including the terminator) m (we require m <= 255);
         internal const int MaxMetadataVersionByteCount = 0xff - 1;

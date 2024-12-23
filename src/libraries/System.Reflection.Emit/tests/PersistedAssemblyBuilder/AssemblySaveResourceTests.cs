@@ -53,10 +53,7 @@ namespace System.Reflection.Emit.Tests
 
             // Create a temporary assembly.
             string tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".dll");
-            using (FileStream fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
-            {
-                blob.WriteContentTo(fileStream);
-            }
+            using TempFile file = new TempFile(tempFilePath, blob.ToArray());
 
             // In order to verify the resources work with ResourceManager, we need to load the assembly.
             using (RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (tempFilePath, byteValue, byteValueExpected) =>
@@ -88,8 +85,6 @@ namespace System.Reflection.Emit.Tests
                     Assert.False(resources.MoveNext());
                 }
             }, tempFilePath, BitConverter.ToString(byteValue), byteValueExpected)) { }
-
-            File.Delete(tempFilePath);
         }
     }
 }

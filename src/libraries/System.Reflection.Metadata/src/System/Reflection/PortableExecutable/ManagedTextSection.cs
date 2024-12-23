@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.PortableExecutable
 {
@@ -40,8 +41,8 @@ namespace System.Reflection.PortableExecutable
         public int MetadataSize { get; }
 
         /// <summary>
-        /// The size of managed resource data stream.
-        /// Aligned to <see cref="ManagedResourcesDataAlignment"/>.
+        /// The size of managed resource data stream (unaligned).
+        /// When written, will be aligned to <see cref="ManagedResourcesDataAlignment"/>.
         /// </summary>
         public int ResourceDataSize { get; }
 
@@ -147,14 +148,16 @@ namespace System.Reflection.PortableExecutable
 
         internal int ComputeOffsetToDebugDirectory()
         {
-            Debug.Assert(MetadataSize % 4 == 0);
-            Debug.Assert(ResourceDataSize % 4 == 0);
+            Debug.Assert(MetadataSize % MetadataSizes.StreamAlignment == 0);
 
-            return
+            int offset =
                 ComputeOffsetToMetadata() +
                 MetadataSize +
-                ResourceDataSize +
+                BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment) +
                 StrongNameSignatureSize;
+
+            Debug.Assert(offset % MetadataSizes.StreamAlignment == 0);
+            return offset;
         }
 
         private int ComputeOffsetToImportTable()
@@ -254,7 +257,6 @@ namespace System.Reflection.PortableExecutable
             Debug.Assert(ilBuilder.Count == ILStreamSize);
             Debug.Assert((mappedFieldDataBuilderOpt?.Count ?? 0) == MappedFieldDataSize);
             Debug.Assert((resourceBuilderOpt?.Count ?? 0) == ResourceDataSize);
-            Debug.Assert((resourceBuilderOpt?.Count ?? 0) % 4 == 0);
 
             // TODO: avoid recalculation
             int importTableRva = GetImportTableDirectoryEntry(relativeVirtualAddess).RelativeVirtualAddress;
@@ -278,6 +280,7 @@ namespace System.Reflection.PortableExecutable
             if (resourceBuilderOpt != null)
             {
                 builder.LinkSuffix(resourceBuilderOpt);
+                builder.Align(ManagedTextSection.ManagedResourcesDataAlignment);
             }
 
             // strong name signature:
@@ -387,7 +390,7 @@ namespace System.Reflection.PortableExecutable
 
             int metadataRva = textSectionRva + ComputeOffsetToMetadata();
             int resourcesRva = metadataRva + MetadataSize;
-            int signatureRva = resourcesRva + ResourceDataSize;
+            int signatureRva = resourcesRva + BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment);
 
             int start = builder.Count;
 
@@ -410,7 +413,7 @@ namespace System.Reflection.PortableExecutable
 
             // ResourcesDirectory:
             builder.WriteUInt32((uint)(ResourceDataSize == 0 ? 0 : resourcesRva)); // 28
-            builder.WriteUInt32((uint)ResourceDataSize);
+            builder.WriteUInt32((uint)BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment));
 
             // StrongNameSignatureDirectory:
             builder.WriteUInt32((uint)(StrongNameSignatureSize == 0 ? 0 : signatureRva)); // 36
