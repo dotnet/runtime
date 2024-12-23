@@ -437,7 +437,7 @@ namespace System
         {
             if (BinaryPrimitives.TryWriteUInt32BigEndian(destination, m_value))
             {
-                bytesWritten = sizeof(ushort);
+                bytesWritten = sizeof(uint);
                 return true;
             }
 
@@ -450,7 +450,7 @@ namespace System
         {
             if (BinaryPrimitives.TryWriteUInt32LittleEndian(destination, m_value))
             {
-                bytesWritten = sizeof(ushort);
+                bytesWritten = sizeof(uint);
                 return true;
             }
 
