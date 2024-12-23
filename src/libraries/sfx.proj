@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+  <Import Project="BuildTask.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <BuildInParallel>false</BuildInParallel>
-    <IsPackable>false</IsPackable>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
     <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
