@@ -762,7 +762,8 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    if (!_finalBlockTransformed)
+                    //only encryption write stream need flush
+                    if (_canWrite && !_finalBlockTransformed)
                     {
                         FlushFinalBlock();
                     }
@@ -809,7 +810,8 @@ namespace System.Security.Cryptography
             // Same logic as in Dispose, but with async counterparts
             try
             {
-                if (!_finalBlockTransformed)
+                //only encryption write stream need flush
+                if (_canWrite && !_finalBlockTransformed)
                 {
                     await FlushFinalBlockAsync(useAsync: true, default).ConfigureAwait(false);
                 }
