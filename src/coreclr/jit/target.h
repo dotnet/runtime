@@ -608,11 +608,7 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #endif // TARGET_XARCH
 
 C_ASSERT(REG_FIRST == 0);
-#ifdef TARGET_AMD64
-C_ASSERT(REG_INT_FIRST < REG_INT_LAST_STATIC);
-#else
 C_ASSERT(REG_INT_FIRST < REG_INT_LAST);
-#endif
 C_ASSERT(REG_FP_FIRST  < REG_FP_LAST);
 
 // Opportunistic tail call feature converts non-tail prefixed calls into
@@ -693,11 +689,7 @@ inline bool genIsValidReg(regNumber reg)
  */
 inline bool genIsValidIntReg(regNumber reg)
 {
-#if defined(TARGET_AMD64)
-    return reg >= REG_INT_FIRST && reg <= REG_INT_LAST_STATIC;
-#else
     return reg >= REG_INT_FIRST && reg <= REG_INT_LAST;
-#endif
 }
 
 /*****************************************************************************
@@ -1105,12 +1097,7 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
 
     if (varTypeUsesIntReg(type))
     {
-#if defined(TARGET_AMD64)
-        if (regReturn > REG_INT_LAST_STATIC)
-#else
         if (regReturn > REG_INT_LAST)
-#endif
-        
         {
             regReturn = REG_NA;
         }

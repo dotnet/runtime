@@ -1355,11 +1355,6 @@ private:
         {
             return this->rbmAllInt;
         }
-        /*regNumber regIntLast;
-        FORCEINLINE unsigned get_REG_INT_LAST() const
-        {
-            return this->regIntLast;
-        }*/
 #endif // TARGET_AMD64
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)      FORCEINLINE void try_##stat();
@@ -2090,11 +2085,6 @@ private:
     {
         return this->rbmIntCalleeTrash;
     }
-    regNumber regIntLast;
-        FORCEINLINE regNumber get_REG_INT_LAST() const
-        {
-            return this->regIntLast;
-        }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)

@@ -79,7 +79,6 @@ public:
     regMaskTP rbmAllInt;
     regMaskTP rbmFltCalleeTrash;
     regMaskTP rbmIntCalleeTrash;
-    regNumber regIntLast;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -96,11 +95,6 @@ public:
     FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
     {
         return this->rbmIntCalleeTrash;
-    }
-
-    FORCEINLINE regNumber get_REG_INT_LAST() const
-    {
-        return this->regIntLast;
     }
 #endif // TARGET_AMD64
 
