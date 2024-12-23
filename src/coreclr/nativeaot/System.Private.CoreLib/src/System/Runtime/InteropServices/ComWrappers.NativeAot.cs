@@ -1157,7 +1157,7 @@ namespace System.Runtime.InteropServices
         public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             fpQueryInterface = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IUnknown_QueryInterface;
-            fpAddRef = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_AddRef;
+            fpAddRef = RuntimeImports.RhGetIUnknownAddRef(); // Implemented in C/C++ to avoid GC transitions
             fpRelease = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_Release;
         }
 
@@ -1303,13 +1303,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        internal static unsafe uint IUnknown_AddRef(IntPtr pThis)
-        {
-            ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
-            return wrapper->AddRef();
-        }
-
-        [UnmanagedCallersOnly]
         internal static unsafe uint IUnknown_Release(IntPtr pThis)
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
@@ -1381,8 +1374,7 @@ namespace System.Runtime.InteropServices
         {
             IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 7 * sizeof(IntPtr));
             vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IReferenceTrackerTarget_QueryInterface;
-            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_AddRef;
-            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_Release;
+            GetIUnknownImpl(out _, out vftbl[1], out vftbl[2]);
             vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_AddRefFromReferenceTracker;
             vftbl[4] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_ReleaseFromReferenceTracker;
             vftbl[5] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IReferenceTrackerTarget_Peg;
@@ -1418,15 +1410,10 @@ namespace System.Runtime.InteropServices
         [UnmanagedCallersOnly]
         internal static unsafe int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
         {
-            try
-            {
-                GC.WaitForPendingFinalizers();
-                return HResults.S_OK;
-            }
-            catch (Exception e)
-            {
-                return Marshal.GetHRForException(e);
-            }
+            // We'd like to call GC.WaitForPendingFinalizers() here, but this could lead to deadlock
+            // if the finalizer thread is trying to get back to this thread, because we are not pumping
+            // anymore. Disable this for now. See: https://github.com/dotnet/runtime/issues/109538.
+            return HResults.S_OK;
         }
 
         [UnmanagedCallersOnly]
