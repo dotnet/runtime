@@ -82,33 +82,27 @@ namespace System.Linq.Tests
         [Fact]
         public void Repeat_NotEnumerateAfterEnd()
         {
-            using (var repeatEnum = Enumerable.Repeat(1, 1).GetEnumerator())
-            {
-                Assert.True(repeatEnum.MoveNext());
-                Assert.False(repeatEnum.MoveNext());
-                Assert.False(repeatEnum.MoveNext());
-            }
+            using var repeatEnum = Enumerable.Repeat(1, 1).GetEnumerator();
+            Assert.True(repeatEnum.MoveNext());
+            Assert.False(repeatEnum.MoveNext());
+            Assert.False(repeatEnum.MoveNext());
         }
 
         [Fact]
         public void Repeat_EnumerableAndEnumeratorAreSame()
         {
             var repeatEnumerable = Enumerable.Repeat(1, 1);
-            using (var repeatEnumerator = repeatEnumerable.GetEnumerator())
-            {
-                Assert.Same(repeatEnumerable, repeatEnumerator);
-            }
+            using var repeatEnumerator = repeatEnumerable.GetEnumerator();
+            Assert.Same(repeatEnumerable, repeatEnumerator);
         }
 
         [Fact]
         public void Repeat_GetEnumeratorReturnUniqueInstances()
         {
             var repeatEnumerable = Enumerable.Repeat(1, 1);
-            using (var enum1 = repeatEnumerable.GetEnumerator())
-            using (var enum2 = repeatEnumerable.GetEnumerator())
-            {
-                Assert.NotSame(enum1, enum2);
-            }
+            using var enum1 = repeatEnumerable.GetEnumerator();
+            using var enum2 = repeatEnumerable.GetEnumerator();
+            Assert.NotSame(enum1, enum2);
         }
 
         [Fact]

@@ -127,13 +127,13 @@ namespace System.Linq.Tests
         {
             var taken = new FastInfiniteEnumerator<int>().TakeWhile((e, i) => true);
 
-            using(var en = taken.GetEnumerator())
-                Assert.Throws<OverflowException>(() =>
+            using var en = taken.GetEnumerator();
+            Assert.Throws<OverflowException>(() =>
+            {
+                while(en.MoveNext())
                 {
-                    while(en.MoveNext())
-                    {
-                    }
-                });
+                }
+            });
         }
 
         [Fact]

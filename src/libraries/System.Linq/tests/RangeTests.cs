@@ -78,33 +78,27 @@ namespace System.Linq.Tests
         [Fact]
         public void Range_NotEnumerateAfterEnd()
         {
-            using (var rangeEnum = Enumerable.Range(1, 1).GetEnumerator())
-            {
-                Assert.True(rangeEnum.MoveNext());
-                Assert.False(rangeEnum.MoveNext());
-                Assert.False(rangeEnum.MoveNext());
-            }
+            using var rangeEnum = Enumerable.Range(1, 1).GetEnumerator();
+            Assert.True(rangeEnum.MoveNext());
+            Assert.False(rangeEnum.MoveNext());
+            Assert.False(rangeEnum.MoveNext());
         }
 
         [Fact]
         public void Range_EnumerableAndEnumeratorAreSame()
         {
             var rangeEnumerable = Enumerable.Range(1, 1);
-            using (var rangeEnumerator = rangeEnumerable.GetEnumerator())
-            {
-                Assert.Same(rangeEnumerable, rangeEnumerator);
-            }
+            using var rangeEnumerator = rangeEnumerable.GetEnumerator();
+            Assert.Same(rangeEnumerable, rangeEnumerator);
         }
 
         [Fact]
         public void Range_GetEnumeratorReturnUniqueInstances()
         {
             var rangeEnumerable = Enumerable.Range(1, 1);
-            using (var enum1 = rangeEnumerable.GetEnumerator())
-            using (var enum2 = rangeEnumerable.GetEnumerator())
-            {
-                Assert.NotSame(enum1, enum2);
-            }
+            using var enum1 = rangeEnumerable.GetEnumerator();
+            using var enum2 = rangeEnumerable.GetEnumerator();
+            Assert.NotSame(enum1, enum2);
         }
 
         [Fact]

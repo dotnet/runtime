@@ -489,7 +489,7 @@ namespace System.Linq.Tests
             // so that it does not overflow to a negative number and enumeration does not
             // stop prematurely.
 
-            var iterator = new FastInfiniteEnumerator<int>().Skip(1).GetEnumerator();
+            using var iterator = new FastInfiniteEnumerator<int>().Skip(1).GetEnumerator();
             iterator.MoveNext(); // Make sure the underlying enumerator has been initialized.
 
             FieldInfo state = iterator.GetType().GetTypeInfo()
@@ -524,7 +524,7 @@ namespace System.Linq.Tests
                 current: () => 0,
                 dispose: () => state = -1);
 
-            IEnumerator<int> iterator = source.Skip(count).GetEnumerator();
+            using IEnumerator<int> iterator = source.Skip(count).GetEnumerator();
             int iteratorCount = Math.Max(0, sourceCount - Math.Max(0, count));
             Assert.All(Enumerable.Range(0, iteratorCount), _ => Assert.True(iterator.MoveNext()));
 

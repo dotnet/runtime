@@ -143,14 +143,14 @@ namespace System.Linq.Tests
         public void Overflow()
         {
             var selected = new FastInfiniteEnumerator<int>().Select((e, i) => e);
-            using (var en = selected.GetEnumerator())
-                Assert.Throws<OverflowException>(() =>
+            using var en = selected.GetEnumerator();
+            Assert.Throws<OverflowException>(() =>
+            {
+                while (en.MoveNext())
                 {
-                    while (en.MoveNext())
-                    {
 
-                    }
-                });
+                }
+            });
         }
 
         [Fact]
@@ -406,7 +406,7 @@ namespace System.Linq.Tests
 
             IEnumerable<int> query = source.Select(selector);
 
-            var enumerator = query.GetEnumerator();
+            using var enumerator = query.GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -420,7 +420,7 @@ namespace System.Linq.Tests
 
             IEnumerable<int> query = source.Select(selector);
 
-            var enumerator = query.GetEnumerator();
+            using var enumerator = query.GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -434,7 +434,7 @@ namespace System.Linq.Tests
 
             IEnumerable<int> query = source.Select(selector);
 
-            var enumerator = query.GetEnumerator();
+            using var enumerator = query.GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -462,7 +462,7 @@ namespace System.Linq.Tests
 
             IEnumerable<int> query = source.Select(selector);
 
-            var enumerator = query.GetEnumerator();
+            using var enumerator = query.GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -589,7 +589,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => { throw new InvalidOperationException(); };
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -606,7 +606,7 @@ namespace System.Linq.Tests
             };
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
             enumerator.MoveNext();
@@ -620,7 +620,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -632,7 +632,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
             enumerator.MoveNext();
@@ -663,7 +663,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -675,7 +675,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
             enumerator.MoveNext();
@@ -689,7 +689,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -701,7 +701,7 @@ namespace System.Linq.Tests
             Func<int, string> selector = i => i.ToString();
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
             string currentValue = enumerator.Current;
@@ -718,7 +718,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             var result = source.Select(selector);
-            var enumerator = result.GetEnumerator();
+            using var enumerator = result.GetEnumerator();
 
             Assert.True(enumerator.MoveNext());
             Assert.Equal(2 /* 1 + 1 */, enumerator.Current);
@@ -750,7 +750,7 @@ namespace System.Linq.Tests
             Func<int, int> selector = i => i + 1;
 
             IEnumerable<int> result = source.Select(selector);
-            IEnumerator<int> enumerator = result.GetEnumerator();
+            using IEnumerator<int> enumerator = result.GetEnumerator();
 
             Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
@@ -1181,11 +1181,9 @@ namespace System.Linq.Tests
             foreach (IEnumerable<int> equivalentSource in identityTransforms.Select(t => t(source)))
             {
                 IEnumerable<int> result = equivalentSource.Select(i => i);
-                using (IEnumerator<int> e = result.GetEnumerator())
-                {
-                    while (e.MoveNext()) ; // Loop until we reach the end of the iterator, @ which pt it gets disposed.
-                    Assert.False(e.MoveNext()); // MoveNext should not throw an exception after Dispose.
-                }
+                using IEnumerator<int> e = result.GetEnumerator();
+                while (e.MoveNext()) ; // Loop until we reach the end of the iterator, @ which pt it gets disposed.
+                Assert.False(e.MoveNext()); // MoveNext should not throw an exception after Dispose.
             }
         }
 

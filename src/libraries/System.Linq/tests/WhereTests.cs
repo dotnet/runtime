@@ -405,7 +405,7 @@ namespace System.Linq.Tests
             int[] source = [1];
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -417,7 +417,7 @@ namespace System.Linq.Tests
             List<int> source = [1];
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -429,7 +429,7 @@ namespace System.Linq.Tests
             IReadOnlyCollection<int> source = new ReadOnlyCollection<int>(new List<int>() { 1 });
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -453,7 +453,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = Enumerable.Repeat(1, 1);
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
             while (enumerator.MoveNext()) ;
 
             Assert.Equal(default(int), enumerator.Current);
@@ -756,7 +756,7 @@ namespace System.Linq.Tests
                 return true;
             };
 
-            var enumerator = source.Where(predicate).GetEnumerator();
+            using var enumerator = source.Where(predicate).GetEnumerator();
 
             // Ensure the first MoveNext call throws an exception
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
@@ -776,7 +776,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = new ThrowsOnCurrentEnumerator();
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
 
             // Ensure the first MoveNext call throws an exception
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
@@ -792,7 +792,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = new ThrowsOnMoveNext();
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
 
             // Ensure the first MoveNext call throws an exception
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
@@ -812,7 +812,7 @@ namespace System.Linq.Tests
             IEnumerable<int> source = new ThrowsOnGetEnumerator();
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
 
             // Ensure the first MoveNext call throws an exception
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
@@ -830,7 +830,7 @@ namespace System.Linq.Tests
         public void Select_ResetEnumerator_ThrowsException()
         {
             int[] source = [1, 2, 3, 4, 5];
-            IEnumerator<int> enumerator = source.Where(value => true).GetEnumerator();
+            using IEnumerator<int> enumerator = source.Where(value => true).GetEnumerator();
 
             // The .NET Framework throws a NotImplementedException.
             // See https://github.com/dotnet/corefx/pull/2959.
@@ -843,7 +843,7 @@ namespace System.Linq.Tests
             List<int> source = [1, 2, 3, 4, 5];
             Func<int, bool> truePredicate = (value) => true;
 
-            var enumerator = source.Where(truePredicate).GetEnumerator();
+            using var enumerator = source.Where(truePredicate).GetEnumerator();
 
             Assert.True(enumerator.MoveNext());
             Assert.Equal(1, enumerator.Current);
@@ -861,12 +861,10 @@ namespace System.Linq.Tests
 
             var result = source.Where(value => true);
 
-            using (var enumerator1 = result.GetEnumerator())
-            using (var enumerator2 = result.GetEnumerator())
-            {
-                Assert.Same(result, enumerator1);
-                Assert.NotSame(enumerator1, enumerator2);
-            }
+            using var enumerator1 = result.GetEnumerator();
+            using var enumerator2 = result.GetEnumerator();
+            Assert.Same(result, enumerator1);
+            Assert.NotSame(enumerator1, enumerator2);
         }
 
         [Fact]
@@ -1015,13 +1013,13 @@ namespace System.Linq.Tests
         public void IndexOverflows()
         {
             var infiniteWhere = new FastInfiniteEnumerator<int>().Where((e, i) => true);
-            using (var en = infiniteWhere.GetEnumerator())
-                Assert.Throws<OverflowException>(() =>
+            using var en = infiniteWhere.GetEnumerator();
+            Assert.Throws<OverflowException>(() =>
+            {
+                while (en.MoveNext())
                 {
-                    while (en.MoveNext())
-                    {
-                    }
-                });
+                }
+            });
         }
 
         [Fact]
@@ -1092,19 +1090,17 @@ namespace System.Linq.Tests
                 Assert.Equal(source, equivalent.ToList());
                 Assert.Equal(source.Count(), equivalent.Count()); // Count may be optimized. The above asserts do not imply this will pass.
 
-                using (IEnumerator<int> en = equivalent.GetEnumerator())
+                using IEnumerator<int> en = equivalent.GetEnumerator();
+                for (int i = 0; i < equivalent.Count(); i++)
                 {
-                    for (int i = 0; i < equivalent.Count(); i++)
-                    {
-                        Assert.True(en.MoveNext());
-                    }
-
-                    Assert.False(en.MoveNext()); // No more items, this should dispose.
-                    Assert.Equal(0, en.Current); // Reset to default value
-
-                    Assert.False(en.MoveNext()); // Want to be sure MoveNext after disposing still works.
-                    Assert.Equal(0, en.Current);
+                    Assert.True(en.MoveNext());
                 }
+
+                Assert.False(en.MoveNext()); // No more items, this should dispose.
+                Assert.Equal(0, en.Current); // Reset to default value
+
+                Assert.False(en.MoveNext()); // Want to be sure MoveNext after disposing still works.
+                Assert.Equal(0, en.Current);
             }
         }
 

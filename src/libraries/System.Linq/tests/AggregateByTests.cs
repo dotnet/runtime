@@ -68,7 +68,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnGetEnumerator();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -78,7 +78,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnMoveNext();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -88,7 +88,7 @@ namespace System.Linq.Tests
         {
             IEnumerable<int> source = new ThrowsOnCurrentEnumerator();
 
-            var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
+            using var enumerator = source.AggregateBy(x => x, 0, (x, y) => x + y).GetEnumerator();
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
@@ -227,7 +227,7 @@ namespace System.Linq.Tests
                 [1, 2, 3, 4],
                 i => i % 2 == 0);
 
-            var e = oddsEvens.GetEnumerator();
+            using var e = oddsEvens.GetEnumerator();
 
             Assert.True(e.MoveNext());
             KeyValuePair<bool, List<int>> oddsItem = e.Current;
@@ -261,7 +261,7 @@ namespace System.Linq.Tests
                 [1, 2, 3, 4],
                 i => i % 2 == 0);
 
-            var e = oddsEvens.GetEnumerator();
+            using var e = oddsEvens.GetEnumerator();
 
             Assert.True(e.MoveNext());
             KeyValuePair<bool, long> oddsItem = e.Current;

@@ -1307,7 +1307,7 @@ namespace System.Linq.Tests
                 },
                 5);
 
-            IEnumerator<int> iterator0 = source[0].Take(count).GetEnumerator();
+            using IEnumerator<int> iterator0 = source[0].Take(count).GetEnumerator();
             int iteratorCount0 = Math.Min(sourceCount, Math.Max(0, count));
             Assert.All(Enumerable.Range(0, iteratorCount0), _ => Assert.True(iterator0.MoveNext()));
 
@@ -1320,7 +1320,7 @@ namespace System.Linq.Tests
             Assert.Equal(isItertorNotEmpty0, isIteratorDisposed[0]);
 
             int end = Math.Max(0, count);
-            IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
+            using IEnumerator<int> iterator1 = source[1].Take(0..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator1.MoveNext()));
             Assert.False(iterator1.MoveNext());
             // When startIndex end and endIndex are both not from end and startIndex >= endIndex, Take(Range) returns an empty array.
@@ -1330,19 +1330,19 @@ namespace System.Linq.Tests
             int startIndexFromEnd = Math.Max(sourceCount, end);
             int endIndexFromEnd = Math.Max(0, sourceCount - end);
 
-            IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
+            using IEnumerator<int> iterator2 = source[2].Take(^startIndexFromEnd..end).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator2.MoveNext()));
             Assert.False(iterator2.MoveNext());
             // When startIndex is ^0, Take(Range) returns an empty array.
             bool isIteratorNotEmpty2 = startIndexFromEnd != 0;
             Assert.Equal(isIteratorNotEmpty2, isIteratorDisposed[2]);
 
-            IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
+            using IEnumerator<int> iterator3 = source[3].Take(0..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator3.MoveNext()));
             Assert.False(iterator3.MoveNext());
             Assert.True(isIteratorDisposed[3]);
 
-            IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
+            using IEnumerator<int> iterator4 = source[4].Take(^startIndexFromEnd..^endIndexFromEnd).GetEnumerator();
             Assert.All(Enumerable.Range(0, Math.Min(sourceCount, Math.Max(0, count))), _ => Assert.True(iterator4.MoveNext()));
             Assert.False(iterator4.MoveNext());
             // When startIndex is ^0,

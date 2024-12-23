@@ -213,13 +213,13 @@ namespace System.Linq.Tests
         public void IndexOverflow()
         {
             var selected = new FastInfiniteEnumerator<int>().SelectMany((e, i) => Enumerable.Empty<int>());
-            using (var en = selected.GetEnumerator())
-                Assert.Throws<OverflowException>(() =>
+            using var en = selected.GetEnumerator();
+            Assert.Throws<OverflowException>(() =>
+            {
+                while(en.MoveNext())
                 {
-                    while(en.MoveNext())
-                    {
-                    }
-                });
+                }
+            });
         }
 
         [Fact]
