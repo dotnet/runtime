@@ -280,7 +280,7 @@ namespace System.Reflection.PortableExecutable
             if (resourceBuilderOpt != null)
             {
                 builder.LinkSuffix(resourceBuilderOpt);
-                builder.Align(ManagedTextSection.ManagedResourcesDataAlignment);
+                builder.WriteBytes(0, BitArithmetic.Align(resourceBuilderOpt.Count, ManagedTextSection.ManagedResourcesDataAlignment) - resourceBuilderOpt.Count);
             }
 
             // strong name signature:
