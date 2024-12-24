@@ -118,19 +118,15 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
                 ReadOnlySpan<char> firstSegment = chars[slice1..];
                 ReadOnlySpan<byte> secondSegment = bytes[0..(2 * slice1)];
 
-                expected = expectedBuffer.AsSpan(0, EncodeToUtf8(firstSegment, secondSegment, expectedBuffer, options.Encoder));
+                expected = expectedBuffer.AsSpan(0, EncodeToUtf8(firstSegment, expectedBuffer, options.Encoder));
 
                 actualBuffer = new byte[expected.Length];
                 using MemoryStream stream = new(actualBuffer);
                 using Utf8JsonWriter writer = new(stream, options);
 
                 writer.WriteStringValueSegment(firstSegment, false);
-                writer.WriteStringValueSegment(secondSegment, true);
-                writer.Flush();
 
-                Assert.SequenceEqual(expected, actualBuffer);
-                Assert.Equal(expected.Length, writer.BytesCommitted);
-                Assert.Equal(0, writer.BytesPending);
+                Assert.Throws<InvalidOperationException, ReadOnlySpan<byte>>(state => writer.WriteStringValueSegment(state, true), secondSegment);
             }
 
             Array.Clear(expectedBuffer);
@@ -146,12 +142,7 @@ internal sealed class Utf8JsonWriterFuzzer : IFuzzer
                 using Utf8JsonWriter writer = new(stream, options);
 
                 writer.WriteStringValueSegment(firstSegment, false);
-                writer.WriteStringValueSegment(secondSegment, true);
-                writer.Flush();
-
-                Assert.SequenceEqual(expected, actualBuffer);
-                Assert.Equal(expected.Length, writer.BytesCommitted);
-                Assert.Equal(0, writer.BytesPending);
+                Assert.Throws<InvalidOperationException, ReadOnlySpan<char>>(state => writer.WriteStringValueSegment(state, true), secondSegment);
             }
         }
 
