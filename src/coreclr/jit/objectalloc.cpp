@@ -1016,7 +1016,16 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
+                if (tree != parent->AsIndir()->Addr())
+                {
+                    // TODO-ObjectStackAllocation: track stores to fields.
+                    break;
+                }
+                // Address of the ind is not taken so the local doesn't escape.
+                canLclVarEscapeViaParentStack = false;
             }
+            break;
+
             case GT_STORE_BLK:
             case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
