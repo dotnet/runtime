@@ -820,39 +820,20 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output);
 
-                // Because the first code point is a surrogate pair, it will be
-                // saved until the next write to complete it. It is saved in the
-                // original encoding, UTF-16, so it will be 0b1101_1000 0b1101_1000
+                // High surrogate
                 jsonUtf8.WriteStringValueSegment("\uD8D8".AsSpan(), false);
 
-                // Now we write a UTF-8 continuation byte. With the previous partial
-                // state, the whole sequence is 0b110_11000 0b110_11000 0b10_111111.
-                jsonUtf8.WriteStringValueSegment([0b10_111111], true);
-
-                jsonUtf8.Flush();
-
-                // If this is interpreted as UTF-8, the first byte is invalid because
-                // it is a 2-byte start unit but the second byte is not a continuation.
-                // So a replacement character gets written for the first byte. The second and
-                // third units are valid and get written as is. Instead, if this is
-                // handled correctly, two replacement characters will be written.
-
-                JsonTestHelper.AssertContents(@"""\uFFFD\uFFFD""", output);
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment([0b10_111111], true));
             }
 
             {
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output);
 
-                // The second UTF-16 code unit, when interpreted as UTF-8, is a continuation,
-                // so if the first and second code units are decoded together, they will
-                // form a valid 3-byte sequence.
+                // Start of a 3-byte sequence
                 jsonUtf8.WriteStringValueSegment([0b1110_1111], false);
-                jsonUtf8.WriteStringValueSegment("\u8080".AsSpan(), true);
 
-                jsonUtf8.Flush();
-
-                JsonTestHelper.AssertContents(@"""\uFFFD\u8080""", output);
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment("\u8080".AsSpan(), true));
             }
 
             {
@@ -867,10 +848,8 @@ namespace System.Text.Json.Tests
                 jsonUtf8.Flush();
                 JsonTestHelper.AssertContents("\"", output);
 
-                // Writing empty UTF-16 sequence will dump the partial UTF-8 code point
-                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false);
-                jsonUtf8.Flush();
-                JsonTestHelper.AssertContents(@"""\uFFFD", output);
+                // Writing empty UTF-16 sequence will throw
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false));
             }
 
             {
@@ -886,9 +865,7 @@ namespace System.Text.Json.Tests
                 JsonTestHelper.AssertContents("\"", output);
 
                 // Writing empty UTF-8 sequence will dump the partial UTF-16 code point
-                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
-                jsonUtf8.Flush();
-                JsonTestHelper.AssertContents(@"""\uFFFD", output);
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false));
             }
         }
 

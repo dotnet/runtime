@@ -5,13 +5,10 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
-
-#if !NET
-using System.Runtime.InteropServices;
-#endif
 
 namespace System.Text.Json
 {
@@ -41,6 +38,13 @@ namespace System.Text.Json
         // A special value for JsonTokenType that lets the writer keep track of string segments.
         private const JsonTokenType StringSegmentSentinel = (JsonTokenType)255;
 
+        // Masks and flags for the length and encoding of the partial code point
+        private const byte PartialCodePointLengthMask =         0b000_000_11;
+        private const byte PartialCodePointEncodingMask =       0b000_111_00;
+
+        private const byte PartialCodePointUtf8EncodingFlag =   0b000_001_00;
+        private const byte PartialCodePointUtf16EncodingFlag =  0b000_010_00;
+
         private IBufferWriter<byte>? _output;
         private Stream? _stream;
         private ArrayBufferWriter<byte>? _arrayBufferWriter;
@@ -54,7 +58,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// This 3-byte array stores the partial code point leftover when writing a string value
-        /// segment that is split across multiple write calls.
+        /// segment that is split across multiple segment write calls.
         /// </summary>
 #if !NET
         private byte[]? _partialCodePoint;
@@ -71,7 +75,9 @@ namespace System.Text.Json
 #endif
 
         /// <summary>
-        /// Stores the length and encoding of the partial code point.
+        /// Stores the length and encoding of the partial code point. Outside of segment writes, this value is 0.
+        /// Across segment writes, this value is always non-zero even if the length is 0, to indicate the encoding of the segment.
+        /// This allows detection of encoding changes across segment writes.
         /// </summary>
         private byte _partialCodePointFlags;
 
@@ -120,6 +126,91 @@ namespace System.Text.Json
         /// written so far. This provides the depth of the current token.
         /// </summary>
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
+
+        /// <summary>
+        /// Length of the partial code point.
+        /// </summary>
+        private byte PartialCodePointLength
+        {
+            get => (byte)(_partialCodePointFlags & PartialCodePointLengthMask);
+            set => _partialCodePointFlags = (byte)((_partialCodePointFlags & ~PartialCodePointLengthMask) | (byte)value);
+        }
+
+        /// <summary>
+        /// The partial UTF-8 code point.
+        /// </summary>
+        private ReadOnlySpan<byte> PartialUtf8CodePoint
+        {
+            get
+            {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf8);
+
+                ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
+                Debug.Assert(partialCodePointBytes.Length == 3);
+
+                byte length = PartialCodePointLength;
+                Debug.Assert(length < 4);
+
+                return partialCodePointBytes.Slice(0, length);
+            }
+
+            set
+            {
+                Debug.Assert(value.Length <= 3);
+
+                Span<byte> partialCodePointBytes = PartialCodePointRaw;
+
+                value.CopyTo(partialCodePointBytes);
+                PartialCodePointLength = (byte)value.Length;
+            }
+        }
+
+        /// <summary>
+        /// The partial UTF-16 code point.
+        /// </summary>
+        private ReadOnlySpan<char> PartialUtf16CodePoint
+        {
+            get
+            {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf16);
+
+                ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
+                Debug.Assert(partialCodePointBytes.Length == 3);
+
+                byte length = PartialCodePointLength;
+                Debug.Assert(length is 2 or 0);
+
+                return MemoryMarshal.Cast<byte, char>(partialCodePointBytes.Slice(0, length));
+            }
+            set
+            {
+                Debug.Assert(value.Length <= 1);
+
+                Span<byte> partialCodePointBytes = PartialCodePointRaw;
+
+                value.CopyTo(MemoryMarshal.Cast<byte, char>(partialCodePointBytes));
+                PartialCodePointLength = (byte)(2 * value.Length);
+            }
+        }
+
+        /// <summary>
+        /// Encoding used for the previous string segment write.
+        /// </summary>
+        private SegmentEncoding PreviousSegmentEncoding
+        {
+            get => (SegmentEncoding)(_partialCodePointFlags & PartialCodePointEncodingMask);
+            set => _partialCodePointFlags = (byte)((_partialCodePointFlags & ~PartialCodePointEncodingMask) | (byte)value);
+        }
+
+        /// <summary>
+        /// Convenience enumeration to track the encoding of the partial code point. This must be kept in sync with the PartialCodePoint*Encoding flags.
+        /// </summary>
+        internal enum SegmentEncoding : byte
+        {
+            None = 0,
+            Utf8 = PartialCodePointUtf8EncodingFlag,
+            Utf16 = PartialCodePointUtf16EncodingFlag,
+        }
 
         private Utf8JsonWriter()
         {
@@ -299,7 +390,8 @@ namespace System.Text.Json
 
             _bitStack = default;
 
-            ClearPartialCodePoint();
+            _partialCodePoint = default;
+            _partialCodePointFlags = default;
         }
 
         private void CheckNotDisposed()

@@ -21,7 +21,8 @@ namespace System.Text.Json
         /// Thrown when the specified value is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled) or
+        /// if the previously written segment (if any) was not written with this same overload.
         /// </exception>
         /// <remarks>
         /// The value is escaped before writing.
@@ -30,15 +31,24 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            if (!_options.SkipValidation && _tokenType != Utf8JsonWriter.StringSegmentSentinel)
-            {
-                ValidateWritingValue();
-            }
-
             if (_tokenType != Utf8JsonWriter.StringSegmentSentinel)
             {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
+                Debug.Assert(!HasPartialCodePoint);
+
+                if (!_options.SkipValidation)
+                {
+                    ValidateWritingValue();
+                }
+
                 WriteStringSegmentPrologue();
+
+                PreviousSegmentEncoding = SegmentEncoding.Utf16;
                 _tokenType = Utf8JsonWriter.StringSegmentSentinel;
+            }
+            else
+            {
+                ValidateEncodingDidNotChange(SegmentEncoding.Utf16);
             }
 
             // The steps to write a string segment are to complete the previous partial code point
@@ -55,7 +65,9 @@ namespace System.Text.Json
             if (isFinalSegment)
             {
                 WriteStringSegmentEpilogue();
+
                 SetFlagToAddListSeparatorBeforeNextItem();
+                PreviousSegmentEncoding = SegmentEncoding.None;
                 _tokenType = JsonTokenType.String;
             }
         }
@@ -63,55 +75,51 @@ namespace System.Text.Json
         private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialCodePoint);
+            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf16);
 
-            if (TryGetPartialUtf16CodePoint(out scoped ReadOnlySpan<char> partialCodePointBuffer))
+            scoped ReadOnlySpan<char> partialCodePointBuffer = PartialUtf16CodePoint;
+
+            Span<char> combinedBuffer = stackalloc char[2];
+            combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialCodePointBuffer, value, combinedBuffer));
+
+            switch (Rune.DecodeFromUtf16(combinedBuffer, out _, out int charsConsumed))
             {
-                Span<char> combinedBuffer = stackalloc char[2];
-                combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialCodePointBuffer, value, combinedBuffer));
-
-                switch (Rune.DecodeFromUtf16(combinedBuffer, out _, out int charsConsumed))
-                {
-                    case OperationStatus.NeedMoreData:
-                        Debug.Assert(value.Length + partialCodePointBuffer.Length < 2);
-                        Debug.Assert(charsConsumed == value.Length + partialCodePointBuffer.Length);
-                        // Let the encoder deal with the error if this is a final buffer.
-                        value = combinedBuffer.Slice(0, charsConsumed);
-                        partialCodePointBuffer = ReadOnlySpan<char>.Empty;
-                        break;
-                    case OperationStatus.Done:
-                        Debug.Assert(charsConsumed > partialCodePointBuffer.Length);
-                        Debug.Assert(charsConsumed <= 2);
-                        // Divide up the code point chars into its own buffer and the remainder of the input buffer.
-                        value = value.Slice(charsConsumed - partialCodePointBuffer.Length);
-                        partialCodePointBuffer = combinedBuffer.Slice(0, charsConsumed);
-                        break;
-                    case OperationStatus.InvalidData:
-                        Debug.Assert(charsConsumed >= partialCodePointBuffer.Length);
-                        Debug.Assert(charsConsumed <= 2);
-                        value = value.Slice(charsConsumed - partialCodePointBuffer.Length);
-                        partialCodePointBuffer = combinedBuffer.Slice(0, charsConsumed);
-                        break;
-                    case OperationStatus.DestinationTooSmall:
-                    default:
-                        Debug.Fail("Unexpected OperationStatus return value.");
-                        break;
-                }
-
-                // The "isFinalSegment" argument indicates whether input that NeedsMoreData should be consumed as an error or not.
-                // Because we have validated above that partialCodePointBuffer will be the next consumed chars during Rune decoding
-                // (even if this is because it is invalid), we should pass isFinalSegment = true to indicate to the decoder to
-                // parse the code units without extra data.
-                //
-                // This is relevant in the case of having ['\uD800', 'C'], where the validation above would have needed all both code units
-                // to determine that only the first unit should be consumed (as invalid). So this method will get only ['\uD800'].
-                // Because we know more data will not be able to complete this code point, we need to pass isFinalSegment = true
-                // to ensure that the encoder consumes this data eagerly instead of leaving it and returning NeedsMoreData.
-                WriteStringSegmentEscape(partialCodePointBuffer, true);
+                case OperationStatus.NeedMoreData:
+                    Debug.Assert(value.Length + partialCodePointBuffer.Length < 2);
+                    Debug.Assert(charsConsumed == value.Length + partialCodePointBuffer.Length);
+                    // Let the encoder deal with the error if this is a final buffer.
+                    value = combinedBuffer.Slice(0, charsConsumed);
+                    partialCodePointBuffer = ReadOnlySpan<char>.Empty;
+                    break;
+                case OperationStatus.Done:
+                    Debug.Assert(charsConsumed > partialCodePointBuffer.Length);
+                    Debug.Assert(charsConsumed <= 2);
+                    // Divide up the code point chars into its own buffer and the remainder of the input buffer.
+                    value = value.Slice(charsConsumed - partialCodePointBuffer.Length);
+                    partialCodePointBuffer = combinedBuffer.Slice(0, charsConsumed);
+                    break;
+                case OperationStatus.InvalidData:
+                    Debug.Assert(charsConsumed >= partialCodePointBuffer.Length);
+                    Debug.Assert(charsConsumed <= 2);
+                    value = value.Slice(charsConsumed - partialCodePointBuffer.Length);
+                    partialCodePointBuffer = combinedBuffer.Slice(0, charsConsumed);
+                    break;
+                case OperationStatus.DestinationTooSmall:
+                default:
+                    Debug.Fail("Unexpected OperationStatus return value.");
+                    break;
             }
-            else
-            {
-                WriteInvalidPartialCodePoint();
-            }
+
+            // The "isFinalSegment" argument indicates whether input that NeedsMoreData should be consumed as an error or not.
+            // Because we have validated above that partialCodePointBuffer will be the next consumed chars during Rune decoding
+            // (even if this is because it is invalid), we should pass isFinalSegment = true to indicate to the decoder to
+            // parse the code units without extra data.
+            //
+            // This is relevant in the case of having ['\uD800', 'C'], where the validation above would have needed both code units
+            // to determine that only the first unit should be consumed (as invalid). So this method will get only ['\uD800'].
+            // Because we know more data will not be able to complete this code point, we need to pass isFinalSegment = true
+            // to ensure that the encoder consumes this data eagerly instead of leaving it and returning NeedsMoreData.
+            WriteStringSegmentEscape(partialCodePointBuffer, true);
 
             ClearPartialCodePoint();
 
@@ -155,7 +163,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(!isFinalSegment);
                 Debug.Assert(value.Length - consumed < 2);
-                SetPartialUtf16CodePoint(value.Slice(consumed));
+                PartialUtf16CodePoint = value.Slice(consumed);
             }
 
             if (valueArray != null)
@@ -189,7 +197,8 @@ namespace System.Text.Json
         /// Thrown when the specified value is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled) or
+        /// if the previously written segment (if any) was not written with this same overload.
         /// </exception>
         /// <remarks>
         /// The value is escaped before writing.
@@ -198,15 +207,24 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            if (!_options.SkipValidation && _tokenType != Utf8JsonWriter.StringSegmentSentinel)
-            {
-                ValidateWritingValue();
-            }
-
             if (_tokenType != Utf8JsonWriter.StringSegmentSentinel)
             {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
+                Debug.Assert(!HasPartialCodePoint);
+
+                if (!_options.SkipValidation)
+                {
+                    ValidateWritingValue();
+                }
+
                 WriteStringSegmentPrologue();
+
+                PreviousSegmentEncoding = SegmentEncoding.Utf8;
                 _tokenType = Utf8JsonWriter.StringSegmentSentinel;
+            }
+            else
+            {
+                ValidateEncodingDidNotChange(SegmentEncoding.Utf8);
             }
 
             // The steps to write a string segment are to complete the previous partial code point
@@ -223,7 +241,9 @@ namespace System.Text.Json
             if (isFinalSegment)
             {
                 WriteStringSegmentEpilogue();
+
                 SetFlagToAddListSeparatorBeforeNextItem();
+                PreviousSegmentEncoding = SegmentEncoding.None;
                 _tokenType = JsonTokenType.String;
             }
         }
@@ -231,56 +251,52 @@ namespace System.Text.Json
         private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialCodePoint);
+            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf8);
 
-            if (TryGetPartialUtf8CodePoint(out scoped ReadOnlySpan<byte> partialCodePointBuffer))
+            scoped ReadOnlySpan<byte> partialCodePointBuffer = PartialUtf8CodePoint;
+
+            Span<byte> combinedBuffer = stackalloc byte[4];
+            combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialCodePointBuffer, utf8Value, combinedBuffer));
+
+            switch (Rune.DecodeFromUtf8(combinedBuffer, out _, out int bytesConsumed))
             {
-                Span<byte> combinedBuffer = stackalloc byte[4];
-                combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialCodePointBuffer, utf8Value, combinedBuffer));
-
-                switch (Rune.DecodeFromUtf8(combinedBuffer, out _, out int bytesConsumed))
-                {
-                    case OperationStatus.NeedMoreData:
-                        Debug.Assert(utf8Value.Length + partialCodePointBuffer.Length < 4);
-                        Debug.Assert(bytesConsumed == utf8Value.Length + partialCodePointBuffer.Length);
-                        // Let the encoder deal with the error if this is a final buffer.
-                        utf8Value = combinedBuffer.Slice(0, bytesConsumed);
-                        partialCodePointBuffer = ReadOnlySpan<byte>.Empty;
-                        break;
-                    case OperationStatus.Done:
-                        Debug.Assert(bytesConsumed > partialCodePointBuffer.Length);
-                        Debug.Assert(bytesConsumed <= 4);
-                        // Divide up the code point bytes into its own buffer and the remainder of the input buffer.
-                        utf8Value = utf8Value.Slice(bytesConsumed - partialCodePointBuffer.Length);
-                        partialCodePointBuffer = combinedBuffer.Slice(0, bytesConsumed);
-                        break;
-                    case OperationStatus.InvalidData:
-                        Debug.Assert(bytesConsumed >= partialCodePointBuffer.Length);
-                        Debug.Assert(bytesConsumed <= 4);
-                        utf8Value = utf8Value.Slice(bytesConsumed - partialCodePointBuffer.Length);
-                        partialCodePointBuffer = combinedBuffer.Slice(0, bytesConsumed);
-                        break;
-                    case OperationStatus.DestinationTooSmall:
-                    default:
-                        Debug.Fail("Unexpected OperationStatus return value.");
-                        break;
-                }
-
-                // The "isFinalSegment" argument indicates whether input that NeedsMoreData should be consumed as an error or not.
-                // Because we have validated above that partialCodePointBuffer will be the next consumed bytes during Rune decoding
-                // (even if this is because it is invalid), we should pass isFinalSegment = true to indicate to the decoder to
-                // parse the code units without extra data.
-                //
-                // This is relevant in the case of having [<3-length prefix code unit>, <continuation>, <ascii>], where the validation
-                // above would have needed all 3 code units to determine that only the first 2 units should be consumed (as invalid).
-                // So this method will get only <3-size prefix code unit><continuation>. Because we know more data will not be able
-                // to complete this code point, we need to pass isFinalSegment = true to ensure that the encoder consumes this data eagerly
-                // instead of leaving it and returning NeedsMoreData.
-                WriteStringSegmentEscape(partialCodePointBuffer, true);
+                case OperationStatus.NeedMoreData:
+                    Debug.Assert(utf8Value.Length + partialCodePointBuffer.Length < 4);
+                    Debug.Assert(bytesConsumed == utf8Value.Length + partialCodePointBuffer.Length);
+                    // Let the encoder deal with the error if this is a final buffer.
+                    utf8Value = combinedBuffer.Slice(0, bytesConsumed);
+                    partialCodePointBuffer = ReadOnlySpan<byte>.Empty;
+                    break;
+                case OperationStatus.Done:
+                    Debug.Assert(bytesConsumed > partialCodePointBuffer.Length);
+                    Debug.Assert(bytesConsumed <= 4);
+                    // Divide up the code point bytes into its own buffer and the remainder of the input buffer.
+                    utf8Value = utf8Value.Slice(bytesConsumed - partialCodePointBuffer.Length);
+                    partialCodePointBuffer = combinedBuffer.Slice(0, bytesConsumed);
+                    break;
+                case OperationStatus.InvalidData:
+                    Debug.Assert(bytesConsumed >= partialCodePointBuffer.Length);
+                    Debug.Assert(bytesConsumed <= 4);
+                    utf8Value = utf8Value.Slice(bytesConsumed - partialCodePointBuffer.Length);
+                    partialCodePointBuffer = combinedBuffer.Slice(0, bytesConsumed);
+                    break;
+                case OperationStatus.DestinationTooSmall:
+                default:
+                    Debug.Fail("Unexpected OperationStatus return value.");
+                    break;
             }
-            else
-            {
-                WriteInvalidPartialCodePoint();
-            }
+
+            // The "isFinalSegment" argument indicates whether input that NeedsMoreData should be consumed as an error or not.
+            // Because we have validated above that partialCodePointBuffer will be the next consumed bytes during Rune decoding
+            // (even if this is because it is invalid), we should pass isFinalSegment = true to indicate to the decoder to
+            // parse the code units without extra data.
+            //
+            // This is relevant in the case of having [<3-length prefix code unit>, <continuation>, <ascii>], where the validation
+            // above would have needed all 3 code units to determine that only the first 2 units should be consumed (as invalid).
+            // So this method will get only <3-size prefix code unit><continuation>. Because we know more data will not be able
+            // to complete this code point, we need to pass isFinalSegment = true to ensure that the encoder consumes this data eagerly
+            // instead of leaving it and returning NeedsMoreData.
+            WriteStringSegmentEscape(partialCodePointBuffer, true);
 
             ClearPartialCodePoint();
 
@@ -321,7 +337,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(!isFinalSegment);
                 Debug.Assert(utf8Value.Length - consumed < 4);
-                SetPartialUtf8CodePoint(utf8Value.Slice(consumed));
+                PartialUtf8CodePoint = utf8Value.Slice(consumed);
             }
 
             if (valueArray != null)

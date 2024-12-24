@@ -311,6 +311,12 @@ namespace System.Text.Json
             throw GetInvalidOperationException(SR.CannotSkip);
         }
 
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_CannotMixEncodings(Utf8JsonWriter.SegmentEncoding previousEncoding, Utf8JsonWriter.SegmentEncoding currentEncoding)
+        {
+            throw GetInvalidOperationException(SR.Format(SR.CannotMixEncodings, previousEncoding, currentEncoding));
+        }
+
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
         {
             return GetInvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
