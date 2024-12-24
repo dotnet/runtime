@@ -433,8 +433,16 @@ namespace System
                 _ => false
             };
 
-            result = success ? parseResult.ToGuid() : default;
-            return success;
+            if (success)
+            {
+                result = parseResult.ToGuid();
+                return true;
+            }
+            else
+            {
+                result = default;
+                return false;
+            }
         }
 
         private static bool TryParseGuid(ReadOnlySpan<char> guidString, ref GuidResult result)
@@ -447,7 +455,7 @@ namespace System
                 return false;
             }
 
-            return guidString[0] switch
+            return (guidString[0]) switch
             {
                 '(' => TryParseExactP(guidString, ref result),
                 '{' => guidString[9] == '-' ?
