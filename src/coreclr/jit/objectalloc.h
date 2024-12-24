@@ -177,13 +177,8 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
         var_types            type       = JITtype2varType(corType);
         ClassLayout*         elemLayout = type == TYP_STRUCT ? comp->typGetObjLayout(elemClsHnd) : nullptr;
-        if (varTypeIsGC(type) || ((elemLayout != nullptr) && elemLayout->HasGCPtr()))
-        {
-            *reason = "[array contains gc refs]";
-            return false;
-        }
+        unsigned             elemSize   = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
 
-        unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
         classSize = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data) + elemSize * static_cast<unsigned>(length);
     }
     else if (allocType == OAT_NEWOBJ)

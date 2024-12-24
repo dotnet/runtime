@@ -1004,6 +1004,19 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 break;
 
             case GT_STOREIND:
+            {
+                GenTreeIndir* indir = parent->AsIndir();
+                if (indir->Addr()->OperIs(GT_INDEX_ADDR) && indir->Addr()->AsIndexAddr()->Arr()->OperIs(GT_LCL_VAR))
+                {
+                    // Add an edge to the connection graph.
+                    const unsigned int dstLclNum = indir->Addr()->AsIndexAddr()->Arr()->AsLclVar()->GetLclNum();
+                    const unsigned int srcLclNum = lclNum;
+
+                    AddConnGraphEdge(dstLclNum, srcLclNum);
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+            }
             case GT_STORE_BLK:
             case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
@@ -1134,7 +1147,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_BLK:
-                assert(tree == parent->AsIndir()->Addr());
+                assert(tree == parent->AsIndir()->Addr() || parent->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR));
 
                 // The new target could be *not* on the heap.
                 parent->gtFlags &= ~GTF_IND_TGT_HEAP;
