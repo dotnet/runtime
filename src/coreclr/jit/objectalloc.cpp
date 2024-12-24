@@ -992,18 +992,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_SUB:
             case GT_BOX:
             case GT_FIELD_ADDR:
-                // Check whether the local escapes via its grandparent.
-                ++parentIndex;
-                keepChecking = true;
-                break;
-
             case GT_INDEX_ADDR:
-                if (tree == parent->AsIndexAddr()->Index())
-                {
-                    // The index is not taken so the local doesn't escape.
-                    canLclVarEscapeViaParentStack = false;
-                    break;
-                }
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
@@ -1015,7 +1004,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 if (tree != parent->AsIndir()->Addr())
                 {
                     GenTreeIndir* indir = parent->AsIndir();
-                    if (indir->Addr()->OperIs(GT_INDEX_ADDR) && indir->Addr()->AsIndexAddr()->Arr()->OperIs(GT_LCL_VAR))
+                    if (indir->OperIs(GT_STOREIND) && indir->Addr()->OperIs(GT_INDEX_ADDR) &&
+                        indir->Addr()->AsIndexAddr()->Arr()->OperIs(GT_LCL_VAR))
                     {
                         // Add an edge to the connection graph.
                         const unsigned int dstLclNum = indir->Addr()->AsIndexAddr()->Arr()->AsLclVar()->GetLclNum();
@@ -1031,6 +1021,13 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 }
                 FALLTHROUGH;
             case GT_IND:
+                if (parent->OperIs(GT_IND) && parent->TypeIs(TYP_REF) &&
+                    parent->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR))
+                {
+                    ++parentIndex;
+                    keepChecking = true;
+                    break;
+                }
                 // Address of the field/ind is not taken so the local doesn't escape.
                 canLclVarEscapeViaParentStack = false;
                 break;
