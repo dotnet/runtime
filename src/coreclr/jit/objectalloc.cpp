@@ -1004,32 +1004,22 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 break;
 
             case GT_STOREIND:
-            {
-                GenTreeIndir* indir = parent->AsIndir();
-                if (indir->Addr()->OperIs(GT_INDEX_ADDR) && indir->Addr()->AsIndexAddr()->Arr()->OperIs(GT_LCL_VAR))
-                {
-                    // Add an edge to the connection graph.
-                    const unsigned int dstLclNum = indir->Addr()->AsIndexAddr()->Arr()->AsLclVar()->GetLclNum();
-                    const unsigned int srcLclNum = lclNum;
-
-                    AddConnGraphEdge(dstLclNum, srcLclNum);
-                    canLclVarEscapeViaParentStack = false;
-                    break;
-                }
-                if (tree != parent->AsIndir()->Addr())
-                {
-                    // TODO-ObjectStackAllocation: track stores to fields.
-                    break;
-                }
-                // Address of the ind is not taken so the local doesn't escape.
-                canLclVarEscapeViaParentStack = false;
-            }
-            break;
-
             case GT_STORE_BLK:
             case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
                 {
+                    GenTreeIndir* indir = parent->AsIndir();
+                    if (indir->Addr()->OperIs(GT_INDEX_ADDR) && indir->Addr()->AsIndexAddr()->Arr()->OperIs(GT_LCL_VAR))
+                    {
+                        // Add an edge to the connection graph.
+                        const unsigned int dstLclNum = indir->Addr()->AsIndexAddr()->Arr()->AsLclVar()->GetLclNum();
+                        const unsigned int srcLclNum = lclNum;
+
+                        AddConnGraphEdge(dstLclNum, srcLclNum);
+                        canLclVarEscapeViaParentStack = false;
+                        break;
+                    }
+
                     // TODO-ObjectStackAllocation: track stores to fields.
                     break;
                 }
