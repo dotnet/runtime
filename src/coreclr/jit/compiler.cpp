@@ -3401,11 +3401,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
 
+    regIntLast = REG_R15;
     if (canUseApxEncoding())
     {
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
+        regIntLast = REG_R31;
     }
 #endif // TARGET_AMD64
 
