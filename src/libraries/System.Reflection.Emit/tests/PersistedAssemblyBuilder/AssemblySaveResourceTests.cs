@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Tests
     {
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(new byte[] { 1 }, "01")]
-        [InlineData(new byte[] { 1, 2 }, "01-02")] // Verify blob padding by adding a byte.
+        [InlineData(new byte[] { 1, 2 }, "01-02")] // Verify blob alignment padding by adding a byte.
         public void ManagedResources(byte[] byteValue, string byteValueExpected)
         {
             PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssemblyWithResource"), typeof(object).Assembly);
@@ -35,6 +35,7 @@ namespace System.Reflection.Emit.Tests
             BlobBuilder resourceBlob = new BlobBuilder();
             resourceBlob.WriteInt32(data.Length);
             resourceBlob.WriteBytes(data);
+            int resourceBlobSize = resourceBlob.Count;
 
             metadata.AddManifestResource(
                 ManifestResourceAttributes.Public,
@@ -51,12 +52,17 @@ namespace System.Reflection.Emit.Tests
             BlobBuilder blob = new BlobBuilder();
             peBuilder.Serialize(blob);
 
+            // Ensure the the resource blob wasn't modified by Serialize() due to alignment padding.
+            // Serialize() pads after the blob to align at ManagedTextSection.ManagedResourcesDataAlignment bytes.
+            Assert.Equal(resourceBlobSize, resourceBlob.Count);
+
             // Create a temporary assembly.
             string tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".dll");
             using TempFile file = new TempFile(tempFilePath, blob.ToArray());
 
-            // In order to verify the resources work with ResourceManager, we need to load the assembly.
-            using (RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (tempFilePath, byteValue, byteValueExpected) =>
+            // To verify the resources work with runtime APIs, load the assembly into the process instead of
+            // the normal testing approach of using MetadataLoadContext.
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (tempFilePath, byteValue, byteValueExpected) =>
             {
                 Assembly readAssembly = Assembly.LoadFile(tempFilePath);
 
@@ -84,7 +90,7 @@ namespace System.Reflection.Emit.Tests
 
                     Assert.False(resources.MoveNext());
                 }
-            }, tempFilePath, BitConverter.ToString(byteValue), byteValueExpected)) { }
+            }, tempFilePath, BitConverter.ToString(byteValue), byteValueExpected);
         }
     }
 }
