@@ -1375,29 +1375,31 @@ namespace System
             dest[24] = TChar.CastFrom(HexConverter.ToCharLower(_c));
             dest[25] = TChar.CastFrom(',');
             dest[26] = TChar.CastFrom('{');
-
-            // Write trailing "}}" here:
+            WriteHex(dest, 27, _d);
+            WriteHex(dest, 32, _e);
+            WriteHex(dest, 37, _f);
+            WriteHex(dest, 42, _g);
+            WriteHex(dest, 47, _h);
+            WriteHex(dest, 52, _i);
+            WriteHex(dest, 57, _j);
+            WriteHex(dest, 62, _k, appendComma: false);
             dest[66] = TChar.CastFrom('}');
             dest[67] = TChar.CastFrom('}');
-
-            // Write _d to _k bytes:
-            dest = dest[27..];
-            var dkBytes = new Span<byte>(ref Unsafe.AsRef(in _d), 8);
-            for (int i = 0; i < dkBytes.Length; i++)
-            {
-                dest[0] = TChar.CastFrom('0');
-                dest[1] = TChar.CastFrom('x');
-                dest[2] = TChar.CastFrom(HexConverter.ToCharLower(dkBytes[i] >> 4));
-                dest[3] = TChar.CastFrom(HexConverter.ToCharLower(dkBytes[i]));
-                if (i != dkBytes.Length - 1)
-                {
-                    dest[4] = TChar.CastFrom(',');
-                    dest = dest[5..];
-                }
-            }
-
             charsWritten = 68;
             return true;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void WriteHex(Span<TChar> dest, int offset, int val, bool appendComma = true)
+            {
+                dest[offset + 0] = TChar.CastFrom('0');
+                dest[offset + 1] = TChar.CastFrom('x');
+                dest[offset + 2] = TChar.CastFrom(HexConverter.ToCharLower(val >> 4));
+                dest[offset + 3] = TChar.CastFrom(HexConverter.ToCharLower(val));
+                if (appendComma)
+                {
+                    dest[offset + 4] = TChar.CastFrom(',');
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
