@@ -6583,6 +6583,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
+    bool OperIsYmmEmbRoundingEnabled() const;
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
     {

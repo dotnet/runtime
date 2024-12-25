@@ -259,6 +259,11 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
 
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
+
+    //One-bit:   0b0100_0000
+    INS_OPTS_EVEX_u_MASK = 0x40,    // mask for EVEX.u related features
+
+    INS_OPTS_EVEX_ymm_er = 1 << 6,  // EVEX.u is not set
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

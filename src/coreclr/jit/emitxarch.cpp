@@ -1481,14 +1481,14 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         code |= BBIT_IN_BYTE_EVEX_PREFIX;
 
-        // enable ymm embeddd rounding
-        if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
-        {
-            code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
-        }
         if (!id->idHasMem())
         {
             // embedded rounding case.
+            if (id->idIsEvexuContextSet())
+            {
+                code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
+            }
+            
             unsigned roundingMode = id->idGetEvexbContext();
             if (roundingMode == 1)
             {
@@ -7011,6 +7011,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
+        id->idSetEvexuContext(instOptions);
     }
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
@@ -7438,6 +7439,7 @@ void emitter::emitIns_R_R_R(
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
+        id->idSetEvexuContext(instOptions);
     }
     SetEvexEmbMaskIfNeeded(id, instOptions);
 

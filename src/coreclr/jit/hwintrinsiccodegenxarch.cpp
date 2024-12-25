@@ -82,6 +82,27 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 }
 
 //------------------------------------------------------------------------
+// AddYmmEmbRounding: Adds the ymm embedded rounding to the insOpts
+//
+// Arguments:
+//    instOptions - The existing insOpts
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddYmmEmbRounding(insOpts instOptions)
+{
+    // enable ymm embedded rounding based on current
+    // rounding mode indicator.
+
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) != 0);
+    unsigned result = static_cast<unsigned>(instOptions);
+    result |= INS_OPTS_EVEX_ymm_er;
+
+    return static_cast<insOpts>(result);
+}
+
+//------------------------------------------------------------------------
 // AddEmbRoundingMode: Adds the embedded rounding mode to the insOpts
 //
 // Arguments:
@@ -304,6 +325,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
                 instOptions = AddEmbRoundingMode(instOptions, mode);
+                if (node->OperIsYmmEmbRoundingEnabled())
+                {
+                    instOptions = AddYmmEmbRounding(instOptions);
+                }
             }
             else
             {
