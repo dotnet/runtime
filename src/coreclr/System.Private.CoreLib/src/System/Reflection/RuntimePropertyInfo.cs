@@ -44,10 +44,64 @@ namespace System.Reflection
 
             scope.GetPropertyProps(tkProperty, out m_utf8name, out m_flags, out _);
 
-            Associates.AssignAssociates(scope, tkProperty, declaredType, reflectedTypeCache.GetRuntimeType(),
+            RuntimeType reflectedRuntimeType = reflectedTypeCache.GetRuntimeType();
+            Associates.AssignAssociates(scope, tkProperty, declaredType, reflectedRuntimeType,
                 out _, out _, out _,
                 out m_getterMethod, out m_setterMethod, out m_otherMethod,
                 out isPrivate, out m_bindingFlags);
+
+            // lookup getter/setter when getter and setter are inherited from base class but just a setter/getter is overridden on a sub type
+            if ((m_getterMethod != null && m_getterMethod.IsVirtual && m_setterMethod == null)
+                || (m_setterMethod != null && m_setterMethod.IsVirtual && m_getterMethod == null))
+            {
+                Type? baseDeclaredType = declaredType.BaseType;
+
+                while ((m_getterMethod == null || m_setterMethod == null)
+                    && baseDeclaredType != null && baseDeclaredType is RuntimeType baseDeclaredRuntimeType)
+                {
+                    RuntimeModule baseModule = baseDeclaredRuntimeType.GetRuntimeModule();
+                    MetadataImport baseScope = baseModule.MetadataImport;
+
+                    baseScope.EnumProperties(RuntimeTypeHandle.GetToken(baseDeclaredRuntimeType), out MetadataEnumResult baseTkProperties);
+
+                    for (int i = 0; i < baseTkProperties.Length; i++)
+                    {
+                        int baseTkProperty = baseTkProperties[i];
+                        MdUtf8String baseTkPropertyName = baseScope.GetName(baseTkProperty);
+
+                        if (Name.Equals(baseTkPropertyName.ToString()))
+                        {
+                            if (m_setterMethod == null)
+                            {
+                                Associates.AssignAssociates(baseScope, baseTkProperty, baseDeclaredRuntimeType, reflectedRuntimeType,
+                                    out _, out _, out _,
+                                    out _, out m_setterMethod, out _,
+                                    out _, out _);
+
+                                if (m_setterMethod != null)
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                Associates.AssignAssociates(baseScope, baseTkProperty, baseDeclaredRuntimeType, reflectedRuntimeType,
+                                    out _, out _, out _,
+                                    out m_getterMethod, out _, out _,
+                                    out _, out _);
+
+                                if (m_getterMethod != null)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    baseDeclaredType = baseDeclaredType.BaseType;
+                }
+            }
+
             GC.KeepAlive(module);
         }
         #endregion

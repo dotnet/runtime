@@ -1580,7 +1580,7 @@ namespace System.Reflection
                             RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 
                             // Public properties may have non-public setter methods
-                            if (!setMethod.IsPublic)
+                            if (setMethod == null || !setMethod.IsPublic)
                             {
                                 continue;
                             }
