@@ -228,7 +228,7 @@ namespace System.ComponentModel
                     for (int i = 0; i < Math.Min(_siteCount, _sites!.Length); i++)
                     {
                         ISite? s = _sites[i];
-    
+
                         if (s?.Name != null && string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase) && s.Component != component)
                         {
                             InheritanceAttribute inheritanceAttribute = (InheritanceAttribute)TypeDescriptor.GetAttributes(s.Component)[typeof(InheritanceAttribute)]!;
