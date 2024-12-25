@@ -1577,10 +1577,10 @@ namespace System.Reflection
                                 attributeType.GetProperty(name) :
                                 attributeType.GetProperty(name, type, Type.EmptyTypes)) ??
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                            RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
+                            RuntimeMethodInfo? setMethod = property.GetSetMethod(true);
 
                             // Public properties may have non-public setter methods
-                            if (setMethod == null || !setMethod.IsPublic)
+                            if (setMethod is null || !setMethod.IsPublic)
                             {
                                 continue;
                             }
