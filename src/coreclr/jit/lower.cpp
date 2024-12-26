@@ -7995,6 +7995,32 @@ void Lowering::MapParameterRegisterLocals()
 //
 void Lowering::FindInducedParameterRegisterLocals()
 {
+    // Check if we possibly have any parameters we can induce new register
+    // locals from.
+    bool anyCandidates = false;
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc* lcl = comp->lvaGetDesc(lclNum);
+        if (lcl->lvPromoted || !lcl->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            continue;
+        }
+
+        anyCandidates = true;
+        break;
+    }
+
+    if (!anyCandidates)
+    {
+        return;
+    }
+
     LocalSet storedToLocals(comp->getAllocator(CMK_ABI));
     // Now look for optimization opportunities in the first block: places where
     // we read fields out of struct parameters that can be mapped cleanly. This
