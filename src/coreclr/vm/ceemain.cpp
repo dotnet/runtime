@@ -1710,9 +1710,19 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 struct TlsDestructionMonitor
 {
     bool m_activated = false;
+    bool m_destructorCalled = false;
 
     void Activate()
     {
+        if (m_destructorCalled)
+        {
+            STRESS_LOG1(LF_STARTUP, LL_FATALERROR, "%s", "Thread is being reinitialized after cleanup");
+            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Thread_FailFastOnReinitialize) != 0)
+            {
+                _ASSERTE_ALL_BUILDS(!"Thread is being reinitialized after cleanup");
+            }
+        }
+
         m_activated = true;
     }
 
@@ -1720,6 +1730,8 @@ struct TlsDestructionMonitor
     {
         if (m_activated)
         {
+            m_destructorCalled = true;
+
             Thread* thread = GetThreadNULLOk();
             if (thread)
             {
