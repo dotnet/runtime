@@ -174,7 +174,9 @@ namespace System.Collections.Generic
         public void TrimExcess() { }
         public void TrimExcess(int capacity) { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
+        public bool TryAdd(TKey key, TValue value, out int index) { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value, out int index) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -580,38 +582,6 @@ namespace System.Collections.Generic
         }
     }
 }
-namespace System.Collections.ObjectModel
-{
-    public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
-    {
-        public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
-        public int Count { get { throw null; } }
-        public static System.Collections.ObjectModel.ReadOnlySet<T> Empty { get { throw null; } }
-        protected System.Collections.Generic.ISet<T> Set { get { throw null; } }
-        bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        public bool Contains(T item) { throw null; }
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
-        public bool IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        public bool SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
-        void System.Collections.Generic.ICollection<T>.Add(T item) { }
-        void System.Collections.Generic.ICollection<T>.Clear() { }
-        void System.Collections.Generic.ICollection<T>.CopyTo(T[] array, int arrayIndex) { }
-        bool System.Collections.Generic.ICollection<T>.Remove(T item) { throw null; }
-        bool System.Collections.Generic.ISet<T>.Add(T item) { throw null; }
-        void System.Collections.Generic.ISet<T>.ExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-    }
-}
 #endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Generic
 {
@@ -625,6 +595,7 @@ namespace System.Collections.Generic
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> AsReadOnly<T>(this ISet<T> set) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
     }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer

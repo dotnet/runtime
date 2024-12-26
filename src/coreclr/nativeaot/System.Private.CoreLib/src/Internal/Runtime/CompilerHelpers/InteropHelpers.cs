@@ -299,7 +299,7 @@ namespace Internal.Runtime.CompilerHelpers
                 dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
             }
 
-            Assembly callingAssembly = ReflectionAugments.ReflectionCoreCallbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+            Assembly callingAssembly = ReflectionAugments.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
 
             // First check if there's a NativeLibrary callback and call it to attempt the resolution
             IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);

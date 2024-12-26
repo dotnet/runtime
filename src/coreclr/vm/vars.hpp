@@ -414,6 +414,7 @@ GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
 
 #ifndef DACCESS_COMPILE
 GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
+GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
 #endif // DACCESS_COMPILE
 
 #endif // DEBUGGING_SUPPORTED

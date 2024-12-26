@@ -25,11 +25,16 @@
   <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
     <MSBuild Targets="Restore"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="MonoAotCrossRestore=1" /> <!-- Pass this property to make the evaluation of mono.proj during the "BuildMono" target below use an evaluation that picks up NuGet-generated MSBuild targets from this restore. -->
+             Properties="MonoUseCrossTool=true;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" /> <!-- Pass this property to make the evaluation of mono.proj during the "BuildMono" target below use an evaluation that picks up NuGet-generated MSBuild targets from this restore. -->
     <MSBuild Targets="BuildMonoCrossTarget"
              Projects="$(MSBuildThisFileFullPath)"
              BuildInParallel="true"
              Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+
+    <ItemGroup Condition="'$(ValidateMonoOffsets)' == 'true'">
+      <NewOffsetsFiles Include="$(MonoProjectRoot)mono/offsets/*.h.new" />
+    </ItemGroup>
+    <Error Condition="'@(NewOffsetsFiles)' != ''" Text="Detected changes in Mono offsets files. When running in a PR build you can download the MonoAOTOffsets artifacts and update the files in the src/mono/mono/offsets folder." />
   </Target>
 
   <Target Name="BuildMonoCrossTarget">
@@ -38,19 +43,22 @@
       <MonoAotTargetArchitecture>$(MonoAotTargetRid.Substring($([MSBuild]::Add(1, $(MonoAotTargetRid.LastIndexOf('-'))))))</MonoAotTargetArchitecture>
       <MonoAotHostOS>$(TargetOS)</MonoAotHostOS>
       <MonoAotHostOS Condition="'$(TargetsLinuxMusl)' == 'true'">linux-musl</MonoAotHostOS>
+      <MonoAotHostArchitecture>$(TargetArchitecture)</MonoAotHostArchitecture>
     </PropertyGroup>
 
     <MSBuild Targets="Build"
              Projects="$(MSBuildThisFileDirectory)llvm\llvm-init.proj"
-             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);AotHostArchitecture=$(TargetArchitecture)" />
+             Properties="TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS);AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(MonoAotHostArchitecture)" />
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(MonoAotHostArchitecture);BuildMonoAOTCrossCompilerOnly=true;TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
     </ItemGroup>
+
+    <Error Condition="'@(_MonoAOTCrossFiles)' == '' and '$(MonoGenerateOffsetsOSGroups)' == ''" Text="No AOT cross files found for $(MonoAotTargetRid)" />
 
     <Message Text="Copying @(_MonoAOTCrossFiles) to $(RealRuntimeBinDir)cross\$(TargetOS)-$(TargetArchitecture.ToLower())\$(MonoAotTargetRid.ToLower())" Importance="High" />
 

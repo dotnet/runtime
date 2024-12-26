@@ -36,6 +36,9 @@
     IMPORT  g_highest_address
     IMPORT  g_card_table
     IMPORT  g_dispatch_cache_chain_success_counter
+    IMPORT  g_pGetGCStaticBase
+    IMPORT  g_pGetNonGCStaticBase
+
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
     SETALIAS g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
@@ -44,9 +47,6 @@
     IMPORT $g_GCShadow
     IMPORT $g_GCShadowEnd
 #endif // WRITE_BARRIER_CHECK
-
-    IMPORT JIT_GetDynamicNonGCStaticBase_Portable
-    IMPORT JIT_GetDynamicGCStaticBase_Portable
 
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
@@ -936,7 +936,6 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   x12
 
     NESTED_END
@@ -1019,8 +1018,11 @@ Fail
     ret lr
 
 CallHelper1
-    ; Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    b JIT_GetDynamicNonGCStaticBase_Portable
+    ; Tail call GetNonGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetNonGCStaticBase
+    ldr      x1, [x1, g_pGetNonGCStaticBase]
+    br       x1
     LEAF_END
 
 ; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
@@ -1034,8 +1036,11 @@ CallHelper1
     ret lr
 
 CallHelper2
-    ; Tail call JIT_GetDynamicGCStaticBase_Portable
-    b JIT_GetDynamicGCStaticBase_Portable
+    ; Tail call GetGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    adrp     x1, g_pGetGCStaticBase
+    ldr      x1, [x1, g_pGetGCStaticBase]
+    br       x1
     LEAF_END
 
 ; ------------------------------------------------------------------

@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Formats.Asn1
 {
     /// <summary>
-    ///   This type represents an ASN.1 tag, as described in ITU-T Recommendation X.680.
+    ///   Represents an ASN.1 tag, as described in ITU-T Recommendation X.680.
     /// </summary>
     // T-REC-X.690-201508 sec 8.1.2
     public readonly partial struct Asn1Tag : IEquatable<Asn1Tag>
@@ -20,18 +20,18 @@ namespace System.Formats.Asn1
         private readonly byte _controlFlags;
 
         /// <summary>
-        ///   The tag class to which this tag belongs.
+        ///   Gets the tag class to which this tag belongs.
         /// </summary>
         public TagClass TagClass => (TagClass)(_controlFlags & ClassMask);
 
         /// <summary>
-        ///   Indicates if the tag represents a constructed encoding (<see langword="true"/>), or
+        ///   Gets a value that indicates whether the tag represents a constructed encoding (<see langword="true"/>), or
         ///   a primitive encoding (<see langword="false"/>).
         /// </summary>
         public bool IsConstructed => (_controlFlags & ConstructedMask) != 0;
 
         /// <summary>
-        ///   The numeric value for this tag.
+        ///   Gets the numeric value for this tag.
         /// </summary>
         /// <remarks>
         ///   If <see cref="TagClass"/> is <see cref="Asn1.TagClass.Universal"/>, this value can
@@ -46,7 +46,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Create an <see cref="Asn1Tag"/> for a tag from the UNIVERSAL class.
+        ///   Creates an <see cref="Asn1Tag"/> for a tag from the UNIVERSAL class.
         /// </summary>
         /// <param name="universalTagNumber">
         ///   One of the enumeration values that specifies the semantic type for this tag.
@@ -72,7 +72,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Create an <see cref="Asn1Tag"/> for a specified value within a specified tag class.
+        ///   Creates an <see cref="Asn1Tag"/> for a specified value within a specified tag class.
         /// </summary>
         /// <param name="tagClass">
         ///   The tag class for this tag.
@@ -91,7 +91,7 @@ namespace System.Formats.Asn1
         ///   <paramref name="tagValue" /> is negative.
         /// </exception>
         /// <remarks>
-        ///   This constructor allows for the creation undefined UNIVERSAL class tags.
+        ///   This constructor allows for the creation of undefined UNIVERSAL class tags.
         /// </remarks>
         public Asn1Tag(TagClass tagClass, int tagValue, bool isConstructed = false)
             : this((byte)((byte)tagClass | (isConstructed ? ConstructedMask : 0)), tagValue)
@@ -140,10 +140,10 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Attempts to read a BER-encoded tag which starts at <paramref name="source"/>.
+        ///   Attempts to read a BER-encoded tag that starts at <paramref name="source"/>.
         /// </summary>
         /// <param name="source">
-        ///   The read only byte sequence whose beginning is a BER-encoded tag.
+        ///   The read-only byte sequence whose beginning is a BER-encoded tag.
         /// </param>
         /// <param name="tag">
         ///   The decoded tag.
@@ -235,10 +235,10 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Reads a BER-encoded tag which starts at <paramref name="source"/>.
+        ///   Reads a BER-encoded tag that starts at <paramref name="source"/>.
         /// </summary>
         /// <param name="source">
-        ///   The read only byte sequence whose beginning is a BER-encoded tag.
+        ///   The read-only byte sequence whose beginning is a BER-encoded tag.
         /// </param>
         /// <param name="bytesConsumed">
         ///   When this method returns, contains the number of bytes that contributed
@@ -373,7 +373,7 @@ namespace System.Formats.Asn1
         ///   Tests if <paramref name="other"/> has the same encoding as this tag.
         /// </summary>
         /// <param name="other">
-        ///   Tag to test for equality.
+        ///   The tag to test for equality.
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if <paramref name="other"/> has the same values for
@@ -389,7 +389,7 @@ namespace System.Formats.Asn1
         ///   Tests if <paramref name="obj"/> is an <see cref="Asn1Tag"/> with the same
         ///   encoding as this tag.
         /// </summary>
-        /// <param name="obj">Object to test for value equality</param>
+        /// <param name="obj">The object to test for value equality.</param>
         /// <returns>
         ///   <see langword="false"/> if <paramref name="obj"/> is not an <see cref="Asn1Tag"/>,
         ///   <see cref="Equals(Asn1Tag)"/> otherwise.

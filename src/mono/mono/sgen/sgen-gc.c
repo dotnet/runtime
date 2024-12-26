@@ -3909,7 +3909,7 @@ sgen_gc_init (void)
 
 	memset (&remset, 0, sizeof (remset));
 
-	sgen_card_table_init (&remset);
+	sgen_card_table_init (&remset, remset_consistency_checks);
 
 	sgen_register_root (NULL, 0, sgen_make_user_root_descriptor (sgen_mark_normal_gc_handles), ROOT_TYPE_NORMAL, MONO_ROOT_SOURCE_GC_HANDLE, GINT_TO_POINTER (ROOT_TYPE_NORMAL), "GC Handles (SGen, Normal)");
 

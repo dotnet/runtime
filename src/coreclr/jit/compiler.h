@@ -36,8 +36,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "regalloc.h"
 #include "sm.h"
 #include "cycletimer.h"
-#include "blockset.h"
 #include "arraystack.h"
+#include "priorityqueue.h"
 #include "hashbv.h"
 #include "jitexpandarray.h"
 #include "valuenum.h"
@@ -65,7 +65,6 @@ inline var_types genActualType(T value);
 
 #include "hwintrinsic.h"
 #include "simd.h"
-#include "simdashwintrinsic.h"
 
 #include "jitmetadata.h"
 
@@ -523,6 +522,7 @@ public:
 
     unsigned char lvIsParam           : 1; // is this a parameter?
     unsigned char lvIsRegArg          : 1; // is this an argument that was passed by register?
+    unsigned char lvIsParamRegTarget  : 1; // is this the target of a param reg to local mapping?
     unsigned char lvFramePointerBased : 1; // 0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)
 
     unsigned char lvOnFrame  : 1; // (part of) the variable lives on the frame
@@ -1543,6 +1543,7 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_LINKED_LOCALS = 1 << 7, // check linked list of locals
+    CHECK_FG_INIT_BLOCK = 1 << 8, // flow graph has an init block
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -2221,9 +2222,6 @@ public:
     BasicBlockVisit VisitLoopBlocks(TFunc func);
 
     template<typename TFunc>
-    BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
-
-    template<typename TFunc>
     BasicBlockVisit VisitRegularExitBlocks(TFunc func);
 
     BasicBlock* GetLexicallyTopMostBlock();
@@ -2234,7 +2232,9 @@ public:
     bool HasDef(unsigned lclNum);
 
     bool CanDuplicate(INDEBUG(const char** reason));
+    bool CanDuplicateWithEH(INDEBUG(const char** reason));
     void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
+    void DuplicateWithEH(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 
@@ -2387,6 +2387,29 @@ public:
     static FlowGraphDominatorTree* Build(const FlowGraphDfsTree* dfsTree);
 };
 
+class FlowGraphDominanceFrontiers
+{
+    FlowGraphDominatorTree* m_domTree;
+    BlkToBlkVectorMap m_map;
+    BitVecTraits m_poTraits;
+    BitVec m_visited;
+
+    FlowGraphDominanceFrontiers(FlowGraphDominatorTree* domTree);
+
+#ifdef DEBUG
+    void Dump();
+#endif
+
+public:
+    FlowGraphDominatorTree* GetDomTree()
+    {
+        return m_domTree;
+    }
+
+    static FlowGraphDominanceFrontiers* Build(FlowGraphDominatorTree* domTree);
+    void ComputeIteratedDominanceFrontier(BasicBlock* block, BlkVector* result);
+};
+
 // Represents a reverse mapping from block back to its (most nested) containing loop.
 class BlockToNaturalLoopMap
 {
@@ -2535,6 +2558,55 @@ struct RelopImplicationInfo
     bool reverseSense = false;
 };
 
+//------------------------------------------------------------------------
+// CloneTryInfo
+//
+// Describes information needed to clone a try region, and information
+// produced by cloning that region
+//
+struct CloneTryInfo
+{
+    CloneTryInfo(Compiler* comp);
+
+    // bbID based traits and vector
+    //
+    BitVecTraits Traits;
+    BitVec Visited;
+
+    BlockToBlockMap* Map = nullptr;
+    jitstd::vector<BasicBlock*>* BlocksToClone = nullptr;
+    weight_t ProfileScale = 0.0;
+    unsigned EHIndexShift = 0;
+    bool AddEdges = false;
+    bool ScaleOriginalBlockProfile = false;
+};
+
+//------------------------------------------------------------------------
+// ParameterRegisterLocalMapping:
+//   Contains mappings between a parameter register segment and a corresponding
+//   local. Used by the backend to know which locals are expected to contain
+//   which register parameters after the prolog.
+//
+struct ParameterRegisterLocalMapping
+{
+    const ABIPassingSegment* RegisterSegment;
+    unsigned LclNum;
+    // Offset at which the register is inserted into the local. Used e.g. for
+    // HFAs on arm64 that might have been promoted as a single local (e.g.
+    // System.Numerics.Plane is passed in 3 float regs but enregistered as
+    // TYP_SIMD12).
+    // SysV 64 also see similar situations e.g. Vector3 being passed in
+    // xmm0[0..8), xmm1[8..12), but enregistered as one register.
+    unsigned Offset;
+
+    ParameterRegisterLocalMapping(const ABIPassingSegment* segment, unsigned lclNum, unsigned offset)
+        : RegisterSegment(segment)
+        , LclNum(lclNum)
+        , Offset(offset)
+    {
+    }
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2607,7 +2679,6 @@ class Compiler
 #ifdef FEATURE_HW_INTRINSICS
     friend struct GenTreeHWIntrinsic;
     friend struct HWIntrinsicInfo;
-    friend struct SimdAsHWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT
@@ -2926,6 +2997,35 @@ public:
         return m_dominancePreds;
     }
 
+    struct BasicBlockLocalPair
+    {
+        BasicBlock* Block;
+        unsigned LclNum;
+
+        BasicBlockLocalPair(BasicBlock* block, unsigned lclNum)
+            : Block(block)
+            , LclNum(lclNum)
+        {
+        }
+
+        static bool Equals(const BasicBlockLocalPair& x, const BasicBlockLocalPair& y)
+        {
+            return (x.Block == y.Block) && (x.LclNum == y.LclNum);
+        }
+        static unsigned GetHashCode(const BasicBlockLocalPair& val)
+        {
+            unsigned hash = val.Block->bbID;
+            hash ^= val.LclNum + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+            return hash;
+        }
+    };
+
+    typedef JitHashTable<BasicBlockLocalPair, BasicBlockLocalPair, bool> BasicBlockLocalPairSet;
+
+    BasicBlockLocalPairSet* m_insertedSsaLocalsLiveIn = nullptr;
+    bool IsInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum);
+    bool AddInsertedSsaLiveIn(BasicBlock* block, unsigned lclNum);
+
     void* ehEmitCookie(BasicBlock* block);
     UNATIVE_OFFSET ehCodeOffset(BasicBlock* block);
 
@@ -2951,7 +3051,7 @@ public:
 
     void fgRemoveEHTableEntry(unsigned XTnum);
 
-    EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
+    EHblkDsc* fgTryAddEHTableEntries(unsigned XTnum, unsigned count = 1, bool deferAdding = false);
 
     void fgSortEHTable();
 
@@ -3018,6 +3118,7 @@ public:
                                 GenTree*   op2  = nullptr);
 
     GenTreeIntCon* gtNewIconNode(ssize_t value, var_types type = TYP_INT);
+    GenTreeIntCon* gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type = TYP_INT);
     GenTreeIntCon* gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq);
     GenTreeIntCon* gtNewNull();
     GenTreeIntCon* gtNewTrue();
@@ -3057,11 +3158,14 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
+#if defined(FEATURE_SIMD)
     GenTreeVecCon* gtNewVconNode(var_types type);
-
     GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTreeMskCon* gtNewMskConNode(var_types type);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
@@ -3159,41 +3263,6 @@ public:
                                                  NamedIntrinsic         hwIntrinsicID,
                                                  CorInfoType            simdBaseJitType,
                                                  unsigned               simdSize);
-
-    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
-                                                   NamedIntrinsic hwIntrinsicID,
-                                                   CorInfoType    simdBaseJitType,
-                                                   unsigned       simdSize)
-    {
-        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, simdBaseJitType, simdSize);
-    }
-
-    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
-        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
-    {
-        return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize);
-    }
-
-    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
-                                                   GenTree*       op1,
-                                                   GenTree*       op2,
-                                                   NamedIntrinsic hwIntrinsicID,
-                                                   CorInfoType    simdBaseJitType,
-                                                   unsigned       simdSize)
-    {
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, simdBaseJitType, simdSize);
-    }
-
-    GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
-                                                   GenTree*       op1,
-                                                   GenTree*       op2,
-                                                   GenTree*       op3,
-                                                   NamedIntrinsic hwIntrinsicID,
-                                                   CorInfoType    simdBaseJitType,
-                                                   unsigned       simdSize)
-    {
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
-    }
 
     GenTree* gtNewSimdAbsNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3617,7 +3686,7 @@ public:
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
     // before they have been set.)
-    bool gtComplexityExceeds(GenTree* tree, unsigned limit);
+    bool gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* gtReverseCond(GenTree* tree);
 
@@ -3742,6 +3811,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree* array);
+    // Get a method handle from a helper call argument
+    CORINFO_METHOD_HANDLE gtGetHelperArgMethodHandle(GenTree* array);
     // Get the class handle for a field
     CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a typeof()
@@ -4683,22 +4754,9 @@ protected:
                             CORINFO_SIG_INFO*     sig
                             R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                             bool                  mustExpand);
-    GenTree* impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
-                                  CORINFO_CLASS_HANDLE  clsHnd,
-                                  CORINFO_METHOD_HANDLE method,
-                                  CORINFO_SIG_INFO*     sig,
-                                  bool                  mustExpand);
 
 protected:
     bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
-
-    GenTree* impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
-                                         CORINFO_CLASS_HANDLE clsHnd,
-                                         CORINFO_SIG_INFO*    sig,
-                                         var_types            retType,
-                                         CorInfoType          simdBaseJitType,
-                                         unsigned             simdSize,
-                                         bool                 mustExpand);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -4960,7 +5018,7 @@ private:
     void impImportBlockPending(BasicBlock* block);
 
     // Similar to impImportBlockPending, but assumes that block has already been imported once and is being
-    // reimported for some reason.  It specifically does *not* look at verCurrentState to set the EntryState
+    // reimported for some reason.  It specifically does *not* look at stackState to set the EntryState
     // for the block, but instead, just re-uses the block's existing EntryState.
     void impReimportBlockPending(BasicBlock* block);
 
@@ -5167,8 +5225,6 @@ public:
     BasicBlock* fgEntryBB = nullptr;        // For OSR, the original method's entry point
     BasicBlock* fgOSREntryBB = nullptr;     // For OSR, the logical entry point (~ patchpoint)
     BasicBlock* fgFirstFuncletBB = nullptr; // First block of outlined funclets (to allow block insertion before the funclets)
-    BasicBlock* fgFirstBBScratch = nullptr;   // Block inserted for initialization stuff. Is nullptr if no such block has been
-                                    // created.
     BasicBlockList* fgReturnBlocks = nullptr; // list of BBJ_RETURN blocks
     unsigned        fgEdgeCount = 0;    // # of control flow edges between the BBs
     unsigned        fgBBcount = 0;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
@@ -5194,6 +5250,7 @@ public:
     // Dominator tree used by SSA construction and copy propagation (the two are expected to use the same tree
     // in order to avoid the need for SSA reconstruction and an "out of SSA" phase).
     FlowGraphDominatorTree* m_domTree = nullptr;
+    FlowGraphDominanceFrontiers* m_domFrontiers = nullptr;
     BlockReachabilitySets* m_reachabilitySets = nullptr;
 
     // Do we require loops to be in canonical form? The canonical form ensures that:
@@ -5214,69 +5271,6 @@ public:
     {
         return getAllocator(cmk).allocate<T>(fgBBNumMax + 1);
     }
-
-    // BlockSets are relative to a specific set of BasicBlock numbers. If that changes
-    // (if the blocks are renumbered), this changes. BlockSets from different epochs
-    // cannot be meaningfully combined. Note that new blocks can be created with higher
-    // block numbers without changing the basic block epoch. These blocks *cannot*
-    // participate in a block set until the blocks are all renumbered, causing the epoch
-    // to change. This is useful if continuing to use previous block sets is valuable.
-    // If the epoch is zero, then it is uninitialized, and block sets can't be used.
-    unsigned fgCurBBEpoch = 0;
-
-    unsigned GetCurBasicBlockEpoch()
-    {
-        return fgCurBBEpoch;
-    }
-
-    // The number of basic blocks in the current epoch. When the blocks are renumbered,
-    // this is fgBBcount. As blocks are added, fgBBcount increases, fgCurBBEpochSize remains
-    // the same, until a new BasicBlock epoch is created, such as when the blocks are all renumbered.
-    unsigned fgCurBBEpochSize = 0;
-
-    // The number of "size_t" elements required to hold a bitset large enough for fgCurBBEpochSize
-    // bits. This is precomputed to avoid doing math every time BasicBlockBitSetTraits::GetArrSize() is called.
-    unsigned fgBBSetCountInSizeTUnits = 0;
-
-    void NewBasicBlockEpoch()
-    {
-        INDEBUG(unsigned oldEpochArrSize = fgBBSetCountInSizeTUnits);
-
-        // We have a new epoch. Compute and cache the size needed for new BlockSets.
-        fgCurBBEpoch++;
-        fgCurBBEpochSize = fgBBNumMax + 1;
-        fgBBSetCountInSizeTUnits =
-            roundUp(fgCurBBEpochSize, (unsigned)(sizeof(size_t) * 8)) / unsigned(sizeof(size_t) * 8);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            unsigned epochArrSize = BasicBlockBitSetTraits::GetArrSize(this);
-            printf("\nNew BlockSet epoch %d, # of blocks (including unused BB00): %u, bitset array size: %u (%s)",
-                   fgCurBBEpoch, fgCurBBEpochSize, epochArrSize, (epochArrSize <= 1) ? "short" : "long");
-            if ((fgCurBBEpoch != 1) && ((oldEpochArrSize <= 1) != (epochArrSize <= 1)))
-            {
-                // If we're not just establishing the first epoch, and the epoch array size has changed such that we're
-                // going to change our bitset representation from short (just a size_t bitset) to long (a pointer to an
-                // array of size_t bitsets), then print that out.
-                printf("; NOTE: BlockSet size was previously %s!", (oldEpochArrSize <= 1) ? "short" : "long");
-            }
-            printf("\n");
-        }
-#endif // DEBUG
-    }
-
-    void EnsureBasicBlockEpoch()
-    {
-        if (fgCurBBEpochSize != fgBBNumMax + 1)
-        {
-            NewBasicBlockEpoch();
-        }
-    }
-
-    bool fgEnsureFirstBBisScratch();
-    bool fgFirstBBisScratch();
-    bool fgBBisScratch(BasicBlock* block);
 
     void fgExtendEHRegionBefore(BasicBlock* block);
     void fgExtendEHRegionAfter(BasicBlock* block);
@@ -5320,7 +5314,6 @@ public:
 
     bool fgModified = false;             // True if the flow graph has been modified recently
     bool fgPredsComputed = false;        // Have we computed the bbPreds list
-    bool fgOptimizedFinally = false;     // Did we optimize any try-finallys?
 
     bool fgHasSwitch = false; // any BBJ_SWITCH jumps?
 
@@ -5361,7 +5354,6 @@ public:
     // - Rationalization links all nodes into linear form which is kept until
     //   the end of compilation. The first and last nodes are stored in the block.
     NodeThreading fgNodeThreading = NodeThreading::None;
-    bool          fgCanRelocateEHRegions; // true if we are allowed to relocate the EH regions
     weight_t      fgCalledCount = BB_ZERO_WEIGHT;          // count of the number of times this method was called
                                           // This is derived from the profile data
                                           // or is BB_UNITY_WEIGHT when we don't have profile data
@@ -5402,11 +5394,19 @@ public:
 
     PhaseStatus fgRemoveEmptyTry();
 
+    PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
+
     PhaseStatus fgRemoveEmptyFinally();
 
     PhaseStatus fgMergeFinallyChains();
 
     PhaseStatus fgCloneFinally();
+
+    bool fgCanCloneTryRegion(BasicBlock* tryEntry);
+
+    BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
+
+    void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
 
     void fgCleanupContinuation(BasicBlock* continuation);
 
@@ -5448,13 +5448,30 @@ public:
 
     FoldResult fgFoldConditional(BasicBlock* block);
 
+    struct MorphUnreachableInfo
+    {
+        MorphUnreachableInfo(Compiler* comp);
+        void SetUnreachable(BasicBlock* block);
+        bool IsUnreachable(BasicBlock* block);
+
+    private:
+
+        BitVecTraits m_traits;
+        BitVec m_vec;
+    };
+
     PhaseStatus fgMorphBlocks();
-    void fgMorphBlock(BasicBlock* block);
+    BasicBlock* fgGetFirstILBlock();
+    void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
+
+#ifdef DEBUG
+    void fgPostGlobalMorphChecks();
+#endif
 
     void fgMergeBlockReturn(BasicBlock* block);
 
-    bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
+    bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool invalidateDFSTreeOnFGChange = true);
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
     bool gtRemoveTreesAfterNoReturnCall(BasicBlock* block, Statement* stmt);
@@ -5735,7 +5752,7 @@ public:
     PhaseStatus fgSsaBuild();
 
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
-    void fgResetForSsa();
+    void fgResetForSsa(bool deepClean);
 
     unsigned fgSsaPassesCompleted = 0; // Number of times fgSsaBuild has been run.
     bool     fgSsaValid = false;           // True if SSA info is valid and can be cross-checked versus IR
@@ -5752,7 +5769,7 @@ public:
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore = nullptr;
-    class ValueNumberState* vnState;
+    class ValueNumberState* vnState = nullptr;
 
 public:
     ValueNumStore* GetValueNumStore()
@@ -6168,6 +6185,7 @@ public:
     bool fgCheckRemoveStmt(BasicBlock* block, Statement* stmt);
 
     PhaseStatus fgCanonicalizeFirstBB();
+    void fgCreateNewInitBB();
 
     void fgSetEHRegionForNewPreheaderOrExit(BasicBlock* preheader);
 
@@ -6188,6 +6206,8 @@ public:
     void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
     bool fgCanCompactBlock(BasicBlock* block);
+
+    bool fgCanCompactInitBlock();
 
     void fgCompactBlock(BasicBlock* block);
 
@@ -6249,9 +6269,42 @@ public:
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
+    void fgSearchImprovedLayout();
+
+    class ThreeOptLayout
+    {
+        static bool EdgeCmp(const FlowEdge* left, const FlowEdge* right);
+
+        Compiler* compiler;
+        PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
+        unsigned* ordinals;
+        BasicBlock** blockOrder;
+        BasicBlock** tempOrder;
+        unsigned numCandidateBlocks;
+        unsigned currEHRegion;
+
+#ifdef DEBUG
+        weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
+#endif // DEBUG
+
+        weight_t GetCost(BasicBlock* block, BasicBlock* next);
+        weight_t GetPartitionCostDelta(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+        void SwapPartitions(unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End);
+
+        void ConsiderEdge(FlowEdge* edge);
+        void AddNonFallthroughSuccs(unsigned blockPos);
+        void AddNonFallthroughPreds(unsigned blockPos);
+        bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
+
+        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+
+    public:
+        ThreeOptLayout(Compiler* comp);
+        void Run();
+    };
 
     template <bool hasEH>
-    void fgMoveHotJumps();
+    void fgMoveHotJumps(FlowGraphDfsTree* dfsTree);
 
     bool fgFuncletsAreCold();
 
@@ -6259,7 +6312,7 @@ public:
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
-    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false, bool doAggressiveCompaction = true);
+    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
@@ -6327,11 +6380,12 @@ public:
 
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
-    void               fgDebugCheckUpdate(const bool doAggressiveCompaction);
+    void               fgDebugCheckUpdate();
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
+    void fgDebugCheckInitBB();
     void fgDebugCheckLinks(bool morphTrees = false);
     void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
@@ -6518,6 +6572,7 @@ public:
     }
 
     void fgRemoveProfileData(const char* reason);
+    void fgRepairProfileCondToUncond(BasicBlock* block, FlowEdge* retainedEdge, FlowEdge* removedEdge, int* metric = nullptr);
 
 //-------- Insert a statement at the start or end of a basic block --------
 
@@ -6761,7 +6816,7 @@ private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgMorphTreeDone(GenTree* tree);
-    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
@@ -6870,6 +6925,7 @@ public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, BasicBlock* fromBlock);
     bool fgUseThrowHelperBlocks();
     void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
+    void fgSequenceLocals(Statement* stmt);
 
 private:
     bool fgIsThrowHlpBlk(BasicBlock* block);
@@ -6914,9 +6970,10 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     PhaseStatus fgMarkAddressExposedLocals();
-    void fgSequenceLocals(Statement* stmt);
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
+
+    PhaseStatus fgOptimizeMaskConversions();
 
     PhaseStatus PhysicalPromotion();
 
@@ -7227,14 +7284,6 @@ protected:
     size_t              optCSEhashMaxCountBeforeResize; // Number of entries before resize
     CSEdsc**            optCSEhash;
     CSEdsc**            optCSEtab;
-
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, GenTree*> NodeToNodeMap;
-
-    NodeToNodeMap* optCseCheckedBoundMap; // Maps bound nodes to ancestor compares that should be
-                                          // re-numbered with the bound to improve range check elimination
-
-    // Given a compare, look for a cse candidate checked bound feeding it and add a map entry if found.
-    void optCseUpdateCheckedBoundMap(GenTree* compare);
 
     void optCSEstop();
 
@@ -7565,6 +7614,7 @@ public:
                                              unsigned               classAttr,
                                              unsigned               likelihood,
                                              bool                   arrayInterface,
+                                             bool                   instantiatingStub,
                                              CORINFO_CONTEXT_HANDLE originalContextHandle);
 
     int getGDVMaxTypeChecks()
@@ -7693,6 +7743,7 @@ public:
                                          LoopLocalOccurrences*   loopLocals);
     bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
     bool optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optLocalIsLiveIntoBlock(unsigned lclNum, BasicBlock* block);
 
     bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
@@ -8238,8 +8289,6 @@ protected:
     */
 
 public:
-    regNumber raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc);
-
     void raMarkStkVars();
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -8271,8 +8320,14 @@ protected:
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
 private:
-    Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
-    LinearScanInterface* m_pLinearScan; // Linear Scan allocator
+    Lowering*            m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
+    LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
+
+public:
+    ArrayStack<ParameterRegisterLocalMapping>* m_paramRegLocalMappings = nullptr;
+
+    const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByRegister(regNumber reg);
+    const ParameterRegisterLocalMapping* FindParameterRegisterLocalMappingByLocal(unsigned lclNum, unsigned offset);
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8287,7 +8342,6 @@ private:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     */
 
-public:
     // Get handles
 
     void eeGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -8991,6 +9045,11 @@ private:
         return info.compCompHnd->getTypeInstantiationArgument(cls, index);
     }
 
+    CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index)
+    {
+        return info.compCompHnd->getMethodInstantiationArgument(ftn, index);
+    }
+
     bool isNumericsNamespace(const char* ns)
     {
         return strcmp(ns, "System.Numerics") == 0;
@@ -9515,6 +9574,7 @@ public:
         Memset,
         Memcpy,
         Memmove,
+        MemcmpU16,
         ProfiledMemmove,
         ProfiledMemcmp
     };
@@ -9589,6 +9649,14 @@ public:
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
+        }
+
+        if (type == UnrollKind::MemcmpU16)
+        {
+            threshold = maxRegSize * 2;
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * 6;
+#endif
         }
 
         // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
@@ -9887,6 +9955,17 @@ public:
         return (compOpportunisticallyDependsOn(InstructionSet_EVEX));
     }
 
+    //------------------------------------------------------------------------
+    // canUseRex2Encoding - Answer the question: Is Rex2 encoding supported on this target.
+    //
+    // Returns:
+    //    `true` if Rex2 encoding is supported, `false` if not.
+    //
+    bool canUseApxEncoding() const
+    {
+        return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -9901,7 +9980,7 @@ private:
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
+        if (JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
@@ -9914,10 +9993,45 @@ private:
 
             return true;
         }
-        else if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        else if (JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
         {
             return true;
         }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressRex2Encoding- Answer the question: Do we force REX2 encoding.
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool DoJitStressRex2Encoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        {
+            // we should make sure EVEX is also stressed when REX2 is stressed, as we will need to guarantee EGPR
+            // functionality is properly turned on for every instructions when REX2 is stress.
+            return true;
+        }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // JitStressEvexEncoding- Answer the question: Is Evex stress knob set
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool JitStressEvexEncoding() const
+    {
+#ifdef DEBUG
+        return JitConfig.JitStressEvexEncoding() || JitConfig.JitStressRex2Encoding();
 #endif // DEBUG
 
         return false;
@@ -9959,6 +10073,7 @@ public:
     bool compSwitchedToOptimized      = false; // Codegen initially was Tier0 but jit switched to FullOpts
     bool compSwitchedToMinOpts        = false; // Codegen initially was Tier1/FullOpts but jit switched to MinOpts
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
+    bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -10487,6 +10602,8 @@ public:
 
     const char* printfAlloc(const char* format, ...);
 
+    const char* convertUtf16ToUtf8ForPrinting(const WCHAR* utf16String);
+
 #endif // DEBUG
 
     // clang-format off
@@ -10566,9 +10683,8 @@ public:
     // clang-format on
 
 #ifdef DEBUG
-    static const LPCWSTR s_compStressModeNamesW[STRESS_COUNT + 1];
-    static const char*   s_compStressModeNames[STRESS_COUNT + 1];
-    BYTE                 compActiveStressModes[STRESS_COUNT];
+    static const char* s_compStressModeNames[STRESS_COUNT + 1];
+    BYTE               compActiveStressModes[STRESS_COUNT];
 #endif // DEBUG
 
 #define MAX_STRESS_WEIGHT 100
@@ -11260,37 +11376,22 @@ public:
     }
 #endif // DEBUG
 
-    /*
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XX                                                                           XX
-    XX                           IL verification stuff                           XX
-    XX                                                                           XX
-    XX                                                                           XX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    */
-
 public:
-    EntryState verCurrentState;
+    EntryState stackState;
 
-    void verInitBBEntryState(BasicBlock* block, EntryState* currentState);
+    void initBBEntryState(BasicBlock* block, EntryState* currentState);
 
-    void verInitCurrentState();
-    void verResetCurrentState(BasicBlock* block, EntryState* currentState);
+    void initCurrentState();
+    void resetCurrentState(BasicBlock* block, EntryState* currentState);
 
-    void     verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
-    void     verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
-    typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
-    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
-    typeInfo verMakeTypeInfo(CorInfoType          ciType,
-                             CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
+    typeInfo makeTypeInfoForLocal(unsigned lclNum);
+    typeInfo makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
+    typeInfo makeTypeInfo(CorInfoType          ciType,
+                          CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
 
-    typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
-
-    bool verCheckTailCallConstraint(OPCODE                  opcode,
-                                    CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
+    bool checkTailCallConstraint(OPCODE                  opcode,
+                                 CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
 
 #ifdef DEBUG
 
@@ -11393,8 +11494,8 @@ private:
     JitTimer*                  pCompJitTimer = nullptr; // Timer data structure (by phases) for current compilation.
     static CompTimeSummaryInfo s_compJitTimerSummary;   // Summary of the Timer information for the whole run.
 
-    static LPCWSTR JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
-    static LPCWSTR compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
+    static const char* JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
+    static const char* compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
 #endif
     void BeginPhase(Phases phase); // Indicate the start of the given phase.
     void EndPhase(Phases phase);   // Indicate the end of the given phase.
@@ -11429,10 +11530,10 @@ private:
 
 public:
 #if FUNC_INFO_LOGGING
-    static LPCWSTR compJitFuncInfoFilename; // If a log file for per-function information is required, this is the
-                                            // filename to write it to.
-    static FILE* compJitFuncInfoFile;       // And this is the actual FILE* to write to.
-#endif                                      // FUNC_INFO_LOGGING
+    static const char* compJitFuncInfoFilename; // If a log file for per-function information is required, this is the
+                                                // filename to write it to.
+    static FILE* compJitFuncInfoFile;           // And this is the actual FILE* to write to.
+#endif                                          // FUNC_INFO_LOGGING
 
 #if MEASURE_NOWAY
     void RecordNowayAssert(const char* filename, unsigned line, const char* condStr);
@@ -11792,8 +11893,12 @@ public:
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:
@@ -12205,7 +12310,7 @@ private:
 
 public:
     //------------------------------------------------------------------------
-    // WalkTree: Walk the dominator tree.
+    // WalkTree: Walk the dominator tree starting from the first BB.
     //
     // Parameter:
     //    domTree - Dominator tree.
@@ -12260,6 +12365,13 @@ class EHClauses
 public:
     EHClauses(Compiler* comp)
         : m_begin(comp->compHndBBtab)
+        , m_end(comp->compHndBBtab + comp->compHndBBtabCount)
+    {
+        assert((m_begin != nullptr) || (m_begin == m_end));
+    }
+
+    EHClauses(Compiler* comp, EHblkDsc* begin)
+        : m_begin(begin)
         , m_end(comp->compHndBBtab + comp->compHndBBtabCount)
     {
         assert((m_begin != nullptr) || (m_begin == m_end));

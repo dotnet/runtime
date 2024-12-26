@@ -2,59 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Diagnostics;
-using System.Text;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed partial class AppleCertificatePal : ICertificatePal
     {
-        internal delegate bool DerCallback(ReadOnlySpan<byte> derData, X509ContentType contentType);
-
-        internal static bool TryDecodePem(ReadOnlySpan<byte> rawData, DerCallback derCallback)
+        internal static void TryDecodePem(ReadOnlySpan<byte> rawData, Func<ReadOnlySpan<byte>, X509ContentType, bool> derCallback)
         {
             // If the character is a control character that isn't whitespace, then we're probably using a DER encoding
-            // and not using a PEM encoding in ASCII.
+            // and not using a PEM encoding in UTF8.
             if (char.IsControl((char)rawData[0]) && !char.IsWhiteSpace((char)rawData[0]))
             {
-                return false;
+                return;
             }
 
-            // Look for the PEM marker. This doesn't guarantee it will be a valid PEM since we don't check whether
-            // the marker is at the beginning of line or whether the line is a complete marker. It's just a quick
-            // check to avoid conversion from bytes to characters if the content is DER encoded.
-            if (rawData.IndexOf("-----BEGIN "u8) < 0)
-            {
-                return false;
-            }
-
-            char[] certPem = ArrayPool<char>.Shared.Rent(rawData.Length);
             byte[]? certBytes = null;
 
             try
             {
-                Encoding.ASCII.GetChars(rawData, certPem);
-
-                foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem.AsSpan(0, rawData.Length)))
+                foreach ((ReadOnlySpan<byte> contents, PemFields fields) in PemEnumerator.Utf8(rawData))
                 {
-                    ReadOnlySpan<char> label = contents[fields.Label];
+                    ReadOnlySpan<byte> label = contents[fields.Label];
+                    bool isCertificate = label.SequenceEqual(PemLabels.X509CertificateUtf8);
 
-                    if (label.SequenceEqual(PemLabels.X509Certificate) || label.SequenceEqual(PemLabels.Pkcs7Certificate))
+                    if (isCertificate || label.SequenceEqual(PemLabels.Pkcs7CertificateUtf8))
                     {
                         certBytes = CryptoPool.Rent(fields.DecodedDataLength);
 
-                        if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], certBytes, out int bytesWritten)
-                            || bytesWritten != fields.DecodedDataLength)
+                        OperationStatus decodeResult = Base64.DecodeFromUtf8(
+                            contents[fields.Base64Data],
+                            certBytes,
+                            out _,
+                            out int bytesWritten);
+
+                        if (decodeResult != OperationStatus.Done || bytesWritten != fields.DecodedDataLength)
                         {
                             Debug.Fail("The contents should have already been validated by the PEM reader.");
                             throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                         }
 
-                        X509ContentType contentType =
-                            label.SequenceEqual(PemLabels.X509Certificate) ?
-                            X509ContentType.Cert :
-                            X509ContentType.Pkcs7;
+                        X509ContentType contentType = isCertificate ? X509ContentType.Cert : X509ContentType.Pkcs7;
                         bool cont = derCallback(certBytes.AsSpan(0, bytesWritten), contentType);
 
                         byte[] toReturn = certBytes;
@@ -63,22 +52,18 @@ namespace System.Security.Cryptography.X509Certificates
 
                         if (!cont)
                         {
-                            return true;
+                            return;
                         }
                     }
                 }
             }
             finally
             {
-                ArrayPool<char>.Shared.Return(certPem, clearArray: true);
-
                 if (certBytes != null)
                 {
                     CryptoPool.Return(certBytes, clearSize: 0);
                 }
             }
-
-            return true;
         }
     }
 }

@@ -118,6 +118,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
 
+    NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
+
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
     NI_System_String_Equals,
@@ -163,18 +165,6 @@ enum NamedIntrinsic : unsigned short
 #include "hwintrinsiclistarm64.h"
 #endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_HW_INTRINSIC_END,
-
-    NI_SIMD_AS_HWINTRINSIC_START,
-#if defined(TARGET_XARCH)
-#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
-    NI_##classId##_##id,
-#include "simdashwintrinsiclistxarch.h"
-#elif defined(TARGET_ARM64)
-#define SIMD_AS_HWINTRINSIC(classId, id, name, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, flag)                  \
-    NI_##classId##_##id,
-#include "simdashwintrinsiclistarm64.h"
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
-    NI_SIMD_AS_HWINTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 
 #if defined(FEATURE_SIMD)
