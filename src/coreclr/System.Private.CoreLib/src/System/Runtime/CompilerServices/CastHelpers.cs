@@ -539,7 +539,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
+        internal static bool IsNullableForType(MethodTable* typeMT, MethodTable* boxedMT)
         {
             if (!typeMT->IsNullable)
             {

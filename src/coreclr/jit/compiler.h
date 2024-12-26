@@ -5465,6 +5465,10 @@ public:
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
+#ifdef DEBUG
+    void fgPostGlobalMorphChecks();
+#endif
+
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool invalidateDFSTreeOnFGChange = true);
@@ -5748,7 +5752,7 @@ public:
     PhaseStatus fgSsaBuild();
 
     // Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.
-    void fgResetForSsa();
+    void fgResetForSsa(bool deepClean);
 
     unsigned fgSsaPassesCompleted = 0; // Number of times fgSsaBuild has been run.
     bool     fgSsaValid = false;           // True if SSA info is valid and can be cross-checked versus IR
@@ -6812,7 +6816,7 @@ private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgMorphTreeDone(GenTree* tree);
-    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
@@ -9951,6 +9955,17 @@ public:
         return (compOpportunisticallyDependsOn(InstructionSet_EVEX));
     }
 
+    //------------------------------------------------------------------------
+    // canUseRex2Encoding - Answer the question: Is Rex2 encoding supported on this target.
+    //
+    // Returns:
+    //    `true` if Rex2 encoding is supported, `false` if not.
+    //
+    bool canUseApxEncoding() const
+    {
+        return compOpportunisticallyDependsOn(InstructionSet_APX);
+    }
+
 private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
@@ -9965,7 +9980,7 @@ private:
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
         // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
+        if (JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
@@ -9978,10 +9993,45 @@ private:
 
             return true;
         }
-        else if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        else if (JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
         {
             return true;
         }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressRex2Encoding- Answer the question: Do we force REX2 encoding.
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool DoJitStressRex2Encoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        {
+            // we should make sure EVEX is also stressed when REX2 is stressed, as we will need to guarantee EGPR
+            // functionality is properly turned on for every instructions when REX2 is stress.
+            return true;
+        }
+#endif // DEBUG
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // JitStressEvexEncoding- Answer the question: Is Evex stress knob set
+    //
+    // Returns:
+    //    `true` if user requests REX2 encoding.
+    //
+    bool JitStressEvexEncoding() const
+    {
+#ifdef DEBUG
+        return JitConfig.JitStressEvexEncoding() || JitConfig.JitStressRex2Encoding();
 #endif // DEBUG
 
         return false;

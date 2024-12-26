@@ -2698,6 +2698,10 @@ void CodeGen::genEmitterUnitTests()
     {
         genAmd64EmitterUnitTestsSse2();
     }
+    if (unitTestSectionAll || (strstr(unitTestSection, "apx") != nullptr))
+    {
+        genAmd64EmitterUnitTestsApx();
+    }
 
 #elif defined(TARGET_ARM64)
     if (unitTestSectionAll || (strstr(unitTestSection, "general") != nullptr))

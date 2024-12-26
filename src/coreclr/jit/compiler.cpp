@@ -2295,7 +2295,10 @@ void Compiler::compSetProcessor()
         if (canUseEvexEncoding())
         {
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
+        }
+        if (canUseApxEncoding())
+        {
+            codeGen->GetEmitter()->SetUseRex2Encoding(true);
         }
     }
 #endif // TARGET_XARCH
@@ -5062,6 +5065,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             // Iterate if requested, resetting annotations first.
             if (opts.optRepeatIteration == opts.optRepeatCount)
             {
+                // If we're done optimizing, just remove the PHIs
+                //
+                fgResetForSsa(/* deepClean */ false);
                 break;
             }
 
@@ -5905,7 +5911,7 @@ void Compiler::ResetOptAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
-    fgResetForSsa();
+    fgResetForSsa(/* deepClean */ true);
     vnStore                    = nullptr;
     m_blockToEHPreds           = nullptr;
     m_dominancePreds           = nullptr;
