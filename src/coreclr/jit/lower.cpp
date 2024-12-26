@@ -8106,9 +8106,8 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         if (remappedLclNum == BAD_VAR_NUM)
         {
-            remappedLclNum =
-                comp->lvaGrabTemp(false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(),
-                                                                   getRegName(regSegment->GetRegister()))));
+            remappedLclNum = comp->lvaGrabTemp(
+                false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
             comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
             JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
         }
@@ -8125,10 +8124,9 @@ void Lowering::FindInducedParameterRegisterLocals()
 #ifdef DEBUG
             LclVarDsc* remappedLclDsc = comp->lvaGetDesc(remappedLclNum);
             remappedLclDsc->lvReason =
-                comp->printfAlloc("%s%sV%02u.%s",
-                    remappedLclDsc->lvReason == nullptr ? "" : remappedLclDsc->lvReason,
-                    remappedLclDsc->lvReason == nullptr ? "" : " ",
-                    fld->GetLclNum(), getRegName(regSegment->GetRegister()));
+                comp->printfAlloc("%s%sV%02u.%s", remappedLclDsc->lvReason == nullptr ? "" : remappedLclDsc->lvReason,
+                                  remappedLclDsc->lvReason == nullptr ? "" : " ", fld->GetLclNum(),
+                                  getRegName(regSegment->GetRegister()));
 #endif
         }
 
