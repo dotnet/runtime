@@ -423,7 +423,7 @@ namespace System
             input = input.Trim();
 
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
-            bool success = (char)(format[0] | 0x20) switch
+            bool success = (format[0] | 0x20) switch
             {
                 'd' => TryParseExactD(input, ref parseResult),
                 'n' => TryParseExactN(input, ref parseResult),
