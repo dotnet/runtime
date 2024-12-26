@@ -3211,20 +3211,30 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
                 return layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
             }
 
-#ifdef TARGET_ARM64
+            // For the Swift calling convention the enregistered segments do
+            // not match the memory layout, so we need to use exact store sizes
+            // for the same reason as RISCV64/LA64 below.
+            if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+            {
+                return seg.GetRegisterType();
+            }
+
+#if defined(TARGET_ARM64)
             // We round struct sizes up to TYP_I_IMPL on the stack frame so we
             // can always use the full register size here. This allows us to
             // use stp more often.
             return TYP_I_IMPL;
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            // On RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
+#elif defined(TARGET_XARCH)
+            // Round up to use smallest possible encoding
+            return genActualType(seg.GetRegisterType());
+#else
+            // On other platforms, a safer default is to use the exact size always. For example, for
+            // RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
             // field per register regardless of the field layout in memory, so the small int load/store instructions
             // must not be upsized to 4 bytes, otherwise for example:
             // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
             // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
             return seg.GetRegisterType();
-#else
-            return genActualType(seg.GetRegisterType());
 #endif
         }
         default:
