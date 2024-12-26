@@ -7981,7 +7981,8 @@ void Lowering::MapParameterRegisterLocals()
         for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
         {
             const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
-            printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum, mapping.Offset);
+            printf("  %s -> V%02u+%u\n", getRegName(mapping.RegisterSegment->GetRegister()), mapping.LclNum,
+                   mapping.Offset);
         }
     }
 #endif
