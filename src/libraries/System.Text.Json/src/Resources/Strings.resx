@@ -810,7 +810,7 @@
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
   <data name="CannotWriteWithinString" xml:space="preserve">
-    <value>Cannot write the requested JSON property or value until the final string value segment has been written.</value>
+    <value>Writing a JSON property or value before writing the final string value segment is not supported.</value>
   </data>
   <data name="Arg_MustBeRune" xml:space="preserve">
     <value>Object must be of type Rune.</value>
@@ -825,6 +825,6 @@
     <value>Cannot extract a Unicode scalar value from the specified index in the input.</value>
   </data>
   <data name="CannotMixEncodings" xml:space="preserve">
-    <value>Cannot mix encodings between string value segments. The previous segment's encoding was '{0}' and the current segment's encoding is '{1}'.</value>
+    <value>Mixing UTF encodings in a single multi-segment JSON string is not supported. The previous segment's encoding was '{0}' and the current segment's encoding is '{1}'.</value>
   </data>
 </root>

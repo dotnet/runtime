@@ -46,23 +46,23 @@ internal static class Assert
         }
     }
 
-    public static void Throws<T, TState>(Action<TState> action, TState state)
-        where T : Exception
+    public static TException Throws<TException, TState>(Action<TState> action, TState state)
+        where TException : Exception
         where TState : allows ref struct
     {
         try
         {
             action(state);
         }
-        catch (T)
+        catch (TException ex)
         {
-            return;
+            return ex;
         }
         catch (Exception ex)
         {
-            throw new Exception($"Expected exception of type {typeof(T).Name} but got {ex.GetType().Name}");
+            throw new Exception($"Expected exception of type {typeof(TException).Name} but got {ex.GetType().Name}");
         }
 
-        throw new Exception($"Expected exception of type {typeof(T).Name} but no exception was thrown");
+        throw new Exception($"Expected exception of type {typeof(TException).Name} but no exception was thrown");
     }
 }
