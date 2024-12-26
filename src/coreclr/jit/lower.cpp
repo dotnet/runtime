@@ -7855,11 +7855,6 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
-    if (comp->opts.OptimizationEnabled())
-    {
-        MapParameterRegisterLocals();
-    }
-
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7969,9 +7964,8 @@ void Lowering::MapParameterRegisterLocals()
                 comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
             }
 
-            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
-            assert(!fieldLclDsc->lvIsParamRegTarget);
-            fieldLclDsc->lvIsParamRegTarget = true;
+            assert(!fieldDsc->lvIsParamRegTarget);
+            fieldDsc->lvIsParamRegTarget = true;
         }
     }
 
