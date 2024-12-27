@@ -36,7 +36,7 @@
   </Target>
 
   <!-- Generate the targeting pack's framework list so that out-of-band projects can leverage it. -->
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)" Condition="'$(DotNetSharedFrameworkTaskFile)' != ''" />
   <Target Name="GenerateFrameworkListFile"
           DependsOnTargets="GetGenerateFrameworkListFileInputs"
           AfterTargets="Build"

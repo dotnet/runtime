@@ -69,7 +69,7 @@
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
           Condition="'$(ContinuousIntegrationBuild)' == 'true'"
-          AfterTargets="Pack">
+          AfterTargets="Build;Pack">
     <Message Condition="Exists('$(ArtifactsDir)packages')" Importance="High" Text="##vso[task.setvariable variable=_librariesBuildProducedPackages]true" />
   </Target>
 
