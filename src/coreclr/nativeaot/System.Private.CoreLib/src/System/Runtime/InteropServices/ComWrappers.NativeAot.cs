@@ -495,7 +495,7 @@ namespace System.Runtime.InteropServices
             private ComWrappers _comWrappers;
             private GCHandle _proxyHandle;
             private GCHandle _proxyHandleTrackingResurrection;
-            internal readonly bool _aggregatedManagedObjectWrapper;
+            private readonly bool _aggregatedManagedObjectWrapper;
             private readonly bool _uniqueInstance;
 
             static NativeObjectWrapper()
@@ -550,6 +550,7 @@ namespace System.Runtime.InteropServices
             internal ComWrappers ComWrappers => _comWrappers;
             internal GCHandle ProxyHandle => _proxyHandle;
             internal bool IsUniqueInstance => _uniqueInstance;
+            internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
 
             public virtual void Release()
             {
@@ -984,7 +985,7 @@ namespace System.Runtime.InteropServices
                 if (comInterfaceDispatch != null)
                 {
                     // If we found a managed object wrapper in this ComWrappers instance
-                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                    // and it has the same identity pointer as the one we're creating a NativeObjectWrapper for,
                     // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
                     //
                     // A managed object can have multiple managed object wrappers, with a max of one per context.
@@ -1713,7 +1714,7 @@ namespace System.Runtime.InteropServices
             // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
             // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
             // by a COM weak reference.
-            return s_nativeObjectWrapperTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper._aggregatedManagedObjectWrapper;
+            return s_nativeObjectWrapperTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper.IsAggregatedWithManagedObjectWrapper;
         }
 
         private static unsafe IntPtr ObjectToComWeakRef(object target, out long wrapperId)
