@@ -3885,7 +3885,11 @@ void CSE_Heuristic::Initialize()
     // Record the weighted ref count of the last "for sure" callee saved LclVar
 
     unsigned   frameSize        = 0;
+#ifdef TARGET_AMD64
+    unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH_INT_INIT * 2) + 1);
+#else
     unsigned   regAvailEstimate = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2) + 1);
+#endif
     unsigned   lclNum;
     LclVarDsc* varDsc;
 
@@ -4063,7 +4067,11 @@ void CSE_Heuristic::Initialize()
         // (weighted) ref count to aggressiveRefCnt or moderateRefCnt.
         //
         const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
+#ifdef TARGET_AMD64
+        const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH_INT_INIT * 2));
+#else
         const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
+#endif
         //
         // On Windows x64 this yields:
         // aggressiveEnregNum == 12 and moderateEnregNum == 38
@@ -4086,7 +4094,11 @@ void CSE_Heuristic::Initialize()
             }
             aggressiveRefCnt += BB_UNITY_WEIGHT;
         }
+#ifdef TARGET_AMD64
+        if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH_INT_INIT * 2))))
+#else
         if ((moderateRefCnt == 0) && (enregCount > ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))))
+#endif
         {
             if (CodeOptKind() == Compiler::SMALL_CODE)
             {
