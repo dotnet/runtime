@@ -197,6 +197,9 @@ public class LibraryBuilderTask : AppBuilderTask
             }
         }
 
+        // Add dependencies of any runtime libraries explicitly after the runtime libraries
+        // to ensure that dependencies show up on the linker command line after their dependents.
+        List<string> bundledStaticLibs = [];
         foreach (ITaskItem lib in RuntimeLibraries)
         {
             string ext = Path.GetExtension(lib.ItemSpec);
@@ -205,11 +208,17 @@ public class LibraryBuilderTask : AppBuilderTask
             {
                 libs.Add(lib.ItemSpec);
             }
+            else if (lib.ItemSpec.Contains("brotli"))
+            {
+                bundledStaticLibs.Add(lib.ItemSpec);
+            }
             else
             {
                 sources.Add(lib.ItemSpec);
             }
         }
+
+        sources.AddRange(bundledStaticLibs);
 
         foreach (ITaskItem item in ExtraLinkerArguments)
         {

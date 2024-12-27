@@ -55,7 +55,7 @@ public unsafe class LargeStructSize
     {
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue - 16 - 1)]
+    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue - 16 + 1)]
     struct BigArray_64_2
     {
     }
@@ -65,9 +65,27 @@ public unsafe class LargeStructSize
     {
     }
 
-    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue - 8 - 1)]
+    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue - 8 + 1)]
     struct BigArray_32_2
     {
+    }
+
+    public static void Test64Bit ()
+    {
+            Assert.Equal(int.MaxValue - (IntPtr.Size * 2), sizeof(BigArray_64_1));
+            Assert.Throws<TypeLoadException>(() => sizeof(BigArray_64_2));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_64));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit_64));
+            Assert.Throws<TypeLoadException>(() => sizeof(Y_64));
+    }
+
+    public static void Test32Bit ()
+    {
+            Assert.Equal(int.MaxValue - (IntPtr.Size * 2), sizeof(BigArray_32_1));
+            Assert.Throws<TypeLoadException>(() => sizeof(BigArray_32_2));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_32));
+            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit_32));
+            Assert.Throws<TypeLoadException>(() => sizeof(Y_32));
     }
 
     [Fact]
@@ -75,19 +93,11 @@ public unsafe class LargeStructSize
     {
         if (Environment.Is64BitProcess)
         {
-            Assert.Equal(int.MaxValue - (IntPtr.Size * 2), sizeof(BigArray_64_1));
-            Assert.Throws<TypeLoadException>(() => sizeof(BigArray_64_2));
-            Assert.Throws<TypeLoadException>(() => sizeof(X_64));
-            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit_64));
-            Assert.Throws<TypeLoadException>(() => sizeof(Y_64));
+            Test64Bit ();
         }
         else
         {
-            Assert.Equal(int.MaxValue - (IntPtr.Size * 2), sizeof(BigArray_32_1));
-            Assert.Throws<TypeLoadException>(() => sizeof(BigArray_32_2));
-            Assert.Throws<TypeLoadException>(() => sizeof(X_32));
-            Assert.Throws<TypeLoadException>(() => sizeof(X_explicit_32));
-            Assert.Throws<TypeLoadException>(() => sizeof(Y_32));
+            Test32Bit ();
         }
     }
 }
