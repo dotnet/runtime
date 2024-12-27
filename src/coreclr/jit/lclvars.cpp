@@ -7343,7 +7343,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
  *  in its home location.
  */
 
-void Compiler::lvaDumpFrameLocation(unsigned lclNum)
+void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
 {
     int       offset;
     regNumber baseReg;
@@ -7356,7 +7356,11 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    int printed = printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    if ((printed >= 0) && (printed < minLength))
+    {
+        printf("%*s", minLength - printed, "");
+    }
 }
 
 /*****************************************************************************
@@ -7447,7 +7451,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             // location. Otherwise, it's always on the stack.
             if (lvaDoneFrameLayout != NO_FRAME_LAYOUT)
             {
-                lvaDumpFrameLocation(lclNum);
+                lvaDumpFrameLocation(lclNum, (int)strlen("zero-ref   "));
             }
         }
     }
