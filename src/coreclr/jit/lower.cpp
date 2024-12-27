@@ -8021,7 +8021,7 @@ void Lowering::FindInducedParameterRegisterLocals()
         return;
     }
 
-    bool hasRegisterKill = false;
+    bool     hasRegisterKill = false;
     LocalSet storedToLocals(comp->getAllocator(CMK_ABI));
     // Now look for optimization opportunities in the first block: places where
     // we read fields out of struct parameters that can be mapped cleanly. This
