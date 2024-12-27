@@ -2821,11 +2821,7 @@ void LinearScan::buildIntervals()
     needNonIntegerRegisters |= compiler->compFloatingPointUsed;
     if (!needNonIntegerRegisters)
     {
-#ifdef TARGET_AMD64
-        availableRegCount = (regIntLast - REG_INT_FIRST + 1);
-#else
         availableRegCount = REG_INT_COUNT;
-#endif
     }
 
 #ifdef HAS_MORE_THAN_64_REGISTERS
@@ -2842,17 +2838,7 @@ void LinearScan::buildIntervals()
 #ifdef HAS_MORE_THAN_64_REGISTERS
     else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
-#ifdef TARGET_AMD64
-        regMaskSmall mask = ~RBM_NONE;
-        if (regIntLast == REG_R15)
-        {
-            regMaskSmall highInt = (regMaskSmall)RBM_HIGHINT;
-            mask                 = mask & ~highInt;
-        }
-        actualRegistersMask = regMaskTP(mask, availableMaskRegs);
-#else
         actualRegistersMask = regMaskTP(~RBM_NONE, availableMaskRegs);
-#endif
     }
 #endif
     else
