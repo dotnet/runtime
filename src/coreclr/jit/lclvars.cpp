@@ -7356,7 +7356,8 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum, int minLength)
     baseReg = EBPbased ? REG_FPBASE : REG_SPBASE;
 #endif
 
-    int printed = printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
+    int printed =
+        printf("[%2s%1s0x%02X] ", getRegName(baseReg), (offset < 0 ? "-" : "+"), (offset < 0 ? -offset : offset));
     if ((printed >= 0) && (printed < minLength))
     {
         printf("%*s", minLength - printed, "");
