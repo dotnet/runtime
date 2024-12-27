@@ -8021,12 +8021,15 @@ void Lowering::FindInducedParameterRegisterLocals()
         return;
     }
 
+    bool hasRegisterKill = false;
     LocalSet storedToLocals(comp->getAllocator(CMK_ABI));
     // Now look for optimization opportunities in the first block: places where
     // we read fields out of struct parameters that can be mapped cleanly. This
     // is frequently created by physical promotion.
     for (GenTree* node : LIR::AsRange(comp->fgFirstBB))
     {
+        hasRegisterKill |= node->IsCall();
+
         GenTreeLclVarCommon* storeLcl;
         if (node->DefinesLocal(comp, &storeLcl))
         {
@@ -8132,6 +8135,16 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         if (remappedLclNum == BAD_VAR_NUM)
         {
+            // If we have seen register kills then avoid creating a new local.
+            // The local is going to have to move from the parameter register
+            // into a callee saved register, and the callee saved register will
+            // need to be saved/restored to/from stack anyway.
+            if (hasRegisterKill)
+            {
+                JITDUMP("  ..but use happens after a call and is deemed unprofitable to create a local for\n");
+                continue;
+            }
+
             remappedLclNum = comp->lvaGrabTemp(
                 false DEBUGARG(comp->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
             comp->lvaGetDesc(remappedLclNum)->lvType = fld->TypeGet();
