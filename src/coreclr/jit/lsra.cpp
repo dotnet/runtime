@@ -4218,14 +4218,8 @@ void LinearScan::resetAllRegistersState()
     resetAvailableRegs();
     clearAllNextIntervalRef();
     clearAllSpillCost();
-#ifdef TARGET_AMD64
-    unsigned availableRegCount = regIntLast;
-#else
-    unsigned availableRegCount = AVAILABLE_REG_COUNT;
-#endif
-    regNumber reg = REG_FIRST;
 
-    for (; reg < availableRegCount; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
 #ifdef DEBUG
@@ -4234,20 +4228,6 @@ void LinearScan::resetAllRegistersState()
 #endif
         physRegRecord->assignedInterval = nullptr;
     }
-
-#ifdef TARGET_AMD64
-    reg = REG_NEXT(REG_INT_LAST);
-    for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-    {
-        RegRecord* physRegRecord = getRegisterRecord(reg);
-#ifdef DEBUG
-        Interval* assignedInterval = physRegRecord->assignedInterval;
-        assert(assignedInterval == nullptr || assignedInterval->isConstant);
-#endif
-        physRegRecord->assignedInterval = nullptr;
-    }
-
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -4807,30 +4787,14 @@ void LinearScan::allocateRegistersMinimal()
     resetRegState();
     clearAllNextIntervalRef();
     clearAllSpillCost();
-#ifdef TARGET_AMD64
-    unsigned availableRegCount = regIntLast;
-#else
-    unsigned availableRegCount = AVAILABLE_REG_COUNT;
-#endif
-    regNumber reg = REG_FIRST;
 
-    for (; reg < availableRegCount; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
         updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
         assert(physRegRecord->assignedInterval == nullptr);
     }
-#ifdef TARGET_AMD64
-    reg = REG_NEXT(REG_INT_LAST);
-    for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-    {
-        RegRecord* physRegRecord         = getRegisterRecord(reg);
-        physRegRecord->recentRefPosition = nullptr;
-        updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
-        assert(physRegRecord->assignedInterval == nullptr);
-    }
-#endif
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -5488,13 +5452,7 @@ void LinearScan::allocateRegisters()
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     resetRegState();
-#ifdef TARGET_AMD64
-    unsigned availableRegCount = regIntLast;
-#else
-    unsigned availableRegCount = AVAILABLE_REG_COUNT;
-#endif
-    regNumber reg = REG_FIRST;
-    for (; reg < availableRegCount; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord         = getRegisterRecord(reg);
         physRegRecord->recentRefPosition = nullptr;
@@ -5521,38 +5479,6 @@ void LinearScan::allocateRegisters()
             clearSpillCost(reg, physRegRecord->registerType);
         }
     }
-
-#ifdef TARGET_AMD64
-    reg = REG_NEXT(REG_INT_LAST);
-    for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-    {
-        RegRecord* physRegRecord         = getRegisterRecord(reg);
-        physRegRecord->recentRefPosition = nullptr;
-        updateNextFixedRef(physRegRecord, physRegRecord->firstRefPosition, killHead);
-
-        // Is this an incoming arg register? (Note that we don't, currently, consider reassigning
-        // an incoming arg register as having spill cost.)
-        Interval* interval = physRegRecord->assignedInterval;
-        if (interval != nullptr)
-        {
-#ifdef TARGET_ARM
-            if ((interval->registerType != TYP_DOUBLE) || genIsValidDoubleReg(reg))
-#endif // TARGET_ARM
-            {
-                updateNextIntervalRef(reg, interval);
-                updateSpillCost(reg, interval);
-                setRegInUse(reg, interval->registerType);
-                INDEBUG(registersToDump.AddRegNum(reg, interval->registerType));
-            }
-        }
-        else
-        {
-            clearNextIntervalRef(reg, physRegRecord->registerType);
-            clearSpillCost(reg, physRegRecord->registerType);
-        }
-    }
-    
-#endif
 
 #ifdef DEBUG
     if (VERBOSE)
@@ -7846,13 +7772,7 @@ void LinearScan::resolveRegisters()
     // are encountered.
     if (localVarsEnregistered)
     {
-#ifdef TARGET_AMD64
-    unsigned availableRegCount = regIntLast;
-#else
-    unsigned availableRegCount = AVAILABLE_REG_COUNT;
-#endif
-    regNumber reg = REG_FIRST;
-        for (; reg < availableRegCount; reg = REG_NEXT(reg))
+        for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
         {
             RegRecord* physRegRecord    = getRegisterRecord(reg);
             Interval*  assignedInterval = physRegRecord->assignedInterval;
@@ -7864,24 +7784,6 @@ void LinearScan::resolveRegisters()
             physRegRecord->assignedInterval  = nullptr;
             physRegRecord->recentRefPosition = nullptr;
         }
-#ifdef TARGET_AMD64
-    reg = REG_NEXT(REG_INT_LAST);
-        for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-        {
-            RegRecord* physRegRecord    = getRegisterRecord(reg);
-            Interval*  assignedInterval = physRegRecord->assignedInterval;
-            if (assignedInterval != nullptr)
-            {
-                assignedInterval->assignedReg = nullptr;
-                assignedInterval->physReg     = REG_NA;
-            }
-            physRegRecord->assignedInterval  = nullptr;
-            physRegRecord->recentRefPosition = nullptr;
-        }
-
-    
-    
-#endif
 
         // Clear "recentRefPosition" for lclVar intervals
         for (unsigned varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
@@ -7897,7 +7799,6 @@ void LinearScan::resolveRegisters()
             }
         }
     }
-
 
     // handle incoming arguments and special temps
     RefPositionIterator currentRefPosition = refPositions.begin();
@@ -11782,13 +11683,7 @@ bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 //
 void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
 {
-#ifdef TARGET_AMD64
-    unsigned availableRegCount = regIntLast;
-#else
-    unsigned availableRegCount = AVAILABLE_REG_COUNT;
-#endif
-    regNumber reg = REG_FIRST;
-    for (; reg < availableRegCount; reg = REG_NEXT(reg))
+    for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         regMaskTP regMask = genRegMask(reg);
         // If this isn't available or if it's still waiting to be freed (i.e. it was in
@@ -11886,109 +11781,6 @@ void LinearScan::verifyFreeRegisters(regMaskTP regsToFree)
         }
 #endif
     }
-
-    // Rest of it
-#ifdef TARGET_AMD64
-    reg = REG_NEXT(REG_INT_LAST);
-    for (; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
-    {
-        regMaskTP regMask = genRegMask(reg);
-        // If this isn't available or if it's still waiting to be freed (i.e. it was in
-        // delayRegsToFree and so now it's in regsToFree), then skip it.
-        if ((regMask & allAvailableRegs & ~regsToFree).IsEmpty())
-        {
-            continue;
-        }
-        RegRecord* physRegRecord    = getRegisterRecord(reg);
-        Interval*  assignedInterval = physRegRecord->assignedInterval;
-        if (assignedInterval != nullptr)
-        {
-            bool         isAssignedReg     = (assignedInterval->physReg == reg);
-            RefPosition* recentRefPosition = assignedInterval->recentRefPosition;
-            // If we have a copyReg or a moveReg, we might have assigned this register to an Interval,
-            // but that isn't considered its assignedReg.
-            if (recentRefPosition != nullptr)
-            {
-                if (recentRefPosition->refType == RefTypeExpUse)
-                {
-                    // We don't update anything on these, as they're just placeholders to extend the
-                    // lifetime.
-                    continue;
-                }
-
-                // For copyReg or moveReg, we don't have anything further to assert.
-                if (recentRefPosition->copyReg || recentRefPosition->moveReg)
-                {
-                    continue;
-                }
-                assert(assignedInterval->isConstant == isRegConstant(reg, assignedInterval->registerType));
-                if (assignedInterval->isActive)
-                {
-                    // If this is not the register most recently allocated, it must be from a copyReg,
-                    // it was placed there by the inVarToRegMap or it might be one of the upper vector
-                    // save/restore refPosition.
-                    // In either case it must be a lclVar.
-
-                    if (!isAssignedToInterval(assignedInterval, physRegRecord))
-                    {
-                        // We'd like to assert that this was either set by the inVarToRegMap, or by
-                        // a copyReg, but we can't traverse backward to check for a copyReg, because
-                        // we only have recentRefPosition, and there may be a previous RefPosition
-                        // at the same Location with a copyReg.
-
-                        bool sanityCheck = assignedInterval->isLocalVar;
-                        // For upper vector interval, make sure it was one of the save/restore only.
-                        if (assignedInterval->IsUpperVector())
-                        {
-                            sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
-                                           (recentRefPosition->refType == RefTypeUpperVectorRestore);
-                        }
-
-                        assert(sanityCheck);
-                    }
-                    if (isAssignedReg)
-                    {
-                        assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                        assert(!isRegAvailable(reg, assignedInterval->registerType));
-                        assert((recentRefPosition == nullptr) || (spillCost[reg] == getSpillWeight(physRegRecord)));
-                    }
-                    else
-                    {
-                        assert((nextIntervalRef[reg] == MaxLocation) || isRegBusy(reg, assignedInterval->registerType));
-                    }
-                }
-                else
-                {
-                    if ((assignedInterval->physReg == reg) && !assignedInterval->isConstant)
-                    {
-                        assert(nextIntervalRef[reg] == assignedInterval->getNextRefLocation());
-                    }
-                    else
-                    {
-                        assert(nextIntervalRef[reg] == MaxLocation);
-                        assert(isRegAvailable(reg, assignedInterval->registerType));
-                        assert(spillCost[reg] == 0);
-                    }
-                }
-            }
-        }
-        else
-        {
-            // Available registers should not hold constants
-            assert(isRegAvailable(reg, physRegRecord->registerType));
-            assert(!isRegConstant(reg, physRegRecord->registerType) || spillAlways());
-            assert(nextIntervalRef[reg] == MaxLocation);
-            assert(spillCost[reg] == 0);
-        }
-#ifdef TARGET_ARM
-        // If this is occupied by a double interval, skip the corresponding float reg.
-        if ((assignedInterval != nullptr) && (assignedInterval->registerType == TYP_DOUBLE))
-        {
-            reg = REG_NEXT(reg);
-        }
-#endif
-    }
-#endif
 }
 
 //------------------------------------------------------------------------
