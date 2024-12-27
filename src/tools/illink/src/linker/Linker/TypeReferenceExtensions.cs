@@ -67,7 +67,7 @@ namespace Mono.Linker
 				}
 
 				type = type.GetElementType ();
-				if (type.DeclaringType is not TypeReference declaringType)
+				if (type.DeclaringType is not { } declaringType)
 					break;
 
 				type = declaringType;
@@ -153,7 +153,7 @@ namespace Mono.Linker
 
 		public static TypeReference InflateFrom (this TypeReference typeToInflate, IGenericInstance? maybeGenericInstanceProvider)
 		{
-			if (maybeGenericInstanceProvider is IGenericInstance genericInstanceProvider)
+			if (maybeGenericInstanceProvider is { } genericInstanceProvider)
 				return InflateGenericType (genericInstanceProvider, typeToInflate);
 			return typeToInflate;
 		}

@@ -2383,7 +2383,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if (argumentTypes[i] is Type t && !t.MatchesParameterTypeExactly(parameterInfos[i]))
+                                if (argumentTypes[i] is { } t && !t.MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -3899,7 +3899,7 @@ namespace System
                 Type[] argsType = args.Length != 0 ? new Type[args.Length] : EmptyTypes;
                 for (int i = 0; i < args.Length; i++)
                 {
-                    if (args[i] is object arg)
+                    if (args[i] is { } arg)
                     {
                         argsType[i] = arg.GetType();
                     }

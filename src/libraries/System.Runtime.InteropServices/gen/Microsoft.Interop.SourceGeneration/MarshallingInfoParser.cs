@@ -231,7 +231,7 @@ namespace Microsoft.Interop
         {
             if (useSiteAttributes.TryGetUseSiteAttributeInfo(indirectionDepth, out UseSiteAttributeData useSiteAttribute))
             {
-                if (GetMarshallingInfoForAttribute(useSiteAttribute.AttributeData, type, indirectionDepth, useSiteAttributes, GetMarshallingInfo) is MarshallingInfo marshallingInfo)
+                if (GetMarshallingInfoForAttribute(useSiteAttribute.AttributeData, type, indirectionDepth, useSiteAttributes, GetMarshallingInfo) is { } marshallingInfo)
                 {
                     return marshallingInfo;
                 }
@@ -241,7 +241,7 @@ namespace Microsoft.Interop
             // then fall back to the information on the element type itself.
             foreach (AttributeData typeAttribute in type.GetAttributes())
             {
-                if (GetMarshallingInfoForAttribute(typeAttribute, type, indirectionDepth, useSiteAttributes, GetMarshallingInfo) is MarshallingInfo marshallingInfo)
+                if (GetMarshallingInfoForAttribute(typeAttribute, type, indirectionDepth, useSiteAttributes, GetMarshallingInfo) is { } marshallingInfo)
                 {
                     return marshallingInfo;
                 }

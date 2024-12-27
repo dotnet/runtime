@@ -2499,7 +2499,7 @@ namespace System.Threading.Tasks
                 // then ignore it.  This helps with performance by avoiding unnecessary posts and queueing
                 // of work items, but more so it ensures that if code happens to publish the default context
                 // as current, it won't prevent usage of a current task scheduler if there is one.
-                if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
+                if (SynchronizationContext.Current is { } syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
                     tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, continuationAction, flowExecutionContext);
                     goto HaveTaskContinuation;
@@ -2507,7 +2507,7 @@ namespace System.Threading.Tasks
 
                 // If there was no SynchronizationContext, then try for the current scheduler.
                 // We only care about it if it's not the default.
-                if (TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default)
+                if (TaskScheduler.InternalCurrent is { } scheduler && scheduler != TaskScheduler.Default)
                 {
                     tc = new TaskSchedulerAwaitTaskContinuation(scheduler, continuationAction, flowExecutionContext);
                     goto HaveTaskContinuation;
@@ -2572,13 +2572,13 @@ namespace System.Threading.Tasks
             // fall back to using the state machine's delegate.
             if (continueOnCapturedContext)
             {
-                if (SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
+                if (SynchronizationContext.Current is { } syncCtx && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
                     tc = new SynchronizationContextAwaitTaskContinuation(syncCtx, stateMachineBox.MoveNextAction, flowExecutionContext: false);
                     goto HaveTaskContinuation;
                 }
 
-                if (TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default)
+                if (TaskScheduler.InternalCurrent is { } scheduler && scheduler != TaskScheduler.Default)
                 {
                     tc = new TaskSchedulerAwaitTaskContinuation(scheduler, stateMachineBox.MoveNextAction, flowExecutionContext: false);
                     goto HaveTaskContinuation;

@@ -37,7 +37,7 @@ namespace ILLink.RoslynAnalyzer
 		/// </summary>
 		public static ParameterProxy GetParameter (this IMethodSymbol method, ParameterIndex index)
 		{
-			if (method.TryGetParameter (index) is not ParameterProxy param)
+			if (method.TryGetParameter (index) is not { } param)
 				throw new InvalidOperationException ($"Cannot get parameter at index {(int) index} of method {method.GetDisplayName ()} with {method.GetParametersCount ()} parameters.");
 			return param;
 		}

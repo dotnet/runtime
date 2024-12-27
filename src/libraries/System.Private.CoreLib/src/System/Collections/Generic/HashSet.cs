@@ -69,7 +69,7 @@ namespace System.Collections.Generic
                 // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
                 // hash buckets become unbalanced.
                 if (typeof(T) == typeof(string) &&
-                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is IEqualityComparer<string> stringComparer)
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is { } stringComparer)
                 {
                     _comparer = (IEqualityComparer<T>)stringComparer;
                 }

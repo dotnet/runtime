@@ -659,7 +659,7 @@ namespace System
             // Format each segment.
             foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
             {
-                if (segment.Literal is string literal)
+                if (segment.Literal is { } literal)
                 {
                     handler.AppendLiteral(literal);
                 }
@@ -1078,7 +1078,7 @@ namespace System
 
                 // We range check again to avoid buffer overflows if this happens.
 
-                if (values[i] is string value)
+                if (values[i] is { } value)
                 {
                     int valueLen = value.Length;
                     if (valueLen > totalLength - copiedLength)

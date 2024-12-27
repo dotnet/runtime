@@ -90,11 +90,11 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var blocks = cfg.Blocks.ToList ();
 			string? methodName = null;
 			foreach (var block in blocks) {
-				if (block.Block.Operations.FirstOrDefault () is not IOperation op)
+				if (block.Block.Operations.FirstOrDefault () is not { } op)
 					continue;
 
 				var method = op.Syntax.FirstAncestorOrSelf<MethodDeclarationSyntax> ();
-				if (method is MethodDeclarationSyntax)
+				if (method is not null)
 					methodName = method.Identifier.ValueText;
 
 				break;
@@ -112,9 +112,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				return;
 
 			TraceWrite ("block " + block.Block.Ordinal + ": ");
-			if (block.Block.Operations.FirstOrDefault () is IOperation firstBlockOp) {
+			if (block.Block.Operations.FirstOrDefault () is { } firstBlockOp) {
 				TraceWriteLine (firstBlockOp.Syntax.ToString ());
-			} else if (block.Block.BranchValue is IOperation branchOp) {
+			} else if (block.Block.BranchValue is { } branchOp) {
 				TraceWriteLine (branchOp.Syntax.ToString ());
 			} else {
 				TraceWriteLine ("");

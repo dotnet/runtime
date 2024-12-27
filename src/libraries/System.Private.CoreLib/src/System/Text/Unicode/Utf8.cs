@@ -658,7 +658,7 @@ namespace System.Text.Unicode
                 Debug.Assert(formatter is not null, "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
 
                 if (formatter is not null &&
-                    formatter.Format(format, value, _provider) is string customFormatted)
+                    formatter.Format(format, value, _provider) is { } customFormatted)
                 {
                     return AppendFormatted(customFormatted.AsSpan());
                 }

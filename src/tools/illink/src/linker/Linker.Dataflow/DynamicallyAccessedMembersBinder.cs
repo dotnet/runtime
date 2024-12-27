@@ -230,7 +230,7 @@ namespace Mono.Linker
 
 		public static IEnumerable<TypeDefinition> GetNestedTypesOnType (this TypeReference typeRef, LinkContext context, Func<TypeDefinition, bool>? filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
-			if (typeRef.ResolveToTypeDefinition (context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (context) is not { } type)
 				yield break;
 
 			foreach (var nestedType in type.NestedTypes) {

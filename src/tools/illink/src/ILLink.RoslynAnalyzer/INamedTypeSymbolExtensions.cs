@@ -44,7 +44,7 @@ namespace ILLink.RoslynAnalyzer
 		{
 			var members = interfaceSymbol.GetMembers ();
 			foreach (ISymbol interfaceMember in members) {
-				if (implementationSymbol.FindImplementationForInterfaceMember (interfaceMember) is ISymbol implementationMember) {
+				if (implementationSymbol.FindImplementationForInterfaceMember (interfaceMember) is { } implementationMember) {
 					yield return (InterfaceMember: interfaceMember, ImplementationMember: implementationMember);
 				}
 			}

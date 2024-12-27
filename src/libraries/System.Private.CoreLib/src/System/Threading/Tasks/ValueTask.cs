@@ -234,7 +234,7 @@ namespace System.Threading.Tasks
             private static readonly Action<object?> s_completionAction = static state =>
             {
                 if (state is not ValueTaskSourceAsTask vtst ||
-                    vtst._source is not IValueTaskSource source)
+                    vtst._source is not { } source)
                 {
                     // This could only happen if the IValueTaskSource passed the wrong state
                     // or if this callback were invoked multiple times such that the state
@@ -641,7 +641,7 @@ namespace System.Threading.Tasks
             private static readonly Action<object?> s_completionAction = static state =>
             {
                 if (state is not ValueTaskSourceAsTask vtst ||
-                    vtst._source is not IValueTaskSource<TResult> source)
+                    vtst._source is not { } source)
                 {
                     // This could only happen if the IValueTaskSource<TResult> passed the wrong state
                     // or if this callback were invoked multiple times such that the state

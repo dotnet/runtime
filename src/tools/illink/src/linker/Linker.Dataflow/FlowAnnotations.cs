@@ -29,7 +29,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public bool RequiresDataFlowAnalysis (MethodReference methodRef)
 		{
-			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+			if (_context.TryResolve (methodRef) is not { } method)
 				return false;
 
 			return GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var methodAnnotations)
@@ -47,7 +47,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal DynamicallyAccessedMemberTypes GetParameterAnnotation (ParameterProxy param)
 		{
-			if (_context.TryResolve (param.Method.Method) is not MethodDefinition methodDef)
+			if (_context.TryResolve (param.Method.Method) is not { } methodDef)
 				return DynamicallyAccessedMemberTypes.None;
 
 			if (GetAnnotations (methodDef.DeclaringType).TryGetAnnotation (methodDef, out var annotation) &&
@@ -59,7 +59,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public DynamicallyAccessedMemberTypes GetReturnParameterAnnotation (MethodReference methodRef)
 		{
-			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+			if (_context.TryResolve (methodRef) is not { } method)
 				return DynamicallyAccessedMemberTypes.None;
 
 			if (GetAnnotations (method.DeclaringType).TryGetAnnotation (method, out var annotation))
@@ -70,7 +70,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public DynamicallyAccessedMemberTypes GetFieldAnnotation (FieldReference fieldRef)
 		{
-			if (_context.TryResolve (fieldRef) is not FieldDefinition field)
+			if (_context.TryResolve (fieldRef) is not { } field)
 				return DynamicallyAccessedMemberTypes.None;
 
 			if (GetAnnotations (field.DeclaringType).TryGetAnnotation (field, out var annotation))
@@ -765,7 +765,7 @@ namespace ILLink.Shared.TrimAnalysis
 				// Technically this should be a new value node type as it's not a System.Type instance representation, but just the generic parameter
 				// That said we only use it to perform the dynamically accessed members checks and for that purpose treating it as System.Type is perfectly valid.
 				return GetGenericParameterValue (inputGenericParameter);
-			} else if (genericArgument.ResolveToTypeDefinition (_context) is TypeDefinition genericArgumentType) {
+			} else if (genericArgument.ResolveToTypeDefinition (_context) is { } genericArgumentType) {
 				if (genericArgumentType.IsTypeOf (WellKnownType.System_Nullable_T)) {
 					var innerGenericArgument = (genericArgument as IGenericInstance)?.GenericArguments.FirstOrDefault ();
 					switch (innerGenericArgument) {
@@ -773,8 +773,8 @@ namespace ILLink.Shared.TrimAnalysis
 						return new NullableValueWithDynamicallyAccessedMembers (new (genericArgumentType, _context),
 							new GenericParameterValue (gp, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (gp)));
 
-					case TypeReference underlyingType:
-						if (underlyingType.ResolveToTypeDefinition (_context) is TypeDefinition underlyingTypeDefinition)
+					case { } underlyingType:
+						if (underlyingType.ResolveToTypeDefinition (_context) is { } underlyingTypeDefinition)
 							return new NullableSystemTypeValue (new (genericArgumentType, _context), new SystemTypeValue (new (underlyingTypeDefinition, _context)));
 						else
 							return UnknownValue.Instance;

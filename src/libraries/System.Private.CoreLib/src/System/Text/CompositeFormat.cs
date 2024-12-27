@@ -45,7 +45,7 @@ namespace System.Text
             {
                 Debug.Assert((segment.Literal is not null) ^ (segment.ArgIndex >= 0), "The segment should represent a literal or a format hole, but not both.");
 
-                if (segment.Literal is string literal)
+                if (segment.Literal is { } literal)
                 {
                     literalLength += literal.Length; // no concern about overflow as these were parsed out of a single string
                 }

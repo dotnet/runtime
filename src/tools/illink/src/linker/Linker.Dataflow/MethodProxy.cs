@@ -13,7 +13,7 @@ namespace ILLink.Shared.TypeSystemProxy
 	{
 		public static bool TryCreate (MethodReference method, ITryResolveMetadata resolver, [NotNullWhen (true)] out MethodProxy? methodProxy)
 		{
-			if (resolver.TryResolve (method) is not MethodDefinition methodDef) {
+			if (resolver.TryResolve (method) is not { } methodDef) {
 				methodProxy = null;
 				return false;
 			}

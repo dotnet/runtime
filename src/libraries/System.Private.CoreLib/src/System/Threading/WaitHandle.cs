@@ -346,7 +346,7 @@ namespace System.Threading
             {
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    if (safeWaitHandles[i] is SafeWaitHandle swh)
+                    if (safeWaitHandles[i] is { } swh)
                     {
                         swh.DangerousRelease();
                         safeWaitHandles[i] = null;

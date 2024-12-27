@@ -107,7 +107,7 @@ namespace Mono.Linker
 					if (m.HasBody)
 						WalkTypeScope (m.Body);
 
-					if (walkSymbols && m.DebugInformation?.Scope?.Import is ImportDebugInformation import)
+					if (walkSymbols && m.DebugInformation?.Scope?.Import is { } import)
 						WalkDebugInfoImportScope (import);
 				}
 			}
@@ -328,7 +328,7 @@ namespace Mono.Linker
 					WalkScopeOfTypeReference (target.Type);
 			}
 
-			if (import.Parent is ImportDebugInformation parent)
+			if (import.Parent is { } parent)
 				WalkDebugInfoImportScope (parent);
 		}
 

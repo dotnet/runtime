@@ -538,7 +538,7 @@ namespace Mono.Linker
 
 			if (WarningSuppressionWriter != null &&
 				message.IsWarningMessage (out int? code) &&
-				message.Origin?.Provider is Mono.Cecil.ICustomAttributeProvider provider)
+				message.Origin?.Provider is { } provider)
 				WarningSuppressionWriter.AddWarning (code.Value, provider);
 
 			if (message.Category == MessageCategory.Error || message.Category == MessageCategory.WarningAsError)
@@ -946,7 +946,7 @@ namespace Mono.Linker
 		/// </summary>
 		public TypeDefinition? Resolve (ExportedType et)
 		{
-			if (TryResolve (et) is not TypeDefinition td) {
+			if (TryResolve (et) is not { } td) {
 				ReportUnresolved (et);
 				return null;
 			}

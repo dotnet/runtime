@@ -234,7 +234,7 @@ namespace Microsoft.Interop
         {
             if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
-                if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
+                if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: { } nestedCountElement })
                 {
                     // Do not include dependent elements with no managed or native index.
                     // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.

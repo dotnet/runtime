@@ -107,14 +107,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					return FeatureChecksValue.None;
 			}
 
-			if (GetLiteralBool (operation.LeftOperand) is bool leftBool) {
+			if (GetLiteralBool (operation.LeftOperand) is { } leftBool) {
 				FeatureChecksValue rightValue = Visit (operation.RightOperand, state);
 				return leftBool == expectEqual
 					? rightValue
 					: rightValue.Negate ();
 			}
 
-			if (GetLiteralBool (operation.RightOperand) is bool rightBool) {
+			if (GetLiteralBool (operation.RightOperand) is { } rightBool) {
 				FeatureChecksValue leftValue = Visit (operation.LeftOperand, state);
 				return rightBool == expectEqual
 					? leftValue
@@ -126,7 +126,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override FeatureChecksValue VisitIsPattern (IIsPatternOperation operation, StateValue state)
 		{
-			if (GetExpectedValueFromPattern (operation.Pattern) is not bool patternValue)
+			if (GetExpectedValueFromPattern (operation.Pattern) is not { } patternValue)
 				return FeatureChecksValue.None;
 
 			FeatureChecksValue value = Visit (operation.Value, state);

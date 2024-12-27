@@ -107,7 +107,7 @@ namespace Microsoft.Win32.SafeHandles
                     return handle;
                 }
 
-                if (createOpenException?.Invoke(error, flags, path) is Exception ex)
+                if (createOpenException?.Invoke(error, flags, path) is { } ex)
                 {
                     throw ex;
                 }

@@ -103,7 +103,7 @@ namespace Mono.Linker.Steps
 		{
 			TypeDefinition? td = null;
 
-			if (_context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition is TypeDefinition knownTypeDef) {
+			if (_context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition is { } knownTypeDef) {
 				return knownTypeDef;
 			}
 
@@ -308,7 +308,7 @@ namespace Mono.Linker.Steps
 					var arrayArgumentIterator = nav.SelectChildren ("argument", string.Empty);
 					ArrayBuilder<CustomAttributeArgument> elements = default;
 					foreach (XPathNavigator elementNav in arrayArgumentIterator) {
-						if (ReadCustomAttributeArgument (elementNav, provider) is CustomAttributeArgument arg) {
+						if (ReadCustomAttributeArgument (elementNav, provider) is { } arg) {
 							// To match Cecil, elements of a list that are subclasses of the list type must be boxed in the base type
 							// e.g. object[] { 73 } translates to Cecil.CAA { Type: object[] : Value: CAA{ Type: object, Value: CAA{ Type: int, Value: 73} } }
 							if (arg.Type == elementType) {

@@ -451,7 +451,7 @@ namespace System.Reflection
 
         private static Type GetPropertyMetaType(PropertyInfo property)
         {
-            if (property.GetGetMethod(true) is MethodInfo method)
+            if (property.GetGetMethod(true) is { } method)
             {
                 return method.ReturnType;
             }

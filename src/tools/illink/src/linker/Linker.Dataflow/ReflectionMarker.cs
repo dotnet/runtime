@@ -29,7 +29,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (type.ResolveToTypeDefinition (_context) is not TypeDefinition typeDefinition)
+			if (type.ResolveToTypeDefinition (_context) is not { } typeDefinition)
 				return;
 
 			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes, declaredOnly)) {
@@ -105,7 +105,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (_context) is not { } type)
 				return;
 
 			_markStep.MarkTypeVisibleToReflection (type, new DependencyInfo (dependencyKind, origin.Provider), origin);
@@ -116,7 +116,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (_context.TryResolve (methodRef) is not MethodDefinition method)
+			if (_context.TryResolve (methodRef) is not { } method)
 				return;
 
 			_markStep.MarkMethodVisibleToReflection (method, new DependencyInfo (dependencyKind, origin.Provider), origin);
@@ -159,7 +159,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (_context) is not { } type)
 				return;
 
 			foreach (var ctor in type.GetConstructorsOnType (filter, bindingFlags))
@@ -171,7 +171,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (_context) is not { } type)
 				return;
 
 			foreach (var field in type.GetFieldsOnTypeHierarchy (_context, filter, bindingFlags))
@@ -183,7 +183,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (_context) is not { } type)
 				return;
 
 			foreach (var property in type.GetPropertiesOnTypeHierarchy (_context, filter, bindingFlags))
@@ -195,7 +195,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (_context) is not { } type)
 				return;
 
 			foreach (var @event in type.GetEventsOnTypeHierarchy (_context, filter, bindingFlags))
@@ -207,7 +207,7 @@ namespace Mono.Linker.Dataflow
 			if (!_enabled)
 				return;
 
-			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
+			if (typeRef.ResolveToTypeDefinition (_context) is not { } type)
 				return;
 
 			_markStep.MarkStaticConstructorVisibleToReflection (type, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);

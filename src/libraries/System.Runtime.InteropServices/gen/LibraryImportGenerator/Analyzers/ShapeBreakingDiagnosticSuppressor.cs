@@ -40,7 +40,7 @@ namespace Microsoft.Interop.Analyzers
                 return;
             }
 
-            if (FindContainingEntryPointTypeAndManagedType(diagnosedSymbol.ContainingType) is (INamedTypeSymbol entryPointMarshallerType, INamedTypeSymbol managedType))
+            if (FindContainingEntryPointTypeAndManagedType(diagnosedSymbol.ContainingType) is ({ } entryPointMarshallerType, { } managedType))
             {
                 bool isLinearCollectionMarshaller = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointMarshallerType);
                 (MarshallerShape _, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(diagnosedSymbol.ContainingType, managedType, isLinearCollectionMarshaller, context.Compilation);

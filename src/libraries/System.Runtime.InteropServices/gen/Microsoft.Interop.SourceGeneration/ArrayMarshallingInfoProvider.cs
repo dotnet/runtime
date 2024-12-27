@@ -46,7 +46,7 @@ namespace Microsoft.Interop
         {
             ITypeSymbol typeArgumentToInsert = elementType;
             INamedTypeSymbol? arrayMarshaller;
-            if (elementType is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAt })
+            if (elementType is IPointerTypeSymbol { PointedAtType: { } pointedAt })
             {
                 arrayMarshaller = compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller_Metadata);
                 typeArgumentToInsert = pointedAt;

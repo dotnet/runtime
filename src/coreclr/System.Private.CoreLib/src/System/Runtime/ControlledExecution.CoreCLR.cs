@@ -99,7 +99,7 @@ namespace System.Runtime
                 // an OperationCanceledException, preserving stack trace details from the ThreadAbortException in
                 // order to aid in diagnostics and debugging.
                 OperationCanceledException e = cancellationToken.IsCancellationRequested ? new(cancellationToken) : new();
-                if (tae.StackTrace is string stackTrace)
+                if (tae.StackTrace is { } stackTrace)
                 {
                     ExceptionDispatchInfo.SetRemoteStackTrace(e, stackTrace);
                 }

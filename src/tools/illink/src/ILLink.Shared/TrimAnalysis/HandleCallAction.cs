@@ -1132,7 +1132,7 @@ namespace ILLink.Shared.TrimAnalysis
 							}
 
 							if (calledMethod.GetMetadataParametersCount () > 3) {
-								if (argumentValues[1].AsConstInt () is int constInt)
+								if (argumentValues[1].AsConstInt () is { } constInt)
 									bindingFlags |= (BindingFlags) constInt;
 								else
 									bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
@@ -1372,7 +1372,7 @@ namespace ILLink.Shared.TrimAnalysis
 			if (calledMethod.HasMetadataParametersCount (8) && calledMethod.HasParameterOfType ((ParameterIndex) 2 + offset, "System.Boolean")) {
 				parameterlessConstructor = false;
 				bindingFlags = BindingFlags.Instance;
-				if (argumentValues[3].AsConstInt () is int bindingFlagsInt)
+				if (argumentValues[3].AsConstInt () is { } bindingFlagsInt)
 					bindingFlags |= (BindingFlags) bindingFlagsInt;
 				else
 					bindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
@@ -1380,7 +1380,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 			foreach (var assemblyNameValue in argumentValues[0].AsEnumerable ()) {
 				if (assemblyNameValue is KnownStringValue assemblyNameStringValue) {
-					if (assemblyNameStringValue.Contents is string assemblyName && assemblyName.Length == 0) {
+					if (assemblyNameStringValue.Contents is { } assemblyName && assemblyName.Length == 0) {
 						// Throws exception for zero-length assembly name.
 						continue;
 					}

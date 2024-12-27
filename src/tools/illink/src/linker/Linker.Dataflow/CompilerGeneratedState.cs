@@ -74,7 +74,7 @@ namespace Mono.Linker.Dataflow
 			if (member is MethodDefinition method && CompilerGeneratedNames.IsLambdaOrLocalFunction (method.Name))
 				return true;
 
-			if (member.DeclaringType is not TypeDefinition declaringType)
+			if (member.DeclaringType is not { } declaringType)
 				return false;
 
 			return CompilerGeneratedNames.IsStateMachineType (declaringType.Name);

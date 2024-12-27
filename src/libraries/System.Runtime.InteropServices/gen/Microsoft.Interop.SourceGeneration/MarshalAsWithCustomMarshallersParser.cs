@@ -50,7 +50,7 @@ namespace Microsoft.Interop
 
             if (marshalAsInfo is MarshalAsArrayInfo arrayInfo)
             {
-                if (type is not IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
+                if (type is not IArrayTypeSymbol { ElementType: { } elementType })
                 {
                     _diagnostics.ReportConfigurationNotSupported(attributeData, nameof(UnmanagedType), arrayInfo.UnmanagedType.ToString());
                     return NoMarshallingInfo.Instance;

@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
         {
             lock (s_registrations)
             {
-                if (_token is Token token)
+                if (_token is { } token)
                 {
                     _token = null;
 

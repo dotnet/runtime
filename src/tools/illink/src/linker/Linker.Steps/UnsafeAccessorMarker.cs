@@ -76,7 +76,7 @@ namespace Mono.Linker.Steps
 			if (method.ReturnsVoid () || method.ReturnType.IsByRefOrPointer () || !string.IsNullOrEmpty (name))
 				return;
 
-			if (_context.TryResolve (method.ReturnType) is not TypeDefinition targetType)
+			if (_context.TryResolve (method.ReturnType) is not { } targetType)
 				return;
 
 			foreach (MethodDefinition targetMethod in targetType.Methods) {
@@ -97,7 +97,7 @@ namespace Mono.Linker.Steps
 				name = method.Name;
 
 			TypeReference targetTypeReference = method.Parameters[0].ParameterType;
-			if (_context.TryResolve (targetTypeReference) is not TypeDefinition targetType)
+			if (_context.TryResolve (targetTypeReference) is not { } targetType)
 				return;
 
 			if (!isStatic && targetType.IsValueType && !targetTypeReference.IsByReference)
@@ -124,7 +124,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			TypeReference targetTypeReference = method.Parameters[0].ParameterType;
-			if (_context.TryResolve (targetTypeReference) is not TypeDefinition targetType)
+			if (_context.TryResolve (targetTypeReference) is not { } targetType)
 				return;
 
 			if (!isStatic && targetType.IsValueType && !targetTypeReference.IsByReference)

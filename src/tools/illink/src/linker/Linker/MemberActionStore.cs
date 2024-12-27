@@ -81,14 +81,14 @@ namespace Mono.Linker
 			if (method.ReturnType.MetadataType != MetadataType.Boolean)
 				return false;
 
-			if (FindProperty (method) is not PropertyDefinition property)
+			if (FindProperty (method) is not { } property)
 				return false;
 
 			if (property.SetMethod != null)
 				return false;
 
 			foreach (var featureSwitchDefinitionAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureSwitchDefinitionAttribute")) {
-				if (featureSwitchDefinitionAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: string switchName }])
+				if (featureSwitchDefinitionAttribute.ConstructorArguments is not [{ Value: string switchName }])
 					continue;
 
 				// If there's a FeatureSwitchDefinition, don't continue looking for FeatureGuard.
@@ -104,7 +104,7 @@ namespace Mono.Linker
 				return false;
 
 			foreach (var featureGuardAttribute in _context.CustomAttributes.GetCustomAttributes (property, "System.Diagnostics.CodeAnalysis", "FeatureGuardAttribute")) {
-				if (featureGuardAttribute.ConstructorArguments is not [CustomAttributeArgument { Value: TypeReference featureType }])
+				if (featureGuardAttribute.ConstructorArguments is not [{ Value: TypeReference featureType }])
 					continue;
 
 				if (featureType.Namespace == "System.Diagnostics.CodeAnalysis") {

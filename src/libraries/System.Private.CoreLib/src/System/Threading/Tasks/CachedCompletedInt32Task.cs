@@ -21,7 +21,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<int> GetTask(int result)
         {
-            if (_task is Task<int> task)
+            if (_task is { } task)
             {
                 Debug.Assert(task.IsCompletedSuccessfully, "Expected that a stored last task completed successfully");
                 if (task.Result == result)

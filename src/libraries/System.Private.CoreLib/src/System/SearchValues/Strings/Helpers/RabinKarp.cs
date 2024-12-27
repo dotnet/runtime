@@ -81,7 +81,7 @@ namespace System.Buffers
 
                 // Start with a bucket containing 1 element and reallocate larger ones if needed.
                 // As MaxValues is similar to BucketCount, we will have 1 value per bucket on average.
-                if (buckets[bucket] is string[] existingBucket)
+                if (buckets[bucket] is { } existingBucket)
                 {
                     newBucket = new string[existingBucket.Length + 1];
                     existingBucket.AsSpan().CopyTo(newBucket);
@@ -132,7 +132,7 @@ namespace System.Buffers
                 {
                     ValidateReadPosition(span, ref current);
 
-                    if (Unsafe.Add(ref bucketsRef, hash % BucketCount) is string[] bucket)
+                    if (Unsafe.Add(ref bucketsRef, hash % BucketCount) is { } bucket)
                     {
                         int startOffset = (int)((nuint)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref current) / sizeof(char));
 

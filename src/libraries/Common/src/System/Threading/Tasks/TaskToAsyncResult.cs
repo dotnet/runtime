@@ -79,7 +79,7 @@ namespace System.Threading.Tasks
             }
 #endif
 
-            if ((asyncResult as TaskAsyncResult)?._task is not Task task)
+            if ((asyncResult as TaskAsyncResult)?._task is not { } task)
             {
                 throw new ArgumentException(null, nameof(asyncResult));
             }

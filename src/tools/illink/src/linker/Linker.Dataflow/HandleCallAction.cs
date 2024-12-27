@@ -225,7 +225,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial bool TryGetBaseType (TypeProxy type, out TypeProxy? baseType)
 		{
-			if (type.Type.ResolveToTypeDefinition (_context)?.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
+			if (type.Type.ResolveToTypeDefinition (_context)?.BaseType is { } baseTypeRef && _context.TryResolve (baseTypeRef) is { } baseTypeDefinition) {
 				baseType = new TypeProxy (baseTypeDefinition, _context);
 				return true;
 			}

@@ -1897,7 +1897,7 @@ namespace System.Text
             // Append each segment.
             foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
             {
-                if (segment.Literal is string literal)
+                if (segment.Literal is { } literal)
                 {
                     handler.AppendLiteral(literal);
                 }

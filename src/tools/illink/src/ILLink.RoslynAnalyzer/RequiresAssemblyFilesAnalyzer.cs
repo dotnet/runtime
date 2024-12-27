@@ -113,7 +113,7 @@ namespace ILLink.RoslynAnalyzer
 					diagnosticContext.AddDiagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile, member.GetDisplayName ());
 					return true;
 				}
-				else if (method.AssociatedSymbol is ISymbol associatedSymbol &&
+				else if (method.AssociatedSymbol is { } associatedSymbol &&
 					ImmutableArrayOperations.Contains (dangerousPatterns, associatedSymbol, SymbolEqualityComparer.Default)) {
 					diagnosticContext.AddDiagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile, member.GetDisplayName ());
 					// The getters for CodeBase and EscapedCodeBase have RAF attribute on them

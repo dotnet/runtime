@@ -3376,7 +3376,7 @@ namespace System.Diagnostics.Tracing
                             if (manifest.HasResources)
                             {
                                 string eventKey = "event_" + eventName;
-                                if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is string msg)
+                                if (manifest.GetLocalizedMessage(eventKey, CultureInfo.CurrentUICulture, etwFormat: false) is { } msg)
                                 {
                                     // overwrite inline message with the localized message
                                     eventAttribute.Message = msg;
@@ -5856,7 +5856,7 @@ namespace System.Diagnostics.Tracing
             {
                 // resource fallback: strings in the neutral culture will take precedence over inline strings
                 key = elementName + "_" + name;
-                if (resources.GetString(key, CultureInfo.InvariantCulture) is string localizedString)
+                if (resources.GetString(key, CultureInfo.InvariantCulture) is { } localizedString)
                     value = localizedString;
             }
 

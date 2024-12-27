@@ -749,7 +749,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 
 			foreach (var parameterProxy in calledMethod.GetParameters ()) {
-				if (parameterProxy.ParameterSymbol is not IParameterSymbol parameter)
+				if (parameterProxy.ParameterSymbol is not { } parameter)
 					continue;
 
 				if (!parameter.TryGetAttribute (nameof (DoesNotReturnIfAttribute), out var attributeData))

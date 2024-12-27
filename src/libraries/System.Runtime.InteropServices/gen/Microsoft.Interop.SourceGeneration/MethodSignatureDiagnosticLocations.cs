@@ -62,7 +62,7 @@ namespace Microsoft.Interop
         {
             var (location, elementName) = diagnostic.TypePositionInfo switch
             {
-                { ManagedIndex: >= 0 and int index, InstanceIdentifier: string identifier } => (ManagedParameterLocations[index], identifier),
+                { ManagedIndex: >= 0 and int index, InstanceIdentifier: { } identifier } => (ManagedParameterLocations[index], identifier),
                 _ => (FallbackLocation, MethodIdentifier),
             };
             return diagnostic.ToDiagnosticInfo(descriptor, location, elementName);

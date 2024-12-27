@@ -65,12 +65,12 @@ namespace Microsoft.Interop
             {
                 SizeAndParamIndexInfo(int size, SizeAndParamIndexInfo.UnspecifiedParam) => GetConstSizeExpression(size),
                 ConstSizeCountInfo(int size) => GetConstSizeExpression(size),
-                SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param) => GetExpressionForParam(param),
-                SizeAndParamIndexInfo(int size, TypePositionInfo param) => CheckedExpression(SyntaxKind.CheckedExpression,
+                SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, { } param) => GetExpressionForParam(param),
+                SizeAndParamIndexInfo(int size, { } param) => CheckedExpression(SyntaxKind.CheckedExpression,
                     BinaryExpression(SyntaxKind.AddExpression,
                         GetConstSizeExpression(size),
                         GetExpressionForParam(param))),
-                CountElementCountInfo(TypePositionInfo elementInfo) => GetExpressionForParam(elementInfo),
+                CountElementCountInfo({ } elementInfo) => GetExpressionForParam(elementInfo),
                 _ => throw new UnreachableException("Count info should have been verified in generator resolution")
             };
 

@@ -69,8 +69,8 @@ namespace Microsoft.Interop
             {
                 SizeAndParamIndexInfo(_, SizeAndParamIndexInfo.UnspecifiedParam) => null,
                 ConstSizeCountInfo => null,
-                SizeAndParamIndexInfo(_, TypePositionInfo param) => ValidateNumElementsExpression(param, out countInfoRequiresCast),
-                CountElementCountInfo(TypePositionInfo elementInfo) => ValidateNumElementsExpression(elementInfo, out countInfoRequiresCast),
+                SizeAndParamIndexInfo(_, { } param) => ValidateNumElementsExpression(param, out countInfoRequiresCast),
+                CountElementCountInfo({ } elementInfo) => ValidateNumElementsExpression(elementInfo, out countInfoRequiresCast),
                 _ => new GeneratorDiagnostic.NotSupported(info)
                 {
                     NotSupportedDetails = SR.ArraySizeMustBeSpecified
@@ -143,7 +143,7 @@ namespace Microsoft.Interop
 
         private ResolvedGenerator CreateCustomNativeTypeMarshaller(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
-            if (ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo) is GeneratorDiagnostic.NotSupported diagnostic)
+            if (ValidateCustomNativeTypeMarshallingSupported(info, context, marshalInfo) is { } diagnostic)
             {
                 return ResolvedGenerator.NotSupported(info, context, diagnostic);
             }

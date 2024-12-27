@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer
 			// But the annotations on base/interfaces may already be applied so we don't need to apply those
 			// again (and should avoid doing so as it would produce extra warnings).
 			var reflectionAccessAnalyzer = new ReflectionAccessAnalyzer (reportDiagnostic, type);
-			if (type.BaseType is INamedTypeSymbol baseType) {
+			if (type.BaseType is { } baseType) {
 				var baseAnnotation = FlowAnnotations.GetTypeAnnotation (baseType);
 				var annotationToApplyToBase = Annotations.GetMissingMemberTypes (annotation, baseAnnotation);
 

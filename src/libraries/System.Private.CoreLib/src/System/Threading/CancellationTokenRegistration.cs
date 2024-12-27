@@ -31,7 +31,7 @@ namespace System.Threading
         /// </summary>
         public void Dispose()
         {
-            if (_node is CancellationTokenSource.CallbackNode node && !node.Registrations.Unregister(_id, node))
+            if (_node is { } node && !node.Registrations.Unregister(_id, node))
             {
                 WaitForCallbackIfNecessary(_id, node);
 
@@ -68,7 +68,7 @@ namespace System.Threading
         /// </summary>
         public ValueTask DisposeAsync()
         {
-            return _node is CancellationTokenSource.CallbackNode node && !node.Registrations.Unregister(_id, node) ?
+            return _node is { } node && !node.Registrations.Unregister(_id, node) ?
                 WaitForCallbackIfNecessaryAsync(_id, node) :
                 default;
 
@@ -98,7 +98,7 @@ namespace System.Threading
         /// this will return a default token.
         /// </remarks>
         public CancellationToken Token =>
-            _node is CancellationTokenSource.CallbackNode node ?
+            _node is { } node ?
                 new CancellationToken(node.Registrations.Source) : // avoid CTS.Token, which throws after disposal
                 default;
 
@@ -107,7 +107,7 @@ namespace System.Threading
         /// <see cref="CancellationToken">CancellationToken</see>.
         /// </summary>
         public bool Unregister() =>
-            _node is CancellationTokenSource.CallbackNode node && node.Registrations.Unregister(_id, node);
+            _node is { } node && node.Registrations.Unregister(_id, node);
 
         /// <summary>
         /// Determines whether two <see

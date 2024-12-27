@@ -136,7 +136,7 @@ namespace System
             cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
-                if (c[i] is Type t)
+                if (c[i] is { } t)
                     ret[cnt++] = t!;
             }
             return ret;
@@ -280,7 +280,7 @@ namespace System
             if (c != null)
             {
                 for (i = 0; i < c.Length; i++)
-                    if (c[i] is ConstructorInfo ci)
+                    if (c[i] is { } ci)
                         ret[cnt++] = ci;
             }
 
@@ -288,7 +288,7 @@ namespace System
             if (f != null)
             {
                 for (i = 0; i < f.Length; i++)
-                    if (f[i] is FieldInfo fi)
+                    if (f[i] is { } fi)
                         ret[cnt++] = fi;
             }
 
@@ -296,7 +296,7 @@ namespace System
             if (p != null)
             {
                 for (i = 0; i < p.Length; i++)
-                    if (p[i] is PropertyInfo pi)
+                    if (p[i] is { } pi)
                         ret[cnt++] = pi;
             }
 
@@ -304,7 +304,7 @@ namespace System
             if (e != null)
             {
                 for (i = 0; i < e.Length; i++)
-                    if (e[i] is EventInfo ei)
+                    if (e[i] is { } ei)
                         ret[cnt++] = ei;
             }
 
@@ -312,7 +312,7 @@ namespace System
             if (t != null)
             {
                 for (i = 0; i < t.Length; i++)
-                    if (t[i] is Type type)
+                    if (t[i] is { } type)
                         ret[cnt++] = type;
             }
 

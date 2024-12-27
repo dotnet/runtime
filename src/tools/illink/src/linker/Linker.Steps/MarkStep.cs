@@ -866,7 +866,7 @@ namespace Mono.Linker.Steps
 			}
 
 			TypeDefinition? type;
-			if (dynamicDependency.TypeName is string typeName) {
+			if (dynamicDependency.TypeName is { } typeName) {
 				type = DocumentationSignatureParser.GetTypeByDocumentationSignature (assembly, typeName, Context);
 				if (type == null) {
 					Context.LogWarning (origin, DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute, typeName);
@@ -874,7 +874,7 @@ namespace Mono.Linker.Steps
 				}
 
 				MarkingHelpers.MarkMatchingExportedType (type, assembly, new DependencyInfo (DependencyKind.DynamicDependency, type), origin);
-			} else if (dynamicDependency.Type is TypeReference typeReference) {
+			} else if (dynamicDependency.Type is { } typeReference) {
 				type = Context.TryResolve (typeReference);
 				if (type == null) {
 					Context.LogWarning (origin, DiagnosticId.UnresolvedTypeInDynamicDependencyAttribute, typeReference.GetDisplayName ());
@@ -889,7 +889,7 @@ namespace Mono.Linker.Steps
 			}
 
 			IEnumerable<IMetadataTokenProvider> members;
-			if (dynamicDependency.MemberSignature is string memberSignature) {
+			if (dynamicDependency.MemberSignature is { } memberSignature) {
 				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, Context, acceptName: true);
 				if (!members.Any ()) {
 					Context.LogWarning (origin, DiagnosticId.NoMembersResolvedForMemberSignatureOrType, memberSignature, type.GetDisplayName ());
@@ -1810,7 +1810,7 @@ namespace Mono.Linker.Steps
 		internal void MarkMethodVisibleToReflection (MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			MarkMethod (method, reason, origin);
-			if (Context.Resolve (method) is MethodDefinition methodDefinition) {
+			if (Context.Resolve (method) is { } methodDefinition) {
 				Annotations.MarkReflectionUsed (methodDefinition);
 				Annotations.MarkIndirectlyCalledMethod (methodDefinition);
 			}
@@ -1961,7 +1961,7 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type), typeOrigin);
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type), typeOrigin);
 
-			if (Context.TryResolve (type.BaseType) is TypeDefinition baseType &&
+			if (Context.TryResolve (type.BaseType) is { } baseType &&
 				!Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
 				Annotations.TryGetLinkerAttribute (baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode)) {
 
@@ -2221,7 +2221,7 @@ namespace Mono.Linker.Steps
 					// This can be improved: dotnet/linker/issues/1873
 					MarkMethodsVisibleToReflection (type, new DependencyInfo (DependencyKind.KeptForSpecialAttribute, attribute), origin);
 					MarkFieldsVisibleToReflection (type, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
-					if (Context.TryResolve (type.BaseType) is not TypeDefinition baseType)
+					if (Context.TryResolve (type.BaseType) is not { } baseType)
 						break;
 					type = baseType;
 				}
@@ -2247,7 +2247,7 @@ namespace Mono.Linker.Steps
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 				MarkType (proxyTypeReference, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 
-				if (Context.TryResolve (proxyTypeReference) is TypeDefinition proxyType) {
+				if (Context.TryResolve (proxyTypeReference) is { } proxyType) {
 					MarkMethodsVisibleToReflection (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 					MarkFieldsVisibleToReflection (proxyType, new DependencyInfo (DependencyKind.ReferencedBySpecialAttribute, attribute), origin);
 				}
@@ -2345,7 +2345,7 @@ namespace Mono.Linker.Steps
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.UnusedInterfaces, type))
 				return true;
 
-			if (Context.Resolve (ifaceType) is not TypeDefinition resolvedInterfaceType)
+			if (Context.Resolve (ifaceType) is not { } resolvedInterfaceType)
 				return false;
 
 			if (Annotations.IsMarked (resolvedInterfaceType))
@@ -2872,7 +2872,7 @@ namespace Mono.Linker.Steps
 			if (reference.DeclaringType is ArrayType arrayType) {
 				MarkType (reference.DeclaringType, new DependencyInfo (DependencyKind.DeclaringType, reference), origin);
 
-				if (reference.Name == ".ctor" && Context.TryResolve (arrayType) is TypeDefinition typeDefinition) {
+				if (reference.Name == ".ctor" && Context.TryResolve (arrayType) is { } typeDefinition) {
 					Annotations.MarkRelevantToVariantCasting (typeDefinition);
 				}
 				return null;
@@ -3116,7 +3116,7 @@ namespace Mono.Linker.Steps
 					// Calling the implementation method directly has no impact on the interface, and as such it should not mark the interface or its method.
 					// Only if the interface method is referenced, then all the methods which implemented must be kept, but not the other way round.
 					if (!markAllOverrides &&
-						Context.Resolve (@base) is MethodDefinition baseDefinition
+						Context.Resolve (@base) is { } baseDefinition
 						&& baseDefinition.DeclaringType.IsInterface && baseDefinition.IsStatic && method.IsStatic)
 						continue;
 					// Instance methods can have overrides on public implementation methods in IL, but C# will usually only have them for private explicit interface implementations.
@@ -3137,7 +3137,7 @@ namespace Mono.Linker.Steps
 
 			MarkBaseMethods (method, methodOrigin);
 
-			if (Annotations.GetOverrides (method) is IEnumerable<OverrideInformation> overrides) {
+			if (Annotations.GetOverrides (method) is { } overrides) {
 				foreach (var @override in overrides.Where (ov => Annotations.IsMarked (ov.Base) || IgnoreScope (ov.Base.DeclaringType.Scope))) {
 					if (ShouldMarkOverrideForBase (@override))
 						MarkOverrideForBaseMethod (@override, methodOrigin);
@@ -3242,7 +3242,7 @@ namespace Mono.Linker.Steps
 
 		void MarkRuntimeInterfaceImplementation (MethodDefinition method, MethodReference ov)
 		{
-			if (Context.Resolve (ov) is not MethodDefinition resolvedOverride)
+			if (Context.Resolve (ov) is not { } resolvedOverride)
 				return;
 			if (!resolvedOverride.DeclaringType.IsInterface)
 				return;
@@ -3654,7 +3654,7 @@ namespace Mono.Linker.Steps
 				var operand = (TypeReference) instruction.Operand;
 				switch (instruction.OpCode.Code) {
 				case Code.Newarr:
-					if (Context.TryResolve (operand) is TypeDefinition typeDefinition) {
+					if (Context.TryResolve (operand) is { } typeDefinition) {
 						Annotations.MarkRelevantToVariantCasting (typeDefinition);
 					}
 					break;
@@ -3727,12 +3727,12 @@ namespace Mono.Linker.Steps
 				foreach (var compilerGeneratedCallee in compilerGeneratedCallees) {
 					switch (compilerGeneratedCallee) {
 					case MethodDefinition nestedFunction:
-						if (nestedFunction.Body is MethodBody nestedBody)
+						if (nestedFunction.Body is { } nestedBody)
 							requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (Context.GetMethodIL (nestedBody), origin);
 						break;
 					case TypeDefinition stateMachineType:
 						foreach (var method in stateMachineType.Methods) {
-							if (method.Body is MethodBody stateMachineBody)
+							if (method.Body is { } stateMachineBody)
 								requiresReflectionMethodBodyScanner |= MarkAndCheckRequiresReflectionMethodBodyScanner (Context.GetMethodIL (stateMachineBody), origin);
 						}
 						break;

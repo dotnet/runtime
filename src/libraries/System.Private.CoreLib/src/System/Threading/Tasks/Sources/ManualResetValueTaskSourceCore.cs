@@ -132,7 +132,7 @@ namespace System.Threading.Tasks.Sources
 
             if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
             {
-                if (SynchronizationContext.Current is SynchronizationContext sc &&
+                if (SynchronizationContext.Current is { } sc &&
                     sc.GetType() != typeof(SynchronizationContext))
                 {
                     _capturedContext = _capturedContext is null ?

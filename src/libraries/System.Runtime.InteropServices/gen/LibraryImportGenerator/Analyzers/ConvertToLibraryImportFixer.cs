@@ -39,7 +39,7 @@ namespace Microsoft.Interop.Analyzers
             bool allowUnsafe = selectedOptions.TryGetValue(Option.AllowUnsafe, out Option? allowUnsafeOption) && allowUnsafeOption is Option.Bool(true);
             string? suffix = null;
             bool hasSuffix = false;
-            if (selectedOptions.TryGetValue(SelectedSuffixOption, out Option? suffixOption) && suffixOption is Option.String(string suffixValue))
+            if (selectedOptions.TryGetValue(SelectedSuffixOption, out Option? suffixOption) && suffixOption is Option.String({ } suffixValue))
             {
                 hasSuffix = true;
                 suffix = suffixValue;
@@ -77,7 +77,7 @@ namespace Microsoft.Interop.Analyzers
         {
             bool warnForAdditionalWork = options.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);
 
-            CharSet? charSet = options.TryGetValue(CharSetOption, out Option charSetOption) && charSetOption is Option.String(string charSetString) && Enum.TryParse<CharSet>(charSetString, out CharSet result) ? result : null;
+            CharSet? charSet = options.TryGetValue(CharSetOption, out Option charSetOption) && charSetOption is Option.String({ } charSetString) && Enum.TryParse<CharSet>(charSetString, out CharSet result) ? result : null;
 
             // We don't want the CharSet option contributing to the "selected options" set for the fix, so we remove it here.
             var selectedOptions = options.Remove(CharSetOption);
@@ -129,7 +129,7 @@ namespace Microsoft.Interop.Analyzers
         protected override Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
             bool warnForAdditionalWork = selectedOptions.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWork) && mayRequireAdditionalWork is Option.Bool(true);
-            char? suffix = selectedOptions.TryGetValue(SelectedSuffixOption, out Option selectedSuffixOption) && selectedSuffixOption is Option.String(string selectedSuffix) ? selectedSuffix[0] : null;
+            char? suffix = selectedOptions.TryGetValue(SelectedSuffixOption, out Option selectedSuffixOption) && selectedSuffixOption is Option.String({ } selectedSuffix) ? selectedSuffix[0] : null;
             return (editor, ct) =>
                 ConvertToLibraryImport(
                     editor,

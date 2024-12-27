@@ -112,7 +112,7 @@ namespace Mono.Linker
 
 			foreach (Instruction instruction in methodIL.Instructions) {
 				if (instruction.Operand is FieldReference fieldReference) {
-					if (context.TryResolve (fieldReference)?.FieldType is TypeReference fieldType)
+					if (context.TryResolve (fieldReference)?.FieldType is { } fieldType)
 						AddIfResolved (types, fieldType);
 				} else if (instruction.Operand is MethodReference methodReference) {
 					if (methodReference is GenericInstanceMethod genericInstanceMethod)

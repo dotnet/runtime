@@ -1863,7 +1863,7 @@ namespace System
 
             if (!enumInfo.HasFlagsAttribute)
             {
-                if (GetNameInlined(enumInfo, Unsafe.BitCast<TUnderlying, TStorage>(value)) is string enumName)
+                if (GetNameInlined(enumInfo, Unsafe.BitCast<TUnderlying, TStorage>(value)) is { } enumName)
                 {
                     if (enumName.TryCopyTo(destination))
                     {
@@ -1967,7 +1967,7 @@ namespace System
             TStorage[] values = enumInfo.Values;
             Debug.Assert(names.Length == values.Length);
 
-            if (GetSingleFlagsEnumNameForValue(resultValue, names, values, out int index) is string singleEnumFlagsFormat)
+            if (GetSingleFlagsEnumNameForValue(resultValue, names, values, out int index) is { } singleEnumFlagsFormat)
             {
                 if (singleEnumFlagsFormat.TryCopyTo(destination))
                 {

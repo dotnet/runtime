@@ -465,7 +465,7 @@ namespace Mono.Linker.Steps
 				// OR
 				//  ov is an interface method and the interface is not implemented by the type
 #pragma warning disable RS0030 // Cecil's Resolve is banned - it's necessary when the metadata graph isn't stable
-				if (method.Overrides[i].Resolve () is not MethodDefinition ov
+				if (method.Overrides[i].Resolve () is not { } ov
 					|| ov.DeclaringType is null
 					|| (IsLinkScope (ov.DeclaringType.Scope) && ShouldRemove (ov))
 					|| (ov.DeclaringType.IsInterface && !MarkStep.IsInterfaceImplementationMarkedRecursively (method.DeclaringType, ov.DeclaringType, Context)))

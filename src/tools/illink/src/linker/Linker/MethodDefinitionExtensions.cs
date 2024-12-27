@@ -121,7 +121,7 @@ namespace Mono.Linker
 		/// </summary>
 		internal static ParameterProxy GetParameter (this MethodDefinition method, ParameterIndex index)
 		{
-			if (method.TryGetParameter (index) is not ParameterProxy param)
+			if (method.TryGetParameter (index) is not { } param)
 				throw new InvalidOperationException ($"Cannot get parameter #{(int) index} of method {method.GetDisplayName ()} with {method.GetParametersCount ()} parameters");
 			return param;
 		}

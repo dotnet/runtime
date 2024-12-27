@@ -323,7 +323,7 @@ namespace ILLink.Tasks
 				args.AppendLine ();
 			}
 
-			if (_singleWarn is bool generalSingleWarn) {
+			if (_singleWarn is { } generalSingleWarn) {
 				if (generalSingleWarn)
 					args.AppendLine ("--singlewarn");
 				else
@@ -428,7 +428,7 @@ namespace ILLink.Tasks
 			if (Warn != null)
 				args.Append ("--warn ").AppendLine (Quote (Warn));
 
-			if (_treatWarningsAsErrors is bool treatWarningsAsErrors && treatWarningsAsErrors)
+			if (_treatWarningsAsErrors is { } treatWarningsAsErrors && treatWarningsAsErrors)
 				args.Append ("--warnaserror ");
 			else
 				args.Append ("--warnaserror- ");
@@ -440,22 +440,22 @@ namespace ILLink.Tasks
 				args.Append ("--warnaserror- ").AppendLine (Quote (WarningsNotAsErrors));
 
 			// Add global optimization arguments
-			if (_beforeFieldInit is bool beforeFieldInit)
+			if (_beforeFieldInit is { } beforeFieldInit)
 				SetOpt (args, "beforefieldinit", beforeFieldInit);
 
-			if (_overrideRemoval is bool overrideRemoval)
+			if (_overrideRemoval is { } overrideRemoval)
 				SetOpt (args, "overrideremoval", overrideRemoval);
 
-			if (_unreachableBodies is bool unreachableBodies)
+			if (_unreachableBodies is { } unreachableBodies)
 				SetOpt (args, "unreachablebodies", unreachableBodies);
 
-			if (_unusedInterfaces is bool unusedInterfaces)
+			if (_unusedInterfaces is { } unusedInterfaces)
 				SetOpt (args, "unusedinterfaces", unusedInterfaces);
 
-			if (_iPConstProp is bool iPConstProp)
+			if (_iPConstProp is { } iPConstProp)
 				SetOpt (args, "ipconstprop", iPConstProp);
 
-			if (_sealer is bool sealer)
+			if (_sealer is { } sealer)
 				SetOpt (args, "sealer", sealer);
 
 			if (CustomData != null) {

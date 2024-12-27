@@ -101,9 +101,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public IEnumerable<ControlFlowBranch> GetSuccessors (BlockProxy block)
 		{
-			if (block.Block.ConditionalSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch conditionalSuccessor)
+			if (block.Block.ConditionalSuccessor is { } conditionalSuccessor)
 				yield return CreateProxyBranch (conditionalSuccessor);
-			if (block.Block.FallThroughSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch fallThroughSuccessor)
+			if (block.Block.FallThroughSuccessor is { } fallThroughSuccessor)
 				yield return CreateProxyBranch (fallThroughSuccessor);
 		}
 

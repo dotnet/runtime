@@ -264,7 +264,7 @@ namespace Mono.Linker.Dataflow
 
 		void TrackNestedFunctionReference (MethodReference referencedMethod, ref InterproceduralState interproceduralState)
 		{
-			if (_context.TryResolve (referencedMethod) is not MethodDefinition method)
+			if (_context.TryResolve (referencedMethod) is not { } method)
 				return;
 
 			if (!CompilerGeneratedNames.IsLambdaOrLocalFunction (method.Name))
@@ -786,7 +786,7 @@ namespace Mono.Linker.Dataflow
 				var param = new RuntimeTypeHandleForGenericParameterValue (genericParameter);
 				currentStack.Push (new StackSlot (param));
 				return;
-			case TypeReference typeReference when ResolveToTypeDefinition (typeReference) is TypeDefinition resolvedDefinition:
+			case TypeReference typeReference when ResolveToTypeDefinition (typeReference) is { } resolvedDefinition:
 				// Note that Nullable types without a generic argument (i.e. Nullable<>) will be RuntimeTypeHandleValue / SystemTypeValue
 				if (typeReference is IGenericInstance instance && resolvedDefinition.IsTypeOf (WellKnownType.System_Nullable_T)) {
 					switch (instance.GenericArguments[0]) {
@@ -795,7 +795,7 @@ namespace Mono.Linker.Dataflow
 							new RuntimeTypeHandleForGenericParameterValue (genericParam));
 						currentStack.Push (new StackSlot (nullableDam));
 						return;
-					case TypeReference underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is TypeDefinition underlyingType:
+					case { } underlyingTypeReference when ResolveToTypeDefinition (underlyingTypeReference) is { } underlyingType:
 						var nullableType = new RuntimeTypeHandleForNullableSystemTypeValue (new TypeProxy (resolvedDefinition, _context), new SystemTypeValue (new (underlyingType, _context)));
 						currentStack.Push (new StackSlot (nullableType));
 						return;
@@ -808,7 +808,7 @@ namespace Mono.Linker.Dataflow
 					currentStack.Push (new StackSlot (typeHandle));
 					return;
 				}
-			case MethodReference methodReference when _context.TryResolve (methodReference) is MethodDefinition resolvedMethod:
+			case MethodReference methodReference when _context.TryResolve (methodReference) is { } resolvedMethod:
 				var method = new RuntimeMethodHandleValue (resolvedMethod);
 				currentStack.Push (new StackSlot (method));
 				return;

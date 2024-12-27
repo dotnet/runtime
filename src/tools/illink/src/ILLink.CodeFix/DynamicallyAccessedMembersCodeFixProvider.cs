@@ -100,9 +100,9 @@ namespace ILLink.CodeFix
 				return;
 			if (diagnostic.AdditionalLocations.Count == 0)
 				return;
-			if (root.FindNode (diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
+			if (root.FindNode (diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not { } targetNode)
 				return;
-			if (diagnostic.Properties["attributeArgument"] is not string stringArgs || stringArgs.Contains (","))
+			if (diagnostic.Properties["attributeArgument"] is not { } stringArgs || stringArgs.Contains (","))
 				return;
 
 			context.RegisterCodeFix (CodeAction.Create (

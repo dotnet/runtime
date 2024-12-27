@@ -121,7 +121,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			var value = base.VisitConversion (operation, state);
 
-			if (operation.OperatorMethod is IMethodSymbol method)
+			if (operation.OperatorMethod is { } method)
 				return method.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef) ? new MethodReturnValue (method, isNewObj: false) : value;
 
 			// TODO - is it possible to have annotation on the operator method parameters?
@@ -243,7 +243,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue HandleArrayElementRead (MultiValue arrayValue, MultiValue indexValue, IOperation operation)
 		{
-			if (indexValue.AsConstInt () is not int index)
+			if (indexValue.AsConstInt () is not { } index)
 				return UnknownValue.Instance;
 
 			MultiValue result = TopValue;

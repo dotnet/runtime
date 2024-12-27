@@ -71,7 +71,7 @@ namespace ILLink.RoslynAnalyzer
 
 				context.RegisterSyntaxNodeAction (syntaxNodeAnalysisContext => {
 					var model = syntaxNodeAnalysisContext.SemanticModel;
-					if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
+					if (syntaxNodeAnalysisContext.ContainingSymbol is not { } containingSymbol || containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
 						return;
 
 					GenericNameSyntax genericNameSyntaxNode = (GenericNameSyntax) syntaxNodeAnalysisContext.Node;

@@ -301,7 +301,7 @@ namespace System
                 count = 0;
                 for (int i = 0; i < objAttr.Length; i++)
                 {
-                    if (objAttr[i] is object attr)
+                    if (objAttr[i] is { } attr)
                     {
                         attributes[count] = (Attribute)attr;
                         count++;

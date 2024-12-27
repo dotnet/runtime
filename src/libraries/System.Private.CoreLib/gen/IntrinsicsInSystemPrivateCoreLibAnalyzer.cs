@@ -291,7 +291,7 @@ namespace IntrinsicsInSystemPrivateCoreLib
             if (propertyDefiningSyntax != null)
             {
                 if (propertyDefiningSyntax is PropertyDeclarationSyntax propertyDeclaration
-                    && propertyDeclaration.ExpressionBody is ArrowExpressionClauseSyntax arrowExpression)
+                    && propertyDeclaration.ExpressionBody is { } arrowExpression)
                 {
                     if (model.SyntaxTree != arrowExpression.SyntaxTree)
                     {

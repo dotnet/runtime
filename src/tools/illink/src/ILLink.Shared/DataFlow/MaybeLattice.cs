@@ -20,7 +20,7 @@ namespace ILLink.Shared.DataFlow
 		public override int GetHashCode () => MaybeValue?.GetHashCode () ?? 0;
 		public Maybe<T> DeepCopy ()
 		{
-			if (MaybeValue is not T value)
+			if (MaybeValue is not { } value)
 				return default;
 			if (value is IDeepCopyValue<T> copyValue)
 				return new (copyValue.DeepCopy ());
@@ -44,9 +44,9 @@ namespace ILLink.Shared.DataFlow
 		public Maybe<T> Top { get; }
 		public Maybe<T> Meet (Maybe<T> left, Maybe<T> right)
 		{
-			if (left.MaybeValue is not T leftValue)
+			if (left.MaybeValue is not { } leftValue)
 				return right.DeepCopy ();
-			if (right.MaybeValue is not T rightValue)
+			if (right.MaybeValue is not { } rightValue)
 				return left.DeepCopy ();
 			return new Maybe<T> (ValueLattice.Meet (leftValue, rightValue));
 		}

@@ -172,7 +172,7 @@ namespace Mono.Linker
 			// Gather assembly-level suppressions if we haven't already. To ensure that we always cache
 			// complete information for a member, we will also scan for attributes on any other members
 			// targeted by the assembly-level suppressions.
-			if (GetModuleFromProvider (provider) is ModuleDefinition module) {
+			if (GetModuleFromProvider (provider) is { } module) {
 				var assembly = module.Assembly;
 				if (InitializedAssemblies.Add (assembly)) {
 					foreach (var suppression in DecodeAssemblyAndModuleSuppressions (module)) {

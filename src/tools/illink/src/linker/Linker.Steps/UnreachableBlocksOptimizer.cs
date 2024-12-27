@@ -99,7 +99,7 @@ namespace Mono.Linker.Steps
 				case FlowControl.Branch:
 				case FlowControl.Cond_Branch:
 					if (instr.Operand is Instruction target) {
-						if (mapping != null && mapping (target) is int index) {
+						if (mapping != null && mapping (target) is { } index) {
 							if (index >= firstInstr && index <= lastInstr) {
 								return true;
 							}
@@ -113,7 +113,7 @@ namespace Mono.Linker.Steps
 						}
 					} else {
 						foreach (var rtarget in (Instruction[]) instr.Operand) {
-							if (mapping != null && mapping (rtarget) is int index) {
+							if (mapping != null && mapping (rtarget) is { } index) {
 								if (index >= firstInstr && index <= lastInstr) {
 									return true;
 								}
@@ -480,7 +480,7 @@ namespace Mono.Linker.Steps
 
 						var cpl = new CalleePayload (md, GetArgumentsOnStack (md, instrs, i));
 						MethodResult? call_result = optimizer.TryGetMethodCallResult (cpl);
-						if (call_result is not MethodResult result)
+						if (call_result is not { } result)
 							break;
 
 						if (!result.IsSideEffectFree) {
@@ -1817,7 +1817,7 @@ namespace Mono.Linker.Steps
 							if (!callStack.TryPop (out _))
 								return false;
 
-							if (call_result is MethodResult result) {
+							if (call_result is { } result) {
 								if (!result.IsSideEffectFree)
 									SideEffectFreeResult = false;
 

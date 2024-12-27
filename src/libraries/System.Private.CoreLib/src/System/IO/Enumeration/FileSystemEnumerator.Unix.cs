@@ -240,13 +240,13 @@ namespace System.IO.Enumeration
 
                     CloseDirectoryHandle();
 
-                    if (_pathBuffer is char[] pathBuffer)
+                    if (_pathBuffer is { } pathBuffer)
                     {
                         _pathBuffer = null;
                         ArrayPool<char>.Shared.Return(pathBuffer);
                     }
 
-                    if (_entryBuffer is byte[] entryBuffer)
+                    if (_entryBuffer is { } entryBuffer)
                     {
                         _entryBuffer = null;
                         ArrayPool<byte>.Shared.Return(entryBuffer);

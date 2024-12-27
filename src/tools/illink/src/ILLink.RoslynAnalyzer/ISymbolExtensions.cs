@@ -81,7 +81,7 @@ namespace ILLink.RoslynAnalyzer
 		{
 			HashSet<string> featureSet = new ();
 			foreach (var featureGuardAttribute in propertySymbol.GetAttributes (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute)) {
-				if (featureGuardAttribute.ConstructorArguments is [TypedConstant { Value: INamedTypeSymbol featureType }])
+				if (featureGuardAttribute.ConstructorArguments is [{ Value: INamedTypeSymbol featureType }])
 					featureSet.Add (featureType.GetDisplayName ());
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
@@ -101,7 +101,7 @@ namespace ILLink.RoslynAnalyzer
 		}
 
 		internal static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesOnAssociatedSymbol (this IMethodSymbol methodSymbol) =>
-			methodSymbol.AssociatedSymbol is ISymbol associatedSymbol ? GetDynamicallyAccessedMemberTypes (associatedSymbol) : DynamicallyAccessedMemberTypes.None;
+			methodSymbol.AssociatedSymbol is { } associatedSymbol ? GetDynamicallyAccessedMemberTypes (associatedSymbol) : DynamicallyAccessedMemberTypes.None;
 
 		internal static bool TryGetOverriddenMember (this ISymbol? symbol, [NotNullWhen (returnValue: true)] out ISymbol? overriddenMember)
 		{

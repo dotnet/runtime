@@ -62,7 +62,7 @@ namespace ILLink.RoslynAnalyzer
 							continue;
 						}
 
-						if (type is object) {
+						if (type is not null) {
 							// Multiple visible types with the same metadata name are present
 							return null;
 						}

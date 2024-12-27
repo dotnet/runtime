@@ -55,7 +55,7 @@ namespace Mono.Linker
 				return null;
 
 			AssemblyDefinition? assembly = originalAssembly;
-			if (typeName.AssemblyName is AssemblyNameInfo assemblyName)
+			if (typeName.AssemblyName is { } assemblyName)
 				// In this case we ignore the assembly parameter since the type name has assembly in it
 				assembly = _assemblyResolver.TryResolve (assemblyName.Name);
 

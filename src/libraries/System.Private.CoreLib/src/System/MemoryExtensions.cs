@@ -3987,7 +3987,7 @@ namespace System
                 foreach ((string? Literal, int ArgIndex, int Alignment, string? Format) segment in format._segments)
                 {
                     bool appended;
-                    if (segment.Literal is string literal)
+                    if (segment.Literal is { } literal)
                     {
                         appended = handler.AppendLiteral(literal);
                     }
@@ -4548,7 +4548,7 @@ namespace System
                 ICustomFormatter? formatter = (ICustomFormatter?)_provider.GetFormat(typeof(ICustomFormatter));
                 Debug.Assert(formatter != null, "An incorrectly written provider said it implemented ICustomFormatter, and then didn't");
 
-                if (formatter is not null && formatter.Format(format, value, _provider) is string customFormatted)
+                if (formatter is not null && formatter.Format(format, value, _provider) is { } customFormatted)
                 {
                     return AppendLiteral(customFormatted);
                 }

@@ -39,7 +39,7 @@ namespace Mono.Linker.Dataflow
 
 		public void TrackMethod (MethodDefinition method)
 		{
-			if (method.Body is not MethodBody methodBody)
+			if (method.Body is not { } methodBody)
 				return;
 
 			TrackMethod (methodBody);
@@ -63,7 +63,7 @@ namespace Mono.Linker.Dataflow
 			if (CompilerGeneratedState.TryGetStateMachineType (methodIL.Method, out TypeDefinition? stateMachineType)) {
 				foreach (var stateMachineMethod in stateMachineType.Methods) {
 					Debug.Assert (!CompilerGeneratedNames.IsLambdaOrLocalFunction (stateMachineMethod.Name));
-					if (stateMachineMethod.Body is MethodBody stateMachineMethodBody)
+					if (stateMachineMethod.Body is { } stateMachineMethodBody)
 						methodsList.Add (lattice.Context.GetMethodIL (stateMachineMethodBody));
 				}
 			}

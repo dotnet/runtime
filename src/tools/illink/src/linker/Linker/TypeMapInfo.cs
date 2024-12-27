@@ -485,8 +485,8 @@ namespace Mono.Linker
 
 			// we need to track what the generic parameter represent - as we cannot allow it to
 			// differ between the return type or any parameter
-			if (a.ReturnType is not TypeReference aReturnType ||
-				b.ReturnType is not TypeReference bReturnType ||
+			if (a.ReturnType is not { } aReturnType ||
+				b.ReturnType is not { } bReturnType ||
 				!TypeMatch (aReturnType, bReturnType))
 				return false;
 
@@ -499,8 +499,8 @@ namespace Mono.Linker
 				return false;
 
 			for (int i = 0; i < ap.Count; i++) {
-				if (a.Parameters[i].ParameterType is not TypeReference aParameterType ||
-					b.Parameters[i].ParameterType is not TypeReference bParameterType ||
+				if (a.Parameters[i].ParameterType is not { } aParameterType ||
+					b.Parameters[i].ParameterType is not { } bParameterType ||
 					!TypeMatch (aParameterType, bParameterType))
 					return false;
 			}

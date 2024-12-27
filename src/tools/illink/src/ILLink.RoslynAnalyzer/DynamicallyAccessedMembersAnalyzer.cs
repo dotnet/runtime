@@ -122,7 +122,7 @@ namespace ILLink.RoslynAnalyzer
 
 					var location = GetPrimaryLocation (type.Locations);
 
-					if (type.BaseType is INamedTypeSymbol baseType)
+					if (type.BaseType is { } baseType)
 						GenericArgumentDataFlow.ProcessGenericArgumentDataFlow (location, baseType, context.ReportDiagnostic);
 
 					foreach (var interfaceType in type.Interfaces)

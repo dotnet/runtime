@@ -523,7 +523,7 @@ namespace System.Buffers
         {
             // Avoid globalization stack, as it might in turn be using ArrayPool.
 
-            if (Environment.GetEnvironmentVariableCore_NoArrayPool(variable) is string envVar &&
+            if (Environment.GetEnvironmentVariableCore_NoArrayPool(variable) is { } envVar &&
                 envVar.Length is > 0 and <= 32) // arbitrary limit that allows for some spaces around the maximum length of a non-negative Int32 (10 digits)
             {
                 ReadOnlySpan<char> value = envVar.AsSpan().Trim(' ');

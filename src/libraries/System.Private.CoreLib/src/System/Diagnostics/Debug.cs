@@ -307,7 +307,7 @@ namespace System.Diagnostics
             /// <summary>Extracts the built string from the handler.</summary>
             internal string ToStringAndClear()
             {
-                string s = _stringBuilderHandler._stringBuilder is StringBuilder sb ?
+                string s = _stringBuilderHandler._stringBuilder is { } sb ?
                     sb.ToString() :
                     string.Empty;
                 _stringBuilderHandler = default;
@@ -402,7 +402,7 @@ namespace System.Diagnostics
             /// <summary>Extracts the built string from the handler.</summary>
             internal string ToStringAndClear()
             {
-                string s = _stringBuilderHandler._stringBuilder is StringBuilder sb ?
+                string s = _stringBuilderHandler._stringBuilder is { } sb ?
                     StringBuilderCache.GetStringAndRelease(sb) :
                     string.Empty;
                 _stringBuilderHandler = default;
