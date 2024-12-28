@@ -1971,16 +1971,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-    // ToDo-APX : div currently can't access eGPR
-    if (tree->OperGet() == GT_UDIV || tree->OperGet() == GT_UMOD ||
-        (op2->isContainedIndir() && varTypeUsesFloatReg(op1)))
-    {
-        srcCount += BuildDelayFreeUses(op2, op1, BuildApxIncompatibleGPRMask(op2, true) & ~(SRBM_RAX | SRBM_RDX));
-    }
-    else
-    {
-        srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
-    }
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 
