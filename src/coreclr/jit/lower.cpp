@@ -8083,15 +8083,6 @@ void Lowering::FindInducedParameterRegisterLocals()
                 continue;
             }
 
-#ifdef TARGET_ARM
-            if ((comp->codeGen->regSet.rsMaskPreSpillRegs(true) & segment.GetRegisterMask()) != 0)
-            {
-                // Parameter registers that are prespilled on arm32 are
-                // currently not supported
-                continue;
-            }
-#endif
-
             assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
             unsigned structAccessedSize =
                 min(genTypeSize(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
