@@ -3,9 +3,6 @@
 
 using System.Collections.Generic;
 
-#pragma warning disable CS0162
-#pragma warning disable IDE0060
-
 namespace System.Linq
 {
     public static partial class Enumerable
