@@ -643,7 +643,7 @@ namespace System
         // Since the returned string is a pointer into metadata, the caller should
         // ensure the passed in type is alive for at least as long as returned result is
         // needed.
-        internal static unsafe MdUtf8String GetUtf8Name(RuntimeType type)
+        internal static MdUtf8String GetUtf8Name(RuntimeType type)
         {
             TypeHandle th = type.GetNativeTypeHandle();
             if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
@@ -673,7 +673,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandle")]
         private static partial IntPtr GetDeclaringTypeHandle(IntPtr typeHandle);
 
-        internal static unsafe RuntimeType? GetDeclaringType(RuntimeType type)
+        internal static RuntimeType? GetDeclaringType(RuntimeType type)
         {
             IntPtr retTypeHandle = IntPtr.Zero;
             TypeHandle typeHandle = type.GetNativeTypeHandle();
