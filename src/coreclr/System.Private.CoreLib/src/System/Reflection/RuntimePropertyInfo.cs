@@ -50,9 +50,9 @@ namespace System.Reflection
                 out m_getterMethod, out m_setterMethod, out m_otherMethod,
                 out isPrivate, out m_bindingFlags);
 
-            // lookup getter/setter when getter and setter are inherited from base class but just a setter/getter is overridden on a sub type
-            if ((m_getterMethod != null && m_getterMethod.IsVirtual && m_setterMethod == null)
-                || (m_setterMethod != null && m_setterMethod.IsVirtual && m_getterMethod == null))
+            // Lookup getter/setter when getter and setter are inherited from base class but just a setter/getter is overridden on a sub type.
+            if ((m_getterMethod is not null && m_getterMethod.IsVirtual && m_setterMethod is null)
+                || (m_setterMethod is not null && m_setterMethod.IsVirtual && m_getterMethod is null))
             {
                 Type? baseDeclaredType = declaredType.BaseType;
 
@@ -77,7 +77,7 @@ namespace System.Reflection
                                     out _, out m_setterMethod, out _,
                                     out _, out _);
 
-                                if (m_setterMethod != null)
+                                if (m_setterMethod is not null)
                                 {
                                     break;
                                 }
@@ -89,7 +89,7 @@ namespace System.Reflection
                                     out m_getterMethod, out _, out _,
                                     out _, out _);
 
-                                if (m_getterMethod != null)
+                                if (m_getterMethod is not null)
                                 {
                                     break;
                                 }
