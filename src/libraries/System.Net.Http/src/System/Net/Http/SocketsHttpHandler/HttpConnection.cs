@@ -257,7 +257,7 @@ namespace System.Net.Http
                     // We don't know for sure that the stream actually has data available, so we need to issue a real read now.
                     int read = await _stream.ReadAsync(_readBuffer.AvailableMemory).ConfigureAwait(false);
 
-                    // PrepareForReuse will check TryOwnReadAheadTaskCompletion before calling into SendAsync.
+                    // PrepareForReuse will set _readAheadTaskStatus to ReadAheadTask_CompletionReserved and check whether it was ReadAheadTask_Started before calling into SendAsync.
                     // If we can own the completion from within the read-ahead task, it means that PrepareForReuse hasn't been called yet.
                     // In that case we've received EOF/erroneous data before we sent the request headers, and the connection can't be reused.
                     if (TransitionToCompletedAndTryOwnCompletion())
@@ -267,8 +267,9 @@ namespace System.Net.Http
 
                     return read;
                 }
-                catch (Exception error) when (TransitionToCompletedAndTryOwnCompletion())
+                catch (Exception error)
                 {
+                    TransitionToCompletedAndTryOwnCompletion();
                     if (NetEventSource.Log.IsEnabled()) Trace($"Error performing read ahead: {error}");
 
                     return 0;
