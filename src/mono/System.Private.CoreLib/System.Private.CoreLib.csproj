@@ -298,7 +298,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <CompilerVisibleProperty Include="ProductVersion" />
+    <CompilerVisibleProperty Include="InformationalVersion" />
   </ItemGroup>
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
