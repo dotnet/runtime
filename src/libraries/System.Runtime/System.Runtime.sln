@@ -77,8 +77,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Dynamic.Runtime.Test
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.CalendarsWithConfigSwitch.Tests", "tests\System.Globalization.Calendars.Tests\CalendarTestWithConfigSwitch\System.Globalization.CalendarsWithConfigSwitch.Tests.csproj", "{B73090B8-20CB-4586-A586-B7F37C1A06FF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Calendars.Hybrid.WASM.Tests", "tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj", "{4C1F2761-857C-40A4-8CDD-7139380DA4D7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Calendars.IOS.Tests", "tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.IOS.Tests.csproj", "{70441C80-1F14-42F9-8225-A891E3C9A82A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Calendars.Tests", "tests\System.Globalization.Calendars.Tests\System.Globalization.Calendars.Tests.csproj", "{EA3FA657-060E-43A3-9CF0-45FCC8E7E5B6}"
@@ -90,8 +88,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Extensions.Tests", "tests\System.Globalization.Extensions.Tests\System.Globalization.Extensions.Tests.csproj", "{CA97D5F2-4D71-4448-8DEB-E18C237C76B3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppleHybrid.Tests", "tests\System.Globalization.Tests\Hybrid\AppleHybrid.Tests.csproj", "{988AECC5-6EB4-48AB-9467-3FB63619631B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Hybrid.WASM.Tests", "tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj", "{C5F86889-E147-4424-9165-D2DF453741F2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.IOS.Tests", "tests\System.Globalization.Tests\Hybrid\System.Globalization.IOS.Tests.csproj", "{67D9B289-AA6D-4FD8-A99D-F8651A51BE7E}"
 EndProject
