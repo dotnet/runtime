@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -329,8 +328,9 @@ namespace System.Linq.Tests
         [Fact]
         public void SelectorsReturnNull()
         {
-            int?[] inner = { null, null, null };
             int?[] outer = { null, null };
+            int?[] inner = { null, null, null };
+
             Assert.Empty(outer.Join(inner, e => e, e => e, (x, y) => x));
         }
 

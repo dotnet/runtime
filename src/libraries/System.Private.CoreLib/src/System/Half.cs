@@ -1369,17 +1369,13 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
@@ -1387,65 +1383,39 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ushort))
+            if (BinaryPrimitives.TryWriteUInt16BigEndian(destination, Significand))
             {
-                ushort significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ushort);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ushort))
+            if (BinaryPrimitives.TryWriteUInt16LittleEndian(destination, Significand))
             {
-                ushort significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ushort);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //

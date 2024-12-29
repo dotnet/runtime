@@ -224,10 +224,6 @@ class CCeeGen : public ICeeGenInternal {
         _In_ LPWSTR lpString,               // [IN] String to emit
         ULONG *RVA);
 
-    STDMETHODIMP GetString (
-        ULONG RVA,
-        __inout LPWSTR *lpString);
-
     STDMETHODIMP AllocateMethodBuffer (
         ULONG cchBuffer,                    // [IN] Length of string to emit
         UCHAR **lpBuffer,                   // [OUT] Returned buffer
