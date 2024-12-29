@@ -620,7 +620,7 @@ namespace System.Numerics
                 // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathMatrix.inl
 
                 Vector4 p = Plane.Normalize(value).AsVector4();
-                Vector4 s = p * -2.0f;
+                Vector4 s = p * Vector4.Create(-2.0f, -2.0f, -2.0f, 0.0f);
 
                 Impl result;
 

@@ -58,13 +58,6 @@
     <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
   </ItemGroup>
 
-  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
-    <ItemGroup>
-      <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/shared/$(MicrosoftNetCoreAppFrameworkName);$(LinuxInstallRoot)/shared/$(MicrosoftNetCoreAppFrameworkName)/$(Version)" />
-    </ItemGroup>
-  </Target>
-
   <!-- Mobile and NativeAOT use a different hosting model, so we don't include the .NET host components. -->
   <ItemGroup Condition="'$(TargetsMobile)' != 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">
     <_HostFiles Include="$(DotNetHostBinDir)/$(LibPrefix)hostpolicy$(LibSuffix)" />
