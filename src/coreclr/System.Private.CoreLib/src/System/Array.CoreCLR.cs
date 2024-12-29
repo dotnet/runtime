@@ -109,7 +109,7 @@ namespace System
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
@@ -605,7 +605,7 @@ namespace System
 
         public long LongLength => (long)NativeLength;
 
-        public unsafe int Rank
+        public int Rank
         {
             get
             {
@@ -615,7 +615,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe int GetLength(int dimension)
+        public int GetLength(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
             if (rank == 0 && dimension == 0)
@@ -628,7 +628,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe int GetUpperBound(int dimension)
+        public int GetUpperBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
             if (rank == 0 && dimension == 0)
@@ -642,7 +642,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe int GetLowerBound(int dimension)
+        public int GetLowerBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
             if (rank == 0 && dimension == 0)
