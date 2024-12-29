@@ -2676,8 +2676,8 @@ public:
     // This flavor of Allocate is more efficient, but can only be used
     // if CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
-    // exists in the same appdomain. It's currently called only from Delegate.Combine
-    // via COMDelegate::InternalAllocLike.
+    // exists in the same ALC. It's currently called only from Delegate.Combine
+    // via RuntimeTypeHandle_InternalAllocNoChecks.
     OBJECTREF AllocateNoChecks();
 
     OBJECTREF Box(void* data);
@@ -3921,12 +3921,11 @@ private:
         TADDR         m_ElementTypeHnd;
     };
     public:
-    union 
+    union
     {
         PTR_InterfaceInfo   m_pInterfaceMap;
         TADDR               m_encodedNullableUnboxData; // Used for Nullable<T> to represent the offset to the value field, and the size of the value field
     };
-    
 
     // VTable slots go here
 

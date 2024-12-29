@@ -26,6 +26,16 @@ dotnet
     .withExitCodeLogging()
     .withExitOnUnhandledError();
 
+const logLevel = params.get("MONO_LOG_LEVEL");
+const logMask = params.get("MONO_LOG_MASK");
+if (logLevel !== null && logMask !== null) {
+    dotnet.withDiagnosticTracing(true); // enable JavaScript tracing
+    dotnet.withConfig({environmentVariables: {
+        "MONO_LOG_LEVEL": logLevel,
+        "MONO_LOG_MASK": logMask,
+    }});
+}
+
 // Modify runtime start based on test case
 switch (testCase) {
     case "SatelliteAssembliesTest":
@@ -151,6 +161,9 @@ switch (testCase) {
     case "OverrideBootConfigName":
         dotnet.withConfigSrc("boot.json");
         break;
+    case "MainWithArgs":
+        dotnet.withApplicationArgumentsFromQuery();
+        break;
 }
 
 const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -199,6 +212,8 @@ try {
             exit(0);
             break;
         case "OutErrOverrideWorks":
+        case "DotnetRun":
+        case "MainWithArgs":
             dotnet.run();
             break;
         case "DebugLevelTest":

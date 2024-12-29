@@ -132,13 +132,11 @@ using namespace CorUnix;
 CObjectType CorUnix::otProcess(
                 otiProcess,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 PROCESS_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
@@ -2228,8 +2226,11 @@ PROCCreateCrashDump(
         size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
         if (previousThreadId != 0)
         {
-            // Should never reenter or recurse
-            _ASSERTE(previousThreadId != currentThreadId);
+            // Return error if reenter this code
+            if (previousThreadId == currentThreadId)
+            {
+                return false;
+            }
 
             // The first thread generates the crash info and any other threads are blocked
             while (true)

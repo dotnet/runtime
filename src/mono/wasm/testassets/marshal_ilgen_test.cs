@@ -4,7 +4,7 @@ using System.Runtime.InteropServices.JavaScript;
 
 int[] x = new int[0];
 MyClass.call_needing_marhsal_ilgen(x);
-Console.WriteLine("call_needing_marhsal_ilgen got called");
+Console.WriteLine("TestOutput -> call_needing_marhsal_ilgen got called");
 
 return 42;
 

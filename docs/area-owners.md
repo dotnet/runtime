@@ -8,7 +8,7 @@ This list is for this **dotnet/runtime** repo. The **dotnet/aspnetcore** repo ha
 
 ## Areas
 
-Note: Editing this file doesn't update the mapping used by `@msftbot` for area-specific issue/PR notifications. That configuration is part of the [`fabricbot.json`](../.github/fabricbot.json) file, and many areas use GitHub teams for those notifications. If you're a community member interested in receiving area-specific issue/PR notifications, you won't appear in this table or be added to those GitHub teams, but you can create a PR that updates `fabricbot.json` to add yourself to those notifications. See [automation.md](infra/automation.md) for more information on the schema and tools used by FabricBot.
+Note: Editing this file doesn't update the mapping used by `@dotnet-policy-service` for area-specific issue/PR notifications. That configuration is part of the [`resourceManagement.yml`](../.github/policies/resourceManagement.yml) file, and many areas use GitHub teams for those notifications. If you're a community member interested in receiving area-specific issue/PR notifications, you won't appear in this table or be added to those GitHub teams, but you can create a PR that updates `resourceManagement.yml` to add yourself to those notifications. See [automation.md](infra/automation.md) for more information.
 
 | Area                                           | Lead                 | Owners (area experts to tag in PRs and issues)                                           | Notes                                                                                                                                                                                                                                                                                     |
 |------------------------------------------------|----------------------|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -193,11 +193,18 @@ Note: Editing this file doesn't update the mapping used by `@msftbot` for area-s
 
 While not necessarily associated with a specific area, these community members have the power to assist with routing and labeling issues and pull requests, and are generally knowledgeable about how the repo works:
 
+* @a74nh
 * @am11
+* @clamp03
+* @Clockwork-Muse
 * @filipnavara
 * @huoyaoyuan
+* @martincostello
+* @omajid
+* @Sergio0694
+* @shushanhf
 * @SingleAccretion
 * @teo-tsirpanis
 * @tmds
 * @vcsjones
-* @Sergio0694
+* @xoofx
