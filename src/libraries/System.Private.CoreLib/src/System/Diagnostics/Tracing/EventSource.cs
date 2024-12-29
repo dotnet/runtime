@@ -2082,7 +2082,7 @@ namespace System.Diagnostics.Tracing
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-        private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
+        private object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
             TraceLoggingEventTypes eventTypes = m_eventData[eventId].TraceLoggingEventTypes;
@@ -2177,7 +2177,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(eventCallbackArgs);
         }
 
-        internal unsafe void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
+        internal void DispatchToAllListeners(EventWrittenEventArgs eventCallbackArgs)
         {
             int eventId = eventCallbackArgs.EventId;
             Exception? lastThrownException = null;
