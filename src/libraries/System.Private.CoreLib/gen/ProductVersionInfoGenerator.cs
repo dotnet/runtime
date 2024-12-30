@@ -12,7 +12,7 @@ namespace Generators
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var informationalVersionProvider = context.AnalyzerConfigOptionsProvider.Select((options, _) =>
+            IncrementalValueProvider<string?> informationalVersionProvider = context.AnalyzerConfigOptionsProvider.Select((options, _) =>
                 options.GlobalOptions.TryGetValue("build_property.InformationalVersion", out string? ver) ? ver : null);
 
             context.RegisterSourceOutput(informationalVersionProvider, (ctx, informationalVersion) =>
