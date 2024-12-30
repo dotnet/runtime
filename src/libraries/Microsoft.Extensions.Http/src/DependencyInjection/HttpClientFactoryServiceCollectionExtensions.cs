@@ -450,7 +450,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             AddHttpClient(services);
 
-            string name = TypeNameHelper.GetTypeDisplayName(typeof(TClient), fullName: false);
+            string name = TypeNameHelper.GetTypeDisplayName(typeof(TImplementation), fullName: false);
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.ConfigureHttpClient(configureClient);
             builder.AddTypedClientCore<TClient, TImplementation>(validateSingleType: true);

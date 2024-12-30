@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Http;
@@ -237,6 +238,33 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void AddMultipleHttpClients_WithSameTypedClientAndImplementation_ConfiguresNamedClient_WithImplementationsFullName()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+
+            // Act
+            serviceCollection.AddHttpClient<ITestTypedClient, TestTypedClient>(config =>
+            {
+                config.BaseAddress = new Uri("http://exampleA.com");
+            });
+
+            serviceCollection.AddHttpClient<ITestTypedClient, TestAnotherTypedClient>(config =>
+            {
+                config.BaseAddress = new Uri("http://exampleB.com");
+            });
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            // Act2
+            var clients = services.GetRequiredService<IEnumerable<ITestTypedClient>>();
+            var baseAddresses = clients.Select(c=>c.HttpClient.BaseAddress).ToList();
+
+            // Assert
+            Assert.NotEqual(baseAddresses.First(), baseAddresses.Last());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AddHttpClient_WithTypedClient_AndName_ConfiguresNamedClient()
         {
             // Arrange
@@ -315,7 +343,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // Arrange
             var serviceCollection = new ServiceCollection();
 
-            serviceCollection.Configure<HttpClientFactoryOptions>(nameof(ITestTypedClient), options =>
+            serviceCollection.Configure<HttpClientFactoryOptions>(nameof(TestTypedClient), options =>
             {
                 options.HttpClientActions.Add((c) => c.BaseAddress = new Uri("http://example.com"));
             });
