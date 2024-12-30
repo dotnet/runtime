@@ -60,11 +60,10 @@ namespace System.Linq
                             Grouping<TKey, TInner>? g = lookup.GetGrouping(outerKeySelector(item), create: false);
                             if (g is not null)
                             {
-                                int count = g._count;
-                                TInner[] elements = g._elements;
+                                int count = g.GetElements().Length;
                                 for (int i = 0; i != count; ++i)
                                 {
-                                    yield return resultSelector(item, elements[i]);
+                                    yield return resultSelector(item, g.GetElements()[i]);
                                 }
                             }
                         }
