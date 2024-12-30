@@ -8434,7 +8434,6 @@ MONO_RESTORE_WARNING
 
 			dest = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
 			if (mono_class_value_size (ins->klass, NULL) == 12) {
-				LLVMTypeRef float3Type = LLVMVectorType (LLVMFloatType (), 3);
 				const int mask_values [] = { 0, 1, 2 };
 
 				LLVMValueRef truncatedVec3 = LLVMBuildShuffleVector (
