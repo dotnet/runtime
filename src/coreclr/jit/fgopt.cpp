@@ -5575,6 +5575,132 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     return modified;
 }
 
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// Compiler::ThreeOptLayout::DumpToTSPFile: Output flowgraph in a format consumable by TSPLIB-based optimizers.
+//
+// Notes:
+//   TSPLIB requires edge weights to be integers, whereas 3-opt's cost model uses floating-point weights.
+//   Thus, we need to recompute and normalize layout costs here.
+//   This loss of precision can lead optimizers to reach optima that don't exist for the method's actual profile.
+//
+void Compiler::ThreeOptLayout::DumpToTSPFile()
+{
+    if (numCandidateBlocks < 3)
+    {
+        printf("JitDumpFlowGraphToTSPFile: Too few blocks. Skipping TSP dump.\n");
+        return;
+    }
+
+    if (numCandidateBlocks > 150)
+    {
+        printf("JitDumpFlowGraphToTSPFile: Too many blocks. Skipping TSP dump.\n");
+        return;
+    }
+
+    if (compiler->compHndBBtabCount != 0)
+    {
+        printf("JitDumpFlowGraphToTSPFile: Method has EH. Skipping TSP dump.\n");
+        return;
+    }
+
+    FILE *paramFile = nullptr, *problemFile = nullptr;
+
+    auto dump = [this, &paramFile, &problemFile]() {
+        char         buffer[32];
+        const size_t bufferSize = ArrLen(buffer);
+        const int    spmiIndex  = compiler->info.compMethodSuperPMIIndex;
+        int          written;
+
+        // Get parameter file handle
+        if (spmiIndex >= 0)
+        {
+            written = _snprintf_s(buffer, bufferSize, bufferSize, "%d.par", spmiIndex);
+        }
+        else
+        {
+            written = _snprintf_s(buffer, bufferSize, bufferSize, "%s.par", compiler->info.compMethodName);
+        }
+
+        paramFile = fopen_utf8(buffer, "a");
+        if (paramFile == nullptr)
+        {
+            printf("JitDumpFlowGraphToTSPFile: Failed to open TSP parameter file. Skipping TSP dump.\n");
+            return;
+        }
+
+        // Get problem file handle
+        buffer[written - 3] = 't';
+        buffer[written - 2] = 's';
+        buffer[written - 1] = 'p';
+
+        {
+            const char* problemFileName = buffer;
+            problemFile                 = fopen_utf8(problemFileName, "a");
+            if (problemFile == nullptr)
+            {
+                printf("JitDumpFlowGraphToTSPFile: Failed to open TSP problem file. Skipping TSP dump.\n");
+                return;
+            }
+
+            fprintf(paramFile, "PROBLEM_FILE=%s", problemFileName);
+        }
+
+        if (JitConfig.JitOutputTSPTourFile())
+        {
+            buffer[written - 3] = 'o';
+            buffer[written - 2] = 'u';
+            buffer[written - 1] = 't';
+            fprintf(paramFile, "\nOUTPUT_TOUR_FILE=%s", buffer);
+        }
+
+        // Write problem file header
+        fprintf(
+            problemFile,
+            "COMMENT: %s\nTYPE: ATSP\nDIMENSION: %d\nEDGE_WEIGHT_TYPE: EXPLICIT\nEDGE_WEIGHT_FORMAT: FULL_MATRIX\nEDGE_WEIGHT_SECTION\n",
+            compiler->info.compFullName, numCandidateBlocks);
+
+        // Write edge weight matrix to problem file
+        for (unsigned i = 0; i < numCandidateBlocks; i++)
+        {
+            BasicBlock* const block = blockOrder[i];
+
+            for (unsigned j = 0; j < numCandidateBlocks; j++)
+            {
+                BasicBlock* const next = blockOrder[j];
+                const weight_t    cost = (block == next) ? BB_ZERO_WEIGHT : GetCost(block, next);
+                fprintf(problemFile, "%llu ", (unsigned long long)cost);
+            }
+
+            fprintf(problemFile, "\n");
+        }
+
+        // Compute JIT-produced layout's cost
+        unsigned long long currLayoutCost = 0;
+
+        for (unsigned i = 0; i < numCandidateBlocks - 1; i++)
+        {
+            currLayoutCost += (unsigned long long)GetCost(blockOrder[i], blockOrder[i + 1]);
+        }
+
+        currLayoutCost += (unsigned long long)blockOrder[numCandidateBlocks - 1]->bbWeight;
+        fprintf(paramFile, "\nOPTIMUM=%llu\nSTOP_AT_OPTIMUM=NO\nTRACE_LEVEL=0", currLayoutCost);
+    };
+
+    dump();
+
+    if (paramFile != nullptr)
+    {
+        fclose(paramFile);
+    }
+
+    if (problemFile != nullptr)
+    {
+        fclose(problemFile);
+    }
+}
+#endif // DEBUG
+
 //-----------------------------------------------------------------------------
 // fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
 //   - Identify a range of hot blocks to reorder within
@@ -5597,6 +5723,13 @@ void Compiler::fgSearchImprovedLayout()
 
     ThreeOptLayout layoutRunner(this);
     layoutRunner.Run();
+
+#ifdef DEBUG
+    if (JitConfig.JitDumpFlowGraphToTSPFile())
+    {
+        layoutRunner.DumpToTSPFile();
+    }
+#endif // DEBUG
 }
 
 //-------------------------------------------------------------
