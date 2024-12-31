@@ -455,7 +455,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                                 if (annotation != default)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
+                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeCalled(closestMetadataType), "GetType called on this type");
                                 }
 
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node

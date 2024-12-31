@@ -218,16 +218,20 @@ namespace System.Globalization
         /// </summary>
         private static bool HasInvalidUnicodeSequence(ReadOnlySpan<char> s)
         {
-            for (int i = 0; i < s.Length; i++)
+            const char Noncharacter = '\uFFFE';
+
+            int i = s.IndexOfAnyInRange(CharUnicodeInfo.HIGH_SURROGATE_START, Noncharacter);
+
+            for (; (uint)i < (uint)s.Length; i++)
             {
                 char c = s[i];
 
-                if (c < '\ud800')
+                if (c < CharUnicodeInfo.HIGH_SURROGATE_START)
                 {
                     continue;
                 }
 
-                if (c == '\uFFFE')
+                if (c == Noncharacter)
                 {
                     return true;
                 }
@@ -240,17 +244,14 @@ namespace System.Globalization
 
                 if (char.IsHighSurrogate(c))
                 {
-                    if (i + 1 >= s.Length || !char.IsLowSurrogate(s[i + 1]))
+                    if ((uint)(i + 1) >= (uint)s.Length || !char.IsLowSurrogate(s[i + 1]))
                     {
                         // A high surrogate at the end of the string or a high surrogate
                         // not followed by a low surrogate
                         return true;
                     }
-                    else
-                    {
-                        i++; // consume the low surrogate.
-                        continue;
-                    }
+
+                    i++; // consume the low surrogate.
                 }
             }
 
