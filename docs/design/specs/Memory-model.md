@@ -74,14 +74,16 @@ The effects of ordinary reads and writes can be reordered as long as that preser
      - IL load instructions with `volatile.` prefix when instruction supports such prefix
      - `System.Threading.Volatile.Read`
      - `System.Thread.VolatileRead`
-     - Acquiring a lock (`System.Threading.Monitor.Enter` or entering a synchronized method)
+     - `System.Threading.Volatile.ReadBarrier` (applies to all prior reads)
+     - Acquiring a lock (`System.Threading.Monitor.Enter` or entering a synchronized method, applies to all prior reads)
 
 * **Volatile writes** have "release semantics" - the effects of a volatile write will not be observable before effects of all previous, in program order, reads and writes become observable.
   Operations with release semantics:
      - IL store instructions with `volatile.` prefix when such prefix is supported
      - `System.Threading.Volatile.Write`
      - `System.Thread.VolatileWrite`
-     - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method)
+     - `System.Threading.Volatile.WriteBarrier` (applies to all following writes)
+     - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method, applies to all following writes)
 
 * **volatile. initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceeding reads and writes.
 
@@ -188,7 +190,7 @@ void ThreadFunc1()
 }
 
 // thread #2
-void ThreadFunc1()
+void ThreadFunc2()
 {
     while (true)
     {
@@ -197,7 +199,7 @@ void ThreadFunc1()
 }
 
 // thread #3
-void ThreadFunc2()
+void ThreadFunc3()
 {
     MyClass localObj = obj;
     if (localObj != null)

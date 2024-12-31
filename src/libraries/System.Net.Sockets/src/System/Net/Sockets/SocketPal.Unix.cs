@@ -19,6 +19,8 @@ namespace System.Net.Sockets
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
+        private static readonly bool SelectOverPollIsBroken = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() ||  OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
+
         // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
@@ -69,7 +71,8 @@ namespace System.Net.Sockets
 
                 // The socket was created successfully; enable IPV6_V6ONLY by default for normal AF_INET6 sockets.
                 // This fails on raw sockets so we just let them be in default state.
-                if (addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
+                // WASI is always IPv6-only when IPv6 is enabled.
+                if (!OperatingSystem.IsWasi() && addressFamily == AddressFamily.InterNetworkV6 && socketType != SocketType.Raw)
                 {
                     int on = 1;
                     error = Interop.Sys.SetSockOpt(fd, SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, (byte*)&on, sizeof(int));
@@ -287,6 +290,11 @@ namespace System.Net.Sockets
             int startIndex = bufferIndex, startOffset = offset;
 
             int maxBuffers = buffers.Count - startIndex;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and recvmsg in preview2
+                maxBuffers = Math.Max(maxBuffers, 1);
+            }
             bool allocOnStack = maxBuffers <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
@@ -374,6 +382,11 @@ namespace System.Net.Sockets
             Debug.Assert(socket.IsSocket);
 
             int maxBuffers = buffers.Count;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and recvmsg in preview2
+                maxBuffers = Math.Max(maxBuffers, 1);
+            }
             bool allocOnStack = maxBuffers <= IovStackThreshold;
 
             // When there are many buffers, reduce the number of pinned buffers based on available bytes.
@@ -530,6 +543,12 @@ namespace System.Net.Sockets
             Debug.Assert(socket.IsSocket);
 
             int buffersCount = buffers.Count;
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI doesn't have iovecs and sendmsg in preview2
+                buffersCount = Math.Max(buffersCount, 1);
+            }
+
             bool allocOnStack = buffersCount <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[buffersCount];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffersCount];
@@ -1054,6 +1073,8 @@ namespace System.Net.Sockets
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
         {
+            if(OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
+
             handle.IsNonBlocking = !shouldBlock;
             willBlock = shouldBlock;
             return SocketError.Success;
@@ -1782,6 +1803,11 @@ namespace System.Net.Sockets
             // by the system.  Since poll then expects an array of entries, we try to allocate the array on the stack,
             // only falling back to allocating it on the heap if it's deemed too big.
 
+            if (SelectOverPollIsBroken)
+            {
+                return SelectViaSelect(checkRead, checkWrite, checkError, microseconds);
+            }
+
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
             if (count < StackThreshold)
             {
@@ -1802,6 +1828,103 @@ namespace System.Net.Sockets
                         checkWrite, checkWriteInitialCount,
                         checkError, checkErrorInitialCount,
                         eventsOnHeapPtr, count, microseconds);
+                }
+            }
+        }
+
+        private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
+        {
+            const int MaxStackAllocCount = 20;      // this is just arbitrary limit 3x 20 -> 60 e.g. close to 64 we have in some other places
+            Span<int> readFDs = checkRead?.Count > MaxStackAllocCount ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];
+            Span<int> writeFDs = checkWrite?.Count > MaxStackAllocCount ? new int[checkWrite.Count] : stackalloc int[checkWrite?.Count ?? 0];
+            Span<int> errorFDs =  checkError?.Count > MaxStackAllocCount ? new int[checkError.Count] : stackalloc int[checkError?.Count ?? 0];
+
+            int refsAdded = 0;
+            int maxFd = 0;
+            try
+            {
+                AddDesriptors(readFDs, checkRead, ref refsAdded, ref maxFd);
+                AddDesriptors(writeFDs, checkWrite, ref refsAdded, ref maxFd);
+                AddDesriptors(errorFDs, checkError, ref refsAdded, ref maxFd);
+
+                int triggered = 0;
+                Interop.Error err = Interop.Sys.Select(readFDs, readFDs.Length, writeFDs, writeFDs.Length, errorFDs, errorFDs.Length, microseconds, maxFd, out triggered);
+                if (err != Interop.Error.SUCCESS)
+                {
+                    return GetSocketErrorForErrorCode(err);
+                }
+
+                Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+
+                if (triggered == 0)
+                {
+                    checkRead?.Clear();
+                    checkWrite?.Clear();
+                    checkError?.Clear();
+                }
+                else
+                {
+                    FilterSelectList(checkRead, readFDs);
+                    FilterSelectList(checkWrite, writeFDs);
+                    FilterSelectList(checkError, errorFDs);
+                }
+            }
+            finally
+            {
+                // This order matches with the AddToPollArray calls
+                // to release only the handles that were ref'd.
+                Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+                Debug.Assert(refsAdded == 0);
+            }
+
+            return (SocketError)0;
+        }
+
+        private static void AddDesriptors(Span<int> buffer, IList? socketList, ref int refsAdded, ref int maxFd)
+        {
+            if (socketList == null || socketList.Count == 0 )
+            {
+                return;
+            }
+
+            Debug.Assert(buffer.Length == socketList.Count);
+            for (int i = 0; i < socketList.Count; i++)
+            {
+                Socket? socket = socketList[i] as Socket;
+                if (socket == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socket?.GetType().FullName ?? "null", typeof(Socket).FullName), nameof(socketList));
+                }
+
+                if (socket.Handle > maxFd)
+                {
+                    maxFd = (int)socket.Handle;
+                }
+
+                bool success = false;
+                socket.InternalSafeHandle.DangerousAddRef(ref success);
+                buffer[i] = (int)socket.InternalSafeHandle.DangerousGetHandle();
+
+                refsAdded++;
+            }
+        }
+
+        private static void FilterSelectList(IList? socketList, Span<int> results)
+        {
+            if (socketList == null)
+                return;
+
+            // This loop can be O(n^2) in the unexpected and worst case. Some more thoughts are written in FilterPollList that does exactly same operation.
+
+            for (int i = socketList.Count - 1; i >= 0; --i)
+            {
+                if (results[i] == 0)
+                {
+                    socketList.RemoveAt(i);
                 }
             }
         }

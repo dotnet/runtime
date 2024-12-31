@@ -76,7 +76,7 @@ elif [[ "$__TargetOS" == wasi ]]; then
     export WASI_SDK_PATH="${WASI_SDK_PATH%/}/"
     export CLR_CC="$WASI_SDK_PATH"bin/clang
     export TARGET_BUILD_ARCH=wasm
-    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake $__CMakeArgs"
+    __CMakeArgs="-DCLR_CMAKE_TARGET_OS=wasi -DCLR_CMAKE_TARGET_ARCH=wasm -DWASI_SDK_PREFIX=$WASI_SDK_PATH -DCMAKE_TOOLCHAIN_FILE=${WASI_SDK_PATH}/share/cmake/wasi-sdk-p2.cmake $__CMakeArgs"
 elif [[ "$__TargetOS" == ios || "$__TargetOS" == iossimulator ]]; then
     # nothing to do here
     true

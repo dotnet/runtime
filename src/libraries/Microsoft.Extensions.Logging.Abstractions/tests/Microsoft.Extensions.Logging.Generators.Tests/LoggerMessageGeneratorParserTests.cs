@@ -457,6 +457,25 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
         }
 
         [Fact]
+        public async Task PrimaryConstructorWithParameterUsedInMethodOK()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C(ILogger logger)
+                {
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    public partial void M1();
+
+                    private void M2()
+                    {
+                        logger.LogInformation(""M2"");
+                    }
+                }
+            ");
+
+            Assert.Empty(diagnostics);
+        }
+
+        [Fact]
         public async Task PrimaryConstructorOnOtherPartialDeclarationOK()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"

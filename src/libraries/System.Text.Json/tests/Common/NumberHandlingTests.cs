@@ -1734,13 +1734,13 @@ namespace System.Text.Json.Serialization.Tests
             // Global options
             ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonSerializerOptions { NumberHandling = (JsonNumberHandling)(-1) });
-            Assert.Contains("value", ex.ToString());
+            Assert.Contains("value", ex.Message);
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonSerializerOptions { NumberHandling = (JsonNumberHandling)(8) });
 
             ex = Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(-1)));
-            Assert.Contains("handling", ex.ToString());
+            Assert.Contains("handling", ex.Message);
             Assert.Throws<ArgumentOutOfRangeException>(
                 () => new JsonNumberHandlingAttribute((JsonNumberHandling)(8)));
         }
@@ -1798,24 +1798,24 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Invalid to set number handling for number collection property when number is handled with custom converter.
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithListPropAndAttribute_ConverterOnProp>(""));
-            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new ClassWithListPropAndAttribute_ConverterOnProp()));
-            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithListPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
             // Source-gen isn't currently validating that the converter on the test prop
             // is invalid so JsonException is being thrown instead due to invalid JSON.
             // [ActiveIssue("https://github.com/dotnet/runtime/issues/73714"]
             ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithDictPropAndAttribute_ConverterOnProp>(""));
-            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new ClassWithDictPropAndAttribute_ConverterOnProp()));
-            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.ToString());
-            Assert.Contains("IntProp", ex.ToString());
+            Assert.Contains(nameof(ClassWithDictPropAndAttribute_ConverterOnProp), ex.Message);
+            Assert.Contains("IntProp", ex.Message);
 #endif
         }
 

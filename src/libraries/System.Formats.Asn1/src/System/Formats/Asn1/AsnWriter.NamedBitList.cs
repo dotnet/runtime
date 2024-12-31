@@ -48,6 +48,9 @@ namespace System.Formats.Asn1
         ///   Write a [<see cref="FlagsAttribute"/>] enum value as a NamedBitList with
         ///   a specified tag.
         /// </summary>
+        /// <typeparam name="TEnum">
+        ///   The [<see cref="FlagsAttribute" />] enumeration type to write.
+        /// </typeparam>
         /// <param name="value">The enumeration value to write</param>
         /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 3).</param>
         /// <exception cref="ArgumentException">

@@ -73,13 +73,13 @@ namespace System.Text.Json.Serialization.Converters
                     node = new JsonArray(element, options);
                     break;
                 default:
-                    node = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                    node = new JsonValueOfElement(element, options);
                     break;
             }
 
             return node;
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

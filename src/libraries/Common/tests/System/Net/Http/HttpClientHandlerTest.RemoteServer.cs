@@ -165,6 +165,7 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108019", TestPlatforms.Browser)]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))

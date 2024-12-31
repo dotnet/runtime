@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[ExpectedNoWarnings]
 	[SetupLinkerArgument ("--enable-opt", "ipconstprop")]
 	[SetupLinkerDescriptorFile ("CompilerGeneratedCodeInPreservedAssembly.xml")]
+	[SetupLinkerArgument ("--feature", "AlwaysFalse", "false")]
 	class CompilerGeneratedCodeInPreservedAssembly
 	{
 		public static void Main ()
@@ -71,6 +72,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
+		[FeatureSwitchDefinition ("AlwaysFalse")]
 		public static bool AlwaysFalse => false;
 
 		[RequiresUnreferencedCode ("RUC")]

@@ -3252,7 +3252,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         public void AddExtObject33(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             ExObj obj = new ExObj(0, _output);

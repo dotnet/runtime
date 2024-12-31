@@ -18,7 +18,7 @@ public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISe
     {
         using Bitmap bitmap = new(10, 10);
         using var deserialized = RoundTrip(bitmap, typeStyle: typeStyle, assemblyMatching: assemblyMatching);
-        deserialized.Size.Should().Be(bitmap.Size);
+        Assert.Equal(bitmap.Size, deserialized.Size);
     }
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.SupportsComInterop))]
@@ -29,7 +29,7 @@ public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISe
         byte[] rawInlineImageBytes = Convert.FromBase64String(TestResources.TestPng);
         using Bitmap bitmap = new(new MemoryStream(rawInlineImageBytes));
         using var deserialized = RoundTrip(bitmap, typeStyle: typeStyle, assemblyMatching: assemblyMatching);
-        deserialized.Size.Should().Be(bitmap.Size);
-        deserialized.RawFormat.Should().Be(bitmap.RawFormat);
+        Assert.Equal(bitmap.Size, deserialized.Size);
+        Assert.Equal(bitmap.RawFormat, deserialized.RawFormat);
     }
 }

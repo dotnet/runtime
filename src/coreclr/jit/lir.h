@@ -317,6 +317,7 @@ public:
 
     static GenTree* LastNode(GenTree* node1, GenTree* node2);
     static GenTree* LastNode(GenTree** nodes, size_t numNodes);
+    static GenTree* FirstNode(GenTree* node1, GenTree* node2);
 };
 
 inline void GenTree::SetUnusedValue()

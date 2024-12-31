@@ -62,12 +62,14 @@ extends:
             - windows_x64
             jobParameters:
               timeoutInMinutes: 200
-              buildArgs: -s clr+libs+hosts+packs -c debug -rc $(_BuildConfig)
+              buildArgs: -s clr+libs+clr.hosts+packs -c debug -rc $(_BuildConfig)
               postBuildSteps:
                 - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                   parameters:
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+              extraVariablesTemplates:
+                - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
         #
         # Build the whole product with Release CoreCLR and run libraries tests
@@ -82,12 +84,14 @@ extends:
             - windows_x64
             jobParameters:
               timeoutInMinutes: 180
-              buildArgs: -s clr+libs+libs.tests+hosts+packs -c $(_BuildConfig) /p:ArchiveTests=true
+              buildArgs: -s clr+libs+libs.tests+clr.hosts+packs -c $(_BuildConfig) /p:ArchiveTests=true
               postBuildSteps:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
+              extraVariablesTemplates:
+                - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
         #
         # Build and test libraries AllConfigurations
@@ -102,3 +106,5 @@ extends:
               buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
               nameSuffix: Libraries_AllConfigurations
               timeoutInMinutes: 150
+              extraVariablesTemplates:
+                - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

@@ -17,12 +17,6 @@
 
 #include <minipal/getexepath.h>
 
-#ifdef DEBUG
-#define DEBUGNOTRETURN __attribute__((noreturn))
-#else
-#define DEBUGNOTRETURN
-#endif
-
 int32_t SystemNative_ForkAndExecProcess(const char* filename,
                                       char* const argv[],
                                       char* const envp[],
@@ -72,10 +66,9 @@ int32_t SystemNative_GetSid(int32_t pid)
     return -1;
 }
 
-DEBUGNOTRETURN
 void SystemNative_SysLog(SysLogPriority priority, const char* message, const char* arg1)
 {
-    assert_msg(false, "Not supported on WASI", 0);
+    fprintf(stderr, message, arg1);
 }
 
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void)

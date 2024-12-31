@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -497,6 +498,18 @@ namespace System.IO.Compression.Tests
             foreach (object[] e in SharedComment_Data())
             {
                 yield return e;
+            }
+        }
+
+        // Returns pairs encoded with Latin1, but decoded with UTF8.
+        // Returns: originalComment, expectedComment, transcoded expectedComment
+        public static IEnumerable<object[]> MismatchingEncodingComment_Data()
+        {
+            foreach (object[] e in Latin1Comment_Data())
+            {
+                byte[] expectedBytes = Encoding.Latin1.GetBytes(e[1] as string);
+                
+                yield return new object[] { e[0], e[1], Encoding.UTF8.GetString(expectedBytes) };
             }
         }
     }

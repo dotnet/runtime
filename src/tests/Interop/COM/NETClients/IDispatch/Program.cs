@@ -190,12 +190,21 @@ namespace NetClient
             var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
             var expected = System.Linq.Enumerable.Range(0, 10);
 
-            Console.WriteLine($"Calling {nameof(DispatchTesting.GetEnumerator)} ...");
-            var enumerator = dispatchTesting.GetEnumerator();
-            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+            {
+                Console.WriteLine($"Calling IEnumerable through cast ...");
+                var enumerable = (System.Collections.IEnumerable)dispatchTesting;
+                AssertExtensions.CollectionEqual(expected, ConvertEnumerable(enumerable));
+                AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerable.GetEnumerator()));
+            }
 
-            enumerator.Reset();
-            AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+            {
+                Console.WriteLine($"Calling {nameof(DispatchTesting.GetEnumerator)} ...");
+                var enumerator = dispatchTesting.GetEnumerator();
+                AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+
+                enumerator.Reset();
+                AssertExtensions.CollectionEqual(expected, GetEnumerable(enumerator));
+            }
 
             Console.WriteLine($"Calling {nameof(DispatchTesting.ExplicitGetEnumerator)} ...");
             var enumeratorExplicit = dispatchTesting.ExplicitGetEnumerator();
@@ -204,12 +213,23 @@ namespace NetClient
             enumeratorExplicit.Reset();
             AssertExtensions.CollectionEqual(expected, GetEnumerable(enumeratorExplicit));
 
-            System.Collections.Generic.IEnumerable<int> GetEnumerable(System.Collections.IEnumerator e)
+            static System.Collections.Generic.IEnumerable<int> GetEnumerable(System.Collections.IEnumerator e)
             {
                var list = new System.Collections.Generic.List<int>();
                while (e.MoveNext())
                {
                    list.Add((int)e.Current);
+               }
+
+               return list;
+            }
+
+            static System.Collections.Generic.IEnumerable<int> ConvertEnumerable(System.Collections.IEnumerable e)
+            {
+               var list = new System.Collections.Generic.List<int>();
+               foreach (object i in e)
+               {
+                   list.Add((int)i);
                }
 
                return list;
@@ -254,13 +274,13 @@ namespace NetClient
             Assert.Equal(unchecked((int)0x80020005), comException.HResult);
 
             // Types rejected by OAVariantLib
-            VarEnum[] unsupportedTypes = 
+            VarEnum[] unsupportedTypes =
             {
                 VarEnum.VT_ERROR | (VarEnum)0x8000,
             };
 
             // Types rejected by VariantChangeTypeEx
-            VarEnum[] invalidCastTypes = 
+            VarEnum[] invalidCastTypes =
             {
                 VarEnum.VT_UNKNOWN,
                 VarEnum.VT_NULL,

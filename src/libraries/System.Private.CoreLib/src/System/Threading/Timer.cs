@@ -171,6 +171,9 @@ namespace System.Threading
         // need to look at the long list because the current time will be <= _currentAbsoluteThreshold.
         private const int ShortTimersThresholdMilliseconds = 333;
 
+        // Lock shared by the TimerQueue and associated TimerQueueTimer instances
+        internal Lock SharedLock { get; } = new Lock();
+
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
         // We're in a thread pool work item here, and if there are multiple timers to be fired, we want
         // to queue all but the first one.  The first may can then be invoked synchronously or queued,
@@ -181,7 +184,7 @@ namespace System.Threading
             // are queued to the ThreadPool.
             TimerQueueTimer? timerToFireOnThisThread = null;
 
-            lock (this)
+            lock (SharedLock)
             {
                 // Since we got here, that means our previous timer has fired.
                 _isTimerScheduled = false;
@@ -540,7 +543,7 @@ namespace System.Threading
         {
             bool success;
 
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 if (_canceled)
                 {
@@ -567,7 +570,7 @@ namespace System.Threading
 
         public void Dispose()
         {
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 if (!_canceled)
                 {
@@ -584,7 +587,7 @@ namespace System.Threading
             bool success;
             bool shouldSignal = false;
 
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 if (_canceled)
                 {
@@ -608,7 +611,7 @@ namespace System.Threading
 
         public ValueTask DisposeAsync()
         {
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 object? notifyWhenNoCallbacksRunning = _notifyWhenNoCallbacksRunning;
 
@@ -668,9 +671,9 @@ namespace System.Threading
 
         internal void Fire(bool isThreadPool = false)
         {
-            bool canceled = false;
+            bool canceled;
 
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 canceled = _canceled;
                 if (!canceled)
@@ -683,7 +686,7 @@ namespace System.Threading
             CallCallback(isThreadPool);
 
             bool shouldSignal;
-            lock (_associatedTimerQueue)
+            lock (_associatedTimerQueue.SharedLock)
             {
                 _callbacksRunning--;
                 shouldSignal = _canceled && _callbacksRunning == 0 && _notifyWhenNoCallbacksRunning != null;
@@ -943,7 +946,7 @@ namespace System.Threading
                 long count = 0;
                 foreach (TimerQueue queue in TimerQueue.Instances)
                 {
-                    lock (queue)
+                    lock (queue.SharedLock)
                     {
                         count += queue.ActiveCount;
                     }

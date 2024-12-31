@@ -151,22 +151,26 @@ namespace System.Reflection.Runtime.General
             Justification = "Array.CreateInstance is only used with reference types here and is therefore safe.")]
         public static object[] InstantiateAsArray(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
         {
-            LowLevelList<object> attributes = new LowLevelList<object>();
+            ArrayBuilder<object> attributes = default;
             foreach (CustomAttributeData cad in cads)
             {
                 object instantiatedAttribute = cad.Instantiate();
                 attributes.Add(instantiatedAttribute);
             }
 
-            // This is here for desktop compatibility. ICustomAttribute.GetCustomAttributes() normally returns an array of the
-            // exact attribute type requested except in two cases: when the passed in type is an open type and when
-            // it is a value type. In these two cases, it returns an array of type Object[].
-            bool useObjectArray = actualElementType.ContainsGenericParameters || actualElementType.IsValueType;
-            int count = attributes.Count;
-            object[] result = useObjectArray ? new object[count] : (object[])Array.CreateInstance(actualElementType, count);
-
-            attributes.CopyTo(result, 0);
-            return result;
+            if (actualElementType.ContainsGenericParameters || actualElementType.IsValueType)
+            {
+                // This is here for desktop compatibility. ICustomAttribute.GetCustomAttributes() normally returns an array of the
+                // exact attribute type requested except in two cases: when the passed in type is an open type and when
+                // it is a value type. In these two cases, it returns an array of type Object[].
+                return attributes.ToArray();
+            }
+            else
+            {
+                object[] result = (object[])Array.CreateInstance(actualElementType, attributes.Count);
+                attributes.CopyTo(result);
+                return result;
+            }
         }
 
         private static object? GetRawDefaultValue(IEnumerable<CustomAttributeData> customAttributes)

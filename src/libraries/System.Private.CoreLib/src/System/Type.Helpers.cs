@@ -142,7 +142,7 @@ namespace System
             return ret;
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(GetAllMembers)]
         public virtual MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object? filterCriteria)
         {
             // Define the work arrays
@@ -493,7 +493,7 @@ namespace System
         private static bool FilterNameImpl(MemberInfo m, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (!(filterCriteria is string filterCriteriaString))
+            if (filterCriteria is not string filterCriteriaString)
             {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }

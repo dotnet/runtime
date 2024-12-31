@@ -125,6 +125,9 @@ public class ResourcesData
     /// </summary>
     public string hash { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, string> fingerprinting { get; set; }
+
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
@@ -249,11 +252,6 @@ public enum GlobalizationMode : int
     /// Load custom icu file provided by the developer.
     /// </summary>
     Custom = 3,
-
-    /// <summary>
-    /// Use the reduced icudt_hybrid.dat file
-    /// </summary>
-    Hybrid = 4,
 }
 
 [DataContract]

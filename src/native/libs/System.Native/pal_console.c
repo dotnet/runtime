@@ -40,22 +40,6 @@ int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 #endif
 }
 
-int32_t SystemNative_SetWindowSize(WinSize* windowSize)
-{
-    assert(windowSize != NULL);
-
-#if HAVE_IOCTL_WITH_INT_REQUEST && HAVE_TIOCSWINSZ
-    return ioctl(STDOUT_FILENO, (int)TIOCSWINSZ, windowSize);
-#elif HAVE_IOCTL && HAVE_TIOCSWINSZ
-    return ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
-#else
-    // Not supported on e.g. Android. Also, prevent a compiler error because windowSize is unused
-    (void)windowSize;
-    errno = ENOTSUP;
-    return -1;
-#endif
-}
-
 int32_t SystemNative_IsATty(intptr_t fd)
 {
     return isatty(ToFileDescriptor(fd));

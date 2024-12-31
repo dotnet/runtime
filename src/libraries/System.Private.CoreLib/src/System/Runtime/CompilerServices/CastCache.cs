@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    // See typehandle.h for matching unmanaged type.
     internal enum CastResult
     {
         CannotCast = 0,
@@ -164,7 +165,7 @@ namespace System.Runtime.CompilerServices
                 if (entrySource == source)
                 {
                     // we do ordinary reads of the entry parts and
-                    // Interlocked.ReadMemoryBarrier() before reading the version
+                    // Volatile.ReadBarrier() before reading the version
                     nuint entryTargetAndResult = pEntry._targetAndResult;
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
@@ -177,7 +178,7 @@ namespace System.Runtime.CompilerServices
                         // - use acquires for both _source and _targetAndResults or
                         // - issue a load barrier before reading _version
                         // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-                        Interlocked.ReadMemoryBarrier();
+                        Volatile.ReadBarrier();
 
                         if (version != pEntry._version)
                         {

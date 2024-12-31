@@ -55,11 +55,24 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (predicate(element))
+                foreach (TSource element in span)
                 {
-                    return true;
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (predicate(element))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -78,11 +91,24 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (!predicate(element))
+                foreach (TSource element in span)
                 {
-                    return false;
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (!predicate(element))
+                    {
+                        return false;
+                    }
                 }
             }
 

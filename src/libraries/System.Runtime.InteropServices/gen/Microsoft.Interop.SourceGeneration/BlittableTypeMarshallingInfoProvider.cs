@@ -31,11 +31,6 @@ namespace Microsoft.Interop
                 // They are supported in configurations where runtime marshalling is enabled.
                 return NoMarshallingInfo.Instance;
             }
-            else if (_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute) is null)
-            {
-                // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the forwarder downlevel.
-                return new MissingSupportMarshallingInfo();
-            }
             else
             {
                 return new UnmanagedBlittableMarshallingInfo(type.IsStrictlyBlittableInContext(_compilation));

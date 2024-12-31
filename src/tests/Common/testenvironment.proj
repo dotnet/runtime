@@ -70,6 +70,7 @@
       DOTNET_JitRandomGuardedDevirtualization;
       DOTNET_JitRandomEdgeCounts;
       DOTNET_JitRandomOnStackReplacement;
+      DOTNET_JitRandomPartialComplation;
       DOTNET_JitRandomlyCollect64BitCounts;
       DOTNET_JitStressModeNames;
       DOTNET_JitGuardedDevirtualizationMaxTypeChecks;
@@ -172,6 +173,7 @@
     <TestEnvironment Include="jitstress_isas_2_x86_nosse41" JitStress="2" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nosse42" JitStress="2" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_2_x86_nossse3" JitStress="2" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstress_isas_arm64_sve" AltJitName="clrjit_universal_arm64_x64.dll" AltJit="*" MaxVectorTBitWidth="128" EnableAVX="0" /> <!-- Trigger Sve code paths-->
     <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
@@ -224,6 +226,7 @@
     <TestEnvironment Include="jit_stress_splitting" JitFakeProcedureSplitting="1" JitStressProcedureSplitting="1" />
     <TestEnvironment Include="jitpartialcompilation" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" />
     <TestEnvironment Include="jitpartialcompilation_pgo" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" />
+    <TestEnvironment Include="jitpartialcompilation_pgo_stress_random" TC_PartialCompilation="1" TC_QuickJitForLoops="1" TieredCompilation="1" TieredPGO="1" JitRandomPartialCompilation="15" />
     <TestEnvironment Include="jitobjectstackallocation" JitObjectStackAllocation="1" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_only" JitStressModeNames="STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />
     <TestEnvironment Include="jitphysicalpromotion_full" JitStressModeNames="STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" TieredCompilation="0" />

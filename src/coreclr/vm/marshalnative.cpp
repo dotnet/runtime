@@ -349,7 +349,7 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 {
     FCALL_CONTRACT;
 
-    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_SIZEDREF);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT);
 
     if (CORProfilerTrackGC())
         return NULL;
@@ -438,9 +438,9 @@ extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOI
 
     BEGIN_QCALL;
 
+#ifdef FEATURE_COMINTEROP
     // Retrieve the IErrorInfo to use.
     IErrorInfo* pErrorInfo = (IErrorInfo*)errorInfo;
-#ifdef FEATURE_COMINTEROP
     if (pErrorInfo == (IErrorInfo*)(-1))
     {
         pErrorInfo = NULL;
@@ -456,7 +456,11 @@ extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOI
 
     OBJECTREF exceptObj = NULL;
     GCPROTECT_BEGIN(exceptObj);
+#ifdef FEATURE_COMINTEROP
     ::GetExceptionForHR(errorCode, pErrorInfo, &exceptObj);
+#else
+    ::GetExceptionForHR(errorCode, &exceptObj);
+#endif // FEATURE_COMINTEROP
     retVal.Set(exceptObj);
     GCPROTECT_END();
 

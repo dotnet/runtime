@@ -49,7 +49,7 @@ namespace System.Reflection.Metadata
             {
                 if (throwOnError)
                 {
-                    if (parser._parseOptions.IsMaxDepthExceeded(recursiveDepth))
+                    if (IsMaxDepthExceeded(parser._parseOptions, recursiveDepth))
                     {
                         ThrowInvalidOperation_MaxNodesExceeded(parser._parseOptions.MaxNodes);
                     }
@@ -61,22 +61,26 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+            Debug.Assert(parsedName.GetNodeCount() == recursiveDepth, $"Node count mismatch for '{typeName.ToString()}'");
+
             return parsedName;
         }
 
         // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
         private TypeName? ParseNextTypeName(bool allowFullyQualifiedName, ref int recursiveDepth)
         {
-            if (!TryDive(ref recursiveDepth))
+            if (!TryDive(_parseOptions, ref recursiveDepth))
             {
                 return null;
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameInfo(ref _inputString, ref nestedNameLengths, out int fullTypeNameLength))
+            if (!TryGetTypeNameInfo(_parseOptions, ref _inputString, ref nestedNameLengths, ref recursiveDepth, out int fullTypeNameLength))
             {
                 return null;
             }
+
+            // At this point, we have performed O(fullTypeNameLength) total work.
 
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
             _inputString = _inputString.Slice(fullTypeNameLength);
@@ -140,12 +144,28 @@ namespace System.Reflection.Metadata
                 }
             }
 
+            // At this point, we may have performed O(fullTypeNameLength + _inputString.Length) total work.
+            // This will be the case if there was whitespace after the full type name in the original input
+            // string. We could end up looking at these same whitespace chars again later in this method,
+            // such as when parsing decorators. We rely on the TryDive routine to limit the total number
+            // of times we might inspect the same character.
+
             // If there was an error stripping the generic args, back up to
             // before we started processing them, and let the decorator
             // parser try handling it.
             if (genericArgs is null)
             {
                 _inputString = capturedBeforeProcessing;
+            }
+            else
+            {
+                // Every constructed generic type needs the generic type definition.
+                if (!TryDive(_parseOptions, ref recursiveDepth))
+                {
+                    return null;
+                }
+                // If that generic type is a nested type, we don't increase the recursiveDepth any further,
+                // as generic type definition uses exactly the same declaring type as the constructed generic type.
             }
 
             int previousDecorator = default;
@@ -154,7 +174,7 @@ namespace System.Reflection.Metadata
             // iterate over the decorators to ensure there are no illegal combinations
             while (TryParseNextDecorator(ref _inputString, out int parsedDecorator))
             {
-                if (!TryDive(ref recursiveDepth))
+                if (!TryDive(_parseOptions, ref recursiveDepth))
                 {
                     return null;
                 }
@@ -190,11 +210,14 @@ namespace System.Reflection.Metadata
                 result = new(fullName: null, assemblyName, elementOrGenericType: result, declaringType, genericArgs);
             }
 
+            // The loop below is protected by the dive check during the first decorator pass prior
+            // to assembly name parsing above.
+
             if (previousDecorator != default) // some decorators were recognized
             {
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
                 {
-                    result = new(fullName: null, assemblyName, elementOrGenericType: result, rankOrModifier: (sbyte)parsedModifier);
+                    result = new(fullName: null, assemblyName, elementOrGenericType: result, rankOrModifier: parsedModifier);
                 }
             }
 
@@ -233,6 +256,8 @@ namespace System.Reflection.Metadata
                 return null;
             }
 
+            // The loop below is protected by the dive check in GetFullTypeNameLength.
+
             TypeName? declaringType = null;
             int nameOffset = 0;
             foreach (int nestedNameLength in nestedNameLengths)
@@ -244,16 +269,6 @@ namespace System.Reflection.Metadata
             }
 
             return declaringType;
-        }
-
-        private bool TryDive(ref int depth)
-        {
-            if (_parseOptions.IsMaxDepthExceeded(depth))
-            {
-                return false;
-            }
-            depth++;
-            return true;
         }
     }
 }

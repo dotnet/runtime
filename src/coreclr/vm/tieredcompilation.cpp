@@ -225,7 +225,7 @@ bool TieredCompilationManager::TrySetCodeEntryPointAndRecordMethodForCallCountin
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != (PCODE)NULL);
 
     if (!IsTieringDelayActive())
     {
@@ -408,7 +408,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
         _ASSERTE(newThread != nullptr);
         INDEBUG(s_backgroundWorkerThread = newThread);
     #ifdef FEATURE_COMINTEROP
-        newThread->SetApartment(Thread::AS_InMTA);
+        newThread->SetApartmentOfUnstartedThread(Thread::AS_InMTA);
     #endif
         newThread->SetBackground(true);
 

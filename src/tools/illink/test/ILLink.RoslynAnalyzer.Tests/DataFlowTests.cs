@@ -216,6 +216,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task MultipleReturnsDataFlow ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task GetInterfaceDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -163,22 +164,12 @@ namespace Internal.Pgo
                 }
                 else if ((bytes[offset]) == 0xC1) // 8 byte specifier
                 {
-                    signedInt = (((long)bytes[offset + 1]) << 56) |
-                                (((long)bytes[offset + 2]) << 48) |
-                                (((long)bytes[offset + 3]) << 40) |
-                                (((long)bytes[offset + 4]) << 32) |
-                                (((long)bytes[offset + 5]) << 24) |
-                                (((long)bytes[offset + 6]) << 16) |
-                                (((long)bytes[offset + 7]) << 8) |
-                                ((long)bytes[offset + 8]);
+                    signedInt = BinaryPrimitives.ReadInt64BigEndian(bytes.AsSpan(offset + 1, sizeof(long)));
                     offset += 9;
                 }
                 else
                 {
-                    signedInt = (((int)bytes[offset + 1]) << 24) |
-                                (((int)bytes[offset + 2]) << 16) |
-                                (((int)bytes[offset + 3]) << 8) |
-                                ((int)bytes[offset + 4]);
+                    signedInt = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(offset + 1, sizeof(int)));
                     offset += 5;
                 }
 

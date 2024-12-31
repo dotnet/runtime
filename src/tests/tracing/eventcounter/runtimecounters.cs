@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using Xunit;
 
 namespace RuntimeEventCounterTests
@@ -19,35 +16,38 @@ namespace RuntimeEventCounterTests
     {
         public RuntimeCounterListener()
         {
-            observedRuntimeCounters = new Dictionary<string, bool>() {
-                { "cpu-usage" , false },
-                { "working-set", false },
-                { "gc-heap-size", false },
-                { "gen-0-gc-count", false },
-                { "gen-1-gc-count", false },
-                { "gen-2-gc-count", false },
-                { "threadpool-thread-count", false },
-                { "monitor-lock-contention-count", false },
-                { "threadpool-queue-length", false },
-                { "threadpool-completed-items-count", false },
-                { "alloc-rate", false },
-                { "active-timer-count", false },
-                { "gc-fragmentation", false },
-                { "gc-committed", false },
-                { "exception-count", false },
-                { "time-in-gc", false },
-                { "gen-0-size", false },
-                { "gen-1-size", false },
-                { "gen-2-size", false },
-                { "loh-size", false },
-                { "poh-size", false },
-                { "assembly-count", false },
-                { "il-bytes-jitted", false },
-                { "methods-jitted-count", false },
-                { "time-in-jit", false }
-            };
+            observedRuntimeCounters = new ConcurrentDictionary<string, bool>();
+            foreach (string counter in new string[] {
+                "cpu-usage",
+                "working-set",
+                "gc-heap-size",
+                "gen-0-gc-count",
+                "gen-1-gc-count",
+                "gen-2-gc-count",
+                "threadpool-thread-count",
+                "monitor-lock-contention-count",
+                "threadpool-queue-length",
+                "threadpool-completed-items-count",
+                "alloc-rate",
+                "active-timer-count",
+                "gc-fragmentation",
+                "gc-committed",
+                "exception-count",
+                "time-in-gc",
+                "gen-0-size",
+                "gen-1-size",
+                "gen-2-size",
+                "loh-size",
+                "poh-size",
+                "assembly-count",
+                "il-bytes-jitted",
+                "methods-jitted-count",
+                "time-in-jit" })
+            {
+                observedRuntimeCounters[counter] = false;
+            }
         }
-        private Dictionary<string, bool> observedRuntimeCounters;
+        private ConcurrentDictionary<string, bool> observedRuntimeCounters;
 
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -63,7 +63,6 @@ namespace RuntimeEventCounterTests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-
             for (int i = 0; i < eventData.Payload.Count; i++)
             {
                 IDictionary<string, object> eventPayload = eventData.Payload[i] as IDictionary<string, object>;
@@ -104,17 +103,19 @@ namespace RuntimeEventCounterTests
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
-                Thread.Sleep(3000);
-                if (myListener.Verify())
+                // Wait max 60 seconds
+                for (int i = 0; i < 60; i++)
                 {
-                    Console.WriteLine("Test passed");
-                    return 100;
+                    Thread.Sleep(1000);
+                    if (myListener.Verify())
+                    {
+                        Console.WriteLine("Test passed");
+                        return 100;
+                    }
                 }
-                else
-                {
-                    Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
-                    return 1;
-                }
+
+                Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
+                return 1;
             }
         }
     }

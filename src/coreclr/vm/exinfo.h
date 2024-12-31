@@ -57,8 +57,6 @@ public:
 
     LPVOID              m_dEsp;             // Esp when  fault occurred, OR esp to restore on endcatch
 
-    StackTraceInfo      m_StackTraceInfo;
-
     PTR_ExInfo          m_pPrevNestedInfo;  // pointer to nested info if are handling nested exception
 
     size_t*             m_pShadowSP;        // Zero this after endcatch
@@ -167,6 +165,12 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_FAULT = 1,
     RH_EH_CLAUSE_FILTER = 2,
     RH_EH_CLAUSE_UNUSED = 3,
+};
+
+enum RhEHFrameType
+{
+    RH_EH_FIRST_FRAME = 1,
+    RH_EH_FIRST_RETHROW_FRAME = 2,
 };
 
 struct RhEHClause

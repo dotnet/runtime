@@ -6,7 +6,7 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration.Ini
 {
     /// <summary>
-    /// An INI file based <see cref="ConfigurationProvider"/>.
+    /// Provides configuration key-value pairs that are obtained from an INI file.
     /// Files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>)
     /// </summary>
     /// <examples>

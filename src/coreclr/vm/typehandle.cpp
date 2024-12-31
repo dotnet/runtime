@@ -84,6 +84,13 @@ BOOL TypeHandle::IsArray() const {
     return !IsTypeDesc() && AsMethodTable()->IsArray();
 }
 
+BOOL TypeHandle::IsString() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return !IsTypeDesc() && AsMethodTable()->IsString();
+}
+
 BOOL TypeHandle::IsGenericVariable() const {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -101,33 +108,6 @@ BOOL TypeHandle::HasTypeParam() const {
 
     CorElementType etype = AsTypeDesc()->GetInternalCorElementType();
     return(CorTypeInfo::IsModifier_NoThrow(etype) || etype == ELEMENT_TYPE_VALUETYPE);
-}
-
-Module *TypeHandle::GetDefiningModuleForOpenType() const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    Module* returnValue = NULL;
-
-    if (IsGenericVariable())
-    {
-        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(AsTypeDesc());
-        returnValue = pTyVar->GetModule();
-        goto Exit;
-    }
-
-    if (HasTypeParam())
-    {
-        returnValue = GetTypeParam().GetDefiningModuleForOpenType();
-    }
-    else if (HasInstantiation())
-    {
-        returnValue = GetMethodTable()->GetDefiningModuleForOpenType();
-    }
-Exit:
-
-    return returnValue;
 }
 
 BOOL TypeHandle::ContainsGenericVariables(BOOL methodOnly /*=FALSE*/) const
@@ -335,7 +315,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     {
         // Allocate RuntimeType on a frozen segment
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
-        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+        CrstHolder exposedClassLock(AppDomain::GetCurrentDomain()->GetMethodTableExposedClassObjectLock());
 
         if (VolatileLoad(pDest) == 0)
         {

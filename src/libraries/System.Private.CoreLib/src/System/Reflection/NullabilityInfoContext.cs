@@ -22,9 +22,6 @@ namespace System.Reflection
         private readonly Dictionary<Module, NotAnnotatedStatus> _publicOnlyModules = new();
         private readonly Dictionary<MemberInfo, NullabilityState> _context = new();
 
-        internal static bool IsSupported { get; } =
-            AppContext.TryGetSwitch("System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported) ? isSupported : true;
-
         [Flags]
         private enum NotAnnotatedStatus
         {
@@ -75,9 +72,6 @@ namespace System.Reflection
 #else
             NetstandardHelpers.ThrowIfNull(parameterInfo, nameof(parameterInfo));
 #endif
-
-            EnsureIsSupported();
-
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
                 ? NullableAttributeStateParser.Unknown
@@ -204,9 +198,6 @@ namespace System.Reflection
 #else
             NetstandardHelpers.ThrowIfNull(propertyInfo, nameof(propertyInfo));
 #endif
-
-            EnsureIsSupported();
-
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
             MethodInfo? setter = propertyInfo.GetSetMethod(true);
             bool annotationsDisabled = (getter == null || IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
@@ -263,9 +254,6 @@ namespace System.Reflection
 #else
             NetstandardHelpers.ThrowIfNull(eventInfo, nameof(eventInfo));
 #endif
-
-            EnsureIsSupported();
-
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
         }
 
@@ -284,22 +272,11 @@ namespace System.Reflection
 #else
             NetstandardHelpers.ThrowIfNull(fieldInfo, nameof(fieldInfo));
 #endif
-
-            EnsureIsSupported();
-
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
             NullableAttributeStateParser parser = IsPrivateOrInternalFieldAndAnnotationDisabled(fieldInfo) ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
             NullabilityInfo nullability = GetNullabilityInfo(fieldInfo, fieldInfo.FieldType, parser);
             CheckNullabilityAttributes(nullability, attributes);
             return nullability;
-        }
-
-        private static void EnsureIsSupported()
-        {
-            if (!IsSupported)
-            {
-                throw new InvalidOperationException(SR.NullabilityInfoContext_NotSupported);
-            }
         }
 
         private bool IsPrivateOrInternalFieldAndAnnotationDisabled(FieldInfo fieldInfo)

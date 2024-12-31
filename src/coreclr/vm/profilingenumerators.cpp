@@ -302,18 +302,14 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     // earlier during FILE_LOAD_LOADLIBRARY. This does not affect the timeline, as either
     // way the profiler receives the notification AFTER the assembly would appear in the
     // enumeration.
-    //
-    // Although it's called an "AssemblyIterator", it actually iterates over
-    // DomainAssembly instances.
-    AppDomain::AssemblyIterator domainAssemblyIterator =
+    AppDomain::AssemblyIterator assemblyIterator =
         pAppDomain->IterateAssembliesEx(
             (AssemblyIterationFlags) (kIncludeAvailableToProfilers | kIncludeExecution));
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (domainAssemblyIterator.Next(pDomainAssembly.This()))
+    while (assemblyIterator.Next(pAssembly.This()))
     {
-        _ASSERTE(pDomainAssembly != NULL);
-        _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
+        _ASSERTE(pAssembly != NULL);
 
         // #ProfilerEnumModules (See also code:#ProfilerEnumGeneral)
         //
@@ -327,7 +323,7 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
         // code:#ProfilerEnumAssemblies for info on how the timing works.
 
         // Call user-supplied callback, and cancel iteration if requested
-        HRESULT hr = (callbackObj->*callbackMethod)(pDomainAssembly->GetModule());
+        HRESULT hr = (callbackObj->*callbackMethod)(pAssembly->GetModule());
         if (hr != S_OK)
         {
             return hr;
@@ -491,8 +487,8 @@ HRESULT IterateAppDomainContainingModule::AddAppDomainContainingModule(AppDomain
     }
     CONTRACTL_END;
 
-    DomainAssembly * pDomainAssembly = m_pModule->GetDomainAssembly();
-    if ((pDomainAssembly != NULL) && (pDomainAssembly->IsAvailableToProfilers()))
+    Assembly * pAssembly = m_pModule->GetAssembly();
+    if ((pAssembly != NULL) && (pAssembly->IsAvailableToProfilers()))
     {
         if (m_index < m_cAppDomainIds)
         {
@@ -556,9 +552,11 @@ HRESULT ProfilerThreadEnum::Init()
     }
     CONTRACTL_END;
 
+    // If EnumThreads is called from a profiler callback where the runtime is already suspended,
+    // don't recursively acquire/release the ThreadStore Lock.
     // If a profiler has requested that the runtime suspend to do stack snapshots, it
     // will be holding the ThreadStore lock already
-    ThreadStoreLockHolder tsLock(!g_profControlBlock.fProfilerRequestedRuntimeSuspend);
+    ThreadStoreLockHolder tsLock(!ThreadStore::HoldingThreadStore() && !g_profControlBlock.fProfilerRequestedRuntimeSuspend);
 
     Thread * pThread = NULL;
 

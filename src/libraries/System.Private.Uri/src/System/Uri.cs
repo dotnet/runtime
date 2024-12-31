@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -2396,16 +2397,13 @@ namespace System
         Done:
             cF |= Flags.MinimalUriInfoSet;
 
-            Debug.Assert(sizeof(Flags) == sizeof(ulong));
-
             Interlocked.CompareExchange(ref _info, info, null!);
 
             Flags current = _flags;
             while ((current & Flags.MinimalUriInfoSet) == 0)
             {
-                Flags newValue = (current & ~Flags.IndexMask) | cF;
-                ulong oldValue = Interlocked.CompareExchange(ref Unsafe.As<Flags, ulong>(ref _flags), (ulong)newValue, (ulong)current);
-                if (oldValue == (ulong)current)
+                Flags oldValue = Interlocked.CompareExchange(ref _flags, (current & ~Flags.IndexMask) | cF, current);
+                if (oldValue == current)
                 {
                     return;
                 }
@@ -2520,7 +2518,8 @@ namespace System
 
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
-                    host = IPv6AddressHelper.ParseCanonicalName(str, idx, ref loopback, ref scopeId);
+                    host = IPv6AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
+                    scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
                     break;
 
                 case Flags.IPv4HostType:

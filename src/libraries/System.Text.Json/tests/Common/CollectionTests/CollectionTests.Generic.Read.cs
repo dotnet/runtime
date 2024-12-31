@@ -1255,7 +1255,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task CustomInterfacesNotSupported_Enumerables(Type type)
         {
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper("[]", type));
-            Assert.Contains(type.ToString(), ex.ToString());
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         [Theory]
@@ -1263,7 +1263,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task CustomInterfacesNotSupported_Dictionaries(Type type)
         {
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper("{}", type));
-            Assert.Contains(type.ToString(), ex.ToString());
+            Assert.Contains(type.ToString(), ex.Message);
         }
 
         public static IEnumerable<object[]> CustomInterfaces_Enumerables()

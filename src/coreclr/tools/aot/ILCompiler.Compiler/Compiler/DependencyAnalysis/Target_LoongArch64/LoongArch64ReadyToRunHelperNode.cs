@@ -34,6 +34,7 @@ namespace ILCompiler.DependencyAnalysis
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
                             encoder.EmitADD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Result, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, factory.Target.PointerSize);
+                            encoder.EmitDBAR();
                             encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg2, 1);
                             encoder.EmitRETIfEqual(encoder.TargetRegister.IntraProcedureCallScratch1);
 
@@ -48,6 +49,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
+
                         encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
                         // First arg: address of the TypeManager slot that provides the helper with
@@ -93,6 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                            encoder.EmitDBAR();
                             encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
                             encoder.EmitRETIfEqual(Register.R21);
 
@@ -143,12 +146,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        // Not tested
-                        encoder.EmitBreak();
-
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
+                            // Not tested
+                            encoder.EmitBreak();
+
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
                             encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
                         }

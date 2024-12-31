@@ -29,11 +29,11 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
                 if (deserialized is StringComparer)
                 {
                     // StringComparer derived classes are not public and they don't serialize the actual type.
-                    value.Should().BeAssignableTo<StringComparer>();
+                    Assert.IsAssignableFrom<StringComparer>(value);
                 }
                 else
                 {
-                    deserialized.Should().BeOfType(value.GetType());
+                    Assert.IsType(value.GetType(), deserialized);
                 }
 
                 bool isSamePlatform = i == platformIndex;
@@ -60,7 +60,7 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
             && value is Array array
             && array.Length > 0)
         {
-            deserialized.Should().NotBeSameAs(value);
+            Assert.NotSame(value, deserialized);
         }
 
         EqualityExtensions.CheckEquals(value, deserialized, isSamePlatform: true);

@@ -27,4 +27,4 @@ Alternatives to this method include copying the desired apphost to the appropria
 
 For a [framework-dependent application](https://learn.microsoft.com/dotnet/core/deploying/#publish-framework-dependent), you can set the `DOTNET_ROOT` environment variable to point at a local .NET layout.
 
-The [libraries tests](../libraries/testing.md) construct and use such a layout based on your local runtime, host, and libraries build as part of the `libs.pretest` subset. To use that layout, set `DOTNET_ROOT=<repo_root>/artifacts/bin/testhost/net8.0-<os>-<configuration>-<arch>` and then run the .NET application.
+The [libraries tests](../libraries/testing.md) construct and use such a layout based on your local runtime, host, and libraries build as part of the `libs.pretest` subset. To use that layout, set `DOTNET_ROOT=<repo_root>/artifacts/bin/testhost/net<version>-<os>-<configuration>-<arch>` and then run the .NET application.

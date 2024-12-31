@@ -12,6 +12,32 @@ namespace Test.Cryptography
     internal static class PlatformSupport
     {
         private static readonly Dictionary<CngAlgorithm, bool> s_platformCryptoSupportedAlgorithms = new();
+        private static readonly Lazy<bool> s_lazyIsRC2Supported = new Lazy<bool>(() =>
+        {
+            if (PlatformDetection.IsAndroid)
+            {
+                return false;
+            }
+
+            if (PlatformDetection.IsLinux)
+            {
+                try
+                {
+                    using (RC2 rc2 = RC2.Create())
+                    using (rc2.CreateEncryptor())
+                    {
+                    }
+
+                    return true;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        });
 
         private static bool PlatformCryptoProviderFunctional(CngAlgorithm algorithm)
         {
@@ -37,19 +63,11 @@ namespace Test.Cryptography
                     return false;
                 }
 #endif
-
-                CngKey key = null;
-
                 try
                 {
-                    key = CngKey.Create(
+                    using CngKeyWrapper key = CngKeyWrapper.CreateMicrosoftPlatformCryptoProvider(
                             algorithm,
-                            $"{nameof(PlatformCryptoProviderFunctional)}{algorithm.Algorithm}Key",
-                        new CngKeyCreationParameters
-                        {
-                            Provider = new CngProvider("Microsoft Platform Crypto Provider"),
-                            KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                        });
+                            keySuffix: $"{algorithm.Algorithm}Key");
 
                     return true;
                 }
@@ -57,10 +75,35 @@ namespace Test.Cryptography
                 {
                     return false;
                 }
-                finally
-                {
-                    key?.Delete();
-                }
+            }
+        }
+
+        private static bool CheckIfVbsAvailable()
+        {
+#if !NETFRAMEWORK
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return false;
+            }
+#endif
+
+            try
+            {
+                const CngKeyCreationOptions RequireVbs = (CngKeyCreationOptions)0x00020000;
+#if !NETFRAMEWORK
+                Assert.Equal(CngKeyCreationOptions.RequireVbs, RequireVbs);
+#endif
+
+                using CngKeyWrapper key = CngKeyWrapper.CreateMicrosoftSoftwareKeyStorageProvider(
+                        CngAlgorithm.ECDsaP256,
+                        RequireVbs,
+                        keySuffix: $"{CngAlgorithm.ECDsaP256.Algorithm}Key");
+
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
             }
         }
 
@@ -72,7 +115,7 @@ namespace Test.Cryptography
         internal const TestPlatforms OpenSSL = TestPlatforms.AnyUnix & ~(AppleCrypto | TestPlatforms.Android | TestPlatforms.Browser);
 
         // Whether or not the current platform supports RC2
-        internal static readonly bool IsRC2Supported = !PlatformDetection.IsAndroid;
+        internal static bool IsRC2Supported => s_lazyIsRC2Supported.Value;
 
 #if NET
         internal static readonly bool IsAndroidVersionAtLeast31 = OperatingSystem.IsAndroidVersionAtLeast(31);
@@ -83,5 +126,8 @@ namespace Test.Cryptography
         internal static bool PlatformCryptoProviderFunctionalP256 => PlatformCryptoProviderFunctional(CngAlgorithm.ECDsaP256);
         internal static bool PlatformCryptoProviderFunctionalP384 => PlatformCryptoProviderFunctional(CngAlgorithm.ECDsaP384);
         internal static bool PlatformCryptoProviderFunctionalRsa => PlatformCryptoProviderFunctional(CngAlgorithm.Rsa);
+
+        private static bool? s_isVbsAvailable;
+        internal static bool IsVbsAvailable => s_isVbsAvailable ??= CheckIfVbsAvailable();
     }
 }

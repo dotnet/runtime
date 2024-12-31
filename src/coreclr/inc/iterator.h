@@ -203,11 +203,10 @@ class IndexerBasePrototype
 };
 };
 
-DEFINE_MEMBER_EXISTENCE_CHECK(m_revision);
-
 template <typename CONTAINER>
 class CheckedIteratorBase
 {
+  DEFINE_MEMBER_EXISTENCE_CHECK(m_revision);
   protected:
 #if defined(_DEBUG)
     const CONTAINER *m_container;

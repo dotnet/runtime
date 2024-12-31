@@ -2,7 +2,7 @@
 #define ZNGLIB_H_
 /* zlib-ng.h -- interface of the 'zlib-ng' compression library, forked from zlib.
 
-  Copyright (C) 1995-2016 Jean-loup Gailly and Mark Adler
+  Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -48,11 +48,11 @@
 extern "C" {
 #endif
 
-#define ZLIBNG_VERSION "2.1.6"
-#define ZLIBNG_VERNUM 0x020106F0L   /* MMNNRRSM: major minor revision status modified */
+#define ZLIBNG_VERSION "2.2.1"
+#define ZLIBNG_VERNUM 0x020201F0L   /* MMNNRRSM: major minor revision status modified */
 #define ZLIBNG_VER_MAJOR 2
-#define ZLIBNG_VER_MINOR 1
-#define ZLIBNG_VER_REVISION 6
+#define ZLIBNG_VER_MINOR 2
+#define ZLIBNG_VER_REVISION 1
 #define ZLIBNG_VER_STATUS F         /* 0=devel, 1-E=beta, F=Release (DEPRECATED) */
 #define ZLIBNG_VER_STATUSH 0xF      /* Hex values: 0=devel, 1-E=beta, F=Release */
 #define ZLIBNG_VER_MODIFIED 0       /* non-zero if modified externally from zlib-ng */
@@ -1759,7 +1759,7 @@ uint32_t zng_crc32_combine(uint32_t crc1, uint32_t crc2, z_off64_t len2);
    seq1 and seq2 with lengths len1 and len2, CRC-32 check values were
    calculated for each, crc1 and crc2.  crc32_combine() returns the CRC-32
    check value of seq1 and seq2 concatenated, requiring only crc1, crc2, and
-   len2.
+   len2. len2 must be non-negative.
 */
 
 Z_EXTERN Z_EXPORT
@@ -1767,7 +1767,7 @@ uint32_t zng_crc32_combine_gen(z_off64_t len2);
 
 /*
      Return the operator corresponding to length len2, to be used with
-   crc32_combine_op().
+   crc32_combine_op(). len2 must be non-negative.
 */
 
 Z_EXTERN Z_EXPORT

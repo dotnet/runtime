@@ -2787,86 +2787,11 @@ emitter::instrDesc* emitter::emitNewInstrCnsDsp(emitAttr size, target_ssize_t cn
 //  There is no need to record live pointers for such call sites.
 //
 // Arguments:
-//   helpFunc - a helper signature for the call, can be CORINFO_HELP_UNDEF, that means that the call is not a helper.
-//
-// Return value:
-//   true if GC can't happen within this call, false otherwise.
-bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
-{
-    // TODO-Throughput: Make this faster (maybe via a simple table of bools?)
-
-    switch (helpFunc)
-    {
-        case CORINFO_HELP_UNDEF:
-            return false;
-
-        case CORINFO_HELP_PROF_FCN_LEAVE:
-        case CORINFO_HELP_PROF_FCN_ENTER:
-        case CORINFO_HELP_PROF_FCN_TAILCALL:
-        case CORINFO_HELP_LLSH:
-        case CORINFO_HELP_LRSH:
-        case CORINFO_HELP_LRSZ:
-
-            //  case CORINFO_HELP_LMUL:
-            //  case CORINFO_HELP_LDIV:
-            //  case CORINFO_HELP_LMOD:
-            //  case CORINFO_HELP_ULDIV:
-            //  case CORINFO_HELP_ULMOD:
-
-#ifdef TARGET_X86
-        case CORINFO_HELP_ASSIGN_REF_EAX:
-        case CORINFO_HELP_ASSIGN_REF_ECX:
-        case CORINFO_HELP_ASSIGN_REF_EBX:
-        case CORINFO_HELP_ASSIGN_REF_EBP:
-        case CORINFO_HELP_ASSIGN_REF_ESI:
-        case CORINFO_HELP_ASSIGN_REF_EDI:
-
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-#endif
-
-        case CORINFO_HELP_ASSIGN_REF:
-        case CORINFO_HELP_CHECKED_ASSIGN_REF:
-        case CORINFO_HELP_ASSIGN_BYREF:
-
-        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
-
-        case CORINFO_HELP_INIT_PINVOKE_FRAME:
-
-        case CORINFO_HELP_FAIL_FAST:
-        case CORINFO_HELP_STACK_PROBE:
-
-        case CORINFO_HELP_CHECK_OBJ:
-
-        // never present on stack at the time of GC
-        case CORINFO_HELP_TAILCALL:
-        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
-        case CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS:
-
-        case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
-//------------------------------------------------------------------------
-// emitNoGChelper: Returns true if garbage collection won't happen within the helper call.
-//
-// Notes:
-//  There is no need to record live pointers for such call sites.
-//
-// Arguments:
 //   methHnd - a method handle for the call.
 //
 // Return value:
 //   true if GC can't happen within this call, false otherwise.
+//
 bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 {
     CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
@@ -2874,7 +2799,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
     {
         return false;
     }
-    return emitNoGChelper(helpFunc);
+    return Compiler::s_helperCallProperties.IsNoGC(helpFunc);
 }
 
 /*****************************************************************************
@@ -3146,8 +3071,25 @@ void emitter::emitSplit(emitLocation*         startLoc,
 
     } // end for loop
 
-    splitIfNecessary();
-    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
+    // It's possible to have zero-sized IGs at this point in the emitter.
+    // For example, the JIT may create an IG to align a loop,
+    // but then later walk back this decision after other alignment decisions,
+    // which means it will zero out the new IG.
+    // If a zero-sized IG precedes a populated IG, it will be included in the latter's fragment.
+    // However, if the last IG candidate is a zero-sized IG, splitting would create a zero-sized fragment,
+    // so skip the last split in such cases.
+    // (The last IG in the main method body can be zero-sized if it was created to align a loop in the first funclet.)
+    if ((igLastCandidate != nullptr) && (curSize == candidateSize))
+    {
+        JITDUMP("emitSplit: can't split at last candidate IG%02u because it would create a zero-sized fragment\n",
+                igLastCandidate->igNum);
+    }
+    else
+    {
+        splitIfNecessary();
+    }
+
+    assert((curSize > 0) && (curSize < UW_MAX_FRAGMENT_SIZE_BYTES));
 }
 
 /*****************************************************************************
@@ -6848,12 +6790,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #endif
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    // For x64/x86/arm64, align methods that are "optimizations enabled" to 32 byte boundaries if
-    // they are larger than 16 bytes and contain a loop.
+    // For x64/x86/arm64, align methods that contain a loop to 32 byte boundaries if
+    // they are larger than 16 bytes and loop alignment is enabled.
     //
-    if (emitComp->opts.OptimizationEnabled() &&
-        (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)) &&
-        (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
+    if (codeGen->ShouldAlignLoops() && (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
     {
         codeAlignment = 32;
     }
@@ -6905,6 +6845,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     args.roDataSize   = emitConsDsc.dsdOffs;
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
+
+    comp->Metrics.AllocatedHotCodeBytes  = args.hotCodeSize;
+    comp->Metrics.AllocatedColdCodeBytes = args.coldCodeSize;
+    comp->Metrics.ReadOnlyDataBytes      = args.roDataSize;
 
     emitComp->eeAllocMem(&args, emitConsDsc.alignment);
 
@@ -7170,8 +7114,28 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *instrCount                                       = 0;
     jitstd::list<RichIPMapping>::iterator nextMapping = emitComp->genRichIPmappings.begin();
 #endif
+#if defined(DEBUG) && defined(TARGET_ARM64)
+    instrDesc* prevId = nullptr;
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
+
     for (insGroup* ig = emitIGlist; ig != nullptr; ig = ig->igNext)
     {
+
+#if defined(DEBUG) && defined(TARGET_ARM64)
+        instrDesc* currId = emitFirstInstrDesc(ig->igData);
+        for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
+        {
+            emitInsPairSanityCheck(prevId, currId);
+            prevId = currId;
+            emitAdvanceInstrDesc(&currId, emitSizeOfInsDsc(currId));
+        }
+        // Final instruction can't be a movprfx
+        if (ig->igNext == nullptr)
+        {
+            assert(prevId->idIns() != INS_sve_movprfx);
+        }
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
+
         assert(!(ig->igFlags & IGF_PLACEHOLDER)); // There better not be any placeholder groups left
 
         /* Is this the first cold block? */
@@ -7720,6 +7684,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 
     /* Return the amount of code we've generated */
 
+    comp->Metrics.ActualCodeBytes = actualCodeSize;
+
     return actualCodeSize;
 }
 
@@ -8225,6 +8191,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
 {
     unsigned cnsSize  = 8;
@@ -8240,7 +8209,7 @@ CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_MASK);
     return emitComp->eeFindJitDataOffs(cnum);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 /*****************************************************************************
@@ -8413,7 +8382,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
             bool      isRelative = (data->dsType == dataSection::blockRelative32);
             size_t    blockCount = data->dsSize / (isRelative ? 4 : TARGET_POINTER_SIZE);
 
-            for (unsigned i = 0; i < blockCount; i++)
+            for (size_t i = 0; i < blockCount; i++)
             {
                 if (i > 0)
                 {
@@ -10427,7 +10396,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 //
 regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
-    assert(emitNoGChelper(helper));
+    assert(emitNoGChelper(Compiler::eeFindHelper(helper)));
     regMaskTP result;
     switch (helper)
     {
@@ -10482,7 +10451,27 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 }
 
 #if !defined(JIT32_GCENCODER)
-// Start a new instruction group that is not interruptible
+//------------------------------------------------------------------------
+// emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
+//
+// Assumptions:
+//    A NoGC request can be closed by a coresponding emitEnableGC.
+//    Overlapping/nested NoGC requests are supported - when number of requests
+//    drops to zero the region is closed. This is not expected to be common.
+//    A completion of an epilog will close NoGC region in progress and clear the request count
+//    regardless of request nesting. If a block after the epilog needs to be no-GC, it needs
+//    to call emitDisableGC() again.
+//
+// Notes:
+//    The semantic of NoGC region is that once the first instruction executes,
+//    some tracking invariants are violated and GC cannot happen, until the execution
+//    of the last instruction in the region makes GC safe again.
+//    In particular - once the IP is on the first instruction, but not executed it yet,
+//    it is still safe to do GC.
+//    The only special case is when NoGC region is used for prologs.
+//    In such case the GC info could be incorrect until the prolog completes, so the first
+//    instruction cannot have GC.
+
 void emitter::emitDisableGC()
 {
     assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
@@ -10511,7 +10500,22 @@ void emitter::emitDisableGC()
     }
 }
 
-// Start a new instruction group that is interruptible
+bool emitter::emitGCDisabled()
+{
+    return emitNoGCIG == true;
+}
+
+//------------------------------------------------------------------------
+// emitEnableGC(): Removes a request that the following instruction groups are not GC-interruptible.
+//
+// Assumptions:
+//    We should have nonzero count of NoGC requests.
+//    "emitEnableGC()" reduces the number of requests by 1.
+//    If the number of requests goes to 0, the subsequent instruction groups are GC-interruptible.
+//
+// Notes:
+//    See emitDisableGC for more details.
+
 void emitter::emitEnableGC()
 {
     assert(emitNoGCRequestCount > 0);

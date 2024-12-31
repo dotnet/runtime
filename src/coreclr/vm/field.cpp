@@ -260,7 +260,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         Module* pModule = GetModule();
         PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
-        _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
+        _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(GetOffset()));
 
         return(ret);
     }
@@ -456,6 +456,7 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
     {
         if(IsEnCNew()) {THROWS;} else {DISABLED(THROWS);};
         if(IsEnCNew()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);};
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

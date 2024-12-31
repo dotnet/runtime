@@ -34,22 +34,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public static void RunMultiply_TwoLargeBigIntegers_Threshold()
-        {
-            // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, RunMultiply_TwoLargeBigIntegers)
-            );
-
-            // Again, with lower threshold
-            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
-                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, () =>
-                    BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.StackAllocThreshold, 8, RunMultiply_TwoLargeBigIntegers)
-                )
-            );
-        }
-
-        [Fact]
         public static void RunMultiply_TwoSmallBigIntegers()
         {
             Random random = new Random(s_seed);
@@ -291,6 +275,26 @@ namespace System.Numerics.Tests
         private static string Print(byte[] bytes)
         {
             return MyBigIntImp.Print(bytes);
+        }
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    public class multiplyTestThreshold
+    {
+        [Fact]
+        public static void RunMultiply_TwoLargeBigIntegers()
+        {
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers)
+            );
+
+            // Again, with lower threshold
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.SquareThreshold, 8, () =>
+                BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.MultiplyKaratsubaThreshold, 8, () =>
+                    BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.StackAllocThreshold, 8, multiplyTest.RunMultiply_TwoLargeBigIntegers)
+                )
+            );
         }
     }
 }

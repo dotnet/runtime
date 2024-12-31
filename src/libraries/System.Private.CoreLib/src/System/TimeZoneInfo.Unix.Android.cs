@@ -343,7 +343,7 @@ namespace System
                 ReadIndex(tzFileDir, fs, indexOffset, dataOffset);
             }
 
-            private static void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
+            private static void LoadHeader(ReadOnlySpan<byte> buffer, out int indexOffset, out int dataOffset)
             {
                 // tzdata files are expected to start with the form of "tzdata2012f\0" depending on the year of the tzdata used which is 2012 in this example
                 // since we're not differentiating on year, check for tzdata and the ending \0

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
 {
@@ -40,9 +41,13 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
+            if (delayCertificate && OperatingSystem.IsAndroid())
+            {
+                throw new SkipTestException("Android does not support delayed certificate selection.");
+            }
+
             X509Certificate? remoteCertificate = null;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();

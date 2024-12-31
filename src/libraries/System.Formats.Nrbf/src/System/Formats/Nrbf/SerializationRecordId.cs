@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Nrbf.Utils;
 using System.IO;
-using System.IO.Hashing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,6 +16,7 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// The ID of <see cref="SerializationRecord" />.
 /// </summary>
+[DebuggerDisplay("{_id}")]
 public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
 {
 #pragma warning disable CS0649 // the default value is used on purpose
@@ -29,6 +30,15 @@ public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
     internal static SerializationRecordId Decode(BinaryReader reader)
     {
         int id = reader.ReadInt32();
+
+        // Many object ids are required to be positive. See:
+        // - https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/8fac763f-e46d-43a1-b360-80eb83d2c5fb
+        // - https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eb503ca5-e1f6-4271-a7ee-c4ca38d07996
+        // - https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/7fcf30e1-4ad4-4410-8f1a-901a4a1ea832 (for library id)
+        //
+        // Exception: https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/0a192be0-58a1-41d0-8a54-9c91db0ab7bf may be negative
+        // The problem is that input generated with FormatterTypeStyle.XsdString ends up generating negative Ids anyway.
+        // That information is not reflected in payload in anyway, so we just always allow for negative Ids.
 
         if (id == 0)
         {
@@ -45,14 +55,5 @@ public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
     public override bool Equals(object? obj) => obj is SerializationRecordId other && Equals(other);
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        int id = _id;
-#if NET
-        Span<int> integers = new(ref id);
-#else
-        Span<int> integers = stackalloc int[1] { id };
-#endif
-        return (int)XxHash32.HashToUInt32(MemoryMarshal.AsBytes(integers));
-    }
+    public override int GetHashCode() => HashCode.Combine(_id);
 }

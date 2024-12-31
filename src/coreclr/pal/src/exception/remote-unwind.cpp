@@ -1684,7 +1684,7 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
         if (!ReadCompactEncodingRegisterPair(info, &addr, &context->Lr, &context->Fp)) {
             return false;
         }
-        // Strip pointer authentication bits 
+        // Strip pointer authentication bits
         context->Lr &= MACOS_ARM64_POINTER_AUTH_MASK;
     }
     else
@@ -2119,6 +2119,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
 #elif defined(TARGET_LOONGARCH64)
     case UNW_LOONGARCH64_R1:    *valp = (unw_word_t)winContext->Ra; break;
     case UNW_LOONGARCH64_R2:    *valp = (unw_word_t)winContext->Tp; break;
+    case UNW_LOONGARCH64_R3:    *valp = (unw_word_t)winContext->Sp; break;
     case UNW_LOONGARCH64_R22:   *valp = (unw_word_t)winContext->Fp; break;
     case UNW_LOONGARCH64_R23:   *valp = (unw_word_t)winContext->S0; break;
     case UNW_LOONGARCH64_R24:   *valp = (unw_word_t)winContext->S1; break;
@@ -2327,7 +2328,13 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         }
     }
 
-#ifdef FEATURE_USE_SYSTEM_LIBUNWIND
+#if HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+    return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
+#else // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
+
+    // This branch is executed when using llvm-libunwind (macOS and similar platforms) 
+    // or HP-libunwind version 1.6 and earlier.
+
     if (ehFrameHdrAddr == 0) {
         ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
         return -UNW_EINVAL;
@@ -2399,9 +2406,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     }
     info->FunctionStart = pip->start_ip;
     return UNW_ESUCCESS;
-#else
-    return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
-#endif // FEATURE_USE_SYSTEM_LIBUNWIND
+#endif // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
 
 #endif // __APPLE__
 }

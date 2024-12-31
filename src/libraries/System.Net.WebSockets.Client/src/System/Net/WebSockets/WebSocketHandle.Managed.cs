@@ -198,6 +198,7 @@ namespace System.Net.WebSockets
                     IsServer = false,
                     SubProtocol = subprotocol,
                     KeepAliveInterval = options.KeepAliveInterval,
+                    KeepAliveTimeout = options.KeepAliveTimeout,
                     DangerousDeflateOptions = negotiatedDeflateOptions
                 });
                 _negotiatedDeflateOptions = negotiatedDeflateOptions;

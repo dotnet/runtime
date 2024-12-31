@@ -140,7 +140,6 @@ else()
         coreclrpal
         ${END_WHOLE_ARCHIVE}
         mscorrc
-        palrt
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -173,6 +172,14 @@ if(FEATURE_EVENT_TRACE)
         )
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
+
+if(FEATURE_PERFTRACING)
+    if(CLR_CMAKE_TARGET_LINUX)
+        list(APPEND CORECLR_LIBRARIES
+            usereventsprovider
+        )
+    endif(CLR_CMAKE_TARGET_LINUX)
+endif(FEATURE_PERFTRACING)
 
 if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)

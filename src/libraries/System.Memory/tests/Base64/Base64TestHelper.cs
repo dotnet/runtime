@@ -174,29 +174,29 @@ namespace System.Buffers.Text.Tests
 
         public static bool VerifyEncodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> encodedBytes)
         {
-            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed));
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten));
+            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed).ToArray());
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
             return expectedText.Equals(encodedText);
         }
 
         public static bool VerifyUrlEncodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> encodedBytes)
         {
-            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed))
+            string expectedText = Convert.ToBase64String(source.Slice(0, expectedConsumed).ToArray())
                 .Replace('+', '-').Replace('/', '_').TrimEnd('=');
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten));
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
             return expectedText.Equals(encodedText);
         }
 
         public static bool VerifyDecodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> decodedBytes)
         {
-            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed));
+            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed).ToArray());
             byte[] expectedBytes = Convert.FromBase64String(sourceString);
             return expectedBytes.AsSpan().SequenceEqual(decodedBytes.Slice(0, expectedWritten));
         }
 
         public static bool VerifyUrlDecodingCorrectness(int expectedConsumed, int expectedWritten, Span<byte> source, Span<byte> decodedBytes)
         {
-            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed));
+            string sourceString = Encoding.ASCII.GetString(source.Slice(0, expectedConsumed).ToArray());
             string padded = sourceString.Length % 4 == 0 ? sourceString :
                 sourceString.PadRight(sourceString.Length + (4 - sourceString.Length % 4), '=');
             string base64 = padded.Replace('_', '/').Replace('-', '+').Replace('%', '=');

@@ -34,18 +34,7 @@ namespace System.Linq.Tests
             foreach (int count in new[] { 0, 1, 2 })
             {
                 bool expected = count > 0;
-
-                var arr = new int[count];
-                var collectionTypes = new IEnumerable<int>[]
-                {
-                    arr,
-                    new List<int>(arr),
-                    new TestCollection<int>(arr),
-                    new TestNonGenericCollection<int>(arr),
-                    NumberRangeGuaranteedNotCollectionType(0, count),
-                };
-
-                foreach (IEnumerable<int> source in collectionTypes)
+                foreach (IEnumerable<int> source in CreateSources(new int[count]))
                 {
                     yield return new object[] { source, expected };
                     yield return new object[] { source.Select(i => i), expected };
@@ -102,34 +91,43 @@ namespace System.Linq.Tests
         [MemberData(nameof(TestDataWithPredicate))]
         public void Any_Predicate(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
-            if (predicate is null)
+            Assert.All(CreateSources(source), source =>
             {
-                Assert.Equal(expected, source.Any());
-            }
-            else
-            {
-                Assert.Equal(expected, source.Any(predicate));
-            }
+                if (predicate is null)
+                {
+                    Assert.Equal(expected, source.Any());
+                }
+                else
+                {
+                    Assert.Equal(expected, source.Any(predicate));
+                }
+            });
         }
 
         [Theory, MemberData(nameof(TestDataWithPredicate))]
         public void AnyRunOnce(IEnumerable<int> source, Func<int, bool> predicate, bool expected)
         {
-            if (predicate is null)
+            Assert.All(CreateSources(source), source =>
             {
-                Assert.Equal(expected, source.RunOnce().Any());
-            }
-            else
-            {
-                Assert.Equal(expected, source.RunOnce().Any(predicate));
-            }
+                if (predicate is null)
+                {
+                    Assert.Equal(expected, source.RunOnce().Any());
+                }
+                else
+                {
+                    Assert.Equal(expected, source.RunOnce().Any(predicate));
+                }
+            });
         }
 
         [Fact]
         public void NullObjectsInArray_Included()
         {
             int?[] source = { null, null, null, null };
-            Assert.True(source.Any());
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.True(source.Any());
+            });
         }
 
         [Fact]

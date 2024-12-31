@@ -48,27 +48,33 @@ namespace System.Linq.Tests
         [MemberData(nameof(Int_TestData))]
         public void Int(IEnumerable<int> source, Func<int, bool> predicate, int expected)
         {
-            if (predicate is null)
+            Assert.All(CreateSources(source), source =>
             {
-                Assert.Equal(expected, source.Count());
-            }
-            else
-            {
-                Assert.Equal(expected, source.Count(predicate));
-            }
+                if (predicate is null)
+                {
+                    Assert.Equal(expected, source.Count());
+                }
+                else
+                {
+                    Assert.Equal(expected, source.Count(predicate));
+                }
+            });
         }
 
         [Theory, MemberData(nameof(Int_TestData))]
         public void IntRunOnce(IEnumerable<int> source, Func<int, bool> predicate, int expected)
         {
-            if (predicate is null)
+            Assert.All(CreateSources(source), source =>
             {
-                Assert.Equal(expected, source.RunOnce().Count());
-            }
-            else
-            {
-                Assert.Equal(expected, source.RunOnce().Count(predicate));
-            }
+                if (predicate is null)
+                {
+                    Assert.Equal(expected, source.RunOnce().Count());
+                }
+                else
+                {
+                    Assert.Equal(expected, source.RunOnce().Count(predicate));
+                }
+            });
         }
 
         [Fact]
@@ -93,10 +99,10 @@ namespace System.Linq.Tests
 
         private static IEnumerable<object[]> EnumerateCollectionTypesAndCounts<T>(int count, IEnumerable<T> enumerable)
         {
-            yield return new object[] { count, enumerable };
-            yield return new object[] { count, enumerable.ToArray() };
-            yield return new object[] { count, enumerable.ToList() };
-            yield return new object[] { count, new Stack<T>(enumerable) };
+            foreach (var transform in IdentityTransforms<T>())
+            {
+                yield return new object[] { count, transform(enumerable) };
+            }
         }
 
         public static IEnumerable<object[]> CountsAndTallies()

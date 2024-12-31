@@ -36,15 +36,15 @@ namespace System.Formats.Asn1
         ///   <paramref name="twoDigitYearMax"/> is not in the range [99, 9999].
         /// </exception>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -252,15 +252,15 @@ namespace System.Formats.Asn1
         ///   The decoded value.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
@@ -295,15 +295,15 @@ namespace System.Formats.Asn1
         ///   The decoded value.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   the next value does not have the correct tag.
+        ///   The next value does not have the correct tag.
         ///
         ///   -or-
         ///
-        ///   the length encoding is not valid under the current encoding rules.
+        ///   The length encoding is not valid under the current encoding rules.
         ///
         ///   -or-
         ///
-        ///   the contents are not valid under the current encoding rules.
+        ///   The contents are not valid under the current encoding rules.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is

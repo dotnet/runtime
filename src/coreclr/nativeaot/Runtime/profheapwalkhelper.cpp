@@ -138,7 +138,7 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
 
     ProfilerWalkHeapContext * pProfilerWalkHeapContext = (ProfilerWalkHeapContext *) pvContext;
 
-    //if (pMT->ContainsPointersOrCollectible())
+    //if (pMT->ContainsGCPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
         GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
