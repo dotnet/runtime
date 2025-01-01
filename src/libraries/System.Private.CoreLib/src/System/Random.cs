@@ -363,17 +363,78 @@ namespace System
         /// </remarks>
         public void Shuffle<T>(Span<T> values)
         {
-            int n = values.Length;
-
-            for (int i = 0; i < n - 1; i++)
+            if (_impl is XoshiroImpl xoshiro)
             {
-                int j = Next(i, n);
+                ulong bound = 2432902008176640000;        // 20!
+                int nextIndex = Math.Min(20, values.Length);
 
-                if (j != i)
+                for (int i = 1; i < values.Length;)
                 {
-                    T temp = values[i];
-                    values[i] = values[j];
-                    values[j] = temp;
+                    ulong r = xoshiro.NextUInt64();
+
+                    // Correct r to be unbiased.
+                    // Based on https://github.com/swiftlang/swift/pull/39143
+                    ulong rbound = r * bound;
+                    if (rbound > 0 - bound)
+                    {
+                        ulong sum, carry;
+                        do
+                        {
+                            ulong r2 = xoshiro.NextUInt64();
+                            ulong lohi = Math.BigMul(r2, bound, out ulong lolo);
+                            sum = rbound + lohi;
+                            carry = sum < rbound ? 1ul : 0ul;
+                            rbound = lolo;
+                        } while (sum == ~0ul);
+                        r += carry;
+                    }
+
+                    // Shuffle the values ​​based on r
+                    for (int m = i; m < nextIndex; m++)
+                    {
+                        int index = (int)Math.BigMul(r, (ulong)(m + 1), out r);
+
+                        // Swap span[m] <-> span[index]
+                        ref var head = ref MemoryMarshal.GetReference(values);
+                        var t = Unsafe.Add(ref head, m);
+                        Unsafe.Add(ref head, m) = Unsafe.Add(ref head, index);
+                        Unsafe.Add(ref head, index) = t;
+                    }
+
+                    i = nextIndex;
+
+                    // Calculates bound.
+                    // bound is (i + 1) * (i + 2) * ... * (nextIndex) < 2^64
+                    bound = (ulong)(i + 1);
+                    for (nextIndex = i + 1; nextIndex < values.Length; nextIndex++)
+                    {
+                        if (Math.BigMul(bound, (ulong)(nextIndex + 1), out var newbound) == 0)
+                        {
+                            bound = newbound;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+            }
+            else
+            {
+                // Fallback & compatibility implementation
+                int n = values.Length;
+
+                for (int i = 0; i < n - 1; i++)
+                {
+                    int j = Next(i, n);
+
+                    if (j != i)
+                    {
+                        T temp = values[i];
+                        values[i] = values[j];
+                        values[j] = temp;
+                    }
                 }
             }
         }
