@@ -24,6 +24,13 @@ trigger:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+resources:
+  repositories:
+  - repository: performance
+    type: git
+    name: internal/dotnet-performance
+    ref: ${{ parameters.perfBranch }}
+
 variables:
 - template: /eng/pipelines/common/variables.yml
 
@@ -43,9 +50,8 @@ schedules:
   always: true
 
 extends:
-  template: /eng/pipelines/coreclr/templates/use-performance-repo-internal.yml
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    perfBranch: ${{ parameters.perfBranch }}
     stages:
     - stage: Build
       jobs:
