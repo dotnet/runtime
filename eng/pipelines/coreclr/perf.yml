@@ -43,11 +43,9 @@ schedules:
   always: true
 
 extends:
-  template:  /eng/pipelines/coreclr/templates/perf-pipeline-with-resources.yml
+  template: /eng/pipelines/coreclr/templates/use-performance-repo-internal.yml
   parameters:
     perfBranch: ${{ parameters.perfBranch }}
-    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      useInternalPerfRepo: true
     stages:
     - stage: Build
       jobs:
