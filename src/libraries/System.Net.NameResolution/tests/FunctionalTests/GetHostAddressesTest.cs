@@ -14,6 +14,14 @@ namespace System.Net.NameResolution.Tests
     public class GetHostAddressesTest
     {
         [Fact]
+        public void TestLocalhostAddresses()
+        {
+            IPAddress[] addresses = Dns.GetHostAddresses("localhost");
+            string localhostResolvesTo = string.Join(',', addresses.Select(a => a.ToString()));
+            throw new Exception(localhostResolvesTo);
+        }
+
+        [Fact]
         public Task Dns_GetHostAddressesAsync_HostString_Ok() => TestGetHostAddressesAsync(() => Dns.GetHostAddressesAsync(TestSettings.LocalHost));
 
         [Fact]
