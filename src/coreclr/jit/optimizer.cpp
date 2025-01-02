@@ -2269,7 +2269,26 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
                 bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
 
-        fgReplaceJumpTarget(predBlock, bTest, bNewCond);
+        switch (predBlock->GetKind())
+        {
+            case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
+            case BBJ_COND:
+            case BBJ_SWITCH:
+            case BBJ_EHFINALLYRET:
+                fgReplaceJumpTarget(predBlock, bTest, bNewCond);
+                break;
+
+            case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
+                // These block types should not need redirecting
+                break;
+
+            default:
+                assert(!"Unexpected bbKind for predecessor block");
+                break;
+        }
     }
 
     // If we have profile data for all blocks and we know that we are cloning the
