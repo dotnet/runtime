@@ -428,17 +428,13 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte value = m_value;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
+                destination[0] = (byte)m_value;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
@@ -446,17 +442,13 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte value = m_value;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
+                destination[0] = (byte)m_value;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //

@@ -46,12 +46,12 @@ internal static class MethodDescOptionalSlots
         DataType type = classification switch
         {
             MethodClassification.IL => DataType.MethodDesc,
-            MethodClassification.FCall => throw new NotImplementedException(), //TODO[cdac]:
-            MethodClassification.PInvoke => throw new NotImplementedException(), //TODO[cdac]:
-            MethodClassification.EEImpl => throw new NotImplementedException(), //TODO[cdac]:
-            MethodClassification.Array => throw new NotImplementedException(), //TODO[cdac]:
+            MethodClassification.FCall => DataType.FCallMethodDesc,
+            MethodClassification.PInvoke => DataType.PInvokeMethodDesc,
+            MethodClassification.EEImpl => DataType.EEImplMethodDesc,
+            MethodClassification.Array => DataType.ArrayMethodDesc,
             MethodClassification.Instantiated => DataType.InstantiatedMethodDesc,
-            MethodClassification.ComInterop => throw new NotImplementedException(), //TODO[cdac]:
+            MethodClassification.ComInterop => DataType.CLRToCOMCallMethodDesc,
             MethodClassification.Dynamic => DataType.DynamicMethodDesc,
             _ => throw new InvalidOperationException($"Unexpected method classification 0x{classification:x2} for MethodDesc")
         };

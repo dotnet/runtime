@@ -713,9 +713,9 @@ namespace System.Tests
             Random random = new Random(0x70636A61);
             int[] items = new int[] { 1, 2, 3, 4 };
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items.AsSpan());
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items.AsSpan());
 
             if (emptyShuffle)
             {
@@ -724,7 +724,7 @@ namespace System.Tests
             }
 
             random.Shuffle(items);
-            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items.AsSpan());
         }
 
         [Fact]
@@ -831,13 +831,13 @@ namespace System.Tests
 
             Span<byte> buffer = stackalloc byte[7];
             random.GetItems(items, buffer);
-            AssertExtensions.SequenceEqual(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 3, 1, 3, 2, 3, 3, 3 }.AsSpan(), buffer);
 
             random.GetItems(items, buffer);
-            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 2, 1, 2, 3, 1 }.AsSpan(), buffer);
 
             random.GetItems(items, buffer);
-            AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }.AsSpan(), buffer);
         }
 
         [Fact]
@@ -880,13 +880,13 @@ namespace System.Tests
 
             Span<byte> buffer = stackalloc byte[7];
             random.GetItems(items, buffer);
-            AssertExtensions.SequenceEqual(new byte[] { 4, 1, 4, 2, 4, 4, 4 }, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 4, 1, 4, 2, 4, 4, 4 }.AsSpan(), buffer);
 
             random.GetItems(items, buffer);
-            AssertExtensions.SequenceEqual(new byte[] { 2, 2, 3, 1, 3, 3, 1 }, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 2, 3, 1, 3, 3, 1 }.AsSpan(), buffer);
 
             random.GetItems(items, buffer);
-            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 4, 2, 4, 2, 2 }, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 4, 2, 4, 2, 2 }.AsSpan(), buffer);
         }
 
         [Theory]

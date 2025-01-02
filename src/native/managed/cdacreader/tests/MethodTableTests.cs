@@ -134,7 +134,7 @@ public class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Assert.Throws<InvalidOperationException>(() => metadataContract.GetTypeHandle(badMethodTablePtr));
+            Assert.Throws<ArgumentException>(() => metadataContract.GetTypeHandle(badMethodTablePtr));
         });
     }
 

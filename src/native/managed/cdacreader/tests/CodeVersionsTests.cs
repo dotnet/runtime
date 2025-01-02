@@ -254,6 +254,24 @@ public class CodeVersionsTests
         return target;
     }
 
+    internal static Target CreateTarget(
+        MockTarget.Architecture arch,
+        MockCodeVersions builder,
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget(
+            arch,
+            builder.Builder.GetReadContext().ReadFromTarget,
+            builder.Types);
+
+        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
+        ContractRegistry reg = Mock.Of<ContractRegistry>(
+            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
+                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object);
+        target.SetContracts(reg);
+        return target;
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeVersion_Null(MockTarget.Architecture arch)
@@ -677,5 +695,66 @@ public class CodeVersionsTests
 
         NativeCodeVersionHandle syntheticNativeCodeVersion = codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, syntheticILcodeVersion);
         Assert.True(syntheticILcodeVersion.Equals(codeVersions.GetILCodeVersion(syntheticNativeCodeVersion)));
+    }
+
+    private void GetGCStressCodeCopy_Impl(MockTarget.Architecture arch, bool returnsNull)
+    {
+        MockCodeVersions builder = new(arch);
+        Mock<IRuntimeTypeSystem> mockRTS = new();
+
+        // Setup synthetic NativeCodeVersion
+        TargetPointer expectedSyntheticCodeCopyAddr = returnsNull ? TargetPointer.Null : new(0x2345_6789);
+        TargetPointer syntheticMethodDescAddr = new(0x2345_8000);
+        NativeCodeVersionHandle syntheticHandle = NativeCodeVersionHandle.CreateSynthetic(syntheticMethodDescAddr);
+        MethodDescHandle methodDescHandle = new MethodDescHandle(syntheticMethodDescAddr);
+        mockRTS.Setup(rts => rts.GetMethodDescHandle(syntheticMethodDescAddr)).Returns(methodDescHandle);
+        mockRTS.Setup(rts => rts.GetGCStressCodeCopy(methodDescHandle)).Returns(expectedSyntheticCodeCopyAddr);
+
+        // Setup explicit NativeCodeVersion
+        TargetPointer? explicitGCCoverageInfoAddr = returnsNull ? TargetPointer.Null : new(0x1234_5678);
+        TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
+        builder.FillNativeCodeVersionNode(
+            nativeCodeVersionNode,
+            methodDesc: TargetPointer.Null,
+            nativeCode: TargetCodePointer.Null,
+            next: TargetPointer.Null,
+            isActive: true,
+            ilVersionId: new(1),
+            gcCoverageInfo: explicitGCCoverageInfoAddr);
+        NativeCodeVersionHandle explicitHandle = NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
+
+        var target = CreateTarget(arch, builder, mockRTS);
+        var codeVersions = target.Contracts.CodeVersions;
+
+        // TEST
+        TargetPointer actualSyntheticCodeCopyAddr = codeVersions.GetGCStressCodeCopy(syntheticHandle);
+        Assert.Equal(expectedSyntheticCodeCopyAddr, actualSyntheticCodeCopyAddr);
+
+        if(returnsNull)
+        {
+            TargetPointer actualExplicitCodeCopyAddr = codeVersions.GetGCStressCodeCopy(explicitHandle);
+            Assert.Equal(TargetPointer.Null, actualExplicitCodeCopyAddr);
+        }
+        else
+        {
+            Target.TypeInfo gcCoverageInfoType = target.GetTypeInfo(DataType.GCCoverageInfo);
+            TargetPointer expectedExplicitCodeCopyAddr = explicitGCCoverageInfoAddr.Value + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+            TargetPointer actualExplicitCodeCopyAddr = codeVersions.GetGCStressCodeCopy(explicitHandle);
+            Assert.Equal(expectedExplicitCodeCopyAddr, actualExplicitCodeCopyAddr);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCStressCodeCopy_Null(MockTarget.Architecture arch)
+    {
+        GetGCStressCodeCopy_Impl(arch, returnsNull: true);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCStressCodeCopy_NotNull(MockTarget.Architecture arch)
+    {
+        GetGCStressCodeCopy_Impl(arch, returnsNull: false);
     }
 }

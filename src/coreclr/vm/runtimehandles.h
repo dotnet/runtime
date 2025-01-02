@@ -11,7 +11,6 @@
 #include "typectxt.h"
 
 typedef void* EnregisteredTypeHandle;
-class SignatureNative;
 
 // NOTE: These are defined in CallingConventions.cs.
 typedef enum ReflectionCallConv {
@@ -41,14 +40,13 @@ typedef DPTR(RuntimeMethodBody) RUNTIMEMETHODBODYREF;
 typedef DPTR(RuntimeLocalVariableInfo) RUNTIMELOCALVARIABLEINFOREF;
 #endif
 
-class RuntimeExceptionHandlingClause : Object
+class RuntimeExceptionHandlingClause : public Object
 {
-private:
-    // Disallow creation and copy construction of these.
-    RuntimeExceptionHandlingClause() { }
-    RuntimeExceptionHandlingClause(RuntimeExceptionHandlingClause &r) { }
-
 public:
+    // Disallow creation and copy construction of these.
+    RuntimeExceptionHandlingClause() = delete;
+    RuntimeExceptionHandlingClause(const RuntimeExceptionHandlingClause&)  = delete;
+
     RUNTIMEMETHODBODYREF _methodBody;
     CorExceptionFlag _flags;
     INT32 _tryOffset;
@@ -59,14 +57,13 @@ public:
     INT32 _filterOffset;
 };
 
-class RuntimeMethodBody : Object
+class RuntimeMethodBody : public Object
 {
-private:
-    // Disallow creation and copy construction of these.
-    RuntimeMethodBody() { }
-    RuntimeMethodBody(RuntimeMethodBody &r) { }
-
 public:
+    // Disallow creation and copy construction of these.
+    RuntimeMethodBody() = delete;
+    RuntimeMethodBody(const RuntimeMethodBody&) = delete;
+
     U1ARRAYREF _IL;
     PTRARRAYREF _exceptionClauses;
     PTRARRAYREF _localVariables;
@@ -77,14 +74,12 @@ public:
     CLR_BOOL _initLocals;
 };
 
-class RuntimeLocalVariableInfo : Object
+class RuntimeLocalVariableInfo : public Object
 {
-private:
-    // Disallow creation and copy construction of these.
-    RuntimeLocalVariableInfo() { }
-    RuntimeLocalVariableInfo(RuntimeLocalVariableInfo &r) { }
-
 public:
+    // Disallow creation and copy construction of these.
+    RuntimeLocalVariableInfo() = delete;
+    RuntimeLocalVariableInfo(const RuntimeLocalVariableInfo&) = delete;
 
     REFLECTCLASSBASEREF GetType()
     {
@@ -118,13 +113,9 @@ public:
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodTable* pMT);
     static FCDECL1(INT32, GetArrayRank, ReflectClassBaseObject* pType);
 
-    static FCDECL1(ReflectMethodObject*, GetDeclaringMethod, ReflectClassBaseObject *pType);
-
     static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 
-    static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
-
-    static FCDECL6(FC_BOOL_RET, SatisfiesConstraints, PTR_ReflectClassBaseObject pGenericParameter, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pGenericArgument);
+    static FCDECL2(TypeHandle::CastResult, CanCastToInternal, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
 
     static
     FCDECL1(FC_BOOL_RET, IsGenericVariable, PTR_ReflectClassBaseObject pType);
@@ -179,6 +170,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_PrepareMemberInfoCache(QCall::TypeHa
 extern "C" void QCALLTYPE RuntimeTypeHandle_ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInterfaces(MethodTable* pMT, QCall::ObjectHandleOnStack result);
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_IsVisible(QCall::TypeHandle pTypeHandle);
+extern "C" BOOL QCALLTYPE RuntimeTypeHandle_SatisfiesConstraints(QCall::TypeHandle paramType, QCall::TypeHandle typeContext, MethodDesc* methodContext, QCall::TypeHandle toType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetInstantiation(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray);
 extern "C" void QCALLTYPE RuntimeTypeHandle_Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetGenericTypeDefinition(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
@@ -191,6 +183,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetMethodAt(MethodTable* pMT,
 extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t* result, INT32* pCount);
 extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
 extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
+extern "C" void QCALLTYPE RuntimeTypeHandle_GetDeclaringMethodForGenericParameter(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack result);
 extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandleForGenericVariable(EnregisteredTypeHandle pTypeHandle);
 extern "C" EnregisteredTypeHandle QCALLTYPE RuntimeTypeHandle_GetDeclaringTypeHandle(EnregisteredTypeHandle pTypeHandle);
 extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly);
@@ -202,7 +195,7 @@ public:
     static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(MethodTable*, GetMethodTable, MethodDesc *pMethod);
     static FCDECL1(INT32, GetSlot, MethodDesc *pMethod);
-    static FCDECL1(INT32, GetMethodDef, ReflectMethodObject *pMethodUNSAFE);
+    static FCDECL1(INT32, GetMethodDef, MethodDesc *pMethod);
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
     static
     FCDECL1(FC_BOOL_RET, HasMethodInstantiation, MethodDesc *pMethod);
@@ -217,7 +210,7 @@ public:
     FCDECL1(INT32, GetGenericParameterCount, MethodDesc * pMethod);
 
     // see comment in the cpp file
-    static FCDECL3(MethodDesc*, GetStubIfNeeded, MethodDesc *pMethod, ReflectClassBaseObject *pType, PtrArray* instArray);
+    static FCDECL2(MethodDesc*, GetStubIfNeededInternal, MethodDesc *pMethod, ReflectClassBaseObject *pType);
     static FCDECL2(MethodDesc*, GetMethodFromCanonical, MethodDesc *pMethod, PTR_ReflectClassBaseObject pType);
 
     static
@@ -225,9 +218,6 @@ public:
 
     static
     FCDECL1(Object*, GetResolver, MethodDesc * pMethod);
-
-
-    static FCDECL2(RuntimeMethodBody*, GetMethodBody, ReflectMethodObject *pMethodUNSAFE, PTR_ReflectClassBaseObject pDeclaringType);
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);
 
@@ -257,6 +247,8 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMet
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetTypicalMethodDefinition(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod);
+extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodDesc* pMethod, QCall::TypeHandle declaringTypeHandle, QCall::ObjectHandleOnStack methodInstantiation);
+extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod, QCall::TypeHandle pDeclaringType, QCall::ObjectHandleOnStack result);
 
 class RuntimeFieldHandle
 {
@@ -269,7 +261,7 @@ public:
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
     static FCDECL1(MethodTable*, GetApproxDeclaringMethodTable, FieldDesc *pField);
     static FCDECL1(INT32, GetToken, FieldDesc* pField);
-    static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
+    static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, MethodTable *pMT);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
     static FCDECL1(Object*, GetLoaderAllocatorInternal, FieldDesc *pField);
 };
@@ -300,43 +292,45 @@ class AssemblyHandle
 {
 public:
     static FCDECL1(ReflectModuleBaseObject*, GetManifestModule, AssemblyBaseObject *pAssemblyUNSAFE);
-    static FCDECL1(INT32, GetToken, AssemblyBaseObject *pAssemblyUNSAFE);
+    static FCDECL1(INT32, GetTokenInternal, AssemblyBaseObject *pAssemblyUNSAFE);
 };
 
 extern "C" void QCALLTYPE AssemblyHandle_GetManifestModuleSlow(QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack module);
 
-class SignatureNative;
+extern "C" void QCALLTYPE Signature_Init(
+    QCall::ObjectHandleOnStack sigObj,
+    PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
+    FieldDesc* pFieldDesc,
+    MethodDesc* pMethodDesc);
 
-typedef DPTR(SignatureNative) PTR_SignatureNative;
+extern "C" BOOL QCALLTYPE Signature_AreEqual(
+    PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
+    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
 
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SignatureNative> SIGNATURENATIVEREF;
-#else
-typedef PTR_SignatureNative SIGNATURENATIVEREF;
-#endif
+extern "C" void QCALLTYPE Signature_GetCustomModifiersAtOffset(
+    QCall::ObjectHandleOnStack sigObj,
+    INT32 offset,
+    BOOL fRequired,
+    QCall::ObjectHandleOnStack result);
 
 class SignatureNative : public Object
 {
-    friend class RuntimeMethodHandle;
+    friend void QCALLTYPE Signature_Init(
+        QCall::ObjectHandleOnStack sigObj,
+        PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
+        FieldDesc* pFieldDesc,
+        MethodDesc* pMethodDesc);
     friend class ArgIteratorForMethodInvoke;
 
 public:
-    static FCDECL6(void, GetSignature,
-        SignatureNative* pSignatureNative,
-        PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
-        FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
-        ReflectClassBaseObject *pDeclaringType);
-
     static FCDECL3(INT32, GetParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 parameterIndex);
 
-    static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
+    static FCDECL4(INT32, GetTypeParameterOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset, INT32 index);
 
-    static FCDECL2(FC_INT8_RET, GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSig, INT32 offset);
+    static FCDECL3(INT32, GetCallingConventionFromFunctionPointerAtOffsetInternal, PCCOR_SIGNATURE sig, DWORD csig, INT32 offset);
 
-    static FCDECL3(Object *, GetCustomModifiersAtOffset, SignatureNative* pSig, INT32 offset, FC_BOOL_ARG fRequired);
-
-    BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
-    INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }
+    BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (_managedCallingConventionAndArgIteratorFlags & CALLCONV_HasThis); }
+    INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return _arguments->GetNumComponents(); }
     TypeHandle GetReturnTypeHandle()
     {
         CONTRACTL {
@@ -346,11 +340,11 @@ public:
         }
         CONTRACTL_END;
 
-        return ((REFLECTCLASSBASEREF)m_returnType)->GetType();
+        return ((REFLECTCLASSBASEREF)_returnTypeORfieldType)->GetType();
     }
 
-    PCCOR_SIGNATURE GetCorSig() { LIMITED_METHOD_CONTRACT; return m_sig; }
-    DWORD GetCorSigSize() { LIMITED_METHOD_CONTRACT; return m_cSig; }
+    PCCOR_SIGNATURE GetCorSig() { LIMITED_METHOD_CONTRACT; return _sig; }
+    DWORD GetCorSigSize() { LIMITED_METHOD_CONTRACT; return _csig; }
     Module* GetModule() { WRAPPER_NO_CONTRACT; return GetDeclaringType().GetModule(); }
 
     TypeHandle GetArgumentAt(INT32 position)
@@ -362,31 +356,31 @@ public:
         }
         CONTRACTL_END;
 
-        REFLECTCLASSBASEREF refArgument = (REFLECTCLASSBASEREF)m_PtrArrayarguments->GetAt(position);
+        REFLECTCLASSBASEREF refArgument = (REFLECTCLASSBASEREF)_arguments->GetAt(position);
         return refArgument->GetType();
     }
 
     DWORD GetArgIteratorFlags()
     {
         LIMITED_METHOD_CONTRACT;
-        return VolatileLoad(&m_managedCallingConvention) >> CALLCONV_ArgIteratorFlags_Shift;
+        return VolatileLoad(&_managedCallingConventionAndArgIteratorFlags) >> CALLCONV_ArgIteratorFlags_Shift;
     }
 
     INT32 GetSizeOfArgStack()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_nSizeOfArgStack;
+        return _nSizeOfArgStack;
     }
 
     TypeHandle GetDeclaringType()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_declaringType->GetType();
+        return _declaringType->GetType();
     }
     MethodDesc* GetMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pMethod;
+        return _pMethod;
     }
 
     const SigTypeContext * GetTypeContext(SigTypeContext *pTypeContext)
@@ -399,9 +393,9 @@ public:
         }
         CONTRACTL_END;
 
-       _ASSERTE(m_pMethod || !GetDeclaringType().IsNull());
-        if (m_pMethod)
-            return SigTypeContext::GetOptionalTypeContext(m_pMethod, GetDeclaringType(), pTypeContext);
+       _ASSERTE(_pMethod || !GetDeclaringType().IsNull());
+        if (_pMethod)
+            return SigTypeContext::GetOptionalTypeContext(_pMethod, GetDeclaringType(), pTypeContext);
         else
             return SigTypeContext::GetOptionalTypeContext(GetDeclaringType(), pTypeContext);
     }
@@ -415,7 +409,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference(&m_returnType, returnType);
+        SetObjectReference(&_returnTypeORfieldType, returnType);
     }
 
     void SetKeepAlive(OBJECTREF keepAlive)
@@ -426,18 +420,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference(&m_keepalive, keepAlive);
-    }
-
-    void SetDeclaringType(REFLECTCLASSBASEREF declaringType)
-    {
-        CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        SetObjectReference((OBJECTREF*)&m_declaringType, (OBJECTREF)declaringType);
+        SetObjectReference(&_keepAlive, keepAlive);
     }
 
     void SetArgumentArray(PTRARRAYREF ptrArrayarguments)
@@ -448,7 +431,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference((OBJECTREF*)&m_PtrArrayarguments, (OBJECTREF)ptrArrayarguments);
+        SetObjectReference((OBJECTREF*)&_arguments, (OBJECTREF)ptrArrayarguments);
     }
 
     void SetArgument(INT32 argument, OBJECTREF argumentType)
@@ -460,19 +443,19 @@ private:
         }
         CONTRACTL_END;
 
-        m_PtrArrayarguments->SetAt(argument, argumentType);
+        _arguments->SetAt(argument, argumentType);
     }
 
     void SetArgIteratorFlags(DWORD flags)
     {
         LIMITED_METHOD_CONTRACT;
-        return VolatileStore(&m_managedCallingConvention, (INT32)(m_managedCallingConvention | (flags << CALLCONV_ArgIteratorFlags_Shift)));
+        return VolatileStore(&_managedCallingConventionAndArgIteratorFlags, (INT32)(_managedCallingConventionAndArgIteratorFlags | (flags << CALLCONV_ArgIteratorFlags_Shift)));
     }
 
     void SetSizeOfArgStack(INT32 nSizeOfArgStack)
     {
         LIMITED_METHOD_CONTRACT;
-        m_nSizeOfArgStack = nSizeOfArgStack;
+        _nSizeOfArgStack = nSizeOfArgStack;
     }
 
     void SetCallingConvention(INT32 mdCallingConvention)
@@ -480,35 +463,39 @@ private:
         LIMITED_METHOD_CONTRACT;
 
         if ((mdCallingConvention & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
-            m_managedCallingConvention = CALLCONV_VarArgs;
+            _managedCallingConventionAndArgIteratorFlags = CALLCONV_VarArgs;
         else
-            m_managedCallingConvention = CALLCONV_Standard;
+            _managedCallingConventionAndArgIteratorFlags = CALLCONV_Standard;
 
         if ((mdCallingConvention & IMAGE_CEE_CS_CALLCONV_HASTHIS) != 0)
-            m_managedCallingConvention |= CALLCONV_HasThis;
+            _managedCallingConventionAndArgIteratorFlags |= CALLCONV_HasThis;
 
         if ((mdCallingConvention & IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS) != 0)
-            m_managedCallingConvention |= CALLCONV_ExplicitThis;
+            _managedCallingConventionAndArgIteratorFlags |= CALLCONV_ExplicitThis;
     }
 
     // Mirrored in the managed world (System.Signature)
     //
     // this is the layout the classloader chooses by default for the managed struct.
     //
-    PTRARRAYREF m_PtrArrayarguments;
-    REFLECTCLASSBASEREF m_declaringType;
-    OBJECTREF m_returnType;
-    OBJECTREF m_keepalive;
-    PCCOR_SIGNATURE m_sig;
-    INT32 m_managedCallingConvention;
-    INT32 m_nSizeOfArgStack;
-    DWORD m_cSig;
-    MethodDesc* m_pMethod;
+    PTRARRAYREF _arguments;
+    REFLECTCLASSBASEREF _declaringType;
+    OBJECTREF _returnTypeORfieldType;
+    OBJECTREF _keepAlive;
+    PCCOR_SIGNATURE _sig;
+    DWORD _csig;
+    INT32 _managedCallingConventionAndArgIteratorFlags;
+    INT32 _nSizeOfArgStack;
+    MethodDesc* _pMethod;
 };
 
-extern "C" BOOL QCALLTYPE Signature_AreEqual(
-    PCCOR_SIGNATURE sig1, INT32 cSig1, QCall::TypeHandle handle1,
-    PCCOR_SIGNATURE sig2, INT32 cSig2, QCall::TypeHandle handle2);
+typedef DPTR(SignatureNative) PTR_SignatureNative;
+
+#ifdef USE_CHECKED_OBJECTREFS
+typedef REF<SignatureNative> SIGNATURENATIVEREF;
+#else
+typedef PTR_SignatureNative SIGNATURENATIVEREF;
+#endif
 
 class ReflectionPointer : public Object
 {
