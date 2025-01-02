@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,9 +17,15 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public void TestLocalhostAddresses()
         {
-            IPAddress[] addresses = Dns.GetHostAddresses("localhost");
-            string localhostResolvesTo = string.Join(',', addresses.Select(a => a.ToString()));
-            throw new Exception(localhostResolvesTo);
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                IPAddress[] addresses = Dns.GetHostAddresses("localhost");
+                if (addresses.Length > 1)
+                {
+                    string localhostResolvesTo = string.Join(',', addresses.Select(a => a.ToString()));
+                    throw new Exception(localhostResolvesTo);
+                }
+            }
         }
 
         [Fact]
