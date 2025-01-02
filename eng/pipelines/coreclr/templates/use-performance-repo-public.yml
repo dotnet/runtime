@@ -1,0 +1,15 @@
+parameters:
+  perfBranch: 'main'
+  extends: {}
+
+resources:
+  repositories:
+  - repository: performance
+    type: github
+    name: dotnet/performance
+    endpoint: public
+    ref: ${{ parameters.perfBranch }}
+
+extends: 
+  template: ${{ parameters.extends.template }}
+  parameters: ${{ parameters.extends.parameters }}

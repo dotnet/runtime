@@ -1,0 +1,17 @@
+parameters:
+  perfBranch: 'main'
+  useInternalPerfRepo: false
+
+extends:
+  ${{ if parameters.useInternalPerfRepo }}:
+    template: use-performance-repo-internal.yml
+  ${{ else }}:
+    template: use-performance-repo-public.yml
+  parameters: 
+    perfBranch: ${{ parameters.perfBranch }}
+    extends:
+      template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+      parameters:
+        ${{ each parameter in parameters }}:
+          ${{ if notIn(parameter.key, 'perfBranch', 'useInternalPerfRepo') }}:
+            ${{ parameter.key }}: ${{ parameter.value }}

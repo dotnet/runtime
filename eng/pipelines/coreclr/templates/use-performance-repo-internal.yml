@@ -1,0 +1,12 @@
+parameters:
+  perfBranch: 'main'
+  extends: {}
+
+resources:
+  repositories:
+  - repository: performance
+    type: git
+    name: internal/dotnet-performance
+    ref: ${{ parameters.perfBranch }}
+
+extends: ${{ parameters.extends }}

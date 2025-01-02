@@ -43,19 +43,20 @@ schedules:
   always: true
 
 extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/perf-pipeline-with-resources.yml
   parameters:
+    perfBranch: ${{ parameters.perfBranch }}
+    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      useInternalPerfRepo: true
     stages:
     - stage: Build
       jobs:
 
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
-          collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-          perfBranch: ${{ parameters.perfBranch }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
-          ${{ if ne(variables['System.TeamProject'], 'public') }}:
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml

@@ -66,7 +66,6 @@ parameters:
         eng/pipelines/coreclr/templates/perf-job.yml
         eng/pipelines/coreclr/templates/*-perf-*
         eng/pipelines/coreclr/templates/run-perf*
-        eng/pipelines/coreclr/templates/run-scenarios-job.yml
         eng/testing/performance/*
     ]
 
