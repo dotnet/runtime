@@ -47,31 +47,30 @@ namespace System.Linq
 
         private static IEnumerable<TResult> RightJoinIterator<TOuter, TInner, TKey, TResult>(IEnumerable<TOuter> outer, IEnumerable<TInner> inner, Func<TOuter, TKey> outerKeySelector, Func<TInner, TKey> innerKeySelector, Func<TOuter?, TInner, TResult> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            using (IEnumerator<TInner> e = inner.GetEnumerator())
+            using IEnumerator<TInner> e = inner.GetEnumerator();
+
+            if (e.MoveNext())
             {
-                if (e.MoveNext())
+                Lookup<TKey, TOuter> outerLookup = Lookup<TKey, TOuter>.CreateForJoin(outer, outerKeySelector, comparer);
+                do
                 {
-                    Lookup<TKey, TOuter> outerLookup = Lookup<TKey, TOuter>.CreateForJoin(outer, outerKeySelector, comparer);
-                    do
+                    TInner item = e.Current;
+                    Grouping<TKey, TOuter>? g = outerLookup.GetGrouping(innerKeySelector(item), create: false);
+                    if (g is null)
                     {
-                        TInner item = e.Current;
-                        Grouping<TKey, TOuter>? g = outerLookup.GetGrouping(innerKeySelector(item), create: false);
-                        if (g is null)
+                        yield return resultSelector(default, item);
+                    }
+                    else
+                    {
+                        int count = g._count;
+                        TOuter[] elements = g._elements;
+                        for (int i = 0; i != count; ++i)
                         {
-                            yield return resultSelector(default, item);
-                        }
-                        else
-                        {
-                            int count = g._count;
-                            TOuter[] elements = g._elements;
-                            for (int i = 0; i != count; ++i)
-                            {
-                                yield return resultSelector(elements[i], item);
-                            }
+                            yield return resultSelector(elements[i], item);
                         }
                     }
-                    while (e.MoveNext());
                 }
+                while (e.MoveNext());
             }
         }
     }
