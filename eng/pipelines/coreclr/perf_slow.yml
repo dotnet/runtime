@@ -41,7 +41,7 @@ schedules:
   always: true
 
 extends:
-  template:  /eng/pipelines/common/templates/perf-pipeline-with-resources.yml
+  template:  /eng/pipelines/coreclr/templates/perf-pipeline-with-resources.yml
   parameters:
     perfBranch: ${{ parameters.perfBranch }}
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
