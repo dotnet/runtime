@@ -204,42 +204,58 @@ struct allMemoryKinds
     }
 };
 
+// Base class for forward iterators over the predecessor edge linked list.
+// Subclasses decide what the iterator yields (edge, source block, etc.) by implementing the dereference operator.
+// The pred list cannot be modified during iteration unless allowEdits is true.
+//
+template <bool allowEdits>
+class BasePredIterator
+{
+private:
+    // When allowEdits=false, try to guard against the user of the iterator from modifying the predecessor list
+    // being traversed: cache the edge we think should be next, then check it when we actually do the `++`
+    // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
+    // this iterator implementation.
+    // When allowEdits=true, m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
+    FlowEdge* m_next;
+
+protected:
+    FlowEdge* m_pred;
+
+    BasePredIterator(FlowEdge* pred);
+
+public:
+    BasePredIterator& operator++();
+
+    bool operator!=(const BasePredIterator& i) const
+    {
+        return m_pred != i.m_pred;
+    }
+};
+
 // PredEdgeList: adapter class for forward iteration of the predecessor edge linked list using range-based `for`,
 // normally used via BasicBlock::PredEdges(), e.g.:
 //    for (FlowEdge* const edge : block->PredEdges()) ...
+// allowEdits controls whether the iterator should be resilient to changes to the predecessor list.
 //
+template <bool allowEdits>
 class PredEdgeList
 {
     FlowEdge* m_begin;
 
     // Forward iterator for the predecessor edges linked list.
-    // The caller can't make changes to the preds list when using this.
     //
-    class iterator
+    class PredEdgeIterator : public BasePredIterator<allowEdits>
     {
-        FlowEdge* m_pred;
-
-#ifdef DEBUG
-        // Try to guard against the user of the iterator from making changes to the IR that would invalidate
-        // the iterator: cache the edge we think should be next, then check it when we actually do the `++`
-        // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
-        // this iterator implementation.
-        FlowEdge* m_next;
-#endif
-
     public:
-        iterator(FlowEdge* pred);
+        PredEdgeIterator(FlowEdge* pred)
+            : BasePredIterator<allowEdits>(pred)
+        {
+        }
 
         FlowEdge* operator*() const
         {
-            return m_pred;
-        }
-
-        iterator& operator++();
-
-        bool operator!=(const iterator& i) const
-        {
-            return m_pred != i.m_pred;
+            return this->m_pred;
         }
     };
 
@@ -249,14 +265,14 @@ public:
     {
     }
 
-    iterator begin() const
+    PredEdgeIterator begin() const
     {
-        return iterator(m_begin);
+        return PredEdgeIterator(m_begin);
     }
 
-    iterator end() const
+    PredEdgeIterator end() const
     {
-        return iterator(nullptr);
+        return PredEdgeIterator(nullptr);
     }
 };
 
@@ -271,30 +287,16 @@ class PredBlockList
     FlowEdge* m_begin;
 
     // Forward iterator for the predecessor edges linked list, yielding the predecessor block, not the edge.
-    // The caller can't make changes to the preds list when using this.
     //
-    class iterator
+    class PredBlockIterator : public BasePredIterator<allowEdits>
     {
-        FlowEdge* m_pred;
-
-        // When allowEdits=false, try to guard against the user of the iterator from modifying the predecessor list
-        // being traversed: cache the edge we think should be next, then check it when we actually do the `++`
-        // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
-        // this iterator implementation.
-        // When allowEdits=true, m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
-        FlowEdge* m_next;
-
     public:
-        iterator(FlowEdge* pred);
+        PredBlockIterator(FlowEdge* pred)
+            : BasePredIterator<allowEdits>(pred)
+        {
+        }
 
         BasicBlock* operator*() const;
-
-        iterator& operator++();
-
-        bool operator!=(const iterator& i) const
-        {
-            return m_pred != i.m_pred;
-        }
     };
 
 public:
@@ -303,14 +305,14 @@ public:
     {
     }
 
-    iterator begin() const
+    PredBlockIterator begin() const
     {
-        return iterator(m_begin);
+        return PredBlockIterator(m_begin);
     }
 
-    iterator end() const
+    PredBlockIterator end() const
     {
-        return iterator(nullptr);
+        return PredBlockIterator(nullptr);
     }
 };
 
@@ -1536,9 +1538,18 @@ public:
     // PredEdges: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
     //    for (FlowEdge* const edge : block->PredEdges()) ...
     //
-    PredEdgeList PredEdges() const
+    PredEdgeList<false> PredEdges() const
     {
-        return PredEdgeList(bbPreds);
+        return PredEdgeList<false>(bbPreds);
+    }
+
+    // PredEdgesEditing: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
+    //    for (FlowEdge* const edge : block->PredEdges()) ...
+    // This iterator tolerates modifications to bbPreds.
+    //
+    PredEdgeList<true> PredEdgesEditing() const
+    {
+        return PredEdgeList<true>(bbPreds);
     }
 
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
@@ -2424,30 +2435,8 @@ inline BasicBlock* BBArrayIterator::operator*() const
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and FlowEdge)
 
-inline PredEdgeList::iterator::iterator(FlowEdge* pred)
-    : m_pred(pred)
-{
-#ifdef DEBUG
-    m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
-#endif
-}
-
-inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
-{
-    FlowEdge* next = m_pred->getNextPredEdge();
-
-#ifdef DEBUG
-    // Check that the next block is the one we expect to see.
-    assert(next == m_next);
-    m_next = (next == nullptr) ? nullptr : next->getNextPredEdge();
-#endif // DEBUG
-
-    m_pred = next;
-    return *this;
-}
-
 template <bool allowEdits>
-inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
+inline BasePredIterator<allowEdits>::BasePredIterator(FlowEdge* pred)
     : m_pred(pred)
 {
     bool initNextPointer = allowEdits;
@@ -2459,13 +2448,7 @@ inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
 }
 
 template <bool allowEdits>
-inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
-{
-    return m_pred->getSourceBlock();
-}
-
-template <bool allowEdits>
-inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
+inline BasePredIterator<allowEdits>& BasePredIterator<allowEdits>::operator++()
 {
     if (allowEdits)
     {
@@ -2477,16 +2460,20 @@ inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::
     {
         FlowEdge* next = m_pred->getNextPredEdge();
 
-#ifdef DEBUG
         // If allowEdits=false, check that the next block is the one we expect to see.
         assert(next == m_next);
-        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
-#endif // DEBUG
+        INDEBUG(m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge());
 
         m_pred = next;
     }
 
     return *this;
+}
+
+template <bool allowEdits>
+inline BasicBlock* PredBlockList<allowEdits>::PredBlockIterator::operator*() const
+{
+    return this->m_pred->getSourceBlock();
 }
 
 /*****************************************************************************
