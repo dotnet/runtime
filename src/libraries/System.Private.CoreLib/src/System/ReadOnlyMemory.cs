@@ -21,7 +21,7 @@ namespace System
     public readonly struct ReadOnlyMemory<T> : IEquatable<ReadOnlyMemory<T>>
     {
         // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
-        // as code uses Unsafe.As to cast between them.
+        // as code uses Unsafe.BitCast to cast between them.
 
         // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
         // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
