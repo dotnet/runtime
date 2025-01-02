@@ -3,10 +3,7 @@
 
 using System.Buffers;
 using System.Buffers.Text;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
@@ -89,7 +86,7 @@ namespace System.Text.Json
                     Debug.Assert(charsConsumed == value.Length + partialCodePointBuffer.Length);
                     // Let the encoder deal with the error if this is a final buffer.
                     value = combinedBuffer.Slice(0, charsConsumed);
-                    partialCodePointBuffer = ReadOnlySpan<char>.Empty;
+                    partialCodePointBuffer = [];
                     break;
                 case OperationStatus.Done:
                     Debug.Assert(charsConsumed > partialCodePointBuffer.Length);
@@ -265,7 +262,7 @@ namespace System.Text.Json
                     Debug.Assert(bytesConsumed == utf8Value.Length + partialCodePointBuffer.Length);
                     // Let the encoder deal with the error if this is a final buffer.
                     utf8Value = combinedBuffer.Slice(0, bytesConsumed);
-                    partialCodePointBuffer = ReadOnlySpan<byte>.Empty;
+                    partialCodePointBuffer = [];
                     break;
                 case OperationStatus.Done:
                     Debug.Assert(bytesConsumed > partialCodePointBuffer.Length);
@@ -361,6 +358,126 @@ namespace System.Text.Json
 
             escapedValue.CopyTo(output.Slice(BytesPending));
             BytesPending += escapedValue.Length;
+        }
+
+        /// <summary>
+        /// Writes the input bytes as a partial JSON string.
+        /// </summary>
+        /// <param name="value">The bytes to be written as a JSON string element of a JSON array.</param>
+        /// <param name="isFinalSegment">Indicates that this is the final segment of the string.</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified value is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled) or
+        /// if the previously written segment (if any) was not written with this same overload.
+        /// </exception>
+        public void WriteBase64StringSegment(ReadOnlySpan<byte> value, bool isFinalSegment)
+        {
+            if (value.Length > Base64.GetMaxDecodedFromUtf8Length(int.MaxValue))
+            {
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(value.Length);
+            }
+
+            if (_tokenType != Utf8JsonWriter.StringSegmentSentinel)
+            {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
+                Debug.Assert(!HasPartialCodePoint);
+
+                if (!_options.SkipValidation)
+                {
+                    ValidateWritingValue();
+                }
+
+                WriteStringSegmentPrologue();
+
+                PreviousSegmentEncoding = SegmentEncoding.Base64;
+                _tokenType = Utf8JsonWriter.StringSegmentSentinel;
+            }
+            else
+            {
+                ValidateEncodingDidNotChange(SegmentEncoding.Base64);
+            }
+
+            // The steps to write a string segment are to complete the previous partial code point
+            // and escape either of which might not be required so there is a fast path for each of these steps.
+            if (HasPartialCodePoint)
+            {
+                WriteBase64StringSegmentWithLeftover(value, isFinalSegment);
+            }
+            else
+            {
+                WriteBase64StringSegmentData(value, isFinalSegment);
+            }
+
+            if (isFinalSegment)
+            {
+                WriteStringSegmentEpilogue();
+
+                SetFlagToAddListSeparatorBeforeNextItem();
+                PreviousSegmentEncoding = SegmentEncoding.None;
+                _tokenType = JsonTokenType.String;
+            }
+        }
+
+        private void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
+        {
+            Debug.Assert(HasPartialCodePoint);
+            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Base64);
+
+            scoped ReadOnlySpan<byte> partialCodePointBuffer = PartialBase64CodePoint;
+
+            Span<byte> combinedBuffer = stackalloc byte[3];
+            combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialCodePointBuffer, bytes, combinedBuffer));
+            if (combinedBuffer.Length is 3)
+            {
+                // Divide up the code point bytes into its own buffer and the remainder of the input buffer.
+                bytes = bytes.Slice(3 - partialCodePointBuffer.Length);
+                partialCodePointBuffer = combinedBuffer.Slice(0, 3);
+            }
+            else
+            {
+                Debug.Assert(combinedBuffer.Length is 1 or 2);
+                // Need more data. If this is a final segment, then the encoder will append '=' as needed.
+                Debug.Assert(bytes.Length + partialCodePointBuffer.Length < 3);
+                bytes = combinedBuffer;
+                partialCodePointBuffer = [];
+            }
+
+            // It doesn't matter if we pass true or false for isFinalSegment since we are guaranteed to not have a partial code point
+            // here (it is either empty or completed using the combined buffer above).
+            WriteBase64StringSegmentData(partialCodePointBuffer, false);
+
+            ClearPartialCodePoint();
+
+            WriteBase64StringSegmentData(bytes, isFinalSegment);
+        }
+
+        private void WriteBase64StringSegmentData(ReadOnlySpan<byte> bytes, bool isFinal)
+        {
+            int leftoverSize;
+            if (!isFinal && (leftoverSize = bytes.Length % 3) != 0)
+            {
+                // If this is not the final segment, we need to wait for more data to come in.
+                PartialBase64CodePoint = bytes.Slice(bytes.Length - leftoverSize);
+                bytes = bytes.Slice(0, bytes.Length - leftoverSize);
+            }
+
+            if (bytes.Length == 0)
+            {
+                return;
+            }
+
+            int requiredBytes = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
+
+            if (_memory.Length - BytesPending < requiredBytes)
+            {
+                Grow(requiredBytes);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            Base64EncodeAndWrite(bytes, output);
         }
 
         private void WriteStringSegmentPrologue()

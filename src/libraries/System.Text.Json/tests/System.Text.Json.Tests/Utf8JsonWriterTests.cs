@@ -272,17 +272,17 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(changed, writerOptions, output =>
+                        SplitCodePointsHelper(newStr.AsSpan(), writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? (i + 1) : -1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf16);
 
-                        SplitCodePointsHelper(changed, writerOptions, output =>
+                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? (i + 1) : -1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf8);
                     }
                 }
 
@@ -307,13 +307,13 @@ namespace System.Text.Json.Tests
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? 1 : -1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf16);
 
                         SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? 1 : -1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf8);
                     }
                 }
             }
@@ -430,12 +430,12 @@ namespace System.Text.Json.Tests
                     SplitCodePointsHelper(str, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    });
+                    }, EncodingType.Utf16);
 
                     SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    });
+                    }, EncodingType.Utf8);
                 }
 
                 for (int i = 0; i < dataLength; i++)
@@ -455,19 +455,19 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(source.ToCharArray(), writerOptions, output =>
+                        SplitCodePointsHelper(source.AsSpan(), writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             // Each CJK character expands to 3 utf-8 bytes.
                             Assert.Equal(requiresEscaping ? ((i * 3) + 1) : -1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf16);
 
                         SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             // Each CJK character expands to 3 utf-8 bytes.
                             Assert.Equal(requiresEscaping ? ((i * 3) + 1) : -1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf8);
                     }
                 }
             }
@@ -541,12 +541,12 @@ namespace System.Text.Json.Tests
                     SplitCodePointsHelper(str, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    });
+                    }, EncodingType.Utf16);
 
                     SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    });
+                    }, EncodingType.Utf8);
                 }
 
                 for (int i = 0; i < dataLength - 1; i++)
@@ -571,13 +571,13 @@ namespace System.Text.Json.Tests
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(i + 1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf16);
 
                         SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(i + 1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf8);
                     }
                 }
 
@@ -607,13 +607,13 @@ namespace System.Text.Json.Tests
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf16);
 
                         SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(1, escapedIndex);  // Account for the start quote
-                        });
+                        }, EncodingType.Utf8);
                     }
                 }
             }
@@ -670,12 +670,12 @@ namespace System.Text.Json.Tests
                         SplitCodePointsHelper(changed, writerOptions, output =>
                         {
                             Assert.True(BeginsWithReplacementCharacter(output.WrittenSpan.Slice(i + 1))); // +1 to account for starting quote
-                        });
+                        }, EncodingType.Utf16);
 
                         SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
                         {
                             Assert.True(BeginsWithReplacementCharacter(output.WrittenSpan.Slice(i + 1))); // +1 to account for starting quote
-                        });
+                        }, EncodingType.Utf8);
                     }
                 }
             }
@@ -1889,6 +1889,18 @@ namespace System.Text.Json.Tests
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 WritePreamble(jsonUtf8, kind);
+                ValidateAction(jsonUtf8, () => jsonUtf8.WriteBase64StringSegment("foo"u8, true), options.SkipValidation);
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                WritePreamble(jsonUtf8, kind);
+                ValidateAction(jsonUtf8, () => jsonUtf8.WriteBase64StringSegment("foo"u8, false), options.SkipValidation);
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                WritePreamble(jsonUtf8, kind);
                 ValidateAction(jsonUtf8, () => jsonUtf8.WriteNumber("key", 123), options.SkipValidation);
             }
 
@@ -2018,6 +2030,18 @@ namespace System.Text.Json.Tests
             {
                 WritePreamble(jsonUtf8, kind, addComments: true);
                 ValidateAction(jsonUtf8, () => jsonUtf8.WriteStringValueSegment("foo"u8, false), options.SkipValidation);
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                WritePreamble(jsonUtf8, kind, addComments: true);
+                ValidateAction(jsonUtf8, () => jsonUtf8.WriteBase64StringSegment("foo"u8, true), options.SkipValidation);
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                WritePreamble(jsonUtf8, kind, addComments: true);
+                ValidateAction(jsonUtf8, () => jsonUtf8.WriteBase64StringSegment("foo"u8, false), options.SkipValidation);
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
@@ -2258,6 +2282,10 @@ namespace System.Text.Json.Tests
                     jsonUtf8.WriteStringValueSegment([65, 66], true);
                     jsonUtf8.WriteStringValueSegment([65, 66], false);
                     jsonUtf8.WriteStringValueSegment([65, 66], true);
+
+                    jsonUtf8.WriteBase64StringSegment([65, 66], true);
+                    jsonUtf8.WriteBase64StringSegment([65, 66], false);
+                    jsonUtf8.WriteBase64StringSegment([65, 66], true);
                 }
                 else
                 {
@@ -2265,6 +2293,8 @@ namespace System.Text.Json.Tests
                     Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment(['a', 'b'], false));
                     Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment([65, 66], true));
                     Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment([65, 66], false));
+                    Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBase64StringSegment([65, 66], true));
+                    Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBase64StringSegment([65, 66], false));
                 }
             }
 
@@ -2830,6 +2860,19 @@ namespace System.Text.Json.Tests
                     Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
                 }
             }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteBase64StringSegment("a"u8, true);
+                if (options.SkipValidation)
+                {
+                    jsonUtf8.WritePropertyName("test name");
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+                }
+            }
         }
 
         // Name is present in the test data to make it easier to identify the test case
@@ -2857,6 +2900,19 @@ namespace System.Text.Json.Tests
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStringValueSegment("foo"u8, isFinalSegment: false);
+                if (options.SkipValidation)
+                {
+                    write(jsonUtf8);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => write(jsonUtf8));
+                }
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteBase64StringSegment("foo"u8, isFinalSegment: false);
                 if (options.SkipValidation)
                 {
                     write(jsonUtf8);
@@ -3236,7 +3292,7 @@ namespace System.Text.Json.Tests
                 byte[] value = new byte[200_000_000];
                 value.AsSpan().Fill((byte)'a');
 
-                    var output = new ArrayBufferWriter<byte>(value.Length);
+                var output = new ArrayBufferWriter<byte>(value.Length);
 
                 using (var jsonUtf8 = new Utf8JsonWriter(output, options))
                 {

@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.ComponentModel;
 
 namespace System.Text.Json
 {
@@ -39,11 +38,12 @@ namespace System.Text.Json
         private const JsonTokenType StringSegmentSentinel = (JsonTokenType)255;
 
         // Masks and flags for the length and encoding of the partial code point
-        private const byte PartialCodePointLengthMask =         0b000_000_11;
-        private const byte PartialCodePointEncodingMask =       0b000_111_00;
+        private const byte PartialCodePointLengthMask =             0b000_000_11;
+        private const byte PartialCodePointEncodingMask =           0b000_111_00;
 
-        private const byte PartialCodePointUtf8EncodingFlag =   0b000_001_00;
-        private const byte PartialCodePointUtf16EncodingFlag =  0b000_010_00;
+        private const byte PartialCodePointUtf8EncodingFlag =       0b000_001_00;
+        private const byte PartialCodePointUtf16EncodingFlag =      0b000_010_00;
+        private const byte PartialCodePointBase64EncodingFlag =     0b000_100_00;
 
         private IBufferWriter<byte>? _output;
         private Stream? _stream;
@@ -133,7 +133,7 @@ namespace System.Text.Json
         private byte PartialCodePointLength
         {
             get => (byte)(_partialCodePointFlags & PartialCodePointLengthMask);
-            set => _partialCodePointFlags = (byte)((_partialCodePointFlags & ~PartialCodePointLengthMask) | (byte)value);
+            set => _partialCodePointFlags = (byte)((_partialCodePointFlags & ~PartialCodePointLengthMask) | value);
         }
 
         /// <summary>
@@ -194,6 +194,34 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// The partial base64 code point.
+        /// </summary>
+        private ReadOnlySpan<byte> PartialBase64CodePoint
+        {
+            get
+            {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Base64);
+
+                ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
+                Debug.Assert(partialCodePointBytes.Length == 3);
+
+                byte length = PartialCodePointLength;
+                Debug.Assert(length < 3);
+
+                return partialCodePointBytes.Slice(0, length);
+            }
+            set
+            {
+                Debug.Assert(value.Length < 3);
+
+                Span<byte> partialCodePointBytes = PartialCodePointRaw;
+
+                value.CopyTo(partialCodePointBytes);
+                PartialCodePointLength = (byte)value.Length;
+            }
+        }
+
+        /// <summary>
         /// Encoding used for the previous string segment write.
         /// </summary>
         private SegmentEncoding PreviousSegmentEncoding
@@ -210,6 +238,7 @@ namespace System.Text.Json
             None = 0,
             Utf8 = PartialCodePointUtf8EncodingFlag,
             Utf16 = PartialCodePointUtf16EncodingFlag,
+            Base64 = PartialCodePointBase64EncodingFlag,
         }
 
         private Utf8JsonWriter()
