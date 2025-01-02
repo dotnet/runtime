@@ -205,10 +205,10 @@ struct allMemoryKinds
 };
 
 // Base class for forward iterators over the predecessor edge linked list.
-// Subclasses decide what the iterator should yield (edge, source block, etc.).
+// Subclasses decide what the iterator yields (edge, source block, etc.) by implementing the dereference operator.
 // The pred list cannot be modified during iteration unless allowEdits is true.
 //
-template <typename IteratorType, bool allowEdits>
+template <bool allowEdits>
 class BasePredIterator
 {
 private:
@@ -222,11 +222,9 @@ private:
 protected:
     FlowEdge* m_pred;
 
-public:
     BasePredIterator(FlowEdge* pred);
 
-    virtual IteratorType* operator*() const = 0;
-
+public:
     BasePredIterator& operator++();
 
     bool operator!=(const BasePredIterator& i) const
@@ -247,15 +245,15 @@ class PredEdgeList
 
     // Forward iterator for the predecessor edges linked list.
     //
-    class PredEdgeIterator : public BasePredIterator<FlowEdge, allowEdits>
+    class PredEdgeIterator : public BasePredIterator<allowEdits>
     {
     public:
         PredEdgeIterator(FlowEdge* pred)
-            : BasePredIterator<FlowEdge, allowEdits>(pred)
+            : BasePredIterator<allowEdits>(pred)
         {
         }
 
-        FlowEdge* operator*() const override
+        FlowEdge* operator*() const
         {
             return this->m_pred;
         }
@@ -290,15 +288,15 @@ class PredBlockList
 
     // Forward iterator for the predecessor edges linked list, yielding the predecessor block, not the edge.
     //
-    class PredBlockIterator : public BasePredIterator<BasicBlock, allowEdits>
+    class PredBlockIterator : public BasePredIterator<allowEdits>
     {
     public:
         PredBlockIterator(FlowEdge* pred)
-            : BasePredIterator<BasicBlock, allowEdits>(pred)
+            : BasePredIterator<allowEdits>(pred)
         {
         }
 
-        BasicBlock* operator*() const override;
+        BasicBlock* operator*() const;
     };
 
 public:
@@ -2437,8 +2435,8 @@ inline BasicBlock* BBArrayIterator::operator*() const
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and FlowEdge)
 
-template <typename IteratorType, bool allowEdits>
-inline BasePredIterator<IteratorType, allowEdits>::BasePredIterator(FlowEdge* pred)
+template <bool allowEdits>
+inline BasePredIterator<allowEdits>::BasePredIterator(FlowEdge* pred)
     : m_pred(pred)
 {
     bool initNextPointer = allowEdits;
@@ -2449,8 +2447,8 @@ inline BasePredIterator<IteratorType, allowEdits>::BasePredIterator(FlowEdge* pr
     }
 }
 
-template <typename IteratorType, bool allowEdits>
-inline BasePredIterator<IteratorType, allowEdits>& BasePredIterator<IteratorType, allowEdits>::operator++()
+template <bool allowEdits>
+inline BasePredIterator<allowEdits>& BasePredIterator<allowEdits>::operator++()
 {
     if (allowEdits)
     {
