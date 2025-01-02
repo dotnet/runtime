@@ -2377,10 +2377,10 @@ public:
             bool                        fDoubleAlignHint = false
             ) = 0;
 
-    // This is only called for Value classes.  It returns a boolean array
-    // in representing of 'cls' from a GC perspective.  The class is
-    // assumed to be an array of machine words
-    // (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
+    // Returns a boolean array representing 'cls' from a GC perspective.
+    // The class is assumed to be an array of machine words
+    // (of length getClassSize(cls) / TARGET_POINTER_SIZE for value classes
+    // and getHeapClassSize(cls) / TARGET_POINTER_SIZE for reference types),
     // 'gcPtrs' is a pointer to an array of uint8_ts of this length.
     // getClassGClayout fills in this array so that gcPtrs[i] is set
     // to one of the CorInfoGCType values which is the GC type of

@@ -7613,64 +7613,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         fgRemoveRefPred(removedEdge);
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
                         Metrics.ImporterBranchFold++;
-
-                        // If we removed an edge carrying profile, try to do a local repair.
-                        //
-                        if (block->hasProfileWeight())
-                        {
-                            bool           repairWasComplete = true;
-                            weight_t const weight            = removedEdge->getLikelyWeight();
-
-                            if (weight > 0)
-                            {
-                                // Target block weight will increase.
-                                //
-                                BasicBlock* const target = block->GetTarget();
-                                assert(target->hasProfileWeight());
-                                target->setBBProfileWeight(target->bbWeight + weight);
-
-                                // Alternate weight will decrease
-                                //
-                                BasicBlock* const alternate = removedEdge->getDestinationBlock();
-                                assert(alternate->hasProfileWeight());
-                                weight_t const alternateNewWeight = alternate->bbWeight - weight;
-
-                                // If profile weights are consistent, expect at worst a slight underflow.
-                                //
-                                if (fgPgoConsistent && (alternateNewWeight < 0))
-                                {
-                                    assert(fgProfileWeightsEqual(alternateNewWeight, 0));
-                                }
-                                alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
-
-                                // This will affect profile transitively, so in general
-                                // the profile will become inconsistent.
-                                //
-                                repairWasComplete = false;
-
-                                // But we can check for the special case where the
-                                // block's postdominator is target's target (simple
-                                // if/then/else/join).
-                                //
-                                if (target->KindIs(BBJ_ALWAYS))
-                                {
-                                    repairWasComplete = alternate->KindIs(BBJ_ALWAYS) &&
-                                                        (alternate->GetTarget() == target->GetTarget());
-                                }
-                            }
-
-                            if (!repairWasComplete)
-                            {
-                                JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
-                                        fgPgoConsistent ? "is now" : "was already");
-
-                                if (fgPgoConsistent)
-                                {
-                                    Metrics.ProfileInconsistentImporterBranchFold++;
-                                    fgPgoConsistent = false;
-                                }
-                            }
-                        }
+                        fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                    &Metrics.ProfileInconsistentImporterBranchFold);
                     }
 
                     if (!op1->OperIs(GT_CNS_INT))
@@ -9735,10 +9679,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
+                block->SetFlags(BBF_HAS_NEWARR);
 
-                /* Push the result of the call on the stack */
+                if (opts.OptimizationEnabled())
+                {
+                    // We assign the newly allocated object (by a GT_CALL to newarr node)
+                    // to a temp. Note that the pattern "temp = allocArr" is required
+                    // by ObjectAllocator phase to be able to determine newarr nodes
+                    // without exhaustive walk over all expressions.
+                    lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
 
-                impPushOnStack(op1, tiRetVal);
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
+
+                    assert(lvaTable[lclNum].lvSingleDef == 0);
+                    lvaTable[lclNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def local\n", lclNum);
+                    lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+
+                    /* Push the result of the call on the stack */
+
+                    impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+                }
+                else
+                {
+                    /* Push the result of the call on the stack */
+                    impPushOnStack(op1, tiRetVal);
+                }
 
                 callTyp = TYP_REF;
             }
