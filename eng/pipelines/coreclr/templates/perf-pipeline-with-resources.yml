@@ -1,6 +1,12 @@
 parameters:
-  perfBranch: 'main'
-  useInternalPerfRepo: false
+  - name: perfBranch
+    type: string
+    default: main
+  - name: useInternalPerfRepo
+    type: boolean
+    default: false
+  - name: stages
+    type: stageList
 
 extends:
   ${{ if parameters.useInternalPerfRepo }}:
@@ -9,9 +15,4 @@ extends:
     template: use-performance-repo-public.yml
   parameters: 
     perfBranch: ${{ parameters.perfBranch }}
-    extends:
-      template: /eng/pipelines/common/templates/pipeline-with-resources.yml
-      parameters:
-        ${{ each parameter in parameters }}:
-          ${{ if notIn(parameter.key, 'perfBranch', 'useInternalPerfRepo') }}:
-            ${{ parameter.key }}: ${{ parameter.value }}
+    stages: ${{ parameters.stages }}

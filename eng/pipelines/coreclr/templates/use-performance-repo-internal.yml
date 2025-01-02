@@ -1,6 +1,9 @@
 parameters:
-  perfBranch: 'main'
-  extends: {}
+  - name: perfBranch
+    type: string
+    default: main
+  - name: stages
+    type: stageList
 
 resources:
   repositories:
@@ -9,4 +12,7 @@ resources:
     name: internal/dotnet-performance
     ref: ${{ parameters.perfBranch }}
 
-extends: ${{ parameters.extends }}
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages: ${{ parameters.stages }}

@@ -1,6 +1,9 @@
 parameters:
-  perfBranch: 'main'
-  extends: {}
+  - name: perfBranch
+    type: string
+    default: main
+  - name: stages
+    type: stageList
 
 resources:
   repositories:
@@ -10,6 +13,7 @@ resources:
     endpoint: public
     ref: ${{ parameters.perfBranch }}
 
-extends: 
-  template: ${{ parameters.extends.template }}
-  parameters: ${{ parameters.extends.parameters }}
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages: ${{ parameters.stages }}
