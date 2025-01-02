@@ -1160,25 +1160,6 @@ HCIMPL2(Object*, JIT_NewArr1MaybeFrozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR s
 }
 HCIMPLEND
 
-/*************************************************************/
-HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF    ret = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
-
-    TypeHandle typeHnd(classHnd);
-    _ASSERTE(typeHnd.IsFullyLoaded());
-    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
-
-    ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(ret);
-}
-HCIMPLEND
-
 #include <optdefault.h>
 
 //========================================================================
