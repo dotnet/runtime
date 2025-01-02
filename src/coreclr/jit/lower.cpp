@@ -7850,6 +7850,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7900,6 +7905,84 @@ PhaseStatus Lowering::DoPhase()
     comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Lowering::MapParameterRegisterLocals:
+//   Create mappings between parameter registers and locals corresponding to
+//   them.
+//
+void Lowering::MapParameterRegisterLocals()
+{
+    comp->m_paramRegLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(comp->getAllocator(CMK_ABI));
+
+    // Create initial mappings for promotions.
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        {
+            // If not promoted, then we do not need to create any mappings.
+            // If dependently promoted then the fields are never enregistered
+            // by LSRA, so no reason to try to create any mappings.
+            continue;
+        }
+
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            // If the parameter is not passed in any registers, then there are
+            // no mappings to create.
+            continue;
+        }
+
+        // Currently we do not support promotion of split parameters, so we
+        // should not see any split parameters here.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+
+        for (int i = 0; i < lclDsc->lvFieldCnt; i++)
+        {
+            unsigned   fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
+
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
+                {
+                    // This register does not map to this field (ends before the field starts)
+                    continue;
+                }
+
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                {
+                    // This register does not map to this field (starts after the field ends)
+                    continue;
+                }
+
+                comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
+            }
+
+            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+            assert(!fieldLclDsc->lvIsParamRegTarget);
+            fieldLclDsc->lvIsParamRegTarget = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("%d parameter register to local mappings\n", comp->m_paramRegLocalMappings->Height());
+        for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
+            printf("  ");
+            mapping.RegisterSegment->Dump();
+            printf(" -> V%02u\n", mapping.LclNum);
+        }
+    }
+#endif
 }
 
 #ifdef DEBUG

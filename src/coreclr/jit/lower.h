@@ -132,6 +132,8 @@ private:
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
 
+    void MapParameterRegisterLocals();
+
     void     LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
