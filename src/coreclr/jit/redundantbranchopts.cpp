@@ -1709,7 +1709,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     BasicBlock* const ambBlock = jti.m_ambiguousVNBlock;
     if ((ambBlock != nullptr) && jti.m_block->KindIs(BBJ_COND) && (jti.m_block->GetUniquePred(this) == ambBlock))
     {
-        JITDUMP(FMT_BB " has just one remaining predcessor " FMT_BB "\n", jti.m_block->bbNum, ambBlock->bbNum);
+        JITDUMP(FMT_BB " has just one remaining predecessor " FMT_BB "\n", jti.m_block->bbNum, ambBlock->bbNum);
 
         Statement* const stmt = jti.m_block->lastStmt();
         assert(stmt != nullptr);
