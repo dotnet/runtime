@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operting on 512-bit vectors.</summary>
-    public static unsafe class Vector512
+    public static class Vector512
     {
         internal const int Size = 64;
 
@@ -2097,7 +2097,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector512<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static unsafe Vector512<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2107,7 +2107,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> LoadAligned<T>(T* source)
+        public static unsafe Vector512<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
 
@@ -2127,7 +2127,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector512<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+        public static unsafe Vector512<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3219,7 +3219,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void Store<T>(this Vector512<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static unsafe void Store<T>(this Vector512<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3229,7 +3229,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAligned<T>(this Vector512<T> source, T* destination)
+        public static unsafe void StoreAligned<T>(this Vector512<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector512BaseType<T>();
 
@@ -3249,7 +3249,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector512<T> source, T* destination) => source.StoreAligned(destination);
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector512<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

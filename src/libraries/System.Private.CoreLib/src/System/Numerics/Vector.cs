@@ -11,9 +11,9 @@ namespace System.Numerics
 {
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on generic vectors.</summary>
     [Intrinsic]
-    public static unsafe partial class Vector
+    public static partial class Vector
     {
-        internal static int Alignment => sizeof(Vector<byte>);
+        internal static unsafe int Alignment => sizeof(Vector<byte>);
 
         /// <summary>Gets a value that indicates whether vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
         /// <value><see langword="true" /> if vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
@@ -1550,7 +1550,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static unsafe Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1560,7 +1560,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> LoadAligned<T>(T* source)
+        public static unsafe Vector<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -1580,7 +1580,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+        public static unsafe Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2577,7 +2577,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void Store<T>(this Vector<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static unsafe void Store<T>(this Vector<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2587,7 +2587,7 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAligned<T>(this Vector<T> source, T* destination)
+        public static unsafe void StoreAligned<T>(this Vector<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
@@ -2607,7 +2607,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

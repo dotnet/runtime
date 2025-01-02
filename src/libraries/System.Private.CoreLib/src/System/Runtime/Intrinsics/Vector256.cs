@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics
     // the internal inlining limits of the JIT.
 
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 256-bit vectors.</summary>
-    public static unsafe class Vector256
+    public static class Vector256
     {
         internal const int Size = 32;
 
@@ -2055,7 +2055,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static unsafe Vector256<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2065,7 +2065,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> LoadAligned<T>(T* source)
+        public static unsafe Vector256<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -2085,7 +2085,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
+        public static unsafe Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3192,7 +3192,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static unsafe void Store<T>(this Vector256<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3202,7 +3202,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void StoreAligned<T>(this Vector256<T> source, T* destination)
+        public static unsafe void StoreAligned<T>(this Vector256<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
@@ -3222,7 +3222,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -3314,7 +3314,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
+        public static Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
