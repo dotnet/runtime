@@ -1098,27 +1098,32 @@ FCIMPLEND
 
 // Returns the address of the EnC instance field in the object (This is an interior
 // pointer and the caller has to use it appropriately) or an EnC static field.
-FCIMPL2(void*, RuntimeFieldHandle::GetEnCFieldAddr, Object* obj, FieldDesc* pFD)
+extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandleOnStack target, FieldDesc* pFD)
 {
     CONTRACTL
     {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(obj, NULL_OK));
+        QCALL_CHECK;
+        PRECONDITION(pFD != NULL);
     }
     CONTRACTL_END;
 
-    _ASSERTE(pFD != NULL);
+    void* ret = NULL;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // Only handling EnC
     _ASSERTE(pFD->IsEnCNew());
 
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    if (!pFD->IsStatic() && objRef == NULL)
-        return NULL;
+    // If the field is static, or if the object is non-null, get the address of the field.
+    if (pFD->IsStatic() || target.Get() != NULL)
+        ret = pFD->GetAddress(OBJECTREFToObject(target.Get()));
 
-    return pFD->GetAddress(OBJECTREFToObject(objRef));
+    END_QCALL;
+
+    return ret;
 }
-FCIMPLEND
 
 extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size)
 {

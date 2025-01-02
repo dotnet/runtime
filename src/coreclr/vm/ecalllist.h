@@ -164,7 +164,6 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("IsFastPathSupported", RuntimeFieldHandle::IsFastPathSupported)
     FCFuncElement("GetInstanceFieldOffset", RuntimeFieldHandle::GetInstanceFieldOffset)
     FCFuncElement("GetStaticFieldAddress", RuntimeFieldHandle::GetStaticFieldAddress)
-    FCFuncElement("GetEnCFieldAddr", RuntimeFieldHandle::GetEnCFieldAddr)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeAssemblyFuncs)
