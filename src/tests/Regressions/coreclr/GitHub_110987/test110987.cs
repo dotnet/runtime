@@ -19,8 +19,6 @@ public class Test110987
     [Fact]
     public static void TestDynamicMethodALC()
     {
-        string tempFilePath = Path.GetTempFileName() + ".dll";
-
         // Create a simple type
         PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), typeof(object).Assembly);
         TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
@@ -28,11 +26,14 @@ public class Test110987
         ILGenerator ilGenerator = myMethod.GetILGenerator();
         ilGenerator.Emit(OpCodes.Ret);
         typeBuilder.CreateType();
-        ab.Save(tempFilePath);
+        MemoryStream ms = new MemoryStream()
+        ab.Save(ms);
+
+        ms.Position = 0;
 
         TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
 
-        Type typeFromDisk = tlc.LoadFromAssemblyPath(tempFilePath).GetType("MyType")!;
+        Type typeFromDisk = tlc.LoadFromStream(ms).GetType("MyType")!;
         MethodInfo methodFromDisk = typeFromDisk.GetMethod("MyMethod")!;
 
         DynamicMethod callIt = new DynamicMethod(
