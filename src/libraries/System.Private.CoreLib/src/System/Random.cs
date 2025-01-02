@@ -373,7 +373,9 @@ namespace System
                     ulong r = xoshiro.NextUInt64();
 
                     // Correct r to be unbiased.
-                    // Based on https://github.com/swiftlang/swift/pull/39143
+                    // Ensure that the result of `Math.BigMul(r, bound, out _)` is
+                    // uniformly distributed between 0 <= r < bound without bias.
+                    // For details, see https://github.com/dotnet/runtime/pull/111015
                     ulong rbound = r * bound;
                     if (rbound > 0 - bound)
                     {
@@ -395,10 +397,9 @@ namespace System
                         int index = (int)Math.BigMul(r, (ulong)(m + 1), out r);
 
                         // Swap span[m] <-> span[index]
-                        ref var head = ref MemoryMarshal.GetReference(values);
-                        var t = Unsafe.Add(ref head, m);
-                        Unsafe.Add(ref head, m) = Unsafe.Add(ref head, index);
-                        Unsafe.Add(ref head, index) = t;
+                        var temp = values[m];
+                        values[m] = values[index];
+                        values[index] = temp;
                     }
 
                     i = nextIndex;
