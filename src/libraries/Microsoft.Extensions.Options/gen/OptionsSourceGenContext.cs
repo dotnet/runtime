@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Options.Generators
             uint result = 2166136261u;
             foreach (char c in s)
             {
-                result = unchecked((c ^ result) * 16777619);
+                result = (c ^ result) * 16777619;
             }
 
             return result;
