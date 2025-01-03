@@ -1455,6 +1455,13 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #if defined(DEBUG)
     if (emitComp->DoJitStressEvexEncoding())
     {
+        if (IsBMIInstruction(ins))
+        {
+            // The Encoding_EVEX on some BMI instructions is tagged due to APX,
+            // they cannot be stressed with JitStressEvexEncoding.
+            return false;
+        }
+
         // Requires the EVEX encoding due to STRESS mode and no change in semantics
         //
         // Some instructions, like VCMPEQW return the value in a SIMD register for
