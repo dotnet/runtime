@@ -1,5 +1,6 @@
-<Project>
+<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack">
   <PropertyGroup>
+    <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
   </PropertyGroup>
 

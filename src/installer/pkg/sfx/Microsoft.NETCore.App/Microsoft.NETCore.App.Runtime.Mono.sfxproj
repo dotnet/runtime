@@ -1,4 +1,4 @@
-<Project>
+<Project TreatAsLocalProperty="RuntimeFlavor;BuildNativeAOTRuntimePack">
   <PropertyGroup>
     <RuntimeFlavor>Mono</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>false</BuildNativeAOTRuntimePack>

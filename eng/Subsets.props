@@ -26,12 +26,19 @@
        platforms (like s390x) where only Mono is supported. The primary runtime
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
+    <_CoreCLRSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_CoreCLRSupportedOS>
+    <_CoreCLRSupportedArch Condition="'$(TargetArchitecture)' != 'armv6' and '$(TargetArchitecture)' != 'ppc64le' and '$(TargetArchitecture)' == 's390x'">true</_CoreCLRSupportedArch>
+    <CoreCLRSupported Condition="'$(_CoreCLRSupportedOS)' == 'true' and '$(_CoreCLRSupportedArch)' == 'true'">true</CoreCLRSupported>
+    <MonoSupported>true</MonoSupported>
+
+    <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
+    <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'loongarch64' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
+    <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true'">true</NativeAotSupported>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <DefaultPrimaryRuntimeFlavor>CoreCLR</DefaultPrimaryRuntimeFlavor>
-    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 'armv6'">Mono</DefaultPrimaryRuntimeFlavor>
-    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 'ppc64le'">Mono</DefaultPrimaryRuntimeFlavor>
-    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x'">Mono</DefaultPrimaryRuntimeFlavor>
-    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetsLinuxBionic)' == 'true'">Mono</DefaultPrimaryRuntimeFlavor>
-    <DefaultPrimaryRuntimeFlavor Condition="'$(TargetsMobile)' == 'true'">Mono</DefaultPrimaryRuntimeFlavor>
+    <DefaultPrimaryRuntimeFlavor Condition="'$(CoreCLRSupported)' != 'true'">Mono</DefaultPrimaryRuntimeFlavor>
     <PrimaryRuntimeFlavor Condition="'$(PrimaryRuntimeFlavor)' == ''">$(DefaultPrimaryRuntimeFlavor)</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
@@ -120,10 +127,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- CLR NativeAot only builds in a subset of the matrix -->
-    <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
-    <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'loongarch64' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
-    <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true'">true</NativeAotSupported>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true'">true</UseNativeAotForComponents>
 
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
@@ -560,10 +563,20 @@
           <ItemGroup>
             <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
           </ItemGroup>
+
+          <PropertyGroup>
+            <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildCoreCLRRuntimePack>
+            <_BuildCoreCLRRuntimePack Condition="'$(BuildAllRuntimePacks)' == 'true' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildMonoRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(BuildAllRuntimePacks)' == 'true' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
+            <_BuildNativeAOTRuntimePack Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</_BuildNativeAOTRuntimePack>
+            <_BuildNativeAOTRuntimePack Condition="'$(BuildAllRuntimePacks)' == 'true' and '$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
+          </PropertyGroup>
+
           <ItemGroup>
-            <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj" />
-            <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
-            <SharedFrameworkProjectToBuild Condition="'$(BuildNativeAOTRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.NativeAOT.sfxproj" />
+            <SharedFrameworkProjectToBuild Condition="'$(_BuildCoreCLRRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
+            <SharedFrameworkProjectToBuild Condition="'$(_BuildMonoRuntimePack)' == 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj" />
+            <SharedFrameworkProjectToBuild Condition="'$(_BuildNativeAOTRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.NativeAOT.sfxproj" />
           </ItemGroup>
           <ItemGroup>
             <SharedFrameworkProjectToBuild Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" />
