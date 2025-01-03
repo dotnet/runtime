@@ -29,7 +29,10 @@
     <_CoreCLRSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_CoreCLRSupportedOS>
     <_CoreCLRSupportedArch Condition="'$(TargetArchitecture)' != 'armv6' and '$(TargetArchitecture)' != 'ppc64le' and '$(TargetArchitecture)' != 's390x'">true</_CoreCLRSupportedArch>
     <CoreCLRSupported Condition="'$(_CoreCLRSupportedOS)' == 'true' and '$(_CoreCLRSupportedArch)' == 'true'">true</CoreCLRSupported>
-    <MonoSupported>true</MonoSupported>
+
+    <_MonoSupportedOS>true</_MonoSupportedOS>
+    <_MonoSupportedArch Condition="!('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm64') and !('$(TargetsLinuxMusl)' == 'true' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'))">true</_MonoSupportedArch>
+    <MonoSupported Condition="'$(_MonoSupportedOS)' == 'true' and '$(_MonoSupportedArch)' == 'true'">true</MonoSupported>
 
     <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
     <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'loongarch64' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
