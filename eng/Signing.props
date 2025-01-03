@@ -46,7 +46,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
-    <VerticalVisibilityNuGetPackages Condition="'$(RuntimeFlavor)' != 'Mono' and '$(ShortStack)' != 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+    <VerticalVisibilityNuGetPackages Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
                                      Include="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg" />
   </ItemGroup>
 
