@@ -41,7 +41,7 @@ variables:
               'NetCore-Svc-Public'
             ),
             False,
-            'NetCore-Public'
+            'NetCore-Public-int'
           )
         ]
 
