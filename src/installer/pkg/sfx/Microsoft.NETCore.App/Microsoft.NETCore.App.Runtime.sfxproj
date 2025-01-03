@@ -47,7 +47,21 @@
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
   </PropertyGroup>
 
-  <Import Project="ReadyToRun.targets" />
+
+  <Target Name="ResolveReadyToRunCompilers" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2.dll'))</Crossgen2Path>
+      <R2RDotnetHostPath>$(DotNetTool)</R2RDotnetHostPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(TargetOS)"
+                     DotnetHostPath="$(R2RDotnetHostPath)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
+    </ItemGroup>
+  </Target>
 
   <!--
     Put the mibc file into tools and not into PgoData. Add it after GetFilesToPackage to ensure it isn't automatically classified.
