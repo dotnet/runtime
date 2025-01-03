@@ -67,17 +67,16 @@ namespace Microsoft.Extensions.Options.Generators
 
         /// <summary>
         /// Returns a non-randomized hash code for the given string.
-        /// We always return a positive value.
         /// </summary>
-        internal static int GetNonRandomizedHashCode(string s)
+        internal static uint GetNonRandomizedHashCode(string s)
         {
             uint result = 2166136261u;
             foreach (char c in s)
             {
-                result = (c ^ result) * 16777619;
+                result = unchecked((c ^ result) * 16777619);
             }
 
-            return Math.Abs((int)result);
+            return result;
         }
     }
 }

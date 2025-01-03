@@ -914,9 +914,10 @@ namespace Microsoft.Extensions.Logging.Generators
             uint result = 2166136261u;
             foreach (char c in s)
             {
-                result = (c ^ result) * 16777619;
+                result = unchecked((c ^ result) * 16777619);
             }
-            return Math.Abs((int)result);
+
+            return (int)(result & 0x7FFFFFFF); // Ensure the result is non-negative
         }
     }
 }
