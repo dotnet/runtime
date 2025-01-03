@@ -437,9 +437,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         CodeBuilder builder = new();
         AppendAliasMap(builder, aliasMap);
 
+        builder.AppendLine("using System;");
+        builder.AppendLine("using System.IO;");
+
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
+        builder.AppendLine("string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);");
+        builder.AppendLine($@"string tempLogPath = Path.Combine(documentsPath, ""{assemblyName}.templog.xml"");");
+        builder.AppendLine($@"string testStatsPath = Path.Combine(documentsPath, ""{assemblyName}.testStats.csv"");");
+
         builder.AppendLine();
 
         builder.AppendLine("try");
@@ -468,16 +475,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
+            builder.AppendLine("if (System.IO.File.Exists(tempLogPath))");
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.tempLog.xml"");");
+                builder.AppendLine("System.IO.File.Delete(tempLogPath);");
             }
 
-            builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.testStats.csv""))");
+            builder.AppendLine("if (System.IO.File.Exists(testStatsPath))");
             using (builder.NewBracesScope())
             {
-                builder.AppendLine($@"System.IO.File.Delete(""{assemblyName}.testStats.csv"");");
+                builder.AppendLine("System.IO.File.Delete(testStatsPath);");
             }
             builder.AppendLine();
 
@@ -495,8 +502,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine("Initialize();");
 
             // Open the stream writer for the temp log.
-            builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.templog.xml""))");
-            builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
+            builder.AppendLine($"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(tempLogPath))");
+            builder.AppendLine($"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(testStatsPath))");
             CodeBuilder testExecutorBuilder = new();
 
             using (builder.NewBracesScope())
