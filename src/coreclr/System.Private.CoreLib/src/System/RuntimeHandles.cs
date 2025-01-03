@@ -643,7 +643,7 @@ namespace System
         // Since the returned string is a pointer into metadata, the caller should
         // ensure the passed in type is alive for at least as long as returned result is
         // needed.
-        internal static unsafe MdUtf8String GetUtf8Name(RuntimeType type)
+        internal static MdUtf8String GetUtf8Name(RuntimeType type)
         {
             TypeHandle th = type.GetNativeTypeHandle();
             if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
@@ -673,7 +673,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandle")]
         private static partial IntPtr GetDeclaringTypeHandle(IntPtr typeHandle);
 
-        internal static unsafe RuntimeType? GetDeclaringType(RuntimeType type)
+        internal static RuntimeType? GetDeclaringType(RuntimeType type)
         {
             IntPtr retTypeHandle = IntPtr.Zero;
             TypeHandle typeHandle = type.GetNativeTypeHandle();
@@ -1657,6 +1657,34 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetEnCFieldAddr")]
+        private static partial void* GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD);
+
+        // implementation of CORINFO_HELP_GETFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
+        {
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
+
+        // implementation of CORINFO_HELP_GETSTATICFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetStaticFieldAddr(void* pFD)
+        {
+            object? nullTarget = null;
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
         }
     }
 
