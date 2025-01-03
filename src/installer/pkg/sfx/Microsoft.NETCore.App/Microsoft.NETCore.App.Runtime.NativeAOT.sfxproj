@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
+    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
+    <UseRidGraph>true</UseRidGraph>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SkipInstallerBuild>true</SkipInstallerBuild>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.NETCore.App.Runtime.props" />
+  <Import Project="ReadyToRun.targets" />
+</Project>
