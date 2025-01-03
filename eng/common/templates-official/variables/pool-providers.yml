@@ -40,6 +40,6 @@ variables:
             'NetCore1ESPool-Svc-Internal'
           ),
           False,
-          'NetCore1ESPool-Internal'
+          'NetCore1ESPool-Internal-int'
         )
       ]
