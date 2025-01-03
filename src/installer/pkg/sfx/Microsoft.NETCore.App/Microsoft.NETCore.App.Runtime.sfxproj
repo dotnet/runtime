@@ -30,6 +30,29 @@
     <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='freebsd' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
+  </PropertyGroup>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
   <Import Project="ReadyToRun.targets" />
+
+  <!--
+    Put the mibc file into tools and not into PgoData. Add it after GetFilesToPackage to ensure it isn't automatically classified.
+    Putting it in tools will also hide it from being part of the RuntimeList.xml.
+  -->
+  <Target Name="AddMibcFilesToPackage"
+          AfterTargets="GetFilesToPackage">
+    <ItemGroup>
+      <FilesToPackageMibcData Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
+                              Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
+        <TargetPath>tools</TargetPath>
+      </FilesToPackageMibcData>
+      <FilesToPackage Include="@(FilesToPackageMibcData)"/>
+    </ItemGroup>
+  </Target>
 </Project>

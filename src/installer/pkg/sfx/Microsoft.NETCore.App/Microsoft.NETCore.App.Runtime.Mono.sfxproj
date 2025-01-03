@@ -27,5 +27,28 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <PublishReadyToRun>false</PublishReadyToRun>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
+    <IsShipping Condition="'$(TargetsMobile)' != 'true'">false</IsShipping>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(TargetsMobile)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(TargetsMobile)' != 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
+    <IsShipping>false</IsShipping>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.multithread</RuntimeSpecificFrameworkSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
+    <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
+  </PropertyGroup>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
 </Project>

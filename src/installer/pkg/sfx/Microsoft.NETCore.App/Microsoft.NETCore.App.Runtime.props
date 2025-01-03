@@ -5,39 +5,11 @@
         AddRuntimeFilesToPackage;
         AddFrameworkFilesToPackage
     </GetSharedFrameworkFilesForReadyToRunDependsOn>
-    <PublishReadyToRun Condition="'$(RuntimeFlavor)' != 'Mono' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono' or '$(BuildNativeAOTRuntimePack)' == 'true'">false</PublishReadyToRun>
-    <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
-    <PublishReadyToRun Condition="'$(TargetOS)'=='freebsd' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
     <!-- These components are installed by the root shared framework, but not others. -->
     <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
     <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
     <MacOSPackageDescription>The .NET Shared Framework</MacOSPackageDescription>
     <UseLocalCrossgen2Pack>$(PublishReadyToRun)</UseLocalCrossgen2Pack>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
-    <RuntimeSpecificFrameworkSuffix>NativeAOT</RuntimeSpecificFrameworkSuffix>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and ('$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true')">
-    <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
-    <IsShipping Condition="'$(TargetsMobile)' != 'true'">false</IsShipping>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
-    <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
-    <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(WasmEnableThreads)' == 'true'">
-    <RuntimeSpecificFrameworkSuffix>Mono.multithread</RuntimeSpecificFrameworkSuffix>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
-    <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
   <!--
@@ -52,10 +24,6 @@
     <PlatformManifestFileEntry Include="hostfxr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostfxr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libhostfxr.dylib" IsNative="true" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
-    <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
   </ItemGroup>
 
   <!-- Mobile and NativeAOT use a different hosting model, so we don't include the .NET host components. -->
@@ -76,10 +44,6 @@
       </RuntimeFiles>
     </ItemGroup>
     <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true'">
-      <RuntimeFiles Condition="'%(FileName)' == 'crossgen'">
-        <TargetPath>tools</TargetPath>
-      </RuntimeFiles>
-
       <RuntimeFiles Include="@(MonoFrameworkReleaseFiles)"
                     ExcludeFromDataFiles="true">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.release.framework/%(RecursiveDir)</TargetPath>
@@ -101,25 +65,15 @@
       </RuntimeFiles>
 
       <CoreCLRCrossTargetFiles PackOnly="true" />
-      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'clrjit' or '%(FileName)' == 'libclrjit'">
-        <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
-      </CoreCLRCrossTargetFiles>
-      <CoreCLRCrossTargetFiles Condition="'%(FileName)' == 'crossgen'">
-        <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
-      </CoreCLRCrossTargetFiles>
       <CoreCLRCrossTargetFiles Condition="$([System.String]::new('%(FileName)').StartsWith('mscordaccore')) and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-      <CoreCLROptimizationFiles Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"
-                                Condition="Exists('$(CoreCLRArtifactsPath)StandardOptimizationData.mibc')">
-        <TargetPath>tools</TargetPath>
-      </CoreCLROptimizationFiles>
     </ItemGroup>
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles);@(CoreCLROptimizationFiles)" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles);@(CoreCLRCrossTargetFiles)" />
     </ItemGroup>
   </Target>
 
@@ -178,28 +132,4 @@
   <PropertyGroup>
     <PublishReadyToRunComposite Condition="$(ForcePublishReadyToRunComposite) == 'true'">true</PublishReadyToRunComposite>
   </PropertyGroup>
-
-  <!-- Put the mibc file into tools and not into PgoData, which will also hide it from being part of the RuntimeList.xml -->
-  <Target Name="RemoveMibcFromRuntimeListXml"
-          AfterTargets="GetFilesToPackage">
-    <ItemGroup>
-      <FilesToPackageMibcData Include="@(FilesToPackage)" Condition="'%(FilesToPackage.Identity)' == '$(CoreCLRArtifactsPath)StandardOptimizationData.mibc'">
-        <TargetPath>tools</TargetPath>
-      </FilesToPackageMibcData>
-      <FilesToPackage Remove="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>
-      <FilesToPackage Include="@(FilesToPackageMibcData)"/>
-    </ItemGroup>
-  </Target>
-
-  <Target Name="IncludeSymbolFilesInNativeAOTPackage"
-          Condition="'$(BuildNativeAOTRuntimePack)' == 'true'"
-          AfterTargets="GetFilesToPackage">
-    <ItemGroup>
-      <!-- ILC needs the symbols next to the binaries -->
-      <FilesToPackage Update="@(FilesToPackage->WithMetadataValue('IsSymbolFile', 'true'))">
-        <IncludeAlways>true</IncludeAlways>
-      </FilesToPackage>
-    </ItemGroup>
-  </Target>
-
 </Project>

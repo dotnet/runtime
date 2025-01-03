@@ -14,8 +14,23 @@
 
   <PropertyGroup>
     <SkipInstallerBuild>true</SkipInstallerBuild>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <OverridePackageId>$(SharedFrameworkName).Runtime.NativeAOT.$(RuntimeIdentifier)</OverridePackageId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <IgnoredDuplicateType Include="Internal.Runtime.CompilerHelpers.LibraryInitializer" />
+  </ItemGroup>
+
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
-  <Import Project="ReadyToRun.targets" />
+
+  <Target Name="IncludeSymbolFilesInNativeAOTPackage"
+          AfterTargets="GetFilesToPackage">
+    <ItemGroup>
+      <!-- ILC needs the symbols next to the binaries -->
+      <FilesToPackage Update="@(FilesToPackage->WithMetadataValue('IsSymbolFile', 'true'))">
+        <IncludeAlways>true</IncludeAlways>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
 </Project>
