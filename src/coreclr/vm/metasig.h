@@ -353,6 +353,7 @@ DEFINE_METASIG(SM(IntPtr_IntPtr_RetIntPtr, I I, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_RetIntPtr, I I i, I))
 DEFINE_METASIG(SM(PtrVoid_RetVoid, P(v), v))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_RetVoid, P(v) P(v), v))
+DEFINE_METASIG(SM(PtrVoid_PtrVoid_PtrVoid_RetVoid, P(v) P(v) P(v), v))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_UInt_RetVoid, P(v) P(v) K, v))
 DEFINE_METASIG(IM(Obj_RetBool, j, F))
 DEFINE_METASIG(SM(Obj_RetVoid, j, v))
@@ -570,7 +571,6 @@ DEFINE_METASIG_T(SM(RefCleanupWorkListElement_SafeHandle_RetIntPtr, r(C(CLEANUP_
 DEFINE_METASIG_T(SM(RefCleanupWorkListElement_Obj_RetVoid, r(C(CLEANUP_WORK_LIST_ELEMENT)) j, v))
 
 DEFINE_METASIG(SM(PtrVoid_RetPtrVoid, P(v), P(v)))
-DEFINE_METASIG(SM(PtrVoid_PtrVoid_PtrVoid_RetVoid, P(v) P(v) P(v), v))
 DEFINE_METASIG(IM(PtrVoid_RetVoid, P(v), v))
 
 DEFINE_METASIG_T(SM(IDynamicInterfaceCastable_RuntimeType_Bool_RetBool, C(IDYNAMICINTERFACECASTABLE) C(CLASS) F, F))
