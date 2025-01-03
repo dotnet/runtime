@@ -12,6 +12,7 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <IncludesTestRunner Condition="'$(TargetsAppleMobile)' == 'true'">false</IncludesTestRunner>
   </PropertyGroup>
 
   <ItemGroup>
