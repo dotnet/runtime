@@ -1658,6 +1658,34 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetEnCFieldAddr")]
+        private static partial void* GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD);
+
+        // implementation of CORINFO_HELP_GETFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
+        {
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
+
+        // implementation of CORINFO_HELP_GETSTATICFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetStaticFieldAddr(void* pFD)
+        {
+            object? nullTarget = null;
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
     }
 
     public unsafe partial struct ModuleHandle : IEquatable<ModuleHandle>
