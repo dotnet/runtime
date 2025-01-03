@@ -2,59 +2,73 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace System.Reflection
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class CustomAttributeExtensions
     {
         #region APIs that return a single attribute
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Attribute? GetCustomAttribute(this Assembly element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Attribute? GetCustomAttribute(this Module element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Attribute? GetCustomAttribute(this MemberInfo element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Attribute? GetCustomAttribute(this ParameterInfo element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetCustomAttribute<T>(this Assembly element) where T : Attribute
         {
             return (T?)GetCustomAttribute(element, typeof(T));
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetCustomAttribute<T>(this Module element) where T : Attribute
         {
             return (T?)GetCustomAttribute(element, typeof(T));
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetCustomAttribute<T>(this MemberInfo element) where T : Attribute
         {
             return (T?)GetCustomAttribute(element, typeof(T));
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetCustomAttribute<T>(this ParameterInfo element) where T : Attribute
         {
             return (T?)GetCustomAttribute(element, typeof(T));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Attribute? GetCustomAttribute(this MemberInfo element, Type attributeType, bool inherit)
         {
             return Attribute.GetCustomAttribute(element, attributeType, inherit);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Attribute? GetCustomAttribute(this ParameterInfo element, Type attributeType, bool inherit)
         {
             return Attribute.GetCustomAttribute(element, attributeType, inherit);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetCustomAttribute<T>(this MemberInfo element, bool inherit) where T : Attribute
         {
             return (T?)GetCustomAttribute(element, typeof(T), inherit);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static T? GetCustomAttribute<T>(this ParameterInfo element, bool inherit) where T : Attribute
         {
             return (T?)GetCustomAttribute(element, typeof(T), inherit);
@@ -62,27 +76,33 @@ namespace System.Reflection
         #endregion
 
         #region APIs that return all attributes
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this Assembly element)
         {
             return Attribute.GetCustomAttributes(element);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this Module element)
         {
             return Attribute.GetCustomAttributes(element);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this MemberInfo element)
         {
             return Attribute.GetCustomAttributes(element);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this ParameterInfo element)
         {
             return Attribute.GetCustomAttributes(element);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this MemberInfo element, bool inherit)
         {
             return Attribute.GetCustomAttributes(element, inherit);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this ParameterInfo element, bool inherit)
         {
             return Attribute.GetCustomAttributes(element, inherit);
@@ -90,53 +110,65 @@ namespace System.Reflection
         #endregion
 
         #region APIs that return all attributes of a particular type
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this Assembly element, Type attributeType)
         {
             return Attribute.GetCustomAttributes(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this Module element, Type attributeType)
         {
             return Attribute.GetCustomAttributes(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this MemberInfo element, Type attributeType)
         {
             return Attribute.GetCustomAttributes(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this ParameterInfo element, Type attributeType)
         {
             return Attribute.GetCustomAttributes(element, attributeType);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<T> GetCustomAttributes<T>(this Assembly element) where T : Attribute
         {
             return (IEnumerable<T>)GetCustomAttributes(element, typeof(T));
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<T> GetCustomAttributes<T>(this Module element) where T : Attribute
         {
             return (IEnumerable<T>)GetCustomAttributes(element, typeof(T));
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<T> GetCustomAttributes<T>(this MemberInfo element) where T : Attribute
         {
             return (IEnumerable<T>)GetCustomAttributes(element, typeof(T));
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<T> GetCustomAttributes<T>(this ParameterInfo element) where T : Attribute
         {
             return (IEnumerable<T>)GetCustomAttributes(element, typeof(T));
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this MemberInfo element, Type attributeType, bool inherit)
         {
             return Attribute.GetCustomAttributes(element, attributeType, inherit);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<Attribute> GetCustomAttributes(this ParameterInfo element, Type attributeType, bool inherit)
         {
             return Attribute.GetCustomAttributes(element, attributeType, inherit);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<T> GetCustomAttributes<T>(this MemberInfo element, bool inherit) where T : Attribute
         {
             return (IEnumerable<T>)GetCustomAttributes(element, typeof(T), inherit);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static IEnumerable<T> GetCustomAttributes<T>(this ParameterInfo element, bool inherit) where T : Attribute
         {
             return (IEnumerable<T>)GetCustomAttributes(element, typeof(T), inherit);
@@ -144,27 +176,33 @@ namespace System.Reflection
         #endregion
 
         #region IsDefined
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsDefined(this Assembly element, Type attributeType)
         {
             return Attribute.IsDefined(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsDefined(this Module element, Type attributeType)
         {
             return Attribute.IsDefined(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsDefined(this MemberInfo element, Type attributeType)
         {
             return Attribute.IsDefined(element, attributeType);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsDefined(this ParameterInfo element, Type attributeType)
         {
             return Attribute.IsDefined(element, attributeType);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsDefined(this MemberInfo element, Type attributeType, bool inherit)
         {
             return Attribute.IsDefined(element, attributeType, inherit);
         }
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsDefined(this ParameterInfo element, Type attributeType, bool inherit)
         {
             return Attribute.IsDefined(element, attributeType, inherit);
