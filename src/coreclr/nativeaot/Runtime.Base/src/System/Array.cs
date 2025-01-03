@@ -12,28 +12,18 @@ namespace System
 
     public partial class Array
     {
-        // CS0169: The field 'Array._numComponents' is never used
-#pragma warning disable 0169
-        // This field should be the first field in Array as the runtime/compilers depend on it
-        private int _numComponents;
-#pragma warning restore
+        internal uint RawLength; // Array._numComponents padded to IntPtr
+#if TARGET_64BIT
+        internal uint RawPadding;
+#endif
+        internal byte RawData;
 
-        public int Length => (int)Unsafe.As<RawArrayData>(this).Length;
+        public int Length => (int)RawLength;
     }
 
     // To accommodate class libraries that wish to implement generic interfaces on arrays, all class libraries
     // are now required to provide an Array<T> class that derives from Array.
     internal class Array<T> : Array
     {
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal class RawArrayData
-    {
-        public uint Length; // Array._numComponents padded to IntPtr
-#if TARGET_64BIT
-        public uint Padding;
-#endif
-        public byte Data;
     }
 }

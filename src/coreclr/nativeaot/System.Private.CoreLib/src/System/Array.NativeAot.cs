@@ -25,19 +25,10 @@ namespace System
     // IList<U> and IReadOnlyList<U>, where T : U dynamically.  See the SZArrayHelper class for details.
     public abstract partial class Array : ICollection, IEnumerable, IList, IStructuralComparable, IStructuralEquatable, ICloneable
     {
-        // CS0169: The field 'Array._numComponents' is never used
-        // CA1823: Unused field '_numComponents'
-#pragma warning disable 0169
-#pragma warning disable CA1823
-        // This field should be the first field in Array as the runtime/compilers depend on it
-        [NonSerialized]
-        private int _numComponents;
-#pragma warning restore
-
-        public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
+        public int Length => checked((int)RawLength);
 
         // This could return a length greater than int.MaxValue
-        internal nuint NativeLength => Unsafe.As<RawArrayData>(this).Length;
+        internal nuint NativeLength => RawLength;
 
         public long LongLength => (long)NativeLength;
 
@@ -159,7 +150,7 @@ namespace System
         private ref int GetRawMultiDimArrayBounds()
         {
             Debug.Assert(!IsSzArray);
-            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
+            return ref Unsafe.As<byte, int>(ref RawData);
         }
 
         // Provides a strong exception guarantee - either it succeeds, or
@@ -579,7 +570,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
+            ref byte p = ref array.RawData;
             int lowerBound = 0;
 
             MethodTable* mt = array.GetMethodTable();

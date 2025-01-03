@@ -21,8 +21,8 @@ namespace System.Runtime.InteropServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T GetArrayDataReference<T>(T[] array) =>
-            // Mono uses same layout for SZARRAY and MDARRAY; see comment on Array+RawData (in Array.Mono.cs) for details
-            ref Unsafe.As<byte, T>(ref Unsafe.As<Array.RawData>(array).Data);
+            // Mono uses same layout for SZARRAY and MDARRAY; see comment on Array for details
+            ref Unsafe.As<byte, T>(ref array.RawData);
 
         /// <summary>
         /// Returns a reference to the 0th element of <paramref name="array"/>. If the array is empty, returns a reference to where the 0th element
@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref byte GetArrayDataReference(Array array) =>
-            // Mono uses same layout for SZARRAY and MDARRAY; see comment on Array+RawData (in Array.Mono.cs) for details
-            ref Unsafe.As<Array.RawData>(array).Data;
+            // Mono uses same layout for SZARRAY and MDARRAY; see comment on Array for details
+            ref array.RawData;
     }
 }

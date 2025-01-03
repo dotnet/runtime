@@ -42,8 +42,8 @@ namespace System.Runtime.InteropServices
             // If needed, we can save one or two instructions per call by marking this method as intrinsic and asking the JIT
             // to special-case arrays of known type and dimension.
 
-            // See comment on RawArrayData (in RuntimeHelpers.CoreCLR.cs) for details
-            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)array.GetMethodTable()->BaseSize - (nuint)(2 * sizeof(IntPtr)));
+            // See comment on Array for details
+            return ref Unsafe.AddByteOffset(ref array.RawData, array.GetMethodTable()->BaseSize - (3 * (nuint)sizeof(IntPtr)));
         }
     }
 }

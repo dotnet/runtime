@@ -378,7 +378,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
+            ref byte p = ref array.RawData;
             int lowerBound = 0;
 
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);
@@ -598,10 +598,10 @@ namespace System
             GC.KeepAlive(this); // Keep the method table alive
         }
 
-        public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
+        public int Length => checked((int)RawLength);
 
         // This could return a length greater than int.MaxValue
-        internal nuint NativeLength => Unsafe.As<RawArrayData>(this).Length;
+        internal nuint NativeLength => RawLength;
 
         public long LongLength => (long)NativeLength;
 
