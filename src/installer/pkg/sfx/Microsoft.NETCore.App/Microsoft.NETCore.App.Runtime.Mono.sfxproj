@@ -29,6 +29,8 @@
 
   <PropertyGroup>
     <PublishReadyToRun>false</PublishReadyToRun>
+    <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
+    <IncludeDiaSymReaderNative Condition="'$(TargetOS)' == 'windows'">true</IncludeDiaSymReaderNative>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">
@@ -51,4 +53,29 @@
   </PropertyGroup>
 
   <Import Project="Microsoft.NETCore.App.Runtime.props" />
+
+  <Target Name="AddMonoRuntimeFiles" AfterTargets="AddRuntimeFilesToPackage">
+    <ItemGroup>
+      <MonoRuntimeFiles Include="@(MonoFrameworkReleaseFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.release.framework/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+
+      <MonoRuntimeFiles Include="@(MonoFrameworkDebugFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/Mono.debug.framework/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+
+      <MonoRuntimeFiles Include="@(MonoIncludeFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+
+      <MonoRuntimeFiles Include="@(MonoBuildFiles)"
+                    ExcludeFromDataFiles="true">
+        <TargetPath>runtimes/$(RuntimeIdentifier)/build/%(RecursiveDir)</TargetPath>
+      </MonoRuntimeFiles>
+      <ReferenceCopyLocalPaths Include="@(MonoRuntimeFiles)" />
+    </ItemGroup>
+  </Target>
 </Project>
