@@ -479,6 +479,54 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    MethodDesc* pCallerMD = GetMethod(caller);
+
+    _ASSERTE(pCallerMD != NULL);
+    AccessCheckContext accessContext(pCallerMD);
+
+    ThrowMethodAccessException(&accessContext, GetMethod(callee));
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_FIELD_HANDLE callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    MethodDesc* pCallerMD = GetMethod(caller);
+
+    _ASSERTE(pCallerMD != NULL);
+    AccessCheckContext accessContext(pCallerMD);
+
+    ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(callee));
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_CLASS_HANDLE callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    MethodDesc* pCallerMD = GetMethod(caller);
+
+    _ASSERTE(pCallerMD != NULL);
+    AccessCheckContext accessContext(pCallerMD);
+
+    ThrowTypeAccessException(&accessContext, TypeHandle(callee).GetMethodTable());
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;

@@ -2129,63 +2129,6 @@ HCIMPL0(void, JIT_FailFast)
 }
 HCIMPLEND
 
-HCIMPL2(void, JIT_ThrowMethodAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE callee)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowMethodAccessException(&accessContext, GetMethod(callee));
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-HCIMPL2(void, JIT_ThrowFieldAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_FIELD_HANDLE callee)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(callee));
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND;
-
-HCIMPL2(void, JIT_ThrowClassAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_CLASS_HANDLE callee)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowTypeAccessException(&accessContext, TypeHandle(callee).GetMethodTable());
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND;
-
 //========================================================================
 //
 //      DEBUGGER/PROFILER HELPERS

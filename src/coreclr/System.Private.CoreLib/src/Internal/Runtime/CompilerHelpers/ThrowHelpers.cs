@@ -37,5 +37,47 @@ namespace Internal.Runtime.CompilerHelpers
         {
             ThrowEntryPointNotFoundException((MethodTable*)targetType, (MethodTable*)interfaceType, method);
         }
+
+        [DoesNotReturn]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowMethodAccessException")]
+        private static partial void ThrowMethodAccessExceptionInternal(void* caller, void* callee);
+
+        // implementation of CORINFO_HELP_METHOD_ACCESS_EXCEPTION
+        [DoesNotReturn]
+        [DebuggerHidden]
+        internal static void ThrowMethodAccessException(
+            void* caller,   // CORINFO_METHOD_HANDLE
+            void* callee)   // CORINFO_METHOD_HANDLE
+        {
+            ThrowMethodAccessExceptionInternal(caller, callee);
+        }
+
+        [DoesNotReturn]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowFieldAccessException")]
+        private static partial void ThrowFieldAccessExceptionInternal(void* caller, void* callee);
+
+        // implementation of CORINFO_HELP_FIELD_ACCESS_EXCEPTION
+        [DoesNotReturn]
+        [DebuggerHidden]
+        internal static void ThrowFieldAccessException(
+            void* caller,   // CORINFO_METHOD_HANDLE
+            void* callee)   // CORINFO_FIELD_HANDLE
+        {
+            ThrowFieldAccessExceptionInternal(caller, callee);
+        }
+
+        [DoesNotReturn]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_ThrowClassAccessException")]
+        private static partial void ThrowClassAccessExceptionInternal(void* caller, void* callee);
+
+        // implementation of CORINFO_HELP_CLASS_ACCESS_EXCEPTION
+        [DoesNotReturn]
+        [DebuggerHidden]
+        internal static void ThrowClassAccessException(
+            void* caller,   // CORINFO_METHOD_HANDLE
+            void* callee)   // CORINFO_CLASS_HANDLE
+        {
+            ThrowClassAccessExceptionInternal(caller, callee);
+        }
     }
 }
