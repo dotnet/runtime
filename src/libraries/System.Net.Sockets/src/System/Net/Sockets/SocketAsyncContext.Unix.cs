@@ -1262,8 +1262,8 @@ namespace System.Net.Sockets
         private SocketAsyncEngine? _asyncEngine;
         private bool IsRegistered => _asyncEngine != null;
         private bool _isHandleNonBlocking = OperatingSystem.IsWasi(); // WASI sockets are always non-blocking, because we don't have another thread which could be blocked
-        /// <summary>Handle associated with a <see cref="SocketAsyncEngine"/> while <see cref="IsRegistered"/>.</summary>
-        internal GCHandle GCHandle;
+        /// <summary>An index into <see cref="SocketAsyncEngine"/>'s table of all contexts that are currently <see cref="IsRegistered"/>.</summary>
+        internal int GlobalContextIndex = -1;
 
         private readonly object _registerLock = new object();
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -75,15 +76,12 @@ namespace System.Net.Sockets
         }
 
         /// <summary>
-        /// Each <see cref="SocketAsyncContext"/> is assigned a <see cref="GCHandle"/> while registered with a <see cref="SocketAsyncEngine"/>.
-        /// <para>The handle is used as the <see cref="Interop.Sys.SocketEvent.Data"/> to quickly map events to <see cref="SocketAsyncContext"/>s.</para>
-        /// <para>When a socket is disposed and unregistered, there is a small race condition where we may still receive events with the
-        /// now-unused <see cref="GCHandle"/>. Since we assume that the handle is always allocated in <see cref="SocketEventHandler.HandleSocketEvents"/>,
-        /// we can never <see cref="GCHandle.Free"/> these handles.</para>
-        /// <para>Instead, we reuse handles for new sockets. The race condition may therefore trigger a notification for the wrong socket,
-        /// but that is okay as those operations can be retried.</para>
+        /// Each <see cref="SocketAsyncContext"/> is assigned an index into this table while registered with a <see cref="SocketAsyncEngine"/>.
+        /// <para>The index is used as the <see cref="Interop.Sys.SocketEvent.Data"/> to quickly map events to <see cref="SocketAsyncContext"/>s.</para>
+        /// <para>It is also stored in <see cref="SocketAsyncContext.GlobalContextIndex"/> so that we can efficiently remove it when unregistering the socket.</para>
         /// </summary>
-        private static readonly ConcurrentQueue<GCHandle> s_gcHandles = new();
+        private static SocketAsyncContext?[] s_registeredContexts = [];
+        private static readonly Queue<int> s_registeredContextsFreeList = [];
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
@@ -125,19 +123,33 @@ namespace System.Net.Sockets
 
         private bool TryRegisterCore(IntPtr socketHandle, SocketAsyncContext context, out Interop.Error error)
         {
-            Debug.Assert(!context.GCHandle.IsAllocated);
+            Debug.Assert(context.GlobalContextIndex == -1);
 
-            if (s_gcHandles.TryDequeue(out context.GCHandle))
+            lock (s_registeredContextsFreeList)
             {
-                context.GCHandle.Target = context;
-            }
-            else
-            {
-                context.GCHandle = GCHandle.Alloc(context, GCHandleType.Normal);
+                if (!s_registeredContextsFreeList.TryDequeue(out int index))
+                {
+                    int previousLength = s_registeredContexts.Length;
+                    int newLength = Math.Max(4, 2 * previousLength);
+
+                    Array.Resize(ref s_registeredContexts, newLength);
+
+                    for (int i = previousLength + 1; i < newLength; i++)
+                    {
+                        s_registeredContextsFreeList.Enqueue(i);
+                    }
+
+                    index = previousLength;
+                }
+
+                Debug.Assert(s_registeredContexts[index] is null);
+
+                s_registeredContexts[index] = context;
+                context.GlobalContextIndex = index;
             }
 
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
-                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, GCHandle.ToIntPtr(context.GCHandle));
+                Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, context.GlobalContextIndex);
             if (error == Interop.Error.SUCCESS)
             {
                 return true;
@@ -149,15 +161,16 @@ namespace System.Net.Sockets
 
         public static void UnregisterSocket(SocketAsyncContext context)
         {
-            Debug.Assert(context.GCHandle.IsAllocated);
-            Debug.Assert(ReferenceEquals(context.GCHandle.Target, context));
+            Debug.Assert(context.GlobalContextIndex >= 0);
+            Debug.Assert(ReferenceEquals(s_registeredContexts[context.GlobalContextIndex], context));
 
-            GCHandle handle = context.GCHandle;
-            context.GCHandle = default;
+            lock (s_registeredContextsFreeList)
+            {
+                s_registeredContexts[context.GlobalContextIndex] = null;
+                s_registeredContextsFreeList.Enqueue(context.GlobalContextIndex);
+            }
 
-            // See comments on s_gcHandles for why we're reusing the handle instead of freeing it.
-            handle.Target = null;
-            s_gcHandles.Enqueue(handle);
+            context.GlobalContextIndex = -1;
         }
 
         private SocketAsyncEngine()
@@ -355,11 +368,14 @@ namespace System.Net.Sockets
                 bool enqueuedEvent = false;
                 foreach (var socketEvent in new ReadOnlySpan<Interop.Sys.SocketEvent>(Buffer, numEvents))
                 {
-                    GCHandle handle = GCHandle.FromIntPtr(socketEvent.Data);
-                    Debug.Assert(handle.IsAllocated);
-                    Debug.Assert(handle.Target is null or SocketAsyncContext);
+                    Debug.Assert((uint)socketEvent.Data < (uint)s_registeredContexts.Length);
 
-                    if (handle.IsAllocated && Unsafe.As<SocketAsyncContext>(handle.Target) is { } context)
+                    // The context may be null if the socket was unregistered right before the event was processed.
+                    // The slot in s_registeredContexts may have been reused by a different context, in which case the
+                    // incorrect socket will notice that no information is available yet and harmlessly retry, waiting for new events.
+                    SocketAsyncContext? context = s_registeredContexts[(uint)socketEvent.Data];
+
+                    if (context is not null)
                     {
                         if (context.PreferInlineCompletions)
                         {
