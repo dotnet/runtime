@@ -10,12 +10,10 @@
     <PlatformPackageType>RuntimePack</PlatformPackageType>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>
     <UseRidGraph>true</UseRidGraph>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <SkipInstallerBuild>true</SkipInstallerBuild>
     <PublishReadyToRun>false</PublishReadyToRun>
     <OverridePackageId>$(SharedFrameworkName).Runtime.NativeAOT.$(RuntimeIdentifier)</OverridePackageId>
+    <IncludeStaticLibrariesInPack>true</IncludeStaticLibrariesInPack>
   </PropertyGroup>
 
   <ItemGroup>
