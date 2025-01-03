@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <RuntimeFlavor>CoreCLR</RuntimeFlavor>
+    <BuildNativeAOTRuntimePack>false</BuildNativeAOTRuntimePack>
+  </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
@@ -16,10 +20,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SkipInstallerBuild Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipInstallerBuild>
     <!-- Skip building any archives except in source-build, where the symbols archive is necessary
          for distro maintainers. It can generally be removed when https://github.com/dotnet/source-build/issues/3547 is resolved. -->
-    <SkipArchivesBuild Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true' or '$(BuildNativeAOTRuntimePack)' == 'true'">true</SkipArchivesBuild>
+    <SkipArchivesBuild Condition="'$(DotNetBuildSourceOnly)' != 'true' or '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipArchivesBuild>
   </PropertyGroup>
 
   <ItemGroup>
