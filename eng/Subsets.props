@@ -546,7 +546,7 @@
           </ItemGroup>
         </When>
         <When Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true'">
-          <ItemGroup Condition="'$(MonoCrossAOTTargetOS) != ''">
+          <ItemGroup Condition="'$(MonoCrossAOTTargetOS)' != ''">
             <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Category="packs" />
           </ItemGroup>
         </When>
