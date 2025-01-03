@@ -289,7 +289,9 @@ namespace System.Security.Cryptography
         /// <typeparam name="T">The type of span.</typeparam>
         public static void Shuffle<T>(Span<T> values)
         {
-            ulong bound = 2432902008176640000;        // 20!
+            // The upper limit of the first random number generated.
+            // 2432902008176640000 == 20! (Largest factorial smaller than 2^64)
+            ulong bound = 2432902008176640000;
             int nextIndex = Math.Min(20, values.Length);
 
             for (int i = 1; i < values.Length;)
@@ -299,39 +301,56 @@ namespace System.Security.Cryptography
 
                 // Correct r to be unbiased.
                 // Ensure that the result of `Math.BigMul(r, bound, out _)` is
-                // uniformly distributed between 0 <= r < bound without bias.
-                // For details, see https://github.com/dotnet/runtime/pull/111015
+                // uniformly distributed between 0 <= result < bound without bias.
                 ulong rbound = r * bound;
+
+                // Look at the lower 64 bits of r * bound,
+                // and if there is a carryover possibility...
+                // (The maximum value added in subsequent processing is bound - 1,
+                //  so if rbound <= (2^64) - bound, no carryover occurs.)
                 if (rbound > 0 - bound)
                 {
                     ulong sum, carry;
                     do
                     {
-                        ulong r2 = 0;
-                        RandomNumberGeneratorImplementation.FillSpan(MemoryMarshal.AsBytes(new Span<ulong>(ref r2)));
+                        // Generate an additional random number t and check if it carries over
+                        //   [rhi] . [rlo]        -> r * bound; upper rhi, lower rlo
+                        // +     0 . [thi] [tlo]  -> t * bound; upper thi, lower tlo
+                        // ---------------------
+                        //   [carry.  sum] [tlo]  -> rhi + carry is the result
+                        ulong t = 0;
+                        RandomNumberGeneratorImplementation.FillSpan(MemoryMarshal.AsBytes(new Span<ulong>(ref t)));
 
-                        ulong lohi = Math.BigMul(r2, bound, out ulong lolo);
-                        sum = rbound + lohi;
+                        ulong thi = Math.BigMul(t, bound, out ulong tlo);
+                        sum = rbound + thi;
                         carry = sum < rbound ? 1ul : 0ul;
-                        rbound = lolo;
+                        rbound = tlo;
+
+                        // If sum == 0xff...ff, there is a possibility of a carry
+                        // in the future, so calculate it again.
+                        // If not, there will be no more carry,
+                        // so add the carry and finish.
                     } while (sum == ~0ul);
                     r += carry;
                 }
 
-                // Shuffle the values ​​based on r
+                // Do the Fisher-Yates shuffle based on r.
+                // For example, the result of `Math.BigMul(r, 20!, out _)` is expressed as
+                //    (0..2) * 20!/2! + (0..3) * 20!/3! + ... + (0..20) * 20!/20!
+                // Imagine extracting the numbers inside the parentheses.
                 for (int m = i; m < nextIndex; m++)
                 {
                     int index = (int)Math.BigMul(r, (ulong)(m + 1), out r);
 
                     // Swap span[m] <-> span[index]
-                    var temp = values[m];
+                    T temp = values[m];
                     values[m] = values[index];
                     values[index] = temp;
                 }
 
                 i = nextIndex;
 
-                // Calculates bound.
+                // Calculates next bound.
                 // bound is (i + 1) * (i + 2) * ... * (nextIndex) < 2^64
                 bound = (ulong)(i + 1);
                 for (nextIndex = i + 1; nextIndex < values.Length; nextIndex++)
