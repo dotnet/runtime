@@ -46,8 +46,8 @@ namespace Internal.Runtime.CompilerHelpers
         [DoesNotReturn]
         [DebuggerHidden]
         internal static void ThrowMethodAccessException(
-            void* caller,   // CORINFO_METHOD_HANDLE
-            void* callee)   // CORINFO_METHOD_HANDLE
+            void* caller,   // MethodDesc*
+            void* callee)   // MethodDesc*
         {
             ThrowMethodAccessExceptionInternal(caller, callee);
         }
@@ -60,8 +60,8 @@ namespace Internal.Runtime.CompilerHelpers
         [DoesNotReturn]
         [DebuggerHidden]
         internal static void ThrowFieldAccessException(
-            void* caller,   // CORINFO_METHOD_HANDLE
-            void* callee)   // CORINFO_FIELD_HANDLE
+            void* caller,   // MethodDesc*
+            void* callee)   // FieldDesc*
         {
             ThrowFieldAccessExceptionInternal(caller, callee);
         }
@@ -74,8 +74,8 @@ namespace Internal.Runtime.CompilerHelpers
         [DoesNotReturn]
         [DebuggerHidden]
         internal static void ThrowClassAccessException(
-            void* caller,   // CORINFO_METHOD_HANDLE
-            void* callee)   // CORINFO_CLASS_HANDLE
+            void* caller,   // MethodDesc*
+            void* callee)   // Type handle
         {
             ThrowClassAccessExceptionInternal(caller, callee);
         }

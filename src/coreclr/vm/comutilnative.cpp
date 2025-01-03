@@ -479,50 +479,41 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE callee)
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowMethodAccessException(&accessContext, GetMethod(callee));
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowMethodAccessException(&accessContext, callee);
 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_FIELD_HANDLE callee)
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(callee));
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowFieldAccessException(&accessContext, callee);
 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_CLASS_HANDLE callee)
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowTypeAccessException(&accessContext, TypeHandle(callee).GetMethodTable());
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
 
     END_QCALL;
 }

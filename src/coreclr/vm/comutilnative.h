@@ -74,9 +74,9 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
 
-extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE callee);
-extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_FIELD_HANDLE callee);
-extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(CORINFO_METHOD_HANDLE caller, CORINFO_CLASS_HANDLE callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee);
 
 //
 // Buffer
