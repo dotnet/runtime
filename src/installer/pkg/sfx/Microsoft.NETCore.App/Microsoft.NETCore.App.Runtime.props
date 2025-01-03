@@ -39,6 +39,8 @@
       <RuntimeFiles Condition="'%(RuntimeFiles.IsNative)' == 'true'">
         <TargetPath>runtimes/$(RuntimeIdentifier)/native</TargetPath>
       </RuntimeFiles>
+
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
     </ItemGroup>
   </Target>
 

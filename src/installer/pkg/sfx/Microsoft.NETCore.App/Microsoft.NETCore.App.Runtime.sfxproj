@@ -88,8 +88,8 @@
       <CoreCLRCrossTargetFiles Condition="'%(FileName)%(Extension)' == 'mscordbi.dll' and '$(TargetsWindows)' == 'true'">
         <TargetPath>tools/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)</TargetPath>
       </CoreCLRCrossTargetFiles>
-    </ItemGroup>
 
-    <ReferenceCopyLocalPaths Include="@(CoreCLRCrossTargetFiles)" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRCrossTargetFiles)" />
+    </ItemGroup>
   </Target>
 </Project>
