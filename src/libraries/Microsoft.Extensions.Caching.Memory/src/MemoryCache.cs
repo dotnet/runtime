@@ -26,7 +26,8 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly MemoryCacheOptions _options;
 
         private readonly List<WeakReference<Stats>>? _allStats;
-        private readonly Stats? _accumulatedStats;
+        private long _accumulatedHits;
+        private long _accumulatedMisses;
         private readonly ThreadLocal<Stats>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
@@ -57,7 +58,6 @@ namespace Microsoft.Extensions.Caching.Memory
             if (_options.TrackStatistics)
             {
                 _allStats = new List<WeakReference<Stats>>();
-                _accumulatedStats = new Stats();
                 _stats = new ThreadLocal<Stats>(() => new Stats(this));
             }
 
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public ICacheEntry CreateEntry(object key)
         {
             CheckDisposed();
-            ValidateCacheKey(key);
+            ThrowHelper.ThrowIfNull(key);
 
             return new CacheEntry(key, this);
         }
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
                     // Hit
-                    if (_allStats is not null)
+                    if (_stats is not null)
                     {
                         if (IntPtr.Size == 4)
                             Interlocked.Increment(ref GetStats().Hits);
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             result = null;
             // Miss
-            if (_allStats is not null)
+            if (_stats is not null)
             {
                 if (IntPtr.Size == 4)
                     Interlocked.Increment(ref GetStats().Misses);
@@ -319,7 +319,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     TotalMisses = sumTotal.miss,
                     TotalHits = sumTotal.hit,
                     CurrentEntryCount = Count,
-                    CurrentEstimatedSize = _options.SizeLimit.HasValue ? Size : null
+                    CurrentEstimatedSize = _options.HasSizeLimit ? Size : null
                 };
             }
 
@@ -355,15 +355,15 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             lock (_allStats!)
             {
-                long hits = _accumulatedStats!.Hits;
-                long misses = _accumulatedStats.Misses;
+                long hits = _accumulatedHits;
+                long misses = _accumulatedMisses;
 
                 foreach (WeakReference<Stats> wr in _allStats)
                 {
                     if (wr.TryGetTarget(out Stats? stats))
                     {
-                        hits += Interlocked.Read(ref stats.Hits);
-                        misses += Interlocked.Read(ref stats.Misses);
+                        hits += Volatile.Read(ref stats.Hits);
+                        misses += Volatile.Read(ref stats.Misses);
                     }
                 }
 
@@ -375,11 +375,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal sealed class Stats
         {
-            private readonly MemoryCache? _memoryCache;
+            private readonly MemoryCache _memoryCache;
             public long Hits;
             public long Misses;
-
-            public Stats() { }
 
             public Stats(MemoryCache memoryCache)
             {
@@ -387,25 +385,23 @@ namespace Microsoft.Extensions.Caching.Memory
                 _memoryCache.AddToStats(this);
             }
 
-            ~Stats() => _memoryCache?.RemoveFromStats(this);
+            ~Stats() => _memoryCache.RemoveFromStats(this);
         }
 
         private void RemoveFromStats(Stats current)
         {
             lock (_allStats!)
             {
-                for (int i = 0; i < _allStats.Count; i++)
-                {
-                    if (!_allStats[i].TryGetTarget(out Stats? stats))
-                    {
-                        _allStats.RemoveAt(i);
-                        i--;
-                    }
-                }
+                _accumulatedHits += Volatile.Read(ref current.Hits);
+                _accumulatedMisses += Volatile.Read(ref current.Misses);
 
-                _accumulatedStats!.Hits += Interlocked.Read(ref current.Hits);
-                _accumulatedStats.Misses += Interlocked.Read(ref current.Misses);
-                _allStats.TrimExcess();
+                List<WeakReference<Stats>> all = _allStats;
+                for (int i = all.Count - 1; i >= 0; i--)
+                {
+                    if (!all[i].TryGetTarget(out _))
+                        all.RemoveAt(i);
+                }
+                all.TrimExcess();
             }
         }
 
@@ -487,7 +483,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // If there is already a thread that is running compact - do nothing
             if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0)
                 // Spawn background thread for compaction
-                ThreadPool.QueueUserWorkItem(s =>
+                ThreadPool.UnsafeQueueUserWorkItem(s =>
                 {
                     try
                     {
@@ -540,9 +536,9 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var entriesToRemove = new List<CacheEntry>();
             // cache LastAccessed outside of the CacheEntry so it is stable during compaction
-            var lowPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
-            var normalPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
-            var highPriEntries = new List<(CacheEntry entry, DateTimeOffset lastAccessed)>();
+            var lowPriEntries = new List<(CacheEntry entry, DateTime lastAccessed)>();
+            var normalPriEntries = new List<(CacheEntry entry, DateTime lastAccessed)>();
+            var highPriEntries = new List<(CacheEntry entry, DateTime lastAccessed)>();
             long removedSize = 0;
 
             // Sort items by expired & priority status
@@ -590,7 +586,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // ?. Items with the soonest absolute expiration.
             // ?. Items with the soonest sliding expiration.
             // ?. Larger objects - estimated by object graph size, inaccurate.
-            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<(CacheEntry Entry, DateTimeOffset LastAccessed)> priorityEntries)
+            static void ExpirePriorityBucket(ref long removedSize, long removalSizeTarget, Func<CacheEntry, long> computeEntrySize, List<CacheEntry> entriesToRemove, List<(CacheEntry Entry, DateTime LastAccessed)> priorityEntries)
             {
                 // Do we meet our quota by just removing expired entries?
                 if (removalSizeTarget <= removedSize)
@@ -653,11 +649,6 @@ namespace Microsoft.Extensions.Caching.Memory
             static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
-        private static void ValidateCacheKey(object key)
-        {
-            ThrowHelper.ThrowIfNull(key);
-        }
-
         /// <summary>
         /// Wrapper for the memory cache entries collection.
         ///
@@ -676,10 +667,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         private sealed class CoherentState
         {
-            internal ConcurrentDictionary<object, CacheEntry> _entries = new ConcurrentDictionary<object, CacheEntry>();
+            internal readonly ConcurrentDictionary<object, CacheEntry> _entries = [];
             internal long _cacheSize;
-
-            private ICollection<KeyValuePair<object, CacheEntry>> EntriesCollection => _entries;
 
             internal int Count => _entries.Count;
 
@@ -687,9 +676,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
-                if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+#if NET8_0_OR_GREATER
+                if (_entries.TryRemove(KeyValuePair.Create(entry.Key, entry)))
+#else
+                if (((ICollection<KeyValuePair<object, CacheEntry>>)_entries).Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
+#endif
                 {
-                    if (options.SizeLimit.HasValue)
+                    if (options.HasSizeLimit)
                     {
                         Interlocked.Add(ref _cacheSize, -entry.Size);
                     }
