@@ -1508,41 +1508,6 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 }
 HCIMPLEND
 
-HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF stubRuntimeField = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    FieldDesc *pField = (FieldDesc *)field;
-    stubRuntimeField = (OBJECTREF)pField->GetStubFieldInfo();
-
-    HELPER_METHOD_FRAME_END();
-
-    return (OBJECTREFToObject(stubRuntimeField));
-}
-HCIMPLEND
-
-HCIMPL1(Object*, JIT_GetRuntimeMethodStub, CORINFO_METHOD_HANDLE method)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF stubRuntimeMethod = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    MethodDesc *pMethod = (MethodDesc *)method;
-    stubRuntimeMethod = (OBJECTREF)pMethod->AllocateStubMethodInfo();
-
-    HELPER_METHOD_FRAME_END();
-
-    return (OBJECTREFToObject(stubRuntimeMethod));
-}
-HCIMPLEND
-
-
 NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
 {
     FCALL_CONTRACT;

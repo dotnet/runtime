@@ -216,6 +216,7 @@ DEFINE_CLASS_U(System,                 RuntimeMethodInfoStub,     ReflectMethodO
 DEFINE_FIELD_U(m_value,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(STUBMETHODINFO,      System,                 RuntimeMethodInfoStub)
 DEFINE_FIELD(STUBMETHODINFO,      HANDLE,                 m_value)
+DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
@@ -360,6 +361,7 @@ DEFINE_FIELD(RT_FIELD_INFO,         HANDLE,                 m_fieldHandle)
 DEFINE_CLASS_U(System,              RuntimeFieldInfoStub,   ReflectFieldObject)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
+DEFINE_METHOD(STUBFIELDINFO,        FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK

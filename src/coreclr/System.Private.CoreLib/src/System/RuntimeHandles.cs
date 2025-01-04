@@ -904,12 +904,6 @@ namespace System
             m_value = methodHandleValue;
         }
 
-        public RuntimeMethodInfoStub(IntPtr methodHandleValue, object keepalive)
-        {
-            m_keepalive = keepalive;
-            m_value = new RuntimeMethodHandleInternal(methodHandleValue);
-        }
-
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
@@ -927,6 +921,16 @@ namespace System
         public RuntimeMethodHandleInternal m_value;
 
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => m_value;
+
+        // implementation of CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object FromPtr(IntPtr pMD)
+        {
+            RuntimeMethodHandleInternal handle = new(pMD);
+            return new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
+        }
     }
 
     internal interface IRuntimeMethodInfo
@@ -1385,6 +1389,16 @@ namespace System
 #pragma warning restore 414, 169, IDE0044
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
+
+        // implementation of CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object FromPtr(IntPtr pFD)
+        {
+            RuntimeFieldHandleInternal handle = new(pFD);
+            return new RuntimeFieldInfoStub(handle, RuntimeFieldHandle.GetLoaderAllocator(handle));
+        }
     }
 
     [NonVersionable]
