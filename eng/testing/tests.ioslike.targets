@@ -77,8 +77,6 @@
       <BundleFiles Include="$(MonoProjectRoot)\msbuild\apple\data\*" TargetDir="publish" />
       <ExtraFiles Condition="'%(AppleAssembliesToBundle._IsNative)' == 'true'"
                    Include="@(AppleAssembliesToBundle)"          TargetDir="extraFiles\%(AppleAssembliesToBundle.RecursiveDir)" />
-      <ExtraFiles Condition="Exists(%(TrimmerRootDescriptor.Identity))"
-                   Include="@(TrimmerRootDescriptor)"            TargetDir="extraFiles" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true' and '$(HybridGlobalization)' == 'false'" >
@@ -155,12 +153,6 @@
 
       <_AppleItemsToPass Include="@(ReferenceExtraPathFiles->'%(FileName)%(Extension)')"
                          OriginalItemName__="AppleReferenceExtraPathFiles" />
-
-      <_AppleItemsToPass Include="@(RuntimeHostConfigurationOption)"
-                         OriginalItemName__="_AppleUsedRuntimeHostConfigurationOption" />
-
-      <_AppleItemsToPass Include="@(TrimmerRootAssembly)"
-                         OriginalItemName__="TrimmerRootAssembly" />
 
       <!-- Example of passing items to the project
 
