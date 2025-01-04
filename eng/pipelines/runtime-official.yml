@@ -423,7 +423,7 @@ extends:
       #
       # Build Mono LLVM runtime packs
       #
-      - template: /eng/pipelines/common/platform-matrix-multijob.yml
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           platforms:
