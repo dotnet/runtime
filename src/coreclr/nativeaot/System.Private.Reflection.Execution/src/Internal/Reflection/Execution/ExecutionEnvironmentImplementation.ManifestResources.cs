@@ -80,7 +80,7 @@ namespace Internal.Reflection.Execution
 
         private static List<ResourceInfo> GetExtractedResources(Assembly assembly)
         {
-            LowLevelDictionary<string, List<ResourceInfo>> extractedResourceDictionary = ExtractedResourceDictionary;
+            Dictionary<string, List<ResourceInfo>> extractedResourceDictionary = ExtractedResourceDictionary;
             string assemblyName = assembly.GetName().FullName;
             List<ResourceInfo> resourceInfos;
             if (!extractedResourceDictionary.TryGetValue(assemblyName, out resourceInfos))
@@ -88,7 +88,7 @@ namespace Internal.Reflection.Execution
             return resourceInfos;
         }
 
-        private static LowLevelDictionary<string, List<ResourceInfo>> ExtractedResourceDictionary
+        private static Dictionary<string, List<ResourceInfo>> ExtractedResourceDictionary
         {
             get
             {
@@ -97,7 +97,7 @@ namespace Internal.Reflection.Execution
                     // Lazily create the extracted resource dictionary. If two threads race here, we may construct two dictionaries
                     // and overwrite one - this is ok since the dictionaries are read-only once constructed and they contain the identical data.
 
-                    LowLevelDictionary<string, List<ResourceInfo>> dict = new LowLevelDictionary<string, List<ResourceInfo>>();
+                    Dictionary<string, List<ResourceInfo>> dict = new Dictionary<string, List<ResourceInfo>>();
 
                     foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                     {
@@ -144,7 +144,7 @@ namespace Internal.Reflection.Execution
         /// The dictionary's key is a Fusion-style assembly name.
         /// The dictionary's value is a list of (resourcename,index) tuples.
         /// </summary>
-        private static volatile LowLevelDictionary<string, List<ResourceInfo>> s_extractedResourceDictionary;
+        private static volatile Dictionary<string, List<ResourceInfo>> s_extractedResourceDictionary;
 
         private struct ResourceInfo
         {
