@@ -13,6 +13,8 @@ namespace System.Security.Cryptography.Tests
 {
     public class RandomNumberGeneratorTests
     {
+        public static bool ManualTestsEnabled => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RNG_MANUAL_TESTS"));
+
         [Fact]
         public static void Create_ReturnsSingleton()
         {
@@ -850,6 +852,64 @@ namespace System.Security.Cryptography.Tests
             {
                 int[] shuffledNumbers = shuffles.Select(x => x[index]).ToArray();
                 VerifyDistribution<int>(shuffledNumbers, 0.1);
+            }
+        }
+
+        /// <summary>
+        /// Runs simple statistical tests.
+        /// This takes about 30 minutes, so run it only if ManualTestsEnabled is enabled.
+        /// </summary>
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void Shuffle_Statistics()
+        {
+            // It shuffled an array of consecutive numbers by `RandomNumberGenerator.Shuffle()` and counted where they moved.
+            // `bucket` contains the count as `[originalIndex * 256 + shuffledIndex]++;`.
+            // If the shuffle is performed evenly, the count in bucket should be pretty even.
+            var bucket = new int[256 * 256];
+            var source = new int[256];
+            long length = 100_000_000;
+
+            for (long i = 0; i < length; i++)
+            {
+                for (int k = 0; k < source.Length; k++)
+                {
+                    source[k] = k;
+                }
+
+                RandomNumberGenerator.Shuffle(source.AsSpan());
+
+                for (int k = 0; k < source.Length; k++)
+                {
+                    bucket[source[k] * 256 + k]++;
+                }
+            }
+
+            int min = int.MaxValue;
+            int max = 0;
+            double average = 0;
+            double stdev = 0;
+            for (int i = 0; i < bucket.Length; i++)
+            {
+                min = Math.Min(min, bucket[i]);
+                max = Math.Max(max, bucket[i]);
+                average += bucket[i];
+            }
+
+            average /= bucket.Length;
+            for (int i = 0; i < bucket.Length; i++)
+            {
+                if (bucket[i] < average * 0.9 || average * 1.1 < bucket[i])
+                {
+                    Assert.Fail($"bucket[{i:x4}] has an outlier = {bucket[i]}");
+                }
+
+                stdev += (bucket[i] - average) * (bucket[i] - average);
+            }
+            stdev = Math.Sqrt(stdev / bucket.Length);
+
+            if (stdev > 700)
+            {
+                Assert.Fail($"Stdev out of range. ({stdev}) The shuffle may be biased.");
             }
         }
 
