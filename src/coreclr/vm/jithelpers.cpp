@@ -2394,46 +2394,12 @@ HCIMPL0(void, JIT_RareDisableHelper)
 }
 HCIMPLEND
 
-/*********************************************************************/
-// This is called by the JIT after every instruction in fully interruptible
-// code to make certain our GC tracking is OK
-HCIMPL0(VOID, JIT_StressGC_NOP)
-{
-    FCALL_CONTRACT;
-}
-HCIMPLEND
-
-
 HCIMPL0(VOID, JIT_StressGC)
 {
     FCALL_CONTRACT;
-
-#ifdef _DEBUG
-    HELPER_METHOD_FRAME_BEGIN_0();    // Set up a frame
-
-    bool fSkipGC = false;
-
-    if (!fSkipGC)
-        GCHeapUtilities::GetGCHeap()->GarbageCollect();
-
-// <TODO>@TODO: the following ifdef is in error, but if corrected the
-// compiler complains about the *__ms->pRetAddr() saying machine state
-// doesn't allow -></TODO>
-#ifdef _X86
-                // Get the machine state, (from HELPER_METHOD_FRAME_BEGIN)
-                // and wack our return address to a nop function
-        BYTE* retInstrs = ((BYTE*) *__ms->pRetAddr()) - 4;
-        _ASSERTE(retInstrs[-1] == 0xE8);                // it is a call instruction
-                // Wack it to point to the JITStressGCNop instead
-        InterlockedExchange((LONG*) retInstrs), (LONG) JIT_StressGC_NOP);
-#endif // _X86
-
-    HELPER_METHOD_FRAME_END();
-#endif // _DEBUG
+    _ASSERTE(!"CORINFO_HELP_STRESS_GC is not implemented");
 }
 HCIMPLEND
-
-
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
@@ -2445,7 +2411,6 @@ FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
     return pThread->GetThreadId();
 }
 FCIMPLEND
-
 
 /*********************************************************************/
 /* we don't use HCIMPL macros because we don't want the overhead even in debug mode */
