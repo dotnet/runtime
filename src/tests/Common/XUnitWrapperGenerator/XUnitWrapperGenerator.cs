@@ -437,13 +437,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         CodeBuilder builder = new();
         AppendAliasMap(builder, aliasMap);
 
-        builder.AppendLine("using System;");
-        builder.AppendLine("using System.IO;");
-
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
-        builder.AppendLine("string documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);");
+        builder.AppendLine("string documentsPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);");
         builder.AppendLine($@"string tempLogPath = Path.Combine(documentsPath, ""{assemblyName}.templog.xml"");");
         builder.AppendLine($@"string testStatsPath = Path.Combine(documentsPath, ""{assemblyName}.testStats.csv"");");
 

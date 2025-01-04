@@ -5,6 +5,7 @@
 
   <PropertyGroup>
     <BuildAsStandalone>false</BuildAsStandalone>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
