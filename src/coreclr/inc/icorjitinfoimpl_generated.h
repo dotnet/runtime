@@ -537,7 +537,8 @@ int32_t* getAddrOfCaptureThreadGlobal(
 
 void* getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection) override;
+          void** ppIndirection,
+          CORINFO_METHOD_HANDLE* pMethod) override;
 
 void getFunctionEntryPoint(
           CORINFO_METHOD_HANDLE ftn,

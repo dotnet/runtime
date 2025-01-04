@@ -1271,10 +1271,10 @@ int32_t* MyICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
-void* MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection)
+void* MyICJI::getHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, CORINFO_METHOD_HANDLE* pMethod)
 {
     jitInstance->mc->cr->AddCall("getHelperFtn");
-    return jitInstance->mc->repGetHelperFtn(ftnNum, ppIndirection);
+    return jitInstance->mc->repGetHelperFtn(ftnNum, ppIndirection, pMethod);
 }
 
 // return a callable address of the function (native code). This function

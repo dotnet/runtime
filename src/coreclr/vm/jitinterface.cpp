@@ -10689,8 +10689,9 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
 
 /*********************************************************************/
 
-void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                               void **            ppIndirection)  /* OUT */
+void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc        ftnNum,         /* IN  */
+                               void **                ppIndirection,  /* OUT */
+                               CORINFO_METHOD_HANDLE* pMethod)        /* OUT */
 {
     CONTRACTL {
         THROWS;
@@ -10748,6 +10749,11 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         if (finalTierAddr != NULL)
         {
             result = finalTierAddr;
+            if (pMethod != nullptr && HasILBasedDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum))
+            {
+                (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, (MethodDesc**)pMethod);
+                _ASSERT(*pMethod != NULL);
+            }
             goto exit;
         }
 
@@ -10756,6 +10762,11 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             MethodDesc* helperMD = NULL;
             (void)LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum, &helperMD);
             _ASSERT(helperMD != NULL);
+
+            if (pMethod != NULL)
+            {
+                *pMethod = (CORINFO_METHOD_HANDLE)helperMD;
+            }
 
             // Check if the target MethodDesc is already jitted to its final Tier
             // so we no longer need to use indirections and can emit a direct call instead.
@@ -14519,8 +14530,9 @@ PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
     UNREACHABLE();      // only called on derived class.
 }
 
-void* CEEInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
-                            void **            ppIndirection)  /* OUT */
+void* CEEInfo::getHelperFtn(CorInfoHelpFunc        ftnNum,         /* IN  */
+                            void **                ppIndirection,  /* OUT */
+                            CORINFO_METHOD_HANDLE* pMethod)        /* OUT */
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

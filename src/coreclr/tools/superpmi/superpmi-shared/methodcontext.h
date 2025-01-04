@@ -332,9 +332,9 @@ public:
                                             CORINFO_METHOD_HANDLE   callerHandle,
                                             CORINFO_LOOKUP*         pLookup);
 
-    void recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, void* result);
-    void dmpGetHelperFtn(DWORD key, DLDL value);
-    void* repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection);
+    void recGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, CORINFO_METHOD_HANDLE* pMethod, void* result);
+    void dmpGetHelperFtn(DWORD key, Agnostic_GetHelperFtn value);
+    void* repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirection, CORINFO_METHOD_HANDLE* pMethod);
     bool fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pResult);
 
     void recGetJustMyCodeHandle(CORINFO_METHOD_HANDLE         method,

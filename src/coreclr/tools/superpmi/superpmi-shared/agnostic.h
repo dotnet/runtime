@@ -133,6 +133,13 @@ struct Agnostic_CORINFO_RESOLVED_TOKENout
     DWORD     cbMethodSpec;
 };
 
+struct Agnostic_GetHelperFtn
+{
+    DWORDLONG pMethod;
+    DWORDLONG ppIndirect;
+    DWORDLONG result;
+};
+
 struct Agnostic_GetArgType_Key
 {
     // Partial CORINFO_SIG_INFO data

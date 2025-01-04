@@ -3063,7 +3063,8 @@ public:
     // return the native entry point to an EE helper (see CorInfoHelpFunc)
     virtual void* getHelperFtn (
             CorInfoHelpFunc         ftnNum,
-            void                  **ppIndirection = NULL
+            void                  **ppIndirection = NULL,
+            CORINFO_METHOD_HANDLE*  pMethod = NULL
             ) = 0;
 
     // return a callable address of the function (native code). This function

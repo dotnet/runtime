@@ -140,7 +140,7 @@ struct JitInterfaceCallbacks
     void (* getFpStructLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
-    void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection);
+    void* (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, void** ppIndirection, CORINFO_METHOD_HANDLE* pMethod);
     void (* getFunctionEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags);
     void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
     void* (* getMethodSync)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
@@ -1451,10 +1451,11 @@ public:
 
     virtual void* getHelperFtn(
           CorInfoHelpFunc ftnNum,
-          void** ppIndirection)
+          void** ppIndirection,
+          CORINFO_METHOD_HANDLE* pMethod)
 {
     CorInfoExceptionClass* pException = nullptr;
-    void* temp = _callbacks->getHelperFtn(_thisHandle, &pException, ftnNum, ppIndirection);
+    void* temp = _callbacks->getHelperFtn(_thisHandle, &pException, ftnNum, ppIndirection, pMethod);
     if (pException != nullptr) throw pException;
     return temp;
 }

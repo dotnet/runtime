@@ -963,8 +963,9 @@ namespace Internal.JitInterface
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc methodDesc)
         {
+            methodDesc = null;
             ReadyToRunHelper id;
 
             switch (ftnNum)

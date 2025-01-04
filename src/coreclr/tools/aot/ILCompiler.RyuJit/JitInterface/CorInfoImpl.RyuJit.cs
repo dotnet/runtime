@@ -455,8 +455,9 @@ namespace Internal.JitInterface
             }
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc methodDesc)
         {
+            methodDesc = null;
             ReadyToRunHelper id;
 
             switch (ftnNum)
@@ -786,7 +787,6 @@ namespace Internal.JitInterface
             }
 
             string mangledName;
-            MethodDesc methodDesc;
             JitHelper.GetEntryPoint(_compilation.TypeSystemContext, id, out mangledName, out methodDesc);
             Debug.Assert(mangledName != null || methodDesc != null);
 
