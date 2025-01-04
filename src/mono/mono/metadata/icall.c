@@ -2909,7 +2909,7 @@ ves_icall_RuntimeTypeHandle_GetElementType (MonoQCallTypeHandle type_handle, Mon
 }
 
 void
-ves_icall_RuntimeTypeHandle_GetBaseType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
+ves_icall_RuntimeType_GetParentType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoType *type = type_handle.type;
 

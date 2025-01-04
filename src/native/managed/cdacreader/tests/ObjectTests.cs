@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 using MockObject = MockDescriptors.Object;
 
@@ -17,15 +19,14 @@ public unsafe class ObjectTests
         MockMemorySpace.Builder builder = new(targetTestHelpers);
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(builder);
         MockObject objectBuilder = new(rtsBuilder);
-        builder = builder
-            .SetContracts([ nameof (Contracts.Object), nameof (Contracts.RuntimeTypeSystem) ])
-            .SetGlobals(objectBuilder.Globals)
-            .SetTypes(objectBuilder.Types);
 
         configure?.Invoke(objectBuilder);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, objectBuilder.Types, objectBuilder.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Object == ((IContractFactory<IObject>)new ObjectFactory()).CreateContract(target, 1)
+                && c.RuntimeTypeSystem == ((IContractFactory<IRuntimeTypeSystem>)new RuntimeTypeSystemFactory()).CreateContract(target, 1)));
+
         testCase(target);
     }
 

@@ -311,6 +311,12 @@ namespace System.Text.Json
             throw GetInvalidOperationException(SR.CannotSkip);
         }
 
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_CannotMixEncodings(Utf8JsonWriter.SegmentEncoding previousEncoding, Utf8JsonWriter.SegmentEncoding currentEncoding)
+        {
+            throw GetInvalidOperationException(SR.Format(SR.CannotMixEncodings, previousEncoding, currentEncoding));
+        }
+
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
         {
             return GetInvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
@@ -616,6 +622,9 @@ namespace System.Text.Json
                 case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:
                     message = SR.Format(SR.CannotWriteValueAfterPrimitiveOrClose, tokenType);
                     break;
+                case ExceptionResource.CannotWriteWithinString:
+                    message = SR.CannotWriteWithinString;
+                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -782,6 +791,7 @@ namespace System.Text.Json
         ExpectedOneCompleteToken,
         NotEnoughData,
         InvalidLeadingZeroInNumber,
+        CannotWriteWithinString,
     }
 
     internal enum NumericType

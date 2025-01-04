@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal partial class MockDescriptors
 {

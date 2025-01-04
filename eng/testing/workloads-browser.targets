@@ -14,6 +14,12 @@
                             Variant="latest"
                             Version="$(PackageVersionForWorkloadManifests)" />
 
+      <WorkloadIdForTesting Include="wasm-tools-net9;wasm-experimental-net9"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net9"
+                            Variant="net9"
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+
       <WorkloadIdForTesting Include="wasm-tools-net8;wasm-experimental-net8"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
                             Variant="net8"
@@ -34,6 +40,7 @@
                             Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
       <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
+      <WorkloadCombinationsToInstall Include="net9"          Variants="net9" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <WorkloadCombinationsToInstall Include="net8"          Variants="net8" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />

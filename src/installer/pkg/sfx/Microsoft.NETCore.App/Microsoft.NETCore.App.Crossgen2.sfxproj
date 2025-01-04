@@ -1,6 +1,5 @@
-<Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <!-- Crossgen is not used for Mono -->
@@ -11,7 +10,6 @@
     <ArchiveName>dotnet-crossgen2</ArchiveName>
     <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
     <GenerateInstallers>false</GenerateInstallers>
-    <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     <!-- Publishing as single-file or NativeAOT means we can't examine the interior DLLs -->
     <ShouldVerifyClosure>false</ShouldVerifyClosure>
@@ -72,23 +70,4 @@
       <_SymbolFilesToPackage Include="@(_Crossgen2SymbolFilesToPackage)" TargetPath="tools/" />
     </ItemGroup>
   </Target>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-
-  <Target Name="GetFilesToPublish">
-    <MSBuild Projects="$(MSBuildProjectFullPath)"
-          Targets="_GetAllSharedFrameworkFiles"
-          RemoveProperties="OutputPath;SymbolsOutputPath">
-      <Output TaskParameter="TargetOutputs" ItemName="_FilesToPackage" />
-    </MSBuild>
-    <ItemGroup>
-      <_PackagedFilesToPublish Include="@(_FilesToPackage)" Condition="'%(_FilesToPackage.PackOnly)' != 'true'" />
-    </ItemGroup>
-    <ItemGroup>
-      <FilesToPublish Include="@(_PackagedFilesToPublish)"
-                       TargetPath="" />
-    </ItemGroup>
-  </Target>
-
 </Project>

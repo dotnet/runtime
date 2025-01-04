@@ -727,7 +727,16 @@ namespace System.Reflection
         private static partial void GetManifestModuleSlow(ObjectHandleOnStack assembly, ObjectHandleOnStack module);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetToken(RuntimeAssembly assembly);
+        private static extern int GetTokenInternal(RuntimeAssembly assembly);
+
+        internal static int GetToken(RuntimeAssembly assembly)
+        {
+            int tokenMaybe = GetTokenInternal(assembly);
+            // If the result is negative, it is an error code.
+            if (tokenMaybe < 0)
+                Marshal.ThrowExceptionForHR(tokenMaybe, new IntPtr(-1));
+            return tokenMaybe;
+        }
 
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type[] GetForwardedTypes()

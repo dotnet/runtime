@@ -239,7 +239,6 @@ export type RuntimeHelpers = {
     stringify_as_error_with_stack?: (error: any) => string,
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
-    instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
@@ -252,19 +251,6 @@ export type RuntimeHelpers = {
     localHeapViewU16: () => Uint16Array,
     setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
     setI32: (offset: MemOffset, value: number) => void,
-}
-export type GlobalizationHelpers = {
-
-    mono_wasm_change_case: (culture: number, cultureLength: number, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) => VoidPtr;
-    mono_wasm_compare_string: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_starts_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_ends_with: (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_index_of: (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_get_calendar_info: (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
-    mono_wasm_get_culture_info: (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr) => VoidPtr;
-    mono_wasm_get_first_day_of_week: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
-    mono_wasm_get_first_week_of_year: (culture: number, cultureLength: number, resultPtr: Int32Ptr) => VoidPtr;
-    setSegmentationRulesFromJson: (json: string) => void;
 }
 
 export type AOTProfilerOptions = {
@@ -317,7 +303,6 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
-    globalizationHelpers: GlobalizationHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -515,10 +500,6 @@ export type RuntimeModuleExportsInternal = {
 
 export type NativeModuleExportsInternal = {
     default: (unificator: Function) => Promise<EmscriptenModuleInternal>
-}
-
-export type HybridGlobalizationModuleExportsInternal = {
-    initHybrid: (gh: GlobalizationHelpers, rh: RuntimeHelpers) => void;
 }
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {

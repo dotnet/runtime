@@ -125,8 +125,6 @@ PTFF_SAVE_ALL_PRESERVED equ 00000007h   ;; NOTE: RBP is not included in this set
 PTFF_SAVE_RSP           equ 00008000h
 PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref and we're in hijack handler
 PTFF_SAVE_ALL_SCRATCH   equ 00000700h
-PTFF_RAX_IS_GCREF       equ 00010000h   ;; iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
-PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
 PTFF_THREAD_ABORT       equ 00100000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
 ;; These must match the TrapThreadsFlags enum

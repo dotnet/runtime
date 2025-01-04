@@ -105,7 +105,6 @@ PROBE_FRAME_SIZE    field 0
 ;; Register state on exit:
 ;;  x2: thread pointer
 ;;  x3: trashed
-;;  x12: transition frame flags for the return registers x0 and x1
 ;;
     MACRO
         FixupHijackedCallstack
@@ -116,9 +115,7 @@ PROBE_FRAME_SIZE    field 0
         ;;
         ;; Fix the stack by restoring the original return address
         ;;
-        ASSERT OFFSETOF__Thread__m_uHijackedReturnValueFlags == (OFFSETOF__Thread__m_pvHijackedReturnAddress + 8)
-        ;; Load m_pvHijackedReturnAddress and m_uHijackedReturnValueFlags
-        ldp         lr, x12, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
         ;;
         ;; Clear hijack state
@@ -126,9 +123,6 @@ PROBE_FRAME_SIZE    field 0
         ASSERT OFFSETOF__Thread__m_pvHijackedReturnAddress == (OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation + 8)
         ;; Clear m_ppvHijackedReturnAddressLocation and m_pvHijackedReturnAddress
         stp         xzr, xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        ;; Clear m_uHijackedReturnValueFlags
-        str         xzr, [x2, #OFFSETOF__Thread__m_uHijackedReturnValueFlags]
-
     MEND
 
     MACRO
@@ -161,7 +155,8 @@ PROBE_FRAME_SIZE    field 0
         ret
 
 WaitForGC
-        orr         x12, x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        mov         x12, #(DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_X0 + PTFF_SAVE_X1)
+        movk        x12, #PTFF_THREAD_HIJACK_HI, lsl #32
         b           RhpWaitForGC
     NESTED_END RhpGcProbeHijackWrapper
 

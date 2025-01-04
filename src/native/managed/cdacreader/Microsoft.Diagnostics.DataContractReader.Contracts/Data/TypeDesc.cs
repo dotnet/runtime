@@ -24,7 +24,7 @@ internal class ParamTypeDesc : IData<ParamTypeDesc>
         TypeAndFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(TypeAndFlags)].Offset);
 
         type = target.GetTypeInfo(DataType.ParamTypeDesc);
-        TypeArg = target.Read<ushort>(address + (ulong)type.Fields[nameof(TypeArg)].Offset);
+        TypeArg = target.ReadPointer(address + (ulong)type.Fields[nameof(TypeArg)].Offset);
     }
 
     public uint TypeAndFlags { get; init; }
@@ -63,10 +63,12 @@ internal class FnPtrTypeDesc : IData<FnPtrTypeDesc>
         NumArgs = target.Read<uint>(address + (ulong)type.Fields[nameof(NumArgs)].Offset);
         CallConv = target.Read<uint>(address + (ulong)type.Fields[nameof(CallConv)].Offset);
         RetAndArgTypes = (TargetPointer)(address + (ulong)type.Fields[nameof(RetAndArgTypes)].Offset);
+        LoaderModule = target.ReadPointer(address + (ulong)type.Fields[nameof(LoaderModule)].Offset);
     }
 
     public uint TypeAndFlags { get; init; }
     public uint NumArgs {  get; init; }
     public uint CallConv { get; init; }
     public TargetPointer RetAndArgTypes { get; init; }
+    public TargetPointer LoaderModule { get; init; }
 }

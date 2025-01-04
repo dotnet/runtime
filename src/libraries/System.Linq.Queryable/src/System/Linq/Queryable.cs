@@ -242,6 +242,38 @@ namespace System.Linq
                     outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        [DynamicDependency("LeftJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> LeftJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner?, TResult>> resultSelector)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, TInner?, TResult>>, IQueryable<TResult>>(LeftJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
+        }
+
+        [DynamicDependency("LeftJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> LeftJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner?, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, TInner?, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(LeftJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+        }
+
         /// <summary>
         /// Sorts the elements of a sequence in ascending order.
         /// </summary>
@@ -438,6 +470,38 @@ namespace System.Linq
                     null,
                     new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, IOrderedQueryable<TSource>>(OrderByDescending).Method,
                     source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
+        }
+
+        [DynamicDependency("RightJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner, TResult>> resultSelector)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter?, TInner, TResult>>, IQueryable<TResult>>(RightJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
+        }
+
+        [DynamicDependency("RightJoin`4", typeof(Enumerable))]
+        public static IQueryable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter?, TInner, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
+        {
+            ArgumentNullException.ThrowIfNull(outer);
+            ArgumentNullException.ThrowIfNull(inner);
+            ArgumentNullException.ThrowIfNull(outerKeySelector);
+            ArgumentNullException.ThrowIfNull(innerKeySelector);
+            ArgumentNullException.ThrowIfNull(resultSelector);
+
+            return outer.Provider.CreateQuery<TResult>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter?, TInner, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(RightJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]

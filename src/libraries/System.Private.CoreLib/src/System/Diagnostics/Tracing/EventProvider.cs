@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tracing
         [StructLayout(LayoutKind.Sequential)]
         public struct EventData
         {
-            internal unsafe ulong Ptr;
+            internal ulong Ptr;
             internal uint Size;
             internal uint Reserved;
         }
@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This method registers the provider with the backing tracing mechanism, either ETW or EventPipe.
         /// </summary>
-        internal unsafe void Register(Guid id, string name)
+        internal void Register(Guid id, string name)
         {
             _providerName = name;
             _providerId = id;
@@ -940,7 +940,7 @@ namespace System.Diagnostics.Tracing
         /// to get the data. The function returns an array of bytes representing the data, the index into that byte array
         /// where the data starts, and the command being issued associated with that data.
         /// </summary>
-        private unsafe bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
+        private bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
         {
             command = ControllerCommand.Update;
             data = null;
@@ -1320,7 +1320,7 @@ namespace System.Diagnostics.Tracing
             return idx;
         }
 
-        protected static unsafe IDictionary<string, string?>? ParseFilterData(byte[]? data)
+        protected static IDictionary<string, string?>? ParseFilterData(byte[]? data)
         {
             Dictionary<string, string?>? args = null;
 

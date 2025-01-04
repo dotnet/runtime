@@ -39,7 +39,7 @@ extends:
             richCodeNavigationLanguage: "csharp"
             nameSuffix: Libs
             timeoutInMinutes: 240
-            buildArgs: -s libs.sfx+libs.oob -allConfigurations
+            buildArgs: -s libs.sfx+libs.oob -pack
             preBuildSteps:
               - script: dotnet.cmd nuget add source -n richnav "https://pkgs.dev.azure.com/azure-public/vside/_packaging/vs-buildservices/nuget/v3/index.json"
                 displayName: Add richnav NuGet feed

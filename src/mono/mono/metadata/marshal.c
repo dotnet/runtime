@@ -5983,7 +5983,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			// Limit the max size of array instance to 1MiB
 			const int struct_max_size = 1024 * 1024;
 			guint32 initial_size = size;
-			size *= m_class_inlinearray_value (klass);
+			size *= mono_class_get_inlinearray_value (klass);
 			if(size == 0 || size > struct_max_size) {
 				if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
@@ -6815,7 +6815,7 @@ static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, 
 	g_assert (field);
 
 	MonoType* fieldType = field->type;
-	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
+	for (int i = 0; i < mono_class_get_inlinearray_value (klass); ++i) {
 		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, &align) - type_offset);
 	}
 }

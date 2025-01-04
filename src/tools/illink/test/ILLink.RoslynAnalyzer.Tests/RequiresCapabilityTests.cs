@@ -101,6 +101,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task RequiresOnEntryPoint ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task RequiresOnVirtualsAndInterfaces ()
 		{
 			return RunTest (nameof (RequiresOnVirtualsAndInterfaces));

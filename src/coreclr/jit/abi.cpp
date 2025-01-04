@@ -465,15 +465,24 @@ void ABIPassingInformation::Dump() const
         }
 
         const ABIPassingSegment& seg = Segment(i);
+        seg.Dump();
+        printf("\n");
+    }
+}
 
-        if (seg.IsPassedInRegister())
-        {
-            printf("[%02u..%02u) reg %s\n", seg.Offset, seg.Offset + seg.Size, getRegName(seg.GetRegister()));
-        }
-        else
-        {
-            printf("[%02u..%02u) stack @ +%02u\n", seg.Offset, seg.Offset + seg.Size, seg.GetStackOffset());
-        }
+//-----------------------------------------------------------------------------
+// Dump:
+//   Dump the ABIPassingSegment to stdout.
+//
+void ABIPassingSegment::Dump() const
+{
+    if (IsPassedInRegister())
+    {
+        printf("[%02u..%02u) reg %s", Offset, Offset + Size, getRegName(GetRegister()));
+    }
+    else
+    {
+        printf("[%02u..%02u) stack @ +%02u", Offset, Offset + Size, GetStackOffset());
     }
 }
 #endif

@@ -874,7 +874,7 @@ HRESULT ReJitManager::BindILVersion(
     ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
     BOOL fDoCallback = (flags & COR_PRF_REJIT_INLINING_CALLBACKS) == COR_PRF_REJIT_INLINING_CALLBACKS;
 
-    if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateRequested)
+    if (ilCodeVersion.GetRejitState() == RejitFlags::kStateRequested)
     {
         // We can 'reuse' this instance because the profiler doesn't know about
         // it yet. (This likely happened because a profiler called RequestReJIT
@@ -965,12 +965,12 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         switch (ilCodeVersion.GetRejitState())
         {
-        case ILCodeVersion::kStateRequested:
-            ilCodeVersion.SetRejitState(ILCodeVersion::kStateGettingReJITParameters);
+        case RejitFlags::kStateRequested:
+            ilCodeVersion.SetRejitState(RejitFlags::kStateGettingReJITParameters);
             fNeedsParameters = TRUE;
             break;
 
-        case ILCodeVersion::kStateGettingReJITParameters:
+        case RejitFlags::kStateGettingReJITParameters:
             fWaitForParameters = TRUE;
             break;
 
@@ -1026,9 +1026,9 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 // This code path also happens if the GetReJITParameters callback was suppressed due to
                 // the method being ReJITted as an inliner by the runtime (instead of by the user).
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
-                if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateGettingReJITParameters)
+                if (ilCodeVersion.GetRejitState() == RejitFlags::kStateGettingReJITParameters)
                 {
-                    ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+                    ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
                     ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
                 }
             }
@@ -1045,7 +1045,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
             _ASSERTE(pFuncControl != NULL);
 
             CodeVersionManager::LockHolder codeVersioningLockHolder;
-            if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateGettingReJITParameters)
+            if (ilCodeVersion.GetRejitState() == RejitFlags::kStateGettingReJITParameters)
             {
                 // Inside the above call to ICorProfilerCallback4::GetReJITParameters, the profiler
                 // will have used the specified pFuncControl to provide its IL and codegen flags.
@@ -1055,7 +1055,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
                 // ilCodeVersion is now the owner of the memory for the IL buffer
                 ilCodeVersion.SetInstrumentedILMap(pFuncControl->GetInstrumentedMapEntryCount(),
                     pFuncControl->GetInstrumentedMapEntries());
-                ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+                ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
             }
         }
     }
@@ -1086,7 +1086,7 @@ HRESULT ReJitManager::ConfigureILCodeVersion(ILCodeVersion ilCodeVersion)
         {
             {
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
-                if (ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive)
+                if (ilCodeVersion.GetRejitState() == RejitFlags::kStateActive)
                 {
                     break; // the other thread got the parameters successfully, go race to rejit
                 }
@@ -1188,7 +1188,7 @@ HRESULT ReJitManager::GetReJITIDs(PTR_MethodDesc pMD, ULONG cReJitIds, ULONG * p
     {
         ILCodeVersion curILVersion = *iter;
 
-        if (curILVersion.GetRejitState() == ILCodeVersion::kStateActive)
+        if (curILVersion.GetRejitState() == RejitFlags::kStateActive)
         {
             if (cnt < cReJitIds)
             {

@@ -551,7 +551,7 @@ static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1
 static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #elif defined(TARGET_RISCV64)
 static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_FT0 | RBM_FT1 | RBM_FT2 | RBM_FS0 | RBM_FS1);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -9988,10 +9988,8 @@ void LinearScan::dumpLsraStats(FILE* file)
 
     fprintf(file, "----------\n");
 #ifdef DEBUG
-    LPCWSTR lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering();
-    char    lsraOrderUtf8[(REGSELECT_HEURISTIC_COUNT * 3) + 1] = {};
-    WideCharToMultiByte(CP_UTF8, 0, lsraOrder, -1, lsraOrderUtf8, ARRAY_SIZE(lsraOrderUtf8), nullptr, nullptr);
-    fprintf(file, "Register selection order: %s\n", lsraOrderUtf8);
+    const char* lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? "ABCDEFGHIJKLMNOPQ" : JitConfig.JitLsraOrdering();
+    fprintf(file, "Register selection order: %s\n", lsraOrder);
 #endif
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
@@ -12395,10 +12393,10 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
 
-    LPCWSTR ordering = JitConfig.JitLsraOrdering();
+    const char* ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
     {
-        ordering = W("ABCDEFGHIJKLMNOPQ");
+        ordering = "ABCDEFGHIJKLMNOPQ";
 
         if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled()
 #ifdef TARGET_ARM64
@@ -12406,7 +12404,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #endif
         )
         {
-            ordering = W("MQQQQQQQQQQQQQQQQ");
+            ordering = "MQQQQQQQQQQQQQQQQ";
         }
     }
 

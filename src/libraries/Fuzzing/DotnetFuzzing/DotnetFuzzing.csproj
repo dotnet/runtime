@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -29,6 +29,7 @@
     <Compile Include="Fuzzers\TextEncodingFuzzer.cs" />
     <Compile Include="Fuzzers\TypeNameFuzzer.cs" />
     <Compile Include="Fuzzers\UTF8Fuzzer.cs" />
+    <Compile Include="Fuzzers\Utf8JsonWriterFuzzer.cs" />
     <Compile Include="IFuzzer.cs" />
     <Compile Include="PooledBoundedMemory.cs" />
     <Compile Include="Program.cs" />

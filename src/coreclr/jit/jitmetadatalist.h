@@ -83,6 +83,10 @@ JITMETADATAMETRIC(NewRefClassHelperCalls,                int,              0)
 JITMETADATAMETRIC(StackAllocatedRefClasses,              int,              0)
 JITMETADATAMETRIC(NewBoxedValueClassHelperCalls,         int,              0)
 JITMETADATAMETRIC(StackAllocatedBoxedValueClasses,       int,              0)
+JITMETADATAMETRIC(LocalAssertionCount,                   int,              0)
+JITMETADATAMETRIC(LocalAssertionOverflow,                int,              0)
+JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
+JITMETADATAMETRIC(MorphLocals,                           int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

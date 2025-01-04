@@ -13,7 +13,7 @@ namespace System
         // respecting types.  This calls memmove internally.  The count and
         // offset parameters here are in bytes.  If you want to use traditional
         // array element indices and counts, use Array.Copy.
-        public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
+        public static void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
         {
             ArgumentNullException.ThrowIfNull(src);
             ArgumentNullException.ThrowIfNull(dst);
@@ -175,9 +175,6 @@ namespace System
         private const uint BulkMoveWithWriteBarrierChunk = 0x4000;
 #endif
 
-#if NATIVEAOT
-        [System.Runtime.RuntimeExport("RhBuffer_BulkMoveWithWriteBarrier")]
-#endif
         internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
         {
             if (byteCount <= BulkMoveWithWriteBarrierChunk)

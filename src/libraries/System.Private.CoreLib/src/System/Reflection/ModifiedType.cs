@@ -79,7 +79,7 @@ namespace System.Reflection
         public override Type GetGenericTypeDefinition() => _unmodifiedType.GetGenericTypeDefinition();
         public override bool IsGenericType => _unmodifiedType.IsGenericType;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
             => throw new NotSupportedException(SR.NotSupported_ModifiedType);

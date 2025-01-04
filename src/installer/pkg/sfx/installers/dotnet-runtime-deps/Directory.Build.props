@@ -5,6 +5,6 @@
     <PackageBrandNameSuffix>Runtime Dependencies</PackageBrandNameSuffix>
     <InstallerName>dotnet-runtime-deps</InstallerName>
     <InstallerRuntimeIdentifiers>linux-$(TargetArchitecture)</InstallerRuntimeIdentifiers>
-    <GenerateInstallers Condition="'$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(TargetsLinuxGlibc)' == 'true' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</GenerateInstallers>
   </PropertyGroup>
 </Project>

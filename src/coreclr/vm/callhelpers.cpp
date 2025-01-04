@@ -11,10 +11,6 @@
 
 // To include declaration of "AppDomainTransitionExceptionFilter"
 #include "excep.h"
-
-// To include declaration of "SignatureNative"
-#include "runtimehandles.h"
-
 #include "invokeutil.h"
 #include "argdestination.h"
 

@@ -1864,10 +1864,20 @@ public:
     // the information within MethodTable, and so less code manipulates EEClass
     // objects directly, because doing so can lead to bugs related to generics.
     //
-    // <TODO> Use m_wBaseSize whenever this is identical to GetNumInstanceFieldBytes.
-    // We would need to reserve a flag for this. </TODO>
-    //
     inline DWORD GetNumInstanceFieldBytes();
+
+    // Returns the size of the instance fields for a value type, in bytes when
+    // the type is known to contain GC pointers. This takes advantage of the detail
+    // that if the type contains GC pointers, the size of the instance fields is aligned
+    // to pointer sized boundaries. This is only faster if we already have some reason
+    // to have checked for ContainsGCPointers.
+    inline DWORD GetNumInstanceFieldBytesIfContainsGCPointers()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(ContainsGCPointers());
+        _ASSERTE(GetBaseSize() - (DWORD)(2 * sizeof(TADDR)) == GetNumInstanceFieldBytes());
+        return GetBaseSize() - (DWORD)(2 * sizeof(TADDR));
+    }
 
     int GetFieldAlignmentRequirement();
 
@@ -2666,14 +2676,13 @@ public:
     // This flavor of Allocate is more efficient, but can only be used
     // if CheckInstanceActivated(), IsClassInited() are known to be true.
     // A sufficient condition is that another instance of the exact same type already
-    // exists in the same appdomain. It's currently called only from Delegate.Combine
-    // via COMDelegate::InternalAllocLike.
+    // exists in the same ALC. It's currently called only from Delegate.Combine
+    // via RuntimeTypeHandle_InternalAllocNoChecks.
     OBJECTREF AllocateNoChecks();
 
     OBJECTREF Box(void* data);
     OBJECTREF FastBox(void** data);
 #ifndef DACCESS_COMPILE
-    BOOL UnBoxInto(void *dest, OBJECTREF src);
     void UnBoxIntoUnchecked(void *dest, OBJECTREF src);
 #endif
 
@@ -2763,7 +2772,7 @@ public:
     }
 
     // Returns true if this type is Nullable<T> for some T.
-    inline BOOL IsNullable()
+    inline BOOL IsNullable() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_Nullable;
@@ -2979,6 +2988,37 @@ public:
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
 
+    // ------------------------------------------------------------------
+    // Details about Nullable<T> MethodTables
+    // ------------------------------------------------------------------
+    UINT32 GetNullableValueAddrOffset() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsNullable());
+#ifndef TARGET_64BIT
+        return *(BYTE*)&m_encodedNullableUnboxData;
+#else
+        return *(UINT32*)&m_encodedNullableUnboxData;
+#endif
+    }
+
+    UINT32 GetNullableValueSize() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsNullable());
+#ifndef TARGET_64BIT
+        return (UINT32)(m_encodedNullableUnboxData >> 8);
+#else
+        return (UINT32)(m_encodedNullableUnboxData >> 32);
+#endif
+    }
+
+    UINT32 GetNullableNumInstanceFieldBytes() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsNullable());
+        return GetNullableValueAddrOffset() + GetNullableValueSize();
+    }
 
     // ------------------------------------------------------------------
     // Private part of MethodTable
@@ -3796,6 +3836,33 @@ private:
         return (m_dwFlags2 & (DWORD)mask) == (DWORD)flag;
     }
 
+#ifndef DACCESS_COMPILE
+    void SetNullableDetails(UINT16 offsetToValueField, UINT32 sizeOfValueField)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(IsNullable());
+#ifndef TARGET_64BIT
+        if (sizeOfValueField > 0xFFFFFF)
+        {
+            // We can't encode the size of the value field in the Nullable<T> MethodTable
+            // because it's too large. This is a limitation of the encoding. It is not expected
+            // to impact any real customers, as Nullable<T> should only be used on the stack
+            // where having a 16MB local would always be a significant problem. Especially oh
+            // a 32-bit machine.
+            ThrowHR(COR_E_TYPELOAD);
+        }
+        if (offsetToValueField > 255)
+        {
+            // If we get here something completely unexpected has happened. We don't expect alignment greater than 128
+            ThrowHR(COR_E_TYPELOAD);
+        }
+        m_encodedNullableUnboxData = ((TADDR)sizeOfValueField << 8) | (TADDR)offsetToValueField;
+#else
+        m_encodedNullableUnboxData = ((TADDR)sizeOfValueField << 32) | (TADDR)offsetToValueField;
+#endif
+    }
+#endif // DACCESS_COMPILE
+
 private:
     // Low WORD is component size for array and string types (HasComponentSize() returns true).
     // Used for flags otherwise.
@@ -3854,7 +3921,11 @@ private:
         TADDR         m_ElementTypeHnd;
     };
     public:
-    PTR_InterfaceInfo   m_pInterfaceMap;
+    union
+    {
+        PTR_InterfaceInfo   m_pInterfaceMap;
+        TADDR               m_encodedNullableUnboxData; // Used for Nullable<T> to represent the offset to the value field, and the size of the value field
+    };
 
     // VTable slots go here
 

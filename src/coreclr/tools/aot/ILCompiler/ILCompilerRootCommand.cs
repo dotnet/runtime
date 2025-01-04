@@ -75,6 +75,8 @@ namespace ILCompiler
             new("--map") { Description = "Generate a map file" };
         public CliOption<string> MstatFileName { get; } =
             new("--mstat") { Description = "Generate an mstat file" };
+        public CliOption<string> SourceLinkFileName { get; } =
+            new("--sourcelink") { Description = "Generate a SourceLink file" };
         public CliOption<string> MetadataLogFileName { get; } =
             new("--metadatalog") { Description = "Generate a metadata log file" };
         public CliOption<bool> CompleteTypesMetadata { get; } =
@@ -209,6 +211,7 @@ namespace ILCompiler
             Options.Add(SubstitutionFilePaths);
             Options.Add(MapFileName);
             Options.Add(MstatFileName);
+            Options.Add(SourceLinkFileName);
             Options.Add(MetadataLogFileName);
             Options.Add(CompleteTypesMetadata);
             Options.Add(ReflectionData);

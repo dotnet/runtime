@@ -1101,7 +1101,7 @@ namespace System
         /// <param name="ianaId">The IANA time zone ID.</param>
         /// <param name="windowsId">String object holding the Windows ID which resulted from the IANA ID conversion.</param>
         /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
-        public static unsafe bool TryConvertIanaIdToWindowsId(string ianaId, [NotNullWhen(true)] out string? windowsId) => TryConvertIanaIdToWindowsId(ianaId, allocate: true, out windowsId);
+        public static bool TryConvertIanaIdToWindowsId(string ianaId, [NotNullWhen(true)] out string? windowsId) => TryConvertIanaIdToWindowsId(ianaId, allocate: true, out windowsId);
 
         /// <summary>
         /// Tries to convert a Windows time zone ID to an IANA ID.
@@ -1118,7 +1118,7 @@ namespace System
         /// <param name="region">The ISO 3166 code for the country/region.</param>
         /// <param name="ianaId">String object holding the IANA ID which resulted from the Windows ID conversion.</param>
         /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
-        public static unsafe bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region, allocate: true, out ianaId);
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region, allocate: true, out ianaId);
 
         void IDeserializationCallback.OnDeserialization(object? sender)
         {

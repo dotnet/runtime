@@ -28,6 +28,9 @@ namespace System.Net.ServerSentEvents
         /// <summary>Carriage Return Line Feed.</summary>
         private static ReadOnlySpan<byte> CRLF => "\r\n"u8;
 
+        /// <summary>The maximum number of milliseconds representible by <see cref="System.TimeSpan"/>.</summary>
+        private readonly long TimeSpan_MaxValueMilliseconds = (long)TimeSpan.MaxValue.TotalMilliseconds;
+
         /// <summary>The default size of an ArrayPool buffer to rent.</summary>
         /// <remarks>Larger size used by default to minimize number of reads. Smaller size used in debug to stress growth/shifting logic.</remarks>
         private const int DefaultArrayPoolRentSize =
@@ -71,7 +74,13 @@ namespace System.Net.ServerSentEvents
         private bool _dataAppended;
 
         /// <summary>The event type for the next event.</summary>
-        private string _eventType = SseParser.EventTypeDefault;
+        private string? _eventType;
+
+        /// <summary>The event id for the next event.</summary>
+        private string? _eventId;
+
+        /// <summary>The reconnection interval for the next event.</summary>
+        private TimeSpan? _nextReconnectionInterval;
 
         /// <summary>Initialize the enumerable.</summary>
         /// <param name="stream">The stream to parse.</param>
@@ -314,8 +323,11 @@ namespace System.Net.ServerSentEvents
 
                 if (_dataAppended)
                 {
-                    sseItem = new SseItem<T>(_itemParser(_eventType, _dataBuffer.AsSpan(0, _dataLength)), _eventType);
-                    _eventType = SseParser.EventTypeDefault;
+                    T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, _dataBuffer.AsSpan(0, _dataLength));
+                    sseItem = new SseItem<T>(data, _eventType) { EventId = _eventId, ReconnectionInterval = _nextReconnectionInterval };
+                    _eventType = null;
+                    _eventId = null;
+                    _nextReconnectionInterval = null;
                     _dataLength = 0;
                     _dataAppended = false;
                     return true;
@@ -365,8 +377,11 @@ namespace System.Net.ServerSentEvents
                         (remainder[0] is LF || (remainder[0] is CR && remainder.Length > 1)))
                     {
                         advance = line.Length + newlineLength + (remainder.StartsWith(CRLF) ? 2 : 1);
-                        sseItem = new SseItem<T>(_itemParser(_eventType, fieldValue), _eventType);
-                        _eventType = SseParser.EventTypeDefault;
+                        T data = _itemParser(_eventType ?? SseParser.EventTypeDefault, fieldValue);
+                        sseItem = new SseItem<T>(data, _eventType) { EventId = _eventId, ReconnectionInterval = _nextReconnectionInterval };
+                        _eventType = null;
+                        _eventId = null;
+                        _nextReconnectionInterval = null;
                         return true;
                     }
                 }
@@ -398,7 +413,7 @@ namespace System.Net.ServerSentEvents
                 if (fieldValue.IndexOf((byte)'\0') < 0)
                 {
                     // Note that fieldValue might be empty, in which case LastEventId will naturally be reset to the empty string. This is per spec.
-                    LastEventId = SseParser.Utf8GetString(fieldValue);
+                    LastEventId = _eventId = SseParser.Utf8GetString(fieldValue);
                 }
             }
             else if (fieldName.SequenceEqual("retry"u8))
@@ -411,9 +426,12 @@ namespace System.Net.ServerSentEvents
 #else
                     SseParser.Utf8GetString(fieldValue),
 #endif
-                    NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds))
+                    NumberStyles.None, CultureInfo.InvariantCulture, out long milliseconds) &&
+                    0 <= milliseconds && milliseconds <= TimeSpan_MaxValueMilliseconds)
                 {
-                    ReconnectionInterval = TimeSpan.FromMilliseconds(milliseconds);
+                    // Workaround for TimeSpan.FromMilliseconds not being able to roundtrip TimeSpan.MaxValue
+                    TimeSpan timeSpan = milliseconds == TimeSpan_MaxValueMilliseconds ? TimeSpan.MaxValue : TimeSpan.FromMilliseconds(milliseconds);
+                    _nextReconnectionInterval = ReconnectionInterval = timeSpan;
                 }
             }
             else

@@ -216,7 +216,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
+            return RuntimeExports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
         }
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
@@ -236,7 +236,7 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadValueTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref address);
+            return RuntimeExports.RhBox(fieldType.ToMethodTable(), ref address);
         }
 
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
@@ -244,7 +244,7 @@ namespace Internal.Runtime.Augments
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
 
             if (fieldType.ToMethodTable()->IsFunctionPointer)
-                return RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref address);
+                return RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref address);
 
             return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
@@ -285,7 +285,7 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
             Debug.Assert(fieldTypeHandle.ToMethodTable()->IsValueType);
 
-            return RuntimeImports.RhBox(fieldTypeHandle.ToMethodTable(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return RuntimeExports.RhBox(fieldTypeHandle.ToMethodTable(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
         }
 
         [CLSCompliant(false)]
@@ -391,7 +391,7 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
         {
-            return RuntimeImports.RhBox(type.ToMethodTable(), ref *(byte*)address);
+            return RuntimeExports.RhBox(type.ToMethodTable(), ref *(byte*)address);
         }
 
         //==============================================================================================

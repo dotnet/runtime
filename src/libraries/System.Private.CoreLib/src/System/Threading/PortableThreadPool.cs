@@ -30,16 +30,10 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
 
-#if CORECLR
-#pragma warning disable CA1823
-        private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
-#pragma warning restore CA1823
-#endif
-
         private static readonly short ForcedMinWorkerThreads =
-            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
+            AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig("System.Threading.ThreadPool.MinThreads", "ThreadPool_ForceMinWorkerThreads", 0, false);
         private static readonly short ForcedMaxWorkerThreads =
-            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+            AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig("System.Threading.ThreadPool.MaxThreads", "ThreadPool_ForceMaxWorkerThreads", 0, false);
 
 #if TARGET_WINDOWS
         // Continuations of IO completions are dispatched to the ThreadPool from IO completion poller threads. This avoids

@@ -147,6 +147,6 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

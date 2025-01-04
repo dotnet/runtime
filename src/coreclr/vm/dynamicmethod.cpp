@@ -112,7 +112,7 @@ void DynamicMethodTable::MakeMethodTable(AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_pDomain->GetLoaderAllocator(), pamTracker);
+    m_pMethodTable = CreateMinimalMethodTable(m_Module, m_Module->GetLoaderAllocator(), pamTracker);
 }
 
 void DynamicMethodTable::Destroy()

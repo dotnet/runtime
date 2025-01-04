@@ -1102,6 +1102,18 @@ namespace System.Text.Json.Schema.Tests
                         }
                         """);
 
+            yield return new TestData<ClassWithPropertiesUsingCustomConverters>(
+                Value: new() { Prop1 = new() , Prop2 = new() },
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                          "Prop1": true,
+                          "Prop2": true,
+                        }
+                    }
+                    """);
+
             // Collection types
             yield return new TestData<int[]>([1, 2, 3], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"integer"}}""");
             yield return new TestData<List<bool>>([false, true, false], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"boolean"}}""");
@@ -1584,6 +1596,29 @@ namespace System.Text.Json.Schema.Tests
             JsonSerializerOptions? SerializerOptions { get; }
 
             IEnumerable<ITestData> GetTestDataForAllValues();
+        }
+
+        public class ClassWithPropertiesUsingCustomConverters
+        {
+            [JsonPropertyOrder(0)]
+            public ClassWithCustomConverter1 Prop1 { get; set; }
+            [JsonPropertyOrder(1)]
+            public ClassWithCustomConverter2 Prop2 { get; set; }
+
+            [JsonConverter(typeof(CustomConverter<ClassWithCustomConverter1>))]
+            public class ClassWithCustomConverter1;
+
+            [JsonConverter(typeof(CustomConverter<ClassWithCustomConverter2>))]
+            public class ClassWithCustomConverter2;
+
+            public sealed class CustomConverter<T> : JsonConverter<T>
+            {
+                public override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                    => default;
+
+                public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                    => writer.WriteNullValue();
+            }
         }
 
         private static TAttribute? GetCustomAttribute<TAttribute>(ICustomAttributeProvider? provider, bool inherit = false) where TAttribute : Attribute

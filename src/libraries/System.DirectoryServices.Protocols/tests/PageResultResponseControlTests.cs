@@ -59,6 +59,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> NonconformantControlValues()
         {
+#if NETFRAMEWORK
             // {eO}, single-byte length. ASN.1 type of ENUMERATED rather than INTEGER
             yield return new object[] { new byte[] { 0x30, 0x0A,
                 0x0A, 0x01, 0x40,
@@ -98,24 +99,9 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
                 0x80, 0x80, 0x80, 0x80
             }, 0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4 } };
-
-            // Windows will treat these values as invalid. OpenLDAP has slightly looser parsing rules around octet string lengths.
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // {iO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
-                yield return new object[] { new byte[] { 0x30, 0x0A,
-                    0x02, 0x01, 0x40,
-                    0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
-                    0x80, 0x80, 0x80
-                }, 0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80 } };
-
-                // {iO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
-                yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
-                    0x02, 0x01, 0x40,
-                    0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
-                    0x80, 0x80, 0x80
-                }, 0x40, new byte[] { 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80 } };
-            }
+#else
+            yield break;
+#endif
         }
 
         public static IEnumerable<object[]> InvalidControlValues()
@@ -131,6 +117,18 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x02, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4} };
 
+#if NET
+            // {eO}, single-byte length. ASN.1 type of ENUMERATED rather than INTEGER
+            yield return new object[] { new byte[] { 0x30, 0x0A,
+                0x0A, 0x01, 0x40,
+                0x04, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4 } };
+
+            // {eO}, four-byte length. ASN.1 type of ENUMERATED rather than INTEGER
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
+                0x0A, 0x01, 0x40,
+                0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4 } };
+#endif
+
             // {iO}, single-byte length, sequence length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x06,
                 0x02, 0x01, 0x40,
@@ -141,23 +139,18 @@ namespace System.DirectoryServices.Protocols.Tests
                 0x02, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x00} };
 
-            // Only Windows treats these values as invalid. These values are present in NonconformantControlValues to prove
-            // the OpenLDAP behavior.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // {iO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
-                yield return new object[] { new byte[] { 0x30, 0x0A,
-                    0x02, 0x01, 0x40,
-                    0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
-                    0x80, 0x80, 0x80 } };
+            // {iO}, single-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
+            yield return new object[] { new byte[] { 0x30, 0x0A,
+                0x02, 0x01, 0x40,
+                0x04, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
+                0x80, 0x80, 0x80 } };
 
-                // {iO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
-                yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
-                    0x02, 0x01, 0x40,
-                    0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
-                    0x80, 0x80, 0x80 } };
-            }
-
+            // {iO}, four-byte length. Octet string length extending beyond the end of the sequence (but within the buffer)
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
+                0x02, 0x01, 0x40,
+                0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0x80,
+                0x80, 0x80, 0x80 } };
+            
             // {iO}, single-byte length. Octet string length extending beyond the end of the buffer
             yield return new object[] { new byte[] { 0x30, 0x0A,
                 0x02, 0x01, 0x40,
@@ -167,6 +160,32 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
                 0x02, 0x01, 0x40,
                 0x04, 0x84, 0x00, 0x00, 0x00, 0x06, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4 } };
+
+#if NET
+            // {iO}, single-byte length. Trailing data after the end of the sequence
+            yield return new object[] { new byte[] { 0x30, 0x0A,
+                0x02, 0x01, 0x40,
+                0x04, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {iO}, four-byte length. Trailing data after the end of the sequence
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x0E,
+                0x02, 0x01, 0x40,
+                0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {iO}, single-byte length. Trailing data within the sequence (after the octet string)
+            yield return new object[] { new byte[] { 0x30, 0x0E,
+                0x02, 0x01, 0x40,
+                0x04, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
+                0x80, 0x80, 0x80, 0x80 } };
+
+            // {iO}, four-byte length. Trailing data within the sequence (after the octet string)
+            yield return new object[] { new byte[] { 0x30, 0x84, 0x00, 0x00, 0x00, 0x12,
+                0x02, 0x01, 0x40,
+                0x04, 0x84, 0x00, 0x00, 0x00, 0x05, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4,
+                0x80, 0x80, 0x80, 0x80 } };
+#endif
         }
 
         [Theory]

@@ -1202,7 +1202,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
 #endif //!DACCESS_COMPILE
 
 #ifdef FEATURE_HIJACK
-
+#ifdef TARGET_X86
 void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1220,9 +1220,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
         switch (r)
         {
-#ifdef TARGET_X86
         case RT_Float: // Fall through
-#endif
         case RT_Scalar:
             // nothing to report
             break;
@@ -1248,7 +1246,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
         regNo++;
     } while (moreRegisters);
 }
-
+#endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
 void ProtectByRefsFrame::GcScanRoots(promote_func *fn, ScanContext *sc)

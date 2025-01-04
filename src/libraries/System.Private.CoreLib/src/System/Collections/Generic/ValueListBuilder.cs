@@ -13,11 +13,14 @@ namespace System.Collections.Generic
         private T[]? _arrayFromPool;
         private int _pos;
 
-        public ValueListBuilder(Span<T> initialSpan)
+        public ValueListBuilder(Span<T?> scratchBuffer)
         {
-            _span = initialSpan;
-            _arrayFromPool = null;
-            _pos = 0;
+            _span = scratchBuffer!;
+        }
+
+        public ValueListBuilder(int capacity)
+        {
+            Grow(capacity);
         }
 
         public int Length

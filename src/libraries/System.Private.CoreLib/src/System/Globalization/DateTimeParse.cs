@@ -1906,15 +1906,6 @@ namespace System
                     result.flags |= ParseFlags.HaveDate;
                     return true; // MD + Year
                 }
-#if TARGET_BROWSER
-                // if we are parsing the datetime string with custom format then the CultureInfo format `order`
-                // does not matter and DM + Year is also possible for NNY
-                if (GlobalizationMode.Hybrid && SetDateYDM(ref result, raw.year, n1, n2))
-                {
-                    result.flags |= ParseFlags.HaveDate;
-                    return true; // DM + Year
-                }
-#endif
             }
             else
             {
@@ -1923,13 +1914,6 @@ namespace System
                     result.flags |= ParseFlags.HaveDate;
                     return true; // DM + Year
                 }
-#if TARGET_BROWSER
-                if (GlobalizationMode.Hybrid && SetDateYMD(ref result, raw.year, n1, n2))
-                {
-                    result.flags |= ParseFlags.HaveDate;
-                    return true; // MD + Year
-                }
-#endif
             }
             result.SetBadDateTimeFailure();
             return false;

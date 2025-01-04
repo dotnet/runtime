@@ -950,7 +950,7 @@ namespace System.Xml.Schema
                         ContentValidator.AddParticleToExpected(element!, _schemaSet, expected, true);
                     }
 
-                    return (expected.ToArray(typeof(XmlSchemaParticle)) as XmlSchemaParticle[])!;
+                    return ToArray(expected);
                 }
             }
             if (_context.ElementDecl != null)
@@ -958,11 +958,17 @@ namespace System.Xml.Schema
                 ArrayList? expected = _context.ElementDecl.ContentValidator!.ExpectedParticles(_context, false, _schemaSet);
                 if (expected != null)
                 {
-                    return (expected.ToArray(typeof(XmlSchemaParticle)) as XmlSchemaParticle[])!;
+                    return ToArray(expected);
                 }
             }
 
             return Array.Empty<XmlSchemaParticle>();
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "ToArray is called for known reference types only.")]
+            static XmlSchemaParticle[] ToArray(ArrayList expected)
+            {
+                return (expected.ToArray(typeof(XmlSchemaParticle)) as XmlSchemaParticle[])!;
+            }
         }
 
         public XmlSchemaAttribute[] GetExpectedAttributes()
@@ -986,7 +992,7 @@ namespace System.Xml.Schema
                     AddXsiAttributes(attList);
                 }
 
-                return (attList.ToArray(typeof(XmlSchemaAttribute)) as XmlSchemaAttribute[])!;
+                return ToArray(attList);
             }
             else if (_currentState == ValidatorState.Start)
             {
@@ -1000,6 +1006,12 @@ namespace System.Xml.Schema
                 }
             }
             return Array.Empty<XmlSchemaAttribute>();
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050", Justification = "ToArray is called for known reference types only.")]
+            static XmlSchemaAttribute[] ToArray(ArrayList attList)
+            {
+                return (attList.ToArray(typeof(XmlSchemaAttribute)) as XmlSchemaAttribute[])!;
+            }
         }
 
         internal void GetUnspecifiedDefaultAttributes(ArrayList defaultAttributes, bool createNodeData)

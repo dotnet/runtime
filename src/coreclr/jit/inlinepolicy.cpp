@@ -3330,14 +3330,14 @@ ReplayPolicy::ReplayPolicy(Compiler* compiler, bool isPrejitRoot)
         if (!s_WroteReplayBanner)
         {
             // Nope, open it up.
-            const WCHAR* replayFileName = JitConfig.JitInlineReplayFile();
-            s_ReplayFile                = _wfopen(replayFileName, W("r"));
+            const char* replayFileName = JitConfig.JitInlineReplayFile();
+            s_ReplayFile               = fopen_utf8(replayFileName, "r");
 
             // Display banner to stderr, unless we're dumping inline Xml,
             // in which case the policy name is captured in the Xml.
             if (JitConfig.JitInlineDumpXml() == 0)
             {
-                fprintf(stderr, "*** %s inlines from %ws\n", s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
+                fprintf(stderr, "*** %s inlines from %s\n", s_ReplayFile == nullptr ? "Unable to replay" : "Replaying",
                         replayFileName);
             }
 

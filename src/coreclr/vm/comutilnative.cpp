@@ -445,7 +445,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
     // The managed stack trace classes always return typical method definition,
     // so we don't need to bother providing exact instantiation.
     MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
-    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    retMethodInfo.Set(pMDTypical->AllocateStubMethodInfo());
     _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
 
     END_QCALL;
@@ -475,6 +475,45 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     BEGIN_QCALL;
 
     ThrowEntryPointNotFoundException(pTargetClass, pInterfaceMT, pInterfaceMD);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowMethodAccessException(&accessContext, callee);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowFieldAccessException(&accessContext, callee);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(caller != NULL);
+    AccessCheckContext accessContext(caller);
+    ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
 
     END_QCALL;
 }
@@ -1818,6 +1857,14 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
 }
 FCIMPLEND
 
+FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
+{
+    FCALL_CONTRACT;
+
+    return mt->GetInstantiation()[0].AsMethodTable();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
@@ -1852,11 +1899,6 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
     if (fromTH.IsTypeDesc())
     {
         ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);
-    }
-    else if (Nullable::IsNullableForType(toTH, fromTH.AsMethodTable()))
-    {
-        // do not allow type T to be cast to Nullable<T>
-        ret = FALSE;
     }
     else
     {

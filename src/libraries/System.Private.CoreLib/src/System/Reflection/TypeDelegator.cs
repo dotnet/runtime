@@ -41,7 +41,7 @@ namespace System.Reflection
         public override Guid GUID => typeImpl.GUID;
         public override int MetadataToken => typeImpl.MetadataToken;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {

@@ -34,14 +34,14 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     {
     }
 
-    public static TheoryData<string, string, bool> SettingDifferentFromValuesInRuntimePack()
+    public static TheoryData<Configuration, string, bool> SettingDifferentFromValuesInRuntimePack()
     {
-        TheoryData<string, string, bool> data = new();
+        TheoryData<Configuration, string, bool> data = new();
 
-        string[] configs = new[] { "Debug", "Release" };
+        var configs = new[] { Configuration.Debug, Configuration.Release };
         foreach (var defaultPair in PropertiesWithTriggerValues)
         {
-            foreach (string config in configs)
+            foreach (Configuration config in configs)
             {
                 data.Add(config, $"<{defaultPair.propertyName}>{defaultPair.triggerValue}</{defaultPair.propertyName}>", true);
                 data.Add(config, $"<{defaultPair.propertyName}>{!defaultPair.triggerValue}</{defaultPair.propertyName}>", false);
@@ -53,18 +53,18 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack))]
-    public void WorkloadRequiredForBuild(string config, string extraProperties, bool workloadNeeded)
+    public void WorkloadRequiredForBuild(Configuration config, string extraProperties, bool workloadNeeded)
         => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: false);
 
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(SettingDifferentFromValuesInRuntimePack))]
-    public void WorkloadRequiredForPublish(string config, string extraProperties, bool workloadNeeded)
+    public void WorkloadRequiredForPublish(Configuration config, string extraProperties, bool workloadNeeded)
         => CheckWorkloadRequired(config, extraProperties, workloadNeeded, publish: true);
 
-    public static TheoryData<string, bool, bool> InvariantGlobalizationTestData(bool publish)
+    public static TheoryData<Configuration, bool, bool> InvariantGlobalizationTestData(bool publish)
     {
-        TheoryData<string, bool, bool> data = new();
-        foreach (string config in new[] { "Debug", "Release" })
+        TheoryData<Configuration, bool, bool> data = new();
+        foreach (Configuration config in new[] { Configuration.Debug, Configuration.Release })
         {
             data.Add(config, /*invariant*/ true, /*publish*/ publish);
             data.Add(config, /*invariant*/ false, /*publish*/ publish);
@@ -73,129 +73,156 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     }
 
     [Theory, TestCategory("no-workload")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public async Task DefaultTemplate_WithoutWorkload(Configuration config)
+    {
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_no_workload");
+        BlazorBuild(info, config);
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(config));
+
+        BlazorPublish(info, config, new PublishOptions(UseCache: false));
+        await RunForPublishWithWebServer(new BlazorRunOptions(config));
+    }
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void NativeRef_EmitsWarningBecauseItRequiresWorkload(Configuration config)
+    {
+        CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
+        res.EnsureSuccessful();
+        Assert.Matches("warning : .*but the native references won't be linked in", res.Output);
+    }
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void AOT_FailsBecauseItRequiresWorkload(Configuration config)
+    {
+        CommandResult res = PublishForRequiresWorkloadTest(config, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
+        Assert.NotEqual(0, res.ExitCode);
+        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
+    }
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(Configuration config)
+    {
+        CommandResult res = PublishForRequiresWorkloadTest(config,
+                                extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
+                                extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
+
+        Assert.NotEqual(0, res.ExitCode);
+        Assert.Contains("following workloads must be installed: wasm-tools", res.Output);
+    }
+
+
+    [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ true)]
-    public async Task WorkloadNotRequiredForInvariantGlobalization(string config, bool invariant, bool publish)
+    public async Task WorkloadNotRequiredForInvariantGlobalization(Configuration config, bool invariant, bool publish)
     {
-        string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-
-        if (invariant)
-            AddItemsPropertiesToProject(projectFile, extraProperties: "<InvariantGlobalization>true</InvariantGlobalization>");
-
-        string counterPath = Path.Combine(Path.GetDirectoryName(projectFile)!, "Pages", "Counter.razor");
-        string allText = File.ReadAllText(counterPath);
+        string prefix = $"props_req_workload_{(publish ? "publish" : "build")}";
+        string extraProperties = invariant ? $"<InvariantGlobalization>true</InvariantGlobalization>" : "";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, prefix, extraProperties: extraProperties);
         string ccText = "currentCount++;";
-        if (allText.IndexOf(ccText) < 0)
-            throw new Exception("Counter.razor does not have the expected content. Test needs to be updated.");
-
-        allText = allText.Replace(ccText, $"{ccText}{Environment.NewLine}TestInvariantCulture();");
-        allText += s_invariantCultureMethodForBlazor;
-        File.WriteAllText(counterPath, allText);
+        // UpdateFile throws if code that is to be replaced does not exist
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
+        {
+            { ccText, $"{ccText}\nTestInvariantCulture();" },
+            { "private int currentCount = 0;", $"{s_invariantCultureMethodForBlazor}" }
+        });
+        string counterPath = Path.Combine(_projectDir, "Pages", "Counter.razor");
+        string allText = File.ReadAllText(counterPath);
         _testOutput.WriteLine($"Updated counter.razor: {allText}");
 
-        CommandResult result;
-        GlobalizationMode mode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
-        if (publish)
-        {
-            (result, _) = BlazorPublish(
-                            new BlazorBuildOptions(
-                                id,
-                                config,
-                                ExpectSuccess: true,
-                                GlobalizationMode: mode));
-        }
-        else
-        {
-            (result, _) = BlazorBuild(
-                            new BlazorBuildOptions(
-                                id,
-                               config,
-                               ExpectSuccess: true,
-                               GlobalizationMode: mode));
-        }
+        var globalizationMode = invariant ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
+        _ = publish ?
+            PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode)) :
+            BuildProject(info, config, new BuildOptions(GlobalizationMode: globalizationMode));
 
-        StringBuilder sbOutput = new();
-        await BlazorRunTest(new BlazorRunOptions()
-        {
-            Config = config,
-            Host = publish ? BlazorRunHost.WebServer : BlazorRunHost.DotnetRun,
-            OnConsoleMessage = (_, msg) =>
-            {
-                sbOutput.AppendLine(msg.Text);
-            }
-        });
+        BlazorRunOptions runOptions = new(config);
+        RunResult result = publish ? await RunForPublishWithWebServer(runOptions) : await RunForBuildWithDotnetRun(runOptions);
 
-        string output = sbOutput.ToString();
         if (invariant)
         {
-            Assert.Contains("Could not create es-ES culture", output);
+            Assert.Contains(result.TestOutput, m => m.Contains("Could not create es-ES culture"));
             // For invariant, we get:
             //    Could not create es-ES culture: Argument_CultureNotSupportedInInvariantMode Arg_ParamName_Name, name
             //    Argument_CultureInvalidIdentifier, es-ES
             //  .. which is expected.
             //
             // Assert.Contains("es-ES is an invalid culture identifier.", output);
-            Assert.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
-            Assert.DoesNotContain($"es-ES: Is-LCID-InvariantCulture:", output);
+            Assert.Contains(result.TestOutput, m => m.Contains("CurrentCulture.NativeName: Invariant Language (Invariant Country)"));
+            Assert.All(result.TestOutput, m => Assert.DoesNotContain("es-ES: Is-LCID-InvariantCulture", m));
         }
         else
         {
-            Assert.DoesNotContain("Could not create es-ES culture", output);
-            Assert.DoesNotContain("invalid culture", output);
-            Assert.DoesNotContain("CurrentCulture.NativeName: Invariant Language (Invariant Country)", output);
-            Assert.Contains("es-ES: Is-LCID-InvariantCulture: False", output);
-            Assert.Contains("NativeName: espa\u00F1ol (Espa\u00F1a)", output);
-
+            Assert.All(result.TestOutput, m => Assert.DoesNotContain("Could not create es-ES culture", m));
+            Assert.All(result.TestOutput, m => Assert.DoesNotContain("invalid culture", m));
+            Assert.All(result.TestOutput, m => Assert.DoesNotContain("CurrentCulture.NativeName: Invariant Language (Invariant Country)", m));
+            Assert.Contains(result.TestOutput, m => m.Contains("es-ES: Is-LCID-InvariantCulture: False"));
+            Assert.Contains(result.TestOutput, m => m.Contains("NativeName: espa\u00F1ol (Espa\u00F1a)"));
             // ignoring the last line of the output which prints the current culture
         }
     }
 
-    private void CheckWorkloadRequired(string config, string extraProperties, bool workloadNeeded, bool publish)
+    private CommandResult PublishForRequiresWorkloadTest(Configuration config, string extraItems="", string extraProperties="")
     {
-        string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";
-        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-        AddItemsPropertiesToProject(projectFile, extraProperties,
-            atTheEnd: @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
-                    <Error Text=""Stopping the build"" />
-            </Target>");
+        ProjectInfo info = CopyTestAsset(
+            config, aot: false, TestAsset.BlazorBasicTestApp, "needs_workload", extraProperties: extraProperties, extraItems: extraItems);
 
-        CommandResult result;
-        if (publish)
-            (result, _) = BlazorPublish(new BlazorBuildOptions(id, config, ExpectSuccess: false));
-        else
-            (result, _) = BlazorBuild(new BlazorBuildOptions(id, config, ExpectSuccess: false));
+        string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, info.ProjectName, $"{info.ProjectName}.binlog");
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+        return cmd.WithWorkingDirectory(_projectDir)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                    .ExecuteWithCapturedOutput("publish",
+                                                $"-bl:{publishLogPath}",
+                                                $"-p:Configuration={config}");
+    }
+
+    private void CheckWorkloadRequired(Configuration config, string extraProperties, bool workloadNeeded, bool publish)
+    {
+        string prefix = $"props_req_workload_{(publish ? "publish" : "build")}";
+        string insertAtEnd = @"<Target Name=""StopBuildBeforeCompile"" BeforeTargets=""Compile"">
+                    <Error Text=""Stopping the build"" />
+            </Target>";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, prefix, extraProperties: extraProperties, insertAtEnd: insertAtEnd);
+        (string _, string output) = publish ?
+            PublishProject(info, config, new PublishOptions(ExpectSuccess: false)) :
+            BuildProject(info, config, new BuildOptions(ExpectSuccess: false));
 
         if (workloadNeeded)
         {
-            Assert.Contains("following workloads must be installed: wasm-tools", result.Output);
-            Assert.DoesNotContain("error : Stopping the build", result.Output);
+            Assert.Contains("following workloads must be installed: wasm-tools", output);
+            Assert.DoesNotContain("error : Stopping the build", output);
         }
         else
         {
-            Assert.DoesNotContain("following workloads must be installed: wasm-tools", result.Output);
-            Assert.Contains("error : Stopping the build", result.Output);
+            Assert.DoesNotContain("following workloads must be installed: wasm-tools", output);
+            Assert.Contains("error : Stopping the build", output);
         }
     }
 
     private static string s_invariantCultureMethodForBlazor = """
-    @code {
+        private int currentCount = 0;
         public int TestInvariantCulture()
         {
             // https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-invariant-mode.md#cultures-and-culture-data
             try
             {
                 System.Globalization.CultureInfo culture = new ("es-ES", false);
-                System.Console.WriteLine($"es-ES: Is-LCID-InvariantCulture: {culture.LCID == System.Globalization.CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}");
+                System.Console.WriteLine($"TestOutput -> es-ES: Is-LCID-InvariantCulture: {culture.LCID == System.Globalization.CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}");
             }
             catch (System.Globalization.CultureNotFoundException cnfe)
             {
-                System.Console.WriteLine($"Could not create es-ES culture: {cnfe.Message}");
+                System.Console.WriteLine($"TestOutput -> Could not create es-ES culture: {cnfe.Message}");
             }
 
-            System.Console.WriteLine($"CurrentCulture.NativeName: {System.Globalization.CultureInfo.CurrentCulture.NativeName}");
+            System.Console.WriteLine($"TestOutput -> CurrentCulture.NativeName: {System.Globalization.CultureInfo.CurrentCulture.NativeName}");
             return 42;
         }
-    }
     """;
 }

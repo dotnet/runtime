@@ -218,6 +218,9 @@ enum insFlags : uint64_t
     // EVEX feature: embedded broadcast
     INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
 
+    // APX: REX2 prefix:
+    Encoding_REX2  = 1ULL << 44,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };

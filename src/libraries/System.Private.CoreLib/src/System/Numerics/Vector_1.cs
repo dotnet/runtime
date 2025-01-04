@@ -119,6 +119,7 @@ namespace System.Numerics
         /// <param name="values">The span from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        [OverloadResolutionPriority(-1)]
         public Vector(Span<T> values) : this((ReadOnlySpan<T>)values)
         {
         }

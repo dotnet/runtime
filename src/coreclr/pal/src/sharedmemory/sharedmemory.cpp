@@ -1087,8 +1087,7 @@ void SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(
 void SharedMemoryProcessDataHeader::PalObject_Close(
     CPalThread *thread,
     IPalObject *object,
-    bool isShuttingDown,
-    bool cleanUpPalSharedState)
+    bool isShuttingDown)
 {
     // This function's signature matches OBJECTCLEANUPROUTINE
     _ASSERTE(thread != nullptr);

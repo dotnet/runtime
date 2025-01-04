@@ -697,7 +697,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             }
             else {
                 // We have been in this routine before.  Give up on epilog checking because
-                // it is hard to insure that the saved caller register state is correct
+                // it is hard to ensure that the saved caller register state is correct
                 // This also has the effect of only doing the checking once per routine
                 // (Even if there are multiple epilogs)
                 gcCover->doingEpilogChecks = false;

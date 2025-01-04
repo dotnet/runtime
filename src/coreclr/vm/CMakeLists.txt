@@ -302,7 +302,6 @@ set(VM_SOURCES_WKS
     comdynamic.cpp
     commodule.cpp
     comsynchronizable.cpp
-    comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
@@ -402,7 +401,6 @@ set(VM_HEADERS_WKS
     comdynamic.h
     commodule.h
     comsynchronizable.h
-    comthreadpool.h
     comutilnative.h
     comwaithandle.h
     customattribute.h

@@ -73,16 +73,6 @@ build-debugger-tests-helix:
 	$(TOP)/src/mono/browser/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
 	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
-submit-debugger-tests-helix: build-debugger-tests-helix
-	BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
-		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
-		/p:TestRunNamePrefixSuffix=WasmDebugger /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
-		/bl:$(TOP)/artifacts/log/$(CONFIG)/SendToHelix.binlog -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
-		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
-		/p:_Scenarios=wasmdebuggertests \
-		$(_MSBUILD_WASM_BUILD_ARGS) \
-		$(MSBUILD_ARGS)
-
 submit-wbt-helix:
 	PATH="$(JSVU):$(PATH)" \
 		$(DOTNET) build $(TOP)/src/mono/wasi/Wasi.Build.Tests/ /v:m /p:ArchiveTests=true /t:ArchiveTests $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS) && \

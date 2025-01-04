@@ -89,20 +89,6 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCom
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ObjectNative_GetTypeSlow(MethodTable* pMT, QCall::ObjectHandleOnStack ret)
-{
-    QCALL_CONTRACT;
-    _ASSERTE(pMT != NULL);
-
-    BEGIN_QCALL;
-
-    GCX_COOP();
-
-    ret.Set(pMT->GetManagedClassObject());
-
-    END_QCALL;
-}
-
 extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle)
 {
     QCALL_CONTRACT;

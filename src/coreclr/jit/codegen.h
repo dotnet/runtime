@@ -260,9 +260,10 @@ protected:
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
-    void      genSpillOrAddRegisterParam(unsigned lclNum, class RegGraph* graph);
-    void      genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
-    void      genEnregisterIncomingStackArgs();
+    void      genSpillOrAddRegisterParam(
+             unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
+    void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
+    void genEnregisterIncomingStackArgs();
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 #else
@@ -643,10 +644,12 @@ protected:
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
     void genArm64EmitterUnitTestsSve();
+    void genArm64EmitterUnitTestsPac();
 #endif
 
 #if defined(TARGET_AMD64)
     void genAmd64EmitterUnitTestsSse2();
+    void genAmd64EmitterUnitTestsApx();
 #endif
 
 #endif // defined(DEBUG)

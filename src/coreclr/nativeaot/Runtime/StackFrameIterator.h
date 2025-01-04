@@ -51,7 +51,9 @@ public:
     PTR_ICodeManager GetCodeManager();
     MethodInfo *     GetMethodInfo();
     bool             IsActiveStackFrame();
+#ifdef TARGET_X86
     bool             GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind);
+#endif
     void             SetControlPC(PTR_VOID controlPC);
 
     static bool     IsValidReturnAddress(PTR_VOID pvAddress);
@@ -221,10 +223,12 @@ protected:
     PTR_ICodeManager    m_pCodeManager;
     MethodInfo          m_methodInfo;
     PTR_VOID            m_effectiveSafePointAddress;
+#ifdef TARGET_X86
     PTR_OBJECTREF       m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
-    PTR_uintptr_t      m_pConservativeStackRangeLowerBound;
-    PTR_uintptr_t      m_pConservativeStackRangeUpperBound;
+#endif
+    PTR_uintptr_t       m_pConservativeStackRangeLowerBound;
+    PTR_uintptr_t       m_pConservativeStackRangeUpperBound;
     uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;

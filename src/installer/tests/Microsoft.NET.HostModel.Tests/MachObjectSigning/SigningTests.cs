@@ -228,13 +228,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 var destinationFileName = Path.GetFileName(removedSignaturePath);
                 var appHostSignedLength = appHostLength + MachObjectFile.GetSignatureSizeEstimate((uint)appHostLength, destinationFileName);
 
-                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostDestinationStream, null, appHostSignedLength, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true))
-                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
-                {
-                    if (MachObjectFile.TryRemoveCodesign(memoryMappedViewAccessor, out long? newLength))
-                        appHostLength = newLength.Value;
-                }
-                appHostDestinationStream.SetLength(appHostLength);
+                MachObjectFile.RemoveCodeSignatureIfPresent(appHostDestinationStream);
             }
         }
     }

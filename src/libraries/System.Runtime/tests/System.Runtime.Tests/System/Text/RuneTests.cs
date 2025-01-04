@@ -57,9 +57,8 @@ namespace System.Text.Tests
             Assert.Equal(new Rune(lower), Rune.ToLowerInvariant(rune));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalizationAndNotHybridOnBrowser), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         // HybridGlobalization on Apple mobile platforms has issues with casing dotless I 
-        // HybridGlobalization on Browser uses Invariant HashCode and SortKey, so its effect does not match this of ICU
         [InlineData('0', '0', '0')]
         [InlineData('a', 'A', 'a')]
         [InlineData('i', 'I', 'i')]

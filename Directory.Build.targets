@@ -41,6 +41,7 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
+    <UnsupportedTargetFrameworkVersion>$([MSBuild]::Add('$(NETCoreAppMaximumVersion.Split('.')[0])', '1')).0</UnsupportedTargetFrameworkVersion>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->

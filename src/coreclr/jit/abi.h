@@ -38,6 +38,10 @@ public:
 
     static ABIPassingSegment InRegister(regNumber reg, unsigned offset, unsigned size);
     static ABIPassingSegment OnStack(unsigned stackOffset, unsigned offset, unsigned size);
+
+#ifdef DEBUG
+    void Dump() const;
+#endif
 };
 
 class ABIPassingSegmentIterator

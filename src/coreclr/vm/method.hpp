@@ -1853,18 +1853,16 @@ public:
     //
     // Optional MethodDesc slots appear after the end of base MethodDesc in this order:
     //
-
-    // class MethodImpl;                            // Present if HasMethodImplSlot() is true
-
     typedef PCODE NonVtableSlot;   // Present if HasNonVtableSlot() is true
+    // class MethodImpl;           // Present if HasMethodImplSlot() is true
     typedef PCODE NativeCodeSlot;  // Present if HasNativeCodeSlot() is true
 
 // Stub Dispatch code
 public:
     MethodDesc *GetInterfaceMD();
 
-// StubMethodInfo for use in creating RuntimeMethodHandles
-    REFLECTMETHODREF GetStubMethodInfo();
+    // StubMethodInfo for use in creating RuntimeMethodHandles
+    REFLECTMETHODREF AllocateStubMethodInfo();
 
     PrecodeType GetPrecodeType();
 

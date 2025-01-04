@@ -63,7 +63,7 @@ internal static unsafe partial class VirtualDispatchHelpers
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [DebuggerHidden]
-    private static unsafe IntPtr VirtualFunctionPointerSlow(object obj, IntPtr classHandle, IntPtr methodHandle)
+    private static IntPtr VirtualFunctionPointerSlow(object obj, IntPtr classHandle, IntPtr methodHandle)
     {
         IntPtr result = ResolveVirtualFunctionPointer(ObjectHandleOnStack.Create(ref obj), classHandle, methodHandle);
         s_virtualFunctionPointerCache.TrySet(new VirtualResolutionData(RuntimeHelpers.GetMethodTable(obj), classHandle, methodHandle), result);
@@ -72,7 +72,7 @@ internal static unsafe partial class VirtualDispatchHelpers
     }
 
     [DebuggerHidden]
-    private static unsafe IntPtr VirtualFunctionPointer(object obj, IntPtr classHandle, IntPtr methodHandle)
+    private static IntPtr VirtualFunctionPointer(object obj, IntPtr classHandle, IntPtr methodHandle)
     {
         if (s_virtualFunctionPointerCache.TryGet(new VirtualResolutionData(RuntimeHelpers.GetMethodTable(obj), classHandle, methodHandle), out IntPtr result))
         {
@@ -82,7 +82,7 @@ internal static unsafe partial class VirtualDispatchHelpers
     }
 
     [DebuggerHidden]
-    private static unsafe IntPtr VirtualFunctionPointer_Dynamic(object obj, ref VirtualFunctionPointerArgs virtualFunctionPointerArgs)
+    private static IntPtr VirtualFunctionPointer_Dynamic(object obj, ref VirtualFunctionPointerArgs virtualFunctionPointerArgs)
     {
         IntPtr classHandle = virtualFunctionPointerArgs.classHnd;
         IntPtr methodHandle = virtualFunctionPointerArgs.methodHnd;

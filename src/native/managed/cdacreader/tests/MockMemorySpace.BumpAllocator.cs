@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 /// <summary>
 /// Helper for creating a mock memory space for testing.

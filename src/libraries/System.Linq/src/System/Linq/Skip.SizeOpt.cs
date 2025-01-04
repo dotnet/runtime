@@ -9,13 +9,11 @@ namespace System.Linq
     {
         private static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count)
         {
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            while (count > 0 && e.MoveNext()) count--;
+            if (count <= 0)
             {
-                while (count > 0 && e.MoveNext()) count--;
-                if (count <= 0)
-                {
-                    while (e.MoveNext()) yield return e.Current;
-                }
+                while (e.MoveNext()) yield return e.Current;
             }
         }
     }

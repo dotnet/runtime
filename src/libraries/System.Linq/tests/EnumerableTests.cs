@@ -320,8 +320,8 @@ namespace System.Linq.Tests
         {
             // All of these transforms should take an enumerable and produce
             // another enumerable with the same contents.
-            return new List<Func<IEnumerable<T>, IEnumerable<T>>>
-            {
+            return
+            [
                 e => e,
                 e => e.ToArray(),
                 e => e.ToList(),
@@ -334,8 +334,8 @@ namespace System.Linq.Tests
                 e => e.Concat(ForceNotCollection(Array.Empty<T>())),
                 e => ForceNotCollection(e),
                 e => ForceNotCollection(e).Skip(0),
-                e => new ReadOnlyCollection<T>(e.ToArray()),
-            };
+                e => new ReadOnlyCollection<T>(e.ToArray())
+            ];
         }
 
         protected sealed class DelegateIterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>

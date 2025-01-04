@@ -33,14 +33,12 @@ namespace System.Linq
             }
 
             int count = 0;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            checked
             {
-                checked
+                while (e.MoveNext())
                 {
-                    while (e.MoveNext())
-                    {
-                        count++;
-                    }
+                    count++;
                 }
             }
 
@@ -150,12 +148,10 @@ namespace System.Linq
             // the source can't possibly be something from which we can extract a span.
 
             long count = 0;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
-                {
-                    checked { count++; }
-                }
+                checked { count++; }
             }
 
             return count;

@@ -77,14 +77,14 @@
 
     <!--
       Packages that aren't matched above as RID-specific are considered RID-agnostic. Also include
-      the AllConfigurations packages from the Libraries build.
+      the packages from the Libraries build.
     -->
     <RidAgnosticNupkgToPublishFile
       Include="
         $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*.nupkg;
         $(DownloadDirectory)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
         $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
-        $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
+        $(DownloadDirectory)*\Libraries_WithPackages\**\*.nupkg"
       Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
     <TransportPackagesToPublishFile

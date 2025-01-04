@@ -160,7 +160,7 @@
     <value>The specified parameter index is not in range.</value>
   </data>
   <data name="Argument_InvalidArgumentForAttribute" xml:space="preserve">
-    <value>Invalid constructor argument {0} provided for MarshalAs atttribute.</value>
+    <value>Invalid constructor argument {0} provided for MarshalAs attribute.</value>
   </data>
   <data name="Argument_InvalidParameterForUnmanagedType" xml:space="preserve">
     <value>Named parameter {0} is not valid for UnmanagedType.{1} type.</value>

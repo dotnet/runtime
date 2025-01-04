@@ -408,9 +408,19 @@ namespace ILCompiler
         {
             // Check to see if we have any dataflow annotations on the type.
             // The check below also covers flow annotations inherited through base classes and implemented interfaces.
-            if (type.IsDefType
-                && !type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */
-                && FlowAnnotations.GetTypeAnnotation(type) != default)
+            bool hasFlowAnnotations = type.IsDefType && FlowAnnotations.GetTypeAnnotation(type) != default;
+
+            if (hasFlowAnnotations)
+            {
+                dependencies ??= new CombinedDependencyList();
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                    factory.ObjectGetTypeFlowDependencies((MetadataType)type),
+                    factory.ObjectGetTypeCalled((MetadataType)type),
+                    "Type exists and GetType called on it"));
+            }
+
+            if (hasFlowAnnotations
+                && !type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */)
             {
                 // We have some flow annotations on this type.
                 //
@@ -428,8 +438,8 @@ namespace ILCompiler
                     // Ensure we have the flow dependencies.
                     dependencies ??= new CombinedDependencyList();
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                        factory.ObjectGetTypeFlowDependencies((MetadataType)type),
-                        factory.ObjectGetTypeFlowDependencies((MetadataType)baseType),
+                        factory.ObjectGetTypeCalled((MetadataType)type),
+                        factory.ObjectGetTypeCalled((MetadataType)baseType),
                         "GetType called on the base type"));
 
                     // We don't have to follow all the bases since the base MethodTable will bubble this up
@@ -444,8 +454,8 @@ namespace ILCompiler
                         // Ensure we have the flow dependencies.
                         dependencies ??= new CombinedDependencyList();
                         dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                            factory.ObjectGetTypeFlowDependencies((MetadataType)type),
-                            factory.ObjectGetTypeFlowDependencies((MetadataType)interfaceType),
+                            factory.ObjectGetTypeCalled((MetadataType)type),
+                            factory.ObjectGetTypeCalled((MetadataType)interfaceType),
                             "GetType called on the interface"));
                     }
 
@@ -640,6 +650,19 @@ namespace ILCompiler
 
                     if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
                         Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresAssemblyFilesOnStaticConstructor, method.GetDisplayName());
+                }
+
+                if (method is EcmaMethod maybeEntrypoint
+                    && (maybeEntrypoint.Module.EntryPoint == method || (method.IsUnmanagedCallersOnly && maybeEntrypoint.GetUnmanagedCallersOnlyExportName() != null)))
+                {
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresUnreferencedCodeOnEntryPoint, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresDynamicCodeOnEntryPoint, method.GetDisplayName());
+
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(method, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                        Logger.LogWarning(new MessageOrigin(method), DiagnosticId.RequiresAssemblyFilesOnEntryPoint, method.GetDisplayName());
                 }
             }
 

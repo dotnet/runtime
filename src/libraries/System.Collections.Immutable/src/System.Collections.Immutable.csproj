@@ -156,6 +156,10 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\String\OrdinalStringFrozenSet.AlternateLookup.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\OverloadResolutionPriorityAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" Link="System\Runtime\CompilerServices\CollectionBuilderAttribute.cs" />
   </ItemGroup>

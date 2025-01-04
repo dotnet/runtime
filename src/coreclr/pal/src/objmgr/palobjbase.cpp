@@ -286,7 +286,7 @@ CPalObjectBase::ReleaseReference(
 
     if (0 == lRefCount)
     {
-        bool fCleanupSharedState = ReleaseObjectDestructionLock(pthr, TRUE);
+        ReleaseObjectDestructionLock(pthr, TRUE);
 
         //
         // We need to do two things with the calling thread data here:
@@ -307,8 +307,7 @@ CPalObjectBase::ReleaseReference(
             (*m_pot->GetObjectCleanupRoutine())(
                 pthr,
                 static_cast<IPalObject*>(this),
-                FALSE,
-                fCleanupSharedState
+                FALSE
                 );
         }
 

@@ -587,6 +587,12 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	return FALSE;
 }
 
+void
+mono_chain_signal_to_default_sigsegv_handler (void)
+{
+	g_error ("mono_chain_signal_to_default_sigsegv_handler not supported on WASM");
+}
+
 gboolean
 mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
 {
@@ -748,7 +754,7 @@ mono_wasm_enable_debugging (int log_level)
 	mono_wasm_debug_level = log_level;
 }
 
-int
+MONO_API int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;

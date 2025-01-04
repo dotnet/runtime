@@ -10,6 +10,7 @@ using System.Xml.XPath;
 namespace System.Xml
 {
     [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     internal sealed class DataDocumentXPathNavigator : XPathNavigator, IHasXmlNode
     {
         private readonly XPathNodePointer _curNode; //pointer to remember the current node position

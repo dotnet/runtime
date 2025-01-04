@@ -559,8 +559,8 @@ namespace System.Net.Http
                     // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
                     // but in that case http2ConnectionWaiter.ConnectionCancellationTokenSource shall be null.
                     Debug.Assert(http11ConnectionWaiter is null || http2ConnectionWaiter?.ConnectionCancellationTokenSource is null);
-                    http11ConnectionWaiter?.CancelIfNecessary(this, cancellationToken.IsCancellationRequested);
-                    http2ConnectionWaiter?.CancelIfNecessary(this, cancellationToken.IsCancellationRequested);
+                    http11ConnectionWaiter?.SetTimeoutToPendingConnectionAttempt(this, cancellationToken.IsCancellationRequested);
+                    http2ConnectionWaiter?.SetTimeoutToPendingConnectionAttempt(this, cancellationToken.IsCancellationRequested);
                 }
             }
         }
@@ -827,7 +827,31 @@ namespace System.Net.Http
             return stream;
         }
 
-        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
+        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource<T>(HttpConnectionWaiter<T> waiter)
+            where T : HttpConnectionBase?
+        {
+            var cts = new CancellationTokenSource(Settings._connectTimeout);
+
+            lock (waiter)
+            {
+                // After a request completes (or is canceled), it will call into SetTimeoutToPendingConnectionAttempt,
+                // which will no-op if ConnectionCancellationTokenSource is not set, assuming that the connection attempt is done.
+                // As the initiating request for this connection attempt may complete concurrently at any time,
+                // there is a race condition where the first call to SetTimeoutToPendingConnectionAttempt may happen
+                // before we were able to set the CTS, so no timeout will be applied even though the request is already done.
+                waiter.ConnectionCancellationTokenSource = cts;
+
+                // To fix that, we check whether the waiter already completed now that we're holding a lock.
+                // If it had, call SetTimeoutToPendingConnectionAttempt again now that the CTS is set.
+                if (waiter.Task.IsCompleted)
+                {
+                    waiter.SetTimeoutToPendingConnectionAttempt(this, requestCancelled: waiter.Task.IsCanceled);
+                    waiter.ConnectionCancellationTokenSource = null;
+                }
+            }
+
+            return cts;
+        }
 
         private static Exception CreateConnectTimeoutException(OperationCanceledException oce)
         {

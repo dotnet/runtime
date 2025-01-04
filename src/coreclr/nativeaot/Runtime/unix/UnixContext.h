@@ -4,7 +4,11 @@
 #ifndef __UNIX_CONTEXT_H__
 #define __UNIX_CONTEXT_H__
 
+#if HAVE_UCONTEXT_H
 #include <ucontext.h>
+#else
+#include <signal.h>
+#endif
 
 // Convert Unix native context to PAL_LIMITED_CONTEXT
 void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palContext);

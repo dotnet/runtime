@@ -39,7 +39,6 @@ set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger-state-machine.h
   ${MONO_COMPONENT_PATH}/debugger-state-machine.c
   ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
-  ${MONO_COMPONENT_PATH}/mini-wasi-debugger.c
   ${MONO_COMPONENT_PATH}/debugger-protocol.h
   ${MONO_COMPONENT_PATH}/debugger-protocol.c
   )

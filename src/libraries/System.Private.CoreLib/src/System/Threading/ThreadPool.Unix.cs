@@ -22,10 +22,6 @@ namespace System.Threading
         internal static bool YieldFromDispatchLoop => false;
 #endif
 
-#if !CORECLR
-        internal static bool EnsureConfigInitialized() => true;
-#endif
-
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 

@@ -57,10 +57,6 @@ add_executable_clr(paltests
   #composite/synchronization/nativecs_interlocked/mtx_critsect.cpp
   #composite/synchronization/nativecs_interlocked/pal_composite_native_cs.cpp
   #composite/synchronization/nativecs_interlocked/resultbuffer.cpp
-  #composite/threading/threadsuspension/mainWrapper.cpp
-  #composite/threading/threadsuspension/threadsuspension.cpp
-  #composite/threading/threadsuspension_switchthread/mainWrapper.cpp
-  #composite/threading/threadsuspension_switchthread/threadsuspension.cpp
   #composite/wfmo/main.cpp
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
@@ -273,13 +269,6 @@ add_executable_clr(paltests
   file_io/errorpathnotfound/test1/test1.cpp
   file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
-  file_io/FindClose/test1/FindClose.cpp
-  file_io/FindFirstFileA/test1/FindFirstFileA.cpp
-  file_io/FindFirstFileW/test1/FindFirstFileW.cpp
-  file_io/FindNextFileA/test1/FindNextFileA.cpp
-  file_io/FindNextFileA/test2/findnextfilea.cpp
-  file_io/FindNextFileW/test1/FindNextFileW.cpp
-  file_io/FindNextFileW/test2/findnextfilew.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
   file_io/GetConsoleOutputCP/test1/GetConsoleOutputCP.cpp
   file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp

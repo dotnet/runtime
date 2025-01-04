@@ -302,13 +302,13 @@ static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* 
     return libicuuc != NULL;
 }
 
-// Select libraries using the version override specified by the CLR_ICU_VERSION_OVERRIDE
+// Select libraries using the version override specified by the DOTNET_ICU_VERSION_OVERRIDE
 // environment variable.
 // The format of the string in this variable is majorVer[.minorVer[.subVer]] (the brackets
 // indicate optional parts).
 static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-    char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
+    char* versionOverride = getenv("DOTNET_ICU_VERSION_OVERRIDE");
     if (versionOverride != NULL)
     {
         if (strcmp(versionOverride, "build") == 0)

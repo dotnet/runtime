@@ -6835,8 +6835,8 @@ HRESULT ProfToEEInterfaceImpl::SuspendRuntime()
         return CORPROF_E_SUSPENSION_IN_PROGRESS;
     }
 
-    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+    g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
     return S_OK;
 }
 
@@ -6874,8 +6874,8 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
         return CORPROF_E_UNSUPPORTED_CALL_SEQUENCE;
     }
 
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     return S_OK;
 }
 
@@ -7667,8 +7667,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         // SuspendEE() may race with other threads by design and this thread may block
         // arbitrarily long inside SuspendEE() for other threads to complete their own
         // suspensions.
-        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+        g_profControlBlock.fProfilerRequestedRuntimeSuspend = TRUE;
         ownEESuspension = TRUE;
     }
 
@@ -7700,8 +7700,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     if (ownEESuspension)
     {
-        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
         g_profControlBlock.fProfilerRequestedRuntimeSuspend = FALSE;
+        ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
     }
 
     return hr;

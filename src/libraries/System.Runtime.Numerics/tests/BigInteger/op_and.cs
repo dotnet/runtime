@@ -121,6 +121,22 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void Issue109669()
+        {
+            // Operations on numbers whose result is of the form 0xFFFFFFFF 00000000 ... 00000000
+            // in two's complement.
+
+            Assert.Equal(-4294967296, new BigInteger(-4294967296) & new BigInteger(-1919810));
+            Assert.Equal(-4294967296, new BigInteger(-4042322161) & new BigInteger(-252645136));
+            Assert.Equal(-4294967296, new BigInteger(-8589934592) | new BigInteger(-21474836480));
+
+            BigInteger a = new BigInteger(MemoryMarshal.AsBytes([uint.MaxValue, 0u, 0u]), isBigEndian: true);
+            Assert.Equal(a, a & a);
+            Assert.Equal(a, a | a);
+            Assert.Equal(a, a ^ 0);
+        }
+
+        [Fact]
         public static void RunAndTestsForSampleSet1()
         {
             var s = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 2);

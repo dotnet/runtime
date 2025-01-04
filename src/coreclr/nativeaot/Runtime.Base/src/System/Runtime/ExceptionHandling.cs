@@ -148,7 +148,7 @@ namespace System.Runtime
         {
         }
 
-        internal static unsafe void* PointerAlign(void* ptr, int alignmentInBytes)
+        internal static void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
 #if TARGET_64BIT
@@ -205,7 +205,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void UnhandledExceptionFailFastViaClasslib(
+        internal static void UnhandledExceptionFailFastViaClasslib(
             RhFailFastReason reason, object unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
         {
 #if NATIVEAOT

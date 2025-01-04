@@ -284,7 +284,6 @@ FUNCTIONS
     [ManualNativeWrapper] bool runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     [ManualNativeWrapper] bool runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
-    const char16_t * getJitTimeLogFilename();
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
     size_t printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char **namespaceName, const char **enclosingClassNames, size_t maxEnclosingClassNames);

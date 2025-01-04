@@ -498,8 +498,6 @@ bool runWithSPMIErrorTrap(
 void getEEInfo(
           CORINFO_EE_INFO* pEEInfoOut) override;
 
-const char16_t* getJitTimeLogFilename() override;
-
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 

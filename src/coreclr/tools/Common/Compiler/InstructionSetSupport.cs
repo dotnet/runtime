@@ -70,51 +70,38 @@ namespace ILCompiler
             if (!potentialTypeDesc.IsIntrinsic || !(potentialTypeDesc is MetadataType potentialType))
                 return "";
 
-            string suffix = "";
-            if (architecture == TargetArchitecture.X64)
+            // 64-bit ISA variants are not included in the mapping dictionary, so we use the containing type instead
+            if (potentialType.Name is "X64" or "Arm64")
             {
-                if (potentialType.Name == "X64")
+                if (architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)
                     potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "V512")
-                {
-                    suffix = "_V512";
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                }
+                else
+                    return "";
+            }
 
+            // We assume that managed names in InstructionSetDesc.txt use an underscore separator for nested classes
+            string suffix = "";
+            while (potentialType.ContainingType is MetadataType containingType)
+            {
+                suffix = $"_{potentialType.Name}{suffix}";
+                potentialType = containingType;
+            }
+
+            if (architecture is TargetArchitecture.X64 or TargetArchitecture.X86)
+            {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
                     return "";
             }
-            else if (architecture == TargetArchitecture.X86)
-            {
-                if (potentialType.Name == "VL")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Name == "V512")
-                {
-                    suffix = "_V512";
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                }
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM64)
-            {
-                if (potentialType.Name == "Arm64")
-                    potentialType = (MetadataType)potentialType.ContainingType;
-                if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
-                    return "";
-            }
-            else if (architecture == TargetArchitecture.ARM)
+            else if (architecture is TargetArchitecture.ARM64 or TargetArchitecture.ARM)
             {
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
-            else if (architecture == TargetArchitecture.LoongArch64)
+            else if (architecture is TargetArchitecture.LoongArch64)
             {
                 return "";
             }
-            else if (architecture == TargetArchitecture.RiscV64)
+            else if (architecture is TargetArchitecture.RiscV64)
             {
                 return "";
             }
@@ -370,11 +357,29 @@ namespace ILCompiler
                 if (_supportedInstructionSets.Contains("avx512vbmi"))
                     _supportedInstructionSets.Add("avx512vbmi_vl");
 
-                // Having AVX10V1 and any AVX-512 instruction sets enabled,
-                // automatically implies AVX10V1-V512 as well.
+                // These ISAs should automatically extend to 512-bit if
+                // AVX-512 is enabled.
 
                 if (_supportedInstructionSets.Contains("avx10v1"))
                     _supportedInstructionSets.Add("avx10v1_v512");
+
+                if (_supportedInstructionSets.Contains("avx10v2"))
+                    _supportedInstructionSets.Add("avx10v2_v512");
+
+                if (_supportedInstructionSets.Contains("gfni"))
+                    _supportedInstructionSets.Add("gfni_v512");
+
+                if (_supportedInstructionSets.Contains("vpclmul"))
+                    _supportedInstructionSets.Add("vpclmul_v512");
+            }
+
+            if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx")))
+            {
+                // These ISAs should automatically extend to 256-bit if
+                // AVX is enabled.
+
+                if (_supportedInstructionSets.Contains("gfni"))
+                    _supportedInstructionSets.Add("gfni_v256");
             }
 
             foreach (string supported in _supportedInstructionSets)

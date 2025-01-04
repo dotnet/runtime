@@ -379,11 +379,6 @@ DECLARE_INTERFACE_(ICeeGenInternal, IUnknown)
         LPWSTR lpString,                    // [IN] String to emit
         ULONG * RVA) PURE;                   // [OUT] RVA for string emitted string
 
-    STDMETHOD(GetString) (
-        ULONG RVA,                          // [IN] RVA for string to return
-        _Out_opt_
-        LPWSTR * lpString) PURE;             // [OUT] Returned string
-
     STDMETHOD(AllocateMethodBuffer) (
         ULONG cchBuffer,                    // [IN] Length of buffer to create
         UCHAR * *lpBuffer,                   // [OUT] Returned buffer

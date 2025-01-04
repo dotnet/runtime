@@ -4,7 +4,7 @@
 using System;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 internal abstract class NibbleMapTestBuilderBase
 {

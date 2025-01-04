@@ -77,9 +77,17 @@ StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransition
     {
         InternalInit(pThreadToWalk, pThreadToWalk->GetInterruptedContext(), GcStackWalkFlags | ActiveStackFrame);
     }
-    else
+    else if (pInitialTransitionFrame == TOP_OF_STACK_MARKER)
     {
         InternalInit(pThreadToWalk, pInitialTransitionFrame, GcStackWalkFlags);
+    }
+    else
+    {
+        uint32_t flags = (pInitialTransitionFrame->m_Flags & PTFF_THREAD_HIJACK) == 0 ?
+            GcStackWalkFlags :
+            GcStackWalkFlags | ActiveStackFrame;
+
+        InternalInit(pThreadToWalk, pInitialTransitionFrame, flags);
     }
 
     PrepareToYieldFrame();
@@ -110,8 +118,10 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
     m_pThread = pThreadToWalk;
     m_pInstance = GetRuntimeInstance();
     m_pCodeManager = NULL;
+#ifdef TARGET_X86
     m_pHijackedReturnValue = NULL;
     m_HijackedReturnValueKind = GCRK_Unknown;
+#endif
     m_pConservativeStackRangeLowerBound = NULL;
     m_pConservativeStackRangeUpperBound = NULL;
     m_pendingFuncletFramePointer = NULL;
@@ -180,17 +190,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     if (pFrame->m_Flags & PTFF_SAVE_R3)  { m_RegDisplay.pR3 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_LR)  { m_RegDisplay.pLR = pPreservedRegsCursor++; }
 
-    if (pFrame->m_Flags & PTFF_R0_IS_GCREF)
-    {
-        m_pHijackedReturnValue = (PTR_OBJECTREF) m_RegDisplay.pR0;
-        m_HijackedReturnValueKind = GCRK_Object;
-    }
-    if (pFrame->m_Flags & PTFF_R0_IS_BYREF)
-    {
-        m_pHijackedReturnValue = (PTR_OBJECTREF) m_RegDisplay.pR0;
-        m_HijackedReturnValueKind = GCRK_Byref;
-    }
-
 #elif defined(TARGET_ARM64)
     m_RegDisplay.pFP = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_FramePointer);
     m_RegDisplay.pLR = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_RIP);
@@ -231,13 +230,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     if (pFrame->m_Flags & PTFF_SAVE_X18) { m_RegDisplay.pX18 = pPreservedRegsCursor++; }
 
     if (pFrame->m_Flags & PTFF_SAVE_LR) { m_RegDisplay.pLR = pPreservedRegsCursor++; }
-
-    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
-    if (retValueKind != GCRK_Scalar)
-    {
-        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pX0;
-        m_HijackedReturnValueKind = retValueKind;
-    }
 
 #elif defined(TARGET_LOONGARCH64)
     m_RegDisplay.pFP = (PTR_uintptr_t)PTR_HOST_MEMBER_TADDR(PInvokeTransitionFrame, pFrame, m_FramePointer);
@@ -280,13 +272,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
     if (pFrame->m_Flags & PTFF_SAVE_RA) { m_RegDisplay.pRA = pPreservedRegsCursor++; }
 
-    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
-    if (retValueKind != GCRK_Scalar)
-    {
-        m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pR4;
-        m_HijackedReturnValueKind = retValueKind;
-    }
-
 #else // TARGET_ARM
     if (pFrame->m_Flags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
@@ -314,12 +299,14 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     if (pFrame->m_Flags & PTFF_SAVE_R11)  { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
 #endif // TARGET_AMD64
 
+#ifdef TARGET_X86
     GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
     if (retValueKind != GCRK_Scalar)
     {
         m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pRax;
         m_HijackedReturnValueKind = retValueKind;
     }
+#endif
 
 #endif // TARGET_ARM
 
@@ -1529,8 +1516,10 @@ UnwindOutOfCurrentManagedFrame:
     m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke|ActiveStackFrame);
     ASSERT(IsValid());
 
+#ifdef TARGET_X86
     m_pHijackedReturnValue = NULL;
     m_HijackedReturnValueKind = GCRK_Unknown;
+#endif
 
 #ifdef _DEBUG
     SetControlPC(dac_cast<PTR_VOID>((void*)666));
@@ -1944,6 +1933,7 @@ void StackFrameIterator::CalculateCurrentMethodState()
     m_dwFlags |= MethodStateCalculated;
 }
 
+#ifdef TARGET_X86
 bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocation, GCRefKind * pKind)
 {
     if (GCRK_Unknown == m_HijackedReturnValueKind)
@@ -1955,6 +1945,7 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocatio
     *pKind = m_HijackedReturnValueKind;
     return true;
 }
+#endif
 
 void StackFrameIterator::SetControlPC(PTR_VOID controlPC)
 {

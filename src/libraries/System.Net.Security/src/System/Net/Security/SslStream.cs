@@ -33,7 +33,7 @@ namespace System.Net.Security
     public delegate bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
 
     // A user delegate used to select local SSL certificate.
-    public delegate X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    public delegate X509Certificate? LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
 
     public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
 

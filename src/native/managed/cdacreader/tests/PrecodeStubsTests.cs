@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using Moq;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class PrecodeStubsTests
 {
@@ -177,7 +179,8 @@ public class PrecodeStubsTests
         public readonly MockMemorySpace.Builder Builder;
         public readonly MockMemorySpace.BumpAllocator PrecodeAllocator;
         public readonly MockMemorySpace.BumpAllocator StubDataPageAllocator;
-        public readonly Dictionary<DataType, Target.TypeInfo>? TypeInfoCache;
+
+        internal Dictionary<DataType, Target.TypeInfo> Types { get; }
 
         public TargetPointer MachineDescriptorAddress;
         public CodePointerFlags CodePointerFlags {get; private set;}
@@ -187,39 +190,35 @@ public class PrecodeStubsTests
             Builder = builder;
             PrecodeAllocator = builder.CreateAllocator(allocationRange.PrecodeDescriptorStart, allocationRange.PrecodeDescriptorEnd);
             StubDataPageAllocator = builder.CreateAllocator(allocationRange.StubDataPageStart, allocationRange.StubDataPageEnd);
-            TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
+            Types = typeInfoCache ?? GetTypes(Builder.TargetTestHelpers);
         }
 
-        public Dictionary<DataType, Target.TypeInfo> CreateTypeInfoCache(TargetTestHelpers targetTestHelpers) {
-            var typeInfo = new Dictionary<DataType, Target.TypeInfo>();
-            AddToTypeInfoCache(typeInfo, targetTestHelpers);
-            return typeInfo;
-        }
-
-        public void AddToTypeInfoCache(Dictionary<DataType, Target.TypeInfo> typeInfoCache, TargetTestHelpers targetTestHelpers) {
+        public Dictionary<DataType, Target.TypeInfo> GetTypes(TargetTestHelpers targetTestHelpers) {
+            Dictionary<DataType, Target.TypeInfo> types = new();
             var layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.PrecodeMachineDescriptor.StubCodePageSize), DataType.uint32),
-                (nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.InvalidPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.StubPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.PInvokeImportPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
-                (nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.StubCodePageSize), DataType.uint32),
+                new(nameof(Data.PrecodeMachineDescriptor.OffsetOfPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.ReadWidthOfPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.ShiftOfPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.InvalidPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.StubPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.PInvokeImportPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.FixupPrecodeType), DataType.uint8),
+                new(nameof(Data.PrecodeMachineDescriptor.ThisPointerRetBufPrecodeType), DataType.uint8),
             ]);
-            typeInfoCache[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
+            types[DataType.PrecodeMachineDescriptor] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
             layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.StubPrecodeData.Type), DataType.uint8),
-                (nameof(Data.StubPrecodeData.MethodDesc), DataType.pointer),
+                new(nameof(Data.StubPrecodeData.Type), DataType.uint8),
+                new(nameof(Data.StubPrecodeData.MethodDesc), DataType.pointer),
             ]);
-            typeInfoCache[DataType.StubPrecodeData] = new Target.TypeInfo() {
+            types[DataType.StubPrecodeData] = new Target.TypeInfo() {
                 Fields = layout.Fields,
                 Size = layout.Stride,
             };
+            return types;
         }
 
         private void SetCodePointerFlags(PrecodeTestDescriptor test)
@@ -232,7 +231,7 @@ public class PrecodeStubsTests
 
         public void AddPlatformMetadata(PrecodeTestDescriptor descriptor) {
             SetCodePointerFlags(descriptor);
-            var typeInfo = TypeInfoCache[DataType.PrecodeMachineDescriptor];
+            var typeInfo = Types[DataType.PrecodeMachineDescriptor];
             var fragment = PrecodeAllocator.Allocate((ulong)typeInfo.Size, $"{descriptor.Name} Precode Machine Descriptor");
             Builder.AddHeapFragment(fragment);
             MachineDescriptorAddress = fragment.Address;
@@ -248,7 +247,7 @@ public class PrecodeStubsTests
         public TargetCodePointer AddStubPrecodeEntry(string name, PrecodeTestDescriptor test, TargetPointer methodDesc) {
             // TODO[cdac]: allow writing other kinds of stub precode subtypes
             ulong stubCodeSize = (ulong)test.StubPrecodeSize;
-            var stubDataTypeInfo  = TypeInfoCache[DataType.StubPrecodeData];
+            var stubDataTypeInfo  = Types[DataType.StubPrecodeData];
             MockMemorySpace.HeapFragment stubDataFragment = StubDataPageAllocator.Allocate((ulong)stubDataTypeInfo.Size, $"Stub data for {name} on {test.Name}");
             Builder.AddHeapFragment(stubDataFragment);
             // allocate the code one page before the stub data
@@ -270,54 +269,29 @@ public class PrecodeStubsTests
             }
             return address;
         }
-
-        public void MarkCreated() => Builder.MarkCreated();
     }
 
-    internal class PrecodeTestTarget : TestPlaceholderTarget
+    private static Target CreateTarget(PrecodeBuilder precodeBuilder)
     {
-        private class TestPlatformMetadata : IPlatformMetadata
-        {
-            private readonly CodePointerFlags _codePointerFlags;
-            private readonly TargetPointer _precodeMachineDescriptorAddress;
-            public TestPlatformMetadata(CodePointerFlags codePointerFlags, TargetPointer precodeMachineDescriptorAddress) {
-                _codePointerFlags = codePointerFlags;
-                _precodeMachineDescriptorAddress = precodeMachineDescriptorAddress;
-            }
-            TargetPointer IPlatformMetadata.GetPrecodeMachineDescriptor() => _precodeMachineDescriptorAddress;
-            CodePointerFlags IPlatformMetadata.GetCodePointerFlags() => _codePointerFlags;
-        }
-        internal readonly TargetPointer PrecodeMachineDescriptorAddress;
+        var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
+        TestPlaceholderTarget.ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
         // hack for this test put the precode machine descriptor at the same address as the PlatformMetadata
-        internal TargetPointer PlatformMetadataAddress => PrecodeMachineDescriptorAddress;
-        public static PrecodeTestTarget FromBuilder(PrecodeBuilder precodeBuilder)
-        {
-            precodeBuilder.MarkCreated();
-            var arch = precodeBuilder.Builder.TargetTestHelpers.Arch;
-            ReadFromTargetDelegate reader = precodeBuilder.Builder.GetReadContext().ReadFromTarget;
-            var typeInfo = precodeBuilder.TypeInfoCache;
-            return new PrecodeTestTarget(arch, reader, precodeBuilder.CodePointerFlags, precodeBuilder.MachineDescriptorAddress, typeInfo);
-        }
-        public PrecodeTestTarget(MockTarget.Architecture arch, ReadFromTargetDelegate reader, CodePointerFlags codePointerFlags, TargetPointer platformMetadataAddress, Dictionary<DataType, TypeInfo> typeInfoCache) : base(arch) {
-            PrecodeMachineDescriptorAddress = platformMetadataAddress;
-            SetTypeInfoCache(typeInfoCache);
-            SetDataCache(new DefaultDataCache(this));
-            SetDataReader(reader);
-            IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
-            SetContracts(new TestRegistry() {
-                PlatformMetadataContract = new (() => new TestPlatformMetadata(codePointerFlags, PrecodeMachineDescriptorAddress)),
-                PrecodeStubsContract = new (() => precodeFactory.CreateContract(this, 1)),
+        (string Name, ulong Value)[] globals = [(Constants.Globals.PlatformMetadata, precodeBuilder.MachineDescriptorAddress)];
+        var target = new TestPlaceholderTarget(arch, reader, precodeBuilder.Types, globals);
 
-            });
-        }
+        IContractFactory<IPrecodeStubs> precodeFactory = new PrecodeStubsFactory();
+        Mock<IPlatformMetadata> platformMetadata = new();
+        platformMetadata.Setup(p => p.GetCodePointerFlags()).Returns(precodeBuilder.CodePointerFlags);
+        platformMetadata.Setup(p => p.GetPrecodeMachineDescriptor()).Returns(precodeBuilder.MachineDescriptorAddress);
 
-        public override TargetPointer ReadGlobalPointer (string name)
-        {
-            if (name == Constants.Globals.PlatformMetadata) {
-                return PlatformMetadataAddress;
-            }
-            return base.ReadGlobalPointer(name);
-        }
+        // Creating the PrecodeStubs contract depends on the PlatformMetadata contract, so we need
+        // to set it up such that it will only be created after the target's targets are set up
+        Mock<ContractRegistry> reg = new();
+        reg.SetupGet(c => c.PlatformMetadata).Returns(platformMetadata.Object);
+        reg.SetupGet(c => c.PrecodeStubs).Returns(() => precodeFactory.CreateContract(target, 1));
+        target.SetContracts(reg.Object);
+
+        return target;
     }
 
     [Theory]
@@ -330,7 +304,7 @@ public class PrecodeStubsTests
         TargetPointer expectedMethodDesc = new TargetPointer(0xeeee_eee0u); // arbitrary
         TargetCodePointer stub1 = builder.AddStubPrecodeEntry("Stub 1", test, expectedMethodDesc);
 
-        var target = PrecodeTestTarget.FromBuilder(builder);
+        var target = CreateTarget(builder);
         Assert.NotNull(target);
 
         var precodeContract = target.Contracts.PrecodeStubs;
@@ -339,7 +313,5 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(stub1);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
-
-
     }
 }

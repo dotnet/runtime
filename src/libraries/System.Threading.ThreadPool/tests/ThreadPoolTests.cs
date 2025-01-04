@@ -1263,12 +1263,13 @@ namespace System.Threading.ThreadPools.Tests
                 RemoteExecutor.Invoke(() =>
                 {
                     const int WorkItemCountPerKind = 100;
+                    const int Kinds = 3;
 
                     int completedWorkItemCount = 0;
                     var allWorkItemsCompleted = new AutoResetEvent(false);
                     Action<int> workItem = _ =>
                     {
-                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCountPerKind * 3)
+                        if (Interlocked.Increment(ref completedWorkItemCount) == WorkItemCountPerKind * Kinds)
                         {
                             allWorkItemsCompleted.Set();
                         }
@@ -1301,6 +1302,27 @@ namespace System.Threading.ThreadPools.Tests
                             {
                                 ThreadPool.UnsafeQueueUserWorkItem(workItem, 0, preferLocal: false);
                             }
+                        },
+                        0,
+                        preferLocal: false);
+
+                    ThreadPool.UnsafeQueueUserWorkItem(
+                        _ =>
+                        {
+                            // Enqueue tasks from a thread pool thread into the local queue,
+                            // then block this thread until a queued task completes.
+
+                            startTest.CheckedWait();
+
+                            Task queued = null;
+                            for (int i = 0; i < WorkItemCountPerKind; i++)
+                            {
+                                queued = Task.Run(() => workItem(0));
+                            }
+
+                            queued
+                                .ContinueWith(_ => { }) // prevent wait inlining
+                                .Wait();
                         },
                         0,
                         preferLocal: false);

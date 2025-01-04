@@ -1185,7 +1185,7 @@ HRESULT PEWriter::link() {
     // NOTE:
     // link() can be called more than once!  This is because at least one compiler
     // (the prejitter) needs to know the base addresses of some segments before it
-    // builds others. It's up to the caller to insure the layout remains the same
+    // builds others. It's up to the caller to ensure the layout remains the same
     // after changes are made, though.
     //
 

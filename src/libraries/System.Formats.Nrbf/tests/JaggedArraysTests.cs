@@ -24,40 +24,43 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(input.Length + input.Length * 3, arrayRecord.FlattenedLength);
+        ArrayRecord?[] output = (ArrayRecord?[])arrayRecord.GetArray(input.GetType());
+        for (int i = 0; i < input.Length; i++)
+        {
+            Assert.Equal(input[i], ((SZArrayRecord<int>)output[i]).GetArray());
+            if (useReferences)
+            {
+                Assert.Same(((SZArrayRecord<int>)output[0]).GetArray(), ((SZArrayRecord<int>)output[i]).GetArray());
+            }
+        }
     }
 
     [Theory]
     [InlineData(1)] // SerializationRecordType.ObjectNull
     [InlineData(200)] // SerializationRecordType.ObjectNullMultiple256
     [InlineData(10_000)] // SerializationRecordType.ObjectNullMultiple
-    public void FlattenedLengthIncludesNullArrays(int nullCount)
+    public void NullRecordsOfAllKindsAreHandledProperly(int nullCount)
     {
         int[][] input = new int[nullCount][];
 
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(nullCount, arrayRecord.FlattenedLength);
+        ArrayRecord?[] output = (ArrayRecord?[])arrayRecord.GetArray(input.GetType());
+        Assert.All(output, Assert.Null);
     }
 
     [Fact]
     public void ItIsPossibleToHaveBinaryArrayRecordsHaveAnElementTypeOfArrayWithoutBeingMarkedAsJagged()
     {
         int[][][] input = new int[3][][];
-        long totalElementsCount = 0;
         for (int i = 0; i < input.Length; i++)
         {
             input[i] = new int[4][];
-            totalElementsCount++; // count the arrays themselves
 
             for (int j = 0; j < input[i].Length; j++)
             {
                 input[i][j] = [i, j, 0, 1, 2];
-                totalElementsCount += input[i][j].Length;
-                totalElementsCount++; // count the arrays themselves
             }
         }
 
@@ -75,41 +78,25 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(new MemoryStream(serialized));
 
         Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(3 + 3 * 4 + 3 * 4 * 5, totalElementsCount);
-        Assert.Equal(totalElementsCount, arrayRecord.FlattenedLength);
-    }
-
-    [Fact]
-    public void CanReadJaggedArraysOfPrimitiveTypes_3D()
-    {
-        int[][][] input = new int[7][][];
-        long totalElementsCount = 0;
+        ArrayRecord?[] output = (ArrayRecord?[])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {
-            totalElementsCount++; // count the arrays themselves
-            input[i] = new int[1][];
-            totalElementsCount++; // count the arrays themselves
-            input[i][0] = [i, i, i];
-            totalElementsCount += input[i][0].Length;
+            ArrayRecord[] firstLevel = (ArrayRecord[])output[i].GetArray(typeof(int[][]));
+
+            for (int j = 0; j < input[i].Length; j++)
+            {
+                Assert.Equal(input[i][j], (int[])firstLevel[j].GetArray(typeof(int[])));
+            }
         }
-
-        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
-
-        Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(1, arrayRecord.Rank);
-        Assert.Equal(7 + 7 * 1 + 7 * 1 * 3, totalElementsCount);
-        Assert.Equal(totalElementsCount, arrayRecord.FlattenedLength);
     }
 
     [Fact]
-    public void CanReadJaggedArrayOfRectangularArrays()
+    public void CanReadSZJaggedArrayOfMDArrays()
     {
         int[][,] input = new int[7][,];
         for (int i = 0; i < input.Length; i++)
         {
-            input[i] = new int[3,3];
+            input[i] = new int[3, 3];
 
             for (int j = 0; j < input[i].GetLength(0); j++)
             {
@@ -123,9 +110,73 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(1, arrayRecord.Rank);
-        Assert.Equal(input.Length + input.Length * 3 * 3, arrayRecord.FlattenedLength);
+        ArrayRecord[] output = (ArrayRecord[])arrayRecord.GetArray(input.GetType());
+        for (int i = 0; i < input.Length; i++)
+        {
+            Assert.Equal(input[i], output[i].GetArray(typeof(int[,])));
+        }
+    }
+
+    [Fact]
+    public void CanReadMDJaggedArrayOfSZArrays()
+    {
+        int[,][] input = new int[2,2][];
+        input[0, 0] = [1, 2, 3];
+
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+
+        Verify(input, arrayRecord);
+        ArrayRecord[,] output = (ArrayRecord[,])arrayRecord.GetArray(input.GetType());
+        Assert.Equal(input[0, 0], output[0, 0].GetArray(typeof(int[])));
+        Assert.Null(output[0, 1]);
+        Assert.Null(output[1, 0]);
+        Assert.Null(output[1, 1]);
+    }
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Integers()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<int>(static (x, y) => x * y);
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Doubles()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<double>(static (x, y) => x * y / 10);
+
+    [Fact]
+    public void MultiDimensionalArrayOfMultiDimensionalArrays_Strings()
+        => MultiDimensionalArrayOfMultiDimensionalArrays<string>(static (x, y) => $"{x},{y}");
+
+    static void MultiDimensionalArrayOfMultiDimensionalArrays<T>(Func<int, int, T> valueFactory)
+    {
+        T[,][,] input = new T[2, 2][,];
+        for (int i = 0; i < input.GetLength(0); i++)
+        {
+            for (int j = 0; j < input.GetLength(1); j++)
+            {
+                T[,] contained = new T[i + 1, j + 1];
+                for (int k = 0; k < contained.GetLength(0); k++)
+                {
+                    for (int l = 0; l < contained.GetLength(1); l++)
+                    {
+                        contained[k, l] = valueFactory(k, l);
+                    }
+                }
+
+                input[i, j] = contained;
+            }
+        }
+
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+
+        Verify(input, arrayRecord);
+
+        ArrayRecord[,] output = (ArrayRecord[,])arrayRecord.GetArray(input.GetType());
+        for (int i = 0; i < input.GetLength(0); i++)
+        {
+            for (int j = 0; j < input.GetLength(1); j++)
+            {
+                Assert.Equal(input[i, j], output[i, j].GetArray(typeof(T[,])));
+            }
+        }
     }
 
     [Fact]
@@ -140,8 +191,11 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(input.Length + input.Length * 3, arrayRecord.FlattenedLength);
+        ArrayRecord[] output = (ArrayRecord[])arrayRecord.GetArray(input.GetType());
+        for (int i = 0; i < input.Length; i++)
+        {
+            Assert.Equal(input[i], ((SZArrayRecord<string>)output[i]).GetArray());
+        }
     }
 
     [Fact]
@@ -156,8 +210,16 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
-        Assert.Equal(input.Length + input.Length * 3, arrayRecord.FlattenedLength);
+        ArrayRecord[] output = (ArrayRecord[])arrayRecord.GetArray(input.GetType());
+
+        for (int i = 0; i < input.Length; i++)
+        {
+            SerializationRecord[] row = (SerializationRecord[])output[i].GetArray(typeof(object[]));
+            for (int j = 0; j < input[i].Length; j++)
+            {
+                Assert.Equal(input[i][j], ((PrimitiveTypeRecord)row[j]).Value);
+            }
+        }
     }
 
     [Serializable]
@@ -170,32 +232,28 @@ public class JaggedArraysTests : ReadTests
     public void CanReadJaggedArraysOfComplexTypes()
     {
         ComplexType[][] input = new ComplexType[3][];
-        long totalElementsCount = 0;
         for (int i = 0; i < input.Length; i++)
         {
             input[i] = Enumerable.Range(0, i + 1).Select(j => new ComplexType { SomeField = j }).ToArray();
-            totalElementsCount += input[i].Length;
-            totalElementsCount++; // count the arrays themselves
         }
 
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Verify(input, arrayRecord);
-        Assert.Equal(totalElementsCount, arrayRecord.FlattenedLength);
-        var output = (ClassRecord?[][])arrayRecord.GetArray(input.GetType());
+        ArrayRecord[] output = (ArrayRecord[])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {
+            SerializationRecord[] row = ((SZArrayRecord<SerializationRecord>)output[i]).GetArray();
             for (int j = 0; j < input[i].Length; j++)
             {
-                Assert.Equal(input[i][j].SomeField, output[i][j]!.GetInt32(nameof(ComplexType.SomeField)));
+                Assert.Equal(input[i][j].SomeField, ((ClassRecord)row[j]!).GetInt32(nameof(ComplexType.SomeField)));
             }
         }
     }
 
     private static void Verify(Array input, ArrayRecord arrayRecord)
     {
-        Assert.Equal(1, arrayRecord.Lengths.Length);
-        Assert.Equal(input.Length, arrayRecord.Lengths[0]);
+        Assert.Equal(input.Rank, arrayRecord.Rank);
         Assert.True(arrayRecord.TypeName.GetElementType().IsArray); // true only for Jagged arrays
         Assert.Equal(input.GetType().FullName, arrayRecord.TypeName.FullName);
         Assert.Equal(input.GetType().GetAssemblyNameIncludingTypeForwards(), arrayRecord.TypeName.AssemblyName!.FullName);

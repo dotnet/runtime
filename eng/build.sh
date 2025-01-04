@@ -65,7 +65,6 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
   echo "  --framework (-f)           Build framework: net10.0 or net48."
   echo "                             [Default: net10.0]"
@@ -308,8 +307,8 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
-     -allconfigurations)
-      arguments="$arguments /p:BuildAllConfigurations=true"
+     -pack)
+      arguments="$arguments --pack /p:BuildAllConfigurations=true"
       shift 1
       ;;
 

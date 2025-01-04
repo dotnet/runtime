@@ -117,7 +117,7 @@ To allow changes in the runtime, we simply require that the new runtime handle a
 
 ### Restrictions on Runtime Evolution
 
-As mentioned previously, when designing for version compatibility we have the choice of either simply disallowing a change (by changing the breaking change rules), or insuring that the format is sufficiently flexible to allow evolution. For example, for managed code we have opted to disallow changes to value type (struct) layout so that codegen for structs can be efficient. In addition, the design also includes a small number of restrictions that affect the flexibility of evolving the runtime itself. They are:
+As mentioned previously, when designing for version compatibility we have the choice of either simply disallowing a change (by changing the breaking change rules), or ensuring that the format is sufficiently flexible to allow evolution. For example, for managed code we have opted to disallow changes to value type (struct) layout so that codegen for structs can be efficient. In addition, the design also includes a small number of restrictions that affect the flexibility of evolving the runtime itself. They are:
 
 - The field layout of `System.Object` cannot change. (First, there is a pointer sized field for type information and then the other fields.)
 - The field layout of arrays cannot change. (First, there is a pointer sized field for type information, and then a pointer sized field for the length. After these fields is the array data, packed using existing alignment rules.)

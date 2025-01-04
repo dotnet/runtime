@@ -69,7 +69,7 @@ namespace System.Net
             address.CopyTo(buffer.Slice(8));
         }
 
-        public static unsafe void Clear(Span<byte> buffer)
+        public static void Clear(Span<byte> buffer)
         {
             AddressFamily family = GetAddressFamily(buffer);
             buffer.Clear();

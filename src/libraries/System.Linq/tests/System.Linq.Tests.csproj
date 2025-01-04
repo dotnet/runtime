@@ -39,6 +39,7 @@
     <Compile Include="JoinTests.cs" />
     <Compile Include="LastOrDefaultTests.cs" />
     <Compile Include="LastTests.cs" />
+    <Compile Include="LeftJoinTests.cs" />
     <Compile Include="LifecycleTests.cs" />
     <Compile Include="LongCountTests.cs" />
     <Compile Include="MaxTests.cs" />
@@ -52,6 +53,7 @@
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
     <Compile Include="ReverseTests.cs" />
+    <Compile Include="RightJoinTests.cs" />
     <Compile Include="SelectManyTests.cs" />
     <Compile Include="SelectTests.cs" />
     <Compile Include="SequenceEqualTests.cs" />

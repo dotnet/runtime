@@ -9,7 +9,7 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal sealed unsafe class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
+    internal sealed class RtFieldInfo : RuntimeFieldInfo, IRuntimeFieldInfo
     {
         #region Private Data Members
         // aggressive caching

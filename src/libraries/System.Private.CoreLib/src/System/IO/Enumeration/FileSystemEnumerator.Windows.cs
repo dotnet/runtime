@@ -78,7 +78,7 @@ namespace System.IO.Enumeration
         /// </summary>
         /// <returns>'true' if new data was found</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe bool GetData()
+        private bool GetData()
         {
             Debug.Assert(_directoryHandle != (IntPtr)(-1) && _directoryHandle != IntPtr.Zero && !_lastEntryFound);
 
@@ -121,7 +121,7 @@ namespace System.IO.Enumeration
             }
         }
 
-        private unsafe IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
+        private IntPtr CreateRelativeDirectoryHandle(ReadOnlySpan<char> relativePath, string fullPath)
         {
             (uint status, IntPtr handle) = Interop.NtDll.CreateFile(
                 relativePath,
@@ -270,7 +270,7 @@ namespace System.IO.Enumeration
             }
         }
 
-        private unsafe void FindNextEntry()
+        private void FindNextEntry()
         {
             _entry = Interop.NtDll.FILE_FULL_DIR_INFORMATION.GetNextInfo(_entry);
             if (_entry != null)

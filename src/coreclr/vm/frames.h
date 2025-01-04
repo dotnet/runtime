@@ -2097,7 +2097,22 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
+
+#ifdef TARGET_X86
+    // On x86 we need to specialcase return values
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
+#else
+    // On non-x86 platforms HijackFrame is just a more compact form of a resumable
+    // frame with main difference that OnHijackTripThread captures just the registers
+    // that can possibly contain GC roots.
+    // The regular reporting of a top frame will report everything that is live
+    // after the call as specified in GC info, thus we do not need to worry about
+    // return values.
+    virtual unsigned GetFrameAttribs() {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_RESUMABLE;    // Treat the next frame as the top frame.
+    }
+#endif
 
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.

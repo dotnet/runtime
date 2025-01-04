@@ -14,7 +14,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
     int IXCLRDataProcess.Flush()
-        => _legacyProcess is not null ? _legacyProcess.Flush() : HResults.E_NOTIMPL;
+    {
+        _target.ProcessedData.Clear();
+
+        // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
+        if (_legacyProcess is not null)
+            return _legacyProcess.Flush();
+
+        return HResults.S_OK;
+    }
 
     int IXCLRDataProcess.StartEnumTasks(ulong* handle)
         => _legacyProcess is not null ? _legacyProcess.StartEnumTasks(handle) : HResults.E_NOTIMPL;

@@ -53,26 +53,28 @@
 // following format:
 //    {
 //        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-//        g_profControlBlock.pProfInterface->AppDomainCreationStarted(MyAppDomainID);
+//        // call the ProfControlBlock callback wrapper
+//        (&g_profControlBlock)->AppDomainCreationStarted(MyAppDomainID);
 //        END_PROFILER_CALLBACK();
 //    }
-// The BEGIN / END macros do the following:
-// * Evaluate the expression argument (e.g., CORProfilerTrackAppDomainLoads()). This is a
+// The BEGIN / END macros evaluates the expression argument (CORProfiler*). This is a
 //     "dirty read" as the profiler could be detached at any moment during or after that
 //     evaluation.
-// * If true, push a code:EvacuationCounterHolder on the stack, which increments the
-//     per-thread evacuation counter (not interlocked).
-// * Re-evaluate the expression argument. This time, it's a "clean read" (see below for
-//     why).
-// * If still true, execute the statements inside the BEGIN/END block. Inside that block,
-//     the profiler is guaranteed to remain loaded, because the evacuation counter
-//     remains nonzero (again, see below).
-// * Once the BEGIN/END block is exited, the evacuation counter is decremented, and the
-//     profiler is unpinned and allowed to detach.
+//
+// The ProfControlBlock callback wrappers call DoOneProfilerIteration, doing the following:
+// * Pushes a code:EvacuationCounterHolder on the stack for the ProfilerInfo, which
+//     increments the per-thread evacuation counter (not interlocked).
+// * Checks the profiler status (code:ProfilerStatus) to see if the profiler is active.
+// * Evaluates the ProfControlBlock condition func (e.g. IsProfilerTrackingAppDomainLoads).
+// * If true, invokes the callback func (e.g. AppDomainCreationStartedHelper) which in turn
+//     calls the EEToProfInterfaceImpl implementation where the profiler is guaranteed to
+//     remain loaded, because the evacuation counter remains nonzero (again, see below).
+// * Once the DoOneProfilerIteration block is exited, the evacuation counter is decremented
+//     and the profiler is unpinned and allowed to detach.
 //
 // READER / WRITER COORDINATION
 //
-// The above ensures that a reader never touches g_profControlBlock.pProfInterface and
+// The above ensures that a reader never touches EEToProfInterfaceImpl and
 // all it embodies (including the profiler DLL code and callback implementations) unless
 // the reader was able to increment its thread's evacuation counter AND re-verify that
 // the profiler's status is still active (the status check is included in the macro's

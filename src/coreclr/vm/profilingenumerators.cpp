@@ -552,9 +552,11 @@ HRESULT ProfilerThreadEnum::Init()
     }
     CONTRACTL_END;
 
+    // If EnumThreads is called from a profiler callback where the runtime is already suspended,
+    // don't recursively acquire/release the ThreadStore Lock.
     // If a profiler has requested that the runtime suspend to do stack snapshots, it
     // will be holding the ThreadStore lock already
-    ThreadStoreLockHolder tsLock(!g_profControlBlock.fProfilerRequestedRuntimeSuspend);
+    ThreadStoreLockHolder tsLock(!ThreadStore::HoldingThreadStore() && !g_profControlBlock.fProfilerRequestedRuntimeSuspend);
 
     Thread * pThread = NULL;
 

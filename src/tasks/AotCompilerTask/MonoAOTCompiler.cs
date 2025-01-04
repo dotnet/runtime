@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -233,6 +233,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public string? ToolPrefix { get; set; }
 
     /// <summary>
+    /// Name of the assembler tool ran by the AOT compiler.
+    /// </summary>
+    public string? AsName { get; set; }
+
+    /// <summary>
+    /// Passes as-options to the AOT compiler
+    /// </summary>
+    public string? AsOptions { get; set; }
+
+    /// <summary>
     /// Prepends a prefix to the name of the assembler (as) tool ran by the AOT compiler.
     /// </summary>
     public string? AsPrefix { get; set; }
@@ -278,6 +288,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// Passes ld-flags to the AOT compiler, for use with UseLLVM=true
     /// </summary>
     public string? LdFlags { get; set; }
+
+    /// <summary>
+    /// Passes ld-options to the AOT compiler
+    /// </summary>
+    public string? LdOptions { get; set; }
 
     /// <summary>
     /// Specify WorkingDirectory for the AOT compiler
@@ -739,6 +754,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"tool-prefix={ToolPrefix}");
         }
 
+        if (!string.IsNullOrEmpty(AsName))
+        {
+            aotArgs.Add($"as-name={AsName}");
+        }
+
+        if (!string.IsNullOrEmpty(AsOptions))
+        {
+            aotArgs.Add($"as-options={AsOptions}");
+        }
+
         if (!string.IsNullOrEmpty(AsPrefix))
         {
             aotArgs.Add($"as-prefix={AsPrefix}");
@@ -952,6 +977,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (!string.IsNullOrEmpty(LdFlags))
         {
             aotArgs.Add($"ld-flags={LdFlags}");
+        }
+
+        if (!string.IsNullOrEmpty(LdOptions))
+        {
+            aotArgs.Add($"ld-options={LdOptions}");
         }
 
         // we need to quote the entire --aot arguments here to make sure it is parsed

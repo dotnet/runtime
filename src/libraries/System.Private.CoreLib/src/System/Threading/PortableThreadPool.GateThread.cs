@@ -23,9 +23,9 @@ namespace System.Threading
             private static void GateThreadStart()
             {
                 bool disableStarvationDetection =
-                    AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.DisableStarvationDetection", false);
+                    AppContextConfigHelper.GetBooleanComPlusOrDotNetConfig("System.Threading.ThreadPool.DisableStarvationDetection", "ThreadPool_DisableStarvationDetection", false);
                 bool debuggerBreakOnWorkStarvation =
-                    AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation", false);
+                    AppContextConfigHelper.GetBooleanComPlusOrDotNetConfig("System.Threading.ThreadPool.DebugBreakOnWorkerStarvation", "ThreadPool_DebugBreakOnWorkerStarvation", false);
 
                 // The first reading is over a time range other than what we are focusing on, so we do not use the read other
                 // than to send it to any runtime-specific implementation that may also use the CPU utilization.
