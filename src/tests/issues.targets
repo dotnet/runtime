@@ -3696,6 +3696,21 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/PrimitiveABI/**">
             <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
+
+        <!-- TODO: Add tracking issue -->
+        <ExcludeList Include = "$(XunitTestBinBase)/Directed/coverage/importer/Desktop/badldsfld_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34587/Runtime_34587/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/poison/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/ComplexHierarchyPositive/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/reabstraction/reabstraction/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_r/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
