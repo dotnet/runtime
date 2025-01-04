@@ -2359,13 +2359,6 @@ HCIMPL0(void, JIT_RareDisableHelper)
 }
 HCIMPLEND
 
-HCIMPL0(VOID, JIT_StressGC)
-{
-    FCALL_CONTRACT;
-    _ASSERTE(!"CORINFO_HELP_STRESS_GC is not implemented");
-}
-HCIMPLEND
-
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
