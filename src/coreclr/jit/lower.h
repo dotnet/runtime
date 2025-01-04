@@ -98,6 +98,7 @@ private:
     void      TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond);
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
+    bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
@@ -130,6 +131,8 @@ private:
     static void CheckNode(Compiler* compiler, GenTree* node);
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
+
+    void MapParameterRegisterLocals();
 
     void     LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);

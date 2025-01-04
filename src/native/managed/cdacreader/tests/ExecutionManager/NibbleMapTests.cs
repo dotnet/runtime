@@ -5,23 +5,17 @@ using Xunit;
 
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests.ExecutionManager;
+namespace Microsoft.Diagnostics.DataContractReader.Tests.ExecutionManager;
 
 public class NibbleMapTestsBase
 {
-    internal class NibbleMapTestTarget : TestPlaceholderTarget
+    internal static Target CreateTarget(NibbleMapTestBuilderBase nibbleMapTestBuilder)
     {
-        public NibbleMapTestTarget(MockTarget.Architecture arch, MockMemorySpace.ReadContext readContext)
-            : base(arch, readContext.ReadFromTarget)
+        MockMemorySpace.ReadContext readContext = new()
         {
-        }
-    }
-
-    internal static NibbleMapTestTarget CreateTarget(NibbleMapTestBuilderBase nibbleMapTestBuilder)
-    {
-        return new NibbleMapTestTarget(nibbleMapTestBuilder.Arch, new MockMemorySpace.ReadContext() {
             HeapFragments = new[] { nibbleMapTestBuilder.NibbleMapFragment }
-        });
+        };
+        return new TestPlaceholderTarget(nibbleMapTestBuilder.Arch, readContext.ReadFromTarget);
     }
 }
 
@@ -84,7 +78,7 @@ public class NibbleMapLinearLookupTests : NibbleMapTestsBase
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
         uint codeSize = 0x80; // doesn't matter
         builder.AllocateCodeChunk (inputPC, codeSize);
-        NibbleMapTestTarget target = CreateTarget(builder);
+        Target target = CreateTarget(builder);
 
         // TESTCASE:
 
@@ -144,7 +138,7 @@ public class NibbleMapConstantLookupTests : NibbleMapTestsBase
         TargetCodePointer inputPC = new(mapBase + 0x0200u);
         uint codeSize = 0x400;
         builder.AllocateCodeChunk (inputPC, codeSize);
-        NibbleMapTestTarget target = CreateTarget(builder);
+        Target target = CreateTarget(builder);
 
         // TESTCASE:
 

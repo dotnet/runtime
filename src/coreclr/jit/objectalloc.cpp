@@ -669,11 +669,7 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
         BasicBlock* removedBlock = removedEdge->getDestinationBlock();
         comp->fgRemoveRefPred(removedEdge);
         predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, keptEdge);
-
-        if (predBlock->hasProfileWeight())
-        {
-            block->setBBProfileWeight(predBlock->bbWeight);
-        }
+        comp->fgRepairProfileCondToUncond(predBlock, keptEdge, removedEdge);
 
         // Just lop off the JTRUE, the rest can clean up later
         // (eg may have side effects)

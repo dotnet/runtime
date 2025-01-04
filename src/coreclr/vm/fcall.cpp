@@ -65,53 +65,6 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
     return NULL;
 }
 
-NOINLINE LPVOID __FCThrowArgument(LPVOID __me, RuntimeExceptionKind reKind, LPCWSTR argName, LPCWSTR resourceName)
-{
-    STATIC_CONTRACT_THROWS;
-    // This isn't strictly true... But the guarantee that we make here is
-    // that we won't trigger without having setup a frame.
-    // STATIC_CONTRACT_TRIGGER
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    // side effect the compiler can't remove
-    if (FC_NO_TAILCALL != 1)
-        return (LPVOID)(SIZE_T)(FC_NO_TAILCALL + 1);
-
-    FC_CAN_TRIGGER_GC();
-    INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
-    FC_GC_POLL_NOT_NEEDED();     // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_NOPOLL(Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    switch (reKind) {
-        case kArgumentNullException:
-            if (resourceName) {
-                COMPlusThrowArgumentNull(argName, resourceName);
-            } else {
-                COMPlusThrowArgumentNull(argName);
-            }
-            break;
-
-        case kArgumentOutOfRangeException:
-            COMPlusThrowArgumentOutOfRange(argName, resourceName);
-            break;
-
-        case kArgumentException:
-            COMPlusThrowArgumentException(argName, resourceName);
-            break;
-
-        default:
-            // If you see this assert, add a case for your exception kind above.
-            _ASSERTE(argName == NULL);
-            COMPlusThrow(reKind, resourceName);
-    }
-
-    HELPER_METHOD_FRAME_END();
-    FC_CAN_TRIGGER_GC_END();
-    _ASSERTE(!"Throw returned");
-    return NULL;
-}
-
 /**************************************************************************************/
 /* erect a frame in the FCALL and then poll the GC, objToProtect will be protected
    during the poll and the updated object returned.  */
