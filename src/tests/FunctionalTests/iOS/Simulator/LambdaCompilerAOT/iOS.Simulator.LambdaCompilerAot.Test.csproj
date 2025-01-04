@@ -11,7 +11,7 @@
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
-    <IsDynamicCodeSupported>false</IsDynamicCodeSupported>
+    <DynamicCodeSupport>false</DynamicCodeSupport>
   </PropertyGroup>
 
   <ItemGroup>
