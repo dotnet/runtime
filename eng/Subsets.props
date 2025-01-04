@@ -31,7 +31,7 @@
     <CoreCLRSupported Condition="'$(_CoreCLRSupportedOS)' == 'true' and '$(_CoreCLRSupportedArch)' == 'true'">true</CoreCLRSupported>
 
     <_MonoSupportedOS>true</_MonoSupportedOS>
-    <_MonoSupportedArch Condition="!('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm64') and !('$(TargetsLinuxMusl)' == 'true' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'))">true</_MonoSupportedArch>
+    <_MonoSupportedArch Condition="!('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'arm64') and !('$(TargetsLinuxMusl)' == 'true' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64')) and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_MonoSupportedArch>
     <MonoSupported Condition="'$(_MonoSupportedOS)' == 'true' and '$(_MonoSupportedArch)' == 'true'">true</MonoSupported>
 
     <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
@@ -541,8 +541,8 @@
     <When Condition="$(_subset.Contains('+packs.product+'))">
       <Choose>
         <When Condition="'$(BuildOnlyPgoInstrumentedAssets)' == 'true'">
-          <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
-            <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Category="packs" />
+          <ItemGroup>
+            <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj" Category="packs" />
           </ItemGroup>
         </When>
         <When Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true'">
