@@ -449,9 +449,9 @@ jobs:
       osGroup: linux
       archType: loongarch64
       targetRid: linux-loongarch64
-      platform: loongarch64
+      platform: linux_loongarch64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      container: loongarch64
+      container: linux_loongarch64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
