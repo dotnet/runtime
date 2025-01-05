@@ -232,6 +232,9 @@ namespace System.Collections.ObjectModel
         }
     }
 
+    /// <summary>
+    /// Provides static methods to create read-only collections and sets.
+    /// </summary>
     public static class ReadOnlyCollection
     {
         /// <summary>
@@ -242,11 +245,9 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlyCollection{T}"/> containing the specified values.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-#pragma warning disable IDE0301 // Simplify collection initialization
+        [Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0301:Simplify collection initialization", Justification = "This method simplifies ReadOnlyCollection<T> initialization, so you cannot simplify collection initialization inside it.")]
         public static ReadOnlyCollection<T> CreateCollection<T>(params ReadOnlySpan<T> values) =>
-            values.Length <= 0 ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(values.ToArray());
-#pragma warning restore IDE0301 // Simplify collection initialization
+            values.IsEmpty ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(values.ToArray());
 
         /// <summary>
         /// Creates a new <see cref="ReadOnlySet{T}"/> from the specified span of values.
@@ -256,10 +257,8 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-#pragma warning disable IDE0301 // Simplify collection initialization
+        [Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0301:Simplify collection initialization", Justification = "This method simplifies ReadOnlySet<T> initialization, so you cannot simplify collection initialization inside it.")]
         public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values) =>
-            values.Length <= 0 ? ReadOnlySet<T>.Empty : new ReadOnlySet<T>((HashSet<T>)[.. values]);
-#pragma warning restore IDE0301 // Simplify collection initialization
+            values.IsEmpty ? ReadOnlySet<T>.Empty : new ReadOnlySet<T>((HashSet<T>)[.. values]);
     }
 }

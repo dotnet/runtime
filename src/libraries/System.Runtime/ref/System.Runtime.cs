@@ -8368,9 +8368,7 @@ namespace System.Collections.ObjectModel
     }
     public static partial class ReadOnlyCollection
     {
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> CreateCollection<T>(params System.ReadOnlySpan<T> values) { throw null; }
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Collections.ObjectModel.ReadOnlySet<T> CreateSet<T>(params System.ReadOnlySpan<T> values) { throw null; }
     }
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateCollection")]
