@@ -34,29 +34,29 @@ namespace System
 
                 if (sizeof(T) == 1)
                 {
-                    vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
+                    vector = Vector.Create(Unsafe.As<T, byte>(ref tmp));
                 }
                 else if (sizeof(T) == 2)
                 {
-                    vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
+                    vector = (Vector<byte>)Vector.Create(Unsafe.ReadUnaligned<ushort>(ref Unsafe.As<T, byte>(ref tmp)));
                 }
                 else if (sizeof(T) == 4)
                 {
                     // special-case float since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(float))
-                        ? (Vector<byte>)(new Vector<float>((float)(object)tmp!))
-                        : (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
+                        ? (Vector<byte>)Vector.Create(Unsafe.BitCast<T, float>(tmp))
+                        : (Vector<byte>)Vector.Create(Unsafe.ReadUnaligned<uint>(ref Unsafe.As<T, byte>(ref tmp)));
                 }
                 else if (sizeof(T) == 8)
                 {
                     // special-case double since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(double))
-                        ? (Vector<byte>)(new Vector<double>((double)(object)tmp!))
-                        : (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
+                        ? (Vector<byte>)Vector.Create(Unsafe.BitCast<T, double>(tmp))
+                        : (Vector<byte>)Vector.Create(Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<T, byte>(ref tmp)));
                 }
                 else if (sizeof(T) == 16)
                 {
-                    Vector128<byte> vec128 = Unsafe.As<T, Vector128<byte>>(ref tmp);
+                    Vector128<byte> vec128 = Vector128.LoadUnsafe(ref Unsafe.As<T, byte>(ref tmp));
                     if (Vector<byte>.Count == 16)
                     {
                         vector = vec128.AsVector();
@@ -75,7 +75,7 @@ namespace System
                 {
                     if (Vector<byte>.Count == 32)
                     {
-                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
+                        vector = Vector256.LoadUnsafe(ref Unsafe.As<T, byte>(ref tmp)).AsVector();
                     }
                     else
                     {
