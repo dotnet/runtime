@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Configuration.Assemblies;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
@@ -304,132 +305,90 @@ namespace System.Reflection
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
 
-        [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
+        // This implementation of Escape has been copied from UriHelper from System.Private.Uri and adapted to match AssemblyName's requirements.
         internal static string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)
                 return string.Empty;
 
-            int position = 0;
-            char[]? dest = EscapeString(codebase, null, ref position);
-            if (dest == null)
+            int indexOfFirstToEscape = codebase.AsSpan().IndexOfAnyExcept(UnreservedReserved);
+            if (indexOfFirstToEscape < 0)
+            {
+                // Nothing to escape, just return the original value.
                 return codebase;
-
-            return new string(dest, 0, position);
-        }
-
-        // This implementation of EscapeString has been copied from System.Private.Uri from the runtime repo
-        //
-        // destPos  - starting offset in dest for output, on return this will be an exclusive "end" in the output.
-        //
-        // In case "dest" has lack of space it will be reallocated by preserving the _whole_ content up to current destPos
-        //
-        // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
-        //
-        internal static unsafe char[]? EscapeString(string input, char[]? dest, ref int destPos)
-        {
-            int i = 0;
-            int prevInputPos = 0;
-            byte* bytes = stackalloc byte[c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar];   // 40*4=160
-
-            fixed (char* pStr = input)
-            {
-                for (; i < input.Length; ++i)
-                {
-                    char ch = pStr[i];
-
-                    // a Unicode ?
-                    if (ch > '\x7F')
-                    {
-                        short maxSize = (short)Math.Min(input.Length - i, (int)c_MaxUnicodeCharsReallocate - 1);
-
-                        short count = 1;
-                        for (; count < maxSize && pStr[i + count] > '\x7f'; ++count) ;
-
-                        // Is the last a high surrogate?
-                        if (pStr[i + count - 1] >= 0xD800 && pStr[i + count - 1] <= 0xDBFF)
-                        {
-                            // Should be a rare case where the app tries to feed an invalid Unicode surrogates pair
-                            if (count == 1 || count == input.Length - i)
-                                throw new FormatException(SR.Arg_FormatException);
-                            // need to grab one more char as a Surrogate except when it's a bogus input
-                            ++count;
-                        }
-
-                        dest = EnsureDestinationSize(pStr, dest, i,
-                            (short)(count * c_MaxUTF_8BytesPerUnicodeChar * c_EncodedCharsPerByte),
-                            c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar * c_EncodedCharsPerByte,
-                            ref destPos, prevInputPos);
-
-                        short numberOfBytes = (short)Encoding.UTF8.GetBytes(pStr + i, count, bytes,
-                            c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar);
-
-                        // This is the only exception that built in UriParser can throw after a Uri ctor.
-                        // Should not happen unless the app tries to feed an invalid Unicode string
-                        if (numberOfBytes == 0)
-                            throw new FormatException(SR.Arg_FormatException);
-
-                        i += (count - 1);
-
-                        for (count = 0; count < numberOfBytes; ++count)
-                            EscapeAsciiChar((char)bytes[count], dest, ref destPos);
-
-                        prevInputPos = i + 1;
-                    }
-                    else if (!UnreservedReserved.Contains(ch))
-                    {
-                        dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
-                            c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        EscapeAsciiChar(ch, dest, ref destPos);
-                        prevInputPos = i + 1;
-                    }
-                }
-
-                if (prevInputPos != i)
-                {
-                    // need to fill up the dest array ?
-                    if (prevInputPos != 0 || dest != null)
-                        dest = EnsureDestinationSize(pStr, dest, i, 0, 0, ref destPos, prevInputPos);
-                }
             }
 
-            return dest;
+            // Otherwise, create a ValueStringBuilder to store the escaped data into,
+            // escape the rest, and concat the result with the characters we skipped above.
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
+            vsb.EnsureCapacity(codebase.Length);
+
+            EscapeStringToBuilder(codebase.AsSpan(indexOfFirstToEscape), ref vsb);
+
+            string result = string.Concat(codebase.AsSpan(0, indexOfFirstToEscape), vsb.ToString());
+            vsb.Dispose();
+            return result;
         }
 
-        //
-        // ensure destination array has enough space and contains all the needed input stuff
-        //
-        private static unsafe char[] EnsureDestinationSize(char* pStr, char[]? dest, int currentInputPos,
-            short charsToAdd, short minReallocateChars, ref int destPos, int prevInputPos)
+        internal static void EscapeStringToBuilder(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb)
         {
-            if (dest is null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
+            // Allocate enough stack space to hold any Rune's UTF8 encoding.
+            Span<byte> utf8Bytes = stackalloc byte[4];
+
+            while (!stringToEscape.IsEmpty)
             {
-                // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
-                char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
+                char ch = stringToEscape[0];
 
-                if (dest is not null && destPos != 0)
-                    Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
-                dest = newresult;
+                if (!char.IsAscii(ch))
+                {
+                    if (Rune.DecodeFromUtf16(stringToEscape, out Rune r, out int charsConsumed) != OperationStatus.Done)
+                    {
+                        r = Rune.ReplacementChar;
+                    }
+
+                    Debug.Assert(stringToEscape.EnumerateRunes() is { } e && e.MoveNext() && e.Current == r);
+                    Debug.Assert(charsConsumed is 1 or 2);
+
+                    stringToEscape = stringToEscape.Slice(charsConsumed);
+
+                    // The rune is non-ASCII, so encode it as UTF8, and escape each UTF8 byte.
+                    r.TryEncodeToUtf8(utf8Bytes, out int bytesWritten);
+                    foreach (byte b in utf8Bytes.Slice(0, bytesWritten))
+                    {
+                        PercentEncodeByte(b, ref vsb);
+                    }
+                }
+                else if (!UnreservedReserved.Contains(ch))
+                {
+                    PercentEncodeByte((byte)ch, ref vsb);
+                    stringToEscape = stringToEscape[1..];
+                }
+                else
+                {
+                    // We have a character we don't want to escape. It's likely there are more, do a vectorized search.
+                    int charsToCopy = stringToEscape.IndexOfAnyExcept(UnreservedReserved);
+                    if (charsToCopy < 0)
+                    {
+                        charsToCopy = stringToEscape.Length;
+                    }
+                    Debug.Assert(charsToCopy > 0);
+
+                    vsb.Append(stringToEscape.Slice(0, charsToCopy));
+                    stringToEscape = stringToEscape.Slice(charsToCopy);
+                }
             }
-
-            // ensuring we copied everything form the input string left before last escaping
-            while (prevInputPos != currentInputPos)
-                dest[destPos++] = pStr[prevInputPos++];
-            return dest;
         }
 
-        internal static void EscapeAsciiChar(char ch, char[] to, ref int pos)
+        internal static void PercentEncodeByte(byte ch, ref ValueStringBuilder vsb)
         {
-            to[pos++] = '%';
-            to[pos++] = HexConverter.ToCharUpper(ch >> 4);
-            to[pos++] = HexConverter.ToCharUpper(ch);
+            vsb.Append('%');
+            HexConverter.ToCharsBuffer(ch, vsb.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
         private static readonly SearchValues<char> UnreservedReserved = SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
-        private const short c_MaxAsciiCharsReallocate = 40;
-        private const short c_MaxUnicodeCharsReallocate = 40;
-        private const short c_MaxUTF_8BytesPerUnicodeChar = 4;
-        private const short c_EncodedCharsPerByte = 3;
+        private const int StackallocThreshold = 512;
     }
 }
