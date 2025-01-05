@@ -179,7 +179,7 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case HeapIndex.Guid:
-                    _guidBuilder.SetCapacity(byteCount);
+                    _guidBuilder.Capacity = byteCount;
                     break;
 
                 case HeapIndex.String:
@@ -187,7 +187,7 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
 
                 case HeapIndex.UserString:
-                    _userStringBuilder.SetCapacity(byteCount);
+                    _userStringBuilder.Capacity = byteCount;
                     break;
 
                 default:

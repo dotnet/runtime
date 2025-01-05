@@ -46,6 +46,9 @@ namespace System.Reflection.Metadata
         // Non-head: highest bit is 1, lower 31 bits are not all 0.
         private uint _length;
 
+        // The maximum size of a chunk when writing a large amount of bytes.
+        private readonly int _maxChunkSize;
+
         private const uint IsFrozenMask = 0x80000000;
         internal bool IsHead => (_length & IsFrozenMask) == 0;
         private int Length => (int)(_length & ~IsFrozenMask);
@@ -63,6 +66,96 @@ namespace System.Reflection.Metadata
             _buffer = new byte[Math.Max(MinChunkSize, capacity)];
         }
 
+        /// <summary>
+        /// Creates a new <see cref="BlobBuilder"/> that is underpinned by a preallocated byte array.
+        /// </summary>
+        /// <param name="buffer">The array that underpins the <see cref="BlobBuilder"/>.</param>
+        /// <param name="maxChunkSize">The size of chunks to split large writes into.</param>
+        protected BlobBuilder(byte[] buffer, int maxChunkSize = 0)
+        {
+            if (buffer is null)
+            {
+                Throw.ArgumentNull(nameof(buffer));
+            }
+            if (maxChunkSize < MinChunkSize)
+            {
+                Throw.ArgumentOutOfRange(nameof(maxChunkSize));
+            }
+            if (maxChunkSize == 0)
+            {
+                maxChunkSize = int.MaxValue;
+            }
+
+            _nextOrPrevious = this;
+            _buffer = buffer;
+            _maxChunkSize = maxChunkSize;
+        }
+
+        /// <summary>
+        /// The byte array underpinning the <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <remarks>
+        /// This can only be called on the head of a chain of <see cref="BlobBuilder"/> instances.
+        /// Calling the setter will reset the <see cref="Length"/> to zero.
+        /// </remarks>
+        protected internal byte[] Buffer
+        {
+            get
+            {
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+
+                return _buffer;
+            }
+            set
+            {
+                if (value is null)
+                {
+                    Throw.ArgumentNull(nameof(value));
+                }
+
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+
+                _buffer = value;
+                _length = 0;
+            }
+        }
+
+        /// <summary>
+        /// The size of the byte array underpinning the <see cref="BlobBuilder"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The value is set while the <see cref="BlobBuilder"/>
+        /// is not the head of a chain of <see cref="BlobBuilder"/> instances.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is set to less than the current <see cref="Length"/>.</exception>
+        /// <seealso cref="SetCapacity"/>
+        public int Capacity
+        {
+            get
+            {
+                return _buffer.Length;
+            }
+            set
+            {
+                if (!IsHead)
+                {
+                    Throw.InvalidOperationBuilderAlreadyLinked();
+                }
+                if (value < Length)
+                {
+                    Throw.ArgumentOutOfRange(nameof(value));
+                }
+                if (value != _buffer.Length)
+                {
+                    SetCapacity(value);
+                }
+            }
+        }
+
         protected virtual BlobBuilder AllocateChunk(int minimalSize)
         {
             return new BlobBuilder(Math.Max(_buffer.Length, minimalSize));
@@ -71,6 +164,37 @@ namespace System.Reflection.Metadata
         protected virtual void FreeChunk()
         {
             // nop
+        }
+
+        private static void OnLinking(BlobBuilder left, BlobBuilder right)
+        {
+            left.OnLinking(right);
+            right.OnLinking(left);
+        }
+
+        /// <summary>
+        /// Notifies when this <see cref="BlobBuilder"/> instance is linked with another one.
+        /// </summary>
+        /// <param name="other">The other <see cref="BlobBuilder"/> instance that gets linked.</param>
+        /// <remarks>
+        /// Derived types can override this method to detect when a link is being made between two different types of
+        /// <see cref="BlobBuilder"/> and take appropriate action. It is called before the underlying buffers are
+        /// linked, for both the current and the target instance.
+        /// </remarks>
+        protected virtual void OnLinking(BlobBuilder other)
+        {
+            // nop
+        }
+
+        /// <summary>
+        /// Changes the size of the byte array underpinning the <see cref="BlobBuilder"/>.
+        /// Derived types can override this method to control the allocation strategy.
+        /// </summary>
+        /// <param name="capacity">The array's new size.</param>
+        /// <seealso cref="Capacity"/>
+        protected virtual void SetCapacity(int capacity)
+        {
+            Array.Resize(ref _buffer, Math.Max(MinChunkSize, capacity));
         }
 
         public void Clear()
@@ -158,9 +282,6 @@ namespace System.Reflection.Metadata
         }
 
         protected int FreeBytes => _buffer.Length - Length;
-
-        // internal for testing
-        protected internal int ChunkCapacity => _buffer.Length;
 
         // internal for testing
         internal Chunks GetChunks()
@@ -399,6 +520,8 @@ namespace System.Reflection.Metadata
                 return;
             }
 
+            OnLinking(this, prefix);
+
             PreviousLength += prefix.Count;
 
             // prefix is not a head anymore:
@@ -472,6 +595,8 @@ namespace System.Reflection.Metadata
             _buffer = suffixBuffer;
             _length = suffixLength;
 
+            OnLinking(this, suffix);
+
             PreviousLength += suffix.Length + suffixPreviousLength;
 
             // Update the _previousLength of the suffix so that suffix.Count = suffix._previousLength + suffix.Length doesn't change.
@@ -532,12 +657,13 @@ namespace System.Reflection.Metadata
             }
 
             var newChunk = AllocateChunk(Math.Max(newLength, MinChunkSize));
-            if (newChunk.ChunkCapacity < newLength)
+            if (newChunk.Capacity < newLength)
             {
                 // The overridden allocator didn't provide large enough buffer:
                 throw new InvalidOperationException(SR.Format(SR.ReturnedBuilderSizeTooSmall, GetType(), nameof(AllocateChunk)));
             }
 
+            OnLinking(this, newChunk);
             var newBuffer = newChunk._buffer;
 
             if (_length == 0)
@@ -678,12 +804,14 @@ namespace System.Reflection.Metadata
             AddLength(bytesToCurrent);
 
             ReadOnlySpan<byte> remaining = buffer.Slice(bytesToCurrent);
-            if (!remaining.IsEmpty)
+            while (!remaining.IsEmpty)
             {
-                Expand(remaining.Length);
+                var chunkSize = Math.Min(remaining.Length, _maxChunkSize);
+                Expand(chunkSize);
 
-                remaining.CopyTo(_buffer);
-                AddLength(remaining.Length);
+                remaining.Slice(0, chunkSize).CopyTo(_buffer);
+                AddLength(chunkSize);
+                remaining = remaining.Slice(chunkSize);
             }
         }
 
@@ -789,7 +917,8 @@ namespace System.Reflection.Metadata
             WriteBytes(buffer.AsSpan(start, byteCount));
         }
 
-        internal void WriteBytes(ReadOnlySpan<byte> buffer)
+        /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
+        public void WriteBytes(ReadOnlySpan<byte> buffer)
         {
             if (!IsHead)
             {

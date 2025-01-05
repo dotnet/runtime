@@ -225,8 +225,11 @@ namespace System.Reflection.Metadata
     }
     public partial class BlobBuilder
     {
+        protected BlobBuilder(byte[] buffer, int maxChunkSize = 0) { }
         public BlobBuilder(int capacity = 256) { }
         protected internal int ChunkCapacity { get { throw null; } }
+        public byte[] Buffer { get { throw null; } set { } }
+        public int Capacity { get { throw null; } set { } }
         public int Count { get { throw null; } }
         protected int FreeBytes { get { throw null; } }
         public void Align(int alignment) { }
@@ -238,8 +241,10 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.BlobBuilder.Blobs GetBlobs() { throw null; }
         public void LinkPrefix(System.Reflection.Metadata.BlobBuilder prefix) { }
         public void LinkSuffix(System.Reflection.Metadata.BlobBuilder suffix) { }
+        protected virtual void OnLinking(System.Reflection.Metadata.BlobBuilder other) { }
         public void PadTo(int position) { }
         public System.Reflection.Metadata.Blob ReserveBytes(int byteCount) { throw null; }
+        protected virtual void SetCapacity(int capacity) { throw null; }
         public byte[] ToArray() { throw null; }
         public byte[] ToArray(int start, int byteCount) { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> ToImmutableArray() { throw null; }
@@ -253,6 +258,7 @@ namespace System.Reflection.Metadata
         public void WriteBytes(byte[] buffer, int start, int byteCount) { }
         public void WriteBytes(System.Collections.Immutable.ImmutableArray<byte> buffer) { }
         public void WriteBytes(System.Collections.Immutable.ImmutableArray<byte> buffer, int start, int byteCount) { }
+        public void WriteBytes(System.ReadOnlySpan<byte> buffer) { }
         public void WriteCompressedInteger(int value) { }
         public void WriteCompressedSignedInteger(int value) { }
         public void WriteConstant(object? value) { }
