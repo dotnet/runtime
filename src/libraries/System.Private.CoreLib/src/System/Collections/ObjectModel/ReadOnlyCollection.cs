@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.ObjectModel
 {
     [Serializable]
+    [CollectionBuilder(typeof(ReadOnlyCollection), "CreateCollection")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -228,5 +230,36 @@ namespace System.Collections.ObjectModel
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
         }
+    }
+
+    public static class ReadOnlyCollection
+    {
+        /// <summary>
+        /// Creates a new <see cref="ReadOnlyCollection{T}"/> from the specified span of values.
+        /// This method (simplifies collection initialization)[/dotnet/csharp/language-reference/operators/collection-expressions]
+        /// to create a new <see cref="ReadOnlyCollection{T}"/> with the specified values.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the collection.</typeparam>
+        /// <param name="values">The span of values to include in the collection.</param>
+        /// <returns>A new <see cref="ReadOnlyCollection{T}"/> containing the specified values.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#pragma warning disable IDE0301 // Simplify collection initialization
+        public static ReadOnlyCollection<T> CreateCollection<T>(params ReadOnlySpan<T> values) =>
+            values.Length <= 0 ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(values.ToArray());
+#pragma warning restore IDE0301 // Simplify collection initialization
+
+        /// <summary>
+        /// Creates a new <see cref="ReadOnlySet{T}"/> from the specified span of values.
+        /// This method (simplifies collection initialization)[/dotnet/csharp/language-reference/operators/collection-expressions]
+        /// to create a new <see cref="ReadOnlySet{T}"/> with the specified values.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the collection.</typeparam>
+        /// <param name="values">The span of values to include in the collection.</param>
+        /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#pragma warning disable IDE0301 // Simplify collection initialization
+        public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values) =>
+            values.Length <= 0 ? ReadOnlySet<T>.Empty : new ReadOnlySet<T>((HashSet<T>)[.. values]);
+#pragma warning restore IDE0301 // Simplify collection initialization
     }
 }

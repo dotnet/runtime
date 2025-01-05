@@ -8366,6 +8366,14 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
+    public static partial class ReadOnlyCollection
+    {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> CreateCollection<T>(params System.ReadOnlySpan<T> values) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public static System.Collections.ObjectModel.ReadOnlySet<T> CreateSet<T>(params System.ReadOnlySpan<T> values) { throw null; }
+    }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateCollection")]
     public partial class ReadOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
@@ -8471,6 +8479,7 @@ namespace System.Collections.ObjectModel
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         }
     }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateSet")]
     public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
