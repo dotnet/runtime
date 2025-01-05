@@ -29,33 +29,34 @@ namespace System
             {
                 // We have enough data for at least one vectorized write.
 
+                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loops below.
                 Vector<byte> vector;
 
                 if (sizeof(T) == 1)
                 {
-                    vector = new Vector<byte>(Unsafe.BitCast<T, byte>(value));
+                    vector = new Vector<byte>(Unsafe.As<T, byte>(ref tmp));
                 }
                 else if (sizeof(T) == 2)
                 {
-                    vector = (Vector<byte>)(new Vector<ushort>(Unsafe.BitCast<T, ushort>(value)));
+                    vector = (Vector<byte>)(new Vector<ushort>(Unsafe.As<T, ushort>(ref tmp)));
                 }
                 else if (sizeof(T) == 4)
                 {
                     // special-case float since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(float))
-                        ? (Vector<byte>)(new Vector<float>(Unsafe.BitCast<T, float>(value)))
-                        : (Vector<byte>)(new Vector<uint>(Unsafe.BitCast<T, uint>(value)));
+                        ? (Vector<byte>)(new Vector<float>((float)(object)tmp!))
+                        : (Vector<byte>)(new Vector<uint>(Unsafe.As<T, uint>(ref tmp)));
                 }
                 else if (sizeof(T) == 8)
                 {
                     // special-case double since it's already passed in a SIMD reg
                     vector = (typeof(T) == typeof(double))
-                        ? (Vector<byte>)(new Vector<double>(Unsafe.BitCast<T, double>(value)))
-                        : (Vector<byte>)(new Vector<ulong>(Unsafe.BitCast<T, ulong>(value)));
+                        ? (Vector<byte>)(new Vector<double>((double)(object)tmp!))
+                        : (Vector<byte>)(new Vector<ulong>(Unsafe.As<T, ulong>(ref tmp)));
                 }
                 else if (sizeof(T) == 16)
                 {
-                    Vector128<byte> vec128 = Unsafe.BitCast<T, Vector128<byte>>(value);
+                    Vector128<byte> vec128 = Unsafe.As<T, Vector128<byte>>(ref tmp);
                     if (Vector<byte>.Count == 16)
                     {
                         vector = vec128.AsVector();
@@ -74,7 +75,7 @@ namespace System
                 {
                     if (Vector<byte>.Count == 32)
                     {
-                        vector = Unsafe.BitCast<T, Vector256<byte>>(value).AsVector();
+                        vector = Unsafe.As<T, Vector256<byte>>(ref tmp).AsVector();
                     }
                     else
                     {
