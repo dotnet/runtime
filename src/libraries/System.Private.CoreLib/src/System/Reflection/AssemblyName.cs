@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
@@ -375,7 +376,7 @@ namespace System.Reflection
 
                         prevInputPos = i + 1;
                     }
-                    else if (!IsReservedUnreservedOrHash(ch))
+                    else if (!UnreservedReserved.Contains(ch))
                     {
                         dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
                             c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
@@ -424,29 +425,11 @@ namespace System.Reflection
             to[pos++] = HexConverter.ToCharUpper(ch);
         }
 
-        private static bool IsReservedUnreservedOrHash(char c)
-        {
-            if (IsUnreserved(c))
-            {
-                return true;
-            }
-            return RFC3986ReservedMarks.Contains(c);
-        }
-
-        internal static bool IsUnreserved(char c)
-        {
-            if (char.IsAsciiLetterOrDigit(c))
-            {
-                return true;
-            }
-            return RFC3986UnreservedMarks.Contains(c);
-        }
+        private static readonly SearchValues<char> UnreservedReserved = SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
         private const short c_MaxAsciiCharsReallocate = 40;
         private const short c_MaxUnicodeCharsReallocate = 40;
         private const short c_MaxUTF_8BytesPerUnicodeChar = 4;
         private const short c_EncodedCharsPerByte = 3;
-        private const string RFC3986ReservedMarks = ":/?#[]@!$&'()*+,;=";
-        private const string RFC3986UnreservedMarks = "-._~";
     }
 }
