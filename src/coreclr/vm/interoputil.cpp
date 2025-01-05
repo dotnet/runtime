@@ -3022,7 +3022,7 @@ static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a CLR Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,
@@ -3509,7 +3509,7 @@ void IUInvokeDispMethod(
         }
         else
         {
-            // Convert the return variant to a COR variant.
+            // Convert the return variant to a CLR object.
             OleVariant::MarshalObjectForOleVariant(&VarResult, pRetVal);
         }
     }
