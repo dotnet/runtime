@@ -449,11 +449,6 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 #define IMAGE_DLLCHARACTERISTICS_X86_THUNK   0x1000 // Image is a Wx86 Thunk DLL
 // Note: The Borland linker sets IMAGE_LIBRARY_xxx flags in DllCharacteristics
 
-// LoaderFlags Values
-
-#define IMAGE_LOADER_FLAGS_COMPLUS             0x00000001   // COM+ image
-#define IMAGE_LOADER_FLAGS_SYSTEM_GLOBAL       0x01000000   // Global subsections apply across TS sessions.
-
 // begin_winnt
 
 // Directory Entries
