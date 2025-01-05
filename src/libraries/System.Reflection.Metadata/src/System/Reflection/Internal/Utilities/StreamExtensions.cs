@@ -48,25 +48,7 @@ namespace System.Reflection.Internal
 
 #if NET
         internal static int TryReadAll(this Stream stream, Span<byte> buffer)
-#if NET
             => stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
-#else
-        {
-            int totalBytesRead = 0;
-            while (totalBytesRead < buffer.Length)
-            {
-                int bytesRead = stream.Read(buffer.Slice(totalBytesRead));
-                if (bytesRead == 0)
-                {
-                    break;
-                }
-
-                totalBytesRead += bytesRead;
-            }
-
-            return totalBytesRead;
-        }
-#endif
 #endif
 
         /// <summary>
