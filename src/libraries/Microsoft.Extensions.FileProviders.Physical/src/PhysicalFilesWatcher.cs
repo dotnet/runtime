@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
             else
             {
-                changeToken = GetOrAddFilePathChangeToken(pattern);
+                changeToken = GetOrAddFilePathChangeToken(Path.GetFileName(pattern));
             }
 
             return changeToken;
