@@ -387,7 +387,7 @@ namespace System.Reflection
             HexConverter.ToCharsBuffer(ch, vsb.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-        private static readonly SearchValues<char> UnreservedReserved = SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
+        private static SearchValues<char> UnreservedReserved => field ??= SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
         private const int StackallocThreshold = 512;
     }
