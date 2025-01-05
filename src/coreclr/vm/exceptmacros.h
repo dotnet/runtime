@@ -41,7 +41,7 @@
 // You can also add a descriptive error string as follows:
 //
 //    - Add a descriptive error string and resource id to
-//      COM99\src\dlls\mscorrc\resource.h and mscorrc.rc.
+//      src\coreclr\dlls\mscorrc\resource.h and mscorrc.rc.
 //      Embed "%1", "%2" or "%3" to leave room for runtime string
 //      inserts.
 //
