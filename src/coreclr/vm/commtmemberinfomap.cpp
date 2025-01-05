@@ -1125,7 +1125,7 @@ void ComMTMemberInfoMap::AssignDefaultMember(
     int         *pDef=0;                // Pointer to one of the def* variables.
     LPWSTR      pName=NULL;             // Pointer to a name.
     ULONG       cbSig=0;                // Size of Cor signature.
-    ULONG       ixSig=0;                // Index into CLR signature.
+    ULONG       ixSig=0;                // Index into signature.
     ULONG       callconv=0;             // A member's calling convention.
     ULONG       cParams=0;              // A member's parameter count.
     ULONG       retval=0;               // A default member's return type.
@@ -1250,7 +1250,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
     mdToken     tkTypeRef;              // Token for a TypeRef/TypeDef
     LPWSTR      pName;                  // Pointer to a name.
     ULONG       cbSig;                  // Size of Cor signature.
-    ULONG       ixSig;                  // Index into CLR signature.
+    ULONG       ixSig;                  // Index into signature.
     ULONG       callconv;               // A member's calling convention.
     ULONG       cParams;                // A member's parameter count.
     MethodDesc  *pMeth;                 // A method desc.
