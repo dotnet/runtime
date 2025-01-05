@@ -310,7 +310,7 @@ namespace System.Reflection
                 return string.Empty;
 
             int position = 0;
-            char[]? dest = EscapeString(codebase, 0, codebase.Length, null, ref position, true, c_DummyChar, c_DummyChar, c_DummyChar);
+            char[]? dest = EscapeString(codebase, null, ref position);
             if (dest == null)
                 return codebase;
 
@@ -318,34 +318,29 @@ namespace System.Reflection
         }
 
         // This implementation of EscapeString has been copied from System.Private.Uri from the runtime repo
-        // - forceX characters are always escaped if found
-        // - rsvd character will remain unescaped
         //
-        // start    - starting offset from input
-        // end      - the exclusive ending offset in input
         // destPos  - starting offset in dest for output, on return this will be an exclusive "end" in the output.
         //
         // In case "dest" has lack of space it will be reallocated by preserving the _whole_ content up to current destPos
         //
         // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
         //
-        internal static unsafe char[]? EscapeString(string input, int start, int end, char[]? dest, ref int destPos,
-            bool isUriString, char force1, char force2, char rsvd)
+        internal static unsafe char[]? EscapeString(string input, char[]? dest, ref int destPos)
         {
-            int i = start;
-            int prevInputPos = start;
+            int i = 0;
+            int prevInputPos = 0;
             byte* bytes = stackalloc byte[c_MaxUnicodeCharsReallocate * c_MaxUTF_8BytesPerUnicodeChar];   // 40*4=160
 
             fixed (char* pStr = input)
             {
-                for (; i < end; ++i)
+                for (; i < input.Length; ++i)
                 {
                     char ch = pStr[i];
 
                     // a Unicode ?
                     if (ch > '\x7F')
                     {
-                        short maxSize = (short)Math.Min(end - i, (int)c_MaxUnicodeCharsReallocate - 1);
+                        short maxSize = (short)Math.Min(input.Length - i, (int)c_MaxUnicodeCharsReallocate - 1);
 
                         short count = 1;
                         for (; count < maxSize && pStr[i + count] > '\x7f'; ++count) ;
@@ -354,7 +349,7 @@ namespace System.Reflection
                         if (pStr[i + count - 1] >= 0xD800 && pStr[i + count - 1] <= 0xDBFF)
                         {
                             // Should be a rare case where the app tries to feed an invalid Unicode surrogates pair
-                            if (count == 1 || count == end - i)
+                            if (count == 1 || count == input.Length - i)
                                 throw new FormatException(SR.Arg_FormatException);
                             // need to grab one more char as a Surrogate except when it's a bogus input
                             ++count;
@@ -380,26 +375,7 @@ namespace System.Reflection
 
                         prevInputPos = i + 1;
                     }
-                    else if (ch == '%' && rsvd == '%')
-                    {
-                        // Means we don't reEncode '%' but check for the possible escaped sequence
-                        dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
-                            c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
-                        if (i + 2 < end && char.IsAsciiHexDigit(pStr[i + 1]) && char.IsAsciiHexDigit(pStr[i + 2]))
-                        {
-                            // leave it escaped
-                            dest[destPos++] = '%';
-                            dest[destPos++] = pStr[i + 1];
-                            dest[destPos++] = pStr[i + 2];
-                            i += 2;
-                        }
-                        else
-                        {
-                            EscapeAsciiChar('%', dest, ref destPos);
-                        }
-                        prevInputPos = i + 1;
-                    }
-                    else if (ch == force1 || ch == force2 || (ch != rsvd && (isUriString ? !IsReservedUnreservedOrHash(ch) : !IsUnreserved(ch))))
+                    else if (!IsReservedUnreservedOrHash(ch))
                     {
                         dest = EnsureDestinationSize(pStr, dest, i, c_EncodedCharsPerByte,
                             c_MaxAsciiCharsReallocate * c_EncodedCharsPerByte, ref destPos, prevInputPos);
@@ -411,7 +387,7 @@ namespace System.Reflection
                 if (prevInputPos != i)
                 {
                     // need to fill up the dest array ?
-                    if (prevInputPos != start || dest != null)
+                    if (prevInputPos != 0 || dest != null)
                         dest = EnsureDestinationSize(pStr, dest, i, 0, 0, ref destPos, prevInputPos);
                 }
             }
@@ -466,7 +442,6 @@ namespace System.Reflection
             return RFC3986UnreservedMarks.Contains(c);
         }
 
-        internal const char c_DummyChar = (char)0xFFFF;     // An Invalid Unicode character used as a dummy char passed into the parameter
         private const short c_MaxAsciiCharsReallocate = 40;
         private const short c_MaxUnicodeCharsReallocate = 40;
         private const short c_MaxUTF_8BytesPerUnicodeChar = 4;
