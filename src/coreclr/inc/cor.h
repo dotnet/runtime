@@ -529,7 +529,7 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
 {
     STDMETHOD(DefineMethodSpec)(
         mdToken     tkParent,               // [IN] MethodDef or MemberRef
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of CLR signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodSpec *pmi) PURE;            // [OUT] method instantiation token
 

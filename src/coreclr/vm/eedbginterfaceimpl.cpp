@@ -4,7 +4,7 @@
 
 /*
  *
- * COM+99 EE to Debugger Interface Implementation
+ * CLR EE to Debugger Interface Implementation
  *
  */
 

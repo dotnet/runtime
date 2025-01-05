@@ -93,11 +93,11 @@
 #ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
 //    | |                         unmanaged code back to managed code. It's
-//    | |                         main functions are to stop COM+ exception
+//    | |                         main functions are to stop CLR exception
 //    | |                         propagation and to expose unmanaged parameters.
 //    | |
 //    | +-ComMethodFrame        - this frame represents a transition from
-//    |   |                       com to com+
+//    |   |                       com to CLR
 //    |   |
 //    |   +-ComPrestubMethodFrame - prestub frame for calls from COM to CLR
 //    |
@@ -1933,7 +1933,7 @@ protected:
 };
 
 //------------------------------------------------------------------------
-// This frame represents a transition from COM to COM+
+// This frame represents a transition from COM to CLR
 //------------------------------------------------------------------------
 
 class ComMethodFrame : public UnmanagedToManagedFrame
@@ -2390,7 +2390,7 @@ typedef VPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
 #ifdef FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
-// This represents a com to com+ call method prestub.
+// This represents a com to CLR call method prestub.
 // we need to catch exceptions etc. so this frame is not the same
 // as the prestub method frame
 // Note that in rare IJW cases, the immediate caller could be a managed method

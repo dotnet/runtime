@@ -125,7 +125,7 @@ typedef enum ReplacesGeneralNumericDefines
 
 typedef enum ReplacesCorHdrNumericDefines
 {
-// COM+ Header entry point flags.
+// CLR Header entry point flags.
     COMIMAGE_FLAGS_ILONLY               =0x00000001,
     COMIMAGE_FLAGS_32BITREQUIRED        =0x00000002,    // *** Do not manipulate this bit directly (see notes above)
     COMIMAGE_FLAGS_IL_LIBRARY           =0x00000004,
@@ -248,7 +248,7 @@ typedef struct IMAGE_COR20_HEADER
 
 #else // !__IMAGE_COR20_HEADER_DEFINED__
 
-// <TODO>@TODO: This is required because we pull in the COM+ 2.0 PE header
+// <TODO>@TODO: This is required because we pull in the CLR 2.0 PE header
 // definition from WinNT.h, and these constants have not yet propagated to there.</TODO>
 //
 #define COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN 0x08
