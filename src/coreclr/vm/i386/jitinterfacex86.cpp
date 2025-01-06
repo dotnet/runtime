@@ -44,7 +44,7 @@ public:
         MP_ALLOCATOR = 0x1,
         SIZE_IN_EAX  = 0x2,
         OBJ_ARRAY    = 0x4,
-        ALIGN8       = 0x8,     // insert a dummy object to insure 8 byte alignment (until the next GC)
+        ALIGN8       = 0x8,     // insert a dummy object to ensure 8 byte alignment (until the next GC)
         ALIGN8OBJ    = 0x10,
     };
 

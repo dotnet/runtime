@@ -731,7 +731,7 @@ namespace System.Linq
                         list = ToListNoPresizing();
                         break;
                     case 0:
-                        list = new List<TResult>();
+                        list = [];
                         break;
                     default:
                         list = new List<TResult>(count);
@@ -908,7 +908,7 @@ namespace System.Linq
                 int count = Count;
                 if (count == 0)
                 {
-                    return new List<TResult>();
+                    return [];
                 }
 
                 List<TResult> list = new List<TResult>(count);

@@ -608,7 +608,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private unsafe AutoResetEvent CreateWaitEvent(bool areContentionEventsEnabled)
+        private AutoResetEvent CreateWaitEvent(bool areContentionEventsEnabled)
         {
             var newWaitEvent = new AutoResetEvent(false);
             AutoResetEvent? waitEventBeforeUpdate = Interlocked.CompareExchange(ref _waitEvent, newWaitEvent, null);

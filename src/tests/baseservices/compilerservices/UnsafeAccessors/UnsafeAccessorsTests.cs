@@ -328,6 +328,54 @@ public static unsafe class UnsafeAccessorsTests
         extern static ref delegate*<void> GetFPtr(ref AllFields f);
     }
 
+    // Contains fields that have modopts/modreqs
+    struct FieldsWithModifiers
+    {
+        private static volatile int s_vInt;
+        private volatile int _vInt;
+    }
+
+    [Fact]
+    public static void Verify_AccessFieldsWithModifiers()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldsWithModifiers)}");
+
+        FieldsWithModifiers fieldsWithModifiers = default;
+
+        GetStaticVolatileInt(ref fieldsWithModifiers) = default;
+        GetVolatileInt(ref fieldsWithModifiers) = default;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="s_vInt")]
+        extern static ref int GetStaticVolatileInt(ref FieldsWithModifiers f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_vInt")]
+        extern static ref int GetVolatileInt(ref FieldsWithModifiers f);
+    }
+
+    // Contains fields that are readonly
+    readonly struct ReadOnlyFields
+    {
+        public static readonly int s_rInt;
+        public readonly int _rInt;
+    }
+
+    [Fact]
+    public static void Verify_AccessFieldsWithReadOnlyRefs()
+    {
+        Console.WriteLine($"Running {nameof(Verify_AccessFieldsWithReadOnlyRefs)}");
+
+        ReadOnlyFields readOnlyFields = default;
+
+        Assert.True(Unsafe.AreSame(in GetStaticReadOnlyInt(in readOnlyFields), in ReadOnlyFields.s_rInt));
+        Assert.True(Unsafe.AreSame(in GetReadOnlyInt(in readOnlyFields), in readOnlyFields._rInt));
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name="s_rInt")]
+        extern static ref readonly int GetStaticReadOnlyInt(ref readonly ReadOnlyFields f);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="_rInt")]
+        extern static ref readonly int GetReadOnlyInt(ref readonly ReadOnlyFields f);
+    }
+
     [Fact]
     public static void Verify_AccessStaticMethodClass()
     {

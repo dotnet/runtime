@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Http.Logging
     /// </summary>
     /// <remarks>
     /// <para>
-    /// It is up to the user implementing the interface to decide where (to <see cref="Microsoft.Extensions.Logging.ILogger"/>, or anything else) and what exactly to log.
+    /// It is up to the user implementing the interface to decide whether to use <see cref="Microsoft.Extensions.Logging.ILogger"/>, or anything else, and what exactly to log.
     /// However, the implementation should be mindful about potential adverse side effects of accessing some of the <see cref="HttpRequestMessage"/> or
     /// <see cref="HttpResponseMessage"/> properties, such as reading from a content stream; if possible, such behavior should be avoided.
     /// </para>

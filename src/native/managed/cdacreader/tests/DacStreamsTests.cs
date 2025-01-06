@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public class DacStreamsTests
 {
@@ -25,30 +27,24 @@ public class DacStreamsTests
     [
     ];
 
-    private static readonly (string Name, ulong Value, string? Type)[] DacStreamsGlobals =
+    private static readonly (string Name, ulong Value)[] DacStreamsGlobals =
     [
-        (nameof(Constants.Globals.MiniMetaDataBuffAddress), TestMiniMetaDataBuffGlobalAddress, null),
-        (nameof(Constants.Globals.MiniMetaDataBuffMaxSize), TestMiniMetaDataBuffGlobalMaxSize, null),
+        (nameof(Constants.Globals.MiniMetaDataBuffAddress), TestMiniMetaDataBuffGlobalAddress),
+        (nameof(Constants.Globals.MiniMetaDataBuffMaxSize), TestMiniMetaDataBuffGlobalMaxSize),
     ];
 
     private static unsafe void DacStreamsContractHelper(MockTarget.Architecture arch, ConfigureContextBuilder configure, Action<Target> testCase)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
-
         MockMemorySpace.Builder builder = new(targetTestHelpers);
-
-        builder = builder
-                .SetContracts([nameof(Contracts.DacStreams)])
-                .SetTypes(DacStreamsTypes)
-                .SetGlobals(DacStreamsGlobals);
-
         if (configure != null)
         {
             builder = configure(builder);
         }
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        var target = new TestPlaceholderTarget(arch, builder.GetReadContext().ReadFromTarget, DacStreamsTypes, DacStreamsGlobals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.DacStreams == ((IContractFactory<IDacStreams>)new DacStreamsFactory()).CreateContract(target, 1)));
 
         testCase(target);
     }

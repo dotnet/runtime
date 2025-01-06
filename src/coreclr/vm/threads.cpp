@@ -1436,10 +1436,6 @@ Thread::Thread()
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER
-    m_fPreemptiveGCDisabledForGCStress = false;
-#endif
-
 #ifdef _DEBUG
     m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
 #endif
@@ -1502,7 +1498,10 @@ Thread::Thread()
 #ifdef FEATURE_PERFTRACING
     memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
+
+#ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+#endif
 
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
@@ -1533,7 +1532,7 @@ void Thread::InitThread()
         // This message actually serves a purpose (which is why it is always run)
         // The Stress log is run during hijacking, when other threads can be suspended
         // at arbitrary locations (including when holding a lock that NT uses to serialize
-        // all memory allocations).  By sending a message now, we insure that the stress
+        // all memory allocations).  By sending a message now, we ensure that the stress
         // log will not allocate memory at these critical times an avoid deadlock.
     STRESS_LOG2(LF_ALWAYS, LL_ALWAYS, "SetupThread  managed Thread %p Thread Id = %x\n", this, GetThreadId());
 
@@ -2019,10 +2018,13 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    SetThreadName(hThread, pName);
+    if (hThread != INVALID_HANDLE_VALUE)
+    {
+        SetThreadName(hThread, pName);
 
-    if (pThreadId)
-        *pThreadId = threadId;
+        if (pThreadId)
+            *pThreadId = threadId;
+    }
 
     return hThread;
 }
@@ -6002,7 +6004,7 @@ BOOL Thread::UniqueStack(void* stackStart)
     size_t stackTrace[UniqueStackDepth+1] = {0};
 
         // stackTraceHash represents a hash of entire stack at the time we make the call,
-        // We insure at least GC per unique stackTrace.  What information is contained in
+        // We ensure at least GC per unique stackTrace.  What information is contained in
         // 'stackTrace' is somewhat arbitrary.  We choose it to mean all functions live
         // on the stack up to the first jitted function.
 
@@ -6021,7 +6023,7 @@ BOOL Thread::UniqueStack(void* stackStart)
         if (pFrame == 0 || pFrame == (Frame*) -1)
             break;
 
-        pFrame->GetFunction();      // This insures that helper frames are inited
+        pFrame->GetFunction();      // This ensures that helper frames are inited
 
         if (pFrame->GetReturnAddress() != 0)
         {

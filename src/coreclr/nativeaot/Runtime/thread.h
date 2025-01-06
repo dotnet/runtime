@@ -6,6 +6,7 @@
 
 #include "StackFrameIterator.h"
 #include "slist.h" // DefaultSListTraits
+#include <minipal/xoshiro128pp.h>
 
 struct gc_alloc_context;
 class RuntimeInstance;
@@ -113,7 +114,19 @@ struct ee_alloc_context
 
     gc_alloc_context* GetGCAllocContext();
     uint8_t* GetCombinedLimit();
-    void UpdateCombinedLimit();
+    void UpdateCombinedLimit(bool samplingEnabled);
+    static bool IsRandomizedSamplingEnabled();
+    static uint32_t ComputeGeometricRandom();
+
+    struct PerThreadRandom
+    {
+        minipal_xoshiro128pp random_state;
+
+        PerThreadRandom();
+        double NextDouble();
+    };
+
+    static thread_local PerThreadRandom t_random;
 };
 
 
@@ -129,11 +142,11 @@ struct RuntimeThreadLocals
 #ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
 #ifdef TARGET_X86
+    uintptr_t               m_uHijackedReturnValueFlags;
     PCODE                   m_LastRedirectIP;
     uint64_t                m_SpinCount;
 #endif

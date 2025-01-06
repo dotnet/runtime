@@ -256,7 +256,6 @@ jobs:
                   -arch $(archType)
                   /p:BuildMonoAotCrossCompiler=true
                   /p:BuildMonoAotCrossCompilerOnly=true
-                  /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                   /p:MonoAOTEnableLLVM=true
           displayName: "Build Mono LLVM AOT cross compiler"
 

@@ -2,9 +2,9 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
-    <DefineConstants>UNITTEST</DefineConstants>
+    <DefineConstants>$(DefineConstants);UNITTEST</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />

@@ -35,8 +35,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
   <!-- Set up default feature switches -->
   <PropertyGroup>
-    <UseSystemResourceKeys Condition="$(IlcDisableReflection) == 'true'">true</UseSystemResourceKeys>
-    <EventSourceSupport Condition="$(IlcDisableReflection) == 'true'">false</EventSourceSupport>
     <EventSourceSupport Condition="$(EventSourceSupport) == ''">false</EventSourceSupport>
     <UseWindowsThreadPool Condition="'$(UseWindowsThreadPool)' == '' and '$(_targetOS)' == 'win'">true</UseWindowsThreadPool>
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
@@ -104,12 +102,11 @@ The .NET Foundation licenses this file to you under the MIT license.
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
-    <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib" />
+    <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib,HIDDEN" />
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(StackTraceSupport) != 'false'" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
-    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
-    <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
   </ItemGroup>
 
   <ItemDefinitionGroup>
@@ -240,6 +237,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateMstatFile) == 'true'" Include="--mstat:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).mstat" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--dgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).codegen.dgml.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
+      <IlcArg Condition="$(IlcMultiModule) != 'true' and $(NativeDebugSymbols) == 'true' and $(EnableSourceLink) == 'true' and $(_targetOS) == 'win'" Include="--sourcelink:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).sourcelink" />
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(FullPath)')" />
       <IlcArg Include="@(TrimmerRootDescriptor->'--descriptor:%(FullPath)')" />
       <IlcArg Condition="'$(NativeLib)' != ''" Include="--nativelib" />
@@ -258,15 +256,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(ServerGarbageCollection) == 'true'" Include="--runtimeopt:gcServer=1" />
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
-      <IlcArg Condition="$(IlcScanReflection) != 'false' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
+      <IlcArg Condition="$(IlcScanReflection) != 'false'" Include="--scanreflection" />
       <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--noinlinetls" />
       <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instruction-set:$(IlcInstructionSet)" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--reflectiondata:none" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection=false" />
       <IlcArg Condition="$(IlcMaxVectorTBitWidth) != ''" Include="--max-vectort-bitwidth:$(IlcMaxVectorTBitWidth)" />
       <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
@@ -291,13 +286,17 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcResilient) != 'false'" Include="--resilient" />
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
-
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(DebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
 
       <!-- Export the managed entry point if building a native library in custom main mode -->
       <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
+
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--reachabilityinstrument" />
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true'" Include="--feature:Internal.Runtime.CompilerHelpers.ReachabilityInstrumentationSupport=true" />
+      <IlcArg Condition="'$(_ReachabilityInstrumentationFile)' != ''" Include="--reachabilityuse:$(_ReachabilityInstrumentationFile)" />
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true' or '$(_ReachabilityInstrumentationFile)' != ''" Include="--noinlinetls" />
+      <IlcArg Condition="'$(_InstrumentReachability)' == 'true' or '$(_ReachabilityInstrumentationFile)' != ''" Include="--nopreinitstatics" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

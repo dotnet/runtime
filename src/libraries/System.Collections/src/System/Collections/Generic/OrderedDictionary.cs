@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if NET8_0_OR_GREATER
+#if NET
 using static System.ArgumentNullException;
 using static System.ArgumentOutOfRangeException;
 #else
@@ -377,7 +377,7 @@ namespace System.Collections.Generic
             {
                 ThrowIfNull(key);
 
-                bool modified = TryInsert(index: -1, key, value, InsertionBehavior.OverwriteExisting);
+                bool modified = TryInsert(index: -1, key, value, InsertionBehavior.OverwriteExisting, out _);
                 Debug.Assert(modified);
             }
         }
@@ -392,8 +392,9 @@ namespace System.Collections.Generic
         /// - OverwriteExisting: If the key already exists, overwrites its value with the specified value, e.g. this[key] = value
         /// - ThrowOnExisting: If the key already exists, throws an exception, e.g. Add(key, value)
         /// </param>
+        /// <param name="keyIndex">The index of the added or existing key. This is always a valid index into the dictionary.</param>
         /// <returns>true if the collection was updated; otherwise, false.</returns>
-        private bool TryInsert(int index, TKey key, TValue value, InsertionBehavior behavior)
+        private bool TryInsert(int index, TKey key, TValue value, InsertionBehavior behavior, out int keyIndex)
         {
             // Search for the key in the dictionary.
             uint hashCode = 0, collisionCount = 0;
@@ -402,6 +403,9 @@ namespace System.Collections.Generic
             // Handle the case where the key already exists, based on the requested behavior.
             if (i >= 0)
             {
+                keyIndex = i;
+                Debug.Assert(0 <= keyIndex && keyIndex < _count);
+
                 Debug.Assert(_entries is not null);
 
                 switch (behavior)
@@ -467,6 +471,9 @@ namespace System.Collections.Generic
 
             RehashIfNecessary(collisionCount, entries);
 
+            keyIndex = index;
+            Debug.Assert(0 <= keyIndex && keyIndex < _count);
+
             return true;
         }
 
@@ -479,7 +486,7 @@ namespace System.Collections.Generic
         {
             ThrowIfNull(key);
 
-            TryInsert(index: -1, key, value, InsertionBehavior.ThrowOnExisting);
+            TryInsert(index: -1, key, value, InsertionBehavior.ThrowOnExisting, out _);
         }
 
         /// <summary>Adds the specified key and value to the dictionary if the key doesn't already exist.</summary>
@@ -487,11 +494,19 @@ namespace System.Collections.Generic
         /// <param name="value">The value of the element to add. The value can be null for reference types.</param>
         /// <exception cref="ArgumentNullException">key is null.</exception>
         /// <returns>true if the key didn't exist and the key and value were added to the dictionary; otherwise, false.</returns>
-        public bool TryAdd(TKey key, TValue value)
+        public bool TryAdd(TKey key, TValue value) => TryAdd(key, value, out _);
+
+        /// <summary>Adds the specified key and value to the dictionary if the key doesn't already exist.</summary>
+        /// <param name="key">The key of the element to add.</param>
+        /// <param name="value">The value of the element to add. The value can be null for reference types.</param>
+        /// <param name="index">The index of the added or existing <paramref name="key"/>. This is always a valid index into the dictionary.</param>
+        /// <exception cref="ArgumentNullException">key is null.</exception>
+        /// <returns>true if the key didn't exist and the key and value were added to the dictionary; otherwise, false.</returns>
+        public bool TryAdd(TKey key, TValue value, out int index)
         {
             ThrowIfNull(key);
 
-            return TryInsert(index: -1, key, value, InsertionBehavior.IgnoreInsertion);
+            return TryInsert(index: -1, key, value, InsertionBehavior.IgnoreInsertion, out index);
         }
 
         /// <summary>Adds each element of the enumerable to the dictionary.</summary>
@@ -714,7 +729,7 @@ namespace System.Collections.Generic
 
             ThrowIfNull(key);
 
-            TryInsert(index, key, value, InsertionBehavior.ThrowOnExisting);
+            TryInsert(index, key, value, InsertionBehavior.ThrowOnExisting, out _);
         }
 
         /// <summary>Removes the value with the specified key from the <see cref="OrderedDictionary{TKey, TValue}"/>.</summary>
@@ -896,12 +911,22 @@ namespace System.Collections.Generic
         /// otherwise, the default value for the type of the value parameter.
         /// </param>
         /// <returns>true if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, false.</returns>
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value) => TryGetValue(key, out value, out _);
+
+        /// <summary>Gets the value associated with the specified key.</summary>
+        /// <param name="key">The key of the value to get.</param>
+        /// <param name="value">
+        /// When this method returns, contains the value associated with the specified key, if the key is found;
+        /// otherwise, the default value for the type of the value parameter.
+        /// </param>
+        /// <param name="index">The index of <paramref name="key"/> if found; otherwise, -1.</param>
+        /// <returns>true if the <see cref="OrderedDictionary{TKey, TValue}"/> contains an element with the specified key; otherwise, false.</returns>
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value, out int index)
         {
             ThrowIfNull(key);
 
             // Find the key.
-            int index = IndexOf(key);
+            index = IndexOf(key);
             if (index >= 0)
             {
                 // It exists. Return its value.

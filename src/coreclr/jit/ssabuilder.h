@@ -12,8 +12,28 @@ typedef int LclVarNum;
 // Pair of a local var name eg: V01 and Ssa number; eg: V01_01
 typedef std::pair<LclVarNum, int> SsaVarName;
 
+struct UseDefLocation
+{
+    BasicBlock*    Block = nullptr;
+    Statement*     Stmt  = nullptr;
+    GenTreeLclVar* Tree  = nullptr;
+
+    UseDefLocation()
+    {
+    }
+
+    UseDefLocation(BasicBlock* block, Statement* stmt, GenTreeLclVar* tree)
+        : Block(block)
+        , Stmt(stmt)
+        , Tree(tree)
+    {
+    }
+};
+
 class SsaBuilder
 {
+    friend class IncrementalSsaBuilder;
+
 private:
     inline void EndPhase(Phases phase)
     {
@@ -34,18 +54,20 @@ public:
     void Build();
 
 private:
-    // Compute flow graph dominance frontiers.
-    void ComputeDominanceFrontiers(BasicBlock** postOrder, int count, BlkToBlkVectorMap* mapDF);
-
-    // Compute the iterated dominance frontier for the specified block.
-    void ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkVectorMap* mapDF, BlkVector* bIDF);
-
     // Insert a new GT_PHI statement.
-    void InsertPhi(BasicBlock* block, unsigned lclNum);
+    static Statement* InsertPhi(Compiler* comp, BasicBlock* block, unsigned lclNum);
 
     // Add a new GT_PHI_ARG node to an existing GT_PHI node
     void AddPhiArg(
         BasicBlock* block, Statement* stmt, GenTreePhi* phi, unsigned lclNum, unsigned ssaNum, BasicBlock* pred);
+
+    static void AddNewPhiArg(Compiler*   comp,
+                             BasicBlock* block,
+                             Statement*  stmt,
+                             GenTreePhi* phi,
+                             unsigned    lclNum,
+                             unsigned    ssaNum,
+                             BasicBlock* pred);
 
     // Requires "postOrder" to hold the blocks of the flowgraph in topologically sorted order. Requires
     // count to be the valid entries in the "postOrder" array. Inserts GT_PHI nodes at the beginning
@@ -79,12 +101,55 @@ private:
     // the handlers of a newly entered block based on one entering block.
     void AddPhiArgsToNewlyEnteredHandler(BasicBlock* predEnterBlock, BasicBlock* enterBlock, BasicBlock* handlerStart);
 
-    Compiler*     m_pCompiler;
-    CompAllocator m_allocator;
-
-    // Bit vector used by ComputeImmediateDom to track already visited blocks.
-    BitVecTraits m_visitedTraits;
-    BitVec       m_visited;
-
+    Compiler*      m_pCompiler;
+    CompAllocator  m_allocator;
     SsaRenameState m_renameStack;
+};
+
+class IncrementalLiveInBuilder
+{
+    Compiler*               m_comp;
+    ArrayStack<BasicBlock*> m_queue;
+
+public:
+    IncrementalLiveInBuilder(Compiler* comp)
+        : m_comp(comp)
+        , m_queue(comp->getAllocator(CMK_SSA))
+    {
+    }
+
+    void MarkLiveInBackwards(unsigned lclNum, const UseDefLocation& use, const UseDefLocation& reachingDef);
+};
+
+class IncrementalSsaBuilder
+{
+    Compiler*                  m_comp;
+    unsigned                   m_lclNum;
+    ArrayStack<UseDefLocation> m_defs;
+    BitVecTraits               m_poTraits;
+    BitVec                     m_defBlocks                  = BitVecOps::UninitVal();
+    BitVec                     m_iteratedDominanceFrontiers = BitVecOps::UninitVal();
+    IncrementalLiveInBuilder   m_liveInBuilder;
+
+#ifdef DEBUG
+    bool m_finalizedDefs = false;
+#endif
+
+    UseDefLocation FindOrCreateReachingDef(const UseDefLocation& use);
+    bool           FindReachingDefInBlock(const UseDefLocation& use, BasicBlock* block, UseDefLocation* def);
+    bool           FindReachingDefInSameStatement(const UseDefLocation& use, UseDefLocation* def);
+    Statement*     LatestStatement(Statement* stmt1, Statement* stmt2);
+public:
+    IncrementalSsaBuilder(Compiler* comp, unsigned lclNum)
+        : m_comp(comp)
+        , m_lclNum(lclNum)
+        , m_defs(comp->getAllocator(CMK_SSA))
+        , m_poTraits(0, comp)
+        , m_liveInBuilder(comp)
+    {
+    }
+
+    void InsertDef(const UseDefLocation& def);
+    bool FinalizeDefs();
+    void InsertUse(const UseDefLocation& use);
 };
