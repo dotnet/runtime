@@ -2,7 +2,7 @@ parameters:
 - name: perfBranch
   displayName: Performance Repo Branch
   type: string
-  default: 'main'
+  default: 'caaavik/move-runtime-yaml-to-performance' #TODO: Revert to "main"
 
 trigger:
   batch: true
