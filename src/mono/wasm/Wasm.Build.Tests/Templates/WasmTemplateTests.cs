@@ -108,10 +108,13 @@ namespace Wasm.Build.Tests
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
             yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "-f net10.0", "net10.0", DefaultRuntimeAssetsRelativePath };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
+            {
+                yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
                 yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+            }
 
             // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
             // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
@@ -120,7 +123,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(BrowserBuildAndRunTestData))]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath) 
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             Configuration config = Configuration.Debug;
             string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
@@ -136,7 +139,7 @@ namespace Wasm.Build.Tests
                 addFrameworkArg: extraNewArgs.Length == 0
             );
 
-            if (targetFramework != "net8.0")
+            if (new Version(targetFramework.Replace("net", "")).Major > 8)
                 UpdateBrowserProgramFile();
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
@@ -164,7 +167,7 @@ namespace Wasm.Build.Tests
                 Path.Combine(projectDirectory, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
                 GetBinFrameworkDir(config, isPublish);
 
-            string extraPropertiesForDBP = string.Empty;            
+            string extraPropertiesForDBP = string.Empty;
             if (useArtifacts)
             {
                 extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
@@ -269,7 +272,7 @@ namespace Wasm.Build.Tests
             string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
-            PublishProject(info, config);
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:CompressionEnabled=true"));
             string publishPath = GetBinFrameworkDir(config, forPublish: true);
             AssertFile(".pdb");
             AssertFile(".pdb.gz");

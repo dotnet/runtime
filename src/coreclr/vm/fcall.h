@@ -362,11 +362,9 @@ private:
 
 //==============================================================================================
 // This is where FCThrow ultimately ends up. Never call this directly.
-// Use the FCThrow() macros. __FCThrowArgument is the helper to throw ArgumentExceptions
-// with a resource taken from the managed resource manager.
+// Use the FCThrow() macro.
 //==============================================================================================
 LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWSTR arg1, LPCWSTR arg2, LPCWSTR arg3);
-LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR argumentName, LPCWSTR resourceName);
 
 //==============================================================================================
 // FDECLn: A set of macros for generating header declarations for FC targets.
@@ -1234,15 +1232,6 @@ public:
         while (NULL ==                                          \
             __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
         return 0;                                               \
-    }
-
-// Use FCThrowRes to throw an exception with a localized error message from the
-// ResourceManager in managed code.
-#define FCThrowRes(reKind, resourceName)                                \
-    {                                                                   \
-        while (NULL ==                                                  \
-            __FCThrowArgument(__me, reKind, NULL, resourceName)) {};    \
-        return 0;                                                       \
     }
 
 // The managed calling convention expects returned small types (e.g. bool) to be
