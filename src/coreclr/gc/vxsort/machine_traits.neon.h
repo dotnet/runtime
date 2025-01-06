@@ -102,7 +102,6 @@ class vxsort_machine_traits<uint64_t, NEON> {
     typedef uint64_t TMASK;
     typedef uint64_t TPACK;  // TODO: ??
     typedef typename std::make_unsigned<T>::type TU;
-    static constexpr TV compare_mask = {0b01, 0b10};
 
     static constexpr bool supports_compress_writes() { return false; }
 
@@ -130,10 +129,10 @@ class vxsort_machine_traits<uint64_t, NEON> {
     static INLINE TV broadcast(T pivot) { return vdupq_n_u64(pivot); }
 
     // Compare. Use mask to get one bit per lane. Add across into a single 64bit int.
-    static INLINE TMASK get_cmpgt_mask(TV a, TV b) { return vaddvq_u64(vandq_u64(vcgtq_u64(a, b), compare_mask)); }
+    static INLINE TMASK get_cmpgt_mask(TV a, TV b) { static TV compare_mask = {0b01, 0b10}; return vaddvq_u64(vandq_u64(vcgtq_u64(a, b), compare_mask)); }
 
-    static TV shift_right(TV v, int i) { return vshrq_n_u64(v, i); }
-    static TV shift_left(TV v, int i) { return vshlq_n_u64(v, i); }
+    static TV shift_right(TV v, int i) { return vshlq_u64(v, vdupq_n_s64(-i)); }
+    static TV shift_left(TV v, int i) { return (TV)vshlq_s64((int64x2_t)v, vdupq_n_s64(i)); }
 
     static INLINE TV add(TV a, TV b) { return vaddq_u64(a, b); }
     static INLINE TV sub(TV a, TV b) { return vsubq_u64(a, b); };

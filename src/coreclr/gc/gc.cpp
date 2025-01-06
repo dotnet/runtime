@@ -42,9 +42,13 @@
 #endif // defined(FEATURE_SVR_GC)
 #endif // __INTELLISENSE__
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #include "vxsort/do_vxsort.h"
-#endif
+#define USE_VXSORT
+#else
+#define USE_INTROSORT
+#endif // TARGET_AMD64 || TARGET_ARM64
+#include "introsort.h"
 
 #ifdef SERVER_GC
 namespace SVR {
@@ -54,13 +58,6 @@ namespace WKS {
     
 #include "gcimpl.h"
 #include "gcpriv.h"
-
-#ifdef TARGET_AMD64
-#define USE_VXSORT
-#else
-#define USE_INTROSORT
-#include "introsort.h"
-#endif
 
 #ifdef DACCESS_COMPILE
 #error this source file should not be compiled with DACCESS_COMPILE!
@@ -10365,9 +10362,13 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
     // despite possible downclocking on current devices
     const ptrdiff_t AVX512F_THRESHOLD_SIZE = 128 * 1024;
 
+    // above this threshold, using NEON for sorting will likely pay off
+    const ptrdiff_t NEON_THRESHOLD_SIZE = 1024;
+
     if (item_count <= 1)
         return;
 
+#if defined(TARGET_AMD64)
     if (IsSupportedInstructionSet (InstructionSet::AVX2) && (item_count > AVX2_THRESHOLD_SIZE))
     {
         dprintf(3, ("Sorting mark lists"));
@@ -10382,6 +10383,13 @@ static void do_vxsort (uint8_t** item_array, ptrdiff_t item_count, uint8_t* rang
             do_vxsort_avx2 (item_array, &item_array[item_count - 1], range_low, range_high);
         }
     }
+#elif defined(TARGET_ARM64)
+    if (IsSupportedInstructionSet (InstructionSet::NEON) && (item_count > NEON_THRESHOLD_SIZE))
+    {
+        dprintf(3, ("Sorting mark lists"));
+        do_vxsort_neon (item_array, &item_array[item_count - 1], range_low, range_high);
+    }
+#endif
     else
     {
         dprintf (3, ("Sorting mark lists"));
@@ -11014,21 +11022,18 @@ uint8_t** gc_heap::get_region_mark_list (BOOL& use_mark_list, uint8_t* start, ui
 void gc_heap::grow_mark_list ()
 {
     // with vectorized sorting, we can use bigger mark lists
-#ifdef USE_VXSORT
-#ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ?
-        (1000 * 1024) : (200 * 1024);
-#else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = IsSupportedInstructionSet (InstructionSet::AVX2) ?
-        (32 * 1024) : (16 * 1024);
-#endif //MULTIPLE_HEAPS
-#else //USE_VXSORT
-#ifdef MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 200 * 1024;
-#else //MULTIPLE_HEAPS
-    const size_t MAX_MARK_LIST_SIZE = 16 * 1024;
-#endif //MULTIPLE_HEAPS
+    bool use_big_lists = false;
+#if defined(USE_VXSORT) && defined(TARGET_AMD64)
+    use_big_lists = IsSupportedInstructionSet (InstructionSet::AVX2);
+#elif defined(USE_VXSORT) && defined(TARGET_ARM64)
+    use_big_lists = IsSupportedInstructionSet (InstructionSet::NEON);
 #endif //USE_VXSORT
+
+#ifdef MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = use_big_lists ? (1000 * 1024) : (200 * 1024);
+#else //MULTIPLE_HEAPS
+    const size_t MAX_MARK_LIST_SIZE = use_big_lists ? (32 * 1024) : (16 * 1024);
+#endif //MULTIPLE_HEAPS
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
     size_t new_mark_list_total_size = new_mark_list_size*n_heaps;
