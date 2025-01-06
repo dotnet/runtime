@@ -79,4 +79,40 @@ internal readonly struct Thread_1 : IThread
         // Get the address of the thread containing the link
         return new TargetPointer(threadLink - _threadLinkOffset);
     }
+
+    [Flags]
+    public enum AMD64ContextFlags : uint
+    {
+        CONTEXT_AMD = 0x00100000,
+        CONTEXT_CONTROL = CONTEXT_AMD | 0x00000001,
+        CONTEXT_INTEGER = CONTEXT_AMD | 0x00000002,
+        CONTEXT_SEGMENTS = CONTEXT_AMD | 0x00000004,
+        CONTEXT_FLOATING_POINT = CONTEXT_AMD | 0x00000008,
+        CONTEXT_DEBUG_REGISTERS = CONTEXT_AMD | 0x00000010,
+        CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
+        CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
+        CONTEXT_XSTATE = CONTEXT_AMD | 0x00000040,
+        CONTEXT_KERNEL_CET = CONTEXT_AMD | 0x00000080,
+    }
+
+    int IThread.GetThreadContext(TargetPointer threadPointer)
+    {
+        ThreadData threadData = ((IThread)this).GetThreadData(threadPointer);
+        int hr;
+        unsafe
+        {
+            byte[] bytes = new byte[0x700];
+
+            fixed (byte* ptr = bytes)
+            {
+                Span<byte> buffer = bytes;
+                hr = _target.GetThreadContext((uint)threadData.OSId.Value, (uint)AMD64ContextFlags.CONTEXT_FULL, 0x700, buffer);
+
+                Console.WriteLine();
+            }
+        }
+
+
+        return hr;
+    }
 }

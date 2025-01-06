@@ -12,16 +12,31 @@ internal static class Entrypoints
     private const string CDAC = "cdac_reader_";
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
-    private static unsafe int Init(ulong descriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, IntPtr* handle)
+    private static unsafe int Init(
+        ulong descriptor,
+        delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
+        delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
+        void* readContext,
+        IntPtr* handle)
     {
         // TODO: [cdac] Better error code/details
-        if (!ContractDescriptorTarget.TryCreate(descriptor, (address, buffer) =>
+        if (!ContractDescriptorTarget.TryCreate(
+            descriptor,
+            (address, buffer) =>
             {
                 fixed (byte* bufferPtr = buffer)
                 {
                     return readFromTarget(address, bufferPtr, (uint)buffer.Length, readContext);
                 }
-            }, out ContractDescriptorTarget? target))
+            },
+            (threadId, contextFlags, contextSize, buffer) =>
+            {
+                fixed (byte* bufferPtr = buffer)
+                {
+                    return readThreadContext(threadId, contextFlags, contextSize, bufferPtr, readContext);
+                }
+            },
+            out ContractDescriptorTarget? target))
             return -1;
 
         GCHandle gcHandle = GCHandle.Alloc(target);

@@ -195,6 +195,16 @@ internal sealed unsafe partial class SOSDacImpl
             return HResults.E_INVALIDARG;
         }
 
+        try
+        {
+            ThreadStoreData tsdata = _target.Contracts.Thread.GetThreadStoreData();
+            _target.Contracts.Thread.GetThreadContext(tsdata.FirstThread);
+        }
+        catch
+        {
+            Console.WriteLine("uh oh");
+        }
+
         int hr = HResults.S_OK;
         try
         {
