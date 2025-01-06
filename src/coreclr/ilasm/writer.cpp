@@ -335,13 +335,15 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
 
     // Algorithm name is case sensitive.
     const char* algoName = "SHA256";
-    DWORD pdbChecksumSize = (DWORD)strlen(algoName) + 1 + sizeof(pdbChecksum);
+    const DWORD pdbChecksumOffset = ((DWORD)strlen(algoName)) + 1;
+    const DWORD pdbChecksumSize = pdbChecksumOffset + sizeof(pdbChecksum);
     BYTE* pdbChecksumData = new BYTE[pdbChecksumSize];
 
-    DWORD pdbChecksumOffset = 0;
-    memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize, algoName, strlen(algoName));       // AlgorithmName
-    pdbChecksumOffset += (DWORD)strlen(algoName) + 1;
-    memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize, &pdbChecksum, sizeof(pdbChecksum)); // Checksum
+    // AlgorithmName (including null terminator)
+    memcpy_s(pdbChecksumData, pdbChecksumSize, algoName, pdbChecksumOffset);
+
+    // Checksum
+    memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize - pdbChecksumOffset, &pdbChecksum, sizeof(pdbChecksum));
     /* END PDB CHECKSUM */
 
     auto finish = 
