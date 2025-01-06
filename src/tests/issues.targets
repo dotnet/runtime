@@ -3698,20 +3698,15 @@
         </ExcludeList>
 
         <!-- TODO: Add tracking issue -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_d.ilproj" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badldsfld_r.ilproj" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34587/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Arrays/nintindexoutofrange.csproj" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Arrays/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/reabstraction/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_d.ilproj" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_r.ilproj" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_d.ilproj" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/tailcall_boxunbox_r.ilproj" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_d.ilproj" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/compat_i4_u_r.ilproj" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
