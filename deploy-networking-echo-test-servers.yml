@@ -39,14 +39,14 @@ extends:
         - task: UseDotNet@2
           inputs:
             packageType: 'sdk'
-            version: '10.x'
+            version: '8.x'
             includePreviewVersions: true
         - task: DotNetCoreCLI@2
           inputs:
             command: 'publish'
             publishWebProjects: false
             projects: '/src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj'
-            arguments: '-c Release /p:GenevaTelemetry=true'
+            arguments: '-c Release /p:GenevaTelemetry=true /p:AspNetCoreAppCurrent=net8.0'
         - task: AzureRmWebAppDeployment@4
           inputs:
             ConnectionType: 'AzureRM'
