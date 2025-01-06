@@ -397,7 +397,7 @@ static void regenLog(unsigned codeDelta,
 
     if (logFile == NULL)
     {
-        logFile = fopen("regen.txt", "a");
+        logFile = fopen_utf8("regen.txt", "a");
         InitializeCriticalSection(&logFileLock);
     }
 
@@ -424,7 +424,7 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 {
     if (logFile == NULL)
     {
-        logFile = fopen("regen.txt", "a");
+        logFile = fopen_utf8("regen.txt", "a");
         InitializeCriticalSection(&logFileLock);
     }
 
@@ -3709,15 +3709,6 @@ public:
         }
     }
 
-    void SetReturnKind(ReturnKind returnKind)
-    {
-        m_gcInfoEncoder->SetReturnKind(returnKind);
-        if (m_doLogging)
-        {
-            printf("Set ReturnKind to %s.\n", ReturnKindToString(returnKind));
-        }
-    }
-
     void SetStackBaseRegister(UINT32 registerNumber)
     {
         m_gcInfoEncoder->SetStackBaseRegister(registerNumber);
@@ -3786,7 +3777,7 @@ public:
             printf("Set WantsReportOnlyLeaf.\n");
         }
     }
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     void SetHasTailCalls()
     {
         m_gcInfoEncoder->SetHasTailCalls();
@@ -3831,8 +3822,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     // Can't create tables if we've not saved code.
 
     gcInfoEncoderWithLog->SetCodeLength(methodSize);
-
-    gcInfoEncoderWithLog->SetReturnKind(getReturnKind());
 
     if (compiler->isFramePointerUsed())
     {
@@ -3974,12 +3963,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_ARMARCH
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (compiler->codeGen->GetHasTailCalls())
     {
         gcInfoEncoderWithLog->SetHasTailCalls();
     }
-#endif // TARGET_ARMARCH
+#endif // TARGET_ARMARCH || TARGET_RISCV64 || TARGET_LOONGARCH64
 
 #if FEATURE_FIXED_OUT_ARGS
     // outgoing stack area size

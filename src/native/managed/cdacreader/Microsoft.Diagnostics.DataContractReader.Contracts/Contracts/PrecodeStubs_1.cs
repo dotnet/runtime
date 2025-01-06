@@ -64,7 +64,7 @@ internal readonly struct PrecodeStubs_1 : IPrecodeStubs
         }
     }
 
-    internal sealed class ThisPtrRetBufPrecode : ValidPrecode // FIXME: is this a StubPrecode?
+    internal sealed class ThisPtrRetBufPrecode : ValidPrecode
     {
         internal ThisPtrRetBufPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.ThisPtrRetBuf) { }
 

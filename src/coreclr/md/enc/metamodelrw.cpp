@@ -19,6 +19,7 @@
 #include "../compiler/importhelper.h"
 #include "metadata.h"
 #include "streamutil.h"
+#include <minipal/guid.h>
 
 #ifdef _MSC_VER
 #pragma intrinsic(memcpy)
@@ -1196,7 +1197,7 @@ CMiniMdRW::SetOption(
         PutCol(TBL_Module, ModuleRec::COL_EncBaseId, pMod, uVal);
 */
         // Allocate a new GUID for EncId.
-        IfFailGo(CoCreateGuid(&encid));
+    IfFailGo(minipal_guid_v4_create(&encid) ? S_OK : E_FAIL);
         IfFailGo(PutGuid(TBL_Module, ModuleRec::COL_EncId, pMod, encid));
 #else //!FEATURE_METADATA_EMIT
         IfFailGo(E_INVALIDARG);

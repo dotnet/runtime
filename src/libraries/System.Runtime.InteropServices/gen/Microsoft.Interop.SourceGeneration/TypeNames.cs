@@ -39,6 +39,9 @@ namespace Microsoft.Interop
 
         private static NameSyntax? _UnmanagedCallersOnlyAttribute;
         public static NameSyntax UnmanagedCallersOnlyAttribute => _UnmanagedCallersOnlyAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.UnmanagedCallersOnlyAttribute);
+
+        private static NameSyntax? _WasmImportLinkageAttribute;
+        public static NameSyntax WasmImportLinkageAttribute => _WasmImportLinkageAttribute ??= ParseName(TypeNames.GlobalAlias + TypeNames.WasmImportLinkageAttribute);
     }
 
     public static class TypeSyntaxes
@@ -312,5 +315,6 @@ namespace Microsoft.Interop
         public const string CallConvMemberFunctionName = "System.Runtime.CompilerServices.CallConvMemberFunction";
         public const string Nint = "nint";
         public const string ComVariantMarshaller = "System.Runtime.InteropServices.Marshalling.ComVariantMarshaller";
+        public const string WasmImportLinkageAttribute = "System.Runtime.InteropServices.WasmImportLinkageAttribute";
     }
 }

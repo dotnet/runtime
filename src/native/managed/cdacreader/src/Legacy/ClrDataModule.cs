@@ -13,17 +13,23 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 {
     private readonly TargetPointer _address;
     private readonly Target _target;
-    private readonly nint _legacyModulePointer;
     private readonly IXCLRDataModule? _legacyModule;
     private readonly IXCLRDataModule2? _legacyModule2;
 
-    public ClrDataModule(TargetPointer address, Target target, nint legacyModulePointer, object? legacyImpl)
+    // This is an IUnknown pointer for the legacy implementation
+    private readonly nint _legacyModulePointer;
+
+    public ClrDataModule(TargetPointer address, Target target, IXCLRDataModule? legacyImpl)
     {
         _address = address;
         _target = target;
-        _legacyModulePointer = legacyModulePointer;
-        _legacyModule = legacyImpl as IXCLRDataModule;
+        _legacyModule = legacyImpl;
         _legacyModule2 = legacyImpl as IXCLRDataModule2;
+        if (legacyImpl is not null && ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
+        {
+            // Release the AddRef from TryGetComInstance. We rely on the ref-count from holding on to IXCLRDataModule.
+            Marshal.Release(_legacyModulePointer);
+        }
     }
 
     private static readonly Guid IID_IMetaDataImport = Guid.Parse("7DAC8207-D3AE-4c75-9B67-92801A497D44");

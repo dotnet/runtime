@@ -107,10 +107,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         public byte[]? Export(X509ContentType contentType)
         {
-            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
             using (IExportPal storePal = StorePal.LinkFromCertificateCollection(this))
             {
-                return storePal.Export(contentType, safePasswordHandle);
+                return storePal.Export(contentType, SafePasswordHandle.InvalidHandle);
             }
         }
 
@@ -154,8 +153,7 @@ namespace System.Security.Cryptography.X509Certificates
         [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(ReadOnlySpan<byte> rawData)
         {
-            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
-            using (ILoaderPal storePal = StorePal.FromBlob(rawData, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet))
+            using (ILoaderPal storePal = StorePal.FromBlob(rawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.DefaultKeySet))
             {
                 storePal.MoveTo(this);
             }
@@ -216,8 +214,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(fileName);
 
-            using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
-            using (ILoaderPal storePal = StorePal.FromFile(fileName, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet))
+            using (ILoaderPal storePal = StorePal.FromFile(fileName, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.DefaultKeySet))
             {
                 storePal.MoveTo(this);
             }
@@ -378,7 +375,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+                foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(certPem))
                 {
                     ReadOnlySpan<char> label = contents[fields.Label];
 

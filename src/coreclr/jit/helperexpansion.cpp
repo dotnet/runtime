@@ -1222,9 +1222,9 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
         }
     }
 
-    if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
-        fgRenumberBlocks();
+        fgInvalidateDfsTree();
     }
 
     return result;

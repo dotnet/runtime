@@ -119,6 +119,11 @@ extern "C"
 #include <sys/user.h>
 #endif
 
+#ifdef __HAIKU__
+#include <image.h>
+#include <OS.h>
+#endif
+
 extern char *g_szCoreCLRPath;
 extern bool g_running_in_exe;
 
@@ -127,13 +132,11 @@ using namespace CorUnix;
 CObjectType CorUnix::otProcess(
                 otiProcess,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
                 PROCESS_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
@@ -1397,7 +1400,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback) 
+    IN PCREATEDUMP_CALLBACK callback)
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
@@ -1679,6 +1682,23 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     *disambiguationKey = secondsSinceEpoch;
 
     return TRUE;
+
+#elif defined(__HAIKU__)
+
+    // On Haiku, we return the process start time expressed in microseconds since boot time.
+
+    team_info info;
+
+    if (get_team_info(processId, &info) == B_OK)
+    {
+        *disambiguationKey = info.start_time;
+        return TRUE;
+    }
+    else
+    {
+        WARN("Failed to get start time of a process.");
+        return FALSE;
+    }
 
 #elif HAVE_PROCFS_STAT
 
@@ -2206,8 +2226,11 @@ PROCCreateCrashDump(
         size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
         if (previousThreadId != 0)
         {
-            // Should never reenter or recurse
-            _ASSERTE(previousThreadId != currentThreadId);
+            // Return error if reenter this code
+            if (previousThreadId == currentThreadId)
+            {
+                return false;
+            }
 
             // The first thread generates the crash info and any other threads are blocked
             while (true)
@@ -3630,10 +3653,16 @@ getFileName(
         wcEnd = *lpEnd;
         *lpEnd = 0x0000;
 
-        /* Convert to ASCII */
+        /* Convert to UTF-8 */
         int size = 0;
-        int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
-        lpFileName = lpFileNamePS.OpenStringBuffer(length);
+        int length = WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1, NULL, 0, NULL, NULL);
+        if (length == 0)
+        {
+            ERROR("Failed to calculate the required buffer length.\n");
+            return FALSE;
+        };
+
+        lpFileName = lpFileNamePS.OpenStringBuffer(length - 1);
         if (NULL == lpFileName)
         {
             ERROR("Not Enough Memory!\n");

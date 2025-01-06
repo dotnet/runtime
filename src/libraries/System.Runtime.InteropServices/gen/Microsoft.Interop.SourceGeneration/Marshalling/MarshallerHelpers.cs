@@ -458,7 +458,7 @@ namespace Microsoft.Interop
                 RefKind.In => Token(SyntaxKind.InKeyword),
                 RefKind.Ref => Token(SyntaxKind.RefKeyword),
                 RefKind.Out => Token(SyntaxKind.OutKeyword),
-                RefKind.RefReadOnlyParameter => Token(SyntaxKind.RefKeyword),
+                RefKind.RefReadOnlyParameter => Token(SyntaxKind.InKeyword),
                 _ => throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}")
             };
         }
