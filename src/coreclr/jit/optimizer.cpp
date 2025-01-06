@@ -2238,6 +2238,25 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 #endif // DEBUG
     }
 
+    // Finally compact the condition with its pred if that is possible now.
+    // TODO-Cleanup: This compensates for limitations in analysis of downstream
+    // phases, particularly the pattern-based IV analysis.
+    BasicBlock* condPred = condBlock->GetUniquePred(this);
+    if (condPred != nullptr)
+    {
+        JITDUMP("Cond block " FMT_BB " has a unique pred now, seeing if we can compact...\n", condBlock->bbNum);
+        if (fgCanCompactBlock(condPred))
+        {
+            JITDUMP("  ..we can!\n");
+            fgCompactBlock(condPred);
+            condBlock = condPred;
+        }
+        else
+        {
+            JITDUMP("  ..we cannot\n");
+        }
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
