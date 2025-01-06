@@ -259,7 +259,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
             {
-                context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
+                context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
             }
             else
             {
@@ -431,7 +431,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
+    private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName, string? targetOS)
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         CodeBuilder builder = new();
@@ -440,9 +440,17 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch;");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder;");
-        builder.AppendLine("string documentsPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);");
-        builder.AppendLine($@"string tempLogPath = System.IO.Path.Combine(documentsPath, ""{assemblyName}.templog.xml"");");
-        builder.AppendLine($@"string testStatsPath = System.IO.Path.Combine(documentsPath, ""{assemblyName}.testStats.csv"");");
+        if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst")
+        {
+            builder.AppendLine("string documentsPath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);");
+            builder.AppendLine($@"string tempLogPath = System.IO.Path.Combine(documentsPath, ""{assemblyName}.templog.xml"");");
+            builder.AppendLine($@"string testStatsPath = System.IO.Path.Combine(documentsPath, ""{assemblyName}.testStats.csv"");");
+        }
+        else
+        {
+            builder.AppendLine($@"string tempLogPath = ""{assemblyName}.templog.xml""");
+            builder.AppendLine($@"string testStatsPath = ""{assemblyName}.testStats.csv""");
+        }
 
         builder.AppendLine();
 
