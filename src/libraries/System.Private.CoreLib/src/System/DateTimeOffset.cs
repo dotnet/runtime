@@ -665,10 +665,7 @@ namespace System
         // Leading and trailing whitespace characters are allowed.
         //
         public static DateTimeOffset Parse(string input, IFormatProvider? formatProvider)
-        {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
-            return Parse(input, formatProvider, DateTimeStyles.None);
-        }
+            => Parse(input, formatProvider, DateTimeStyles.None);
 
         public static DateTimeOffset Parse(string input, IFormatProvider? formatProvider, DateTimeStyles styles)
         {
@@ -694,11 +691,7 @@ namespace System
         // Leading and trailing whitespace characters are allowed.
         //
         public static DateTimeOffset ParseExact(string input, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, IFormatProvider? formatProvider)
-        {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
-            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
-            return ParseExact(input, format, formatProvider, DateTimeStyles.None);
-        }
+            => ParseExact(input, format, formatProvider, DateTimeStyles.None);
 
         // Constructs a DateTimeOffset from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.

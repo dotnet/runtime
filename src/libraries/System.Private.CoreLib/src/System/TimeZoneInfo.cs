@@ -2186,8 +2186,8 @@ namespace System
             }
         }
 
-        private static TimeSpan MaxOffset => new(14 * TimeSpan.TicksPerHour);
-        private static TimeSpan MinOffset => new(-14 * TimeSpan.TicksPerHour);
+        private static TimeSpan MaxOffset => TimeSpan.FromHours(14);
+        private static TimeSpan MinOffset => TimeSpan.FromHours(-14);
 
         /// <summary>
         /// Helper function that validates the TimeSpan is within +/- 14.0 hours

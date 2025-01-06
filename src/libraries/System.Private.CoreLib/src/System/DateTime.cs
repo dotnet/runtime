@@ -1342,9 +1342,7 @@ namespace System
         // corresponds to this DateTime with the time-of-day part set to
         // zero (midnight).
         //
-        public DateTime Date => GetDate(_dateData);
-        private static DateTime GetDate(ulong data) => new DateTime(((data & TicksMask) / TimeSpan.TicksPerDay * TimeSpan.TicksPerDay) | (data & FlagsMask));
-
+        public DateTime Date => new((UTicks / TimeSpan.TicksPerDay * TimeSpan.TicksPerDay) | InternalKind);
 
         // Exactly the same as Year, Month, Day properties, except computing all of
         // year/month/day rather than just one of them. Used when all three
