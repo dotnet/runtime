@@ -718,7 +718,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    REFLECTFIELDREF GetStubFieldInfo();
+    REFLECTFIELDREF AllocateStubFieldInfo();
 #endif
 };
 
