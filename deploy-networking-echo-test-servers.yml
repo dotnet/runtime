@@ -40,6 +40,7 @@ extends:
           inputs:
             packageType: 'sdk'
             useGlobalJson: true
+            includePreviewVersions: true
         - task: DotNetCoreCLI@2
           inputs:
             command: 'publish'
