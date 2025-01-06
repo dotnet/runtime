@@ -929,7 +929,7 @@ DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
-DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,                  SM_RetVoid)
+DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)

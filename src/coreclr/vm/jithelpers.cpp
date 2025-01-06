@@ -2100,31 +2100,6 @@ HCIMPLEND
 //
 //========================================================================
 
-/*********************************************************************/
-// Called by the JIT whenever a cee_break instruction should be executed.
-//
-HCIMPL0(void, JIT_UserBreakpoint)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-
-#ifdef DEBUGGING_SUPPORTED
-    FrameWithCookie<DebuggerExitFrame> __def;
-
-    MethodDescCallSite debuggerBreak(METHOD__DEBUGGER__BREAK);
-
-    debuggerBreak.Call((ARG_SLOT*)NULL);
-
-    __def.Pop();
-#else // !DEBUGGING_SUPPORTED
-    _ASSERTE(!"JIT_UserBreakpoint called, but debugging support is not available in this build.");
-#endif // !DEBUGGING_SUPPORTED
-
-    HELPER_METHOD_FRAME_END_POLL();
-}
-HCIMPLEND
-
 #if defined(_MSC_VER)
 // VC++ Compiler intrinsic.
 extern "C" void * _ReturnAddress(void);
