@@ -36,6 +36,10 @@ extends:
             artifactName: myPipelineArtifact
         steps:
         - checkout: self
+        - task: UseDotNet@2
+          inputs:
+            packageType: 'sdk'
+            useGlobalJson: true
         - task: DotNetCoreCLI@2
           inputs:
             command: 'publish'
