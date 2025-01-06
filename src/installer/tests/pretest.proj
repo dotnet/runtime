@@ -10,8 +10,8 @@
           BeforeTargets="Build">
 
     <ItemGroup>
-      <RuntimeSharedFrameworkProject Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-      <RuntimeSharedFrameworkProject Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+      <RuntimeSharedFrameworkProject Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+      <RuntimeSharedFrameworkProject Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
     </ItemGroup>
     <!--
       Explicitly restore before PublishToDisk. IsRestoring property ensures that this evaluation won't be reused.
