@@ -36,6 +36,9 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
+                // Make sure a new property is not attempted within an unfinalized string.
+                ValidateNotWithinUnfinalizedString();
+
                 if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
@@ -49,6 +52,9 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
+                // Make sure a new property is not attempted within an unfinalized string.
+                ValidateNotWithinUnfinalizedString();
+
                 if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);

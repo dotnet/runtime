@@ -10,7 +10,7 @@ namespace System.Linq.Tests
         [Fact]
         public void Empty()
         {
-            Assert.Equal(Enumerable.Empty<int[]>(), Enumerable.Empty<int>().Chunk(4));
+            Assert.Equal([], Enumerable.Empty<int>().Chunk(4));
         }
 
         [Fact]
@@ -25,7 +25,7 @@ namespace System.Linq.Tests
         [InlineData(-1)]
         public void ThrowsWhenSizeIsNonPositive(int size)
         {
-            int[] source = {1};
+            int[] source = [1];
             AssertExtensions.Throws<ArgumentOutOfRangeException>("size", () => source.Chunk(size));
         }
 
@@ -126,7 +126,7 @@ namespace System.Linq.Tests
             IEnumerable<int[]> chunks = list.Chunk(3);
             list.Remove(66);
 
-            Assert.Equal(new[] {new[] {9999, 0, 888}, new[] {-1, -777, 1}, new[] {2, -12345}}, chunks);
+            Assert.Equal([[9999, 0, 888], [-1, -777, 1], [2, -12345]], chunks);
         }
 
         [Fact]
@@ -139,7 +139,7 @@ namespace System.Linq.Tests
             IEnumerable<int[]> chunks = list.Chunk(3);
             list.Add(10);
 
-            Assert.Equal(new[] {new[] {9999, 0, 888}, new[] {-1, 66, -777}, new[] {1, 2, -12345}, new[] {10}}, chunks);
+            Assert.Equal([[9999, 0, 888], [-1, 66, -777], [1, 2, -12345], [10]], chunks);
         }
 
         // reproduces https://github.com/dotnet/runtime/issues/67132
@@ -148,7 +148,7 @@ namespace System.Linq.Tests
         {
             int[][] chunks = Enumerable.Range(0, 10).Chunk(int.MaxValue).ToArray();
 
-            Assert.Equal(new[] { Enumerable.Range(0, 10).ToArray() }, chunks);
+            Assert.Equal([Enumerable.Range(0, 10).ToArray()], chunks);
         }
     }
 }
