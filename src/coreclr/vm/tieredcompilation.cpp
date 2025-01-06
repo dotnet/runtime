@@ -1102,7 +1102,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
         methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
         nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
         return flags;
     }
 
@@ -1149,7 +1148,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
         case NativeCodeVersion::OptimizationTierOptimized:
         Optimized:
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
             break;
 
         default:
