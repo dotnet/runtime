@@ -671,7 +671,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // Remove profile weight into the continuation block
         if (continuation->hasProfileWeight())
         {
-            continuation->setBBProfileWeight(max(0.0, continuation->bbWeight - leave->bbWeight));
+            continuation->decreaseBBProfileWeight(leave->bbWeight);
         }
 
         // (3) Convert the callfinally to a normal jump to the handler
@@ -717,7 +717,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     // Propagate profile weight into the continuation block
                     if (continuation->hasProfileWeight())
                     {
-                        continuation->setBBProfileWeight(continuation->bbWeight + block->bbWeight);
+                        continuation->increaseBBProfileWeight(block->bbWeight);
                     }
                 }
             }
@@ -2204,16 +2204,12 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
         //
         if (callFinally->hasProfileWeight())
         {
-            weight_t const newCallFinallyWeight =
-                callFinally->bbWeight > block->bbWeight ? callFinally->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
-            callFinally->setBBProfileWeight(newCallFinallyWeight);
+            callFinally->decreaseBBProfileWeight(block->bbWeight);
         }
 
         if (leaveBlock->hasProfileWeight())
         {
-            weight_t const newLeaveWeight =
-                leaveBlock->bbWeight > block->bbWeight ? leaveBlock->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
-            leaveBlock->setBBProfileWeight(newLeaveWeight);
+            leaveBlock->decreaseBBProfileWeight(block->bbWeight);
         }
     }
 

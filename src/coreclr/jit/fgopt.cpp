@@ -655,7 +655,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
                                 fromBlock->bbNum, fgFirstBB->bbNum);
-                        fromBlock->setBBProfileWeight(fromBlock->bbWeight + entryWeight);
+                        fromBlock->increaseBBProfileWeight(entryWeight);
 
                         // We updated the weight of fromBlock above.
                         //
@@ -2277,7 +2277,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         //
         weight_t targetWeight = target->bbWeight;
         weight_t blockWeight  = block->bbWeight;
-        target->setBBProfileWeight(max(0.0, targetWeight - blockWeight));
+        target->decreaseBBProfileWeight(blockWeight);
         JITDUMP("Decreased " FMT_BB " profile weight from " FMT_WT " to " FMT_WT "\n", target->bbNum, targetWeight,
                 target->bbWeight);
     }
@@ -2944,11 +2944,10 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update profile data
         //
-        const weight_t fraction              = newBlock->GetSwitchTargets()->bbsDominantFraction;
-        const weight_t blockToTargetWeight   = block->bbWeight * fraction;
-        const weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
+        const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+        const weight_t blockToTargetWeight = block->bbWeight * fraction;
 
-        newBlock->setBBProfileWeight(blockToNewBlockWeight);
+        newBlock->decreaseBBProfileWeight(blockToTargetWeight);
 
         blockToTargetEdge->setLikelihood(fraction);
         blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
