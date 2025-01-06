@@ -219,9 +219,6 @@ FRAME_TYPE_NAME(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 FRAME_TYPE_NAME(DynamicHelperFrame)
 #endif
-#ifdef FEATURE_INTERPRETER
-FRAME_TYPE_NAME(InterpreterFrame)
-#endif // FEATURE_INTERPRETER
 FRAME_TYPE_NAME(ProtectByRefsFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)
 FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
@@ -2499,34 +2496,6 @@ private:
     BOOL          m_MaybeInterior;
 };
 
-#ifdef FEATURE_INTERPRETER
-class InterpreterFrame: public Frame
-{
-    VPTR_VTABLE_CLASS(InterpreterFrame, Frame)
-
-    class Interpreter* m_interp;
-
-public:
-
-#ifndef DACCESS_COMPILE
-    InterpreterFrame(class Interpreter* interp);
-
-    class Interpreter* GetInterpreter() { return m_interp; }
-
-    // Override.
-    virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
-    MethodDesc* GetFunction();
-#endif
-
-    DEFINE_VTABLE_GETTER_AND_DTOR(InterpreterFrame)
-
-};
-
-typedef VPTR(class InterpreterFrame) PTR_InterpreterFrame;
-#endif // FEATURE_INTERPRETER
-
-
 //-----------------------------------------------------------------------------
 
 struct ByRefInfo;
@@ -3186,12 +3155,6 @@ public:
     // GCSafeCollectionFrame
     FrameWithCookie(GCSafeCollection *gcSafeCollection) :
         m_gsCookie(GetProcessGSCookie()), m_frame(gcSafeCollection) { WRAPPER_NO_CONTRACT; }
-
-#ifdef FEATURE_INTERPRETER
-    // InterpreterFrame
-    FrameWithCookie(Interpreter* interp) :
-        m_gsCookie(GetProcessGSCookie()), m_frame(interp) { WRAPPER_NO_CONTRACT; }
-#endif
 
     // HijackFrame
     FrameWithCookie(LPVOID returnAddress, Thread *thread, HijackArgs *args) :
