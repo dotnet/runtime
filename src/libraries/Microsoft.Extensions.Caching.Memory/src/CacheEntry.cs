@@ -84,7 +84,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     DateTimeOffset expiration = value.GetValueOrDefault();
                     _absoluteExpirationTicks = expiration.UtcTicks;
+#if NET8_0_OR_GREATER
+                    _absoluteExpirationOffsetMinutes = (short)expiration.TotalOffsetMinutes;
+#else
                     _absoluteExpirationOffsetMinutes = (short)(expiration.Offset.Ticks / TimeSpan.TicksPerMinute);
+#endif
                 }
             }
         }
