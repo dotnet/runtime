@@ -7,7 +7,6 @@ enum class InstructionSet
     AVX2 = 0,
     AVX512F = 1,
     NEON = 2,
-    SVE = 3
 };
 
 void InitSupportedInstructionSet (int32_t configSetting);

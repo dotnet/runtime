@@ -17,7 +17,6 @@ enum vector_machine {
     AVX2,
     AVX512,
     NEON,
-    SVE,
     scalar,
 };
 

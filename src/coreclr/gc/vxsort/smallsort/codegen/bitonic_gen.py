@@ -89,7 +89,6 @@ class Language(Enum):
 class VectorISA(Enum):
     AVX2 = 'AVX2'
     AVX512 = 'AVX512'
-    SVE = 'SVE'
     scalar = 'scalar'
 
     def __str__(self):

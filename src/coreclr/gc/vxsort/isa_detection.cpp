@@ -16,7 +16,6 @@ enum class SupportedISA
     AVX2 = 1 << (int)InstructionSet::AVX2,
     AVX512F = 1 << (int)InstructionSet::AVX512F,
     NEON = 1 << (int)InstructionSet::NEON,
-    SVE = 1 << (int)InstructionSet::SVE
 };
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -116,7 +115,7 @@ bool IsSupportedInstructionSet (InstructionSet instructionSet)
 #if defined(TARGET_AMD64)
     assert(instructionSet == InstructionSet::AVX2 || instructionSet == InstructionSet::AVX512F);
 #elif defined(TARGET_ARM64)
-    assert(instructionSet == InstructionSet::NEON || instructionSet == InstructionSet::SVE);
+    assert(instructionSet == InstructionSet::NEON);
 #endif
     return ((int)s_supportedISA & (1 << (int)instructionSet)) != 0;
 }
