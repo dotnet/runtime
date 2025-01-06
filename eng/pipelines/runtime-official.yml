@@ -454,7 +454,7 @@ extends:
                     name: MonoRuntimePacks
 
       #
-      # Build libraries AllConfigurations for packages
+      # Build libraries (all TFMs) and packages
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -464,13 +464,13 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
-            nameSuffix: Libraries_AllConfigurations
+            buildArgs: -s tools+libs -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
-                  name: Libraries_AllConfigurations
+                  name: Libraries_WithPackages
             timeoutInMinutes: 95
       #
       # Build SourceBuild packages

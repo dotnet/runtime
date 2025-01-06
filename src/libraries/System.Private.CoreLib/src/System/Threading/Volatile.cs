@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 namespace System.Threading
 {
     /// <summary>Methods for accessing memory with volatile semantics.</summary>
-    public static unsafe class Volatile
+    public static class Volatile
     {
         // The runtime may replace these implementations with more efficient ones in some cases.
         // In coreclr, for example, see importercalls.cpp.
