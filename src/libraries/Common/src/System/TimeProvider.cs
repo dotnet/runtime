@@ -37,6 +37,9 @@ namespace System
         /// </remarks>
         public virtual DateTimeOffset GetUtcNow() => DateTimeOffset.UtcNow;
 
+        private static readonly long s_minDateTicks = DateTime.MinValue.Ticks;
+        private static readonly long s_maxDateTicks = DateTime.MaxValue.Ticks;
+
         /// <summary>
         /// Gets a <see cref="DateTimeOffset"/> value that is set to the current date and time according to this <see cref="TimeProvider"/>'s
         /// notion of time based on <see cref="GetUtcNow"/>, with the offset set to the <see cref="LocalTimeZone"/>'s offset from Coordinated Universal Time (UTC).
@@ -60,10 +63,9 @@ namespace System
             }
 
             long localTicks = utcDateTime.Ticks + offset.Ticks;
-            const long MaxTicks = 3155378975999999999; // DateTime.MaxTicks
-            if ((ulong)localTicks > MaxTicks)
+            if ((ulong)localTicks > (ulong)s_maxDateTicks)
             {
-                localTicks = localTicks < 0 ? 0 : MaxTicks;
+                localTicks = localTicks < s_minDateTicks ? s_minDateTicks : s_maxDateTicks;
             }
 
             return new DateTimeOffset(localTicks, offset);

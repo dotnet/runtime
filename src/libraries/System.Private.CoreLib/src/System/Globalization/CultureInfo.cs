@@ -68,7 +68,7 @@ namespace System.Globalization
         //
         internal CultureData _cultureData;
 
-        internal readonly bool _isInherited;
+        internal bool _isInherited;
 
         private CultureInfo? _consoleFallbackCulture;
 
