@@ -4687,27 +4687,35 @@ void Compiler::fgDoReversePostOrderLayout()
 #endif // DEBUG
 
     // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
-    // Then, identify any loops in the DFS tree so we can keep their bodies compact.
     //
-    FlowGraphDfsTree* const      dfsTree       = fgComputeDfs</* useProfile */ true>();
-    FlowGraphNaturalLoops* const loops         = FlowGraphNaturalLoops::Find(dfsTree);
-    BasicBlock** const           rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
-    unsigned                     index         = dfsTree->GetPostOrderCount();
-    auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
-        assert(index != 0);
-        rpoSequence[--index] = block;
-    };
+    FlowGraphDfsTree* const dfsTree = fgComputeDfs</* useProfile */ true>();
 
-    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    // If LSRA didn't create any new blocks, we can reuse its loop-aware RPO traversal,
+    // which is cached in Compiler::fgBBs.
+    // If the cache isn't available, we need to recompute the loop-aware RPO.
+    //
+    BasicBlock** rpoSequence = fgBBs;
+
+    if (rpoSequence == nullptr)
+    {
+        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
+        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+        unsigned                     index = 0;
+        auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+            rpoSequence[index++] = block;
+        };
+
+        fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    }
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
     //
     if (compHndBBtabCount == 0)
     {
-        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        for (unsigned i = 1; i < dfsTree->GetPostOrderCount(); i++)
         {
-            BasicBlock* const block       = rpoSequence[i];
-            BasicBlock* const blockToMove = rpoSequence[i - 1];
+            BasicBlock* const block       = rpoSequence[i - 1];
+            BasicBlock* const blockToMove = rpoSequence[i];
 
             if (!block->NextIs(blockToMove))
             {
@@ -4756,10 +4764,10 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Reorder blocks
     //
-    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+    for (unsigned i = 1; i < dfsTree->GetPostOrderCount(); i++)
     {
-        BasicBlock* const block       = rpoSequence[i];
-        BasicBlock* const blockToMove = rpoSequence[i - 1];
+        BasicBlock* const block       = rpoSequence[i - 1];
+        BasicBlock* const blockToMove = rpoSequence[i];
 
         // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
         //
@@ -5452,6 +5460,12 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
                 // Don't consider any cut points that would break up call-finally pairs
                 if (s3Block->KindIs(BBJ_CALLFINALLYRET))
+                {
+                    continue;
+                }
+
+                // Don't consider any cut points that would move try/handler entries
+                if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
                 {
                     continue;
                 }

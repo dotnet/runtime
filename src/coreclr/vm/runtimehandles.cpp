@@ -2312,7 +2312,7 @@ extern "C" void QCALLTYPE ModuleHandle_ResolveField(QCall::ModuleHandle pModule,
     SigTypeContext typeContext(Instantiation(typeArgs, typeArgsCount), Instantiation(methodArgs, methodArgsCount));
     pField = MemberLoader::GetFieldDescFromMemberDefOrRef(pModule, tkMemberRef, &typeContext, FALSE);
     GCX_COOP();
-    retField.Set(pField->GetStubFieldInfo());
+    retField.Set(pField->AllocateStubFieldInfo());
 
     END_QCALL;
 
