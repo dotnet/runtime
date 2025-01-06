@@ -1934,7 +1934,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.InsureInit(NULL);
+    __helperframe.EnsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
