@@ -3709,15 +3709,6 @@ public:
         }
     }
 
-    void SetReturnKind(ReturnKind returnKind)
-    {
-        m_gcInfoEncoder->SetReturnKind(returnKind);
-        if (m_doLogging)
-        {
-            printf("Set ReturnKind to %s.\n", ReturnKindToString(returnKind));
-        }
-    }
-
     void SetStackBaseRegister(UINT32 registerNumber)
     {
         m_gcInfoEncoder->SetStackBaseRegister(registerNumber);
@@ -3831,8 +3822,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     // Can't create tables if we've not saved code.
 
     gcInfoEncoderWithLog->SetCodeLength(methodSize);
-
-    gcInfoEncoderWithLog->SetReturnKind(getReturnKind());
 
     if (compiler->isFramePointerUsed())
     {

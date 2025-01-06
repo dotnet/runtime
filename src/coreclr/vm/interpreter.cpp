@@ -6536,13 +6536,13 @@ void Interpreter::LdToken()
     if (tok.hMethod != NULL)
     {
         MethodDesc* pMethod = (MethodDesc*)tok.hMethod;
-        Object* objPtr = OBJECTREFToObject((OBJECTREF)pMethod->GetStubMethodInfo());
+        Object* objPtr = OBJECTREFToObject((OBJECTREF)pMethod->AllocateStubMethodInfo());
         OpStackSet<Object*>(m_curStackHt, objPtr);
     }
     else if (tok.hField != NULL)
     {
         FieldDesc * pField = (FieldDesc *)tok.hField;
-        Object* objPtr = OBJECTREFToObject((OBJECTREF)pField->GetStubFieldInfo());
+        Object* objPtr = OBJECTREFToObject((OBJECTREF)pField->AllocateStubFieldInfo());
         OpStackSet<Object*>(m_curStackHt, objPtr);
     }
     else

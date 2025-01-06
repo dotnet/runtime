@@ -267,7 +267,8 @@ public:
     // Note that if the TypeHandle is a valuetype, the caller is responsible
     // for checking that the valuetype is in its boxed form before calling
     // CanCastTo. Otherwise, the caller should be using IsBoxedAndCanCastTo()
-    typedef enum { CannotCast, CanCast, MaybeCast } CastResult;
+    // See CastCache.cs for matching managed type.
+    typedef enum { CannotCast = 0, CanCast = 1, MaybeCast = 2 } CastResult;
 
     BOOL CanCastTo(TypeHandle type, TypeHandlePairList *pVisited = NULL) const;
     BOOL IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pVisited) const;

@@ -4,15 +4,43 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
+        private bool HasPartialCodePoint => PartialCodePointLength != 0;
+
+        private void ClearPartialCodePoint() => PartialCodePointLength = 0;
+
+        private void ValidateEncodingDidNotChange(SegmentEncoding currentSegmentEncoding)
+        {
+            if (PreviousSegmentEncoding != currentSegmentEncoding)
+            {
+                ThrowHelper.ThrowInvalidOperationException_CannotMixEncodings(PreviousSegmentEncoding, currentSegmentEncoding);
+            }
+        }
+
+        private void ValidateNotWithinUnfinalizedString()
+        {
+            if (_tokenType == StringSegmentSentinel)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
+            }
+
+            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
+            Debug.Assert(!HasPartialCodePoint);
+        }
+
         private void ValidateWritingValue()
         {
             Debug.Assert(!_options.SkipValidation);
+
+            // Make sure a new value is not attempted within an unfinalized string.
+            ValidateNotWithinUnfinalizedString();
 
             if (_inObject)
             {

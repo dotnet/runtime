@@ -62,21 +62,19 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
+                TSource element = e.Current;
+                if (!predicate(element))
                 {
-                    TSource element = e.Current;
-                    if (!predicate(element))
+                    yield return element;
+                    while (e.MoveNext())
                     {
-                        yield return element;
-                        while (e.MoveNext())
-                        {
-                            yield return e.Current;
-                        }
-
-                        yield break;
+                        yield return e.Current;
                     }
+
+                    yield break;
                 }
             }
         }
@@ -103,27 +101,25 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            int index = -1;
+            while (e.MoveNext())
             {
-                int index = -1;
-                while (e.MoveNext())
+                checked
                 {
-                    checked
+                    index++;
+                }
+
+                TSource element = e.Current;
+                if (!predicate(element, index))
+                {
+                    yield return element;
+                    while (e.MoveNext())
                     {
-                        index++;
+                        yield return e.Current;
                     }
 
-                    TSource element = e.Current;
-                    if (!predicate(element, index))
-                    {
-                        yield return element;
-                        while (e.MoveNext())
-                        {
-                            yield return e.Current;
-                        }
-
-                        yield break;
-                    }
+                    yield break;
                 }
             }
         }

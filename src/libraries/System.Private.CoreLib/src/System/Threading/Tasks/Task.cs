@@ -5937,6 +5937,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
+            int? count = null;
             if (tasks is ICollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
@@ -5949,19 +5950,23 @@ namespace System.Threading.Tasks
                     return WhenAll(CollectionsMarshal.AsSpan(taskList));
                 }
 
-                taskArray = new Task[taskCollection.Count];
-                taskCollection.CopyTo(taskArray, 0);
-                return WhenAll((ReadOnlySpan<Task>)taskArray);
+                count = taskCollection.Count;
             }
-            else
+
+            // Buffer the tasks into a temporary span. Small sets of tasks are common,
+            // so for <= 8 we stack allocate.
+            ValueListBuilder<Task> builder = count is > 8 ?
+                new ValueListBuilder<Task>(count.Value) :
+                new ValueListBuilder<Task>([null, null, null, null, null, null, null, null]);
+            foreach (Task task in tasks)
             {
-                var taskList = new List<Task>();
-                foreach (Task task in tasks)
-                {
-                    taskList.Add(task);
-                }
-                return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                builder.Append(task);
             }
+
+            Task t = WhenAll(builder.AsSpan());
+
+            builder.Dispose();
+            return t;
         }
 
         /// <summary>
