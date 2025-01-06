@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
-    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj" />
+    <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" />
     <ProjectReference Include="$(InstallerProjectRoot)pkg/sfx/bundle/Microsoft.NETCore.App.Bundle.bundleproj" />
   </ItemGroup>
 

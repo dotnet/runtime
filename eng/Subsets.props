@@ -578,7 +578,7 @@
           </ItemGroup>
 
           <ItemGroup>
-            <SharedFrameworkProjectToBuild Condition="'$(_BuildCoreCLRRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
+            <SharedFrameworkProjectToBuild Condition="'$(_BuildCoreCLRRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" />
             <SharedFrameworkProjectToBuild Condition="'$(_BuildMonoRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.Mono.sfxproj" />
             <SharedFrameworkProjectToBuild Condition="'$(_BuildNativeAOTRuntimePack)' == 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.NativeAOT.sfxproj" />
           </ItemGroup>
