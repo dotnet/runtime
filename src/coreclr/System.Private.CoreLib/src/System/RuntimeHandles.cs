@@ -643,7 +643,7 @@ namespace System
         // Since the returned string is a pointer into metadata, the caller should
         // ensure the passed in type is alive for at least as long as returned result is
         // needed.
-        internal static unsafe MdUtf8String GetUtf8Name(RuntimeType type)
+        internal static MdUtf8String GetUtf8Name(RuntimeType type)
         {
             TypeHandle th = type.GetNativeTypeHandle();
             if (th.IsTypeDesc || th.AsMethodTable()->IsArray)
@@ -673,7 +673,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetDeclaringTypeHandle")]
         private static partial IntPtr GetDeclaringTypeHandle(IntPtr typeHandle);
 
-        internal static unsafe RuntimeType? GetDeclaringType(RuntimeType type)
+        internal static RuntimeType? GetDeclaringType(RuntimeType type)
         {
             IntPtr retTypeHandle = IntPtr.Zero;
             TypeHandle typeHandle = type.GetNativeTypeHandle();
@@ -904,12 +904,6 @@ namespace System
             m_value = methodHandleValue;
         }
 
-        public RuntimeMethodInfoStub(IntPtr methodHandleValue, object keepalive)
-        {
-            m_keepalive = keepalive;
-            m_value = new RuntimeMethodHandleInternal(methodHandleValue);
-        }
-
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
@@ -927,6 +921,16 @@ namespace System
         public RuntimeMethodHandleInternal m_value;
 
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => m_value;
+
+        // implementation of CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object FromPtr(IntPtr pMD)
+        {
+            RuntimeMethodHandleInternal handle = new(pMD);
+            return new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
+        }
     }
 
     internal interface IRuntimeMethodInfo
@@ -1385,6 +1389,16 @@ namespace System
 #pragma warning restore 414, 169, IDE0044
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
+
+        // implementation of CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object FromPtr(IntPtr pFD)
+        {
+            RuntimeFieldHandleInternal handle = new(pFD);
+            return new RuntimeFieldInfoStub(handle, RuntimeFieldHandle.GetLoaderAllocator(handle));
+        }
     }
 
     [NonVersionable]
@@ -1657,6 +1671,34 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetEnCFieldAddr")]
+        private static partial void* GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD);
+
+        // implementation of CORINFO_HELP_GETFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
+        {
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
+
+        // implementation of CORINFO_HELP_GETSTATICFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetStaticFieldAddr(void* pFD)
+        {
+            object? nullTarget = null;
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
         }
     }
 

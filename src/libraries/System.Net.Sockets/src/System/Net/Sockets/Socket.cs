@@ -3589,7 +3589,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue, bool silent)
+        internal void SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue, bool silent)
         {
             // WASI is always set to receive PacketInformation
             if (OperatingSystem.IsWasi() && optionName == SocketOptionName.PacketInformation)
