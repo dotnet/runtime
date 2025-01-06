@@ -974,7 +974,7 @@ namespace System.Runtime.InteropServices
             if (wrapperMaybe is not null)
             {
                 retValue = RegisterObjectForComInstance(identity, inner, wrapperMaybe, flags);
-                return true;
+                return retValue is not null;
             }
 
             // Check if the provided COM instance is actually a managed object wrapper from this
@@ -1063,7 +1063,7 @@ namespace System.Runtime.InteropServices
             // If we find a wrapper in the table that is a different NativeObjectWrapper instance
             // then it must be for a different COM instance.
             // It's possible that we could race here with another thread that is trying to register the same comProxy
-            // for the same COM instance, but in that case we'll be pased the same NativeObjectWrapper instance
+            // for the same COM instance, but in that case we'll be passed the same NativeObjectWrapper instance
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
             Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
