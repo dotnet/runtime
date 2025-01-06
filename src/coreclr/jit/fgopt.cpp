@@ -6579,10 +6579,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // For tail merge we have a common successor of predBlock and
                 // crossJumpTarget, so the profile update can be done locally.
-                crossJumpTarget->bbWeight += predBlock->bbWeight;
-                if (crossJumpTarget->bbWeight > BB_ZERO_WEIGHT)
+                if (crossJumpTarget->hasProfileWeight() && predBlock->hasProfileWeight())
                 {
-                    crossJumpTarget->RemoveFlags(BBF_RUN_RARELY);
+                    crossJumpTarget->setBBProfileWeight(crossJumpTarget->bbWeight + predBlock->bbWeight);
                 }
             }
 
