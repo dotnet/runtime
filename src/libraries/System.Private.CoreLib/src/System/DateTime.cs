@@ -1458,12 +1458,11 @@ namespace System
         public DateTimeKind Kind
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (_dateData >> KindShift) switch
+            get
             {
-                (int)DateTimeKind.Unspecified => DateTimeKind.Unspecified,
-                (int)DateTimeKind.Utc => DateTimeKind.Utc,
-                _ => DateTimeKind.Local,
-            };
+                uint kind = (uint)(_dateData >> KindShift);
+                return (DateTimeKind)(kind & ~(kind >> 1));
+            }
         }
 
         // Returns the millisecond part of this DateTime. The returned value
