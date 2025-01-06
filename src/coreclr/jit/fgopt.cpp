@@ -4473,11 +4473,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 // Template parameters:
 //    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
 //
-// Parameters:
-//    dfsTree - The depth-first traversal of the flowgraph
-//
 template <bool hasEH>
-void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
+void Compiler::fgMoveHotJumps()
 {
 #ifdef DEBUG
     if (verbose)
@@ -4490,8 +4487,8 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
     }
 #endif // DEBUG
 
-    assert(dfsTree != nullptr);
-    BitVecTraits traits(dfsTree->PostOrderTraits());
+    assert(m_dfsTree != nullptr);
+    BitVecTraits traits(m_dfsTree->PostOrderTraits());
     BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
 
     // If we have a funclet region, don't bother reordering anything in it.
@@ -4500,7 +4497,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
     {
         next = block->Next();
-        if (!dfsTree->Contains(block))
+        if (!m_dfsTree->Contains(block))
         {
             continue;
         }
@@ -4553,7 +4550,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
 
         BasicBlock* target         = targetEdge->getDestinationBlock();
         bool        isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
-        assert(dfsTree->Contains(target));
+        assert(m_dfsTree->Contains(target));
 
         if (isBackwardJump)
         {
@@ -4573,7 +4570,7 @@ void Compiler::fgMoveHotJumps(FlowGraphDfsTree* dfsTree)
                 targetEdge     = unlikelyEdge;
                 target         = targetEdge->getDestinationBlock();
                 isBackwardJump = BitVecOps::IsMember(&traits, visitedBlocks, target->bbPostorderNum);
-                assert(dfsTree->Contains(target));
+                assert(m_dfsTree->Contains(target));
 
                 if (isBackwardJump)
                 {
@@ -4687,27 +4684,35 @@ void Compiler::fgDoReversePostOrderLayout()
 #endif // DEBUG
 
     // Compute DFS of all blocks in the method, using profile data to determine the order successors are visited in.
-    // Then, identify any loops in the DFS tree so we can keep their bodies compact.
     //
-    FlowGraphDfsTree* const      dfsTree       = fgComputeDfs</* useProfile */ true>();
-    FlowGraphNaturalLoops* const loops         = FlowGraphNaturalLoops::Find(dfsTree);
-    BasicBlock** const           rpoSequence   = new (this, CMK_BasicBlock) BasicBlock*[dfsTree->GetPostOrderCount()];
-    unsigned                     index         = dfsTree->GetPostOrderCount();
-    auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
-        assert(index != 0);
-        rpoSequence[--index] = block;
-    };
+    m_dfsTree = fgComputeDfs</* useProfile */ true>();
 
-    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    // If LSRA didn't create any new blocks, we can reuse its loop-aware RPO traversal,
+    // which is cached in Compiler::fgBBs.
+    // If the cache isn't available, we need to recompute the loop-aware RPO.
+    //
+    BasicBlock** rpoSequence = fgBBs;
+
+    if (rpoSequence == nullptr)
+    {
+        rpoSequence                        = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+        unsigned                     index = 0;
+        auto                         addToSequence = [rpoSequence, &index](BasicBlock* block) {
+            rpoSequence[index++] = block;
+        };
+
+        fgVisitBlocksInLoopAwareRPO(m_dfsTree, loops, addToSequence);
+    }
 
     // Fast path: We don't have any EH regions, so just reorder the blocks
     //
     if (compHndBBtabCount == 0)
     {
-        for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+        for (unsigned i = 1; i < m_dfsTree->GetPostOrderCount(); i++)
         {
-            BasicBlock* const block       = rpoSequence[i];
-            BasicBlock* const blockToMove = rpoSequence[i - 1];
+            BasicBlock* const block       = rpoSequence[i - 1];
+            BasicBlock* const blockToMove = rpoSequence[i];
 
             if (!block->NextIs(blockToMove))
             {
@@ -4716,7 +4721,7 @@ void Compiler::fgDoReversePostOrderLayout()
             }
         }
 
-        fgMoveHotJumps</* hasEH */ false>(dfsTree);
+        fgMoveHotJumps</* hasEH */ false>();
 
         return;
     }
@@ -4756,10 +4761,10 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // Reorder blocks
     //
-    for (unsigned i = dfsTree->GetPostOrderCount() - 1; i != 0; i--)
+    for (unsigned i = 1; i < m_dfsTree->GetPostOrderCount(); i++)
     {
-        BasicBlock* const block       = rpoSequence[i];
-        BasicBlock* const blockToMove = rpoSequence[i - 1];
+        BasicBlock* const block       = rpoSequence[i - 1];
+        BasicBlock* const blockToMove = rpoSequence[i];
 
         // Only reorder blocks within the same EH region -- we don't want to make them non-contiguous
         //
@@ -4789,7 +4794,7 @@ void Compiler::fgDoReversePostOrderLayout()
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
 
-    fgMoveHotJumps</* hasEH */ true>(dfsTree);
+    fgMoveHotJumps</* hasEH */ true>();
 }
 
 //-----------------------------------------------------------------------------
@@ -4919,7 +4924,7 @@ void Compiler::fgMoveColdBlocks()
 Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBNumMax + 1]{})
+    , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBcount]{})
     , blockOrder(nullptr)
     , tempOrder(nullptr)
     , numCandidateBlocks(0)
@@ -5116,6 +5121,10 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
+    // Any edges under consideration should be between reachable blocks
+    assert(compiler->m_dfsTree->Contains(srcBlk));
+    assert(compiler->m_dfsTree->Contains(dstBlk));
+
     // Ignore cross-region branches
     if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
     {
@@ -5138,8 +5147,8 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    const unsigned srcPos = ordinals[srcBlk->bbNum];
-    const unsigned dstPos = ordinals[dstBlk->bbNum];
+    const unsigned srcPos = ordinals[srcBlk->bbPostorderNum];
+    const unsigned dstPos = ordinals[dstBlk->bbPostorderNum];
 
     // Don't consider edges from outside the hot range.
     // If 'srcBlk' has an ordinal of zero and it isn't the first block,
@@ -5255,12 +5264,24 @@ void Compiler::ThreeOptLayout::Run()
     // Block reordering shouldn't change the method's entry point,
     // so if a block has an ordinal of zero and it's not 'fgFirstBB',
     // the block wasn't visited below, so it's not in the range of candidate blocks.
+    unsigned nextPostorderNum = compiler->m_dfsTree->GetPostOrderCount();
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
         assert(numCandidateBlocks < numBlocksUpperBound);
-        ordinals[block->bbNum]         = numCandidateBlocks;
         blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
-        numCandidateBlocks++;
+
+        // Unreachable blocks should have been pushed out of the candidate set of blocks.
+        // However, the entries of unreachable EH regions are left in-place to facilitate reestablishing contiguity,
+        // so it is possible for us to encounter unreachable blocks.
+        // When we do, assign them postorder numbers that can be used as keys into 'ordinals'.
+        if (!compiler->m_dfsTree->Contains(block))
+        {
+            assert(nextPostorderNum < compiler->fgBBcount);
+            block->bbPostorderNum = nextPostorderNum++;
+        }
+
+        assert(ordinals[block->bbPostorderNum] == 0);
+        ordinals[block->bbPostorderNum] = numCandidateBlocks++;
 
         // While walking the span of blocks to reorder,
         // remember where each try region ends within this span.
@@ -5284,8 +5305,14 @@ void Compiler::ThreeOptLayout::Run()
             continue;
         }
 
+        // Ignore try regions unreachable via normal flow
+        if (!compiler->m_dfsTree->Contains(tryBeg))
+        {
+            continue;
+        }
+
         // Only reorder try regions within the candidate span of blocks.
-        if ((ordinals[tryBeg->bbNum] != 0) || tryBeg->IsFirst())
+        if ((ordinals[tryBeg->bbPostorderNum] != 0) || tryBeg->IsFirst())
         {
             JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
             modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
@@ -5359,8 +5386,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
-        const unsigned    srcPos = ordinals[srcBlk->bbNum];
-        const unsigned    dstPos = ordinals[dstBlk->bbNum];
+        const unsigned    srcPos = ordinals[srcBlk->bbPostorderNum];
+        const unsigned    dstPos = ordinals[dstBlk->bbPostorderNum];
 
         // This edge better be between blocks in the current region
         assert((srcPos >= startPos) && (srcPos <= endPos));
@@ -5492,11 +5519,11 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         // Update the ordinals for the blocks we moved
         for (unsigned i = s2Start; i <= endPos; i++)
         {
-            ordinals[blockOrder[i]->bbNum] = i;
+            ordinals[blockOrder[i]->bbPostorderNum] = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
-        assert((ordinals[srcBlk->bbNum] + 1) == ordinals[dstBlk->bbNum]);
+        assert((ordinals[srcBlk->bbPostorderNum] + 1) == ordinals[dstBlk->bbPostorderNum]);
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
@@ -5533,8 +5560,8 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
 
-    const unsigned startPos  = ordinals[startBlock->bbNum];
-    const unsigned endPos    = ordinals[endBlock->bbNum];
+    const unsigned startPos  = ordinals[startBlock->bbPostorderNum];
+    const unsigned endPos    = ordinals[endBlock->bbPostorderNum];
     const unsigned numBlocks = (endPos - startPos + 1);
     assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);

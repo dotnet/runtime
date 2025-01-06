@@ -2338,6 +2338,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 #endif // DEBUG
 
+    Metrics.LoopsInverted++;
     return true;
 }
 

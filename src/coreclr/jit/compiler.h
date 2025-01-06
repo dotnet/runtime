@@ -5226,7 +5226,6 @@ public:
     BasicBlock* fgOSREntryBB = nullptr;     // For OSR, the logical entry point (~ patchpoint)
     BasicBlock* fgFirstFuncletBB = nullptr; // First block of outlined funclets (to allow block insertion before the funclets)
     BasicBlockList* fgReturnBlocks = nullptr; // list of BBJ_RETURN blocks
-    unsigned        fgEdgeCount = 0;    // # of control flow edges between the BBs
     unsigned        fgBBcount = 0;      // # of BBs in the method (in the linked list that starts with fgFirstBB)
 #ifdef DEBUG
     jitstd::vector<BasicBlock*>* fgBBOrder = nullptr;          // ordered vector of BBs
@@ -5237,8 +5236,6 @@ public:
     bool         fgMightHaveNaturalLoops = false;
 
     unsigned     fgBBNumMax = 0;           // The max bbNum that has been assigned to basic blocks
-    unsigned     fgDomBBcount = 0;         // # of BBs for which we have dominator and reachability information
-    BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
 
     FlowGraphDfsTree* m_dfsTree = nullptr;
     // The next members are annotations on the flow graph used during the
@@ -6304,7 +6301,7 @@ public:
     };
 
     template <bool hasEH>
-    void fgMoveHotJumps(FlowGraphDfsTree* dfsTree);
+    void fgMoveHotJumps();
 
     bool fgFuncletsAreCold();
 
