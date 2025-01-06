@@ -3443,6 +3443,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+#if defined(TARGET_X86)
+            if ((simdBaseType == TYP_LONG) || (simdBaseType == TYP_DOUBLE))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX))
+                {
+                    // we need vpsraq to handle signed long, use software fallback
+                    break;
+                }
+            }
+#endif // TARGET_X86
+
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
