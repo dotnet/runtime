@@ -430,13 +430,13 @@ bool emitter::IsLegacyMap1(code_t code) const
         // 2-byte
         return true;
     }
-    if ((code & 0xFF0000) == 0x0F0000)
+    if ((code & 0xFFFF0000) == 0x000F0000)
     {
         // 3-byte
         return true;
     }
 
-    if ((code & 0xFF000000) == 0x0F000000)
+    if ((code & 0xFF00FF00) == 0x0F000000)
     {
         // 4-byte, need to check if PP is prefixs
         BYTE prefix = (BYTE)((code & 0xFF0000) >> 16);
@@ -759,6 +759,24 @@ bool emitter::IsRexW1EvexInstruction(instruction ins)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// DoJitUseApxNDD: Answer the question: does JIT use APX NDD feature on the given instruction?
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if JIT allows APX NDD to be applied on the instructions.
+//
+bool emitter::DoJitUseApxNDD(instruction ins) const
+{
+#if !defined(TARGET_AMD64)
+    return false;
+#else
+    return JitConfig.EnableApxNDD() && IsApxNDDEncodableInstruction(ins);
+#endif 
 }
 
 #ifdef TARGET_64BIT
@@ -1372,6 +1390,179 @@ insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
 }
 
 //------------------------------------------------------------------------
+// emitHandleGCrefRegs: Update GC ref related registers' liveness.
+//
+// Arguments:
+//   dst - Destination buffer.
+//   id  - instruction descriptor to the GC ref instruction.
+//
+void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
+{
+    regNumber reg1 = id->idReg1(); // dst and src1
+    regNumber reg2 = id->idReg2(); // src2
+    switch (id->idInsFmt())
+        {
+            case IF_RRD_RRD:
+                break;
+
+            case IF_RWR_RRD:
+            {
+                if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == (int)REG_ARG_0)
+                {
+                    // We're relocating "this" in the prolog
+                    assert(emitComp->lvaIsOriginalThisArg(0));
+                    assert(emitComp->lvaTable[0].lvRegister);
+                    assert(emitComp->lvaTable[0].GetRegNum() == reg1);
+
+                    if (emitFullGCinfo)
+                    {
+                        emitGCregLiveSet(id->idGCref(), genRegMask(reg1), dst, true);
+                        break;
+                    }
+                    else
+                    {
+                        /* If emitFullGCinfo==false, the we don't use any
+                           regPtrDsc's and so explicitly note the location
+                           of "this" in GCEncode.cpp
+                         */
+                    }
+                }
+
+                emitGCregLiveUpd(id->idGCref(), reg1, dst);
+                break;
+            }
+
+            case IF_RRW_RRD:
+            case IF_RWR_RRD_RRD:
+            {
+                regNumber targetReg = reg1; // dst
+
+                // if the instructions is encoded in NDD form,
+                // src registers will be the 2nd and 3rd register on id.
+                if (id->idInsFmt() == IF_RWR_RRD_RRD)
+                {
+                    reg1 = id->idReg2(); // src1
+                    reg2 = id->idReg3(); // src2
+                }
+                
+                switch (id->idIns())
+                {
+                    /*
+                        This must be one of the following cases:
+
+                        xor reg, reg        to assign NULL
+
+                        and r1 , r2         if (ptr1 && ptr2) ...
+                        or  r1 , r2         if (ptr1 || ptr2) ...
+
+                        add r1 , r2         to compute a normal byref
+                        sub r1 , r2         to compute a strange byref (VC only)
+
+                    */
+                    case INS_xor:
+                        assert(reg1 == reg2);
+                        emitGCregLiveUpd(id->idGCref(), targetReg, dst);
+                        break;
+
+                    case INS_or:
+                    case INS_and:
+                        emitGCregDeadUpd(targetReg, dst);
+                        break;
+
+                    case INS_add:
+                    case INS_sub:
+                    case INS_sub_hide:
+                        assert(id->idGCref() == GCT_BYREF);
+
+#if 0
+#ifdef DEBUG
+                        // Due to elided register moves, we can't have the following assert.
+                        // For example, consider:
+                        //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
+                        //        /--*  t85    byref
+                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
+                        // Here, V01 is type `long` on entry, then is stored as a byref. But because
+                        // the register allocator assigned the same register, no instruction was
+                        // generated, and we only (currently) make gcref/byref changes in emitter GC info
+                        // when an instruction is generated. We still generate correct GC info, as this
+                        // instruction, if writing a GC ref even through reading a long, will go live here.
+                        // These situations typically occur due to unsafe casting, such as with Span<T>.
+
+                        regMaskTP regMask;
+                        regMask = genRegMask(reg1) | genRegMask(reg2);
+
+                        // r1/r2 could have been a GCREF as GCREF + int=BYREF
+                        //                               or BYREF+/-int=BYREF
+                        assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
+                               ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide)));
+#endif // DEBUG
+#endif // 0
+
+                        // Mark r1 as holding a byref
+                        emitGCregLiveUpd(GCT_BYREF, targetReg, dst);
+                        break;
+
+                    default:
+#ifdef DEBUG
+                        emitDispIns(id, false, false, false);
+#endif
+                        assert(!"unexpected GC reg update instruction");
+                }
+
+                break;
+            }
+
+            case IF_RRW_RRW:
+            {
+                // This must be "xchg reg1, reg2"
+                assert(id->idIns() == INS_xchg);
+
+                // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
+                // register pointer mask.
+
+                GCtype gc1, gc2;
+
+                gc1 = emitRegGCtype(reg1);
+                gc2 = emitRegGCtype(reg2);
+
+                if (gc1 != gc2)
+                {
+                    // Kill the GC-info about the GC registers
+
+                    if (needsGC(gc1))
+                    {
+                        emitGCregDeadUpd(reg1, dst);
+                    }
+
+                    if (needsGC(gc2))
+                    {
+                        emitGCregDeadUpd(reg2, dst);
+                    }
+
+                    // Now, swap the info
+
+                    if (needsGC(gc1))
+                    {
+                        emitGCregLiveUpd(gc1, reg2, dst);
+                    }
+
+                    if (needsGC(gc2))
+                    {
+                        emitGCregLiveUpd(gc2, reg1, dst);
+                    }
+                }
+                break;
+            }
+
+            default:
+#ifdef DEBUG
+                emitDispIns(id, false, false, false);
+#endif
+                assert(!"unexpected GC ref instruction format");
+        }
+}
+
+//------------------------------------------------------------------------
 // encodeRegAsIval: Encodes a register as an ival for use by a SIMD instruction
 //
 // Arguments
@@ -1460,7 +1651,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     if (id->idIsEvexNfContextSet() && IsBMIInstruction(ins))
     {
         // Only a few BMI instructions shall be promoted to APX-EVEX due to NF feature.
-        // TODO-Ruihan: convert the check into forms like Has* as above.
+        // TODO-XArch-APX: convert the check into forms like Has* as above.
         return true;
     }
 
@@ -1515,7 +1706,7 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
     // TODO-xarch-apx:
     // At this stage, we are only using REX2 in the case that non-simd integer instructions
     // with EGPRs being used in its operands, it could be either direct register uses, or
-    // memory addresssig operands, i.e. index and base.
+    // memory addressing operands, i.e. index and base.
     instruction ins = id->idIns();
     if (!IsRex2EncodableInstruction(ins))
     {
@@ -1543,21 +1734,19 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 }
 
 //------------------------------------------------------------------------
-// TakesApxExtendedEvexPrefix: Checks if the instruction should be legacy-promoted-evex encoded.
+// TakesApxExtendedEvexPrefix: Checks if the instruction should be legacy-promoted-EVEX encoded.
 //
 // Arguments:
 //    instruction -- processor instruction to check
 //
 // Return Value:
-//    true if this instruction requires a legacy-promoted-evex prefix.
+//    true if this instruction requires a legacy-promoted-EVEX prefix.
 //
 bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 {
     // TODO-XArch-APX:
-    // Ruihan:
-    // I'm isolating legacy-promoted-evex case out from vex/evex-promoted-evex,
+    // Isolating legacy-promoted-EVEX case out from VEX/EVEX-promoted-EVEX,
     // as the latter ones are relatively simple, providing EGPRs functionality,
-    // (VEX has NF, this case needs to be investigated)
     instruction ins = id->idIns();
     if (!IsApxExtendedEvexInstruction(ins))
     {
@@ -1625,8 +1814,8 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
 
 #define MAP4_IN_BYTE_EVEX_PREFIX  0x4000000000000ULL
-#define NDBIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
-#define NFBIT_IN_BYTE_EVEX_PREFIX 0x400000000ULL
+#define ND_BIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
+#define NF_BIT_IN_BYTE_EVEX_PREFIX 0x400000000ULL
 #define EXTENDED_EVEX_PP_BITS     0x10000000000ULL
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
@@ -1637,12 +1826,12 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 //    attr -- operand size
 //
 // Return Value:
-//    encoded code with Evex prefix.
+//    encoded code with EVEX prefix.
 //
 emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAttr attr)
 {
     // Only AVX512 instructions require EVEX prefix
-    // After APX, some instructions in legacy or vex space will be promoted to EVEX.
+    // After APX, some instructions in legacy or VEX space will be promoted to EVEX.
     instruction ins = id->idIns();
     assert(IsEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
@@ -1670,16 +1859,16 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             code |= MAP4_IN_BYTE_EVEX_PREFIX;
         }
 
-        // TODO-XArch-apx:
-        // verify if it is actually safe to reuse the Evex.nd with Evex.b on instrDesc.
+        // TODO-XArch-APX:
+        // verify if it is actually safe to reuse the EVEX.ND with EVEX.B on instrDesc.
         if (id->idIsEvexNdContextSet())
         {
-            code |= NDBIT_IN_BYTE_EVEX_PREFIX;
+            code |= ND_BIT_IN_BYTE_EVEX_PREFIX;
         }
 
         if (id->idIsEvexNfContextSet())
         {
-            code |= NFBIT_IN_BYTE_EVEX_PREFIX;
+            code |= NF_BIT_IN_BYTE_EVEX_PREFIX;
         }
 
         if (attr == EA_2BYTE)
@@ -1691,7 +1880,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
         {
             // EVEX.R3
             // TODO-XArch-APX:
-            // A few sidenotes: based on how JIT defined IMUL, we may need to extend
+            // A few side notes: based on how JIT defined IMUL, we may need to extend
             // the definition to `IMUL_31` to cover EGPRs. And it can be defined in a
             // similar way that opcodes comes with built-in REX2 prefix, and convert
             // it to EVEX when needed with some helper functions.
@@ -4050,7 +4239,7 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         }
         if (false /*reg >= REG_R16 && reg <= REG_R31*/)
         {
-            // Seperate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
+            // Separate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
             *code |= 0x002000000000ULL; // REX2.X4
         }
@@ -5744,7 +5933,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     // consistent regardless of whether they are src or dst. As such, we will find
     // the type of each operand and only check them against src/dst where relevant.
 
-    bool useNDD = UsePromotedEVEXEncoding() && (targetReg != REG_NA);
+    const bool useNDD = UsePromotedEVEXEncoding() && (targetReg != REG_NA);
 #if !defined(TARGET_AMD64)
     // APX does not support 32-bit system.
     assert(!useNDD);
@@ -16042,9 +16231,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else
     {
         // TODO-XArch-APX:
-        // Ruihan:
         // some instructions with NDD form might go into this path with EVEX prefix.
-        // might consider having a seperate path with checks like: TakesApxExtendedEvexPrefix
+        // might consider having a separate path with checks like: TakesApxExtendedEvexPrefix
         // essentially, we need to make it clear on the priority and necessity of REX2 and EVEX:
         // REX2 is needed iff EGPRs are involved.
         // EVEX is needed when NDD, NF or other features are involved.
@@ -16214,155 +16402,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     // Does this instruction operate on a GC ref value?
     if (id->idGCref())
     {
-        switch (id->idInsFmt())
-        {
-            case IF_RRD_RRD:
-                break;
-
-            case IF_RWR_RRD:
-            {
-                if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == (int)REG_ARG_0)
-                {
-                    // We're relocating "this" in the prolog
-                    assert(emitComp->lvaIsOriginalThisArg(0));
-                    assert(emitComp->lvaTable[0].lvRegister);
-                    assert(emitComp->lvaTable[0].GetRegNum() == reg1);
-
-                    if (emitFullGCinfo)
-                    {
-                        emitGCregLiveSet(id->idGCref(), genRegMask(reg1), dst, true);
-                        break;
-                    }
-                    else
-                    {
-                        /* If emitFullGCinfo==false, the we don't use any
-                           regPtrDsc's and so explicitly note the location
-                           of "this" in GCEncode.cpp
-                         */
-                    }
-                }
-
-                emitGCregLiveUpd(id->idGCref(), reg1, dst);
-                break;
-            }
-
-            case IF_RRW_RRD:
-            {
-                switch (id->idIns())
-                {
-                    /*
-                        This must be one of the following cases:
-
-                        xor reg, reg        to assign NULL
-
-                        and r1 , r2         if (ptr1 && ptr2) ...
-                        or  r1 , r2         if (ptr1 || ptr2) ...
-
-                        add r1 , r2         to compute a normal byref
-                        sub r1 , r2         to compute a strange byref (VC only)
-
-                    */
-                    case INS_xor:
-                        assert(reg1 == reg2);
-                        emitGCregLiveUpd(id->idGCref(), reg1, dst);
-                        break;
-
-                    case INS_or:
-                    case INS_and:
-                        emitGCregDeadUpd(reg1, dst);
-                        break;
-
-                    case INS_add:
-                    case INS_sub:
-                    case INS_sub_hide:
-                        assert(id->idGCref() == GCT_BYREF);
-
-#if 0
-#ifdef DEBUG
-                        // Due to elided register moves, we can't have the following assert.
-                        // For example, consider:
-                        //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
-                        //        /--*  t85    byref
-                        //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
-                        // Here, V01 is type `long` on entry, then is stored as a byref. But because
-                        // the register allocator assigned the same register, no instruction was
-                        // generated, and we only (currently) make gcref/byref changes in emitter GC info
-                        // when an instruction is generated. We still generate correct GC info, as this
-                        // instruction, if writing a GC ref even through reading a long, will go live here.
-                        // These situations typically occur due to unsafe casting, such as with Span<T>.
-
-                        regMaskTP regMask;
-                        regMask = genRegMask(reg1) | genRegMask(reg2);
-
-                        // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                        //                               or BYREF+/-int=BYREF
-                        assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
-                               ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide)));
-#endif // DEBUG
-#endif // 0
-
-                        // Mark r1 as holding a byref
-                        emitGCregLiveUpd(GCT_BYREF, reg1, dst);
-                        break;
-
-                    default:
-#ifdef DEBUG
-                        emitDispIns(id, false, false, false);
-#endif
-                        assert(!"unexpected GC reg update instruction");
-                }
-
-                break;
-            }
-
-            case IF_RRW_RRW:
-            {
-                // This must be "xchg reg1, reg2"
-                assert(id->idIns() == INS_xchg);
-
-                // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
-                // register pointer mask.
-
-                GCtype gc1, gc2;
-
-                gc1 = emitRegGCtype(reg1);
-                gc2 = emitRegGCtype(reg2);
-
-                if (gc1 != gc2)
-                {
-                    // Kill the GC-info about the GC registers
-
-                    if (needsGC(gc1))
-                    {
-                        emitGCregDeadUpd(reg1, dst);
-                    }
-
-                    if (needsGC(gc2))
-                    {
-                        emitGCregDeadUpd(reg2, dst);
-                    }
-
-                    // Now, swap the info
-
-                    if (needsGC(gc1))
-                    {
-                        emitGCregLiveUpd(gc1, reg2, dst);
-                    }
-
-                    if (needsGC(gc2))
-                    {
-                        emitGCregLiveUpd(gc2, reg1, dst);
-                    }
-                }
-                break;
-            }
-
-            default:
-#ifdef DEBUG
-                emitDispIns(id, false, false, false);
-#endif
-                assert(!"unexpected GC ref instruction format");
-        }
+        emitHandleGCrefRegs(dst, id);
     }
     else
     {
@@ -16510,74 +16550,9 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
 
-    // noway_assert(!id->idGCref());
     if (id->idGCref())
     {
-        assert(IsApxExtendedEvexInstruction(ins));
-        assert(id->idInsFmt() == IF_RWR_RRD_RRD);
-        switch (id->idIns())
-        {
-            /*
-                This must be one of the following cases:
-
-                xor reg, reg        to assign NULL
-
-                and r1 , r2         if (ptr1 && ptr2) ...
-                or  r1 , r2         if (ptr1 || ptr2) ...
-
-                add r1 , r2         to compute a normal byref
-                sub r1 , r2         to compute a strange byref (VC only)
-
-            */
-            case INS_xor:
-                assert(src1 == src2);
-                emitGCregLiveUpd(id->idGCref(), targetReg, dst);
-                break;
-
-            case INS_or:
-            case INS_and:
-                emitGCregDeadUpd(targetReg, dst);
-                break;
-
-            case INS_add:
-            case INS_sub:
-            case INS_sub_hide:
-                assert(id->idGCref() == GCT_BYREF);
-
-#if 0
-#ifdef DEBUG
-                // Due to elided register moves, we can't have the following assert.
-                // For example, consider:
-                //    t85 = LCL_VAR byref V01 arg1 rdx (last use) REG rdx
-                //        /--*  t85    byref
-                //        *  STORE_LCL_VAR byref  V40 tmp31 rdx REG rdx
-                // Here, V01 is type `long` on entry, then is stored as a byref. But because
-                // the register allocator assigned the same register, no instruction was
-                // generated, and we only (currently) make gcref/byref changes in emitter GC info
-                // when an instruction is generated. We still generate correct GC info, as this
-                // instruction, if writing a GC ref even through reading a long, will go live here.
-                // These situations typically occur due to unsafe casting, such as with Span<T>.
-
-                regMaskTP regMask;
-                regMask = genRegMask(src1) | genRegMask(src2);
-
-                // r1/r2 could have been a GCREF as GCREF + int=BYREF
-                //                               or BYREF+/-int=BYREF
-                assert(((regMask & emitThisGCrefRegs) && (ins == INS_add)) ||
-                        ((regMask & emitThisByrefRegs) && (ins == INS_add || ins == INS_sub || ins == INS_sub_hide)));
-#endif // DEBUG
-#endif // 0
-
-                // Mark r1 as holding a byref
-                emitGCregLiveUpd(GCT_BYREF, targetReg, dst);
-                break;
-
-            default:
-#ifdef DEBUG
-                emitDispIns(id, false, false, false);
-#endif
-                assert(!"unexpected GC reg update instruction");
-        }
+        emitHandleGCrefRegs(dst, id);
     }
 
     if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
@@ -18629,8 +18604,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (id->idIsEvexNdContextSet() && TakesApxExtendedEvexPrefix(id))
             {
-                // TODO-XArchh-apx:
-                // Ruihan: I'm not sure why instructions on this path can be with instruction
+                // TODO-XArch-APX:
+                // I'm not sure why instructions on this path can be with instruction
                 // format other than IF_RWR_RRD_ARD, fix here for debug purpose only,
                 // need revisit.
                 id->idInsFmt(IF_RWR_RRD_ARD);

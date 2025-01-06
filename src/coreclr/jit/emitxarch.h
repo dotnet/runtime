@@ -145,6 +145,7 @@ bool             IsApxExtendedEvexInstruction(instruction ins) const;
 bool             IsShiftInstruction(instruction ins) const;
 bool             IsLegacyMap1(code_t code) const;
 bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
+bool             DoJitUseApxNDD(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -184,6 +185,8 @@ bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
 insOpts GetEmbRoundingMode(uint8_t mode) const;
+
+void emitHandleGCrefRegs(BYTE* dst, instrDesc* id);
 
 bool hasRexPrefix(code_t code)
 {
