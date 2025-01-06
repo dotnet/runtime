@@ -1248,7 +1248,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
-#elif
+#else
     PTR_uintptr_t pRA = pRegisterSet->pRA;
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
