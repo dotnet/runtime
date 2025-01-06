@@ -87,12 +87,12 @@ extends:
               parameters:
                 buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
                 displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
-                condition: ne('$(archType)', 'arm64')
+                condition: ne(variables['archType'], 'arm64')
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
                 buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
                 displayName: Build managed CoreCLR components, all libraries, hosts, and packs
-                condition: eq('$(archType)', 'arm64')
+                condition: eq(variables['archType'], 'arm64')
 
             # Upload the results.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
