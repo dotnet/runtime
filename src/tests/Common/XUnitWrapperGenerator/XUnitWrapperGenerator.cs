@@ -448,8 +448,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         else
         {
-            builder.AppendLine($@"string tempLogPath = ""{assemblyName}.templog.xml""");
-            builder.AppendLine($@"string testStatsPath = ""{assemblyName}.testStats.csv""");
+            builder.AppendLine($@"string tempLogPath = ""{assemblyName}.templog.xml"";");
+            builder.AppendLine($@"string testStatsPath = ""{assemblyName}.testStats.csv"";");
         }
 
         builder.AppendLine();
