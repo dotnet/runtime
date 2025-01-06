@@ -31,7 +31,7 @@ namespace System
         /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) =>
-            new RuntimeTypeHandle(value == IntPtr.Zero ? null : GetRuntimeTypeFromHandle(value));
+            new RuntimeTypeHandle(GetRuntimeTypeFromHandleMaybeNull(value));
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow")]
         private static partial void GetRuntimeTypeFromHandleSlow(
@@ -49,9 +49,28 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern RuntimeType? GetRuntimeTypeFromHandleIfExists(IntPtr handle);
 
-        private static RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
+        // implementation of CORINFO_HELP_GETSYNCFROMCLASSHANDLE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+        internal static unsafe RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
-            return GetRuntimeTypeFromHandleIfExists(handle) ?? GetRuntimeTypeFromHandleSlow(handle);
+            TypeHandle h = new((void*)handle);
+            if (h.IsTypeDesc)
+            {
+                return GetRuntimeTypeFromHandleIfExists(handle) ?? GetRuntimeTypeFromHandleSlow(handle);
+            }
+
+            // The MethodTable fast path is in managed, so handle that here.
+            return GetRuntimeType(h.AsMethodTable());
+        }
+
+        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
+        internal static RuntimeType? GetRuntimeTypeFromHandleMaybeNull(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            return GetRuntimeTypeFromHandle(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
