@@ -363,7 +363,7 @@ namespace System.Reflection
                 else if (!UnreservedReserved.Contains(ch))
                 {
                     PercentEncodeByte((byte)ch, ref vsb);
-                    stringToEscape = stringToEscape[1..];
+                    stringToEscape = stringToEscape.Slice(1);
                 }
                 else
                 {
@@ -387,9 +387,8 @@ namespace System.Reflection
             HexConverter.ToCharsBuffer(ch, vsb.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
-#pragma warning disable CS9264 // nullability of `field`: https://github.com/dotnet/csharplang/issues/8425
+        [field: AllowNull]
         private static SearchValues<char> UnreservedReserved => field ??= SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
-#pragma warning restore CS9264
 
         private const int StackallocThreshold = 512;
     }
