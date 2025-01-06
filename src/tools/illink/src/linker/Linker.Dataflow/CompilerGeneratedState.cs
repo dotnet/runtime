@@ -122,12 +122,20 @@ namespace Mono.Linker.Dataflow
 				return null;
 
 			// Avoid repeat scans of the same type
-			if (!_cachedTypeToCompilerGeneratedMembers.TryAdd (type, null))
+			if (_cachedTypeToCompilerGeneratedMembers.ContainsKey (type))
 				return type;
 
 			var callGraph = new CompilerGeneratedCallGraph ();
 			var userDefinedMethods = new HashSet<MethodDefinition> ();
 			var generatedTypeToTypeArgs = new Dictionary<TypeDefinition, TypeArgumentInfo> ();
+
+			List<(MessageOrigin, DiagnosticId, string[])>? _warnings = null;
+
+			void AddWarning (MessageOrigin origin, DiagnosticId id, params string[] messageArgs)
+			{
+				_warnings ??= new List<(MessageOrigin, DiagnosticId, string[])> ();
+				_warnings.Add ((origin, id, messageArgs));
+			}
 
 			void ProcessMethod (MethodDefinition method)
 			{
@@ -163,7 +171,7 @@ namespace Mono.Linker.Dataflow
 									// fill in null for now, attribute providers will be filled in later
 									if (!generatedTypeToTypeArgs.TryAdd (generatedType, new TypeArgumentInfo (method, null))) {
 										var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
-										_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
+										AddWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
 									}
 									continue;
 								}
@@ -214,7 +222,7 @@ namespace Mono.Linker.Dataflow
 
 					if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd (stateMachineType, method)) {
 						var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
-						_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), stateMachineType.GetDisplayName ());
+						AddWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), stateMachineType.GetDisplayName ());
 					}
 					// Already warned above if multiple methods map to the same type
 					// Fill in null for argument providers now, the real providers will be filled in later
@@ -265,7 +273,7 @@ namespace Mono.Linker.Dataflow
 						// Nested functions get suppressions from the user method only.
 						if (!_compilerGeneratedMethodToUserCodeMethod.TryAdd (nestedFunction, userDefinedMethod)) {
 							var alreadyAssociatedMethod = _compilerGeneratedMethodToUserCodeMethod[nestedFunction];
-							_context.LogWarning (new MessageOrigin (userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), nestedFunction.GetDisplayName ());
+							AddWarning (new MessageOrigin (userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), nestedFunction.GetDisplayName ());
 						}
 						break;
 					case TypeDefinition stateMachineType:
@@ -292,12 +300,19 @@ namespace Mono.Linker.Dataflow
 					if (!_generatedTypeToTypeArgumentInfo.TryAdd (generatedType, info)) {
 						var method = info.CreatingMethod;
 						var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
-						_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
+						AddWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), generatedType.GetDisplayName ());
 					}
 				}
 			}
 
-			_cachedTypeToCompilerGeneratedMembers[type] = compilerGeneratedCallees;
+			_cachedTypeToCompilerGeneratedMembers.Add (type, compilerGeneratedCallees);
+
+			if (_warnings != null) {
+				foreach (var (origin, id, messageArgs) in _warnings) {
+					_context.LogWarning (origin, id, messageArgs);
+				}
+			}
+
 			return type;
 
 			/// <summary>
