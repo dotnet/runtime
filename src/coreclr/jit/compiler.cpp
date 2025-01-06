@@ -5230,6 +5230,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 fgDoReversePostOrderLayout();
                 fgMoveColdBlocks();
                 fgSearchImprovedLayout();
+                fgInvalidateDfsTree();
 
                 if (compHndBBtabCount != 0)
                 {
