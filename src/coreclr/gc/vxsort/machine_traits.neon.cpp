@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if defined(TARGET_ARM64)
-
 #include "common.h"
 #include "alignment.h"
 #include "machine_traits.neon.h"
@@ -17,5 +15,3 @@ alignas(32) const uint8_t perm_table_64[T64_SIZE] = {
 };
 
 }
-
-#endif

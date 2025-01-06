@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if defined(TARGET_AMD64)
-
 #include "common.h"
 #include "machine_traits.avx2.h"
 
@@ -288,4 +286,3 @@ alignas(32) const uint8_t perm_table_32[T32_SIZE] = {
 
 }
 
-#endif
