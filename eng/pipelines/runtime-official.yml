@@ -256,6 +256,10 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
+          - android_x64
+          - android_x86
+          - android_arm
+          - android_arm64
           - maccatalyst_x64
           - maccatalyst_arm64
           - tvossimulator_x64
@@ -265,61 +269,11 @@ extends:
           - iossimulator_arm64
           - ios_arm64
           - linux_bionic_x64
+          - linux_bionic_arm
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+mono+libs+host+packs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - android_x64
-          - android_x86
-          - android_arm
-          - android_arm64
-          jobParameters:
-            templatePath: 'templates-official'
             buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - linux_bionic_arm
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
