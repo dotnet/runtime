@@ -2161,7 +2161,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     FlowEdge* newCondToNewExit = fgAddRefPred(nonEnterBlock, preheader);
 
     preheader->SetCond(trueExits ? newCondToNewExit : newCondToNewPreheader,
-                     trueExits ? newCondToNewPreheader : newCondToNewExit);
+                       trueExits ? newCondToNewPreheader : newCondToNewExit);
 
     preheader->GetTrueEdge()->setLikelihood(condBlock->GetTrueEdge()->getLikelihood());
     preheader->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
@@ -2224,9 +2224,9 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         {
             if (JitConfig.JitProfileChecks() > 0)
             {
-                const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(preheader->GetFalseTarget(), checks);
-                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(preheader->GetTrueTarget(), checks);
+                const ProfileChecks checks = (ProfileChecks)JitConfig.JitProfileChecks();
+                const bool nextProfileOk   = fgDebugCheckIncomingProfileData(preheader->GetFalseTarget(), checks);
+                const bool jumpProfileOk   = fgDebugCheckIncomingProfileData(preheader->GetTrueTarget(), checks);
 
                 if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
                 {
