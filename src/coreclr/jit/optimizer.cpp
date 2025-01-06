@@ -2129,8 +2129,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     }
 
     // Split the preheader so we can duplicate the statements into it. The new
-    // block will be a BBJ_COND node.
-    BasicBlock* newCond = fgSplitBlockAtEnd(preheader);
+    // block will be the new preheader.
+    BasicBlock* newPreheader = fgSplitBlockAtEnd(preheader);
 
     if (allProfileWeightsAreValid)
     {
@@ -2143,32 +2143,28 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         //
         if (delta > preheader->bbWeight)
         {
-            newCond->setBBProfileWeight(delta);
+            newPreheader->setBBProfileWeight(delta);
         }
     }
-
-    // Split the new block once more to create a proper preheader, so we end up
-    // with preheader (always) -> newCond (cond) -> newPreheader (always) -> header
-    BasicBlock* newPreheader = fgSplitBlockAtEnd(newCond);
 
     // Make sure exit stays canonical
     BasicBlock* nonEnterBlock = fgSplitBlockAtBeginning(exit);
 
     JITDUMP("New preheader is " FMT_BB "\n", newPreheader->bbNum);
-    JITDUMP("Duplicated condition block is " FMT_BB "\n", newCond->bbNum);
+    JITDUMP("Duplicated condition block is " FMT_BB "\n", preheader->bbNum);
     JITDUMP("Old exit is " FMT_BB ", new non-enter block is " FMT_BB "\n", exit->bbNum, nonEnterBlock->bbNum);
 
     // Get the newCond -> newPreheader edge
-    FlowEdge* newCondToNewPreheader = newCond->GetTargetEdge();
+    FlowEdge* newCondToNewPreheader = preheader->GetTargetEdge();
 
     // Add newCond -> nonEnterBlock
-    FlowEdge* newCondToNewExit = fgAddRefPred(nonEnterBlock, newCond);
+    FlowEdge* newCondToNewExit = fgAddRefPred(nonEnterBlock, preheader);
 
-    newCond->SetCond(trueExits ? newCondToNewExit : newCondToNewPreheader,
+    preheader->SetCond(trueExits ? newCondToNewExit : newCondToNewPreheader,
                      trueExits ? newCondToNewPreheader : newCondToNewExit);
 
-    newCond->GetTrueEdge()->setLikelihood(condBlock->GetTrueEdge()->getLikelihood());
-    newCond->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
+    preheader->GetTrueEdge()->setLikelihood(condBlock->GetTrueEdge()->getLikelihood());
+    preheader->GetFalseEdge()->setLikelihood(condBlock->GetFalseEdge()->getLikelihood());
 
     // Add newPreheader -> stayInLoopSucc
     FlowEdge* newPreheaderToInLoopSucc = fgAddRefPred(stayInLoopSucc, newPreheader, newPreheader->GetTargetEdge());
@@ -2186,20 +2182,20 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         for (Statement* stmt : block->Statements())
         {
             GenTree*   clonedTree = gtCloneExpr(stmt->GetRootNode());
-            Statement* clonedStmt = fgNewStmtAtEnd(newCond, clonedTree, stmt->GetDebugInfo());
+            Statement* clonedStmt = fgNewStmtAtEnd(preheader, clonedTree, stmt->GetDebugInfo());
 
             if (stmt == condBlock->lastStmt())
             {
                 // TODO: This ought not to be necessary, but has large negative diffs if we don't do it
                 assert(clonedStmt->GetRootNode()->OperIs(GT_JTRUE));
                 clonedStmt->GetRootNode()->AsUnOp()->gtOp1 = gtReverseCond(clonedStmt->GetRootNode()->gtGetOp1());
-                newCond->SetCond(newCond->GetFalseEdge(), newCond->GetTrueEdge());
+                preheader->SetCond(preheader->GetFalseEdge(), preheader->GetTrueEdge());
             }
 
             DISPSTMT(clonedStmt);
         }
 
-        newCond->CopyFlags(block, BBF_COPY_PROPAGATE);
+        preheader->CopyFlags(block, BBF_COPY_PROPAGATE);
     }
 
     // If we have profile data for all blocks and we know that we are cloning the
@@ -2229,8 +2225,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
             if (JitConfig.JitProfileChecks() > 0)
             {
                 const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(newCond->GetFalseTarget(), checks);
-                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(newCond->GetTrueTarget(), checks);
+                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(preheader->GetFalseTarget(), checks);
+                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(preheader->GetTrueTarget(), checks);
 
                 if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
                 {
@@ -2245,10 +2241,10 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nDuplicated loop exit block at " FMT_BB " for loop " FMT_LP "\n", newCond->bbNum, loop->GetIndex());
+        printf("\nDuplicated loop exit block at " FMT_BB " for loop " FMT_LP "\n", preheader->bbNum, loop->GetIndex());
         printf("Estimated code size expansion is %d\n", estDupCostSz);
 
-        fgDumpBlock(newCond);
+        fgDumpBlock(preheader);
         fgDumpBlock(condBlock);
     }
 #endif // DEBUG
