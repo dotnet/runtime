@@ -69,10 +69,10 @@
     <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
   </PropertyGroup>
 
-  <ProperyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(BuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
+  <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(BuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
     <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
-  </ProperyGroup>
+  </PropertyGroup>
 
   <!-- Init _subset here to allow RuntimeFlavor to be set as early as possible -->
   <PropertyGroup>
