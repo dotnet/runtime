@@ -39,7 +39,7 @@ extends:
         - task: UseDotNet@2
           inputs:
             packageType: 'sdk'
-            useGlobalJson: true
+            version: '10.x'
             includePreviewVersions: true
         - task: DotNetCoreCLI@2
           inputs:
