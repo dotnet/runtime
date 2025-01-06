@@ -45,6 +45,7 @@ extends:
         - task: AzureRmWebAppDeployment@4
           inputs:
             ConnectionType: 'AzureRM'
+            azureSubscription: .NET Libraries Network Testing
             appType: 'webApp'
             WebAppName: 'corefx-net-http11'
             deployToSlotOrASE: true
