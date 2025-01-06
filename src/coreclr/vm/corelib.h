@@ -109,6 +109,7 @@ DEFINE_METHOD(ARG_ITERATOR,         CTOR2,                  .ctor,              
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
+DEFINE_METHOD(ARRAY,                CREATEINSTANCEMDARRAY,  CreateInstanceMDArray,      SM_IntPtr_UInt_VoidPtr_RetObj)
 
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
@@ -137,6 +138,7 @@ DEFINE_METHOD(ASSEMBLY,             CTOR,                   .ctor,              
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
 
+DEFINE_CLASS_U(System,              Signature,          SignatureNative)
 
 DEFINE_CLASS(BINDER,                Reflection,             Binder)
 
@@ -182,7 +184,7 @@ DEFINE_METHOD(COM_OBJECT,           RELEASE_ALL_DATA,       ReleaseAllData,     
 DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           IM_Class_RetObj)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
@@ -214,6 +216,7 @@ DEFINE_CLASS_U(System,                 RuntimeMethodInfoStub,     ReflectMethodO
 DEFINE_FIELD_U(m_value,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(STUBMETHODINFO,      System,                 RuntimeMethodInfoStub)
 DEFINE_FIELD(STUBMETHODINFO,      HANDLE,                 m_value)
+DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
@@ -358,14 +361,17 @@ DEFINE_FIELD(RT_FIELD_INFO,         HANDLE,                 m_fieldHandle)
 DEFINE_CLASS_U(System,              RuntimeFieldInfoStub,   ReflectFieldObject)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
-#if FOR_ILLINK
+DEFINE_METHOD(STUBFIELDINFO,        FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
+#ifdef FOR_ILLINK
 DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_HANDLE,          System,                 RuntimeFieldHandle)
 DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
+DEFINE_METHOD(FIELD_HANDLE,         GETFIELDADDR,           GetFieldAddr,       SM_Obj_VoidPtr_RetVoidPtr)
+DEFINE_METHOD(FIELD_HANDLE,         GETSTATICFIELDADDR,     GetStaticFieldAddr, SM_VoidPtr_RetVoidPtr)
 
 DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 
@@ -497,18 +503,18 @@ DEFINE_FIELD_U(_handlerLength,         RuntimeExceptionHandlingClause,        _h
 DEFINE_FIELD_U(_catchMetadataToken,    RuntimeExceptionHandlingClause,        _catchToken)
 DEFINE_FIELD_U(_filterOffset,          RuntimeExceptionHandlingClause,        _filterOffset)
 DEFINE_CLASS(RUNTIME_EH_CLAUSE,             Reflection,             RuntimeExceptionHandlingClause)
-#if FOR_ILLINK
+#ifdef FOR_ILLINK
 DEFINE_METHOD(RUNTIME_EH_CLAUSE,            CTOR,                   .ctor,              IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(Reflection,             RuntimeLocalVariableInfo,        RuntimeLocalVariableInfo)
 DEFINE_FIELD_U(_type,                  RuntimeLocalVariableInfo,        _type)
 DEFINE_FIELD_U(_localIndex,            RuntimeLocalVariableInfo,        _localIndex)
 DEFINE_FIELD_U(_isPinned,              RuntimeLocalVariableInfo,        _isPinned)
 DEFINE_CLASS(RUNTIME_LOCAL_VARIABLE_INFO,   Reflection,             RuntimeLocalVariableInfo)
-#if FOR_ILLINK
+#ifdef FOR_ILLINK
 DEFINE_METHOD(RUNTIME_LOCAL_VARIABLE_INFO,  CTOR,                   .ctor,              IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodBody,           RuntimeMethodBody)
 DEFINE_FIELD_U(_IL,                    RuntimeMethodBody,         _IL)
@@ -518,7 +524,11 @@ DEFINE_FIELD_U(_methodBase,               RuntimeMethodBody,         _methodBase
 DEFINE_FIELD_U(_localSignatureMetadataToken, RuntimeMethodBody,      _localVarSigToken)
 DEFINE_FIELD_U(_maxStackSize,             RuntimeMethodBody,         _maxStackSize)
 DEFINE_FIELD_U(_initLocals,               RuntimeMethodBody,         _initLocals)
-DEFINE_CLASS(RUNTIME_METHOD_BODY,           Reflection,             RuntimeMethodBody)
+
+DEFINE_CLASS(RUNTIME_METHOD_BODY,   Reflection, RuntimeMethodBody)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(RUNTIME_METHOD_BODY,  CTOR,   .ctor,  IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(METHOD_INFO,           Reflection,             MethodInfo)
 
@@ -660,6 +670,9 @@ DEFINE_METHOD(THROWHELPERS,    THROWNULLREFEXCEPTION,               ThrowNullRef
 DEFINE_METHOD(THROWHELPERS,    THROWVERIFICATIONEXCEPTION,          ThrowVerificationException, SM_Int_RetVoid)
 DEFINE_METHOD(THROWHELPERS,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,   ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
 DEFINE_METHOD(THROWHELPERS,    THROWENTRYPOINTNOTFOUNDEXCEPTION,    ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWMETHODACCESSEXCEPTION,          ThrowMethodAccessException, SM_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWFIELDACCESSEXCEPTION,           ThrowFieldAccessException,  SM_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWCLASSACCESSEXCEPTION,           ThrowClassAccessException,  SM_PtrVoid_PtrVoid_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)

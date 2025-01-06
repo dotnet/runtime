@@ -60,7 +60,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
             """
         );
 
-        BuildProject(info, config, new PublishOptions(RuntimeType: RuntimeVariant.MultiThreaded, AOT: aot));
+        BlazorPublish(info, config, new PublishOptions(RuntimeType: RuntimeVariant.MultiThreaded, AOT: aot));
 
         bool hasEmittedWasmEnableThreads = false;
         StringBuilder errorOutput = new();

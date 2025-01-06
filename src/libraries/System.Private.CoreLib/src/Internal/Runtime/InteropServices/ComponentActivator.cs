@@ -110,7 +110,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
-        public static unsafe int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
+        public static int LoadAssembly(IntPtr assemblyPathNative, IntPtr loadContext, IntPtr reserved)
         {
             if (!IsSupported)
                 return HostFeatureDisabled;

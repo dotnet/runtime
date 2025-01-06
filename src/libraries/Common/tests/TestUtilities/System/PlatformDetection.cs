@@ -290,6 +290,12 @@ namespace System
         public static bool IsBrowserAndIsBuiltWithAggressiveTrimming => IsBuiltWithAggressiveTrimming && IsBrowser;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
+#if NET
+        public static bool DataSetXmlSerializationIsSupported => AppContext.TryGetSwitch("System.Data.DataSet.XmlSerializationIsSupported", out bool isSupported) ? isSupported : true;
+#else
+        public static bool DataSetXmlSerializationIsSupported => true;
+#endif
+
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // Android - Platform supports alpn from API level 29 and higher

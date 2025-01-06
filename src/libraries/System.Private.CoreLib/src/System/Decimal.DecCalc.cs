@@ -154,7 +154,7 @@ namespace System
 
 #region Decimal Math Helpers
 
-            private static unsafe uint GetExponent(float f)
+            private static uint GetExponent(float f)
             {
                 // Based on pulling out the exp from this single struct layout
                 // typedef struct {
@@ -166,7 +166,7 @@ namespace System
                 return (byte)(BitConverter.SingleToUInt32Bits(f) >> 23);
             }
 
-            private static unsafe uint GetExponent(double d)
+            private static uint GetExponent(double d)
             {
                 // Based on pulling out the exp from this double struct layout
                 // typedef struct {
