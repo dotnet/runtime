@@ -249,7 +249,10 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 //    This involves:
 //    - Widening operations of unsigneds.
 //
-void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+// Returns:
+//   Next node to lower.
+//
+GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
@@ -257,6 +260,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
     ContainCheckStoreLoc(storeLoc);
+    return storeLoc->gtNext;
 }
 
 //------------------------------------------------------------------------

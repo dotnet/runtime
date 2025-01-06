@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Test.Console;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -544,6 +545,69 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.True(regexMatch.Success);
                     var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
                     Assert.Equal(DateTimeOffset.Now.Offset, parsedDateTime.Offset);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
+        }
+
+        private sealed class BufferedLogRecordImpl : BufferedLogRecord
+        {
+            private readonly DateTimeOffset _timestamp;
+            private readonly LogLevel _level;
+            private readonly string _exception;
+
+            public BufferedLogRecordImpl(DateTimeOffset timestamp, LogLevel level, string exception)
+            {
+                _timestamp = timestamp;
+                _level = level;
+                _exception = exception;
+            }
+
+            public override DateTimeOffset Timestamp => _timestamp;
+            public override LogLevel LogLevel => _level;
+            public override EventId EventId => new EventId(0);
+            public override string? Exception => _exception;
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(FormatsAndLevels))]
+        public void Log_LogsCorrectOverrideTimestamp(ConsoleLoggerFormat format, LogLevel level)
+        {
+            // Arrange
+            using var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyy-MM-ddTHH:mm:sszz ", Format = format, UseUtcTimestamp = false });
+            var levelPrefix = t.GetLevelPrefix(level);
+            var logger = t.Logger;
+            var sink = t.Sink;
+            var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
+            var now = new DateTimeOffset(DateTime.Now);
+            var round_now = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, now.Offset);
+            var bufferedRecord = new BufferedLogRecordImpl(now, level, ex.ToString());
+
+            // Act
+            logger.LogRecords(new [] { bufferedRecord });
+
+            // Assert
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(3, sink.Writes.Count);
+                    Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                    Assert.Matches(@"^\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\s$", sink.Writes[0].Message);
+                    var parsedDateTime = DateTimeOffset.Parse(sink.Writes[0].Message.Trim());
+                    Assert.Equal(round_now, parsedDateTime);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                    var regexMatch = Regex.Match(sink.Writes[0].Message, @"^<\d>(\d{4}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2}\D\d{2})\s[^\s]");
+                    Assert.True(regexMatch.Success);
+                    var parsedDateTime = DateTimeOffset.Parse(regexMatch.Groups[1].Value);
+                    Assert.Equal(round_now, parsedDateTime);
                 }
                 break;
                 default:
@@ -1343,6 +1407,31 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.NotNull(logger.ScopeProvider);
             var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
             Assert.True(formatter.FormatterOptions.IncludeScopes);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void LogMultipleArrays()
+        {
+            // Arrange
+            using var t = SetUp();
+            var logger = t.Logger;
+            var sink = t.Sink;
+
+            var define1 = LoggerMessage.Define<string[], string[]>(LogLevel.Information, new EventId(), "Log: {Array1} and {Array2}");
+            var define2 = LoggerMessage.Define<int, string[], string[]>(LogLevel.Information, new EventId(), "Log {Number}: {Array1} and {Array2}");
+
+            // Act
+            define1(logger, ["a", "b", "c"], ["d", "e", "f"], null);
+            define2(logger, 30, ["a", "b", "c"], ["d", "e", "f"], null);
+
+            var expectedMessage1 = $"{CreateHeader(ConsoleLoggerFormat.Default)}{Environment.NewLine}{_paddingString}Log: a, b, c and d, e, f{Environment.NewLine}";
+            var expectedMessage2 = $"{CreateHeader(ConsoleLoggerFormat.Default)}{Environment.NewLine}{_paddingString}Log 30: a, b, c and d, e, f{Environment.NewLine}";
+
+            Assert.Equal(4, sink.Writes.Count);
+            Assert.Equal("info", sink.Writes[0].Message);
+            Assert.Equal(expectedMessage1, sink.Writes[1].Message);
+            Assert.Equal("info", sink.Writes[2].Message);
+            Assert.Equal(expectedMessage2, sink.Writes[3].Message);
         }
 
         public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels

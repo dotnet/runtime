@@ -2,30 +2,48 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
-namespace System
+namespace System.Net
 {
     internal static partial class IPv4AddressHelper
     {
         internal const long Invalid = -1;
         private const long MaxIPv4Value = uint.MaxValue; // the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
+
         private const int Octal = 8;
         private const int Decimal = 10;
         private const int Hex = 16;
 
         private const int NumberOfLabels = 4;
 
-        // Only called from the IPv6Helper, only parse the canonical format
-        internal static int ParseHostNumber(ReadOnlySpan<char> str, int start, int end)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ushort ToUShort<TChar>(TChar value)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            return typeof(TChar) == typeof(char)
+                ? (char)(object)value
+                : (byte)(object)value;
+        }
+
+        // Only called from the IPv6Helper, only parse the canonical format
+        internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str, int start, int end)
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
 
             for (int i = 0; i < numbers.Length; ++i)
             {
                 int b = 0;
-                char ch;
+                int ch;
 
-                for (; (start < end) && (ch = str[start]) != '.' && ch != ':'; ++start)
+                for (; (start < end) && (ch = ToUShort(str[start])) != '.' && ch != ':'; ++start)
                 {
                     b = (b * 10) + ch - '0';
                 }
@@ -79,7 +97,8 @@ namespace System
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static unsafe bool IsValid(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static unsafe bool IsValid<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
@@ -105,32 +124,45 @@ namespace System
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static unsafe bool IsValidCanonical(char* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
+        internal static unsafe bool IsValidCanonical<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int dots = 0;
-            int number = 0;
+            long number = 0;
             bool haveNumber = false;
             bool firstCharIsZero = false;
 
             while (start < end)
             {
-                char ch = name[start];
+                int ch = ToUShort(name[start]);
+
                 if (allowIPv6)
                 {
-                    // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
+                    // For an IPv4 address nested inside an IPv6 address, the terminator is either the IPv6 address terminator (']'), prefix ('/') or ScopeId ('%')
                     if (ch == ']' || ch == '/' || ch == '%')
+                    {
                         break;
+                    }
                 }
                 else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
                 {
+                    // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
+                    // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
+
                     break;
                 }
 
-                if (char.IsAsciiDigit(ch))
+                // An explicit cast to an unsigned integer forces character values preceding '0' to underflow, eliminating one comparison below.
+                uint parsedCharacter = (uint)(ch - '0');
+
+                if (parsedCharacter < IPv4AddressHelper.Decimal)
                 {
-                    if (!haveNumber && (ch == '0'))
+                    // A number starting with zero should be interpreted in base 8 / octal
+                    if (!haveNumber && parsedCharacter == 0)
                     {
-                        if ((start + 1 < end) && name[start + 1] == '0')
+                        if ((start + 1 < end) && name[start + 1] == TChar.CreateTruncating('0'))
                         {
                             // 00 is not allowed as a prefix.
                             return false;
@@ -140,14 +172,16 @@ namespace System
                     }
 
                     haveNumber = true;
-                    number = number * 10 + (name[start] - '0');
-                    if (number > 255)
+                    number = number * IPv4AddressHelper.Decimal + parsedCharacter;
+                    if (number > byte.MaxValue)
                     {
                         return false;
                     }
                 }
                 else if (ch == '.')
                 {
+                    // If the current character is not an integer, it may be the IPv4 component separator ('.')
+
                     if (!haveNumber || (number > 0 && firstCharIsZero))
                     {
                         // 0 is not allowed to prefix a number.
@@ -176,37 +210,49 @@ namespace System
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static unsafe long ParseNonCanonical(char* name, int start, ref int end, bool notImplicitFile)
+        internal static unsafe long ParseNonCanonical<TChar>(TChar* name, int start, ref int end, bool notImplicitFile)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int numberBase = Decimal;
-            char ch;
-            long* parts = stackalloc long[4];
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            int numberBase = IPv4AddressHelper.Decimal;
+            int ch = 0;
+            long* parts = stackalloc long[3]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
             long currentValue = 0;
             bool atLeastOneChar = false;
 
             // Parse one dotted section at a time
             int dotCount = 0; // Limit 3
             int current = start;
+
             for (; current < end; current++)
             {
-                ch = name[current];
+                ch = ToUShort(name[current]);
                 currentValue = 0;
 
-                // Figure out what base this section is in
-                numberBase = Decimal;
+                // Figure out what base this section is in, default to base 10.
+                // A number starting with zero should be interpreted in base 8 / octal
+                // If the number starts with 0x, it should be interpreted in base 16 / hex
+                numberBase = IPv4AddressHelper.Decimal;
+
                 if (ch == '0')
                 {
-                    numberBase = Octal;
                     current++;
                     atLeastOneChar = true;
                     if (current < end)
                     {
-                        ch = name[current];
+                        ch = ToUShort(name[current]);
+
                         if (ch == 'x' || ch == 'X')
                         {
-                            numberBase = Hex;
+                            numberBase = IPv4AddressHelper.Hex;
+
                             current++;
                             atLeastOneChar = false;
+                        }
+                        else
+                        {
+                            numberBase = IPv4AddressHelper.Octal;
                         }
                     }
                 }
@@ -214,30 +260,13 @@ namespace System
                 // Parse this section
                 for (; current < end; current++)
                 {
-                    ch = name[current];
-                    int digitValue;
+                    ch = ToUShort(name[current]);
+                    int digitValue = HexConverter.FromChar(ch);
 
-                    if ((numberBase == Decimal || numberBase == Hex) && char.IsAsciiDigit(ch))
-                    {
-                        digitValue = ch - '0';
-                    }
-                    else if (numberBase == Octal && '0' <= ch && ch <= '7')
-                    {
-                        digitValue = ch - '0';
-                    }
-                    else if (numberBase == Hex && 'a' <= ch && ch <= 'f')
-                    {
-                        digitValue = ch + 10 - 'a';
-                    }
-                    else if (numberBase == Hex && 'A' <= ch && ch <= 'F')
-                    {
-                        digitValue = ch + 10 - 'A';
-                    }
-                    else
+                    if (digitValue >= numberBase)
                     {
                         break; // Invalid/terminator
                     }
-
                     currentValue = (currentValue * numberBase) + digitValue;
 
                     if (currentValue > MaxIPv4Value) // Overflow
@@ -248,10 +277,10 @@ namespace System
                     atLeastOneChar = true;
                 }
 
-                if (current < end && name[current] == '.')
+                if (current < end && ch == '.')
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
-                        || !atLeastOneChar // No empty segmets: 1...1
+                        || !atLeastOneChar // No empty segments: 1...1
                                            // Only the last segment can be more than 255 (if there are less than 3 dots)
                         || currentValue > 0xFF)
                     {
@@ -262,7 +291,7 @@ namespace System
                     atLeastOneChar = false;
                     continue;
                 }
-                // We don't get here unless We find an invalid character or a terminator
+                // We don't get here unless we find an invalid character or a terminator
                 break;
             }
 
@@ -275,8 +304,11 @@ namespace System
             {
                 // end of string, allowed
             }
-            else if ((ch = name[current]) == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
+            else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
             {
+                // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
+                // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
+
                 end = current;
             }
             else
@@ -285,35 +317,35 @@ namespace System
                 return Invalid;
             }
 
-            parts[dotCount] = currentValue;
-
-            // Parsed, reassemble and check for overflows
+            // Parsed, reassemble and check for overflows in the last part. Previous parts have already been checked in the loop
             switch (dotCount)
             {
                 case 0: // 0xFFFFFFFF
-                    if (parts[0] > MaxIPv4Value)
-                    {
-                        return Invalid;
-                    }
-                    return parts[0];
+                    return currentValue;
                 case 1: // 0xFF.0xFFFFFF
-                    if (parts[1] > 0xffffff)
+                    Debug.Assert(parts[0] <= 0xFF);
+                    if (currentValue > 0xffffff)
                     {
                         return Invalid;
                     }
-                    return (parts[0] << 24) | (parts[1] & 0xffffff);
+                    return (parts[0] << 24) | currentValue;
                 case 2: // 0xFF.0xFF.0xFFFF
-                    if (parts[2] > 0xffff)
+                    Debug.Assert(parts[0] <= 0xFF);
+                    Debug.Assert(parts[1] <= 0xFF);
+                    if (currentValue > 0xffff)
                     {
                         return Invalid;
                     }
-                    return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | (parts[2] & 0xffff);
+                    return (parts[0] << 24) | (parts[1] << 16) | currentValue;
                 case 3: // 0xFF.0xFF.0xFF.0xFF
-                    if (parts[3] > 0xff)
+                    Debug.Assert(parts[0] <= 0xFF);
+                    Debug.Assert(parts[1] <= 0xFF);
+                    Debug.Assert(parts[2] <= 0xFF);
+                    if (currentValue > 0xff)
                     {
                         return Invalid;
                     }
-                    return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | ((parts[2] & 0xff) << 8) | (parts[3] & 0xff);
+                    return (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | currentValue;
                 default:
                     return Invalid;
             }

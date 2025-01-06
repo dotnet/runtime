@@ -84,10 +84,6 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (!string.IsNullOrEmpty(WasmIcuDataFileName))
             return GlobalizationMode.Custom;
 
-        // Hybrid mode
-        if (HybridGlobalization)
-            return GlobalizationMode.Hybrid;
-
         // If user requested to include full ICU data, use it
         if (WasmIncludeFullIcuData)
             return GlobalizationMode.All;
@@ -170,10 +166,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
 
-            if (!IncludeThreadsWorker && name == "dotnet.native.worker.js")
-                continue;
-
-            if (!HybridGlobalization && name == "dotnet.globalization.js")
+            if (!IncludeThreadsWorker && name == "dotnet.native.worker.mjs")
                 continue;
 
             if (name == "dotnet.runtime.js.map" || name == "dotnet.js.map")

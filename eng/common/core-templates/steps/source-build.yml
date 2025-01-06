@@ -76,6 +76,11 @@ steps:
       assetManifestFileName=SourceBuild_${{ parameters.platform.name }}.xml
     fi
 
+    portableBuildArgs=
+    if [ '${{ parameters.platform.portableBuild }}' != '' ]; then
+      portableBuildArgs='/p:PortableBuild=${{ parameters.platform.portableBuild }}'
+    fi
+
     ${{ coalesce(parameters.platform.buildScript, './build.sh') }} --ci \
       --configuration $buildConfig \
       --restore --build --pack $publishArgs -bl \
@@ -85,8 +90,7 @@ steps:
       $targetRidArgs \
       $runtimeOsArgs \
       $baseOsArgs \
-      /p:SourceBuildNonPortable=${{ parameters.platform.nonPortable }} \
-      /p:ArcadeBuildFromSource=true \
+      $portableBuildArgs \
       /p:DotNetBuildSourceOnly=true \
       /p:DotNetBuildRepo=true \
       /p:AssetManifestFileName=$assetManifestFileName
@@ -121,7 +125,9 @@ steps:
 # a nupkg cache of input packages (a local feed).
 # This path must match the upstream cache path in property 'CurrentRepoSourceBuiltNupkgCacheDir'
 # in src\Microsoft.DotNet.Arcade.Sdk\tools\SourceBuild\SourceBuildArcade.targets
-- task: ComponentGovernanceComponentDetection@0
-  displayName: Component Detection (Exclude upstream cache)
-  inputs:
-    ignoreDirectories: '$(Build.SourcesDirectory)/artifacts/sb/src/artifacts/obj/source-built-upstream-cache'
+- template: /eng/common/core-templates/steps/component-governance.yml
+  parameters:
+    displayName: Component Detection (Exclude upstream cache)
+    is1ESPipeline: ${{ parameters.is1ESPipeline }}
+    componentGovernanceIgnoreDirectories: '$(Build.SourcesDirectory)/artifacts/sb/src/artifacts/obj/source-built-upstream-cache'
+    disableComponentGovernance: ${{ eq(variables['System.TeamProject'], 'public') }}

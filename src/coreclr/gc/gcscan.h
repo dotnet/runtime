@@ -33,8 +33,9 @@ struct DhContext
 class GCScan
 {
   public:
-
+#ifdef FEATURE_SIZED_REF_HANDLES
     static void GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
+#endif // FEATURE_SIZED_REF_HANDLES
 
     // Regular stack Roots
     static void GcScanRoots (promote_func* fn, int condemned, int max_gen, ScanContext* sc);

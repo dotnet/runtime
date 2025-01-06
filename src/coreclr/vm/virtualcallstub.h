@@ -239,7 +239,7 @@ public:
     static void LogFinalStats();
 
     // Per instance initialization - called during AppDomain::Init and ::Uninit and for collectible loader allocators
-    void Init(BaseDomain* pDomain, LoaderAllocator *pLoaderAllocator);
+    void Init(LoaderAllocator *pLoaderAllocator);
     void Uninit();
 
     //@TODO: the logging should be tied into the VMs normal logging mechanisms,
@@ -262,7 +262,6 @@ public:
     VirtualCallStubManager()
         : StubManager(),
           cache_entry_rangeList(),
-          parentDomain(NULL),
           m_loaderAllocator(NULL),
           m_initialReservedMemForHeaps(NULL),
           m_FreeIndCellList(NULL),
@@ -486,9 +485,6 @@ private:
                              TraceDestination *trace);
 
 private:
-    // The parent domain of this manager
-    PTR_BaseDomain  parentDomain;
-
     PTR_LoaderAllocator m_loaderAllocator;
 
     BYTE *          m_initialReservedMemForHeaps;

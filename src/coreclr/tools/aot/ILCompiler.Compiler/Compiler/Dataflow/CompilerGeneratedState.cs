@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -377,7 +378,7 @@ namespace ILCompiler.Dataflow
                                     }
                                     else
                                     {
-                                        Debug.Assert(false, "This should be impossible in valid code");
+                                        Debug.Fail("This should be impossible in valid code");
                                     }
                                 }
                             }

@@ -44,6 +44,9 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataInterner dataInterner)
         {
             _target = context.Target;
+
+            InitialInterfaceDispatchStub = new AddressTakenExternSymbolNode("RhpInitialDynamicInterfaceDispatch");
+
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
@@ -98,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
+        {
+            get;
+        }
+
+        public ISymbolNode InitialInterfaceDispatchStub
         {
             get;
         }
@@ -233,9 +241,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<GCPointerMap, GCStaticEETypeNode>((GCPointerMap gcMap) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), GCStaticEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
             {
-                return new GCStaticEETypeNode(Target, gcMap);
+                return new GCStaticEETypeNode(Target, key.gcMap, key.requiresAlign8);
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -313,6 +321,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new GenericMethodsHashtableEntryNode(method);
             });
 
+            _exactMethodEntries = new NodeCache<MethodDesc, ExactMethodInstantiationsEntryNode>(method =>
+            {
+                return new ExactMethodInstantiationsEntryNode(method);
+            });
+
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
             {
                 return new TypeGVMEntriesNode(type);
@@ -362,6 +375,11 @@ namespace ILCompiler.DependencyAnalysis
             _genericStaticBaseInfos = new NodeCache<MetadataType, GenericStaticBaseInfoNode>(type =>
             {
                 return new GenericStaticBaseInfoNode(type);
+            });
+
+            _objectGetTypeCalled = new NodeCache<MetadataType, ObjectGetTypeCalledNode>(type =>
+            {
+                return new ObjectGetTypeCalledNode(type);
             });
 
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
@@ -465,7 +483,12 @@ namespace ILCompiler.DependencyAnalysis
 
             _genericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
             {
-                return new GenericCompositionNode(details);
+                return new GenericCompositionNode(details, constructed: false);
+            });
+
+            _constructedGenericCompositions = new NodeCache<Instantiation, GenericCompositionNode>((Instantiation details) =>
+            {
+                return new GenericCompositionNode(details, constructed: true);
             });
 
             _genericVariances = new NodeCache<GenericVarianceDetails, GenericVarianceNode>((GenericVarianceDetails details) =>
@@ -792,11 +815,12 @@ namespace ILCompiler.DependencyAnalysis
             return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
-        private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<(GCPointerMap, bool), GCStaticEETypeNode> _GCStaticEETypes;
 
-        public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
+        public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
-            return _GCStaticEETypes.GetOrAdd(gcMap);
+            requiredAlign8 &= Target.SupportsAlign8;
+            return _GCStaticEETypes.GetOrAdd((gcMap, requiredAlign8));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
@@ -832,6 +856,13 @@ namespace ILCompiler.DependencyAnalysis
         internal ISymbolNode GenericComposition(Instantiation details)
         {
             return _genericCompositions.GetOrAdd(details);
+        }
+
+        private NodeCache<Instantiation, GenericCompositionNode> _constructedGenericCompositions;
+
+        internal ISymbolNode ConstructedGenericComposition(Instantiation details)
+        {
+            return _constructedGenericCompositions.GetOrAdd(details);
         }
 
         private NodeCache<GenericVarianceDetails, GenericVarianceNode> _genericVariances;
@@ -1048,6 +1079,12 @@ namespace ILCompiler.DependencyAnalysis
             return _genericMethodEntries.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, ExactMethodInstantiationsEntryNode> _exactMethodEntries;
+        public ExactMethodInstantiationsEntryNode ExactMethodInstantiationsHashtableEntry(MethodDesc method)
+        {
+            return _exactMethodEntries.GetOrAdd(method);
+        }
+
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;
         internal TypeGVMEntriesNode TypeGVMEntries(TypeDesc type)
         {
@@ -1113,6 +1150,12 @@ namespace ILCompiler.DependencyAnalysis
         internal GenericStaticBaseInfoNode GenericStaticBaseInfo(MetadataType type)
         {
             return _genericStaticBaseInfos.GetOrAdd(type);
+        }
+
+        private NodeCache<MetadataType, ObjectGetTypeCalledNode> _objectGetTypeCalled;
+        internal ObjectGetTypeCalledNode ObjectGetTypeCalled(MetadataType type)
+        {
+            return _objectGetTypeCalled.GetOrAdd(type);
         }
 
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;
@@ -1391,12 +1434,16 @@ namespace ILCompiler.DependencyAnalysis
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.
         /// </summary>
-        public string GetSymbolAlternateName(ISymbolNode node)
+        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
-            string value;
-            if (!NodeAliases.TryGetValue(node, out value))
+            if (!NodeAliases.TryGetValue(node, out var value))
+            {
+                isHidden = false;
                 return null;
-            return value;
+            }
+
+            isHidden = value.Hidden;
+            return value.Name;
         }
 
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
@@ -1419,7 +1466,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ReadyToRunHeaderNode ReadyToRunHeader;
 
-        public Dictionary<ISymbolNode, string> NodeAliases = new Dictionary<ISymbolNode, string>();
+        public Dictionary<ISymbolNode, (string Name, bool Hidden)> NodeAliases = new Dictionary<ISymbolNode, (string, bool)>();
 
         protected internal TypeManagerIndirectionNode TypeManagerIndirection = new TypeManagerIndirectionNode();
 

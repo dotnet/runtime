@@ -32,7 +32,11 @@ namespace System.Drawing
         /// </summary>
         public static int ToWin32(Color c)
         {
-            return c.R << COLORREF_RedShift | c.G << COLORREF_GreenShift | c.B << COLORREF_BlueShift;
+            // KnownColor Color values causes a table lookup or OS call for
+            // every access, as such we manually extract the RGB values.
+
+            c.GetRgbValues(out int r, out int g, out int b);
+            return r << COLORREF_RedShift | g << COLORREF_GreenShift | b << COLORREF_BlueShift;
         }
 
         /// <summary>
@@ -386,7 +390,8 @@ namespace System.Drawing
             }
             else
             {
-                colorString = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+                c.GetRgbValues(out int r, out int g, out int b);
+                colorString = $"#{r:X2}{g:X2}{b:X2}";
             }
 
             return colorString;

@@ -141,6 +141,7 @@ namespace System.Net.WebSockets
         public bool IsServer { get { throw null; } set { } }
         public string? SubProtocol { get { throw null; } set { } }
         public System.TimeSpan KeepAliveInterval { get { throw null; } set { } }
+        public System.TimeSpan KeepAliveTimeout { get { throw null; } set { } }
         public System.Net.WebSockets.WebSocketDeflateOptions? DangerousDeflateOptions { get { throw null; } set { } }
     }
     public sealed partial class WebSocketDeflateOptions

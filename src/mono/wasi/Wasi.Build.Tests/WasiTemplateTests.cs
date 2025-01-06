@@ -50,7 +50,7 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        RunWithoutBuild(config, id, true);
     }
 
     [Theory]
@@ -80,7 +80,7 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework));
-        RunWithoutBuild(config, id);
+        RunWithoutBuild(config, id, true);
 
         if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -96,7 +96,8 @@ public class WasiTemplateTests : BuildTestBase
                         CreateProject: false,
                         Publish: true,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
-                        UseCache: false));
+                        UseCache: false,
+                        ExpectSuccess: !(config == "Debug" && aot)));
     }
 
     [Theory]
@@ -134,7 +135,8 @@ public class WasiTemplateTests : BuildTestBase
 
         CommandResult res = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!)
-                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
+                                    // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
+                                    .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} --extra-host-arg=--wasi --extra-host-arg=http x y z")
                                     .EnsureSuccessful();
 
         Assert.Contains("Hello, Wasi Console!", res.Output);

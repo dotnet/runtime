@@ -350,6 +350,9 @@ namespace System.Threading
 #endif
         public void Wait()
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 
@@ -486,6 +489,9 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
 #endif

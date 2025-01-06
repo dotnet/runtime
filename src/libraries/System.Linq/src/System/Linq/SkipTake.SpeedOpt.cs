@@ -258,21 +258,19 @@ namespace System.Linq
                     return Math.Max(_source.Count() - _minIndexInclusive, 0);
                 }
 
-                using (IEnumerator<TSource> en = _source.GetEnumerator())
-                {
-                    // We only want to iterate up to _maxIndexInclusive + 1.
-                    // Past that, we know the enumerable will be able to fit this subset,
-                    // so the count will just be _maxIndexInclusive + 1 - _minIndexInclusive.
+                using IEnumerator<TSource> en = _source.GetEnumerator();
+                // We only want to iterate up to _maxIndexInclusive + 1.
+                // Past that, we know the enumerable will be able to fit this subset,
+                // so the count will just be _maxIndexInclusive + 1 - _minIndexInclusive.
 
-                    // Note that it is possible for _maxIndexInclusive to be int.MaxValue here,
-                    // so + 1 may result in signed integer overflow. We need to handle this.
-                    // At the same time, however, we are guaranteed that our max count can fit
-                    // in an int because if that is true, then _minIndexInclusive must > 0.
+                // Note that it is possible for _maxIndexInclusive to be int.MaxValue here,
+                // so + 1 may result in signed integer overflow. We need to handle this.
+                // At the same time, however, we are guaranteed that our max count can fit
+                // in an int because if that is true, then _minIndexInclusive must > 0.
 
-                    uint count = SkipAndCount((uint)_maxIndexInclusive + 1, en);
-                    Debug.Assert(count != (uint)int.MaxValue + 1 || _minIndexInclusive > 0, "Our return value will be incorrect.");
-                    return Math.Max((int)count - _minIndexInclusive, 0);
-                }
+                uint count = SkipAndCount((uint)_maxIndexInclusive + 1, en);
+                Debug.Assert(count != (uint)int.MaxValue + 1 || _minIndexInclusive > 0, "Our return value will be incorrect.");
+                return Math.Max((int)count - _minIndexInclusive, 0);
             }
 
             public override bool MoveNext()
@@ -390,13 +388,11 @@ namespace System.Linq
                         return iterator.TryGetElementAt(_minIndexInclusive + index, out found);
                     }
 
-                    using (IEnumerator<TSource> en = _source.GetEnumerator())
+                    using IEnumerator<TSource> en = _source.GetEnumerator();
+                    if (SkipBefore(_minIndexInclusive + index, en) && en.MoveNext())
                     {
-                        if (SkipBefore(_minIndexInclusive + index, en) && en.MoveNext())
-                        {
-                            found = true;
-                            return en.Current;
-                        }
+                        found = true;
+                        return en.Current;
                     }
                 }
 
@@ -491,8 +487,6 @@ namespace System.Linq
 
             public override List<TSource> ToList()
             {
-                var list = new List<TSource>();
-
                 using (IEnumerator<TSource> en = _source.GetEnumerator())
                 {
                     if (SkipBeforeFirst(en) && en.MoveNext())
@@ -500,16 +494,23 @@ namespace System.Linq
                         int remaining = Limit - 1; // Max number of items left, not counting the current element.
                         int comparand = HasLimit ? 0 : int.MinValue; // If we don't have an upper bound, have the comparison always return true.
 
+                        SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                        SegmentedArrayBuilder<TSource> builder = new(scratch);
                         do
                         {
                             remaining--;
-                            list.Add(en.Current);
+                            builder.Add(en.Current);
                         }
                         while (remaining >= comparand && en.MoveNext());
+
+                        List<TSource> result = builder.ToList();
+                        builder.Dispose();
+
+                        return result;
                     }
                 }
 
-                return list;
+                return [];
             }
 
             private bool SkipBeforeFirst(IEnumerator<TSource> en) => SkipBefore(_minIndexInclusive, en);

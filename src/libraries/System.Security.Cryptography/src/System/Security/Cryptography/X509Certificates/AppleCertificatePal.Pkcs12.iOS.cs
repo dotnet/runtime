@@ -9,26 +9,11 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private static readonly SafePasswordHandle s_passwordExportHandle = new SafePasswordHandle("DotnetExportPassphrase", passwordProvided: true);
 
-        private static AppleCertificatePal ImportPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool ephemeralSpecified)
+        internal static AppleCertificatePal ImportPkcs12(AppleCertificatePal pal, AsymmetricAlgorithm? key)
         {
-            using (ApplePkcs12Reader reader = new ApplePkcs12Reader())
+            if (key is not null)
             {
-                reader.ParsePkcs12(rawData);
-                reader.Decrypt(password, ephemeralSpecified);
-                return ImportPkcs12(reader.GetSingleCert());
-            }
-        }
-
-        internal static AppleCertificatePal ImportPkcs12(UnixPkcs12Reader.CertAndKey certAndKey)
-        {
-            AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;
-
-            if (certAndKey.Key != null)
-            {
-                AppleCertificateExporter exporter = new AppleCertificateExporter(new TempExportPal(pal), certAndKey.Key);
+                AppleCertificateExporter exporter = new AppleCertificateExporter(new TempExportPal(pal), key);
                 byte[] smallPfx = exporter.Export(X509ContentType.Pkcs12, s_passwordExportHandle)!;
 
                 SafeSecIdentityHandle identityHandle;

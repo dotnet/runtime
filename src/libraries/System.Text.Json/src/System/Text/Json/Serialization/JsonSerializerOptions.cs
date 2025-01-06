@@ -753,7 +753,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _referenceHandler = value;
-                ReferenceHandlingStrategy = value?.HandlingStrategy ?? ReferenceHandlingStrategy.None;
+                ReferenceHandlingStrategy = value?.HandlingStrategy ?? JsonKnownReferenceHandler.Unspecified;
             }
         }
 
@@ -853,7 +853,7 @@ namespace System.Text.Json
         private bool? _canUseFastPathSerializationLogic;
 
         // The cached value used to determine if ReferenceHandler should use Preserve or IgnoreCycles semantics or None of them.
-        internal ReferenceHandlingStrategy ReferenceHandlingStrategy = ReferenceHandlingStrategy.None;
+        internal JsonKnownReferenceHandler ReferenceHandlingStrategy = JsonKnownReferenceHandler.Unspecified;
 
         /// <summary>
         /// Specifies whether the current instance has been locked for user modification.

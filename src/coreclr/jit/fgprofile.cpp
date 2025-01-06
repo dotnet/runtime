@@ -45,6 +45,27 @@ bool Compiler::fgHaveProfileWeights()
 }
 
 //------------------------------------------------------------------------
+// fgRemoveProfileData: Remove all traces of profile info
+//
+// Notes:
+//   Needed if the jit initially thought it was going to optimize
+//   the method, but then decided not to.
+//
+//   Does not modify any block fields, so should be called before
+//   we start to incorporate profile data.
+//
+void Compiler::fgRemoveProfileData(const char* reason)
+{
+    fgPgoFailReason  = reason;
+    fgPgoQueryResult = E_FAIL;
+    fgPgoHaveWeights = false;
+    fgPgoData        = nullptr;
+    fgPgoSchema      = nullptr;
+    fgPgoDisabled    = true;
+    fgPgoDynamic     = false;
+}
+
+//------------------------------------------------------------------------
 // fgHaveSufficientProfileWeights: check if profile data is available
 //   and is sufficient enough to be trustful.
 //
@@ -344,9 +365,6 @@ public:
     virtual void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory)
     {
     }
-    virtual void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
-    {
-    }
     unsigned SchemaCount() const
     {
         return m_schemaCount;
@@ -402,7 +420,6 @@ public:
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
-    void InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory) override;
 
     static GenTree* CreateCounterIncrement(Compiler* comp, uint8_t* counterAddr, var_types countType);
 };
@@ -673,89 +690,6 @@ void BlockCountInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 }
 
 //------------------------------------------------------------------------
-// BlockCountInstrumentor::InstrumentMethodEntry: add any special method entry instrumentation
-//
-// Arguments:
-//   schema -- instrumentation schema
-//   profileMemory -- profile data slab
-//
-// Notes:
-//   When prejitting, add the method entry callback node
-//
-void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, uint8_t* profileMemory)
-{
-    Compiler::Options& opts = m_comp->opts;
-    Compiler::Info&    info = m_comp->info;
-
-    // Nothing to do, if not prejitting.
-    //
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        return;
-    }
-
-    // Find the address of the entry block's counter.
-    //
-    assert(m_entryBlock != nullptr);
-    assert(m_entryBlock->bbCodeOffs == 0);
-
-    const ICorJitInfo::PgoInstrumentationSchema& entry = schema[m_entryBlock->bbCountSchemaIndex];
-    assert((IL_OFFSET)entry.ILOffset == 0);
-    assert((entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount) ||
-           (entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockLongCount));
-
-    const size_t addrOfFirstExecutionCount = (size_t)(entry.Offset + profileMemory);
-
-    GenTree* arg;
-
-#ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
-    {
-        mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
-
-        CORINFO_RESOLVED_TOKEN resolvedToken;
-        resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
-        resolvedToken.tokenScope   = info.compScopeHnd;
-        resolvedToken.token        = currentMethodToken;
-        resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
-
-        info.compCompHnd->resolveToken(&resolvedToken);
-
-        arg = m_comp->impTokenToHandle(&resolvedToken);
-    }
-    else
-#endif
-    {
-        arg = m_comp->gtNewIconEmbMethHndNode(info.compMethodHnd);
-    }
-
-    // We want to call CORINFO_HELP_BBT_FCN_ENTER just one time,
-    // the first time this method is called. So make the call conditional
-    // on the entry block's profile count.
-    //
-    GenTreeCall* call = m_comp->gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, arg);
-
-    var_types typ =
-        entry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount ? TYP_INT : TYP_LONG;
-    // Read Basic-Block count value
-    //
-    GenTree* valueNode = m_comp->gtNewIndOfIconHandleNode(typ, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);
-
-    // Compare Basic-Block count value against zero
-    //
-    GenTree*      relop = m_comp->gtNewOperNode(GT_NE, typ, valueNode, m_comp->gtNewIconNode(0, typ));
-    GenTreeColon* colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
-    GenTreeQmark* cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
-    Statement*    stmt  = m_comp->gtNewStmt(cond);
-
-    // Add this check into the scratch block entry so we only do the check once per call.
-    // If we put it in block we may be putting it inside a loop.
-    //
-    m_comp->fgEnsureFirstBBisScratch();
-    m_comp->fgInsertStmtAtEnd(m_comp->fgFirstBB, stmt);
-}
-
-//------------------------------------------------------------------------
 // BlockCountInstrumentor::CreateCounterIncrement: create a tree that increments a profile counter.
 //
 // Arguments:
@@ -887,8 +821,8 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 {
     // We will track visited or queued nodes with a bit vector.
     //
-    EnsureBasicBlockEpoch();
-    BlockSet marked = BlockSetOps::MakeEmpty(this);
+    BitVecTraits traits(compBasicBlockID, this);
+    BitVec       marked = BitVecOps::MakeEmpty(&traits);
 
     // And nodes to visit with a bit vector and stack.
     //
@@ -900,7 +834,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     // Bit vector to track progress through those successors.
     //
     ArrayStack<BasicBlock*> scratch(getAllocator(CMK_Pgo));
-    BlockSet                processed = BlockSetOps::MakeEmpty(this);
+    BitVec                  processed = BitVecOps::MakeEmpty(&traits);
 
     // Push the method entry and all EH handler region entries on the stack.
     // (push method entry last so it's visited first).
@@ -918,18 +852,18 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
         {
             BasicBlock* hndBegBB = HBtab->ebdHndBeg;
             stack.Push(hndBegBB);
-            BlockSetOps::AddElemD(this, marked, hndBegBB->bbNum);
+            BitVecOps::AddElemD(&traits, marked, hndBegBB->bbID);
             if (HBtab->HasFilter())
             {
                 BasicBlock* filterBB = HBtab->ebdFilter;
                 stack.Push(filterBB);
-                BlockSetOps::AddElemD(this, marked, filterBB->bbNum);
+                BitVecOps::AddElemD(&traits, marked, filterBB->bbID);
             }
         }
     }
 
     stack.Push(fgFirstBB);
-    BlockSetOps::AddElemD(this, marked, fgFirstBB->bbNum);
+    BitVecOps::AddElemD(&traits, marked, fgFirstBB->bbID);
 
     unsigned nBlocks = 0;
 
@@ -939,7 +873,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
 
         // Visit the block.
         //
-        assert(BlockSetOps::IsMember(this, marked, block->bbNum));
+        assert(BitVecOps::IsMember(&traits, marked, block->bbID));
         visitor->VisitBlock(block);
         nBlocks++;
 
@@ -962,10 +896,10 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // This block should be the only pred of the continuation.
                     //
                     BasicBlock* const target = block->Next();
-                    assert(!BlockSetOps::IsMember(this, marked, target->bbNum));
+                    assert(!BitVecOps::IsMember(&traits, marked, target->bbID));
                     visitor->VisitTreeEdge(block, target);
                     stack.Push(target);
-                    BlockSetOps::AddElemD(this, marked, target->bbNum);
+                    BitVecOps::AddElemD(&traits, marked, target->bbID);
                 }
             }
             break;
@@ -994,7 +928,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 // profiles for methods that throw lots of exceptions.
                 //
                 BasicBlock* const target = fgFirstBB;
-                assert(BlockSetOps::IsMember(this, marked, target->bbNum));
+                assert(BitVecOps::IsMember(&traits, marked, target->bbID));
                 visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::Pseudo);
             }
             break;
@@ -1033,7 +967,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     }
                     else
                     {
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target,
                                                       SpanningTreeVisitor::EdgeKind::PostdominatesSource);
@@ -1042,7 +976,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
                 }
@@ -1051,7 +985,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // Pseudo-edge back to handler entry.
                     //
                     BasicBlock* const target = dsc->ebdHndBeg;
-                    assert(BlockSetOps::IsMember(this, marked, target->bbNum));
+                    assert(BitVecOps::IsMember(&traits, marked, target->bbID));
                     visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::Pseudo);
                 }
             }
@@ -1082,7 +1016,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // Not a fork. Just visit the sole successor.
                     //
                     BasicBlock* const target = block->GetSucc(0, this);
-                    if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                    if (BitVecOps::IsMember(&traits, marked, target->bbID))
                     {
                         // We can't instrument in the call finally pair tail block
                         // so treat this as a critical edge.
@@ -1096,7 +1030,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         visitor->VisitTreeEdge(block, target);
                         stack.Push(target);
-                        BlockSetOps::AddElemD(this, marked, target->bbNum);
+                        BitVecOps::AddElemD(&traits, marked, target->bbID);
                     }
                 }
                 else
@@ -1112,7 +1046,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     // edges from non-rare to rare be non-tree edges.
                     //
                     scratch.Reset();
-                    BlockSetOps::ClearD(this, processed);
+                    BitVecOps::ClearD(&traits, processed);
 
                     for (unsigned i = 0; i < numSucc; i++)
                     {
@@ -1126,7 +1060,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(this, processed, i))
+                        if (BitVecOps::IsMember(&traits, processed, i))
                         {
                             continue;
                         }
@@ -1136,9 +1070,9 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(this, processed, i);
+                        BitVecOps::AddElemD(&traits, processed, i);
 
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target,
                                                       target->bbRefs > 1
@@ -1149,7 +1083,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
 
@@ -1159,7 +1093,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(this, processed, i))
+                        if (BitVecOps::IsMember(&traits, processed, i))
                         {
                             continue;
                         }
@@ -1169,9 +1103,9 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(this, processed, i);
+                        BitVecOps::AddElemD(&traits, processed, i);
 
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::DominatesTarget);
                         }
@@ -1179,7 +1113,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
 
@@ -1189,14 +1123,14 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                     {
                         BasicBlock* const target = scratch.Top(i);
 
-                        if (BlockSetOps::IsMember(this, processed, i))
+                        if (BitVecOps::IsMember(&traits, processed, i))
                         {
                             continue;
                         }
 
-                        BlockSetOps::AddElemD(this, processed, i);
+                        BitVecOps::AddElemD(&traits, processed, i);
 
-                        if (BlockSetOps::IsMember(this, marked, target->bbNum))
+                        if (BitVecOps::IsMember(&traits, marked, target->bbID))
                         {
                             visitor->VisitNonTreeEdge(block, target, SpanningTreeVisitor::EdgeKind::CriticalEdge);
                         }
@@ -1204,13 +1138,13 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                         {
                             visitor->VisitTreeEdge(block, target);
                             stack.Push(target);
-                            BlockSetOps::AddElemD(this, marked, target->bbNum);
+                            BitVecOps::AddElemD(&traits, marked, target->bbID);
                         }
                     }
 
                     // Verify we processed each successor.
                     //
-                    assert(numSucc == BlockSetOps::Count(this, processed));
+                    assert(numSucc == BitVecOps::Count(&traits, processed));
                 }
             }
             break;
@@ -1221,7 +1155,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!BlockSetOps::IsMember(this, marked, block->bbNum))
+        if (!BitVecOps::IsMember(&traits, marked, block->bbID))
         {
             visitor->VisitBlock(block);
         }
@@ -2827,13 +2761,6 @@ PhaseStatus Compiler::fgInstrumentMethod()
     //
     assert(fgHistogramInstrumentor->InstrCount() == info.compHandleHistogramProbeCount);
 
-    // Add any special entry instrumentation. This does not
-    // use the schema mechanism.
-    //
-    fgCountInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-    fgHistogramInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-    fgValueInstrumentor->InstrumentMethodEntry(schema, profileMemory);
-
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -3562,15 +3489,6 @@ void EfficientEdgeCountReconstructor::Prepare()
 //
 void EfficientEdgeCountReconstructor::Solve()
 {
-    // If we have dynamic PGO data, we don't expect to see any mismatches,
-    // since the schema we got from the runtime should have come from the
-    // exact same JIT and IL, created in an earlier tier.
-    //
-    if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
-    {
-        assert(!m_mismatch);
-    }
-
     // If issues arose earlier, then don't try solving.
     //
     if (m_badcode || m_mismatch || m_allWeightsZero)
@@ -4556,7 +4474,7 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
 
     // If we allocated a scratch block as the first BB then we need
     // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBBisScratch())
+    if (fgFirstBB->HasFlag(BBF_INTERNAL))
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
         madeChanges = true;
@@ -5145,3 +5063,115 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// fgRepairProfileCondToUncond: attempt to repair profile after modifying
+//   a conditinal branch to an unconditional branch.
+//
+// Arguments:
+//   block        - block that was just altered
+//   retainedEdge - flow edge that remains
+//   removedEdge  - flow edge that was removed
+//   metric       - [in/out, optional] metric to update if profile becomes inconsistent
+//
+void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
+                                           FlowEdge*   retainedEdge,
+                                           FlowEdge*   removedEdge,
+                                           int*        metric /* = nullptr */)
+{
+    assert(block->KindIs(BBJ_ALWAYS));
+    assert(block->GetTargetEdge() == retainedEdge);
+
+    // If block does not have profile data, there's nothing to do.
+    //
+    if (!block->hasProfileWeight())
+    {
+        return;
+    }
+
+    // If the removed edge was not carrying away any profile, there's nothing to do.
+    //
+    weight_t const weight = removedEdge->getLikelyWeight();
+
+    if (weight == 0.0)
+    {
+        return;
+    }
+
+    // If the branch was degenerate, there is nothing to do
+    //
+    if (retainedEdge == removedEdge)
+    {
+        return;
+    }
+
+    // This flow graph change will affect profile transitively, so in general
+    // the profile will become inconsistent.
+    //
+    bool repairWasComplete  = false;
+    bool missingProfileData = false;
+
+    // Target block weight will increase.
+    //
+    BasicBlock* const target = block->GetTarget();
+
+    if (target->hasProfileWeight())
+    {
+        target->setBBProfileWeight(target->bbWeight + weight);
+    }
+    else
+    {
+        missingProfileData = true;
+    }
+
+    // Alternate weight will decrease
+    //
+    BasicBlock* const alternate = removedEdge->getDestinationBlock();
+
+    if (alternate->hasProfileWeight())
+    {
+        weight_t const alternateNewWeight = alternate->bbWeight - weight;
+
+        // If profile weights are consistent, expect at worst a slight underflow.
+        //
+        if (fgPgoConsistent && (alternateNewWeight < 0.0))
+        {
+            assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
+        }
+        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+    }
+    else
+    {
+        missingProfileData = true;
+    }
+
+    // Check for the special case where the block's postdominator
+    // is target's target (simple if/then/else/join).
+    //
+    // TODO: try a bit harder to find a postdominator, if it's "nearby"
+    //
+    if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
+    {
+        repairWasComplete = alternate->KindIs(BBJ_ALWAYS) && (alternate->GetTarget() == target->GetTarget());
+    }
+
+    if (missingProfileData)
+    {
+        JITDUMP("Profile data could not be locally repaired. Data was missing.\n");
+    }
+
+    if (!repairWasComplete)
+    {
+        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+
+        if (fgPgoConsistent)
+        {
+            if (metric != nullptr)
+            {
+                *metric++;
+            }
+            fgPgoConsistent = false;
+        }
+    }
+}

@@ -112,15 +112,6 @@ typedef int errno_t; /* standard */
 /* error codes */
 #if !defined(_SECURECRT_ERRCODE_VALUES_DEFINED)
 #define _SECURECRT_ERRCODE_VALUES_DEFINED
-#if !defined(EINVAL)
-#define EINVAL          22
-#endif
-#if !defined(ERANGE)
-#define ERANGE          34
-#endif
-#if !defined(EILSEQ)
-#define EILSEQ          42
-#endif
 #if !defined(STRUNCATE)
 #define STRUNCATE       80
 #endif
@@ -1093,29 +1084,6 @@ errno_t __cdecl _wcsnset_s(WCHAR *_Dst, size_t _SizeInWords, WCHAR _Value, size_
     }
     _SAFECRT__FILL_STRING(_Dst, _SizeInWords, _SizeInWords - available + 1);
     return 0;
-}
-
-#endif
-
-/* wcsnlen */
-extern
-size_t __cdecl wcsnlen(const WCHAR *inString, size_t inMaxSize);
-
-#if _SAFECRT_USE_INLINES || _SAFECRT_IMPL
-
-_SAFECRT__INLINE
-size_t __cdecl wcsnlen(const WCHAR *inString, size_t inMaxSize)
-{
-    size_t n;
-
-    /* Note that we do not check if s == nullptr, because we do not
-     * return errno_t...
-     */
-
-    for (n = 0; n < inMaxSize && *inString; n++, inString++)
-        ;
-
-    return n;
 }
 
 #endif

@@ -154,6 +154,7 @@ Assembler::Assembler()
     indexKeywords(&indxKeywords);
 
     m_pPortablePdbWriter = NULL;
+    m_pOverrideAssemblyName = NULL;
 }
 
 
@@ -327,7 +328,7 @@ BOOL Assembler::AddMethod(Method *pMethod)
     unsigned codeSize = m_CurPC;
     unsigned codeSizeAligned = codeSize;
     if (moreSections)
-        codeSizeAligned = (codeSizeAligned + 3) & ~3;    // to insure EH section aligned
+        codeSizeAligned = (codeSizeAligned + 3) & ~3;    // to ensure EH section aligned
 
     unsigned headerSize = COR_ILMETHOD::Size(&fatHeader, moreSections);
     unsigned ehSize     = COR_ILMETHOD_SECT_EH::Size(pMethod->m_dwNumExceptions, pMethod->m_ExceptionList);
@@ -1063,19 +1064,10 @@ BOOL Assembler::EmitClass(Class *pClass)
     LPCUTF8              szFullName;
     WCHAR*              wzFullName=&wzUniBuf[0];
     HRESULT             hr = E_FAIL;
-    GUID                guid;
     size_t              L;
     mdToken             tok;
 
     if(pClass == NULL) return FALSE;
-
-    hr = CoCreateGuid(&guid);
-    if (FAILED(hr))
-    {
-        printf("Unable to create GUID\n");
-        m_State = STATE_FAIL;
-        return FALSE;
-    }
 
     if(pClass->m_pEncloser)
         szFullName = strrchr(pClass->m_szFQN,NESTING_SEP) + 1;

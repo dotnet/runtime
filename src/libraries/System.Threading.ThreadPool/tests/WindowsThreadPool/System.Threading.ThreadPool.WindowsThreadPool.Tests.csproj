@@ -3,6 +3,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- This test project is Windows only as it uses the Windows Threadpool -->
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>

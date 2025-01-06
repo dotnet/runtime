@@ -116,12 +116,10 @@
 2:
         // We can skip the card table write if the reference is to
         // an object not on the epehemeral segment.
-        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x17
         cmp     \refReg, x12
-        blo     0f
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x12
-        cmp     \refReg, x12
+        ccmp    \refReg, x17, #0x2, hs
         bhs     0f
 
         // Set this objects card, if it has not already been set.
@@ -222,11 +220,10 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
  LEAF_ENTRY RhpCheckedAssignRefArm64, _TEXT
 
         // is destReg within the heap?
-        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address,  x12
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x17
         cmp     x14, x12
-
-        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x12
-        ccmp    x14, x12, #0x2, hs
+        ccmp    x14, x17, #0x2, hs
         bhs     LOCAL_LABEL(NotInHeap)
 
         b       C_FUNC(RhpAssignRefArm64)

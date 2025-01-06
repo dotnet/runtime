@@ -1,4 +1,3 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -7,8 +6,9 @@
 // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 //
 
-#include <minipal/strings.h>
 #include <inttypes.h>
+#include <minipal/utils.h>
+#include <minipal/strings.h>
 
 typedef struct
 {
@@ -2385,7 +2385,7 @@ static const UnicodeDataRec UnicodeData[] =
 
 #define UNICODE_DATA_SIZE 2359
 
-static int UnicodeDataComp(const void *opposingCode, const void *elem)
+static int LIBC_CALLBACK UnicodeDataComp(const void *opposingCode, const void *elem)
 {
     CHAR16_T code = ((UnicodeDataRec*)elem)->code;
 

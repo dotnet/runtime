@@ -242,7 +242,7 @@ load_runtimeconfig (void)
 }
 
 void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -252,19 +252,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		load_icu_data();
 #endif /* INVARIANT_GLOBALIZATION */
 
-
-	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
-	if (debugger_fd != 0)
-	{
-		const char *debugger_str = "--debugger-agent=transport=wasi_socket,debugger_fd=%-2s,loglevel=0";
-		char *debugger_str_with_fd = (char *)malloc (sizeof (char) * (strlen(debugger_str) + strlen(debugger_fd) + 1));
-		snprintf (debugger_str_with_fd, strlen(debugger_str) + strlen(debugger_fd) + 1, debugger_str, debugger_fd);
-		mono_jit_parse_options (1, &debugger_str_with_fd);
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		free (debugger_str_with_fd);
-	}
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
 	const char *appctx_keys[2];

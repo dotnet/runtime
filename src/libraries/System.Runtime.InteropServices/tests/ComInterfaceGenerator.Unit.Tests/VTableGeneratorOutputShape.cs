@@ -17,7 +17,7 @@ namespace ComInterfaceGenerator.Unit.Tests
     public class VTableGeneratorOutputShape
     {
         [Fact]
-        public async Task NativeInterfaceNestedInUserInterface()
+        public void NativeInterfaceNestedInUserInterface()
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
@@ -31,7 +31,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
@@ -43,7 +43,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task NativeInterfaceInheritsFromUserInterface()
+        public void NativeInterfaceInheritsFromUserInterface()
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
@@ -57,7 +57,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
@@ -69,7 +69,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task NativeInterfaceImplementsUserInterfaceMethods()
+        public void NativeInterfaceImplementsUserInterfaceMethods()
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
@@ -86,7 +86,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 // Ensure we can implement the native interface without defining any implementations.
                 class C : INativeAPI.Native {}
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = TestUtils.CreateCompilation(source);
             // Allow the Native nested type name to be missing in the pre-source-generator compilation
             TestUtils.AssertPreSourceGeneratorCompilation(comp, "CS0426");
 
@@ -95,7 +95,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task NativeInterfaceHasDynamicInterfaceCastableImplementationAttribute()
+        public void NativeInterfaceHasDynamicInterfaceCastableImplementationAttribute()
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
@@ -109,7 +109,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());
@@ -126,7 +126,7 @@ namespace ComInterfaceGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task NativeInterfaceHasStaticMethodWithSameNameWithExpectedPrefixWithUnmanagedCallersOnly()
+        public void NativeInterfaceHasStaticMethodWithSameNameWithExpectedPrefixWithUnmanagedCallersOnly()
         {
             string source = $$"""
                 using System.Runtime.InteropServices;
@@ -140,7 +140,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Method();
                 }
                 """;
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.VtableIndexStubGenerator());

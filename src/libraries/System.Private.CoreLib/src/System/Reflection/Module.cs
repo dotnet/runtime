@@ -179,7 +179,7 @@ namespace System.Reflection
         private static bool FilterTypeNameImpl(Type cls, object filterCriteria, StringComparison comparison)
         {
             // Check that the criteria object is a String object
-            if (!(filterCriteria is string str))
+            if (filterCriteria is not string str)
             {
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritString);
             }

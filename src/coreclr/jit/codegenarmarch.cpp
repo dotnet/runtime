@@ -186,7 +186,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CNS_INT:
         case GT_CNS_DBL:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -427,8 +432,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_MEMORYBARRIER:
         {
-            CodeGen::BarrierKind barrierKind =
-                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD ? BARRIER_LOAD_ONLY : BARRIER_FULL;
+            BarrierKind barrierKind =
+                treeNode->gtFlags & GTF_MEMORYBARRIER_LOAD
+                    ? BARRIER_LOAD_ONLY
+                    : (treeNode->gtFlags & GTF_MEMORYBARRIER_STORE ? BARRIER_STORE_ONLY : BARRIER_FULL);
 
             instGen_MemoryBarrier(barrierKind);
             break;
@@ -604,10 +611,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-    // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
-    // executing GS cookie check will not collect the object pointed to by REG_INTRET (R0).
-    if (!pushReg && (compiler->info.compRetNativeType == TYP_REF))
-        gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
+    assert(GetEmitter()->emitGCDisabled());
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
     // any argument registers if 'pushReg' is true (meaning we have a JMP call). They should be
@@ -1200,23 +1204,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             {
                 var_types type   = treeNode->GetRegType(regIndex);
                 regNumber argReg = treeNode->GetRegNumByIdx(regIndex);
-#ifdef TARGET_ARM
-                if (type == TYP_LONG)
-                {
-                    // We should only see long fields for DOUBLEs passed in 2 integer registers, via bitcast.
-                    // All other LONGs should have been decomposed.
-                    // Handle the first INT, and then handle the 2nd below.
-                    assert(nextArgNode->OperIs(GT_BITCAST));
-                    type = TYP_INT;
-                    inst_Mov(type, argReg, fieldReg, /* canSkip */ true);
-
-                    // Now set up the next register for the 2nd INT
-                    argReg = REG_NEXT(argReg);
-                    regIndex++;
-                    assert(argReg == treeNode->GetRegNumByIdx(regIndex));
-                    fieldReg = nextArgNode->AsMultiRegOp()->GetRegNumByIdx(1);
-                }
-#endif // TARGET_ARM
 
                 // If child node is not already in the register we need, move it
                 inst_Mov(type, argReg, fieldReg, /* canSkip */ true);
@@ -1524,8 +1511,18 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
 
-    inst_Mov(targetType, targetReg, tree->gtSrcReg, /* canSkip */ true);
-    genTransferRegGCState(targetReg, tree->gtSrcReg);
+#ifdef TARGET_ARM64
+    if (varTypeIsMask(targetType))
+    {
+        assert(tree->gtSrcReg == REG_FFR);
+        GetEmitter()->emitIns_R(INS_sve_rdffr, EA_SCALABLE, targetReg);
+    }
+    else
+#endif
+    {
+        inst_Mov(targetType, targetReg, tree->gtSrcReg, /* canSkip */ true);
+        genTransferRegGCState(targetReg, tree->gtSrcReg);
+    }
 
     genProduceReg(tree);
 }
@@ -2120,10 +2117,10 @@ public:
     }
 
 private:
-    const regNumber intReg1;
-    const regNumber intReg2;
-    const regNumber addrReg;
-    emitter* const  emitter;
+    const regNumber      intReg1;
+    const regNumber      intReg2;
+    const regNumber      addrReg;
+    class emitter* const emitter;
 };
 
 class ProducingStream
@@ -2213,11 +2210,11 @@ public:
     }
 
 private:
-    const regNumber intReg1;
-    const regNumber simdReg1;
-    const regNumber simdReg2;
-    const regNumber addrReg;
-    emitter* const  emitter;
+    const regNumber      intReg1;
+    const regNumber      simdReg1;
+    const regNumber      simdReg2;
+    const regNumber      addrReg;
+    class emitter* const emitter;
 };
 
 class BlockUnrollHelper
@@ -2809,8 +2806,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     if (node->IsVolatile())
     {
-        // issue a full memory barrier before a volatile CpBlk operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile CpBlk operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     emitter* emit = GetEmitter();
@@ -3234,8 +3231,8 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 
     if (initBlkNode->IsVolatile())
     {
-        // issue a full memory barrier before a volatile initBlock Operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     //  str     xzr, [dstReg]
@@ -3281,60 +3278,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-            continue;
-
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-
-                genConsumeReg(putArgRegNode);
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ true, argReg, putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
-
-                argReg = genRegArgNext(argReg);
-
-#if defined(TARGET_ARM)
-                // A double register is modelled as an even-numbered single one
-                if (putArgRegNode->TypeGet() == TYP_DOUBLE)
-                {
-                    argReg = genRegArgNext(argReg);
-                }
-#endif // TARGET_ARM
-            }
-        }
-        else if (abiInfo.IsSplit())
-        {
-            assert(compFeatureArgSplit());
-            assert(abiInfo.NumRegs >= 1);
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            for (unsigned idx = 0; idx < abiInfo.NumRegs; idx++)
-            {
-                regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
-                inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, allocReg, /* canSkip */ true,
-                                emitActualTypeSize(TYP_I_IMPL));
-            }
-        }
-        else
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
-        }
-    }
+    genCallPlaceRegArgs(call);
 
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
@@ -3565,14 +3509,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
+            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
             {
-                regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
             }
@@ -3800,9 +3743,8 @@ void CodeGen::genJmpPlaceVarArgs()
     for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            const ABIPassingSegment& segment = abiInfo.Segments[i];
             if (segment.IsPassedInRegister())
             {
                 potentialArgs &= ~segment.GetRegisterMask();
@@ -4202,7 +4144,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
     // let's save the values anyway for debugging purposes
     compiler->compInfoBlkAddr = gcInfoEncoder->Emit();
-    compiler->compInfoBlkSize = 0; // not exposed by the GCEncoder interface
+    compiler->compInfoBlkSize = gcInfoEncoder->GetEncodedGCInfoSize();
 }
 
 // clang-format off

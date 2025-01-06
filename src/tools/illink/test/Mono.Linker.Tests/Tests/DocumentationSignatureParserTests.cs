@@ -12,14 +12,6 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
-	sealed class TestResolver : ITryResolveMetadata
-	{
-		public static TestResolver Instance => new TestResolver ();
-
-		public MethodDefinition TryResolve (MethodReference methodReference) => methodReference.Resolve ();
-		public TypeDefinition TryResolve (TypeReference typeReference) => typeReference.Resolve ();
-	}
-
 	[TestFixture]
 	public class DocumentationSignatureParserTests
 	{
@@ -51,7 +43,7 @@ namespace Mono.Linker.Tests
 		{
 			var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
 			Assert.NotNull (module);
-			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, TestResolver.Instance);
+			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, new TestResolver ());
 			Assert.AreEqual (1, parseResults.Count ());
 			Assert.AreEqual (member, parseResults.First ());
 		}
@@ -59,7 +51,7 @@ namespace Mono.Linker.Tests
 		public static void CheckGeneratedString (IMemberDefinition member, string expected)
 		{
 			var builder = new StringBuilder ();
-			DocumentationSignatureGenerator.VisitMember (member, builder, TestResolver.Instance);
+			DocumentationSignatureGenerator.VisitMember (member, builder, new TestResolver ());
 			Assert.AreEqual (expected, builder.ToString ());
 		}
 
@@ -67,7 +59,7 @@ namespace Mono.Linker.Tests
 		{
 			var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
 			Assert.NotNull (module);
-			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, TestResolver.Instance);
+			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, new TestResolver ());
 			CollectionAssert.Contains (parseResults, member);
 		}
 
@@ -75,7 +67,7 @@ namespace Mono.Linker.Tests
 		{
 			var module = (member as TypeDefinition)?.Module ?? member.DeclaringType?.Module;
 			Assert.NotNull (module);
-			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, TestResolver.Instance);
+			var parseResults = DocumentationSignatureParser.GetMembersForDocumentationSignature (input, module, new TestResolver ());
 			CollectionAssert.DoesNotContain (parseResults, member);
 		}
 

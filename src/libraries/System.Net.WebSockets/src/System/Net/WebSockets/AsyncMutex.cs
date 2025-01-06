@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -54,10 +55,21 @@ namespace System.Threading
             // If cancellation was requested, bail immediately.
             // If the mutex is not currently held nor contended, enter immediately.
             // Otherwise, fall back to a more expensive likely-asynchronous wait.
-            return
-                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                Interlocked.Decrement(ref _gate) >= 0 ? Task.CompletedTask :
-                Contended(cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            int gate = Interlocked.Decrement(ref _gate);
+            if (gate >= 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Waiting to enter, queue length {-gate}");
+
+            return Contended(cancellationToken);
 
             // Everything that follows is the equivalent of:
             //     return _sem.WaitAsync(cancellationToken);
@@ -175,11 +187,13 @@ namespace System.Threading
         /// <remarks>The caller must logically own the mutex.  This is not validated.</remarks>
         public void Exit()
         {
-            if (Interlocked.Increment(ref _gate) < 1)
+            // This is the equivalent of:
+            //     _sem.Release();
+            // if _sem were to be constructed as `new SemaphoreSlim(0)`.
+            int gate = Interlocked.Increment(ref _gate);
+            if (gate < 1)
             {
-                // This is the equivalent of:
-                //     _sem.Release();
-                // if _sem were to be constructed as `new SemaphoreSlim(0)`.
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Unblocking next waiter on exit, remaining queue length {-_gate}", nameof(Exit));
                 Contended();
             }
 

@@ -3,6 +3,8 @@
 
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -91,5 +93,12 @@ namespace System.Text.Json.Serialization.Converters
 
             writer.WritePropertyName(output.Slice(0, bytesWritten));
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new()
+        {
+            Type = JsonSchemaType.String,
+            Comment = "Represents a System.TimeSpan value.",
+            Pattern = @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$"
+        };
     }
 }

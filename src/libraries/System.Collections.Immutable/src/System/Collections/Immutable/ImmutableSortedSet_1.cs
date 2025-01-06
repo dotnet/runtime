@@ -21,9 +21,9 @@ namespace System.Collections.Immutable
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
 #if NET
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #else
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #endif
     {
         /// <summary>
@@ -119,24 +119,12 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        #region ISortKeyCollection<T> Properties
-
         /// <summary>
-        /// See the <see cref="ISortKeyCollection{T}"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public IComparer<T> KeyComparer
         {
             get { return _comparer; }
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Gets the root node (for testing purposes).
-        /// </summary>
-        internal IBinaryTree Root
-        {
-            get { return _root; }
         }
 
         #region IReadOnlyList<T> Indexers
@@ -1169,7 +1157,7 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 
@@ -1227,7 +1215,7 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 

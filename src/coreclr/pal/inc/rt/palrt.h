@@ -274,10 +274,6 @@ typedef union _ULARGE_INTEGER {
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
 /******************* OLE, BSTR, VARIANT *************************/
-
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
-
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
 #define VARIANT_FALSE ((VARIANT_BOOL)0)
@@ -489,9 +485,6 @@ struct tagVARIANT
 
 typedef VARIANT VARIANTARG, *LPVARIANTARG;
 
-STDAPI_(void) VariantInit(VARIANT * pvarg);
-STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
-
 #define V_VT(X)         ((X)->n1.n2.vt)
 #define V_UNION(X, Y)   ((X)->n1.n2.n3.Y)
 #define V_RECORDINFO(X) ((X)->n1.n2.n3.brecVal.pRecInfo)
@@ -555,8 +548,6 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_DECIMALREF(X)    V_UNION(X, pdecVal)
 
 #define V_ISBYREF(X)     (V_VT(X)&VT_BYREF)
-
-STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface IStream** ppstm);
 
 #define STGM_DIRECT             0x00000000L
 
@@ -715,8 +706,6 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__in_xcount(x)
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
-
-typedef DWORD OLE_COLOR;
 
 typedef HANDLE HWND;
 
@@ -1075,33 +1064,6 @@ typedef LONG (WINAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
     IN struct _EXCEPTION_POINTERS *ExceptionInfo
     );
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
-
-/******************** PAL RT APIs *******************************/
-
-typedef struct _HSATELLITE *HSATELLITE;
-
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW(LPCWSTR SatelliteResourceFileName);
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceA(LPCSTR SatelliteResourceFileName);
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource(HSATELLITE SatelliteResource);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringA(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPSTR lpBuffer,
-             UINT nBufferMax);
-
-EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
-                             REFIID     riid,
-                             void     **ppv);
-
-// So we can have CoCreateInstance in most of the code base,
-// instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
-#define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
-
-STDAPI
-CoCreateGuid(OUT GUID * pguid);
 
 /************** Byte swapping & unaligned access ******************/
 

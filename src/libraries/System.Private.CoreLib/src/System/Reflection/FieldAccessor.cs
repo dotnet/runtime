@@ -48,14 +48,19 @@ namespace System.Reflection
                 {
                     _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo);
 
-                    if (fieldType.IsValueType)
+                    if ((_fieldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                    {
+                        _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        _fieldAccessType = FieldAccessorType.StaticValueType;
+                    }
+                    else if (fieldType.IsValueType)
                     {
                         if (fieldType.IsEnum)
                         {
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
                             _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType.GetEnumUnderlyingType());
                         }
-                        else if (RuntimeTypeHandle.GetCorElementType(fieldType) == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                        else if (fieldType.GetCorElementType() == CorElementType.ELEMENT_TYPE_VALUETYPE)
                         {
                             // The runtime stores non-primitive value types as a boxed value.
                             _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
@@ -197,7 +202,7 @@ namespace System.Reflection
                         throw new FieldAccessException();
 
                     default:
-                        Debug.Assert(false, "Unknown enum value");
+                        Debug.Fail("Unknown enum value");
                         return null;
                 }
             }

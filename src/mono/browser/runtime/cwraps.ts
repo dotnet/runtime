@@ -53,7 +53,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
-    [false, "mono_wasm_load_runtime", null, ["string", "number"]],
+    [false, "mono_wasm_load_runtime", null, ["number"]],
     [true, "mono_wasm_change_debugger_log_level", "void", ["number"]],
 
     [true, "mono_wasm_assembly_load", "number", ["string"]],
@@ -65,9 +65,10 @@ const fn_signatures: SigLine[] = [
     [false, "mono_wasm_exit", "void", ["number"]],
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
-    // These two need to be lazy because they may be missing
+    // These three need to be lazy because they may be missing
     [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_browser", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableLogProfiler, "mono_wasm_profiler_init_log", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
@@ -165,6 +166,7 @@ export interface t_ThreadingCwraps {
 export interface t_ProfilerCwraps {
     mono_wasm_profiler_init_aot(desc: string): void;
     mono_wasm_profiler_init_browser(desc: string): void;
+    mono_wasm_profiler_init_log(desc: string): void;
 }
 
 export interface t_Cwraps {
@@ -293,10 +295,10 @@ function cwrap (name: string, returnType: string | null, argTypes: string[] | un
             // Only attempt to do fast calls if all the args and the return type are either number or void
             (fastCwrapTypes.indexOf(returnType) >= 0) &&
             (!argTypes || argTypes.every(atype => fastCwrapTypes.indexOf(atype) >= 0)) &&
-            // Module["asm"] may not be defined yet if we are early enough in the startup process
+            // Module["wasmExports"] may not be defined yet if we are early enough in the startup process
             //  in that case, we need to rely on emscripten's lazy wrappers
-            Module["asm"]
-            ? <Function>((<any>Module["asm"])[name])
+            Module["wasmExports"]
+            ? <Function>((<any>Module["wasmExports"])[name])
             : undefined;
 
     // If the argument count for the wasm function doesn't match the signature, fall back to cwrap

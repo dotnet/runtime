@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -307,22 +308,34 @@ namespace System.Linq.Tests
             IEnumerator IEnumerable.GetEnumerator() => NonGenericGetEnumeratorWorker();
         }
 
+        protected static IEnumerable<IEnumerable<T>> CreateSources<T>(IEnumerable<T> source)
+        {
+            foreach (Func<IEnumerable<T>, IEnumerable<T>> t in IdentityTransforms<T>())
+            {
+                yield return t(source);
+            }
+        }
+
         protected static List<Func<IEnumerable<T>, IEnumerable<T>>> IdentityTransforms<T>()
         {
             // All of these transforms should take an enumerable and produce
             // another enumerable with the same contents.
-            return new List<Func<IEnumerable<T>, IEnumerable<T>>>
-            {
+            return
+            [
                 e => e,
                 e => e.ToArray(),
                 e => e.ToList(),
+                e => e.ToList().Take(int.MaxValue),
                 e => e.Select(i => i),
-                e => e.Concat(Array.Empty<T>()),
-                e => ForceNotCollection(e),
-                e => e.Concat(ForceNotCollection(Array.Empty<T>())),
+                e => e.Select(i => i).Take(int.MaxValue),
+                e => e.Select(i => i).Where(i => true),
                 e => e.Where(i => true),
-                e => ForceNotCollection(e).Skip(0)
-            };
+                e => e.Concat(Array.Empty<T>()),
+                e => e.Concat(ForceNotCollection(Array.Empty<T>())),
+                e => ForceNotCollection(e),
+                e => ForceNotCollection(e).Skip(0),
+                e => new ReadOnlyCollection<T>(e.ToArray())
+            ];
         }
 
         protected sealed class DelegateIterator<TSource> : IEnumerable<TSource>, IEnumerator<TSource>

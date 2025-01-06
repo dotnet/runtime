@@ -160,7 +160,6 @@ internal static partial class Interop
             if (sslAuthenticationOptions.IsClient)
             {
                 var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
-
                 return s_clientSslContexts.GetOrCreate(key, static (args) =>
                 {
                     var (sslAuthOptions, protocols, allowCached) = args;
@@ -173,14 +172,13 @@ internal static partial class Interop
 
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
 
-            SafeSslContextHandle? handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
-
-            if (!sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), out handle))
+            SslProtocols serverCacheKey = protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None);
+            if (!sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(serverCacheKey, out SafeSslContextHandle? handle))
             {
                 // not found in cache, create and insert
                 handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
 
-                SafeSslContextHandle cached = sslAuthenticationOptions.CertificateContext!.SslContexts!.GetOrAdd(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), handle);
+                SafeSslContextHandle cached = sslAuthenticationOptions.CertificateContext!.SslContexts!.GetOrAdd(serverCacheKey, handle);
 
                 if (handle != cached)
                 {
@@ -460,7 +458,7 @@ internal static partial class Interop
                             SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
                             X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
-                            Debug.Assert(certList != null, "certList != null");
+                            Debug.Assert(certList != null);
                             Span<IntPtr> handles = certList.Count <= 256 ?
                                 stackalloc IntPtr[256] :
                                 new IntPtr[certList.Count];
@@ -573,6 +571,16 @@ internal static partial class Interop
             if (handshakeException != null)
             {
                 throw handshakeException;
+            }
+
+            // in case of TLS 1.3 post-handshake authentication, SslDoHandhaske
+            // may return SSL_ERROR_NONE while still expecting more data from
+            // the client. Attempts to send app data in this state would result
+            // in SSL_ERROR_WANT_READ from SslWrite, override the return status
+            // to continue waiting for the rest of the TLS frames
+            if (context.IsServer && token.Size == 0 && errorCode == Ssl.SslErrorCode.SSL_ERROR_NONE && Ssl.IsSslRenegotiatePending(context))
+            {
+                return SecurityStatusPalErrorCode.ContinueNeeded;
             }
 
             bool stateOk = Ssl.IsSslStateOK(context);
@@ -876,8 +884,8 @@ internal static partial class Interop
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
         {
-            Debug.Assert(certPtr != null && !certPtr.IsInvalid, "certPtr != null && !certPtr.IsInvalid");
-            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
+            Debug.Assert(certPtr != null && !certPtr.IsInvalid);
+            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid);
 
             int retVal = Ssl.SslCtxUseCertificate(contextPtr, certPtr);
 

@@ -13,29 +13,50 @@ namespace System.Security.Cryptography
         private int hashSizeInBytes;
         private SHAManagedImplementationBase impl;
         private MemoryStream? buffer;
+        private readonly string _hashAlgorithmId;
 
         public SHAManagedHashProvider(string hashAlgorithmId)
+        {
+            (impl, hashSizeInBytes) = CreateFromHashAlgorithmId(hashAlgorithmId);
+            _hashAlgorithmId = hashAlgorithmId;
+        }
+
+        private SHAManagedHashProvider(string hashAlgorithmId, MemoryStream buffer)
+        {
+            (impl, hashSizeInBytes) = CreateFromHashAlgorithmId(hashAlgorithmId);
+            _hashAlgorithmId = hashAlgorithmId;
+            this.buffer = buffer;
+        }
+
+        private static (SHAManagedImplementationBase, int) CreateFromHashAlgorithmId(string hashAlgorithmId)
         {
             switch (hashAlgorithmId)
             {
                 case HashAlgorithmNames.SHA1:
-                    impl = new SHA1ManagedImplementation();
-                    hashSizeInBytes = 20;
-                    break;
+                    return (new SHA1ManagedImplementation(), 20);
                 case HashAlgorithmNames.SHA256:
-                    impl = new SHA256ManagedImplementation();
-                    hashSizeInBytes = 32;
-                    break;
+                    return (new SHA256ManagedImplementation(), 32);
                 case HashAlgorithmNames.SHA384:
-                    impl = new SHA384ManagedImplementation();
-                    hashSizeInBytes = 48;
-                    break;
+                    return (new SHA384ManagedImplementation(), 48);
                 case HashAlgorithmNames.SHA512:
-                    impl = new SHA512ManagedImplementation();
-                    hashSizeInBytes = 64;
-                    break;
+                    return (new SHA512ManagedImplementation(), 64);
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
+            }
+        }
+
+        public override HashProvider Clone()
+        {
+            if (buffer is null)
+            {
+                return new SHAManagedHashProvider(_hashAlgorithmId);
+            }
+            else
+            {
+                int length = (int)buffer.Length;
+                MemoryStream bufferCopy = new MemoryStream(length);
+                bufferCopy.Write(buffer.GetBuffer(), 0, length);
+                return new SHAManagedHashProvider(_hashAlgorithmId, bufferCopy);
             }
         }
 

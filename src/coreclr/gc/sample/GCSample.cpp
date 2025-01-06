@@ -179,7 +179,7 @@ int __cdecl main(int argc, char* argv[])
     My_MethodTable.m_MT.m_baseSize = max(baseSize, (uint32_t)MIN_OBJECT_SIZE);
 
     My_MethodTable.m_MT.m_componentSize = 0;    // Array component size
-    My_MethodTable.m_MT.m_flags = MTFlag_ContainsPointers;
+    My_MethodTable.m_MT.m_flags = MTFlag_ContainsGCPointers;
 
     My_MethodTable.m_numSeries = 2;
 

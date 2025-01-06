@@ -813,7 +813,7 @@ namespace System.Threading.Tasks.Dataflow
                         break;
 
                     case DataflowMessageStatus.NotAvailable:
-                        Debug.Assert(false, "Messages from a Broadcast should never be missed.");
+                        Debug.Fail("Messages from a Broadcast should never be missed.");
                         break;
                         // No action required for Postponed or Declined
                 }

@@ -8,7 +8,7 @@
 
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
-    <BuildCoreHostDependsOn>GetProductVersions;GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn>GenerateRuntimeVersionFile</BuildCoreHostDependsOn>
     <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRID).$(Configuration)\</IntermediateOutputRootPath>
     <!-- Global location for version files -->

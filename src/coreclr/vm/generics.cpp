@@ -217,7 +217,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 #endif // FEATURE_COMINTEROP
 
     // The number of bytes used for GC info
-    size_t cbGC = pOldMT->ContainsPointers() ? ((CGCDesc*) pOldMT)->GetSize() : 0;
+    size_t cbGC = pOldMT->ContainsGCPointers() ? ((CGCDesc*) pOldMT)->GetSize() : 0;
 
     // Bytes are required for the vtable itself
     S_SIZE_T safe_cbMT = S_SIZE_T( cbGC ) + S_SIZE_T( sizeof(MethodTable) );
@@ -401,6 +401,10 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // Fill in interface map pointer
     pMT->SetInterfaceMap(wNumInterfaces, pInterfaceMap);
+    if (pMT->IsNullable())
+    {
+        pMT->SetNullableDetails((UINT16)pOldMT->GetNullableValueAddrOffset(), (UINT16)pOldMT->GetNullableValueSize());
+    }
 
     // Copy across extra flags for these interfaces as well. We may need additional memory for this.
     PVOID pExtraInterfaceInfo = NULL;

@@ -159,17 +159,6 @@ namespace System.Text.Json.Nodes.Tests
             FieldInfo jsonDictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(jsonDictionaryField);
 
-            Type jsonPropertyDictionaryType = typeof(JsonObject).Assembly.GetType("System.Text.Json.JsonPropertyDictionary`1");
-            Assert.NotNull(jsonPropertyDictionaryType);
-
-            jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(JsonNode) });
-
-            FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(listField);
-
-            FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_propertyDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(dictionaryField);
-
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
                 // Only JsonElement is present.
@@ -186,8 +175,6 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
-                Assert.NotNull(listField.GetValue(jsonDictionary));
-                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
                 Test();
 
                 void Test()
@@ -217,8 +204,6 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
-                Assert.NotNull(listField.GetValue(jsonDictionary));
-                Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
                 Test();
 
                 void Test()

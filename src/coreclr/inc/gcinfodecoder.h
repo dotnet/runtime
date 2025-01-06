@@ -222,7 +222,6 @@ enum GcInfoDecoderFlags
     DECODE_PROLOG_LENGTH         = 0x400,   // length of the prolog (used to avoid reporting generics context)
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
-    DECODE_RETURN_KIND           = 0x2000,
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     DECODE_HAS_TAILCALLS         = 0x4000,
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
@@ -268,6 +267,8 @@ public:
 
         m_pCurrent = m_pBuffer = dac_cast<PTR_size_t>((size_t)dac_cast<TADDR>(pBuffer) & ~((size_t)sizeof(size_t)-1));
         m_RelPos = m_InitialRelPos = (int)((size_t)dac_cast<TADDR>(pBuffer) % sizeof(size_t)) * 8/*BITS_PER_BYTE*/;
+        // There are always some bits in the GC info, at least the header.
+        // It is ok to prefetch.
         m_current = *m_pCurrent >> m_RelPos;
     }
 
@@ -304,7 +305,7 @@ public:
         size_t result = m_current;
         m_current >>= numBits;
         int newRelPos = m_RelPos + numBits;
-        if(newRelPos >= BITS_PER_SIZE_T)
+        if(newRelPos > BITS_PER_SIZE_T)
         {
             m_pCurrent++;
             m_current = *m_pCurrent;
@@ -324,14 +325,19 @@ public:
     {
         SUPPORTS_DAC;
 
-        size_t result = m_current & 1;
-        m_current >>= 1;
-        if(++m_RelPos == BITS_PER_SIZE_T)
+        // "m_RelPos == BITS_PER_SIZE_T" means that m_current
+        // is not yet fetched. Do that now.
+        if(m_RelPos == BITS_PER_SIZE_T)
         {
             m_pCurrent++;
             m_current = *m_pCurrent;
             m_RelPos = 0;
         }
+
+        m_RelPos++;
+        size_t result = m_current & 1;
+        m_current >>= 1;
+
         return result;
     }
 
@@ -347,6 +353,9 @@ public:
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
         m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
+
+        // we always call SetCurrentPos just before reading.
+        // It is ok to prefetch.
         m_current = *m_pCurrent >> m_RelPos;
         _ASSERTE(GetCurrentPos() == pos);
     }
@@ -355,15 +364,27 @@ public:
     {
         SUPPORTS_DAC;
 
-        SetCurrentPos(GetCurrentPos() + numBitsToSkip);
-    }
-
-    __forceinline size_t ReadBitAtPos( size_t pos )
-    {
+        size_t pos = GetCurrentPos() + numBitsToSkip;
         size_t adjPos = pos + m_InitialRelPos;
-        size_t* ptr = m_pBuffer + adjPos / BITS_PER_SIZE_T;
-        int relPos = (int)(adjPos % BITS_PER_SIZE_T);
-        return (*ptr) & (((size_t)1) << relPos);
+        m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
+        m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
+
+        // Skipping ahead may go to a position at the edge-exclusive
+        // end of the stream. The location may have no more data.
+        // We will not prefetch on word boundary - in case
+        // the next word in in an unreadable page.
+        if (m_RelPos == 0)
+        {
+            m_pCurrent--;
+            m_RelPos = BITS_PER_SIZE_T;
+            m_current = 0;
+        }
+        else
+        {
+            m_current = *m_pCurrent >> m_RelPos;
+        }
+
+        _ASSERTE(GetCurrentPos() == pos);
     }
 
 
@@ -506,10 +527,9 @@ public:
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     bool IsSafePoint();
-    bool AreSafePointsInterruptible();
-    bool IsInterruptibleSafePoint();
+    bool CouldBeSafePoint();
 
-    // This is used for gccoverage
+    // This is used for gcinfodumper
     bool IsSafePoint(UINT32 codeOffset);
 
     typedef void EnumerateSafePointsCallback (GcInfoDecoder* decoder, UINT32 offset, void * hCallback);
@@ -561,7 +581,6 @@ public:
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool    HasTailCalls();
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
-    ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
     UINT32  GetSizeOfEditAndContinuePreservedArea();
@@ -594,7 +613,6 @@ private:
 #ifdef TARGET_ARM64
     UINT32  m_SizeOfEditAndContinueFixedStackFrame;
 #endif
-    ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;

@@ -72,7 +72,8 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
+            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
+                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.MaximallyConstructableType(type);
 
@@ -81,7 +82,8 @@ namespace ILCompiler
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
+            bool canPotentiallyConstruct = ConstructedEETypeNode.CreationAllowed(type)
+                && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
 
@@ -202,10 +204,6 @@ namespace ILCompiler
 
             if (exception != null)
             {
-                // Try to compile the method again, but with a throwing method body this time.
-                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
-                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
-
                 if (exception is TypeSystemException.InvalidProgramException
                     && method.OwningType is MetadataType mdOwningType
                     && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
@@ -216,6 +214,10 @@ namespace ILCompiler
                     Logger.LogMessage($"Method '{method}' will always throw because: {exception.Message}");
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+
+                // Try to compile the method again, but with a throwing method body this time.
+                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
+                corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
             }
         }
     }

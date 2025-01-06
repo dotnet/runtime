@@ -79,7 +79,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
     public void BinaryFormattedObject_ReadPrimitive(object value)
     {
         BinaryFormattedObject formattedObject = new(Serialize(value));
-        ((PrimitiveTypeRecord)formattedObject.RootRecord).Value.Should().Be(value);
+        Assert.Equal(value, ((PrimitiveTypeRecord)formattedObject.RootRecord).Value);
     }
 
     public static TheoryData<object> Primitive_Data => new()
@@ -117,7 +117,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
 
     private static void VerifyGeneric<T>(T value, SerializationRecord record) where T : unmanaged
     {
-        record.As<PrimitiveTypeRecord>().Value.Should().Be(value);
-        record.As<PrimitiveTypeRecord<T>>().Value.Should().Be(value);
+        Assert.Equal(value, ((PrimitiveTypeRecord)record).Value);
+        Assert.Equal(value, ((PrimitiveTypeRecord<T>)record).Value);
     }
 }

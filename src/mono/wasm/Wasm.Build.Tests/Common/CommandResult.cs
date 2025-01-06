@@ -27,6 +27,13 @@ namespace Wasm.Build.Tests
         public CommandResult EnsureSuccessful(string messagePrefix = "", bool suppressOutput = false)
             => EnsureExitCode(0, messagePrefix, suppressOutput);
 
+        public CommandResult EnsureFailed(string messagePrefix = "", bool suppressOutput = false)
+        {
+            if (ExitCode == 0)
+                throw new XunitException($"{messagePrefix} Expected non-zero exit code but got 0: {StartInfo.FileName} {StartInfo.Arguments}");
+            return this;
+        }
+
         public CommandResult EnsureExitCode(int expectedExitCode = 0, string messagePrefix = "", bool suppressOutput = false)
         {
             if (ExitCode != expectedExitCode)

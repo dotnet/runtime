@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// Implementation of _CONTEXT_CaptureContext for the ARM platform.
+// Implementation of _CONTEXT_CaptureContext for the ARM64 platform.
 // This function is processor dependent.  It is used by exception handling,
 // and is always apply to the current thread.
 //
@@ -12,6 +12,7 @@
 // Incoming:
 //  x0: Context*
 //
+.arch_extension sve
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     PROLOG_STACK_ALLOC 32
     .cfi_adjust_cfa_offset 32
@@ -69,7 +70,6 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
     stp x26, x27, [x0, CONTEXT_X26]
     str x28,      [x0, CONTEXT_X28]
 
-
 LOCAL_LABEL(Done_CONTEXT_INTEGER):
     ldr w1, [x0, CONTEXT_ContextFlags]
     // clangs assembler doesn't seem to support the mov Wx, imm32 yet
@@ -104,6 +104,41 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
     sub x0, x0,   CONTEXT_FLOAT_CONTROL_OFFSET + CONTEXT_NEON_OFFSET
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
+    ldr w1, [x0, CONTEXT_ContextFlags]
+    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
+    movz w2, #0x40, lsl #16
+    movk w2, #0x40
+    mov w3, w2
+    and w2, w1, w2
+    cmp w2, w3
+    b.ne LOCAL_LABEL(Done_CONTEXT_SVE)
+
+    ldr x1, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
+    tbz x1, #XSTATE_ARM64_SVE_BIT, LOCAL_LABEL(Done_CONTEXT_SVE)
+
+    add x0, x0,   CONTEXT_SVE_OFFSET
+    str p0, [x0, CONTEXT_P0_VL, MUL VL]
+    str p1, [x0, CONTEXT_P1_VL, MUL VL]
+    str p2, [x0, CONTEXT_P2_VL, MUL VL]
+    str p3, [x0, CONTEXT_P3_VL, MUL VL]
+    str p4, [x0, CONTEXT_P4_VL, MUL VL]
+    str p5, [x0, CONTEXT_P5_VL, MUL VL]
+    str p6, [x0, CONTEXT_P6_VL, MUL VL]
+    str p7, [x0, CONTEXT_P7_VL, MUL VL]
+    str p8, [x0, CONTEXT_P8_VL, MUL VL]
+    str p9, [x0, CONTEXT_P9_VL, MUL VL]
+    str p10, [x0, CONTEXT_P10_VL, MUL VL]
+    str p11, [x0, CONTEXT_P11_VL, MUL VL]
+    str p12, [x0, CONTEXT_P12_VL, MUL VL]
+    str p13, [x0, CONTEXT_P13_VL, MUL VL]
+    str p14, [x0, CONTEXT_P14_VL, MUL VL]
+    str p15, [x0, CONTEXT_P15_VL, MUL VL]
+    rdffr p0.b
+    str p0, [x0, CONTEXT_FFR_VL, MUL VL]
+    ldr p0, [x0, 0, MUL VL]
+    sub x0, x0,   CONTEXT_SVE_OFFSET
+
+LOCAL_LABEL(Done_CONTEXT_SVE):
 
     EPILOG_STACK_FREE 32
     ret
@@ -124,6 +159,7 @@ LEAF_ENTRY RtlCaptureContext, _TEXT
     orr w1, w1, #0x4
     orr w1, w1, #0x8
     str w1, [x0, CONTEXT_ContextFlags]
+    str xzr, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
     ldr x1, [sp]
     EPILOG_STACK_FREE 16
     b C_FUNC(CONTEXT_CaptureContext)
@@ -133,6 +169,7 @@ LEAF_END RtlCaptureContext, _TEXT
 //  x0: Context*
 //  x1: Exception*
 //
+.arch_extension sve
 LEAF_ENTRY RtlRestoreContext, _TEXT
 
 #ifdef HAS_ADDRESS_SANITIZER
@@ -154,6 +191,34 @@ LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT):
     // since we potentially clobber x0 below, we'll bank it in x16
     mov x16, x0
 
+    ldr w17, [x16, CONTEXT_ContextFlags]
+    tbz w17, #CONTEXT_XSTATE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
+
+    ldr w17, [x16, CONTEXT_XSTATEFEATURESMASK_OFFSET]
+    tbz w17, #XSTATE_ARM64_SVE_BIT, LOCAL_LABEL(No_Restore_CONTEXT_SVE)
+
+    add x16, x16,   CONTEXT_SVE_OFFSET
+    ldr p0, [x16, CONTEXT_FFR_VL, MUL VL]
+    wrffr p0.b
+    ldr p0, [x16, CONTEXT_P0_VL, MUL VL]
+    ldr p1, [x16, CONTEXT_P1_VL, MUL VL]
+    ldr p2, [x16, CONTEXT_P2_VL, MUL VL]
+    ldr p3, [x16, CONTEXT_P3_VL, MUL VL]
+    ldr p4, [x16, CONTEXT_P4_VL, MUL VL]
+    ldr p5, [x16, CONTEXT_P5_VL, MUL VL]
+    ldr p6, [x16, CONTEXT_P6_VL, MUL VL]
+    ldr p7, [x16, CONTEXT_P7_VL, MUL VL]
+    ldr p8, [x16, CONTEXT_P8_VL, MUL VL]
+    ldr p9, [x16, CONTEXT_P9_VL, MUL VL]
+    ldr p10, [x16, CONTEXT_P10_VL, MUL VL]
+    ldr p11, [x16, CONTEXT_P11_VL, MUL VL]
+    ldr p12, [x16, CONTEXT_P12_VL, MUL VL]
+    ldr p13, [x16, CONTEXT_P13_VL, MUL VL]
+    ldr p14, [x16, CONTEXT_P14_VL, MUL VL]
+    ldr p15, [x16, CONTEXT_P15_VL, MUL VL]
+    sub x16, x16,   CONTEXT_SVE_OFFSET
+
+LOCAL_LABEL(No_Restore_CONTEXT_SVE):
     ldr w17, [x16, CONTEXT_ContextFlags]
     tbz w17, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(No_Restore_CONTEXT_FLOATING_POINT)
 
@@ -230,3 +295,12 @@ LEAF_ENTRY RestoreCompleteContext, _TEXT
 LEAF_END RestoreCompleteContext, _TEXT
 
 #endif // __APPLE__
+
+// Incoming:
+//  None
+//
+.arch_extension sve
+    LEAF_ENTRY CONTEXT_GetSveLengthFromOS, _TEXT
+        rdvl    x0, 1
+        ret     lr
+    LEAF_END CONTEXT_GetSveLengthFromOS, _TEXT

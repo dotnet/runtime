@@ -121,7 +121,7 @@ namespace System.Net
                     SslCertificateTrust trust = sslAuthenticationOptions.CertificateContext!.Trust!;
                     X509Certificate2Collection certList = (trust._trustList ?? trust._store!.Certificates);
 
-                    Debug.Assert(certList != null, "certList != null");
+                    Debug.Assert(certList != null);
                     Span<IntPtr> handles = certList.Count <= 256
                         ? stackalloc IntPtr[256]
                         : new IntPtr[certList.Count];
@@ -368,7 +368,7 @@ namespace System.Net
 
         internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
-            Debug.Assert(sslContext != null, "sslContext != null");
+            Debug.Assert(sslContext != null);
 
             IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates.Count + 1];
 
@@ -384,7 +384,7 @@ namespace System.Net
                     // The current value of intermediateCert is still in elements, which will
                     // get Disposed at the end of this method.  The new value will be
                     // in the intermediate certs array, which also gets serially Disposed.
-                    intermediateCert = new X509Certificate2(intermediateCert.RawDataMemory.Span);
+                    intermediateCert = X509CertificateLoader.LoadCertificate(intermediateCert.RawDataMemory.Span);
                 }
 
                 ptrs[i + 1] = intermediateCert.Handle;

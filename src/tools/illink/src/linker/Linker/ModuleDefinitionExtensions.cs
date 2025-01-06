@@ -4,18 +4,19 @@
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 
+#nullable enable
+
 namespace Mono.Linker
 {
-	public static class ModuleDefinitionExtensions
+	internal static class ModuleDefinitionExtensions
 	{
-
 		public static bool IsCrossgened (this ModuleDefinition module)
 		{
 			return (module.Attributes & ModuleAttributes.ILOnly) == 0 &&
 				(module.Attributes & ModuleAttributes.ILLibrary) != 0;
 		}
 
-		public static bool GetMatchingExportedType (this ModuleDefinition module, TypeDefinition typeDefinition, LinkContext context, [NotNullWhen (true)] out ExportedType? exportedType)
+		public static bool GetMatchingExportedType (this ModuleDefinition module, TypeDefinition typeDefinition, ITryResolveMetadata context, [NotNullWhen (true)] out ExportedType? exportedType)
 		{
 			exportedType = null;
 			if (!module.HasExportedTypes)

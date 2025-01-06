@@ -18,7 +18,9 @@ namespace System.Security.Cryptography.Tests
 
         // This would need to be virtualized if there was ever a platform that
         // allowed explicit in ECDH or ECDSA but not the other.
-        public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
+        public static bool SupportsExplicitCurves { get; } =
+            EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported ||
+            EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly;
 
         public static bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 

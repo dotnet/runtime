@@ -1261,7 +1261,7 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (evp != NULL)
     {
-        CryptoNative_EvpPkeyDestroy(evp);
+        CryptoNative_EvpPkeyDestroy(evp, NULL);
     }
 
     if (bio1)

@@ -165,7 +165,7 @@ void NativeWalker::Decode()
                     //
                     BYTE sib   = *ip;
 
-                    _ASSERT(sib != NULL);
+                    _ASSERT(sib != 0);
 
                     BYTE ss    = (sib & 0xC0) >> 6;
                     BYTE index = (sib & 0x38) >> 3;

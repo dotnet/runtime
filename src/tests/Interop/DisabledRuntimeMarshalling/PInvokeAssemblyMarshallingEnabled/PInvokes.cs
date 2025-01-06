@@ -24,7 +24,7 @@ public class PInvokes
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
     }
 
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
     public static void StructWithDefaultNonBlittableFields_Char()
     {
@@ -45,7 +45,7 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
     }
 
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
     public static void StructWithDefaultNonBlittableFields_Char_MarshalAsInfo()
     {

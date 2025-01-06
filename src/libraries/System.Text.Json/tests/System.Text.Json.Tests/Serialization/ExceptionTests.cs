@@ -522,7 +522,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Each constructor parameter must bind to an object property or field.
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("{}", type));
-            Assert.Contains(type.FullName, ex.ToString());
+            Assert.Contains(type.FullName, ex.Message);
         }
 
         [Theory]

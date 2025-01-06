@@ -725,97 +725,53 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(short))
+            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
             {
-                short exponent = Exponent;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
                 bytesWritten = sizeof(short);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(short))
+            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
             {
-                short exponent = Exponent;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
                 bytesWritten = sizeof(short);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
             {
-                ulong significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
             {
-                ulong significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -874,7 +830,7 @@ namespace System
         public static int ILogB(double x) => Math.ILogB(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
-        public static double Lerp(double value1, double value2, double amount) => (value1 * (1.0 - amount)) + (value2 * amount);
+        public static double Lerp(double value1, double value2, double amount) => MultiplyAddEstimate(value1, 1.0 - amount, value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         [Intrinsic]
