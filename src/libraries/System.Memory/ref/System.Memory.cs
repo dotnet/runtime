@@ -774,7 +774,7 @@ namespace System.Text
         public System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
     }
-    public readonly struct RunePosition : System.IEquatable<System.Text.RunePosition>
+    public readonly partial struct RunePosition : System.IEquatable<System.Text.RunePosition>
     {
         private readonly int _dummyPrimitive;
         public static System.Text.RunePosition.Utf16Enumerator EnumerateUtf16(System.ReadOnlySpan<char> span) { throw null; }
@@ -783,7 +783,6 @@ namespace System.Text
         public int StartIndex { get { throw null; } }
         public int Length { get { throw null; } }
         public bool WasReplaced { get { throw null; } }
-        public RunePosition(Rune rune, int startIndex, int length, bool wasReplaced) { }
         public bool Equals(System.Text.RunePosition other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -793,14 +792,14 @@ namespace System.Text
         public void Deconstruct(out System.Text.Rune rune, out int startIndex, out int length) { throw null; }
         public static bool operator ==(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
         public static bool operator !=(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
-        public ref struct Utf16Enumerator
+        public ref partial struct Utf16Enumerator
         {
             private readonly int _dummyPrimitive;
             public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf16Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }
-        public ref struct Utf8Enumerator
+        public ref partial struct Utf8Enumerator
         {
             private readonly int _dummyPrimitive;
             public System.Text.RunePosition Current { get { throw null; } }
