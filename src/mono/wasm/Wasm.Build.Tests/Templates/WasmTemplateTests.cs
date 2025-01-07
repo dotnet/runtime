@@ -282,14 +282,23 @@ namespace Wasm.Build.Tests
             }
         }
 
-        [Fact]
-        public void LibraryModeBuildPublishRun()
+        [Theory]
+        [InlineData("Microsoft.NET.Sdk", false)]
+        [InlineData("Microsoft.NET.Sdk.WebAssembly", true)]
+        public void LibraryModeBuild(string sdk, bool hasWasmAppBundle)
         {
             var config = Configuration.Release;
             string extraProperties = $"<OutputType>Library</OutputType>";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "libraryMode", extraProperties: extraProperties);
+            string wasmBrowserSdkFromTemplate = """Microsoft.NET.Sdk.WebAssembly""";
+            if (wasmBrowserSdkFromTemplate != sdk)
+            {
+                UpdateFile($"{info.ProjectName}.csproj",  new Dictionary<string, string>() { 
+                    { wasmBrowserSdkFromTemplate, sdk } 
+                });
+            }            
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "LibraryMode.cs"));
-            BuildProject(info, config);
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: hasWasmAppBundle));
         }
     }
 }

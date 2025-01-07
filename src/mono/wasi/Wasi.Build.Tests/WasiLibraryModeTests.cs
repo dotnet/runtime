@@ -22,7 +22,7 @@ public class WasiLibraryModeTests : BuildTestBase
     [Theory]
     [InlineData("Microsoft.NET.Sdk", false)]
     [InlineData("Microsoft.NET.Sdk.WebAssembly", true)]
-    public void LibraryModeBuildPublishRun(string sdk, bool hasWasmAppBundle)
+    public void LibraryModeBuild(string sdk, bool hasWasmAppBundle)
     {
         string config = "Release";
         string id = $"{config}_{GetRandomId()}";
