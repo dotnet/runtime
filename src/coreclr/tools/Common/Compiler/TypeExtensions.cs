@@ -495,7 +495,9 @@ namespace ILCompiler
                                 potentialInterfaceMethod.GetTypicalMethodDefinition(), (InstantiatedType)potentialInterfaceType);
                         }
 
-                        method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod);
+                        method = canonType.ResolveInterfaceMethodToVirtualMethodOnType(potentialInterfaceMethod)
+                            // Do not lose track of `method` if we were able to resolve it previously
+                            ?? method;
 
                         // See code:#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
                         if (method != null && !method.OwningType.IsValueType)
