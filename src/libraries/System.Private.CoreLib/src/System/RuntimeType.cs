@@ -15,7 +15,6 @@ namespace System
     {
         public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
         public override Type? BaseType => GetBaseType();
-        public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
         public override bool IsGenericParameter => RuntimeTypeHandle.IsGenericVariable(this);
         public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition(this);
         public override bool IsSecurityCritical => true;
@@ -94,7 +93,7 @@ namespace System
             return members ?? Array.Empty<MemberInfo>();
         }
 
-        public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
+        public override Type? GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
         public override string? GetEnumName(object value)
         {
@@ -134,16 +133,8 @@ namespace System
             // Get all of the values as the underlying type and copy them to a new array of the enum type.
             Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             Array ret = Array.CreateInstance(this, values.Length);
-#if MONO
-            // TODO https://github.com/dotnet/runtime/issues/79224:
-            // Array.Copy can be used instead when bool[] is no longer supported, or if mono's Array.Copy is updated to support copying a bool[] to an EnumBackedByBool[].
-            for (int i = 0; i < values.Length; i++)
-            {
-                ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
-            }
-#else
             Array.Copy(values, ret, values.Length);
-#endif
+
             return ret;
         }
 
@@ -263,17 +254,8 @@ namespace System
 
         protected override bool IsPointerImpl() => RuntimeTypeHandle.IsPointer(this);
 
-        protected override bool IsCOMObjectImpl() => RuntimeTypeHandle.IsComObject(this, false);
-
-        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
-
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
-        {
-            if (typeInfo == null)
-                return false;
-
-            return IsAssignableFrom(typeInfo.AsType());
-        }
+            => typeInfo != null && IsAssignableFrom(typeInfo.AsType());
 
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
@@ -286,7 +268,6 @@ namespace System
             // For runtime type, let the VM decide.
             if (c.UnderlyingSystemType is RuntimeType fromType)
             {
-                // both this and c (or their underlying system types) are runtime types
                 return RuntimeTypeHandle.CanCastTo(fromType, this);
             }
 
@@ -318,7 +299,7 @@ namespace System
 
         [DebuggerStepThrough]
         [DebuggerHidden]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
@@ -466,7 +447,12 @@ namespace System
 
                 // Lookup Field
                 FieldInfo? selFld = null;
-                FieldInfo[]? flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
+                FieldInfo[]? flds = GetFields(this, name, bindingFlags);
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Field is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static FieldInfo[]? GetFields(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
                 Debug.Assert(flds != null);
 
@@ -578,7 +564,13 @@ namespace System
             if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
             {
                 // Lookup Methods
-                MethodInfo[] semiFinalists = (GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[])!;
+                MethodInfo[] semiFinalists = GetMethods(this, name, bindingFlags)!;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Method is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static MethodInfo[]? GetMethods(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[];
+
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -613,7 +605,13 @@ namespace System
             if (finalist == null && isGetProperty || isSetProperty)
             {
                 // Lookup Property
-                PropertyInfo[] semiFinalists = (GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[])!;
+                PropertyInfo[] semiFinalists = GetProperties(this, name, bindingFlags)!;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070",
+                    Justification = $"MemberTypes.Property is satisfied by ({nameof(InvokeMemberMembers)}) on this method")]
+                static PropertyInfo[]? GetProperties(RuntimeType thisType, string name, BindingFlags bindingFlags)
+                    => thisType.GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[];
+
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -658,13 +656,13 @@ namespace System
                 // Invoke
                 if (finalists == null &&
                     argCnt == 0 &&
-                    finalist.GetParametersNoCopy().Length == 0 &&
+                    finalist.GetParametersAsSpan().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
                 {
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                finalists ??= new MethodInfo[] { finalist };
+                finalists ??= [finalist];
                 providedArgs ??= Array.Empty<object>();
                 object? state = null;
                 MethodBase? invokeMethod = null;
@@ -686,6 +684,12 @@ namespace System
             throw new MissingMethodException(FullName, name);
         }
 
+        // Returns the type from which the current type directly inherits from with reflection quirks.
+        // The base type is null for interfaces, pointers, byrefs.
+        // The base type of a generic argument with a direct class constraint is the class constrain type, `System.Object` otherwise. For example:
+        // `class G1<T> where T:Stream`: `typeof(G1<>).GetGenericArguments()[0].BaseType` is Stream
+        // `class G2<T> where T:IDisposable`: typeof(G2<>).GetGenericArguments()[0].BaseType is Object
+        // `class G3<T,U> where T:U where U:Stream`: typeof(G3<,>).GetGenericArguments()[0].BaseType is Object (!)
         private RuntimeType? GetBaseType()
         {
             if (IsInterface)
@@ -706,7 +710,7 @@ namespace System
 
                     if (constraint.IsGenericParameter)
                     {
-                        GenericParameterAttributes special = constraint.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+                        GenericParameterAttributes special = constraint.GenericParameterAttributes;
 
                         if ((special & GenericParameterAttributes.ReferenceTypeConstraint) == 0 &&
                             (special & GenericParameterAttributes.NotNullableValueTypeConstraint) == 0)
@@ -718,7 +722,7 @@ namespace System
 
                 if (baseType == ObjectType)
                 {
-                    GenericParameterAttributes special = GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+                    GenericParameterAttributes special = GenericParameterAttributes;
                     if ((special & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
                         baseType = ValueType;
                 }
@@ -726,7 +730,7 @@ namespace System
                 return baseType;
             }
 
-            return RuntimeTypeHandle.GetBaseType(this);
+            return GetParentType();
         }
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
@@ -751,22 +755,25 @@ namespace System
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
         }
 
-        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        internal CorElementType GetUnderlyingCorElementType()
         {
+            RuntimeType type = this;
             if (type.IsActualEnum)
             {
                 type = (RuntimeType)Enum.GetUnderlyingType(type);
             }
 
-            return RuntimeTypeHandle.GetCorElementType(type);
+            return type.GetCorElementType();
         }
 
+        // AggressiveInlining used since on hot path for reflection.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
         {
-            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
             {
-                elementType = RuntimeTypeHandle.GetElementType(type);
+                elementType = RuntimeTypeHandle.GetElementType(type)!;
                 return true;
             }
 
@@ -784,19 +791,9 @@ namespace System
         /// <summary>
         /// Verify <paramref name="value"/> and optionally convert the value for special cases.
         /// </summary>
-        /// <returns>True if <paramref name="value"/> is a value type, False otherwise</returns>
-        internal bool CheckValue(
-            ref object? value,
-            ref ParameterCopyBackAction copyBack,
-            Binder? binder,
-            CultureInfo? culture,
-            BindingFlags invokeAttr)
+        /// <returns>True if the value requires a copy-back to the original object[].</returns>
+        internal bool CheckValue(ref object? value)
         {
-            // Already fast-pathed by the caller.
-            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
-
-            // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
-            // because it is faster than IsValueType
             Debug.Assert(!IsGenericParameter);
 
             // Fast path to whether a value can be assigned without conversion.
@@ -809,17 +806,58 @@ namespace System
                     return true;
                 }
 
-                // Other value types won't get here since Type equality was previous checked.
-                Debug.Assert(!RuntimeTypeHandle.IsValueType(this));
+                return false;
+            }
+
+            bool copyBack = false;
+            CheckValueStatus result = TryChangeType(ref value, ref copyBack);
+            if (result == CheckValueStatus.Success)
+            {
+                return copyBack;
+            }
+
+            switch (result)
+            {
+                case CheckValueStatus.ArgumentException:
+                    throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
+                case CheckValueStatus.NotSupported_ByRefLike:
+                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            }
+
+            Debug.Fail("Error result not expected");
+            return false;
+        }
+
+        /// <summary>
+        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
+        /// </summary>
+        /// <returns>True if the value requires a copy-back to the original object[] or Span{object}.</returns>
+        internal bool CheckValue(
+            ref object? value,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
+        {
+            Debug.Assert(!IsGenericParameter);
+
+            // Fast path to whether a value can be assigned without conversion.
+            if (IsInstanceOfType(value))
+            {
+                if (IsNullableOfT)
+                {
+                    // Pass as a true boxed Nullable<T>, not as a T or null.
+                    value = RuntimeMethodHandle.ReboxToNullable(value, this);
+                    return true;
+                }
 
                 return false;
             }
 
-            bool isValueType;
-            CheckValueStatus result = TryChangeType(ref value, ref copyBack, out isValueType);
+            bool copyBack = false;
+            CheckValueStatus result = TryChangeType(ref value, ref copyBack);
             if (result == CheckValueStatus.Success)
             {
-                return isValueType;
+                return copyBack;
             }
 
             if (result == CheckValueStatus.ArgumentException && (invokeAttr & BindingFlags.ExactBinding) == 0)
@@ -836,20 +874,15 @@ namespace System
                         {
                             // Pass as a true boxed Nullable<T>, not as a T or null.
                             value = RuntimeMethodHandle.ReboxToNullable(value, this);
-                            copyBack = ParameterCopyBackAction.CopyNullable;
-                        }
-                        else
-                        {
-                            copyBack = ParameterCopyBackAction.Copy;
                         }
 
-                        return IsValueType; // Note the call to IsValueType, not the variable.
+                        return true;
                     }
 
-                    result = TryChangeType(ref value, ref copyBack, out isValueType);
+                    result = TryChangeType(ref value, ref copyBack);
                     if (result == CheckValueStatus.Success)
                     {
-                        return isValueType;
+                        return copyBack;
                     }
                 }
             }
@@ -866,27 +899,47 @@ namespace System
             return false;
         }
 
-        private CheckValueStatus TryChangeType(
-            ref object? value,
-            ref ParameterCopyBackAction copyBack,
-            out bool isValueType)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "AllocateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static object? AllocateValueType(RuntimeType type, object? value)
+        {
+            Debug.Assert(type.IsValueType);
+            Debug.Assert(!type.IsByRefLike);
+
+            if (value is not null)
+            {
+                // Make a copy of the provided value by re-boxing the existing value's underlying data.
+                Debug.Assert(type.IsEquivalentTo(value.GetType()));
+                return RuntimeHelpers.Box(ref RuntimeHelpers.GetRawData(value), type.TypeHandle)!;
+            }
+
+            if (type.IsNullableOfT)
+            {
+                // If the type is Nullable<T>, then create a true boxed Nullable<T> of the default Nullable<T> value.
+                return RuntimeMethodHandle.ReboxToNullable(null, type);
+            }
+
+            // Otherwise, just create a default instance of the type.
+            return RuntimeHelpers.GetUninitializedObject(type);
+        }
+
+        private CheckValueStatus TryChangeType(ref object? value, ref bool copyBack)
         {
             RuntimeType? sigElementType;
             if (TryGetByRefElementType(this, out sigElementType))
             {
-                copyBack = ParameterCopyBackAction.Copy;
                 Debug.Assert(!sigElementType.IsGenericParameter);
+                copyBack = true;
 
                 if (sigElementType.IsInstanceOfType(value))
                 {
-                    isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
-                    if (isValueType)
+                    if (sigElementType.IsActualValueType)
                     {
                         if (sigElementType.IsNullableOfT)
                         {
                             // Pass as a true boxed Nullable<T>, not as a T or null.
                             value = RuntimeMethodHandle.ReboxToNullable(value, sigElementType);
-                            copyBack = ParameterCopyBackAction.CopyNullable;
                         }
                         else
                         {
@@ -900,10 +953,8 @@ namespace System
 
                 if (value == null)
                 {
-                    isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
-                    if (!isValueType)
+                    if (!sigElementType.IsActualValueType)
                     {
-                        // Normally we don't get here since 'null' was previosuly checked, but due to binders we can.
                         return CheckValueStatus.Success;
                     }
 
@@ -914,20 +965,23 @@ namespace System
 
                     // Allocate default<T>.
                     value = AllocateValueType(sigElementType, value: null);
-                    copyBack = sigElementType.IsNullableOfT ? ParameterCopyBackAction.CopyNullable : ParameterCopyBackAction.Copy;
                     return CheckValueStatus.Success;
                 }
 
-                isValueType = false;
                 return CheckValueStatus.ArgumentException;
             }
 
             if (value == null)
             {
-                isValueType = RuntimeTypeHandle.IsValueType(this);
-                if (!isValueType)
+                if (IsPointer || IsFunctionPointer)
                 {
-                    // Normally we don't get here since 'null' was previosuly checked, but due to binders we can.
+                    // Pass an IntPtr instead of null.
+                    value = default(IntPtr);
+                    return CheckValueStatus.Success;
+                }
+
+                if (!IsActualValueType)
+                {
                     return CheckValueStatus.Success;
                 }
 
@@ -946,29 +1000,10 @@ namespace System
             // - Enum treated as underlying type
             // - Pointer (*) types to IntPtr (if dest is IntPtr)
             // - System.Reflection.Pointer to appropriate pointer (*) type (if dest is pointer type)
-            if (IsPointer || IsEnum || IsPrimitive)
-                return TryChangeTypeSpecial(ref value, out isValueType);
+            if (IsPointer || IsEnum || IsPrimitive || IsFunctionPointer)
+                return TryChangeTypeSpecial(ref value);
 
-            isValueType = false;
             return CheckValueStatus.ArgumentException;
-        }
-
-        internal bool TryByRefFastPath(ref object arg, ref bool isValueType)
-        {
-            if (TryGetByRefElementType(this, out RuntimeType? sigElementType) &&
-                ReferenceEquals(sigElementType, arg.GetType()))
-            {
-                isValueType = sigElementType.IsValueType;
-                if (isValueType)
-                {
-                    // Make a copy to prevent the boxed instance from being directly modified by the method.
-                    arg = AllocateValueType(sigElementType, arg);
-                }
-
-                return true;
-            }
-
-            return false;
         }
     }
 }

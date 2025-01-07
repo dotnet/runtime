@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
-using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
 using System.Reflection;
-using System.Collections;
+using System.Runtime.Versioning;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -61,6 +61,19 @@ namespace System.Net.Sockets
         private static unsafe void LoadSocketTypeFromHandle(
             SafeSocketHandle handle, out AddressFamily addressFamily, out SocketType socketType, out ProtocolType protocolType, out bool blocking, out bool isListening, out bool isSocket)
         {
+            if (OperatingSystem.IsWasi())
+            {
+                // FIXME: Unify with unix after https://github.com/WebAssembly/wasi-libc/issues/537
+                blocking = false;
+                Interop.Error e = Interop.Sys.GetSocketType(handle, out addressFamily, out socketType, out protocolType, out isListening);
+                if (e == Interop.Error.ENOTSOCK)
+                {
+                    throw new SocketException((int)SocketError.NotSocket);
+                }
+                handle.IsSocket = isSocket = true;
+                return;
+            }
+
             if (Interop.Sys.FStat(handle, out Interop.Sys.FileStatus stat) == -1)
             {
                 throw new SocketException((int)SocketError.NotSocket);
@@ -148,7 +161,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            if (Volatile.Read(ref _disposed) != 0)
+            if (Volatile.Read(ref _disposed))
             {
                 _handle.Dispose();
                 throw new ObjectDisposedException(GetType().FullName);

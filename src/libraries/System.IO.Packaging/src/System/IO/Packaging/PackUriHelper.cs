@@ -139,9 +139,9 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException(nameof(partUri));
             }
 
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
-            return ((ValidatedPartUri)partUri).NormalizedPartUri;
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
+
+            return validatedUri.NormalizedPartUri;
         }
 
         /// <summary>
@@ -187,10 +187,9 @@ namespace System.IO.Packaging
                 throw new ArgumentNullException(nameof(partUri));
             }
 
-            if (!(partUri is ValidatedPartUri))
-                partUri = ValidatePartUri(partUri);
+            ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
-            return ((ValidatedPartUri)partUri).IsRelationshipPartUri;
+            return validatedUri.IsRelationshipPartUri;
         }
 
         /// <summary>
@@ -450,6 +449,14 @@ namespace System.IO.Packaging
             if (!string.Equals(partUri.OriginalString, wellFormedPartName, StringComparison.OrdinalIgnoreCase))
                 return new ArgumentException(SR.InvalidPartUri);
 
+            // Check to ensure that it isn't possible to create a part with the same URI as a part piece.
+            // This check isn't part of the OPC specification; it prevents callers from treating a part piece
+            // as a part.
+            if (ZipPackagePartPiece.TryParseName(partName, out _, out _, out _, out _))
+            {
+                return new ArgumentException(SR.UnexpectedPartPieceUri);
+            }
+
             //if we get here, the partUri is valid and so we return null, as there is no exception.
             partUriString = partName;
             return null;
@@ -667,14 +674,14 @@ namespace System.IO.Packaging
 
             #endregion IComparable Methods
 
-            #region IEqualityComparer Methods
+            #region IEquatable Methods
 
             bool IEquatable<ValidatedPartUri>.Equals(ValidatedPartUri? otherPartUri)
             {
                 return Compare(otherPartUri) == 0;
             }
 
-            #endregion IEqualityComparer Methods
+            #endregion IEquatable Methods
 
             #region Internal Properties
 
@@ -852,8 +859,8 @@ namespace System.IO.Packaging
                     return this;
                 else
                     return new ValidatedPartUri(_normalizedPartUriString!,
-                                                true /*isNormalized*/,
-                                                false /*computeIsRelationship*/,
+                                                isNormalized: true,
+                                                computeIsRelationship: false,
                                                 IsRelationshipPartUri);
             }
 
@@ -864,7 +871,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.CompareOrdinal(this.NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------

@@ -113,6 +113,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="document">The <see cref="JsonDocument"/> to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
         /// <exception cref="System.ArgumentNullException">
         /// <paramref name="document"/> is <see langword="null"/>.
         ///

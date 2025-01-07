@@ -252,4 +252,7 @@
   <data name="BinaryFormatter_SerializationNotSupportedOnThisPlatform" xml:space="preserve">
     <value>BinaryFormatter serialization and deserialization are not supported on this platform. See https://aka.ms/binaryformatter for more information.</value>
   </data>
+  <data name="BinaryFormatter_Removed" xml:space="preserve">
+    <value>BinaryFormatter serialization and deserialization have been removed. See https://aka.ms/binaryformatter for more information.</value>
+  </data>
 </root>

@@ -220,19 +220,6 @@ struct HENUMInternal
 //*****************************************
 typedef struct _MDDefaultValue
 {
-#if BIGENDIAN
-    _MDDefaultValue(void)
-    {
-        m_bType = ELEMENT_TYPE_END;
-    }
-    ~_MDDefaultValue(void)
-    {
-        if (m_bType == ELEMENT_TYPE_STRING)
-        {
-            delete[] m_wzValue;
-        }
-    }
-#endif
 
     // type of default value
     BYTE            m_bType;                // CorElementType for the default value
@@ -251,7 +238,7 @@ typedef struct _MDDefaultValue
         ULONGLONG   m_ullValue;             // ELEMENT_TYPE_UI8
         FLOAT       m_fltValue;             // ELEMENT_TYPE_R4
         DOUBLE      m_dblValue;             // ELEMENT_TYPE_R8
-        LPCWSTR     m_wzValue;              // ELEMENT_TYPE_STRING
+        LPCWSTR     m_wzValue;              // ELEMENT_TYPE_STRING - Little endian
         IUnknown    *m_unkValue;            // ELEMENT_TYPE_CLASS
     };
     ULONG   m_cbSize;   // default value size (for blob)

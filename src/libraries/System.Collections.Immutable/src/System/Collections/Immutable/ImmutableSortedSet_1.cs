@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -16,12 +17,13 @@ namespace System.Collections.Immutable
     /// We implement <see cref="IReadOnlyList{T}"/> because it adds an ordinal indexer.
     /// We implement <see cref="IList{T}"/> because it gives us <see cref="IList{T}.IndexOf"/>, which is important for some folks.
     /// </devremarks>
+    [CollectionBuilder(typeof(ImmutableSortedSet), nameof(ImmutableSortedSet.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-#if NETCOREAPP
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+#if NET
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #else
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
 #endif
     {
         /// <summary>
@@ -117,24 +119,12 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        #region ISortKeyCollection<T> Properties
-
         /// <summary>
-        /// See the <see cref="ISortKeyCollection{T}"/> interface.
+        /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         public IComparer<T> KeyComparer
         {
             get { return _comparer; }
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Gets the root node (for testing purposes).
-        /// </summary>
-        internal IBinaryTree Root
-        {
-            get { return _root; }
         }
 
         #region IReadOnlyList<T> Indexers
@@ -323,6 +313,23 @@ namespace System.Collections.Immutable
 
             int count;
             if (this.IsEmpty || (other.TryGetCount(out count) && (this.Count + count) * RefillOverIncrementalThreshold > this.Count))
+            {
+                // The payload being added is so large compared to this collection's current size
+                // that we likely won't see much memory reuse in the node tree by performing an
+                // incremental update.  So just recreate the entire node tree since that will
+                // likely be faster.
+                return this.LeafToRootRefill(other);
+            }
+
+            return this.UnionIncremental(other);
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableSet{T}"/> interface.
+        /// </summary>
+        internal ImmutableSortedSet<T> Union(ReadOnlySpan<T> other)
+        {
+            if (this.IsEmpty || (this.Count + other.Length) * RefillOverIncrementalThreshold > this.Count)
             {
                 // The payload being added is so large compared to this collection's current size
                 // that we likely won't see much memory reuse in the node tree by performing an
@@ -1042,8 +1049,31 @@ namespace System.Collections.Immutable
             ImmutableSortedSet<T>.Node result = _root;
             foreach (T item in items.GetEnumerableDisposable<T, Enumerator>())
             {
-                bool mutated;
-                result = result.Add(item, _comparer, out mutated);
+                result = result.Add(item, _comparer, out _);
+            }
+
+            return this.Wrap(result);
+        }
+
+        /// <summary>
+        /// Adds items to this collection using the standard spine rewrite and tree rebalance technique.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The new collection.</returns>
+        /// <remarks>
+        /// This method is least demanding on memory, providing the great chance of memory reuse
+        /// and does not require allocating memory large enough to store all items contiguously.
+        /// It's performance is optimal for additions that do not significantly dwarf the existing
+        /// size of this collection.
+        /// </remarks>
+        private ImmutableSortedSet<T> UnionIncremental(ReadOnlySpan<T> items)
+        {
+            // Let's not implement in terms of ImmutableSortedSet.Add so that we're
+            // not unnecessarily generating a new wrapping set object for each item.
+            ImmutableSortedSet<T>.Node result = _root;
+            foreach (T item in items)
+            {
+                result = result.Add(item, _comparer, out _);
             }
 
             return this.Wrap(result);
@@ -1127,7 +1157,65 @@ namespace System.Collections.Immutable
             list.RemoveRange(index, list.Count - index);
 
             // Use the now sorted list of unique items to construct a new sorted set.
-            Node root = Node.NodeTreeFromList(list.AsOrderedCollection(), 0, list.Count);
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
+            return this.Wrap(root);
+        }
+
+        /// <summary>
+        /// Creates an immutable sorted set with the contents from this collection and a sequence of elements.
+        /// </summary>
+        /// <param name="addedItems">The sequence of elements to add to this set.</param>
+        /// <returns>The immutable sorted set.</returns>
+        private ImmutableSortedSet<T> LeafToRootRefill(ReadOnlySpan<T> addedItems)
+        {
+            // See comments in LeafToRootRefill(IEnumerable<T> addedItems)
+
+            // Produce the initial list containing all elements, including any duplicates.
+            List<T> list;
+            if (this.IsEmpty && addedItems.IsEmpty)
+            {
+                // If the additional items enumerable list is known to be empty, too,
+                // then just return this empty instance.
+                if (addedItems.IsEmpty)
+                {
+                    return this;
+                }
+
+                list = new List<T>(addedItems.Length);
+            }
+            else
+            {
+                // Build the list from this set and then add the additional items.
+                // Even if the additional items is empty, this set isn't, so we know
+                // the resulting list will not be empty.
+                list = new List<T>(this.Count + addedItems.Length);
+                list.AddRange(this);
+            }
+#if NET8_0_OR_GREATER
+            list.AddRange(addedItems);
+#else
+            foreach (var item in addedItems)
+            {
+                list.Add(item);
+            }
+#endif
+            Debug.Assert(list.Count > 0);
+
+            // Sort the list and remove duplicate entries.
+            IComparer<T> comparer = this.KeyComparer;
+            list.Sort(comparer);
+            int index = 1;
+            for (int i = 1; i < list.Count; i++)
+            {
+                if (comparer.Compare(list[i], list[i - 1]) != 0)
+                {
+                    list[index++] = list[i];
+                }
+            }
+            list.RemoveRange(index, list.Count - index);
+
+            // Use the now sorted list of unique items to construct a new sorted set.
+            Node root = Node.NodeTreeFromList(list.AsReadOnlyList(), 0, list.Count);
             return this.Wrap(root);
         }
 

@@ -135,7 +135,7 @@ namespace System.Net.WebSockets
                         break;
                     }
                     catch (HttpRequestException ex) when
-                        ((ex.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL") || ex.Data.Contains("HTTP2_ENABLED"))
+                        ((ex.HttpRequestError == HttpRequestError.ExtendedConnectNotSupported || ex.Data.Contains("HTTP2_ENABLED"))
                         && tryDowngrade
                         && (options.HttpVersion == HttpVersion.Version11 || options.HttpVersionPolicy == HttpVersionPolicy.RequestVersionOrLower))
                     {
@@ -198,6 +198,7 @@ namespace System.Net.WebSockets
                     IsServer = false,
                     SubProtocol = subprotocol,
                     KeepAliveInterval = options.KeepAliveInterval,
+                    KeepAliveTimeout = options.KeepAliveTimeout,
                     DangerousDeflateOptions = negotiatedDeflateOptions
                 });
                 _negotiatedDeflateOptions = negotiatedDeflateOptions;

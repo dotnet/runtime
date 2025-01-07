@@ -94,7 +94,7 @@ namespace
         delegates.delegate_no_load_cxt = nullptr;
 
         get_function_pointer_fn get_function_pointer;
-        int status = load_fxr_and_get_delegate(
+            int status = load_fxr_and_get_delegate(
             hostfxr_delegate_type::hdt_get_function_pointer,
             [app_path](const pal::string_t& host_path, pal::string_t* config_path_out)
             {
@@ -123,7 +123,8 @@ namespace
                     *load_context = nullptr; // Default context
                 }
             },
-            reinterpret_cast<void**>(&get_function_pointer)
+            reinterpret_cast<void**>(&get_function_pointer),
+            false // do not ignore missing config file if there's an active context
         );
         if (status != StatusCode::Success)
             return status;

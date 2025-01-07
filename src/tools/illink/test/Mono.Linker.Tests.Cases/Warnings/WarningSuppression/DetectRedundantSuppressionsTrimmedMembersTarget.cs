@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [assembly: UnconditionalSuppressMessage ("Test", "IL2071",
 	Scope = "type",
@@ -24,6 +23,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	class DetectRedundantSuppressionsTrimmedMembersTarget
 	{
 		[ExpectedWarning ("IL2072")]

@@ -18,13 +18,13 @@ namespace System
         }
 
         public MissingFieldException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MissingFieldException)
         {
             HResult = HResults.COR_E_MISSINGFIELD;
         }
 
         public MissingFieldException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MissingFieldException, inner)
         {
             HResult = HResults.COR_E_MISSINGFIELD;
         }

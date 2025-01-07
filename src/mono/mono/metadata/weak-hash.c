@@ -235,7 +235,7 @@ rehash (MonoWeakHashTable *hash)
 	 * Rehash to a size that can fit the current elements. Rehash relative to in_use
 	 * to allow also for compaction.
 	 */
-	data.new_size = g_spaced_primes_closest (hash->in_use / HASH_TABLE_MAX_LOAD_FACTOR * HASH_TABLE_RESIZE_RATIO);
+	data.new_size = g_spaced_primes_closest (GFLOAT_TO_UINT (hash->in_use / HASH_TABLE_MAX_LOAD_FACTOR * HASH_TABLE_RESIZE_RATIO));
 
 	MonoArray *holder = (MonoArray*)mono_gchandle_get_target_internal (hash->key_value_handle);
 	g_assert (holder);

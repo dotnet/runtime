@@ -641,7 +641,6 @@ namespace BinderTracingTests
                 Cached = false,
                 ResolutionAttempts = new List<ResolutionAttempt>()
                 {
-                    // GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.IncompatibleVersion, UseDependentAssembly()),
                     GetResolutionAttempt(assemblyName, ResolutionStage.FindInLoadContext, AssemblyLoadContext.Default, ResolutionResult.Failure, new AssemblyName($"{DependentAssemblyName}, Version=1.0.0.0"), Helpers.GetAssemblyInAppPath(DependentAssemblyName), errorMessage),
                 }
             };

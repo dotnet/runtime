@@ -66,7 +66,7 @@ internal struct ReceiveBuffers
         }
     }
 
-    public int CopyTo(Memory<byte> buffer, out bool isCompleted, out bool isEmpty)
+    public int CopyTo(Memory<byte> buffer, out bool completed, out bool empty)
     {
         lock (_syncRoot)
         {
@@ -79,8 +79,8 @@ internal struct ReceiveBuffers
                 _buffer.Discard(copied);
             }
 
-            isCompleted = _buffer.IsEmpty && _final;
-            isEmpty = _buffer.IsEmpty;
+            completed = _buffer.IsEmpty && _final;
+            empty = _buffer.IsEmpty;
 
             return copied;
         }

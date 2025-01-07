@@ -7,16 +7,15 @@ namespace System.Collections
 {
     public static class StructuralComparisons
     {
-        private static volatile IComparer? s_StructuralComparer;
-        private static volatile IEqualityComparer? s_StructuralEqualityComparer;
+        public static IComparer StructuralComparer => System.Collections.StructuralComparer.s_instance;
 
-        public static IComparer StructuralComparer => s_StructuralComparer ??= new StructuralComparer();
-
-        public static IEqualityComparer StructuralEqualityComparer => s_StructuralEqualityComparer ??= new StructuralEqualityComparer();
+        public static IEqualityComparer StructuralEqualityComparer => System.Collections.StructuralEqualityComparer.s_instance;
     }
 
     internal sealed class StructuralEqualityComparer : IEqualityComparer
     {
+        internal static readonly StructuralEqualityComparer s_instance = new();
+
         public new bool Equals(object? x, object? y)
         {
             if (x != null)
@@ -58,6 +57,8 @@ namespace System.Collections
 
     internal sealed class StructuralComparer : IComparer
     {
+        internal static readonly StructuralComparer s_instance = new();
+
         public int Compare(object? x, object? y)
         {
             if (x == null) return y == null ? 0 : -1;

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Internal.Text;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysisFramework;
@@ -305,20 +304,13 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private static int _rotl(int value, int shift)
-                {
-                    // This is expected to be optimized into a single rotl instruction
-                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-                }
-
                 public override int GetHashCode()
                 {
                     int hashcode = 0;
                     foreach (NativeLayoutVertexNode node in Vertices)
                     {
                         hashcode ^= node.GetHashCode();
-                        hashcode = _rotl(hashcode, 5);
+                        hashcode = int.RotateLeft(hashcode, 5);
                     }
                     return hashcode;
                 }
@@ -345,20 +337,13 @@ namespace ILCompiler.DependencyAnalysis
                     return true;
                 }
 
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                private static int _rotl(int value, int shift)
-                {
-                    // This is expected to be optimized into a single rotl instruction
-                    return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-                }
-
                 int IEqualityComparer<List<uint>>.GetHashCode(List<uint> obj)
                 {
                     int hashcode = 0x42284781;
                     foreach (uint u in obj)
                     {
                         hashcode ^= (int)u;
-                        hashcode = _rotl(hashcode, 5);
+                        hashcode = int.RotateLeft(hashcode, 5);
                     }
 
                     return hashcode;

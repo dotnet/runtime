@@ -30,17 +30,20 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Int_TestData()
         {
-            yield return new object[] { new int[0], 6, false };
-            yield return new object[] { new int[] { 8, 10, 3, 0, -8 }, 6, false };
-            yield return new object[] { new int[] { 8, 10, 3, 0, -8 }, 8, true };
-            yield return new object[] { new int[] { 8, 10, 3, 0, -8 }, -8, true };
-            yield return new object[] { new int[] { 8, 0, 10, 3, 0, -8, 0 }, 0, true };
+            foreach (Func<IEnumerable<int>, IEnumerable<int>> transform in IdentityTransforms<int>())
+            {
+                yield return [transform(new int[0]), 6, false];
+                yield return [transform([8, 10, 3, 0, -8]), 6, false];
+                yield return [transform([8, 10, 3, 0, -8]), 8, true];
+                yield return [transform([8, 10, 3, 0, -8]), -8, true];
+                yield return [transform([8, 0, 10, 3, 0, -8, 0]), 0, true];
 
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(0, 0), 0, false };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(4, 5), 3, false };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(3, 5), 3, true };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(3, 5), 7, true };
-            yield return new object[] { RepeatedNumberGuaranteedNotCollectionType(10, 3), 10, true };
+                yield return [transform(Enumerable.Range(0, 0)), 0, false];
+                yield return [transform(Enumerable.Range(4, 5)), 3, false];
+                yield return [transform(Enumerable.Range(3, 5)), 3, true];
+                yield return [transform(Enumerable.Range(3, 5)), 7, true];
+                yield return [transform(Enumerable.Range(10, 3)), 10, true];
+            }
         }
 
         [Theory]
@@ -60,18 +63,18 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> String_TestData()
         {
-            yield return new object[] { new string[] { null }, StringComparer.Ordinal, null, true };
-            yield return new object[] { new string[] { "Bob", "Robert", "Tim" }, null, "trboeR", false };
-            yield return new object[] { new string[] { "Bob", "Robert", "Tim" }, null, "Tim", true };
-            yield return new object[] { new string[] { "Bob", "Robert", "Tim" }, new AnagramEqualityComparer(), "trboeR", true };
-            yield return new object[] { new string[] { "Bob", "Robert", "Tim" }, new AnagramEqualityComparer(), "nevar", false };
+            yield return [new string[] { null }, StringComparer.Ordinal, null, true];
+            yield return [new string[] { "Bob", "Robert", "Tim" }, null, "trboeR", false];
+            yield return [new string[] { "Bob", "Robert", "Tim" }, null, "Tim", true];
+            yield return [new string[] { "Bob", "Robert", "Tim" }, new AnagramEqualityComparer(), "trboeR", true];
+            yield return [new string[] { "Bob", "Robert", "Tim" }, new AnagramEqualityComparer(), "nevar", false];
         }
 
         [Theory]
         [MemberData(nameof(String_TestData))]
         public void String(IEnumerable<string> source, IEqualityComparer<string> comparer, string value, bool expected)
         {
-            if (comparer == null)
+            if (comparer is null)
             {
                 Assert.Equal(expected, source.Contains(value));
             }
@@ -81,7 +84,7 @@ namespace System.Linq.Tests
         [Theory, MemberData(nameof(String_TestData))]
         public void StringRunOnce(IEnumerable<string> source, IEqualityComparer<string> comparer, string value, bool expected)
         {
-            if (comparer == null)
+            if (comparer is null)
             {
                 Assert.Equal(expected, source.RunOnce().Contains(value));
             }
@@ -90,11 +93,11 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> NullableInt_TestData()
         {
-            yield return new object[] { new int?[] { 8, 0, 10, 3, 0, -8, 0 }, null, false };
-            yield return new object[] { new int?[] { 8, 0, 10, null, 3, 0, -8, 0 }, null, true };
+            yield return [new int?[] { 8, 0, 10, 3, 0, -8, 0 }, null, false];
+            yield return [new int?[] { 8, 0, 10, null, 3, 0, -8, 0 }, null, true];
 
-            yield return new object[] { NullableNumberRangeGuaranteedNotCollectionType(3, 4), null, false };
-            yield return new object[] { RepeatedNullableNumberGuaranteedNotCollectionType(null, 5), null, true };
+            yield return [NullableNumberRangeGuaranteedNotCollectionType(3, 4), null, false];
+            yield return [RepeatedNullableNumberGuaranteedNotCollectionType(null, 5), null, true];
         }
 
         [Theory]

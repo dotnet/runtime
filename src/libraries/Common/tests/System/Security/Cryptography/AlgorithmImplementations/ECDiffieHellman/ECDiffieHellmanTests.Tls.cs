@@ -189,7 +189,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             };
         }
 
-#if NETCOREAPP
+#if NET
         [Theory]
         [MemberData(nameof(TlsDerivationTestCases))]
         public static void TlsDerivation_KnownResults(string labelText, string answerHex)

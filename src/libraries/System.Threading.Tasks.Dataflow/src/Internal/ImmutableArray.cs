@@ -21,7 +21,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
     /// <summary>Provides a simple, immutable array.</summary>
     /// <typeparam name="T">Specifies the type of the data stored in the array.</typeparam>
-    [DebuggerDisplay("Count={Count}")]
+    [DebuggerDisplay("Count = {Count}")]
     internal readonly struct ImmutableArray<T>
     {
         /// <summary>An empty array.</summary>

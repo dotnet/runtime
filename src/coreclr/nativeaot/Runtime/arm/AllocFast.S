@@ -26,7 +26,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
 
         ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         add         r2, r3
-        ldr         r1, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r1, [r0, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         r2, r1
         bhi         LOCAL_LABEL(RhpNewFast_RarePath)
 
@@ -132,7 +132,7 @@ LEAF_ENTRY RhNewString, _TEXT
         adds        r6, r12
         bcs         LOCAL_LABEL(RhNewString_RarePath) // if we get a carry here, the string is too large to fit below 4 GB
 
-        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r12, [r0, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         r6, r12
         bhi         LOCAL_LABEL(RhNewString_RarePath)
 
@@ -213,7 +213,7 @@ LOCAL_LABEL(ArrayAlignSize):
         adds        r6, r12
         bcs         LOCAL_LABEL(RhpNewArray_RarePath) // if we get a carry here, the array is too large to fit below 4 GB
 
-        ldr         r12, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r12, [r0, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         r6, r12
         bhi         LOCAL_LABEL(RhpNewArray_RarePath)
 
@@ -349,7 +349,7 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         r2, r3
-        ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r3, [r0, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         r2, r3
         bhi         LOCAL_LABEL(Alloc8Failed)
 
@@ -412,7 +412,7 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         r2, r3
-        ldr         r3, [r0, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         r3, [r0, #OFFSETOF__Thread__m_eeAllocContext__combined_limit]
         cmp         r2, r3
         bhi         LOCAL_LABEL(BoxAlloc8Failed)
 

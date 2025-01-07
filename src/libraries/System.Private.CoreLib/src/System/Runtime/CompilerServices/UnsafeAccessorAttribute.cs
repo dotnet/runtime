@@ -45,6 +45,8 @@ namespace System.Runtime.CompilerServices
     /// The runtime will try to find the matching method or field and forward the call
     /// to it. If the matching method or field is not found, the body of the <code>extern</code>
     /// method will throw <see cref="MissingFieldException" /> or <see cref="MissingMethodException" />.
+    /// Only the specific type defined will be examined for inaccessible members. The type hierarchy
+    /// is not walked looking for a match.
     ///
     /// For <see cref="UnsafeAccessorKind.Method"/>, <see cref="UnsafeAccessorKind.StaticMethod"/>,
     /// <see cref="UnsafeAccessorKind.Field"/>, and <see cref="UnsafeAccessorKind.StaticField"/>, the type of
@@ -56,6 +58,20 @@ namespace System.Runtime.CompilerServices
     /// Return type is considered for the signature match. modreqs and modopts are initially not considered for
     /// the signature match. However, if an ambiguity exists ignoring modreqs and modopts, a precise match
     /// is attempted. If an ambiguity still exists <see cref="System.Reflection.AmbiguousMatchException" /> is thrown.
+    ///
+    /// By default, the attributed method's name dictates the name of the method/field. This can cause confusion
+    /// in some cases since language abstractions, like C# local functions, generate mangled IL names. The
+    /// solution to this is to use the <code>nameof</code> mechanism and define the <see cref="Name"/> property.
+    ///
+    /// <code>
+    /// public void Method(Class c)
+    /// {
+    ///     PrivateMethod(c);
+    ///
+    ///     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(PrivateMethod))]
+    ///     extern static void PrivateMethod(Class c);
+    /// }
+    /// </code>
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed class UnsafeAccessorAttribute : Attribute

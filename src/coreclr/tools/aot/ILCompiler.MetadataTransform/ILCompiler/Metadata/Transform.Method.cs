@@ -241,6 +241,10 @@ namespace ILCompiler.Metadata
             {
                 callingConvention |= SignatureCallingConvention.HasThis;
             }
+            if ((signature.Flags & Cts.MethodSignatureFlags.ExplicitThis) != 0)
+            {
+                callingConvention |= SignatureCallingConvention.ExplicitThis;
+            }
             return callingConvention;
         }
 

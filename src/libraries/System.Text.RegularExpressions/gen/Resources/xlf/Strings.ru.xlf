@@ -167,11 +167,6 @@
         <target state="translated">Вызов результата невозможен при сбойном соответствии.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Замена регулярных выражений на группы не поддерживается в RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Данная коллекция предназначена только для чтения.</target>
@@ -197,9 +192,9 @@
         <target state="translated">Истекло время ожидания модуля регулярного выражения при попытке сравнить шаблон со входной строкой. Это могло произойти по многим причинам, в том числе из-за очень большого объема входных данных или излишнего обратного отслеживания, вызванного вложенными квантификаторами, обратными ссылками и прочими факторами.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">Метод GeneratedRegexAttribute должен быть частичным, без параметров, неуниверсальным, неабстрактным и возвращать регулярное выражение.</target>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">

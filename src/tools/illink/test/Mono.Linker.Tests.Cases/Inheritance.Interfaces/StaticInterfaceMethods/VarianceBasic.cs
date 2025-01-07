@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
@@ -14,13 +12,19 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			TestEntrypoint.Test ();
 		}
 		[Kept]
-		public interface InterfaceScenario1<in T>
+		public interface InterfaceScenario1<
+			[KeptGenericParamAttributes (GenericParameterAttributes.Contravariant)]
+			in T
+		>
 		{
 			[Kept]
 			static abstract int Method ();
 		}
 		[Kept]
-		public interface InterfaceScenario2<in T>
+		public interface InterfaceScenario2<
+			[KeptGenericParamAttributes (GenericParameterAttributes.Contravariant)]
+			in T
+		>
 		{
 			[Kept]
 			static abstract int Method ();

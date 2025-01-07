@@ -309,7 +309,7 @@ namespace System.Net.Http.Functional.Tests
                         return;
                     }
                     // We expect negotiation to fail so one or the other expected exception should be thrown.
-                    Assert.True(false, "Expected exception did not happen.");
+                    Assert.Fail("Expected exception did not happen.");
                 }, options);
             }
         }

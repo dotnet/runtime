@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -284,6 +284,8 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSend(byte[] datagram, int bytes, IPEndPoint? endPoint, AsyncCallback? requestCallback, object? state)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ValidateDatagram(datagram, bytes, endPoint);
 
             if (endPoint is null)
@@ -299,6 +301,8 @@ namespace System.Net.Sockets
 
         public int EndSend(IAsyncResult asyncResult)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             return _active ?
@@ -354,6 +358,8 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginReceive(AsyncCallback? requestCallback, object? state)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             // Due to the nature of the ReceiveFrom() call and the ref parameter convention,
@@ -368,6 +374,8 @@ namespace System.Net.Sockets
 
         public byte[] EndReceive(IAsyncResult asyncResult, ref IPEndPoint? remoteEP)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             EndPoint tempRemoteEP = _family == AddressFamily.InterNetwork ?
@@ -379,14 +387,7 @@ namespace System.Net.Sockets
 
             // Because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-
-            return _buffer;
+            return _buffer.AsSpan(0, received).ToArray();
         }
 
         // Joins a multicast address group.
@@ -623,11 +624,7 @@ namespace System.Net.Sockets
             async Task<UdpReceiveResult> WaitAndWrap(Task<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
-
-                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
-                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
-                    _buffer;
-
+                byte[] buffer = _buffer.AsSpan(0, result.ReceivedBytes).ToArray();
                 return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
             }
         }
@@ -653,11 +650,7 @@ namespace System.Net.Sockets
             async ValueTask<UdpReceiveResult> WaitAndWrap(ValueTask<SocketReceiveFromResult> task)
             {
                 SocketReceiveFromResult result = await task.ConfigureAwait(false);
-
-                byte[] buffer = result.ReceivedBytes < MaxUDPSize ?
-                    _buffer.AsSpan(0, result.ReceivedBytes).ToArray() :
-                    _buffer;
-
+                byte[] buffer = _buffer.AsSpan(0, result.ReceivedBytes).ToArray();
                 return new UdpReceiveResult(buffer, (IPEndPoint)result.RemoteEndPoint);
             }
         }
@@ -692,6 +685,8 @@ namespace System.Net.Sockets
 
         public void Connect(string hostname, int port)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(hostname);
@@ -805,6 +800,8 @@ namespace System.Net.Sockets
 
         public void Connect(IPAddress addr, int port)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(addr);
@@ -820,6 +817,8 @@ namespace System.Net.Sockets
 
         public void Connect(IPEndPoint endPoint)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(endPoint);
@@ -831,6 +830,8 @@ namespace System.Net.Sockets
 
         public byte[] Receive([NotNull] ref IPEndPoint? remoteEP)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             // this is a fix due to the nature of the ReceiveFrom() call and the
@@ -845,20 +846,15 @@ namespace System.Net.Sockets
 
             // because we don't return the actual length, we need to ensure the returned buffer
             // has the appropriate length.
-
-            if (received < MaxUDPSize)
-            {
-                byte[] newBuffer = new byte[received];
-                Buffer.BlockCopy(_buffer, 0, newBuffer, 0, received);
-                return newBuffer;
-            }
-            return _buffer;
+            return _buffer.AsSpan(0, received).ToArray();
         }
 
 
         // Sends a UDP datagram to the host at the remote end point.
         public int Send(byte[] dgram, int bytes, IPEndPoint? endPoint)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(dgram);
@@ -893,6 +889,8 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public int Send(ReadOnlySpan<byte> datagram, IPEndPoint? endPoint)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             if (_active && endPoint != null)
@@ -935,6 +933,8 @@ namespace System.Net.Sockets
         // Sends a UDP datagram to a remote host.
         public int Send(byte[] dgram, int bytes)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(dgram);
@@ -959,6 +959,8 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when accessing the socket.</exception>
         public int Send(ReadOnlySpan<byte> datagram)
         {
+            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ThrowIfDisposed();
 
             if (!_active)

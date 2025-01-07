@@ -4,9 +4,9 @@
 using System;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices
         /// it is important for the caller to understand the COM object may have apartment affinity and therefore
         /// if the current thread is not in the correct apartment or the COM object is not a proxy this call may fail.
         /// </remarks>
-        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
+        public static bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             if (obj == null)
             {
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
         /// <param name="unknown">An unmanaged wrapper</param>
         /// <param name="obj">A managed object</param>
         /// <returns>True if the wrapper was resolved to a managed object, otherwise false.</returns>
-        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
+        public static bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
         {
             obj = null;
             if (unknown == IntPtr.Zero)
@@ -384,14 +384,13 @@ namespace System.Runtime.InteropServices
 
         internal static int CallICustomQueryInterface(object customQueryInterfaceMaybe, ref Guid iid, out IntPtr ppObject)
         {
-            var customQueryInterface = customQueryInterfaceMaybe as ICustomQueryInterface;
-            if (customQueryInterface is null)
+            if (customQueryInterfaceMaybe is ICustomQueryInterface customQueryInterface)
             {
-                ppObject = IntPtr.Zero;
-                return -1; // See TryInvokeICustomQueryInterfaceResult
+                return (int)customQueryInterface.GetInterface(ref iid, out ppObject);
             }
 
-            return (int)customQueryInterface.GetInterface(ref iid, out ppObject);
+            ppObject = IntPtr.Zero;
+            return -1; // See TryInvokeICustomQueryInterfaceResult
         }
     }
 }

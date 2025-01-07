@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
             if (password.IsEmpty)
             {
                 // CNG won't accept a null pointer for the password.
-                symmetricKeyMaterial = stackalloc byte[1];
+                symmetricKeyMaterial = [0];
                 symmetricKeyMaterialLength = 0;
                 clearSpan = default;
             }
@@ -86,25 +86,20 @@ namespace System.Security.Cryptography
                 switch (hashAlgorithmName)
                 {
                     case HashAlgorithmNames.SHA1:
-                        hashBufferSize = SHA1.HashData(password, hashBuffer);
-                        break;
                     case HashAlgorithmNames.SHA256:
-                        hashBufferSize = SHA256.HashData(password, hashBuffer);
-                        break;
                     case HashAlgorithmNames.SHA384:
-                        hashBufferSize = SHA384.HashData(password, hashBuffer);
-                        break;
                     case HashAlgorithmNames.SHA512:
-                        hashBufferSize = SHA512.HashData(password, hashBuffer);
+                        hashBufferSize = HashProviderDispenser.OneShotHashProvider.HashData(hashAlgorithmName, password, hashBuffer);
                         break;
                     case HashAlgorithmNames.SHA3_256:
-                        hashBufferSize = SHA3_256.HashData(password, hashBuffer);
-                        break;
                     case HashAlgorithmNames.SHA3_384:
-                        hashBufferSize = SHA3_384.HashData(password, hashBuffer);
-                        break;
                     case HashAlgorithmNames.SHA3_512:
-                        hashBufferSize = SHA3_512.HashData(password, hashBuffer);
+                        if (!HashProviderDispenser.HashSupported(hashAlgorithmName))
+                        {
+                            throw new PlatformNotSupportedException();
+                        }
+
+                        hashBufferSize = HashProviderDispenser.OneShotHashProvider.HashData(hashAlgorithmName, password, hashBuffer);
                         break;
                     default:
                         Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");

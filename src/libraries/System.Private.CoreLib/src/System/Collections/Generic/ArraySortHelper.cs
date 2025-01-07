@@ -128,6 +128,9 @@ namespace System.Collections.Generic
             }
         }
 
+        // IntroSort is recursive; block it from being inlined into itself as
+        // this is currenly not profitable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void IntroSort(Span<T> keys, int depthLimit, Comparison<T> comparer)
         {
             Debug.Assert(!keys.IsEmpty);
@@ -168,7 +171,7 @@ namespace System.Collections.Generic
                 int p = PickPivotAndPartition(keys.Slice(0, partitionSize), comparer);
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], depthLimit, comparer);
+                IntroSort(keys[(p + 1)..partitionSize], depthLimit, comparer);
                 partitionSize = p;
             }
         }
@@ -402,6 +405,9 @@ namespace System.Collections.Generic
             j = t;
         }
 
+        // IntroSort is recursive; block it from being inlined into itself as
+        // this is currenly not profitable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void IntroSort(Span<T> keys, int depthLimit)
         {
             Debug.Assert(!keys.IsEmpty);
@@ -444,7 +450,7 @@ namespace System.Collections.Generic
                 int p = PickPivotAndPartition(keys.Slice(0, partitionSize));
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], depthLimit);
+                IntroSort(keys[(p + 1)..partitionSize], depthLimit);
                 partitionSize = p;
             }
         }
@@ -494,9 +500,8 @@ namespace System.Collections.Generic
             {
                 Swap(ref leftRef, ref nextToLastRef);
             }
-#pragma warning disable 8500 // sizeof of managed types
+
             return (int)((nint)Unsafe.ByteOffset(ref zeroRef, ref leftRef) / sizeof(T));
-#pragma warning restore 8500
         }
 
         private static void HeapSort(Span<T> keys)
@@ -710,7 +715,7 @@ namespace System.Collections.Generic
                 int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize), comparer);
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], values[(p+1)..partitionSize], depthLimit, comparer);
+                IntroSort(keys[(p + 1)..partitionSize], values[(p + 1)..partitionSize], depthLimit, comparer);
                 partitionSize = p;
             }
         }
@@ -939,7 +944,7 @@ namespace System.Collections.Generic
                 int p = PickPivotAndPartition(keys.Slice(0, partitionSize), values.Slice(0, partitionSize));
 
                 // Note we've already partitioned around the pivot and do not have to move the pivot again.
-                IntroSort(keys[(p+1)..partitionSize], values[(p+1)..partitionSize], depthLimit);
+                IntroSort(keys[(p + 1)..partitionSize], values[(p + 1)..partitionSize], depthLimit);
                 partitionSize = p;
             }
         }

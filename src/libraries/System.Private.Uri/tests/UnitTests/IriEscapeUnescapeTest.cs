@@ -249,7 +249,7 @@ namespace System.Net.Test.Uri.IriTest
                 {
                     if (front[i] != PaddingValue)
                     {
-                        Assert.True(false, "Heap corruption detected: unexpected padding value at index: " + i);
+                        Assert.Fail("Heap corruption detected: unexpected padding value at index: " + i);
                     }
                 }
 
@@ -258,7 +258,7 @@ namespace System.Net.Test.Uri.IriTest
                 {
                     if (back[i] != PaddingValue)
                     {
-                        Assert.True(false, "Heap corruption detected: unexpected padding value at index: " + (PaddingLength + _length + i));
+                        Assert.Fail("Heap corruption detected: unexpected padding value at index: " + (PaddingLength + _length + i));
                     }
                 }
             }

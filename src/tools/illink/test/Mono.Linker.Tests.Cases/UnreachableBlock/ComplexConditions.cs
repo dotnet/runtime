@@ -1,6 +1,7 @@
 using System;
 using System.Reflection.Emit;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.UnreachableBlock
@@ -14,10 +15,13 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			Test_1 (null);
 			Test_2 (9);
+
+			// Prevents optimizing away 'is Type' check.
+			PreserveSystemType ();
 		}
 
 		[Kept]
-#if !NETCOREAPP
+#if !NET
 		[ExpectBodyModified]
 #else
 		[ExpectedInstructionSequence (new[] {
@@ -50,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		}
 
 		[Kept]
-#if !NETCOREAPP
+#if !NET
 		[ExpectBodyModified]
 #else
 		[ExpectedInstructionSequence (new[] {
@@ -99,6 +103,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		static void Reached_1 ()
 		{
+		}
+
+		[Kept]
+		static void PreserveSystemType ()
+		{
+			typeof (Type).RequiresNonPublicConstructors ();
 		}
 	}
 }

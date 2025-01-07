@@ -103,6 +103,7 @@ namespace Microsoft.Extensions.Logging.Generators
                             IMethodSymbol logMethodSymbol = sm.GetDeclaredSymbol(method, _cancellationToken)!;
                             Debug.Assert(logMethodSymbol != null, "log method is present.");
                             (int eventId, int? level, string message, string? eventName, bool skipEnabledCheck) = (-1, null, string.Empty, null, false);
+                            bool suppliedEventId = false;
 
                             foreach (AttributeListSyntax mal in method.AttributeLists)
                             {
@@ -160,25 +161,27 @@ namespace Microsoft.Extensions.Logging.Generators
                                                         message = string.Empty;
                                                         level = items[0].IsNull ? null : (int?)GetItem(items[0]);
                                                     }
-                                                    eventId = -1;
                                                     break;
 
                                                 case 2:
                                                     // LoggerMessageAttribute(LogLevel level, string message)
-                                                    eventId = -1;
                                                     level = items[0].IsNull ? null : (int?)GetItem(items[0]);
                                                     message = items[1].IsNull ? string.Empty : (string)GetItem(items[1]);
                                                     break;
 
                                                 case 3:
                                                     // LoggerMessageAttribute(int eventId, LogLevel level, string message)
-                                                    eventId = items[0].IsNull ? -1 : (int)GetItem(items[0]);
+                                                    if (!items[0].IsNull)
+                                                    {
+                                                        suppliedEventId = true;
+                                                        eventId = (int)GetItem(items[0]);
+                                                    }
                                                     level = items[1].IsNull ? null : (int?)GetItem(items[1]);
                                                     message = items[2].IsNull ? string.Empty : (string)GetItem(items[2]);
                                                     break;
 
                                                 default:
-                                                    Debug.Assert(false, "Unexpected number of arguments in attribute constructor.");
+                                                    Debug.Fail("Unexpected number of arguments in attribute constructor.");
                                                     break;
                                             }
                                         }
@@ -202,6 +205,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                                     {
                                                         case "EventId":
                                                             eventId = (int)GetItem(value);
+                                                            suppliedEventId = true;
                                                             break;
                                                         case "Level":
                                                             level = value.IsNull ? null : (int?)GetItem(value);
@@ -225,6 +229,11 @@ namespace Microsoft.Extensions.Logging.Generators
                                     {
                                         // skip further generator execution and let compiler generate the errors
                                         break;
+                                    }
+
+                                    if (!suppliedEventId)
+                                    {
+                                        eventId = GetNonRandomizedHashCode(string.IsNullOrWhiteSpace(eventName) ? logMethodSymbol.Name : eventName);
                                     }
 
                                     var lm = new LoggerMethod
@@ -298,8 +307,8 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     // ensure there are no duplicate event ids.
-                                    // LoggerMessageAttribute has constructors that don't take an EventId, we need to exclude the default Id -1 from duplication checks.
-                                    if (lm.EventId != -1 && !eventIds.Add(lm.EventId))
+                                    // We don't check Id duplication for the auto-generated event id.
+                                    if (suppliedEventId && !eventIds.Add(lm.EventId))
                                     {
                                         Diag(DiagnosticDescriptors.ShouldntReuseEventIds, ma.GetLocation(), lm.EventId, classDec.Identifier.Text);
                                     }
@@ -527,7 +536,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                         {
                                             Keyword = classDec.Keyword.ValueText,
                                             Namespace = nspace,
-                                            Name = classDec.Identifier.ToString() + classDec.TypeParameterList,
+                                            Name = GenerateClassName(classDec),
                                             ParentClass = null,
                                         };
 
@@ -545,7 +554,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             {
                                                 Keyword = parentLoggerClass.Keyword.ValueText,
                                                 Namespace = nspace,
-                                                Name = parentLoggerClass.Identifier.ToString() + parentLoggerClass.TypeParameterList,
+                                                Name = GenerateClassName(parentLoggerClass),
                                                 ParentClass = null,
                                             };
 
@@ -582,7 +591,37 @@ namespace Microsoft.Extensions.Logging.Generators
                     }
                 }
 
+                if (results.Count > 0 && _compilation is CSharpCompilation { LanguageVersion : LanguageVersion version and < LanguageVersion.CSharp8 })
+                {
+                    // we only support C# 8.0 and above
+                    Diag(DiagnosticDescriptors.LoggingUnsupportedLanguageVersion, null, version.ToDisplayString(), LanguageVersion.CSharp8.ToDisplayString());
+                    return Array.Empty<LoggerClass>();
+                }
+
                 return results;
+            }
+
+            private static string GenerateClassName(TypeDeclarationSyntax typeDeclaration)
+            {
+                if (typeDeclaration.TypeParameterList != null &&
+                    typeDeclaration.TypeParameterList.Parameters.Count != 0)
+                {
+                    // The source generator produces a partial class that the compiler merges with the original
+                    // class definition in the user code. If the user applies attributes to the generic types
+                    // of the class, it is necessary to remove these attribute annotations from the generated
+                    // code. Failure to do so may result in a compilation error (CS0579: Duplicate attribute).
+                    for (int i = 0; i < typeDeclaration.TypeParameterList.Parameters.Count; i++)
+                    {
+                        TypeParameterSyntax parameter = typeDeclaration.TypeParameterList.Parameters[i];
+
+                        if (parameter.AttributeLists.Count > 0)
+                        {
+                            typeDeclaration = typeDeclaration.ReplaceNode(parameter, parameter.WithAttributeLists([]));
+                        }
+                    }
+                }
+
+                return typeDeclaration.Identifier.ToString() + typeDeclaration.TypeParameterList;
             }
 
             private (string? loggerField, bool multipleLoggerFields) FindLoggerField(SemanticModel sm, TypeDeclarationSyntax classDec, ITypeSymbol loggerSymbol)
@@ -591,13 +630,29 @@ namespace Microsoft.Extensions.Logging.Generators
 
                 INamedTypeSymbol? classType = sm.GetDeclaredSymbol(classDec, _cancellationToken);
 
+                INamedTypeSymbol? currentClassType = classType;
                 bool onMostDerivedType = true;
 
-                while (classType is { SpecialType: not SpecialType.System_Object })
+                // We keep track of the names of all non-logger fields, since they prevent referring to logger
+                // primary constructor parameters with the same name. Example:
+                // partial class C(ILogger logger)
+                // {
+                //     private readonly object logger = logger;
+                //
+                //     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                //     public partial void M1(); // The ILogger primary constructor parameter cannot be used here.
+                // }
+                HashSet<string> shadowedNames = new(StringComparer.Ordinal);
+
+                while (currentClassType is { SpecialType: not SpecialType.System_Object })
                 {
-                    foreach (IFieldSymbol fs in classType.GetMembers().OfType<IFieldSymbol>())
+                    foreach (IFieldSymbol fs in currentClassType.GetMembers().OfType<IFieldSymbol>())
                     {
                         if (!onMostDerivedType && fs.DeclaredAccessibility == Accessibility.Private)
+                        {
+                            continue;
+                        }
+                        if (!fs.CanBeReferencedByName)
                         {
                             continue;
                         }
@@ -612,10 +667,52 @@ namespace Microsoft.Extensions.Logging.Generators
                                 return (null, true);
                             }
                         }
+                        else
+                        {
+                            shadowedNames.Add(fs.Name);
+                        }
                     }
 
                     onMostDerivedType = false;
-                    classType = classType.BaseType;
+                    currentClassType = currentClassType.BaseType;
+                }
+
+                // We prioritize fields over primary constructor parameters and avoid warnings if both exist.
+                if (loggerField is not null)
+                {
+                    return (loggerField, false);
+                }
+
+                IEnumerable<IMethodSymbol> primaryConstructors = classType.InstanceConstructors
+                    .Where(ic => ic.DeclaringSyntaxReferences
+                        .Any(ds => ds.GetSyntax() is ClassDeclarationSyntax));
+
+                foreach (IMethodSymbol primaryConstructor in primaryConstructors)
+                {
+                    foreach (IParameterSymbol parameter in primaryConstructor.Parameters)
+                    {
+                        if (IsBaseOrIdentity(parameter.Type, loggerSymbol))
+                        {
+                            if (shadowedNames.Contains(parameter.Name))
+                            {
+                                // Accessible fields always shadow primary constructor parameters,
+                                // so we can't use the primary constructor parameter,
+                                // even if the field is not a valid logger.
+                                Diag(DiagnosticDescriptors.PrimaryConstructorParameterLoggerHidden, parameter.Locations[0], classDec.Identifier.Text);
+
+                                continue;
+                            }
+
+                            if (loggerField == null)
+                            {
+                                loggerField = parameter.Name;
+                            }
+                            else
+                            {
+                                return (null, true);
+                            }
+                        }
+                    }
                 }
 
                 return (loggerField, false);
@@ -638,7 +735,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// Finds the template arguments contained in the message string.
             /// </summary>
             /// <returns>A value indicating whether the extraction was successful.</returns>
-            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            private static bool ExtractTemplates(string? message, Dictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {
@@ -806,6 +903,21 @@ namespace Microsoft.Extensions.Logging.Generators
             // A parameter flagged as IsTemplateParameter is not going to be taken care of specially as an argument to ILogger.Log
             // but instead is supposed to be taken as a parameter for the template.
             public bool IsTemplateParameter => !IsLogger && !IsException && !IsLogLevel;
+        }
+
+        /// <summary>
+        /// Returns a non-randomized hash code for the given string.
+        /// We always return a positive value.
+        /// </summary>
+        internal static int GetNonRandomizedHashCode(string s)
+        {
+            uint result = 2166136261u;
+            foreach (char c in s)
+            {
+                result = (c ^ result) * 16777619;
+            }
+
+            return (int)(result & 0x7FFFFFFF); // Ensure the result is non-negative
         }
     }
 }

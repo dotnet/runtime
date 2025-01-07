@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics;
-using System.Collections.Generic;
-
 using System.Reflection.Runtime.General;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;
-
-using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
@@ -27,7 +25,7 @@ namespace Internal.Reflection.Execution
     {
         private AssemblyBinderImplementation()
         {
-            _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
+            _scopeGroups = Array.Empty<KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>>();
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 RegisterModule(module);

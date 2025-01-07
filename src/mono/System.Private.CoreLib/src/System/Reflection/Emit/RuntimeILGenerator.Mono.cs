@@ -207,7 +207,7 @@ namespace System.Reflection.Emit
         private int code_len;
         private int max_stack;
         private int cur_stack;
-        private LocalBuilder[]? locals;
+        private RuntimeLocalBuilder[]? locals;
         private ILExceptionInfo[]? ex_handlers;
         private int num_token_fixups;
         private object? token_fixups;
@@ -441,19 +441,19 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(localType);
             if (localType.IsUserType)
                 throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
-            LocalBuilder res = new LocalBuilder(localType, this);
+            RuntimeLocalBuilder res = new RuntimeLocalBuilder(localType, this);
             res.is_pinned = pinned;
 
             if (locals != null)
             {
-                LocalBuilder[] new_l = new LocalBuilder[locals.Length + 1];
+                RuntimeLocalBuilder[] new_l = new RuntimeLocalBuilder[locals.Length + 1];
                 Array.Copy(locals, new_l, locals.Length);
                 new_l[locals.Length] = res;
                 locals = new_l;
             }
             else
             {
-                locals = new LocalBuilder[1];
+                locals = new RuntimeLocalBuilder[1];
                 locals[0] = res;
             }
             res.position = (ushort)(locals.Length - 1);
@@ -619,10 +619,10 @@ namespace System.Reflection.Emit
         public override void Emit(OpCode opcode, LocalBuilder local)
         {
             ArgumentNullException.ThrowIfNull(local);
-            if (local.ilgen != this)
+            if (local is not RuntimeLocalBuilder localBuilder || localBuilder.ilgen != this)
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
 
-            uint pos = local.position;
+            uint pos = localBuilder.position;
             if ((opcode == OpCodes.Ldloca_S || opcode == OpCodes.Ldloc_S || opcode == OpCodes.Stloc_S) && pos > 255)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInstructionOrIndexOutOfBound);
 

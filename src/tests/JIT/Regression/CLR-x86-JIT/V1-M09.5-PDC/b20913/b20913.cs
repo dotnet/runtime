@@ -18,11 +18,10 @@ namespace Bug
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             m_static3[0] = new DD();
             m_static3[0].m_field1 = m_static3[0].Method2();
-            return 100;
         }
     }
 }

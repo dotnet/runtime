@@ -35,7 +35,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -125,7 +125,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             catch (Exception) // Replace with concrete exception type
             {
                 // Verify exception
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;

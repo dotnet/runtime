@@ -27,9 +27,8 @@ public class testout1
         return retval;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Func();
-        return 100;
     }
 }

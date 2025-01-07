@@ -1963,6 +1963,9 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 #define x86_leave(inst) do { x86_byte (inst, 0xc9); } while (0)
 #define x86_sahf(inst)  do { x86_byte (inst, 0x9e); } while (0)
 
+#define x86_bsf(inst,dreg,reg) do { x86_byte (inst, 0x0f); x86_byte (inst, 0xbc); x86_reg_emit ((inst), (dreg), (reg)); } while (0)
+#define x86_bsr(inst,dreg,reg) do { x86_byte (inst, 0x0f); x86_byte (inst, 0xbd); x86_reg_emit ((inst), (dreg), (reg)); } while (0)
+
 #define x86_fsin(inst) do { x86_codegen_pre(&(inst), 2); x86_byte (inst, 0xd9); x86_byte (inst, 0xfe); } while (0)
 #define x86_fcos(inst) do { x86_codegen_pre(&(inst), 2); x86_byte (inst, 0xd9); x86_byte (inst, 0xff); } while (0)
 #define x86_fabs(inst) do { x86_codegen_pre(&(inst), 2); x86_byte (inst, 0xd9); x86_byte (inst, 0xe1); } while (0)
@@ -2905,5 +2908,11 @@ typedef enum {
 
 #define x86_sse_lzcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xbd, (size))
 #define x86_sse_popcnt_reg_reg_size(inst, dreg, reg, size) emit_sse_reg_reg_size((inst), (dreg), (reg), 0xf3, 0x0f, 0xb8, (size))
+
+#define x86_pause(inst) do { \
+	x86_codegen_pre(&(inst), 2);	   \
+	x86_byte (inst, 0xF3); \
+	x86_byte (inst, 0x90); \
+} while (0)
 
 #endif // X86_H

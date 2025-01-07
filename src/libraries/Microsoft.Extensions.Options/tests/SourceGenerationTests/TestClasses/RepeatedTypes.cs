@@ -36,7 +36,7 @@ namespace RepeatedTypes
     {
         [Required]
         [MinLength(5)]
-        public string? P5;
+        public string? P5 { get; set; }
     }
 
     [OptionsValidator]

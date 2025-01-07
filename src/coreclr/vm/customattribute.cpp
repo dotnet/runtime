@@ -10,39 +10,34 @@
 #include "excep.h"
 #include "corerror.h"
 #include "classnames.h"
-#include "fcall.h"
 #include "assemblynative.hpp"
 #include "typeparse.h"
 #include "reflectioninvocation.h"
 #include "runtimehandles.h"
 #include "typestring.h"
 
-typedef InlineFactory<InlineSString<64>, 16> SStringFactory;
-
-/*static*/
-TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, DomainAssembly* pDomainAssembly)
+static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Assembly* pAssembly)
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(pDomainAssembly));
+        PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(szEnumName));
         PRECONDITION(cbEnumName);
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
     StackSString sszEnumName(SString::Utf8, szEnumName, cbEnumName);
-    return TypeName::GetTypeReferencedByCustomAttribute(sszEnumName.GetUnicode(), pDomainAssembly->GetAssembly());
+    return TypeName::GetTypeReferencedByCustomAttribute(sszEnumName.GetUnicode(), pAssembly);
 }
 
-/*static*/
-HRESULT Attribute::ParseCaType(
+static HRESULT ParseCaType(
     CustomAttributeParser &ca,
     CaType* pCaType,
-    DomainAssembly* pDomainAssembly,
-    StackSString* ss)
+    Assembly* pAssembly,
+    StackSString* ss = NULL)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -50,10 +45,10 @@ HRESULT Attribute::ParseCaType(
 
     IfFailGo(::ParseEncodedType(ca, pCaType));
 
-    if (pCaType->tag == SERIALIZATION_TYPE_ENUM ||
-        (pCaType->tag == SERIALIZATION_TYPE_SZARRAY && pCaType->arrayType == SERIALIZATION_TYPE_ENUM ))
+    if (pCaType->tag == SERIALIZATION_TYPE_ENUM
+        || (pCaType->tag == SERIALIZATION_TYPE_SZARRAY && pCaType->arrayType == SERIALIZATION_TYPE_ENUM ))
     {
-        TypeHandle th = Attribute::GetTypeForEnum(pCaType->szEnumName, pCaType->cEnumName, pDomainAssembly);
+        TypeHandle th = GetTypeForEnum(pCaType->szEnumName, pCaType->cEnumName, pAssembly);
 
         if (!th.IsNull() && th.IsEnum())
         {
@@ -78,153 +73,17 @@ ErrExit:
     return hr;
 }
 
-/*static*/
-void Attribute::SetBlittableCaValue(CustomAttributeValue* pVal, CaValue* pCaVal, BOOL* pbAllBlittableCa)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CorSerializationType type = pCaVal->type.tag;
-
-    pVal->m_type.m_tag = pCaVal->type.tag;
-    pVal->m_type.m_arrayType = pCaVal->type.arrayType;
-    pVal->m_type.m_enumType = pCaVal->type.enumType;
-    pVal->m_rawValue = 0;
-
-    if (type == SERIALIZATION_TYPE_STRING ||
-        type == SERIALIZATION_TYPE_SZARRAY ||
-        type == SERIALIZATION_TYPE_TYPE)
-    {
-        *pbAllBlittableCa = FALSE;
-    }
-    else
-    {
-        // Enum arg -> Object param
-        if (type == SERIALIZATION_TYPE_ENUM && pCaVal->type.cEnumName)
-            *pbAllBlittableCa = FALSE;
-
-        pVal->m_rawValue = pCaVal->i8;
-    }
-}
-
-/*static*/
-void Attribute::SetManagedValue(CustomAttributeManagedValues gc, CustomAttributeValue* pValue)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CorSerializationType type = pValue->m_type.m_tag;
-
-    if (type == SERIALIZATION_TYPE_TYPE || type == SERIALIZATION_TYPE_STRING)
-    {
-        SetObjectReference((OBJECTREF*)&pValue->m_enumOrTypeName, gc.string);
-    }
-    else if (type == SERIALIZATION_TYPE_ENUM)
-    {
-        SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string);
-    }
-    else if (type == SERIALIZATION_TYPE_SZARRAY)
-    {
-        SetObjectReference((OBJECTREF*)&pValue->m_value, gc.array);
-
-        if (pValue->m_type.m_arrayType == SERIALIZATION_TYPE_ENUM)
-            SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string);
-    }
-}
-
-/*static*/
-CustomAttributeManagedValues Attribute::GetManagedCaValue(CaValue* pCaVal)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CustomAttributeManagedValues gc;
-    gc.string = NULL;
-    gc.array = NULL;
-    GCPROTECT_BEGIN(gc)
-    {
-        CorSerializationType type = pCaVal->type.tag;
-
-        if (type == SERIALIZATION_TYPE_ENUM)
-        {
-            gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);
-        }
-        else if (type == SERIALIZATION_TYPE_STRING)
-        {
-            gc.string = NULL;
-
-            if (pCaVal->str.pStr)
-                gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);
-        }
-        else if (type == SERIALIZATION_TYPE_TYPE)
-        {
-            gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);
-        }
-        else if (type == SERIALIZATION_TYPE_SZARRAY)
-        {
-            CorSerializationType arrayType = pCaVal->type.arrayType;
-            ULONG length = pCaVal->arr.length;
-            BOOL bAllBlittableCa = arrayType != SERIALIZATION_TYPE_ENUM;
-
-            if (arrayType == SERIALIZATION_TYPE_ENUM)
-                gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);
-
-            if (length != (ULONG)-1)
-            {
-                gc.array = (CaValueArrayREF)AllocateSzArray(TypeHandle(CoreLibBinder::GetClass(CLASS__CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT)).MakeSZArray(), length);
-                CustomAttributeValue* pValues = gc.array->GetDirectPointerToNonObjectElements();
-
-                for (COUNT_T i = 0; i < length; i ++)
-                    Attribute::SetBlittableCaValue(&pValues[i], &pCaVal->arr[i], &bAllBlittableCa);
-
-                if (!bAllBlittableCa)
-                {
-                    for (COUNT_T i = 0; i < length; i ++)
-                    {
-                        CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaVal->arr[i]);
-                        Attribute::SetManagedValue(
-                            managedCaValue,
-                            &gc.array->GetDirectPointerToNonObjectElements()[i]);
-                    }
-                }
-            }
-        }
-    }
-    GCPROTECT_END();
-    return gc;
-}
-
-/*static*/
-HRESULT Attribute::ParseAttributeArgumentValues(
-    void* pCa,
-    INT32 cCa,
-    CaValueArrayFactory* pCaValueArrayFactory,
-    CaArg* pCaArgs,
-    COUNT_T cArgs,
-    CaNamedArg* pCaNamedArgs,
-    COUNT_T cNamedArgs,
-    DomainAssembly* pDomainAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-
-    HRESULT hr = S_OK;
-    CustomAttributeParser cap(pCa, cCa);
-
-    IfFailGo(Attribute::ParseCaCtorArgs(cap, pCaArgs, cArgs, pCaValueArrayFactory, pDomainAssembly));
-    IfFailGo(Attribute::ParseCaNamedArgs(cap, pCaNamedArgs, cNamedArgs, pCaValueArrayFactory, pDomainAssembly));
-
-ErrExit:
-    return hr;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Helper to parse the values for the ctor argument list and the named argument list.
 //
 
-HRESULT Attribute::ParseCaValue(
+static HRESULT ParseCaValue(
     CustomAttributeParser &ca,
     CaValue* pCaArg,
     CaType* pCaParam,
     CaValueArrayFactory* pCaValueArrayFactory,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     CONTRACTL
     {
@@ -240,7 +99,7 @@ HRESULT Attribute::ParseCaValue(
     CaType elementType;
 
     if (pCaParam->tag == SERIALIZATION_TYPE_TAGGED_OBJECT)
-        IfFailGo(Attribute::ParseCaType(ca, &pCaArg->type, pDomainAssembly));
+        IfFailGo(ParseCaType(ca, &pCaArg->type, pAssembly));
     else
         pCaArg->type = *pCaParam;
 
@@ -296,7 +155,7 @@ HRESULT Attribute::ParseCaValue(
         elementType.Init(pCaArg->type.arrayType, SERIALIZATION_TYPE_UNDEFINED,
             pCaArg->type.enumType, pCaArg->type.szEnumName, pCaArg->type.cEnumName);
         for (ULONG i = 0; i < pCaArg->arr.length; i++)
-            IfFailGo(Attribute::ParseCaValue(ca, &*pCaArg->arr.pSArray->Append(), &elementType, pCaValueArrayFactory, pDomainAssembly));
+            IfFailGo(ParseCaValue(ca, &*pCaArg->arr.pSArray->Append(), &elementType, pCaValueArrayFactory, pAssembly));
 
         break;
 
@@ -310,13 +169,12 @@ ErrExit:
     return hr;
 }
 
-/*static*/
-HRESULT Attribute::ParseCaCtorArgs(
+static HRESULT ParseCaCtorArgs(
     CustomAttributeParser &ca,
     CaArg* pArgs,
     ULONG cArgs,
     CaValueArrayFactory* pCaValueArrayFactory,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -333,7 +191,7 @@ HRESULT Attribute::ParseCaCtorArgs(
     for (ix=0; ix<cArgs; ++ix)
     {
         CaArg* pArg = &pArgs[ix];
-        IfFailGo(Attribute::ParseCaValue(ca, &pArg->val, &pArg->type, pCaValueArrayFactory, pDomainAssembly));
+        IfFailGo(ParseCaValue(ca, &pArg->val, &pArg->type, pCaValueArrayFactory, pAssembly));
     }
 
 ErrExit:
@@ -347,17 +205,16 @@ ErrExit:
 //   2. It Compares the enum type name with that of the loaded enum type, not the one in the CA record.
 //
 
-/*static*/
-HRESULT Attribute::ParseCaNamedArgs(
+static HRESULT ParseCaNamedArgs(
     CustomAttributeParser &ca,
     CaNamedArg *pNamedParams,
     ULONG cNamedParams,
     CaValueArrayFactory* pCaValueArrayFactory,
-    DomainAssembly* pDomainAssembly)
+    Assembly* pAssembly)
 {
     CONTRACTL {
         PRECONDITION(CheckPointer(pCaValueArrayFactory));
-        PRECONDITION(CheckPointer(pDomainAssembly));
+        PRECONDITION(CheckPointer(pAssembly));
         THROWS;
     } CONTRACTL_END;
 
@@ -386,7 +243,7 @@ HRESULT Attribute::ParseCaNamedArgs(
         // Get argument type information
         CaType* pNamedArgType = &namedArg.type;
         StackSString ss;
-        IfFailGo(Attribute::ParseCaType(ca, pNamedArgType, pDomainAssembly, &ss));
+        IfFailGo(ParseCaType(ca, pNamedArgType, pAssembly, &ss));
 
         LPCSTR szLoadedEnumName = NULL;
 
@@ -462,527 +319,76 @@ HRESULT Attribute::ParseCaNamedArgs(
             IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
-        IfFailGo(Attribute::ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pDomainAssembly));
+        IfFailGo(ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pAssembly));
     }
 
 ErrExit:
     return hr;
 }
 
-/*static*/
-HRESULT Attribute::InitCaType(CustomAttributeType* pType, Factory<SString>* pSstringFactory, CaType* pCaType)
+HRESULT CustomAttribute::ParseArgumentValues(
+    void* pCa,
+    INT32 cCa,
+    CaValueArrayFactory* pCaValueArrayFactory,
+    CaArg* pCaArgs,
+    COUNT_T cArgs,
+    CaNamedArg* pCaNamedArgs,
+    COUNT_T cNamedArgs,
+    Assembly* pAssembly)
 {
-    CONTRACTL {
-        THROWS;
-        PRECONDITION(CheckPointer(pType));
-        PRECONDITION(CheckPointer(pSstringFactory));
-        PRECONDITION(CheckPointer(pCaType));
-    } CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
     HRESULT hr = S_OK;
+    CustomAttributeParser cap(pCa, cCa);
 
-    SString* psszName = NULL;
-
-    IfNullGo(psszName = pSstringFactory->Create());
-
-    psszName->Set(pType->m_enumName == NULL ? NULL : pType->m_enumName->GetBuffer());
-
-    pCaType->Init(
-        pType->m_tag,
-        pType->m_arrayType,
-        pType->m_enumType,
-        psszName->GetUTF8(),
-        (ULONG)psszName->GetCount());
+    IfFailGo(ParseCaCtorArgs(cap, pCaArgs, cArgs, pCaValueArrayFactory, pAssembly));
+    IfFailGo(ParseCaNamedArgs(cap, pCaNamedArgs, cNamedArgs, pCaValueArrayFactory, pAssembly));
 
 ErrExit:
     return hr;
 }
 
-FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
-        CaArgArrayREF* ppCustomAttributeArguments,
-        CaNamedArgArrayREF* ppCustomAttributeNamedArguments,
-        AssemblyBaseObject* pAssemblyUNSAFE)
+// retrieve the string size in a CA blob. Advance the blob pointer to point to
+// the beginning of the string immediately following the size
+static int GetStringSize(BYTE **pBlob, const BYTE *endBlob)
 {
-    FCALL_CONTRACT;
-
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_1(refAssembly)
+    CONTRACTL
     {
-        DomainAssembly *pDomainAssembly = refAssembly->GetDomainAssembly();
-
-        struct
-        {
-            CustomAttributeArgument* pArgs;
-            CustomAttributeNamedArgument* pNamedArgs;
-        } gc;
-
-        gc.pArgs = NULL;
-        gc.pNamedArgs = NULL;
-
-        HRESULT hr = S_OK;
-
-        GCPROTECT_BEGININTERIOR(gc);
-
-        BOOL bAllBlittableCa = TRUE;
-        COUNT_T cArgs = 0;
-        COUNT_T cNamedArgs = 0;
-        CaArg* pCaArgs = NULL;
-        CaNamedArg* pCaNamedArgs = NULL;
-#ifdef __GNUC__
-        // When compiling under GCC we have to use the -fstack-check option to ensure we always spot stack
-        // overflow. But this option is intolerant of locals growing too large, so we have to cut back a bit
-        // on what we can allocate inline here. Leave the Windows versions alone to retain the perf benefits
-        // since we don't have the same constraints.
-        NewHolder<CaValueArrayFactory> pCaValueArrayFactory = new InlineFactory<SArray<CaValue>, 4>();
-        InlineFactory<SString, 4> sstringFactory;
-#else // __GNUC__
-
-        // Preallocate 4 elements in each of the following factories for optimal performance.
-        // 4 is enough for 4 typed args or 2 named args which are enough for 99% of the cases.
-
-        // SArray<CaValue> is only needed if a argument is an array, don't preallocate any memory as arrays are rare.
-
-        // Need one per (ctor or named) arg + one per array element
-        InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-        InlineFactory<SArray<CaValue>, 4> *pCaValueArrayFactory = &caValueArrayFactory;
-
-        // Need one SString per ctor arg and two per named arg
-        InlineFactory<SString, 4> sstringFactory;
-#endif // __GNUC__
-
-        cArgs = (*ppCustomAttributeArguments)->GetNumComponents();
-
-        if (cArgs)
-        {
-            gc.pArgs = (*ppCustomAttributeArguments)->GetDirectPointerToNonObjectElements();
-
-            size_t size = sizeof(CaArg) * cArgs;
-            if ((size / sizeof(CaArg)) != cArgs) // uint over/underflow
-                IfFailGo(E_INVALIDARG);
-            pCaArgs = (CaArg*)_alloca(size);
-
-            for (COUNT_T i = 0; i < cArgs; i ++)
-            {
-                CaType caType;
-                IfFailGo(Attribute::InitCaType(&gc.pArgs[i].m_type, &sstringFactory, &caType));
-
-                pCaArgs[i].Init(caType);
-            }
-        }
-
-        cNamedArgs = (*ppCustomAttributeNamedArguments)->GetNumComponents();
-
-        if (cNamedArgs)
-        {
-            gc.pNamedArgs = (*ppCustomAttributeNamedArguments)->GetDirectPointerToNonObjectElements();
-
-            size_t size = sizeof(CaNamedArg) * cNamedArgs;
-            if ((size / sizeof(CaNamedArg)) != cNamedArgs) // uint over/underflow
-                IfFailGo(E_INVALIDARG);
-            pCaNamedArgs = (CaNamedArg*)_alloca(size);
-
-            for (COUNT_T i = 0; i < cNamedArgs; i ++)
-            {
-                CustomAttributeNamedArgument* pNamedArg = &gc.pNamedArgs[i];
-
-                CaType caType;
-                IfFailGo(Attribute::InitCaType(&pNamedArg->m_type, &sstringFactory, &caType));
-
-                SString* psszName = NULL;
-                IfNullGo(psszName = sstringFactory.Create());
-
-                psszName->Set(pNamedArg->m_argumentName->GetBuffer());
-
-                pCaNamedArgs[i].Init(
-                    psszName->GetUTF8(),
-                    pNamedArg->m_propertyOrField,
-                    caType);
-            }
-        }
-
-        // This call maps the named parameters (fields and arguments) and ctor parameters with the arguments in the CA record
-        // and retrieve their values.
-        IfFailGo(Attribute::ParseAttributeArgumentValues(pCa, cCa, pCaValueArrayFactory, pCaArgs, cArgs, pCaNamedArgs, cNamedArgs, pDomainAssembly));
-
-        for (COUNT_T i = 0; i < cArgs; i ++)
-            Attribute::SetBlittableCaValue(&gc.pArgs[i].m_value, &pCaArgs[i].val, &bAllBlittableCa);
-
-        for (COUNT_T i = 0; i < cNamedArgs; i ++)
-            Attribute::SetBlittableCaValue(&gc.pNamedArgs[i].m_value, &pCaNamedArgs[i].val, &bAllBlittableCa);
-
-        if (!bAllBlittableCa)
-        {
-            for (COUNT_T i = 0; i < cArgs; i ++)
-            {
-                CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaArgs[i].val);
-                Attribute::SetManagedValue(managedCaValue, &(gc.pArgs[i].m_value));
-            }
-
-            for (COUNT_T i = 0; i < cNamedArgs; i++)
-            {
-                CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaNamedArgs[i].val);
-                Attribute::SetManagedValue(managedCaValue, &(gc.pNamedArgs[i].m_value));
-            }
-        }
-
-    ErrExit:
-
-        ; // Need empty statement to get GCPROTECT_END below to work.
-
-        GCPROTECT_END();
-
-
-        if (hr != S_OK)
-        {
-            if ((hr == E_OUTOFMEMORY) || (hr == NTE_NO_MEMORY))
-            {
-               COMPlusThrow(kOutOfMemoryException);
-            }
-            else
-            {
-                COMPlusThrow(kCustomAttributeFormatException);
-            }
-        }
+        MODE_COOPERATIVE;
+        THROWS;
     }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
+    CONTRACTL_END;
 
-FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs)
-{
-    FCALL_CONTRACT;
-
-    struct
-    {
-        REFLECTCLASSBASEREF refCaType;
-        OBJECTREF ca;
-        REFLECTMETHODREF refCtor;
-        REFLECTMODULEBASEREF refAttributedModule;
-    } gc;
-    gc.refCaType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pCaTypeUNSAFE);
-    TypeHandle th = gc.refCaType->GetType();
-
-    gc.ca = NULL;
-    gc.refCtor = (REFLECTMETHODREF)ObjectToOBJECTREF(pMethodUNSAFE);
-    gc.refAttributedModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pAttributedModuleUNSAFE);
-
-    if(gc.refAttributedModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    MethodDesc* pCtorMD = gc.refCtor->GetMethod();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-    {
-        MethodDescCallSite ctorCallSite(pCtorMD, th);
-        MetaSig* pSig = ctorCallSite.GetMetaSig();
-        BYTE* pBlob = *ppBlob;
-
-        // get the number of arguments and allocate an array for the args
-        ARG_SLOT *args = NULL;
-        UINT cArgs = pSig->NumFixedArgs() + 1; // make room for the this pointer
-        UINT i = 1; // used to flag that we actually get the right number of arg from the blob
-
-        args = (ARG_SLOT*)_alloca(cArgs * sizeof(ARG_SLOT));
-        memset((void*)args, 0, cArgs * sizeof(ARG_SLOT));
-
-        OBJECTREF *argToProtect = (OBJECTREF*)_alloca(cArgs * sizeof(OBJECTREF));
-        memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
-
-        // load the this pointer
-        argToProtect[0] = gc.refCaType->GetType().GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
-
-        if (pBlob)
-        {
-            if (pBlob < pEndBlob)
-            {
-                if (pBlob + 2 > pEndBlob)
-                {
-                    COMPlusThrow(kCustomAttributeFormatException);
-                }
-                INT16 prolog = GET_UNALIGNED_VAL16(pBlob);
-                if (prolog != 1)
-                    COMPlusThrow(kCustomAttributeFormatException);
-                pBlob += 2;
-            }
-
-            if (cArgs > 1)
-            {
-                GCPROTECT_ARRAY_BEGIN(*argToProtect, cArgs);
-                {
-                    // loop through the args
-                    for (i = 1; i < cArgs; i++) {
-                        CorElementType type = pSig->NextArg();
-                        if (type == ELEMENT_TYPE_END)
-                            break;
-                        BOOL bObjectCreated = FALSE;
-                        TypeHandle th = pSig->GetLastTypeHandleThrowing();
-                        if (th.IsArray())
-                            // get the array element
-                            th = th.GetArrayElementTypeHandle();
-                        ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, gc.refAttributedModule->GetModule(), &bObjectCreated);
-                        if (bObjectCreated)
-                            argToProtect[i] = ArgSlotToObj(data);
-                        else
-                            args[i] = data;
-                    }
-                }
-                GCPROTECT_END();
-
-                // We have borrowed the signature from MethodDescCallSite. We have to put it back into the initial position
-                // because of that's where MethodDescCallSite expects to find it below.
-                pSig->Reset();
-
-                for (i = 1; i < cArgs; i++)
-                {
-                    if (argToProtect[i] != NULL)
-                    {
-                        _ASSERTE(args[i] == NULL);
-                        args[i] = ObjToArgSlot(argToProtect[i]);
-                    }
-                }
-            }
-        }
-        args[0] = ObjToArgSlot(argToProtect[0]);
-
-        if (i != cArgs)
-            COMPlusThrow(kCustomAttributeFormatException);
-
-        // check if there are any named properties to invoke,
-        // if so set the by ref int passed in to point
-        // to the blob position where name properties start
-        *pcNamedArgs = 0;
-
-        if (pBlob && pBlob != pEndBlob)
-        {
-            if (pBlob + 2 > pEndBlob)
-                COMPlusThrow(kCustomAttributeFormatException);
-
-            *pcNamedArgs = GET_UNALIGNED_VAL16(pBlob);
-
-            pBlob += 2;
-        }
-
-        *ppBlob = pBlob;
-
-        if (*pcNamedArgs == 0 && pBlob != pEndBlob)
-            COMPlusThrow(kCustomAttributeFormatException);
-
-        // make the invocation to the ctor
-        gc.ca = ArgSlotToObj(args[0]);
-        if (pCtorMD->GetMethodTable()->IsValueType())
-            args[0] = PtrToArgSlot(OBJECTREFToObject(gc.ca)->UnBox());
-
-        ctorCallSite.CallWithValueTypes(args);
+    if (*pBlob >= endBlob )
+    {   // No buffer at all, or buffer overrun
+        COMPlusThrow(kCustomAttributeFormatException);
     }
-    HELPER_METHOD_FRAME_END();
 
-    return OBJECTREFToObject(gc.ca);
-}
-FCIMPLEND
-
-FCIMPL5(VOID, COMCustomAttribute::ParseAttributeUsageAttribute, PVOID pData, ULONG cData, ULONG* pTargets, CLR_BOOL* pInherited, CLR_BOOL* pAllowMultiple)
-{
-    FCALL_CONTRACT;
-
-    int inherited = 0;
-    int allowMultiple = 1;
-
-    {
-        CustomAttributeParser ca(pData, cData);
-
-        CaArg args[1];
-        args[0].InitEnum(SERIALIZATION_TYPE_I4, 0);
-        if (FAILED(::ParseKnownCaArgs(ca, args, ARRAY_SIZE(args))))
-        {
-            HELPER_METHOD_FRAME_BEGIN_0();
-            COMPlusThrow(kCustomAttributeFormatException);
-            HELPER_METHOD_FRAME_END();
-        }
-
-        *pTargets = args[0].val.u4;
-
-        CaNamedArg namedArgs[2];
-        CaType namedArgTypes[2];
-        namedArgTypes[inherited].Init(SERIALIZATION_TYPE_BOOLEAN);
-        namedArgTypes[allowMultiple].Init(SERIALIZATION_TYPE_BOOLEAN);
-        namedArgs[inherited].Init("Inherited", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[inherited], TRUE);
-        namedArgs[allowMultiple].Init("AllowMultiple", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[allowMultiple], FALSE);
-        if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
-        {
-            HELPER_METHOD_FRAME_BEGIN_0();
-            COMPlusThrow(kCustomAttributeFormatException);
-            HELPER_METHOD_FRAME_END();
-        }
-
-        *pInherited = namedArgs[inherited].val.boolean == TRUE;
-        *pAllowMultiple = namedArgs[allowMultiple].val.boolean == TRUE;
+    if (**pBlob == 0xFF)
+    {   // Special case null string.
+        ++(*pBlob);
+        return -1;
     }
-}
-FCIMPLEND
 
-
-FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value)
-{
-    FCALL_CONTRACT;
-
-    BYTE* pBlob = *ppBlobStart;
-    *pType = NULL;
-
-    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
-
-    if(refModule == NULL)
-        FCThrowResVoid(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    Module *pModule = refModule->GetModule();
-
-    HELPER_METHOD_FRAME_BEGIN_1(refModule);
+    ULONG ulSize;
+    if (FAILED(CPackedLen::SafeGetData((BYTE const *)*pBlob, (BYTE const *)endBlob, (ULONG *)&ulSize, (BYTE const **)pBlob)))
     {
-        Assembly *pCtorAssembly = NULL;
-
-        MethodTable *pMTValue = NULL;
-        CorSerializationType arrayType = SERIALIZATION_TYPE_BOOLEAN;
-        BOOL bObjectCreated = FALSE;
-        TypeHandle nullTH;
-
-        if (pBlob + 2 > pBlobEnd)
-            COMPlusThrow(kCustomAttributeFormatException);
-
-        // get whether it is a field or a property
-        CorSerializationType propOrField = (CorSerializationType)*pBlob;
-        pBlob++;
-        if (propOrField == SERIALIZATION_TYPE_FIELD)
-            *pbIsProperty = FALSE;
-        else if (propOrField == SERIALIZATION_TYPE_PROPERTY)
-            *pbIsProperty = TRUE;
-        else
-            COMPlusThrow(kCustomAttributeFormatException);
-
-        // get the type of the field
-        CorSerializationType fieldType = (CorSerializationType)*pBlob;
-        pBlob++;
-        if (fieldType == SERIALIZATION_TYPE_SZARRAY)
-        {
-            arrayType = (CorSerializationType)*pBlob;
-
-            if (pBlob + 1 > pBlobEnd)
-                COMPlusThrow(kCustomAttributeFormatException);
-
-            pBlob++;
-        }
-        if (fieldType == SERIALIZATION_TYPE_ENUM || arrayType == SERIALIZATION_TYPE_ENUM)
-        {
-            // get the enum type
-            ReflectClassBaseObject *pEnum =
-                (ReflectClassBaseObject*)OBJECTREFToObject(ArgSlotToObj(GetDataFromBlob(
-                    pCtorAssembly, SERIALIZATION_TYPE_TYPE, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
-
-            if (pEnum == NULL)
-                COMPlusThrow(kCustomAttributeFormatException);
-
-            _ASSERTE(bObjectCreated);
-
-            TypeHandle th = pEnum->GetType();
-            _ASSERTE(th.IsEnum());
-
-            pMTValue = th.AsMethodTable();
-            if (fieldType == SERIALIZATION_TYPE_ENUM)
-                // load the enum type to pass it back
-                *pType = th.GetManagedClassObject();
-            else
-                nullTH = th;
-        }
-
-        // get the string representing the field/property name
-        *pName = ArgSlotToString(GetDataFromBlob(
-            pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
-        _ASSERTE(bObjectCreated || *pName == NULL);
-
-        // create the object and return it
-        switch (fieldType)
-        {
-            case SERIALIZATION_TYPE_TAGGED_OBJECT:
-                *pType = g_pObjectClass->GetManagedClassObject();
-                FALLTHROUGH;
-            case SERIALIZATION_TYPE_TYPE:
-            case SERIALIZATION_TYPE_STRING:
-                *value = ArgSlotToObj(GetDataFromBlob(
-                    pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated));
-                _ASSERTE(bObjectCreated || *value == NULL);
-
-                if (*value == NULL)
-                {
-                    // load the proper type so that code in managed knows which property to load
-                    if (fieldType == SERIALIZATION_TYPE_STRING)
-                        *pType = CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject();
-                    else if (fieldType == SERIALIZATION_TYPE_TYPE)
-                        *pType = CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject();
-                }
-                break;
-            case SERIALIZATION_TYPE_SZARRAY:
-            {
-                *value = NULL;
-                int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
-
-                if (arraySize != -1)
-                {
-                    _ASSERTE(!bObjectCreated);
-                    if (arrayType == SERIALIZATION_TYPE_STRING)
-                        nullTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
-                    else if (arrayType == SERIALIZATION_TYPE_TYPE)
-                        nullTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
-                    else if (arrayType == SERIALIZATION_TYPE_TAGGED_OBJECT)
-                        nullTH = TypeHandle(g_pObjectClass);
-                    ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule, (BASEARRAYREF*)value);
-                }
-                if (*value == NULL)
-                {
-                    TypeHandle arrayTH;
-                    switch (arrayType)
-                    {
-                        case SERIALIZATION_TYPE_STRING:
-                            arrayTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
-                            break;
-                        case SERIALIZATION_TYPE_TYPE:
-                            arrayTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
-                            break;
-                        case SERIALIZATION_TYPE_TAGGED_OBJECT:
-                            arrayTH = TypeHandle(g_pObjectClass);
-                            break;
-                        default:
-                            if (SERIALIZATION_TYPE_BOOLEAN <= arrayType && arrayType <= SERIALIZATION_TYPE_R8)
-                                arrayTH = TypeHandle(CoreLibBinder::GetElementType((CorElementType)arrayType));
-                    }
-                    if (!arrayTH.IsNull())
-                    {
-                        arrayTH = ClassLoader::LoadArrayTypeThrowing(arrayTH);
-                        *pType = arrayTH.GetManagedClassObject();
-                    }
-                }
-                break;
-            }
-            default:
-                if (SERIALIZATION_TYPE_BOOLEAN <= fieldType && fieldType <= SERIALIZATION_TYPE_R8)
-                    pMTValue = CoreLibBinder::GetElementType((CorElementType)fieldType);
-                else if(fieldType == SERIALIZATION_TYPE_ENUM)
-                    fieldType = (CorSerializationType)pMTValue->GetInternalCorElementType();
-                else
-                    COMPlusThrow(kCustomAttributeFormatException);
-
-                ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
-                _ASSERTE(!bObjectCreated);
-
-                *value = pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes()));
-        }
-
-        *ppBlobStart = pBlob;
+        COMPlusThrow(kCustomAttributeFormatException);
     }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
-/*static*/
-TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,
+    return (int)ulSize;
+}
+
+// Forward declaration
+static ARG_SLOT GetDataFromBlob(Assembly *pCtorAssembly,
+                      CorSerializationType type,
+                      TypeHandle th,
+                      BYTE **pBlob,
+                      const BYTE *endBlob,
+                      Module *pModule,
+                      BOOL *bObjectCreated);
+
+static TypeHandle GetTypeHandleFromBlob(Assembly *pCtorAssembly,
                                     CorSerializationType objType,
                                     BYTE **pBlob,
                                     const BYTE *endBlob,
@@ -990,6 +396,7 @@ TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,
 {
     CONTRACTL
     {
+        MODE_COOPERATIVE;
         THROWS;
     }
     CONTRACTL_END;
@@ -1076,50 +483,25 @@ TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,
     return RtnTypeHnd;
 }
 
-// retrieve the string size in a CA blob. Advance the blob pointer to point to
-// the beginning of the string immediately following the size
-/*static*/
-int COMCustomAttribute::GetStringSize(BYTE **pBlob, const BYTE *endBlob)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    if (*pBlob >= endBlob )
-    {   // No buffer at all, or buffer overrun
-        COMPlusThrow(kCustomAttributeFormatException);
-    }
-
-    if (**pBlob == 0xFF)
-    {   // Special case null string.
-        ++(*pBlob);
-        return -1;
-    }
-
-    ULONG ulSize;
-    if (FAILED(CPackedLen::SafeGetData((BYTE const *)*pBlob, (BYTE const *)endBlob, (ULONG *)&ulSize, (BYTE const **)pBlob)))
-    {
-        COMPlusThrow(kCustomAttributeFormatException);
-    }
-
-    return (int)ulSize;
-}
-
 // copy the values of an array of integers from a CA blob
 // (i.e., always stored in little-endian, and needs not be aligned).
 // Returns TRUE on success, FALSE if the blob was not big enough.
 // Advances *pBlob by the amount copied.
-/*static*/
-template < typename T >
-BOOL COMCustomAttribute::CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE **pBlob, const BYTE *endBlob)
+template<typename T>
+static bool CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE **pBlob, const BYTE *endBlob)
 {
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+        NOTHROW;
+    }
+    CONTRACTL_END;
+
     int sizeData;   // = size * 2; with integer overflow check
     if (!ClrSafeInt<int>::multiply(nElements, sizeof(T), sizeData))
-        return FALSE;
+        return false;
     if (sizeData > endBlob - *pBlob)     // integer overflow check
-        return FALSE;
+        return false;
 #if BIGENDIAN
     T *ptDest = reinterpret_cast<T *>(pArray->GetDataPtr());
     for (int iElement = 0; iElement < nElements; iElement++)
@@ -1137,34 +519,36 @@ BOOL COMCustomAttribute::CopyArrayVAL(BASEARRAYREF pArray, int nElements, BYTE *
     memcpyNoGCRefs(pArray->GetDataPtr(), *pBlob, sizeData);
 #endif // BIGENDIAN
     *pBlob += sizeData;
-    return TRUE;
+    return true;
 }
 
 // read the whole array as a chunk
-/*static*/
-void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
+static BASEARRAYREF ReadArray(Assembly *pCtorAssembly,
                CorSerializationType arrayType,
                int size,
                TypeHandle th,
                BYTE **pBlob,
                const BYTE *endBlob,
-               Module *pModule,
-               BASEARRAYREF *pArray)
+               Module *pModule)
 {
     CONTRACTL
     {
+        MODE_COOPERATIVE;
         THROWS;
     }
     CONTRACTL_END;
 
     ARG_SLOT element = 0;
 
+    BASEARRAYREF array = NULL;
+    GCPROTECT_BEGIN(array);
+
     switch ((DWORD)arrayType) {
     case SERIALIZATION_TYPE_BOOLEAN:
     case SERIALIZATION_TYPE_I1:
     case SERIALIZATION_TYPE_U1:
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<BYTE>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<BYTE>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
 
@@ -1172,8 +556,8 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_I2:
     case SERIALIZATION_TYPE_U2:
     {
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<UINT16>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<UINT16>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
     }
@@ -1181,8 +565,8 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_U4:
     case SERIALIZATION_TYPE_R4:
     {
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<UINT32>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<UINT32>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
     }
@@ -1190,8 +574,8 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_U8:
     case SERIALIZATION_TYPE_R8:
     {
-        *pArray = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
-        if (!CopyArrayVAL<UINT64>(*pArray, size, pBlob, endBlob))
+        array = (BASEARRAYREF)AllocatePrimitiveArray((CorElementType)arrayType, size);
+        if (!CopyArrayVAL<UINT64>(array, size, pBlob, endBlob))
             goto badBlob;
         break;
     }
@@ -1207,14 +591,14 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
         if (th.IsNull())
             goto badBlob;
 
-        *pArray = (BASEARRAYREF)AllocateObjectArray(size, th);
+        array = (BASEARRAYREF)AllocateObjectArray(size, th);
         if (arrayType == SERIALIZATION_TYPE_SZARRAY)
             // switch the th to be the proper one
             th = th.GetArrayElementTypeHandle();
         for (int i = 0; i < size; i++) {
             element = GetDataFromBlob(pCtorAssembly, arrayType, th, pBlob, endBlob, pModule, &isObject);
-            _ASSERTE(isObject || element == NULL);
-            ((PTRARRAYREF)(*pArray))->SetAt(i, ArgSlotToObj(element));
+            _ASSERTE(isObject || element == (ARG_SLOT)NULL);
+            ((PTRARRAYREF)(array))->SetAt(i, ArgSlotToObj(element));
         }
         break;
     }
@@ -1231,21 +615,21 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(th);
         if (arrayHandle.IsNull())
             goto badBlob;
-        *pArray = (BASEARRAYREF)AllocateSzArray(arrayHandle, bounds);
+        array = (BASEARRAYREF)AllocateSzArray(arrayHandle, bounds);
         BOOL fSuccess;
         switch (elementSize)
         {
         case 1:
-            fSuccess = CopyArrayVAL<BYTE>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<BYTE>(array, size, pBlob, endBlob);
             break;
         case 2:
-            fSuccess = CopyArrayVAL<UINT16>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<UINT16>(array, size, pBlob, endBlob);
             break;
         case 4:
-            fSuccess = CopyArrayVAL<UINT32>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<UINT32>(array, size, pBlob, endBlob);
             break;
         case 8:
-            fSuccess = CopyArrayVAL<UINT64>(*pArray, size, pBlob, endBlob);
+            fSuccess = CopyArrayVAL<UINT64>(array, size, pBlob, endBlob);
             break;
         default:
             fSuccess = FALSE;
@@ -1260,11 +644,12 @@ void COMCustomAttribute::ReadArray(Assembly *pCtorAssembly,
         COMPlusThrow(kCustomAttributeFormatException);
     }
 
+    GCPROTECT_END();
+    return array;
 }
 
 // get data out of the blob according to a CorElementType
-/*static*/
-ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
+static ARG_SLOT GetDataFromBlob(Assembly *pCtorAssembly,
                       CorSerializationType type,
                       TypeHandle th,
                       BYTE **pBlob,
@@ -1274,6 +659,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
 {
     CONTRACTL
     {
+        MODE_COOPERATIVE;
         THROWS;
     }
     CONTRACTL_END;
@@ -1462,11 +848,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
             else
                 arrayType = (CorSerializationType)th.GetInternalCorElementType();
 
-            BASEARRAYREF array = NULL;
-            GCPROTECT_BEGIN(array);
-            ReadArray(pCtorAssembly, arrayType, size, th, pBlob, endBlob, pModule, &array);
-            retValue = ObjToArgSlot(array);
-            GCPROTECT_END();
+            retValue = ObjToArgSlot(ReadArray(pCtorAssembly, arrayType, size, th, pBlob, endBlob, pModule));
         }
         *bObjectCreated = TRUE;
         break;
@@ -1479,4 +861,318 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
     }
 
     return retValue;
+}
+
+extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
+    PVOID pData,
+    ULONG cData,
+    ULONG* pTargets,
+    BOOL* pAllowMultiple,
+    BOOL* pInherited)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    CustomAttributeParser ca(pData, cData);
+    CaArg args[1];
+    args[0].InitEnum(SERIALIZATION_TYPE_I4, 0);
+    if (FAILED(::ParseKnownCaArgs(ca, args, ARRAY_SIZE(args))))
+        return FALSE;
+    *pTargets = args[0].val.u4;
+
+    // Define index values.
+    const int allowMultiple = 0;
+    const int inherited = 1;
+
+    CaNamedArg namedArgs[2];
+    CaType namedArgTypes[2];
+    namedArgTypes[allowMultiple].Init(SERIALIZATION_TYPE_BOOLEAN);
+    namedArgTypes[inherited].Init(SERIALIZATION_TYPE_BOOLEAN);
+    namedArgs[allowMultiple].Init("AllowMultiple", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[allowMultiple], FALSE);
+    namedArgs[inherited].Init("Inherited", SERIALIZATION_TYPE_PROPERTY, namedArgTypes[inherited], TRUE);
+    if (FAILED(::ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs))))
+        return FALSE;
+
+    *pAllowMultiple = namedArgs[allowMultiple].val.boolean ? TRUE : FALSE;
+    *pInherited = namedArgs[inherited].val.boolean ? TRUE : FALSE;
+    return TRUE;
+}
+
+extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
+    QCall::ModuleHandle pModule,
+    QCall::ObjectHandleOnStack pCaType,
+    QCall::ObjectHandleOnStack pMethod,
+    BYTE** ppBlob,
+    BYTE* pEndBlob,
+    INT32* pcNamedArgs,
+    QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
+    TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
+
+    MethodDescCallSite ctorCallSite(pCtorMD, th);
+    MetaSig* pSig = ctorCallSite.GetMetaSig();
+    BYTE* pBlob = *ppBlob;
+
+    // get the number of arguments and allocate an array for the args
+    ARG_SLOT *args = NULL;
+    UINT cArgs = pSig->NumFixedArgs() + 1; // make room for the this pointer
+    UINT i = 1; // used to flag that we actually get the right number of arg from the blob
+
+    args = (ARG_SLOT*)_alloca(cArgs * sizeof(ARG_SLOT));
+    memset((void*)args, 0, cArgs * sizeof(ARG_SLOT));
+
+    OBJECTREF *argToProtect = (OBJECTREF*)_alloca(cArgs * sizeof(OBJECTREF));
+    memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
+
+    // load the this pointer
+    argToProtect[0] = th.GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
+
+    if (pBlob)
+    {
+        if (pBlob < pEndBlob)
+        {
+            if (pBlob + 2 > pEndBlob)
+            {
+                COMPlusThrow(kCustomAttributeFormatException);
+            }
+            INT16 prolog = GET_UNALIGNED_VAL16(pBlob);
+            if (prolog != 1)
+                COMPlusThrow(kCustomAttributeFormatException);
+            pBlob += 2;
+        }
+
+        if (cArgs > 1)
+        {
+            GCPROTECT_ARRAY_BEGIN(*argToProtect, cArgs);
+            {
+                // loop through the args
+                for (i = 1; i < cArgs; i++) {
+                    CorElementType type = pSig->NextArg();
+                    if (type == ELEMENT_TYPE_END)
+                        break;
+                    BOOL bObjectCreated = FALSE;
+                    TypeHandle th = pSig->GetLastTypeHandleThrowing();
+                    if (th.IsArray())
+                        // get the array element
+                        th = th.GetArrayElementTypeHandle();
+                    ARG_SLOT data = GetDataFromBlob(pCtorMD->GetAssembly(), (CorSerializationType)type, th, &pBlob, pEndBlob, pModule, &bObjectCreated);
+                    if (bObjectCreated)
+                        argToProtect[i] = ArgSlotToObj(data);
+                    else
+                        args[i] = data;
+                }
+            }
+            GCPROTECT_END();
+
+            // We have borrowed the signature from MethodDescCallSite. We have to put it back into the initial position
+            // because of that's where MethodDescCallSite expects to find it below.
+            pSig->Reset();
+
+            for (i = 1; i < cArgs; i++)
+            {
+                if (argToProtect[i] != NULL)
+                {
+                    _ASSERTE(args[i] == (ARG_SLOT)NULL);
+                    args[i] = ObjToArgSlot(argToProtect[i]);
+                }
+            }
+        }
+    }
+    args[0] = ObjToArgSlot(argToProtect[0]);
+
+    if (i != cArgs)
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // check if there are any named properties to invoke,
+    // if so set the by ref int passed in to point
+    // to the blob position where name properties start
+    *pcNamedArgs = 0;
+
+    if (pBlob && pBlob != pEndBlob)
+    {
+        if (pBlob + 2 > pEndBlob)
+            COMPlusThrow(kCustomAttributeFormatException);
+
+        *pcNamedArgs = GET_UNALIGNED_VAL16(pBlob);
+
+        pBlob += 2;
+    }
+
+    *ppBlob = pBlob;
+
+    if (*pcNamedArgs == 0 && pBlob != pEndBlob)
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // make the invocation to the ctor
+    result.Set(ArgSlotToObj(args[0]));
+    if (pCtorMD->GetMethodTable()->IsValueType())
+        args[0] = PtrToArgSlot(OBJECTREFToObject(result.Get())->UnBox());
+
+    ctorCallSite.CallWithValueTypes(args);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
+    QCall::ModuleHandle pModule,
+    BYTE** ppBlobStart,
+    BYTE* pBlobEnd,
+    QCall::StringHandleOnStack pName,
+    BOOL* pbIsProperty,
+    QCall::ObjectHandleOnStack pType,
+    QCall::ObjectHandleOnStack pValue)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    BYTE* pBlob = *ppBlobStart;
+
+    GCX_COOP();
+
+    Assembly *pCtorAssembly = NULL;
+
+    MethodTable *pMTValue = NULL;
+    CorSerializationType arrayType = SERIALIZATION_TYPE_BOOLEAN;
+    BOOL bObjectCreated = FALSE;
+    TypeHandle nullTH;
+
+    if (pBlob + 2 > pBlobEnd)
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // get whether it is a field or a property
+    CorSerializationType propOrField = (CorSerializationType)*pBlob;
+    pBlob++;
+    if (propOrField == SERIALIZATION_TYPE_FIELD)
+        *pbIsProperty = FALSE;
+    else if (propOrField == SERIALIZATION_TYPE_PROPERTY)
+        *pbIsProperty = TRUE;
+    else
+        COMPlusThrow(kCustomAttributeFormatException);
+
+    // get the type of the field
+    CorSerializationType fieldType = (CorSerializationType)*pBlob;
+    pBlob++;
+    if (fieldType == SERIALIZATION_TYPE_SZARRAY)
+    {
+        arrayType = (CorSerializationType)*pBlob;
+
+        if (pBlob + 1 > pBlobEnd)
+            COMPlusThrow(kCustomAttributeFormatException);
+
+        pBlob++;
+    }
+    if (fieldType == SERIALIZATION_TYPE_ENUM || arrayType == SERIALIZATION_TYPE_ENUM)
+    {
+        // get the enum type
+        ReflectClassBaseObject *pEnum =
+            (ReflectClassBaseObject*)OBJECTREFToObject(ArgSlotToObj(GetDataFromBlob(
+                pCtorAssembly, SERIALIZATION_TYPE_TYPE, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
+
+        if (pEnum == NULL)
+            COMPlusThrow(kCustomAttributeFormatException);
+
+        _ASSERTE(bObjectCreated);
+
+        TypeHandle th = pEnum->GetType();
+        _ASSERTE(th.IsEnum());
+
+        pMTValue = th.AsMethodTable();
+        if (fieldType == SERIALIZATION_TYPE_ENUM)
+            // load the enum type to pass it back
+            pType.Set(th.GetManagedClassObject());
+        else
+            nullTH = th;
+    }
+
+    // get the string representing the field/property name
+    pName.Set(ArgSlotToString(GetDataFromBlob(
+        pCtorAssembly, SERIALIZATION_TYPE_STRING, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
+    _ASSERTE(bObjectCreated || pName.Get() == NULL);
+
+    // create the object and return it
+    switch (fieldType)
+    {
+        case SERIALIZATION_TYPE_TAGGED_OBJECT:
+            pType.Set(g_pObjectClass->GetManagedClassObject());
+            FALLTHROUGH;
+        case SERIALIZATION_TYPE_TYPE:
+        case SERIALIZATION_TYPE_STRING:
+            pValue.Set(ArgSlotToObj(GetDataFromBlob(
+                pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated)));
+            _ASSERTE(bObjectCreated || pValue.Get() == NULL);
+
+            if (pValue.Get() == NULL)
+            {
+                // load the proper type so that code in managed knows which property to load
+                if (fieldType == SERIALIZATION_TYPE_STRING)
+                    pType.Set(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject());
+                else if (fieldType == SERIALIZATION_TYPE_TYPE)
+                    pType.Set(CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject());
+            }
+            break;
+        case SERIALIZATION_TYPE_SZARRAY:
+        {
+            pValue.Set(NULL);
+            int arraySize = (int)GetDataFromBlob(pCtorAssembly, SERIALIZATION_TYPE_I4, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
+
+            if (arraySize != -1)
+            {
+                _ASSERTE(!bObjectCreated);
+                if (arrayType == SERIALIZATION_TYPE_STRING)
+                    nullTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
+                else if (arrayType == SERIALIZATION_TYPE_TYPE)
+                    nullTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
+                else if (arrayType == SERIALIZATION_TYPE_TAGGED_OBJECT)
+                    nullTH = TypeHandle(g_pObjectClass);
+                pValue.Set(ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule));
+            }
+            if (pValue.Get() == NULL)
+            {
+                TypeHandle arrayTH;
+                switch (arrayType)
+                {
+                    case SERIALIZATION_TYPE_STRING:
+                        arrayTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
+                        break;
+                    case SERIALIZATION_TYPE_TYPE:
+                        arrayTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
+                        break;
+                    case SERIALIZATION_TYPE_TAGGED_OBJECT:
+                        arrayTH = TypeHandle(g_pObjectClass);
+                        break;
+                    default:
+                        if (SERIALIZATION_TYPE_BOOLEAN <= arrayType && arrayType <= SERIALIZATION_TYPE_R8)
+                            arrayTH = TypeHandle(CoreLibBinder::GetElementType((CorElementType)arrayType));
+                }
+                if (!arrayTH.IsNull())
+                {
+                    arrayTH = ClassLoader::LoadArrayTypeThrowing(arrayTH);
+                    pType.Set(arrayTH.GetManagedClassObject());
+                }
+            }
+            break;
+        }
+        default:
+            if (SERIALIZATION_TYPE_BOOLEAN <= fieldType && fieldType <= SERIALIZATION_TYPE_R8)
+                pMTValue = CoreLibBinder::GetElementType((CorElementType)fieldType);
+            else if(fieldType == SERIALIZATION_TYPE_ENUM)
+                fieldType = (CorSerializationType)pMTValue->GetInternalCorElementType();
+            else
+                COMPlusThrow(kCustomAttributeFormatException);
+
+            ARG_SLOT val = GetDataFromBlob(pCtorAssembly, fieldType, nullTH, &pBlob, pBlobEnd, pModule, &bObjectCreated);
+            _ASSERTE(!bObjectCreated);
+
+            pValue.Set(pMTValue->Box((void*)ArgSlotEndiannessFixup(&val, pMTValue->GetNumInstanceFieldBytes())));
+    }
+
+    *ppBlobStart = pBlob;
+    END_QCALL;
 }

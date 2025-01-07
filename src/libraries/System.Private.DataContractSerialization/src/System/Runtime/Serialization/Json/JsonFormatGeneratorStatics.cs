@@ -3,12 +3,12 @@
 
 using System;
 using System.Collections;
-using System.Reflection;
-using System.Xml;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.Serialization.DataContracts;
 using System.Runtime.Serialization.Json;
+using System.Xml;
 
 namespace System.Runtime.Serialization
 {

@@ -1,16 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection.Runtime.EventInfos;
+using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.PropertyInfos;
-using System.Reflection.Runtime.EventInfos;
-using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 using Internal.Reflection.Core.Execution;
+
+using NameFilter = System.Reflection.Runtime.BindingFlagSupport.NameFilter;
 
 //
 // The CoreGet() methods on RuntimeTypeInfo provide the raw source material for the Type.Get*() family of apis.

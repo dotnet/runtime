@@ -193,12 +193,11 @@ namespace System.Management
                 throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
 
-
-            // Construct a new System.DateTime object, .NET Framework uses date kind unspecified so use the same
-            var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Unspecified);
+            // codeql[cs/leap-year/unsafe-date-construction-from-two-elements] - DateTime not constructed from multiple elements - it's parsed from a string with defaults that are stable DateTime.MinValue.  It would be intentional to throw if an invalid combination occurred.
+            var datetime = new DateTime(year, month, day, hour, minute, second, 0, DateTimeKind.Local);
             // Then add the ticks calculated from the microseconds
             datetime = datetime.AddTicks(ticks);
-            // Then adjust the offset, using a manual calulation to keep the same possible range as netfx
+            // Then adjust the offset, using a manual calculation to keep the same possible range as netfx
             datetime = datetime.AddMinutes(-(utcOffset - TimeZoneInfo.Local.GetUtcOffset(datetime).Ticks / TimeSpan.TicksPerMinute));
 
             return datetime;

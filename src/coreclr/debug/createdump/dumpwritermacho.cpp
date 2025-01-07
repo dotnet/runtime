@@ -93,7 +93,7 @@ DumpWriter::BuildSegmentLoadCommands()
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
         uint64_t size = memoryRegion.Size();
-        uint32_t prot = ConvertFlags(memoryRegion.Permissions());
+        int32_t prot = ConvertFlags(memoryRegion.Permissions());
 
         segment_command_64 segment = {
             LC_SEGMENT_64,                  // uint32_t cmd;
@@ -229,13 +229,19 @@ DumpWriter::WriteSegments()
             (segment.initprot & VM_PROT_EXECUTE) ? 'x' : '-',
             segment.initprot);
 
-        if (address == SpecialThreadInfoAddress)
+        if (address == SpecialDiagInfoAddress)
+        {
+            if (!WriteDiagInfo(size)) {
+                return false;
+            }
+        }
+        else if (address == SpecialThreadInfoAddress)
         {
             // Write the header
             SpecialThreadInfoHeader header = {
                 {SPECIAL_THREADINFO_SIGNATURE},
-                m_crashInfo.Pid(),
-                m_crashInfo.Threads().size()
+                static_cast<uint32_t>(m_crashInfo.Pid()),
+                static_cast<uint32_t>(m_crashInfo.Threads().size())
             };
 
             if (!WriteData(&header, sizeof(header))) {
@@ -246,7 +252,7 @@ DumpWriter::WriteSegments()
             for (const ThreadInfo* thread : m_crashInfo.Threads())
             {
                 SpecialThreadInfoEntry entry = {
-                    thread->Tid(),
+                    static_cast<uint32_t>(thread->Tid()),
                     thread->GetStackPointer()
                 };
 
@@ -262,7 +268,7 @@ DumpWriter::WriteSegments()
                 size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
                 size_t read = 0;
 
-                if (!m_crashInfo.ReadProcessMemory((void*)address, m_tempBuffer, bytesToRead, &read)) {
+                if (!m_crashInfo.ReadProcessMemory(address, m_tempBuffer, bytesToRead, &read)) {
                     printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%x)\n", address, bytesToRead, mach_error_string(g_readProcessMemoryResult), g_readProcessMemoryResult);
                     return false;
                 }

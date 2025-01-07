@@ -12,36 +12,50 @@
 class DECLSPEC_UUID("53169A33-E85D-4E3C-B668-24E438D0929B") NumericTesting;
 class DECLSPEC_UUID("B99ABE6A-DFF6-440F-BFB6-55179B8FE18E") ArrayTesting;
 class DECLSPEC_UUID("C73C83E8-51A2-47F8-9B5C-4284458E47A6") StringTesting;
+class DECLSPEC_UUID("CCFF894B-A27C-45E0-9B30-6C88D722E843") MiscTypesTesting;
 class DECLSPEC_UUID("71CF5C45-106C-4B32-B418-43A463C6041F") ErrorMarshalTesting;
 class DECLSPEC_UUID("0F8ACD0C-ECE0-4F2A-BD1B-6BFCA93A0726") DispatchTesting;
 class DECLSPEC_UUID("4DBD9B61-E372-499F-84DE-EFC70AA8A009") EventTesting;
+class DECLSPEC_UUID("661F9962-3477-416B-BE40-4CBA3190A562") DispatchCoerceTesting;
 class DECLSPEC_UUID("4CEFE36D-F377-4B6E-8C34-819A8BB9CB04") AggregationTesting;
 class DECLSPEC_UUID("C222F472-DA5A-4FC6-9321-92F4F7053A65") ColorTesting;
 class DECLSPEC_UUID("66DB7882-E2B0-471D-92C7-B2B52A0EA535") LicenseTesting;
 class DECLSPEC_UUID("FAEF42AE-C1A4-419F-A912-B768AC2679EA") DefaultInterfaceTesting;
 class DECLSPEC_UUID("CE137261-6F19-44F5-A449-EF963B3F987E") InspectableTesting;
 class DECLSPEC_UUID("4F54231D-9E11-4C0B-8E0B-2EBD8B0E5811") TrackMyLifetimeTesting;
+class DECLSPEC_UUID("B8314D5A-DE70-435B-AD97-8F88820D1F3C") ClassInterfaceNotSetTesting;
+class DECLSPEC_UUID("ED4D9C70-1C9F-406B-B51F-87DD977AF3B2") ClassInterfaceNoneTesting;
+class DECLSPEC_UUID("C1A0AE72-791B-4380-946E-B7BABDEA1701") ClassInterfaceAutoDispatchTesting;
+class DECLSPEC_UUID("95696E2C-742F-4639-A9D4-5D36EE021C49") ClassInterfaceAutoDualTesting;
 
 #define CLSID_NumericTesting __uuidof(NumericTesting)
 #define CLSID_ArrayTesting __uuidof(ArrayTesting)
 #define CLSID_StringTesting __uuidof(StringTesting)
+#define CLSID_MiscTypesTesting __uuidof(MiscTypesTesting)
 #define CLSID_ErrorMarshalTesting __uuidof(ErrorMarshalTesting)
 #define CLSID_DispatchTesting __uuidof(DispatchTesting)
 #define CLSID_EventTesting __uuidof(EventTesting)
+#define CLSID_DispatchCoerceTesting __uuidof(DispatchCoerceTesting)
 #define CLSID_AggregationTesting __uuidof(AggregationTesting)
 #define CLSID_ColorTesting __uuidof(ColorTesting)
 #define CLSID_LicenseTesting __uuidof(LicenseTesting)
 #define CLSID_DefaultInterfaceTesting __uuidof(DefaultInterfaceTesting)
 #define CLSID_InspectableTesting __uuidof(InspectableTesting)
 #define CLSID_TrackMyLifetimeTesting __uuidof(TrackMyLifetimeTesting)
+#define CLSID_ClassInterfaceNotSetTesting __uuidof(ClassInterfaceNotSetTesting)
+#define CLSID_ClassInterfaceNoneTesting __uuidof(ClassInterfaceNoneTesting)
+#define CLSID_ClassInterfaceAutoDispatchTesting __uuidof(ClassInterfaceAutoDispatchTesting)
+#define CLSID_ClassInterfaceAutoDualTesting  __uuidof(ClassInterfaceAutoDualTesting)
 
 #define IID_INumericTesting __uuidof(INumericTesting)
 #define IID_IArrayTesting __uuidof(IArrayTesting)
 #define IID_IStringTesting __uuidof(IStringTesting)
+#define IID_IMiscTypesTesting __uuidof(IMiscTypesTesting)
 #define IID_IErrorMarshalTesting __uuidof(IErrorMarshalTesting)
 #define IID_IDispatchTesting __uuidof(IDispatchTesting)
 #define IID_TestingEvents __uuidof(TestingEvents)
 #define IID_IEventTesting __uuidof(IEventTesting)
+#define IID_IDispatchCoerceTesting __uuidof(IDispatchCoerceTesting)
 #define IID_IAggregationTesting __uuidof(IAggregationTesting)
 #define IID_IColorTesting __uuidof(IColorTesting)
 #define IID_ILicenseTesting __uuidof(ILicenseTesting)
@@ -82,9 +96,11 @@ private:
     #include "NumericTesting.h"
     #include "ArrayTesting.h"
     #include "StringTesting.h"
+    #include "MiscTypesTesting.h"
     #include "ErrorMarshalTesting.h"
     #include "DispatchTesting.h"
     #include "EventTesting.h"
+    #include "DispatchCoerceTesting.h"
     #include "AggregationTesting.h"
     #include "ColorTesting.h"
     #include "LicenseTesting.h"

@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -92,21 +92,39 @@ namespace Mono.Linker.Steps
 			return true;
 		}
 
-		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int>? mapping = null)
+		static bool HasJumpIntoTargetRange (Collection<Instruction> instructions, int firstInstr, int lastInstr, Func<Instruction, int?>? mapping = null)
 		{
 			foreach (var instr in instructions) {
 				switch (instr.OpCode.FlowControl) {
 				case FlowControl.Branch:
 				case FlowControl.Cond_Branch:
 					if (instr.Operand is Instruction target) {
-						int index = mapping == null ? instructions.IndexOf (target) : mapping (target);
-						if (index >= firstInstr && index <= lastInstr)
-							return true;
+						if (mapping != null && mapping (target) is int index) {
+							if (index >= firstInstr && index <= lastInstr) {
+								return true;
+							}
+						}
+						else {
+							for (int i = firstInstr; i <= lastInstr; i++) {
+								if (instructions[i] == target) {
+									return true;
+								}
+							}
+						}
 					} else {
 						foreach (var rtarget in (Instruction[]) instr.Operand) {
-							int index = mapping == null ? instructions.IndexOf (rtarget) : mapping (rtarget);
-							if (index >= firstInstr && index <= lastInstr)
-								return true;
+							if (mapping != null && mapping (rtarget) is int index) {
+								if (index >= firstInstr && index <= lastInstr) {
+									return true;
+								}
+							}
+							else {
+								for (int i = firstInstr; i <= lastInstr; i++) {
+									if (instructions[i] == rtarget) {
+										return true;
+									}
+								}
+							}
 						}
 					}
 
@@ -1175,6 +1193,15 @@ namespace Mono.Linker.Steps
 				return idx;
 			}
 
+			int? TryGetInstructionIndex (Instruction instruction)
+			{
+				Debug.Assert (mapping != null);
+				if (mapping.TryGetValue (instruction, out int idx))
+					return idx;
+
+				return null;
+			}
+
 			bool GetOperandsConstantValues (int index, out object? left, out object? right)
 			{
 				Debug.Assert (FoldedInstructions != null);
@@ -1213,7 +1240,7 @@ namespace Mono.Linker.Steps
 			bool IsJumpTargetRange (int firstInstr, int lastInstr)
 			{
 				Debug.Assert (FoldedInstructions != null);
-				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, GetInstructionIndex);
+				return HasJumpIntoTargetRange (FoldedInstructions, firstInstr, lastInstr, TryGetInstructionIndex);
 			}
 		}
 
@@ -1556,7 +1583,7 @@ namespace Mono.Linker.Steps
 								return false;
 
 							if (operand is int oint) {
-								if (oint == 1)
+								if (oint != 0)
 									jmpTarget = (Instruction) instr.Operand;
 
 								continue;

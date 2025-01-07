@@ -69,6 +69,7 @@ LOCAL_LABEL(NoFloatingPoint):
     // call pTarget
     ldr     x9, [x19,#CallDescrData__pTarget]
     blr     x9
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 
     ldr     w3, [x19,#CallDescrData__fpReturnSize]
 
@@ -138,4 +139,8 @@ LOCAL_LABEL(ReturnDone):
     EPILOG_RESTORE_REG      x19, 16    //the stack slot at sp+24 is empty for 16 byte alligment
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .quad LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT

@@ -50,6 +50,7 @@ static gboolean type_is_reference (MonoType *type);
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, "System.Reflection", "CustomAttributeTypedArgument");
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.Reflection", "CustomAttributeNamedArgument");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (customattribute_data, "System.Reflection", "RuntimeCustomAttributeData");
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unsafe_accessor_attribute, "System.Runtime.CompilerServices", "UnsafeAccessorAttribute");
 
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs, gboolean respect_cattr_visibility);
@@ -392,18 +393,8 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =	t->data.klass;
-
-			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
-				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
-				if (!bcheck_blob (p, 7, boundp, error))
-					return NULL;
-				*val = read64 (p);
-				*end = p + 8;
-				return val;
-			}
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		}
-		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		break;
 
 	case MONO_TYPE_STRING: {
@@ -732,19 +723,8 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *k =	t->data.klass;
-
-			if (mono_is_corlib_image (m_class_get_image (k)) && strcmp (m_class_get_name_space (k), "System") == 0 && strcmp (m_class_get_name (k), "DateTime") == 0){
-				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
-				if (!bcheck_blob (p, 7, boundp, error))
-					return NULL;
-				*val = read64 (p);
-				*end = p + 8;
-				result->value.primitive = val;
-				return result;
-			}
+			g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		}
-		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
 		break;
 
 	case MONO_TYPE_STRING: {
@@ -2054,6 +2034,62 @@ mono_custom_attrs_from_method_checked (MonoMethod *method, MonoError *error)
 
 	idx = custom_attrs_idx_from_method (method);
 	return mono_custom_attrs_from_index_checked (m_class_get_image (method->klass), idx, FALSE, error);
+}
+
+gboolean
+mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kind, char **member_name, MonoError *error)
+{
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_method_checked (method, error);
+
+	if (!cinfo)
+		return FALSE;
+
+	MonoClass *unsafeAccessor = mono_class_try_get_unsafe_accessor_attribute_class ();
+	MonoCustomAttrEntry *attr = NULL;
+
+	for (int idx = 0; idx < cinfo->num_attrs; ++idx) {
+		MonoClass *ctor_class = cinfo->attrs [idx].ctor->klass;
+		if (ctor_class == unsafeAccessor) {
+			attr = &cinfo->attrs [idx];
+			break;
+		}
+	}
+
+	if (!attr){
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
+		return FALSE;
+	}
+
+	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
+	
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
+		return FALSE;
+	}
+
+	g_assert (decoded_args->typed_args_num == 1);
+	*accessor_kind =  *(int*)decoded_args->typed_args [0]->value.primitive;
+
+	for (int i = 0; i < decoded_args->named_args_num; ++i) {
+		if (decoded_args->named_args_info [i].prop && !strcmp (decoded_args->named_args_info [i].prop->name, "Name")) {
+			const char *ptr = (const char*)decoded_args->named_args [i]->value.primitive;
+			uint32_t len = mono_metadata_decode_value (ptr, &ptr);
+			char *name = m_method_alloc0 (method, len + 1);
+			memcpy (name, ptr, len);
+			name[len] = 0;
+			*member_name = (char*)name;
+		}
+	}
+
+	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
+
+	return TRUE;
 }
 
 /**

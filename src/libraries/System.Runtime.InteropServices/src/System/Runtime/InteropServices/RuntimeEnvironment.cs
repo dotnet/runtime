@@ -34,6 +34,6 @@ namespace System.Runtime.InteropServices
         [Obsolete(Obsoletions.RuntimeEnvironmentMessage, DiagnosticId = Obsoletions.RuntimeEnvironmentDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static object GetRuntimeInterfaceAsObject(Guid clsid, Guid riid) => throw new PlatformNotSupportedException();
 
-        public static string GetSystemVersion() => typeof(object).Assembly.ImageRuntimeVersion;
+        public static string GetSystemVersion() => $"v{Environment.Version}";
     }
 }

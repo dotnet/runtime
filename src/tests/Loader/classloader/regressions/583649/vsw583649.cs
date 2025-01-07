@@ -6,11 +6,13 @@
 // The struct contains a literal field and we should ignore marshaling data attached to literals and statics
 
 using System;
+using Xunit;
 
 public class Type_Class42_Driver
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

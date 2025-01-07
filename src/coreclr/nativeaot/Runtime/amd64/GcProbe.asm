@@ -76,7 +76,6 @@ endm
 ;;
 ;; Register state on exit:
 ;;  RDX: thread pointer
-;;  RCX: return value flags
 ;;  RAX: preserved, other volatile regs trashed
 ;;
 FixupHijackedCallstack macro
@@ -87,14 +86,10 @@ FixupHijackedCallstack macro
         mov         rcx, [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
-        ;; Fetch the return address flags
-        mov         rcx, [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
-
         ;; Clear hijack state
-        xor         r9, r9
-        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
-        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
-        mov         [rdx + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
+        xor         ecx, ecx
+        mov         [rdx + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
+        mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
 endm
 
 EXTERN RhpPInvokeExceptionGuard : PROC
@@ -110,7 +105,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
         jnz         @f
         ret
 @@:
-        or          ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX
+        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_RAX + PTFF_THREAD_HIJACK
         jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 
@@ -183,7 +178,7 @@ NESTED_ENTRY RhpGcStressProbe, _TEXT
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
 
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        RhpStressGc
 
         POP_PROBE_FRAME
         ret
@@ -288,7 +283,6 @@ RuntimeInstance__ShouldHijackLoopForGcStress equ ?ShouldHijackLoopForGcStress@Ru
 EXTERN RuntimeInstance__ShouldHijackLoopForGcStress : PROC
 
 EXTERN g_fGcStressStarted : DWORD
-EXTERN g_fHasFastFxsave : BYTE
 
 ;;
 ;; INVARIANT: Don't trash the argument registers, the binder codegen depends on this.

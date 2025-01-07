@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class ExceptionTypeNameFormatter
+    public partial class ExceptionTypeNameFormatter
     {
         private static string GetTypeName(DefType type)
         {

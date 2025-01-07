@@ -646,6 +646,41 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(frame1.Length + frame2.Length, messageSize);
         }
 
+        [Fact]
+        public async Task DisposeShouldNotCorruptStateWhileReceiving()
+        {
+            WebSocketTestStream stream = new();
+            using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = TimeSpan.Zero,
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
+            });
+            using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                IsServer = false,
+                KeepAliveInterval = TimeSpan.Zero,
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
+            });
+
+            byte[] buffer = new byte[64];
+
+            // Send two messages so that the zlib stream has data in its internal dictionary
+            await SendTextAsync("Hello World", client);
+            await server.ReceiveAsync(buffer, CancellationToken.None);
+            buffer.AsSpan().Clear();
+
+            stream.DelayForNextRead = TimeSpan.FromSeconds(1);
+            stream.IgnoreCancellationToken = true;
+            await SendTextAsync("Hello Worlds", client);
+
+            Task<WebSocketReceiveResult> receiveTask = server.ReceiveAsync(buffer, CancellationToken.None);
+            server.Dispose();
+
+            var result = await receiveTask;
+            Assert.Equal("Hello Worlds", Encoding.UTF8.GetString(buffer.AsSpan(0, result.Count)));
+        }
+
         private ValueTask SendTextAsync(string text, WebSocket websocket, bool disableCompression = false)
         {
             WebSocketMessageFlags flags = WebSocketMessageFlags.EndOfMessage;

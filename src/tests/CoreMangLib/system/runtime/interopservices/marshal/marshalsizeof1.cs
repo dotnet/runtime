@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Security;
+using Xunit;
 
 
 [SecuritySafeCritical]
@@ -479,7 +480,7 @@ public class MarshalSizeOf1
         try
         {
             Object obj = new Object();
-            int size = Marshal.SizeOf(obj);
+            int size = Marshal.SizeOf<object>(obj);
 
             TestLibrary.TestFramework.LogError("103.1", "ArgumentException is not thrown when the value is a reference type");
             retVal = false;
@@ -499,7 +500,8 @@ public class MarshalSizeOf1
     #endregion
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MarshalSizeOf1 test = new MarshalSizeOf1();
 

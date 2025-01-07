@@ -18,6 +18,7 @@ class D<T> : C<T> {virtual NEWSLOT methods}
 */
 
 using System;
+using Xunit;
 
 
 
@@ -250,7 +251,8 @@ public class Test_Class2_ImplicitOverrideVirtualNewslot
 
 
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		TestNonGenInterface_NonGenType();

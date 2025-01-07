@@ -11,7 +11,7 @@ using Xunit;
 public class TEST
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         int SSS;
         try
@@ -45,7 +45,6 @@ public class TEST
         System.Console.WriteLine("END");
 
         System.Console.WriteLine("!!!!!!!!!!!!! PASSED !!!!!!!!!!!!!");
-        return 100;
     }
 }
 

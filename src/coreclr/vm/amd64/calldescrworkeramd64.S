@@ -10,33 +10,6 @@
 
 //extern CallDescrWorkerUnwindFrameChainHandler:proc
 
-//
-//      EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
-//
-NESTED_ENTRY FastCallFinalizeWorker, _TEXT, NoHandler
-        push_nonvol_reg rbp
-        mov     rbp, rsp
-        END_PROLOGUE
-
-        //
-        // RDI: already contains obj*
-        // RSI: address of finalizer method to call
-        //
-
-        // !!!!!!!!!
-        // NOTE:  you cannot tail call here because we must have the CallDescrWorkerUnwindFrameChainHandler
-        //        personality routine on the stack.
-        // !!!!!!!!!
-        call    rsi
-        xor     rax, rax
-
-        // epilog
-        pop_nonvol_reg rbp
-        ret
-
-
-NESTED_END FastCallFinalizeWorker, _TEXT
-
 //extern "C" void CallDescrWorkerInternal(CallDescrData * pCallDescrData);
 
 NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
@@ -95,7 +68,7 @@ LOCAL_LABEL(NoStackArguments):
         movsd   xmm7, [rax + 112]
 LOCAL_LABEL(NoFloatArguments):
         call    qword ptr [rbx + CallDescrData__pTarget]     // call target function
-
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
         // Save FP return value
 
         mov     ecx, dword ptr [rbx + CallDescrData__fpReturnSize]
@@ -159,6 +132,7 @@ LOCAL_LABEL(ReturnsDouble):
         movsd   real8 ptr [rbx+CallDescrData__returnValue], xmm0
         jmp     LOCAL_LABEL(Epilog)
 
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .quad LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT
-
-

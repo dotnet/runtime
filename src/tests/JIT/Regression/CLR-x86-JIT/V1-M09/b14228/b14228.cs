@@ -11,12 +11,11 @@ namespace DefaultNamespace
     public class MainClass
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Decimal c1 = new Decimal();
 
             Console.WriteLine(c1);
-            return 100;
         }
     }
 }

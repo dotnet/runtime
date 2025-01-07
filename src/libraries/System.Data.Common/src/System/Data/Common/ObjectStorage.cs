@@ -1,21 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.IO;
-using System.Xml.Serialization;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Dynamic;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data.Common
 {
     internal sealed class ObjectStorage : DataStorage
     {
-        private enum Families { DATETIME, NUMBER, STRING, BOOLEAN, ARRAY };
+        private enum Families
+        {
+            DATETIME,
+            NUMBER,
+            STRING,
+            BOOLEAN,
+            ARRAY
+        };
 
         private object?[] _values = default!; // Late-initialized
         private readonly bool _implementsIXmlSerializable;
@@ -308,6 +315,7 @@ namespace System.Data.Common
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             Type type = _dataType; // real type of objects in this column
@@ -349,6 +357,7 @@ namespace System.Data.Common
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
             object? retValue;
@@ -449,6 +458,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             if ((value == null) || (value == _nullValue))// this case won't happen,  this is added in case if code in xml saver changes
@@ -490,6 +500,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             if (null == xmlAttrib)
@@ -558,6 +569,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal static XmlSerializer GetXmlSerializer(Type type)
         {
             // prevent writing an instance which implements IDynamicMetaObjectProvider and not IXmlSerializable
@@ -570,6 +582,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal static XmlSerializer GetXmlSerializer(Type type, XmlRootAttribute attribute)
         {
             XmlSerializer? serializer = null;

@@ -40,13 +40,22 @@ namespace System.IO.Strategies
         {
             if (!Interop.Kernel32.FlushFileBuffers(handle))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                // NOTE: unlike fsync() on Unix, the FlushFileBuffers() function on Windows doesn't
+                // support flushing handles opened for read-only access and will return an error. We
+                // ignore this error to harmonize the two platforms: i.e. users can flush handles
+                // opened for read-only access on BOTH platforms and no exception will be thrown.
+                if (errorCode != Interop.Errors.ERROR_ACCESS_DENIED)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
+                }
             }
         }
 
         internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
+            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             if (!Interop.Kernel32.SetFilePointerEx(handle, offset, out long ret, (uint)origin))
             {
@@ -123,7 +132,7 @@ namespace System.IO.Strategies
 
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle != null");
+            Debug.Assert(handle != null);
 
             int r;
             int numBytesRead = 0;

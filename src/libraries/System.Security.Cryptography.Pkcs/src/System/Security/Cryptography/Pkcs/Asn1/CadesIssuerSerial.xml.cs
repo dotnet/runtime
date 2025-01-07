@@ -15,12 +15,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal System.Security.Cryptography.Asn1.GeneralNameAsn[] Issuer;
         internal ReadOnlyMemory<byte> SerialNumber;
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

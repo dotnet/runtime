@@ -39,6 +39,7 @@ public sealed class JsonObjectCreationHandlingAttribute : JsonAttribute
     /// <summary>
     /// Initializes a new instance of <see cref="JsonObjectCreationHandlingAttribute"/>.
     /// </summary>
+    /// <param name="handling">The handling to apply to the current member.</param>
     public JsonObjectCreationHandlingAttribute(JsonObjectCreationHandling handling)
     {
         if (!JsonSerializer.IsValidCreationHandlingValue(handling))

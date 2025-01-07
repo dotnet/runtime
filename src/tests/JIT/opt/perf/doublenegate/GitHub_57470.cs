@@ -39,14 +39,12 @@ public class TestClass8505
                 {
                 }
             }
-            return;
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         TestClass8505 objTestClass8505 = new TestClass8505();
         objTestClass8505.Method0();
-        return 100;
     }
 }

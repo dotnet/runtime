@@ -22,7 +22,7 @@ namespace Internal
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
         /* [in] */ I obj)
-    {    
+    {
         if (riid == __uuidof(I))
         {
             *ppvObject = static_cast<I>(obj);
@@ -57,7 +57,7 @@ namespace Internal
 // Implementation of IUnknown operations
 class UnknownImpl
 {
-public:  
+public:
     UnknownImpl() : _refCount{ 1 } {};
     virtual ~UnknownImpl() = default;
 
@@ -98,29 +98,29 @@ public:
         return S_OK;
     }
 
-    ULONG DoAddRef()
+    uint32_t DoAddRef()
     {
         assert(_refCount > 0);
         return (++_refCount);
     }
 
-    ULONG DoRelease()
+    uint32_t DoRelease()
     {
         assert(_refCount > 0);
-        ULONG c = (--_refCount);
+        uint32_t c = (--_refCount);
         if (c == 0)
             delete this;
         return c;
     }
 
 protected:
-    ULONG GetRefCount()
+    uint32_t GetRefCount()
     {
         return _refCount;
     }
 
 private:
-    std::atomic<ULONG> _refCount;  
+    std::atomic<uint32_t> _refCount;
 };
 
 // Macro to use for defining ref counting impls

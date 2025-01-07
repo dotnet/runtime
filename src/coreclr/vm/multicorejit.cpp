@@ -73,7 +73,7 @@ void MulticoreJitFireEtwMethodCodeReturned(MethodDesc * pMethod)
         if(pMethod)
         {
             // Get the module id.
-            Module * pModule = pMethod->GetModule_NoLogging();
+            Module * pModule = pMethod->GetModule();
             ULONGLONG ullModuleID = (ULONGLONG)(TADDR) pModule;
 
             // Get the method id.
@@ -237,11 +237,11 @@ FileLoadLevel MulticoreJitManager::GetModuleFileLoadLevel(Module * pModule)
 
     if (pModule != NULL)
     {
-        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
+        Assembly * pAssembly = pModule->GetAssembly();
 
-        if (pDomainAssembly != NULL)
+        if (pAssembly != NULL)
         {
-            level = pDomainAssembly->GetLoadLevel();
+            level = pAssembly->GetLoadLevel();
         }
     }
 
@@ -441,7 +441,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
         {
             _ASSERTE(m_JitInfoArray[i].IsNonGenericMethodInfo());
 
-            unsigned token = pMethod->GetMemberDef_NoLogging();
+            unsigned token = pMethod->GetMemberDef();
             m_JitInfoArray[i].PackTokenForNonGenericMethod(token);
         }
     }
@@ -761,14 +761,14 @@ DWORD MulticoreJitRecorder::EncodeModule(Module * pReferencedModule)
     }
 
     // This increment is required, because we need to increase methodCount for all referenced modules for generic method.
-    // RecordMethodInfo will only increment this counter for pMethod->GetModule_NoLogging.
+    // RecordMethodInfo will only increment this counter for pMethod->GetModule.
     m_ModuleList[slot].methodCount++;
 
     return (DWORD) slot;
 }
 
 // Enumerate all modules within an assembly, call OnModule virtual method
-HRESULT MulticoreJitModuleEnumerator::HandleAssembly(DomainAssembly * pAssembly)
+HRESULT MulticoreJitModuleEnumerator::HandleAssembly(Assembly * pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -786,12 +786,12 @@ HRESULT MulticoreJitModuleEnumerator::EnumerateLoadedModules(AppDomain * pDomain
 
     AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
 
-    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+    while (appIt.Next(pAssembly.This()) && SUCCEEDED(hr))
     {
         {
-            hr = HandleAssembly(pDomainAssembly);
+            hr = HandleAssembly(pAssembly);
         }
     }
 
@@ -870,7 +870,7 @@ void MulticoreJitRecorder::RecordMethodJitOrLoad(MethodDesc * pMethod, bool appl
 {
     STANDARD_VM_CONTRACT;
 
-    Module * pModule = pMethod->GetModule_NoLogging();
+    Module * pModule = pMethod->GetModule();
 
     // Skip methods from non-supported modules
     if (! MulticoreJitManager::IsSupportedModule(pModule, true))
@@ -997,7 +997,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
 
     if (g_MulticoreJitEnabled && (lenFile > 0))
     {
-        m_fullFileName = pRoot;
+        m_fullFileName.Set(pRoot);
 
         // Append separator if root does not end with one
         unsigned len = m_fullFileName.GetCount();
@@ -1146,7 +1146,7 @@ void MulticoreJitManager::SetProfileRoot(const WCHAR * pProfilePath)
     {
         if (InterlockedCompareExchange(& m_fSetProfileRootCalled, SETPROFILEROOTCALLED, 0) == 0) // Only allow the first call per appdomain
         {
-            m_profileRoot = pProfilePath;
+            m_profileRoot.Set(pProfilePath);
         }
     }
 }

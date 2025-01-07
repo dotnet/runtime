@@ -131,6 +131,16 @@ mono_arch_fregname (int reg) {
 static guint8*
 emit_memcpy (guint8 *code, int size, int dreg, int doffset, int sreg, int soffset)
 {
+	if (!ppc_is_imm16(soffset)) {
+		ppc_addis (code, ppc_r12, sreg, ppc_ha(soffset));
+		sreg = ppc_r12;
+	}
+
+	if (!ppc_is_imm16(doffset)) {
+		ppc_addis (code, ppc_r11, dreg, ppc_ha(doffset));
+		dreg = ppc_r11;
+	}
+
 	/* unrolled, use the counter in big */
 	if (size > sizeof (target_mgreg_t) * 5) {
 		long shifted = size / TARGET_SIZEOF_VOID_P;
@@ -297,7 +307,7 @@ gboolean
 mono_ppc_is_direct_call_sequence (guint32 *code)
 {
 #ifdef TARGET_POWERPC64
-	g_assert(*code == 0x4e800021 || *code == 0x4e800020 || *code == 0x4e800420);
+	g_assert(*code == 0x4e800021 || *code == 0x4e800020 || *code == 0x4e800421 || *code == 0x4e800420);
 
 	/* the thunk-less direct call sequence: lis/ori/sldi/oris/ori/mtlr/blrl */
 	if (ppc_opcode (code [-1]) == 31) { /* mtlr */
@@ -806,7 +816,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	}
 #else
 	/* For POWER5/6 with ICACHE_SNOOPing only one icbi in the range is required.
-	 * The sync is required to insure that the store queue is completely empty.
+	 * The sync is required to ensure that the store queue is completely empty.
 	 * While the icbi performs no cache operations, icbi/isync is required to
 	 * kill local prefetch.
 	 */
@@ -2420,7 +2430,7 @@ map_to_reg_reg_op (int op)
 		return OP_STOREI8_MEMBASE_REG;
 	}
 	if (mono_op_imm_to_op (op) == -1)
-		g_error ("mono_op_imm_to_op failed for %s\n", mono_inst_name (op));
+		g_error ("mono_op_imm_to_op failed for " M_PRI_INST "\n", mono_inst_name (op));
 	return mono_op_imm_to_op (op);
 }
 
@@ -2939,7 +2949,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 		return;
 	}
 
-	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
+	if (prim == 15 || ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800421 || ins == 0x4e800420) {
 #ifdef TARGET_POWERPC64
 #if !defined(PPC_USES_FUNCTION_DESCRIPTOR)
 		handle_thunk (cfg, code, target);
@@ -2948,7 +2958,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 		guint32 *branch_ins;
 
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
-		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
+		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800421 || ins == 0x4e800420) {
 			branch_ins = seq;
 			if (ppc_is_load_op (seq [-3]) || ppc_opcode (seq [-3]) == 31) /* ld || lwz || mr */
 				code -= 32;
@@ -2996,7 +3006,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 #else
 		guint32 *seq;
 		/* the trampoline code will try to patch the blrl, blr, bcctr */
-		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800420) {
+		if (ins == 0x4e800021 || ins == 0x4e800020 || ins == 0x4e800421 || ins == 0x4e800420) {
 			code -= 12;
 		}
 		/* this is the lis/ori/mtlr/blrl sequence */
@@ -3004,7 +3014,7 @@ ppc_patch_full (MonoCompile *cfg, guchar *code, const guchar *target, gboolean i
 		g_assert ((seq [0] >> 26) == 15);
 		g_assert ((seq [1] >> 26) == 24);
 		g_assert ((seq [2] >> 26) == 31);
-		g_assert (seq [3] == 0x4e800021 || seq [3] == 0x4e800020 || seq [3] == 0x4e800420);
+		g_assert (seq [3] == 0x4e800021 || seq [3] == 0x4e800020 || seq [3] == 0x4e800421 || seq [3] == 0x4e800420);
 		/* FIXME: make this thread safe */
 		ppc_lis (code, PPC_CALL_REG, (guint32)(target) >> 16);
 		ppc_ori (code, PPC_CALL_REG, PPC_CALL_REG, (guint32)(target) & 0xffff);
@@ -3426,8 +3436,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3913,8 +3923,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -3945,9 +3955,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				 }
 			}
 #endif
-			ppc_mtlr (code, ins->sreg1);
+			ppc_mtctr (code, ins->sreg1);
 #endif
-			ppc_blrl (code);
+			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -3965,8 +3975,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				ppc_ldptr (code, ppc_r12, ins->inst_offset, ins->sreg1);
 			}
-			ppc_mtlr (code, ppc_r12);
-			ppc_blrl (code);
+			ppc_mtctr (code, ppc_r12);
+			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
@@ -4022,8 +4032,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -4040,8 +4050,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -4221,11 +4231,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_lfd (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset)) {
-					ppc_addis (code, ppc_r11, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_addis (code, ppc_r11, ins->inst_basereg, ppc_ha(ins->inst_offset));
 					ppc_lfd (code, ins->dreg, ins->inst_offset, ppc_r11);
 				} else {
 					ppc_load (code, ppc_r0, ins->inst_offset);
-					ppc_lfdx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+					ppc_lfdx (code, ins->dreg, ins->inst_basereg, ppc_r0);
 				}
 			}
 			break;
@@ -4248,11 +4258,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_lfs (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset)) {
-					ppc_addis (code, ppc_r11, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
+					ppc_addis (code, ppc_r11, ins->inst_basereg, ppc_ha(ins->inst_offset));
 					ppc_lfs (code, ins->dreg, ins->inst_offset, ppc_r11);
 				} else {
 					ppc_load (code, ppc_r0, ins->inst_offset);
-					ppc_lfsx (code, ins->dreg, ins->inst_destbasereg, ppc_r0);
+					ppc_lfsx (code, ins->dreg, ins->inst_basereg, ppc_r0);
 				}
 			}
 			break;
@@ -4725,8 +4735,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 				cfg->thunk_area += THUNK_SIZE;
 #endif
-				ppc_mtlr (code, PPC_CALL_REG);
-				ppc_blrl (code);
+				ppc_mtctr (code, PPC_CALL_REG);
+				ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 			} else {
 				ppc_bl (code, 0);
 			}
@@ -4734,12 +4744,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		default:
-			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_warning ("unknown opcode " M_PRI_INST " in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();
 		}
 
 		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
-			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %ld)",
+			g_warning ("wrong maximal instruction length of instruction " M_PRI_INST " (expected %d, got %ld)",
 				   mono_inst_name (ins->opcode), max_len, (glong)(code - cfg->native_code - offset));
 			g_assert_not_reached ();
 		}
@@ -5202,11 +5212,32 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					break;
 				}
 			} else if (ainfo->regtype == RegTypeFP) {
-				g_assert (ppc_is_imm16 (inst->inst_offset));
-				if (ainfo->size == 8)
-					ppc_stfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
-				else if (ainfo->size == 4)
-					ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+				if (ainfo->size == 8) {
+					if (ppc_is_imm16 (inst->inst_offset)) {
+                                                ppc_stfd (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+                                        }
+                                        else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(inst->inst_offset));
+                                                ppc_stfd (code, ainfo->reg, inst->inst_offset, ppc_r12);
+                                        }
+                                        else {
+                                                ppc_load (code, ppc_r12, inst->inst_offset);
+                                                ppc_stfdx (code, ainfo->reg, inst->inst_basereg, ppc_r12);
+                                        }
+				 }
+				else if (ainfo->size == 4) {
+					if (ppc_is_imm16 (inst->inst_offset)) {
+                                                ppc_stfs (code, ainfo->reg, inst->inst_offset, inst->inst_basereg);
+                                        }
+                                        else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(inst->inst_offset));
+                                                ppc_stfs (code, ainfo->reg, inst->inst_offset, ppc_r12);
+                                        }
+                                        else {
+                                                ppc_load (code, ppc_r12, inst->inst_offset);
+                                                ppc_stfsx (code, ainfo->reg, inst->inst_basereg, ppc_r12);
+                                        }
+				}
 				else
 					g_assert_not_reached ();
 			 } else if (ainfo->regtype == RegTypeFPStructByVal) {
@@ -5214,17 +5245,39 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int soffset = 0;
 				int cur_reg;
 				int size = 0;
-				g_assert (ppc_is_imm16 (inst->inst_offset));
-				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (target_mgreg_t)));
 				/* FIXME: what if there is no class? */
 				if (sig->pinvoke && !sig->marshalling_disabled && mono_class_from_mono_type_internal (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
-					if (ainfo->size == 4) {
-						ppc_stfs (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					} else {
-						ppc_stfd (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
-					}
+					if (ainfo->size == 8){
+                                                if (ppc_is_imm16 (inst->inst_offset)) {
+                                                        ppc_stfd (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+                                                }
+                                                else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                        ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+                                                        ppc_stfd (code, ainfo->reg + cur_reg, doffset, ppc_r12);
+                                                }
+                                                else {
+                                                        ppc_load (code, ppc_r12, doffset);
+                                                        ppc_stfdx (code, ainfo->reg + cur_reg, inst->inst_basereg, ppc_r12);
+                                                }
+                                        }
+                                        else if (ainfo->size == 4){
+                                                if (ppc_is_imm16 (inst->inst_offset)) {
+                                                        ppc_stfs (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
+                                                }
+                                                else if (ppc_is_imm32 (inst->inst_offset)) {
+                                                        ppc_addis (code, ppc_r12, inst->inst_basereg, ppc_ha(doffset));
+                                                        ppc_stfs (code, ainfo->reg + cur_reg, doffset, ppc_r12);
+                                                }
+                                                else {
+                                                        ppc_load (code, ppc_r12, doffset);
+                                                        ppc_stfsx (code, ainfo->reg + cur_reg, inst->inst_basereg, ppc_r12);
+                                                }
+                                        }
+                                        else
+                                                g_assert_not_reached ();
+
 					soffset += ainfo->size;
 					doffset += ainfo->size;
 				}
@@ -5348,8 +5401,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 			cfg->thunk_area += THUNK_SIZE;
 #endif
-			ppc_mtlr (code, PPC_CALL_REG);
-			ppc_blrl (code);
+			ppc_mtctr (code, PPC_CALL_REG);
+			ppc_bcctrl (code, PPC_BR_ALWAYS, 0);
 		} else {
 			ppc_bl (code, 0);
 		}

@@ -17,6 +17,8 @@ add_executable_clr(corerun
   native.rc
 )
 
+target_link_libraries(corerun PRIVATE minipal)
+
 if(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun
         PRIVATE
@@ -27,6 +29,10 @@ if(CLR_CMAKE_HOST_WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        target_link_options(corerun PRIVATE "/CETCOMPAT")
+    endif()
 else(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
     # Required to expose symbols for global symbol discovery
@@ -38,4 +44,13 @@ else(CLR_CMAKE_HOST_WIN32)
     endif()
 endif(CLR_CMAKE_HOST_WIN32)
 
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(corerun "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()
+
 install_clr(TARGETS corerun DESTINATIONS . COMPONENT hosts)
+
+# If there's a dynamic ASAN runtime, then install it in the directory where we put our executable.
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    install(FILES ${ASAN_RUNTIME} DESTINATION .)
+endif()

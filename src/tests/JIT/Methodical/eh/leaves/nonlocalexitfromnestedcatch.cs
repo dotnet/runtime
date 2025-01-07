@@ -30,6 +30,7 @@ public class test
         testLog = new TestUtil.TestLog(expectedOut);
     }
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         //Start recording
@@ -67,7 +68,7 @@ public class test
         }
 
         Console.WriteLine("Never executed");
-        L:
+    L:
         Console.WriteLine("Done");
         // stop recoding
         testLog.StopRecording();

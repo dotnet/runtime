@@ -40,7 +40,7 @@ namespace System
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         public AggregateException(string? message)
-            : base(message)
+            : base(message ?? SR.AggregateException_ctor_DefaultMessage)
         {
             _innerExceptions = Array.Empty<Exception>();
         }
@@ -54,11 +54,11 @@ namespace System
         /// <exception cref="ArgumentNullException">The <paramref name="innerException"/> argument
         /// is null.</exception>
         public AggregateException(string? message, Exception innerException)
-            : base(message, innerException)
+            : base(message ?? SR.AggregateException_ctor_DefaultMessage, innerException)
         {
             ArgumentNullException.ThrowIfNull(innerException);
 
-            _innerExceptions = new[] { innerException };
+            _innerExceptions = [innerException];
         }
 
         /// <summary>
@@ -120,7 +120,7 @@ namespace System
         }
 
         private AggregateException(string? message, Exception[] innerExceptions, bool cloneExceptions) :
-            base(message, innerExceptions.Length > 0 ? innerExceptions[0] : null)
+            base(message ?? SR.AggregateException_ctor_DefaultMessage, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
             _innerExceptions = cloneExceptions ? new Exception[innerExceptions.Length] : innerExceptions;
 
@@ -190,13 +190,8 @@ namespace System
         protected AggregateException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
-            Exception[]? innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[]; // Do not rename (binary serialization)
-            if (innerExceptions is null)
-            {
+            _innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[] ?? // Do not rename (binary serialization);
                 throw new SerializationException(SR.AggregateException_DeserializationFailure);
-            }
-
-            _innerExceptions = innerExceptions;
         }
 
         /// <summary>
@@ -218,13 +213,16 @@ namespace System
         }
 
         /// <summary>
-        /// Returns the <see cref="AggregateException"/> that is the root cause of this exception.
+        /// Returns the <see cref="Exception"/> that is the root cause of this exception.
         /// </summary>
+        /// <remarks>
+        /// This will either be the root exception, or the first <see cref="AggregateException"/>
+        /// that contains either multiple inner exceptions or no inner exceptions at all.
+        /// </remarks>
         public override Exception GetBaseException()
         {
-            // Returns the first inner AggregateException that contains more or less than one inner exception
-
-            // Recursively traverse the inner exceptions as long as the inner exception of type AggregateException and has only one inner exception
+            // Recursively traverse the inner exceptions as long as the inner exception is of type
+            // AggregateException and has exactly one inner exception
             Exception? back = this;
             AggregateException? backAsAggregate = this;
             while (backAsAggregate != null && backAsAggregate.InnerExceptions.Count == 1)
@@ -392,7 +390,7 @@ namespace System
         /// because DebuggerDisplay should be a single property access or parameterless method call, so that the debugger
         /// can use a fast path without using the expression evaluator.
         ///
-        /// See https://docs.microsoft.com/en-us/visualstudio/debugger/using-the-debuggerdisplay-attribute
+        /// See https://learn.microsoft.com/visualstudio/debugger/using-the-debuggerdisplay-attribute
         /// </summary>
         internal int InnerExceptionCount => _innerExceptions.Length;
 

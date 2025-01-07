@@ -25,6 +25,7 @@ test_provider_callback_data_queue_setup (void)
 
 static
 void
+EP_CALLBACK_CALLTYPE
 provider_callback (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -56,7 +57,8 @@ test_provider_callback_data_queue (void)
 			1,
 			EP_EVENT_LEVEL_LOGALWAYS,
 			true,
-			0);
+			0,
+			NULL);
 		ep_provider_callback_data_queue_enqueue (provider_callback_data_queue, provider_enqueue_callback_data);
 		ep_provider_callback_data_fini (provider_enqueue_callback_data);
 	}

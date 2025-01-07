@@ -62,12 +62,16 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]      // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
         str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] // m_pExInfoStackHead = pExInfo
 
+        // set the exception context field on the ExInfo
+        add         r2, sp, #rsp_offsetof_Context                   // r2 <- PAL_LIMITED_CONTEXT*
+        str         r2, [r1, #OFFSETOF__ExInfo__m_pExContext]       // pExInfo->m_pExContext = pContext
+
         mov         r0, r4 	        // restore the exception code
         // r0 contains the exception code
         // r1 contains the address of the ExInfo
         bl          C_FUNC(RhThrowHwEx)
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+GLOBAL_LABEL RhpThrowHwEx2
 
         // no return
         EMIT_BREAKPOINT
@@ -172,7 +176,7 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+GLOBAL_LABEL RhpThrowEx2
 
         // no return
         EMIT_BREAKPOINT
@@ -233,7 +237,7 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         // r1 contains the address of the new ExInfo
         blx    C_FUNC(RhRethrow)
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+GLOBAL_LABEL RhpRethrow2
 
         // no return
         EMIT_BREAKPOINT
@@ -243,7 +247,7 @@ NESTED_END RhpRethrow, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallCatchFunclet(RtuObjectRef exceptionObj,
+// void* FASTCALL RhpCallCatchFunclet(OBJECTREF exceptionObj,
 //                                    void* pHandlerIP,
 //                                    REGDISPLAY* pRegDisplay,
 //                                    ExInfo* pExInfo)
@@ -262,6 +266,7 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
 	                                   // REGDISPLAY and ExInfo later
         PROLOG_VPUSH {d8-d15}
 
+#define rsp_offset_r0 (8 * 8)
 #define rsp_offset_r2 (8 * 8) + 4
 #define rsp_offset_r3 (8 * 8) + 8
 
@@ -315,9 +320,9 @@ LOCAL_LABEL(ClearSuccess_Catch):
         // r0 <- exception object
         blx         r3                                 // call handler funclet
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+GLOBAL_LABEL RhpCallCatchFunclet2
 
-        mov         r4, r0    // Save the result
+        str         r0, [sp, #rsp_offset_r0]             // Save the result
 
         INLINE_GETTHREAD                                 // r0 <- Thread*
         // We must unhijack the thread at this point because the section of stack where the
@@ -337,9 +342,11 @@ LOCAL_LABEL(DonePopping):
 
         str         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]   // store the new head on the Thread
 
+        ldr         r0, [sp, #rsp_offset_r0]             // Load the result
+
         // reset RSP and jump to the continuation address
         mov         sp, r2
-        bx          r4
+        bx          r0
 
 NESTED_END RhpCallCatchFunclet, _TEXT
 
@@ -414,7 +421,7 @@ LOCAL_LABEL(ClearSuccess):
 
         blx         r2                                  // handler funclet address
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
+GLOBAL_LABEL RhpCallFinallyFunclet2
 
         ldr         r1, [sp, #rsp_offset_r1]        // reload REGDISPLAY pointer
 
@@ -463,7 +470,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// void* FASTCALL RhpCallFilterFunclet(RtuObjectRef exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
+// void* FASTCALL RhpCallFilterFunclet(OBJECTREF exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
 //
 // INPUT:  R0:  exception object
 //         R1:  filter funclet address
@@ -490,7 +497,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         //    r1 = establisher frame
         blx         r12
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
+GLOBAL_LABEL RhpCallFilterFunclet2
 
         // R0 contains the result of the filter execution
 

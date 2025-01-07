@@ -11,6 +11,7 @@
 #include "vxsort_targets_enable_avx512.h"
 
 #include <immintrin.h>
+#include <type_traits>
 #include "defs.h"
 #include "machine_traits.h"
 
@@ -92,8 +93,7 @@ class vxsort_machine_traits<int64_t, AVX512> {
 
     template <int Shift>
     static constexpr bool can_pack(T span) {
-        const auto PACK_LIMIT = (((TU) std::numeric_limits<uint32_t>::Max() + 1)) << Shift;
-        return ((TU) span) < PACK_LIMIT;
+        return ((TU) span) < ((((TU) std::numeric_limits<uint32_t>::max() + 1)) << Shift);
     }
 
     static INLINE TV load_vec(TV* p) { return _mm512_loadu_si512(p); }

@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Reflection;
+using Xunit;
 
-class Program
+public class Program
 {
     public int scale;
 
@@ -15,7 +16,9 @@ class Program
     {
         return new decimal(constituent/prog.scale);
     }
-    static int Main()
+
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = -1;
         

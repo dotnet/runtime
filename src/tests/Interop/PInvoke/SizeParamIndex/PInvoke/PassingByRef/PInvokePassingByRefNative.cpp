@@ -11,20 +11,20 @@
 //ByRef Array, ByRef SizeParamIndex
 //#####################################################################
 
-//BYTE 1 ==> 0 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayByte_AsByRef_AsSizeParamIndex(BYTE* arrSize, BYTE** ppActual)
+//uint8_t 1 ==> 0 size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayByte_AsByRef_AsSizeParamIndex(uint8_t* arrSize, uint8_t** ppActual)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (BYTE)1, (BYTE)0);
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (uint8_t)1, (uint8_t)0);
 }
 
 //CHAR 10 ==> CHAR.Max size Array
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArraySbyte_AsByRef_AsSizeParamIndex(CHAR* arrSize, CHAR** ppActual)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (CHAR)10, (CHAR)CHAR_MAX); 
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (CHAR)10, (CHAR)CHAR_MAX);
 }
 
-//SHORT -1 ==> 20 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayShort_AsByRef_AsSizeParamIndex(SHORT* arrSize, SHORT** ppActual)
+//int16_t -1 ==> 20 size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayShort_AsByRef_AsSizeParamIndex(int16_t* arrSize, int16_t** ppActual)
 {
     if(*arrSize != -1)
     {
@@ -33,81 +33,81 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayShort_AsByRef_AsS
         return FALSE;
     }
 
-    SHORT* pExpectedArr = InitArray<SHORT>((SHORT)Array_Size);
+    int16_t* pExpectedArr = InitArray<int16_t>((int16_t)Array_Size);
 
-    if(!EqualArray(*ppActual, (SHORT)Array_Size, pExpectedArr, (SHORT)Array_Size))
+    if(!EqualArray(*ppActual, (int16_t)Array_Size, pExpectedArr, (int16_t)Array_Size))
     {
         printf("%s,ManagedtoNative Error!\n",__FUNCTION__);
         return FALSE;
     }
 
     CoreClrFree(*ppActual);
-    *ppActual = (SHORT*)CoreClrAlloc(sizeof(SHORT)*CArray_Size);
+    *ppActual = (int16_t*)CoreClrAlloc(sizeof(int16_t)*CArray_Size);
 
     *arrSize = CArray_Size;
 
-    for(SHORT i = 0; i < CArray_Size; ++i)
+    for(int16_t i = 0; i < CArray_Size; ++i)
     {
         (*ppActual)[i] = CArray_Size - 1 - i;
     }
     return TRUE;
 }
 
-//SHORT 10 ==> -1 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayShortReturnNegative_AsByRef_AsSizeParamIndex(SHORT* arrSize, SHORT** ppActual)
+//int16_t 10 ==> -1 size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayShortReturnNegative_AsByRef_AsSizeParamIndex(int16_t* arrSize, int16_t** ppActual)
 {
-    SHORT* pExpectedArr = InitArray<SHORT>((SHORT)Array_Size);
+    int16_t* pExpectedArr = InitArray<int16_t>((int16_t)Array_Size);
 
-    if(!EqualArray(*ppActual, (SHORT)Array_Size, pExpectedArr, (SHORT)Array_Size))
+    if(!EqualArray(*ppActual, (int16_t)Array_Size, pExpectedArr, (int16_t)Array_Size))
     {
         printf("%s,ManagedtoNative Error!\n",__FUNCTION__);
         return FALSE;
     }
 
     CoreClrFree(*ppActual);
-    *ppActual = (SHORT*)CoreClrAlloc(sizeof(SHORT)*CArray_Size);
+    *ppActual = (int16_t*)CoreClrAlloc(sizeof(int16_t)*CArray_Size);
 
-    *arrSize = (SHORT)-1;
+    *arrSize = (int16_t)-1;
 
-    for(SHORT i = 0; i < CArray_Size; ++i)
+    for(int16_t i = 0; i < CArray_Size; ++i)
     {
         (*ppActual)[i] = CArray_Size - 1 - i;
     }
     return TRUE;
 }
 
-//USHORT 20 ==> ushort.Max  size Array 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayUshort_AsByRef_AsSizeParamIndex(USHORT** ppActual, USHORT* arrSize)
+//uint16_t 20 ==> ushort.Max  size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayUshort_AsByRef_AsSizeParamIndex(uint16_t** ppActual, uint16_t* arrSize)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (USHORT)20, (USHORT)65535);
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (uint16_t)20, (uint16_t)65535);
 }
 
 //Int32 10 ==> 1 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayInt_AsByRef_AsSizeParamIndex(LONG* arrSize,LONG unused,LONG** ppActual)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayInt_AsByRef_AsSizeParamIndex(int32_t* arrSize,int32_t unused,int32_t** ppActual)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (LONG)10, (LONG)1);
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (int32_t)10, (int32_t)1);
 }
 
-//ULONG 1234 ==> 4321 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayUInt_AsByRef_AsSizeParamIndex(ULONG** ppActual,ULONG unused, ULONG* arrSize)
+//uint32_t 1234 ==> 4321 size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayUInt_AsByRef_AsSizeParamIndex(uint32_t** ppActual,uint32_t unused, uint32_t* arrSize)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (ULONG)1234, (ULONG)4321);
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (uint32_t)1234, (uint32_t)4321);
 }
 
-//LONGLONG 10 ==> 20 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayLong_AsByRef_AsSizeParamIndex(LONGLONG* arrSize, LONGLONG** ppActual)
+//int64_t 10 ==> 20 size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayLong_AsByRef_AsSizeParamIndex(int64_t* arrSize, int64_t** ppActual)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (LONGLONG)10, (LONGLONG)20);
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (int64_t)10, (int64_t)20);
 }
 
-//ULONGLONG 0 ==> 0 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayUlong_AsByRef_AsSizeParamIndex(ULONGLONG* arrSize, ULONGLONG** ppActual)
+//uint64_t 0 ==> 0 size Array
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayUlong_AsByRef_AsSizeParamIndex(uint64_t* arrSize, uint64_t** ppActual)
 {
-    return CheckAndChangeArrayByRef(ppActual, arrSize, (ULONGLONG)0, (ULONGLONG)0);
+    return CheckAndChangeArrayByRef(ppActual, arrSize, (uint64_t)0, (uint64_t)0);
 }
 #ifdef _WIN32
 //String size Array 20 ==> BSTR 10 size Array
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayString_AsByRef_AsSizeParamIndex(short* arrSize, BSTR** ppBSTR,char *** pppStr)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalCStyleArrayString_AsByRef_AsSizeParamIndex(int16_t* arrSize, BSTR** ppBSTR,char *** pppStr)
 {
     BSTR* pExpectedArr = InitArrayBSTR(20);
 

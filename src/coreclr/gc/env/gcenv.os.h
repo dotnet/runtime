@@ -6,12 +6,6 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
-#ifdef HAS_SYSTEM_YIELDPROCESSOR
-// YieldProcessor is defined to Dont_Use_YieldProcessor. Restore it to the system-default implementation for the GC.
-#undef YieldProcessor
-#define YieldProcessor System_YieldProcessor
-#endif
-
 #define NUMA_NODE_UNDEFINED UINT16_MAX
 
 bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* end_index);
@@ -409,6 +403,11 @@ public:
     // Return:
     //  non zero if it has succeeded, 0 if it has failed
     static size_t GetVirtualMemoryLimit();
+
+    // Return the maximum address of the of the virtual address space of this process.
+    // Return:
+    //  non zero if it has succeeded, 0 if it has failed
+    static size_t GetVirtualMemoryMaxAddress();
 
     // Get the physical memory that this process can use.
     // Return:

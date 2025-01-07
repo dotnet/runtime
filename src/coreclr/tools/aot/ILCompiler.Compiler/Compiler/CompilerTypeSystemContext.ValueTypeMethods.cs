@@ -113,8 +113,14 @@ namespace ILCompiler
                 && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
         }
 
-        private static bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
+        private bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
         {
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+
+            // If the classlib doesn't have Object.Equals, we don't need this.
+            if (_objectEqualsMethod == null)
+                return false;
+
             foreach (FieldDesc field in attributeTypeDef.GetFields())
             {
                 if (field.IsStatic)

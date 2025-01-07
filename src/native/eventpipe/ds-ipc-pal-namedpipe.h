@@ -29,6 +29,9 @@ struct _DiagnosticsIpc_Internal {
 	ep_char8_t pipe_name [DS_IPC_WIN32_MAX_NAMED_PIPE_LEN];
 	OVERLAPPED overlap;
 	HANDLE pipe;
+    // This handle roots the ownership of the pipe from first listen until it
+    // all sessions are closed.
+	HANDLE owningPipe;
 	bool is_listening;
 	DiagnosticsIpcConnectionMode mode;
 };

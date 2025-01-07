@@ -49,6 +49,8 @@ unsigned GetSizeForCorElementType(CorElementType etyp);
 
 class SigBuilder;
 class ArgDestination;
+class TokenLookupMap;
+class DynamicResolver;
 
 typedef const struct HardCodedMetaSig *LPHARDCODEDMETASIG;
 
@@ -83,7 +85,7 @@ class SigPointer : public SigParser
 
 public:
     // Constructor.
-    SigPointer() { LIMITED_METHOD_DAC_CONTRACT; }
+    SigPointer() : SigParser() { LIMITED_METHOD_DAC_CONTRACT; }
 
     // Copy constructor.
     SigPointer(const SigPointer & sig) : SigParser(sig)
@@ -277,7 +279,7 @@ public:
         //------------------------------------------------------------------------
         // Tests for the existence of a custom modifier
         //------------------------------------------------------------------------
-        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype) const;
+        BOOL HasCustomModifier(Module *pModule, LPCSTR szModName, CorElementType cmodtype, Module** pModifierScope = NULL, mdToken* pModifierType = NULL) const;
 
         //------------------------------------------------------------------------
         // Tests for ELEMENT_TYPE_CLASS or ELEMENT_TYPE_VALUETYPE followed by a TypeDef,
@@ -394,7 +396,7 @@ public:
 
     Substitution(
         ModuleBase *         pModuleArg,
-        const SigPointer &   sigInst,
+        SigPointer           sigInst,
         const Substitution * pNextSubstitution)
     {
         LIMITED_METHOD_CONTRACT;
@@ -432,9 +434,10 @@ public:
 // infinite recursion when types refer to each other in a cycle, e.g. a delegate that takes itself as
 // a parameter or a struct that declares a field of itself (illegal but we don't know at this point).
 //
-class TokenPairList
+class TokenPairList final
 {
 public:
+
     // Chain using this constructor when comparing two typedefs for equivalence.
     TokenPairList(mdToken token1, ModuleBase *pModule1, mdToken token2, ModuleBase *pModule2, TokenPairList *pNext)
         : m_token1(token1), m_token2(token2),
@@ -470,7 +473,6 @@ public:
     static TokenPairList AdjustForTypeSpec(TokenPairList *pTemplate, ModuleBase *pTypeSpecModule, PCCOR_SIGNATURE pTypeSpecSig, DWORD cbTypeSpecSig);
     static TokenPairList AdjustForTypeEquivalenceForbiddenScope(TokenPairList *pTemplate);
 
-private:
     TokenPairList(TokenPairList *pTemplate)
         : m_token1(pTemplate ? pTemplate->m_token1 : mdTokenNil),
           m_token2(pTemplate ? pTemplate->m_token2 : mdTokenNil),
@@ -480,6 +482,7 @@ private:
           m_pNext(pTemplate ? pTemplate->m_pNext : NULL)
     { LIMITED_METHOD_CONTRACT; }
 
+private:
     mdToken m_token1, m_token2;
     ModuleBase *m_pModule1, *m_pModule2;
     BOOL m_bInTypeEquivalenceForbiddenScope;
@@ -1006,24 +1009,6 @@ class MetaSig
             const Substitution* pSubst2,
             BOOL                skipReturnTypeSig,
             TokenPairList*      pVisited = NULL
-        );
-
-        // Nonthrowing version of CompareMethodSigs
-        //
-        //   Return S_OK if they match
-        //          S_FALSE if they don't match
-        //          FAILED  if OOM or some other blocking error
-        //
-        static HRESULT CompareMethodSigsNT(
-            PCCOR_SIGNATURE pSig1,
-            DWORD       cSig1,
-            Module*     pModule1,
-            const Substitution* pSubst1,
-            PCCOR_SIGNATURE pSig2,
-            DWORD       cSig2,
-            Module*     pModule2,
-            const Substitution* pSubst2,
-            TokenPairList *pVisited = NULL
         );
 
         static BOOL CompareFieldSigs(

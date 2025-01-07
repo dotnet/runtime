@@ -4,10 +4,12 @@
            Text="Both %24(RuntimeSrcDir) and %24(WasmBuildSupportDir) are not set. Either one of them needs to be set to use local runtime builds" />
     <Error Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' != ''"
            Text="Both %24(RuntimeSrcDir) and %24(WasmBuildSupportDir) are set. " />
-    <Error Condition="!Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.props')"
-           Text="Could not find WasmApp.LocalBuild.props in $(_WasmTargetsDir)" />
-    <Error Condition="!Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.targets')"
-           Text="Could not find WasmApp.LocalBuild.targets in $(_WasmTargetsDir)" />
+    <Error Condition="!Exists($(_WasmSharedDir))"
+           Text="Could not find %24(_WasmSharedDir)=" />
+    <Error Condition="!Exists($(_WasmLocalBuildPropsPath))"
+           Text="Could not find WasmApp.LocalBuild.props at $(_WasmLocalBuildPropsPath)" />
+    <Error Condition="!Exists($(_WasmLocalBuildTargetsPath))"
+           Text="Could not find WasmApp.LocalBuild.targets at $(_WasmLocalBuildTargetsPath)" />
     <Warning
       Condition="'$(WasmMainJS)' != '' and '$(WasmGenerateAppBundle)' != 'true'"
       Text="%24(WasmMainJS) is set when %24(WasmGenerateAppBundle) is not true: it won't be used because an app bundle is not being generated. Possible build authoring error" />
@@ -17,5 +19,5 @@
       <WasmAssembliesToBundle Include="$(TargetDir)publish\*.dll" />
     </ItemGroup>
   </Target>
-  <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.targets" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.targets')" />
+  <Import Project="$(_WasmLocalBuildTargetsPath)" Condition="Exists($(_WasmLocalBuildTargetsPath))" />
 </Project>

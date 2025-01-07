@@ -127,8 +127,22 @@ IF NOT "%RunningIlasmRoundTrip%"=="" (
 
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SynthesizedPgoIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%CrossGen2SynthesizePgo"=="" (
+IF NOT "%CrossGen2SynthesizePgo%"=="" (
   ECHO SKIPPING EXECUTION BECAUSE CrossGen2SynthesizePgo IS SET
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(SuperPmiCollectIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%SuperPMIShimPath%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE SuperPMIShimPath IS SET
+  popd
+  Exit /b 0
+)
+IF NOT "%spmi_enable_collection%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE spmi_enable_collection IS SET
   popd
   Exit /b 0
 )
@@ -164,8 +178,8 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
 :TakeLock
 md %lockFolder%
 IF NOT "!ERRORLEVEL!"=="0" (
-timeout /t 10 /nobreak
-goto :TakeLock
+  timeout /t 10 /nobreak
+  goto :TakeLock
 )
 Exit /b 2
 
@@ -318,8 +332,6 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
 
-$(BatchIlrtTestLaunchCmds)
-
 if defined RunCrossGen2 (
   call :TakeLock
 )
@@ -403,15 +415,17 @@ IF /I [%1] == [-%(Identity)] set cond=1
 IF /I [%1] == [/%(Identity)] set cond=1
 IF %cond% EQU 1 (
 %(Command)
-shift
-IF /I [%(HasParam)] == [true] shift
-goto NextArg
+    shift
+    IF /I [%(HasParam)] == [true] shift
+    goto NextArg
 )','
 ')
 
+:ExtraArgs
 if NOT "%1" == "" (
-set CLRTestExecutionArguments=%*
-goto :ArgsDone
+    set CLRTestExecutionArguments=%CLRTestExecutionArguments% %1
+    shift
+    goto :ExtraArgs
 )
 
 goto ArgsDone

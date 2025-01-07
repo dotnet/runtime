@@ -44,6 +44,10 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 
+#ifndef _ASSERTE_ALL_BUILDS
+#define _ASSERTE_ALL_BUILDS(_expr) ASSERT(_expr)
+#endif
+
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
     ASSUME(0); \
@@ -58,6 +62,6 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define FAIL_FAST_GENERATE_EXCEPTION_ADDRESS 0x1
 
-#define RhFailFast() PalRaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
+#define RhFailFast() RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
 
 #endif // __RHASSERT_H__

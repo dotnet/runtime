@@ -30,6 +30,9 @@ public class WasmAppHost
         RegisterHostHandler(WasmHost.Wasmtime, WasiEngineHost.InvokeAsync);
 
         using CancellationTokenSource cts = new();
+
+        Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) => cts.Cancel();
+
         ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
             builder
                 .AddPassThroughConsole()

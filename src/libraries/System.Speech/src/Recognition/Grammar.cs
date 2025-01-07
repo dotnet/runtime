@@ -19,7 +19,7 @@ namespace System.Speech.Recognition
 {
     // Class for grammars which are to be loaded from SRGS or CFG.
     // In contrast to dictation grammars which inherit from this.
-    [DebuggerDisplay("Grammar: {(_uri != null ? \"uri=\" + _uri.ToString () + \" \" : \"\") + \"rule=\" + _ruleName }")]
+    [DebuggerDisplay("Grammar = {(_uri != null ? \"uri=\" + _uri.ToString () + \" \" : \"\") + \"rule=\" + _ruleName }")]
     public class Grammar
     {
         #region Constructors
@@ -1121,7 +1121,7 @@ namespace System.Speech.Recognition
         private InternalGrammarData _internalData;
         private string _grammarName = string.Empty;
         private Collection<Grammar> _ruleRefs;
-        private static ResourceLoader s_resourceLoader = new();
+        private static readonly ResourceLoader s_resourceLoader = new();
 
 #if DEBUG
         private bool _loaded;

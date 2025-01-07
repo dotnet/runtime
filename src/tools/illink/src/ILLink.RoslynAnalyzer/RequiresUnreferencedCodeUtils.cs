@@ -34,7 +34,7 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="attribute">Attribute data to compare.</param>
 		/// <returns>True if the validation was successfull; otherwise, returns false.</returns>
 		public static bool VerifyRequiresUnreferencedCodeAttributeArguments (AttributeData attribute)
-			=> attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments[0] is { Type.SpecialType: SpecialType.System_String } ctorArg;
+			=> attribute.ConstructorArguments.Length >= 1 && attribute.ConstructorArguments is [ { Type.SpecialType: SpecialType.System_String }, ..];
 
 		public static string GetMessageFromAttribute (AttributeData? requiresAttribute)
 		{

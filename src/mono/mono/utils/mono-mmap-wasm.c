@@ -22,6 +22,7 @@
 #include "mono-proclib.h"
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/options.h>
 
 #define BEGIN_CRITICAL_SECTION do { \
 	MonoThreadInfo *__info = mono_thread_info_current_unchecked (); \
@@ -34,19 +35,7 @@
 int
 mono_pagesize (void)
 {
-	static int saved_pagesize = 0;
-
-	if (saved_pagesize)
-		return saved_pagesize;
-
-	// Prefer sysconf () as it's signal safe.
-#if defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
-	saved_pagesize = sysconf (_SC_PAGESIZE);
-#else
-	saved_pagesize = getpagesize ();
-#endif
-
-	return saved_pagesize;
+	return 16384;
 }
 
 int
@@ -90,87 +79,50 @@ mono_setmmapjit (int flag)
 	/* Ignored on HOST_WASM */
 }
 
+
 void*
-mono_valloc (void *addr, size_t size, int flags, MonoMemAccountType type)
+mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 {
-	void *ptr;
-	int mflags = 0;
-	int prot = prot_from_flags (flags);
-
-	if (!mono_valloc_can_alloc (size))
-		return NULL;
-
-	if (size == 0)
-		/* emscripten throws an exception on 0 length */
-		return NULL;
-
-	mflags |= MAP_ANONYMOUS;
-	mflags |= MAP_PRIVATE;
-
-	BEGIN_CRITICAL_SECTION;
-	ptr = mmap (addr, size, prot, mflags, -1, 0);
-	END_CRITICAL_SECTION;
-
-	if (ptr == MAP_FAILED)
-		return NULL;
-
-	mono_account_mem (type, (ssize_t)size);
-
-	return ptr;
+	g_assert (addr == NULL);
+	return mono_valloc_aligned (length, mono_pagesize (), flags, type);
 }
-
-static GHashTable *valloc_hash;
-
-typedef struct {
-	void *addr;
-	int size;
-} VallocInfo;
 
 void*
 mono_valloc_aligned (size_t size, size_t alignment, int flags, MonoMemAccountType type)
 {
-	/* Allocate twice the memory to be able to put the block on an aligned address */
-	char *mem = (char *) mono_valloc (NULL, size + alignment, flags, type);
-	char *aligned;
+#ifdef DISABLE_THREADS
+	void *old_sbrk = NULL;
+	if ((flags & MONO_MMAP_NOZERO) == 0) {
+		old_sbrk = sbrk (0);
+	}
+#endif
 
-	if (!mem)
+	void *res = NULL;
+	if (posix_memalign (&res, alignment, size))
 		return NULL;
 
-	aligned = mono_aligned_address (mem, size, alignment);
+#ifdef DISABLE_THREADS
+	if ((flags & MONO_MMAP_NOZERO) == 0 && old_sbrk > res) {
+		// this means that we got an old block, not the new block from sbrk
+		memset (res, 0, size);
+	}
+#else
+	if ((flags & MONO_MMAP_NOZERO) == 0) {
+		memset (res, 0, size);
+	}
+#endif
 
-	/* The mmap implementation in emscripten cannot unmap parts of regions */
-	/* Free the other two parts in when 'aligned' is freed */
-	// FIXME: This doubles the memory usage
-	if (!valloc_hash)
-		valloc_hash = g_hash_table_new (NULL, NULL);
-	VallocInfo *info = g_new0 (VallocInfo, 1);
-	info->addr = mem;
-	info->size = size + alignment;
-	g_hash_table_insert (valloc_hash, aligned, info);
+	mono_account_mem (type, (ssize_t)size);
 
-	return aligned;
+	return res;
 }
 
 int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
-	VallocInfo *info = (VallocInfo*)(valloc_hash ? g_hash_table_lookup (valloc_hash, addr) : NULL);
-
-	if (info) {
-		/*
-		 * We are passed the aligned address in the middle of the mapping allocated by
-		 * mono_valloc_align (), free the original mapping.
-		 */
-		BEGIN_CRITICAL_SECTION;
-		munmap (info->addr, info->size);
-		END_CRITICAL_SECTION;
-		g_free (info);
-		g_hash_table_remove (valloc_hash, addr);
-	} else {
-		BEGIN_CRITICAL_SECTION;
-		munmap (addr, length);
-		END_CRITICAL_SECTION;
-	}
+	// NOTE: this doesn't implement partial freeing like munmap does
+	// we set MS_BLOCK_ALLOC_NUM to 1 to avoid partial freeing
+	g_free (addr);
 
 	mono_account_mem (type, -(ssize_t)length);
 
@@ -226,6 +178,9 @@ mono_file_unmap (void *addr, void *handle)
 int
 mono_mprotect (void *addr, size_t length, int flags)
 {
+	if (flags & MONO_MMAP_DISCARD) {
+		memset (addr, 0, length);
+	}
 	return 0;
 }
 

@@ -104,13 +104,13 @@ namespace Tests.System
 
         public static IEnumerable<object[]> TimersProvidersData()
         {
-            yield return new object[] { TimeProvider.System, 6000 };
-            yield return new object[] { new FastClock(),     3000 };
+            yield return new object[] { TimeProvider.System, 1200 }; // At least 4-periods of of 300ms
+            yield return new object[] { new FastClock(),     600  }; // At least 4-periods of of 150ms. fast clock cut time by half
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TimersProvidersData))]
-        public void TestProviderTimer(TimeProvider provider, int MaxMilliseconds)
+        public void TestProviderTimer(TimeProvider provider, int minMilliseconds)
         {
             TimerState state = new TimerState();
 
@@ -118,24 +118,24 @@ namespace Tests.System
                             stat =>
                                 {
                                     TimerState s = (TimerState)stat;
-                                    s.Counter++;
-
-                                    s.TotalTicks += DateTimeOffset.UtcNow.Ticks - s.UtcNow.Ticks;
-
-                                    switch (s.Counter)
+                                    lock (s)
                                     {
-                                        case 2:
-                                            s.Period = 400;
-                                            s.Timer.Change(TimeSpan.FromMilliseconds(s.Period), TimeSpan.FromMilliseconds(s.Period));
-                                            break;
+                                        s.Counter++;
 
-                                        case 4:
-                                            s.TokenSource.Cancel();
-                                            s.Timer.Dispose();
-                                            break;
+                                        switch (s.Counter)
+                                        {
+                                            case 2:
+                                                s.Period = 400;
+                                                s.Timer.Change(TimeSpan.FromMilliseconds(s.Period), TimeSpan.FromMilliseconds(s.Period));
+                                                break;
+
+                                            case 4:
+                                                s.Stopwatch.Stop();
+                                                s.TokenSource.Cancel();
+                                                s.Timer.Dispose();
+                                                break;
+                                        }
                                     }
-
-                                    s.UtcNow = DateTimeOffset.UtcNow;
                                 },
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
@@ -143,9 +143,11 @@ namespace Tests.System
             state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
-            Assert.Equal(4, state.Counter);
+            // In normal conditions, the timer callback should be called 4 times. Sometimes the timer callback could be queued and fired after the timer was disposed.
+            Assert.True(state.Counter >= 4, $"The timer callback was expected to be called at least 4 times, but was called {state.Counter} times");
+
             Assert.Equal(400, state.Period);
-            Assert.True(MaxMilliseconds >= state.TotalTicks / TimeSpan.TicksPerMillisecond, $"The total fired periods {state.TotalTicks / TimeSpan.TicksPerMillisecond}ms expected not exceeding the expected max {MaxMilliseconds}");
+            Assert.True(minMilliseconds <= state.Stopwatch.ElapsedMilliseconds, $"The total fired periods {state.Stopwatch.ElapsedMilliseconds}ms expected to be greater then the expected min {minMilliseconds}ms");
         }
 
         [Fact]
@@ -174,10 +176,15 @@ namespace Tests.System
             Assert.Equal(stamp2 - stamp1, fastClock.GetElapsedTime(stamp1, stamp2).Ticks);
         }
 
+        public class DerivedTimeProvider : TimeProvider
+        {
+        }
+
         public static IEnumerable<object[]> TimersProvidersListData()
         {
             yield return new object[] { TimeProvider.System };
             yield return new object[] { new FastClock() };
+            yield return new object[] { new DerivedTimeProvider() };
         }
 
         public static IEnumerable<object[]> TimersProvidersWithTaskFactorData()
@@ -305,18 +312,25 @@ namespace Tests.System
             }
             catch (Exception e)
             {
-                Assert.True(false, string.Format("RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {0}", e));
+                Assert.Fail($"RunDelayTests:    > FAILED.  Unexpected exception on WaitAll(simple tasks): {e}");
             }
 
             Assert.True(task1.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider) to run to completion");
             Assert.True(task2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider, uncanceledToken) to run to completion");
 
-            // This should take some time
-            Task task3 = taskFactory.Delay(provider, TimeSpan.FromMilliseconds(20000));
+            // This should complete quickly with a CANCELED status.
+            Task task3 = taskFactory.Delay(provider, new TimeSpan(0), new CancellationToken(true));
+            var canceledException = Record.Exception(task3.Wait);
+            Assert.True(canceledException is AggregateException { InnerException: OperationCanceledException },
+                $"RunDelayTests:    > FAILED.  Unexpected exception on canceled task Wait(): {canceledException}");
+            Assert.True(task3.Status == TaskStatus.Canceled, "    > FAILED.  Expected Delay(timeProvider, TimeSpan(0), canceledToken) to be canceled");
 
-            Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
+            // This should take some time
+            Task task4 = taskFactory.Delay(provider, TimeSpan.FromMilliseconds(20000));
+
+            Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
             Task t2 = Task.Delay(TimeSpan.FromMilliseconds(10));
-            Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
+            Assert.False(task4.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -349,6 +363,13 @@ namespace Tests.System
             tcs4.SetResult(42);
             Assert.Equal(42, await task4);
 
+            var tcs5 = new TaskCompletionSource<bool>();
+            await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.Zero, provider, cts.Token));
+
+            cts.Cancel();
+            await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.FromMilliseconds(10), provider, cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(() => taskFactory.WaitAsync(tcs5.Task, TimeSpan.Zero, provider, cts.Token));
+
             using CancellationTokenSource cts1 = new CancellationTokenSource();
             Task task5 = Task.Run(() => { while (!cts1.Token.IsCancellationRequested) { Thread.Sleep(10); } });
             await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(task5, TimeSpan.FromMilliseconds(10), provider));
@@ -358,8 +379,8 @@ namespace Tests.System
             using CancellationTokenSource cts2 = new CancellationTokenSource();
             Task task6 = Task.Run(() => { while (!cts2.Token.IsCancellationRequested) { Thread.Sleep(10); } });
             await Assert.ThrowsAsync<TimeoutException>(() => taskFactory.WaitAsync(task6, TimeSpan.FromMilliseconds(10), provider, cts2.Token));
-            cts1.Cancel();
-            await task5;
+            cts2.Cancel();
+            await task6;
 
             using CancellationTokenSource cts3 = new CancellationTokenSource();
             Task<int> task7 = Task<int>.Run(() => { while (!cts3.Token.IsCancellationRequested) { Thread.Sleep(10); } return 100; });
@@ -445,17 +466,16 @@ namespace Tests.System
             {
                 Counter = 0;
                 Period = 300;
-                TotalTicks = 0;
-                UtcNow = DateTimeOffset.UtcNow;
                 TokenSource = new CancellationTokenSource();
+                Stopwatch = new Stopwatch ();
+                Stopwatch.Start();
             }
 
             public CancellationTokenSource TokenSource { get; set; }
             public int Counter { get; set; }
             public int Period { get; set; }
-            public DateTimeOffset UtcNow { get; set; }
             public ITimer Timer { get; set; }
-            public long TotalTicks { get; set; }
+            public Stopwatch Stopwatch { get; set; }
         };
 
         // Clock that speeds up the reported time
@@ -630,6 +650,69 @@ namespace Tests.System
             {
                 Timer = new ManualTimer(callback, state, dueTime, period);
                 return Timer;
+            }
+        }
+
+        public static IEnumerable<object[]> TaskFactoryData()
+        {
+            yield return new object[] { taskFactory };
+
+#if TESTEXTENSIONS
+            yield return new object[] { extensionsTaskFactory };
+#endif // TESTEXTENSIONS
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [MemberData(nameof(TaskFactoryData))]
+        public async Task TestDelayTaskContinuation(ITestTaskFactory taskFactory)
+        {
+            //
+            // Test time expiration and validate continuation is called synchronously.
+            //
+
+            ManualTimeProvider manualTimeProvider = new ManualTimeProvider();
+            int callbackCount = 0;
+
+            _ = Continuation(manualTimeProvider, default, () => callbackCount++);
+
+             Assert.NotNull(manualTimeProvider.Timer);
+             manualTimeProvider.Timer.Fire();
+
+            // Delay should be completed and the continuation should be called synchronously.
+            Assert.Equal(1, callbackCount);
+
+            //
+            // Test cancellation and validate continuation is called asynchronously.
+            //
+
+            manualTimeProvider = new ManualTimeProvider();
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            var tl = new ThreadLocal<int>();
+            tl.Value = 10;
+            int t1Value = 0;
+
+            Task task = Continuation(manualTimeProvider, cts.Token, () =>  t1Value = tl.Value);
+            cts.Cancel();
+
+            // reset the thread local value as the continuation callback could end up running on this thread pool thread.
+            tl.Value = 0;
+            await task;
+
+            Assert.NotEqual(10, t1Value);
+
+            async Task Continuation(TimeProvider timeProvider, CancellationToken token, Action callback)
+            {
+                try
+                {
+                    await taskFactory.Delay(timeProvider, TimeSpan.FromSeconds(10), token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignore
+                }
+
+                callback();
             }
         }
 

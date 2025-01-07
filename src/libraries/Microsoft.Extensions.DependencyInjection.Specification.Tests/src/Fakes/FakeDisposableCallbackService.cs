@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification.Fakes
 {
-    public class FakeDisposableCallbackService: IDisposable
+    public class FakeDisposableCallbackService : IDisposable
     {
         private static int _globalId;
         private readonly int _id;

@@ -13,6 +13,9 @@ parameters:
   extraHelixArguments: ''
   shouldContinueOnError: false
   scenarios: ''
+  SuperPmiCollect: ''
+  SuperPmiCollectionType: ''
+  SuperPmiCollectionName: ''
 
 steps:
   - script: $(_msbuildCommand) $(_warnAsErrorParamHelixOverride) -restore
@@ -34,6 +37,9 @@ steps:
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
       _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
+      _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      _SuperPmiCollectionType: ${{ parameters.SuperPmiCollectionType }}
+      _SuperPmiCollectionName: ${{ parameters.SuperPmiCollectionName }}
 
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         HelixAccessToken: $(HelixApiAccessToken)

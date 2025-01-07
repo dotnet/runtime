@@ -559,7 +559,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifySimpleDecrypt(encodedMessage, certLoader, expectedContentInfo);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsRC2Supported))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public void TestDecryptSimpleAes256_RsaOaepSha256()
         {
@@ -580,7 +580,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifySimpleDecrypt(encodedMessage, Certificates.RSASha256KeyTransfer1, expectedContentInfo);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsRC2Supported))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public void TestDecryptSimpleAes256_RsaOaepSha384()
         {
@@ -603,7 +603,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             VerifySimpleDecrypt(encodedMessage, Certificates.RSA2048Sha256KeyTransfer1, expectedContentInfo);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsRC2Supported))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public void TestDecryptSimpleAes256_RsaOaepSha512()
         {
@@ -835,7 +835,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 if (cert == null)
                     return; // Sorry - CertLoader is not configured to load certs with private keys - we've tested as much as we can.
 
-#if NETCOREAPP // API not present on netfx
+#if NET // API not present on netfx
                 if (_useExplicitPrivateKey)
                 {
                     using (X509Certificate2 pubCert = certLoader.GetCertificate())

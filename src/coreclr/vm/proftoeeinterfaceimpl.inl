@@ -89,43 +89,6 @@ inline BOOL IsCalledAsynchronously()
 
 //---------------------------------------------------------------------------------------
 //
-// Simple helper that decides whether we should avoid calling into the host. Generally,
-// host calls should be avoided if the current Info method was called asynchronously
-// (i.e., from an F1-style hijack), for fear of re-entering the host (mainly SQL).
-//
-// Server GC threads are native (non-EE) threads, which therefore do not track enough
-// state for us to determine if a call is made asynhronously on those threads. So we
-// pessimistically assume that the current call on a server GC thread is from a hijack
-// for the purposes of determining whether we may enter the host. Reasoning for this:
-//     * SQL enables server-mode GC
-//     * server GC threads are responsible for performing runtime suspension, and thus
-//         call Thread::SuspendThread() which yields/sleeps and thus enters the host. So
-//         server GC threads are examples of non-EE Threads that actually do spend time
-//         in the host (this otherwise almost never happens for other non-EE threads).
-//     * In spite of this pessimism, the effect on the profiler should be minimal. The
-//         host calls we're avoiding are from the code manager's lock, which:
-//             * a) Is only used when doing stack walks or translating IPs to functions
-//             * b) Is only affected if it tries to yield/sleep when the code manager
-//                 writer lock is taken, and that happens for incredibly tiny windows of
-//                 time.
-//
-
-inline BOOL ShouldAvoidHostCalls()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return
-    (
-        IsCalledAsynchronously() ||
-        (
-            (GetThreadNULLOk() == NULL) && IsGCSpecialThread()
-        )
-    );
-}
-
-
-//---------------------------------------------------------------------------------------
-//
 // Simple helper that returns nonzero iff the current thread is a non-EE thread in the
 // process of doing a GC
 //
@@ -180,10 +143,7 @@ inline BOOL IsClassOfMethodTableInited(MethodTable * pMethodTable)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (pMethodTable->IsRestored() &&
-        (pMethodTable->GetModuleForStatics() != NULL) &&
-        (pMethodTable->GetDomainLocalModule() != NULL) &&
-        pMethodTable->IsClassInited());
+    return pMethodTable->IsClassInited();
 }
 
 

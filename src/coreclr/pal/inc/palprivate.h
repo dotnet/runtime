@@ -50,20 +50,6 @@ CreateDirectoryW(
          IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
 PALIMPORT
-HANDLE
-PALAPI
-FindFirstFileA(
-           IN LPCSTR lpFileName,
-           OUT LPWIN32_FIND_DATAA lpFindFileData);
-
-PALIMPORT
-BOOL
-PALAPI
-FindNextFileA(
-          IN HANDLE hFindFile,
-          OUT LPWIN32_FIND_DATAA lpFindFileData);
-
-PALIMPORT
 DWORD
 PALAPI
 GetFileAttributesA(
@@ -127,12 +113,6 @@ OpenMutexA(
        IN DWORD dwDesiredAccess,
        IN BOOL bInheritHandle,
        IN LPCSTR lpName);
-
-PALIMPORT
-HMODULE
-PALAPI
-LoadLibraryA(
-        IN LPCSTR lpLibFileName);
 
 PALIMPORT
 HMODULE

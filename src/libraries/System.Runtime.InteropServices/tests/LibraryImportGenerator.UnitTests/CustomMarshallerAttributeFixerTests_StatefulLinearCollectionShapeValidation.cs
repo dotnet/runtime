@@ -15,7 +15,6 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
 
 namespace LibraryImportGenerator.UnitTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class CustomMarshallerAttributeAnalyzerTests_StatefulLinearCollectionShapeValidation
     {
         [Fact]
@@ -172,7 +171,7 @@ namespace LibraryImportGenerator.UnitTests
                     public nint ToUnmanaged() => default;
                     public void Free() {}
                     public Span<T> GetUnmanagedValuesDestination() => default;
-                
+
                     public ReadOnlySpan<nint> GetManagedValuesSource()
                     {
                         throw new NotImplementedException();
@@ -603,7 +602,6 @@ namespace LibraryImportGenerator.UnitTests
                     public void Free() {}
                     public ReadOnlySpan<byte> GetManagedValuesSource() => default;
                     public Span<T> GetUnmanagedValuesDestination() => default;
-
                     public static int BufferSize
                     {
                         get

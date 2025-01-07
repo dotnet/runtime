@@ -55,7 +55,8 @@ public class TestAssignFieldsBetweenPromotedNotPromotedStructs
 
     // Some simple tests that check that lcl variables
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestStructCasts()
+    [Fact]
+    public static void TestStructCasts()
     {
         PromotedStruct a = new PromotedStruct(); // Addr-exposed, cannot be promoted.promotedField.
         a.promotedField.pointerSizedField = 4;
@@ -74,13 +75,5 @@ public class TestAssignFieldsBetweenPromotedNotPromotedStructs
 
         Debug.Assert(c.anotherOverlappingStruct.b == 0x5);
     }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        TestStructCasts();
-        return 100;
-    }
-
 }
 

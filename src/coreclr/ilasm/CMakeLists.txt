@@ -34,7 +34,17 @@ set(ILASM_HEADERS
   nvpair.h
   typar.hpp
   portable_pdb.h
+  sha256.h
 )
+
+if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
+  configure_file(
+    ../../native/libs/System.Security.Cryptography.Native/pal_crypto_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
+  include_directories(../../native/libs/Common)
+  include_directories(../../native/libs/System.Security.Cryptography.Native)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR})
+endif(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
 
 if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND ILASM_SOURCES ${ILASM_HEADERS})
@@ -54,7 +64,7 @@ if(CLR_CMAKE_HOST_UNIX)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
@@ -63,7 +73,7 @@ if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CL
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
 add_executable_clr(ilasm
   ${ILASM_SOURCES}
@@ -103,10 +113,19 @@ else()
     list(APPEND ILASM_LINK_LIBRARIES
         coreclrpal
         mscorrc
-        palrt
         coreclrminipal
     )
 endif(CLR_CMAKE_TARGET_WIN32)
+
+if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
+  list(APPEND ILASM_LINK_LIBRARIES System.Security.Cryptography.Native.OpenSsl-Static)
+  if(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+    find_package(OpenSSL QUIET)
+    if(OPENSSL_FOUND)
+      list(APPEND ILASM_LINK_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+    endif(OPENSSL_FOUND)
+  endif(NOT FEATURE_DISTRO_AGNOSTIC_SSL)
+endif(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE)
 
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -116,7 +135,6 @@ if(CLR_CMAKE_HOST_UNIX)
     utilcodestaticnohost
     mscorrc
     coreclrpal
-    palrt
     ${CMAKE_DL_LIBS}
   )
 else()

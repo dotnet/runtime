@@ -7,11 +7,10 @@ using Xunit;
 public unsafe class Runtime_74117
 {
     [Fact]
-    public unsafe static int TestEntryPoint()
+    public unsafe static void TestEntryPoint()
     {
         byte a = 5;
         Problem(ref a, 0);
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

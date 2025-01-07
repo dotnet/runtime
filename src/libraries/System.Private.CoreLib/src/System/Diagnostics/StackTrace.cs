@@ -17,6 +17,12 @@ namespace System.Diagnostics
     /// </summary>
     public partial class StackTrace
     {
+        [FeatureSwitchDefinition("System.Diagnostics.StackTrace.IsSupported")]
+        internal static bool IsSupported { get; } = InitializeIsSupported();
+
+        private static bool InitializeIsSupported() =>
+            AppContext.TryGetSwitch("System.Diagnostics.StackTrace.IsSupported", out bool isSupported) ? isSupported : true;
+
         public const int METHODS_TO_SKIP = 0;
 
         private int _numOfFrames;
@@ -121,8 +127,22 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(StackFrame frame)
         {
-            _stackFrames = new StackFrame[] { frame };
+            _stackFrames = [frame];
             _numOfFrames = 1;
+        }
+
+        /// <summary>
+        /// Constructs a stack trace from a set of <see cref="StackFrame"/> objects
+        /// </summary>
+        /// <param name="frames">The set of stack frames that should be present in the stack trace</param>
+        public StackTrace(IEnumerable<StackFrame> frames)
+        {
+            ArgumentNullException.ThrowIfNull(frames);
+
+            List<StackFrame> frameList = new List<StackFrame>(frames);
+
+            _stackFrames = frameList.ToArray();
+            _numOfFrames = frameList.Count;
         }
 
         /// <summary>
@@ -197,10 +217,10 @@ namespace System.Diagnostics
         {
             // Passing a default string for "at" in case SR.UsingResourceKeys() is true
             // as this is a special case and we don't want to have "Word_At" on stack traces.
-            string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
+            string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
             // We also want to pass in a default for inFileLineNumber.
-            string inFileLineNum = SR.GetResourceString(nameof(SR.StackTrace_InFileLineNumber), defaultString: "in {0}:line {1}");
-            string inFileILOffset = SR.GetResourceString(nameof(SR.StackTrace_InFileILOffset), defaultString: "in {0}:token 0x{1:x}+0x{2:x}");
+            string inFileLineNum = SR.UsingResourceKeys() ? "in {0}:line {1}" : SR.StackTrace_InFileLineNumber;
+            string inFileILOffset = SR.UsingResourceKeys() ? "in {0}:token 0x{1:x}+0x{2:x}" : SR.StackTrace_InFileILOffset;
             bool fFirstFrame = true;
             for (int iFrameIndex = 0; iFrameIndex < _numOfFrames; iFrameIndex++)
             {
@@ -221,7 +241,7 @@ namespace System.Diagnostics
                     Type? declaringType = mb.DeclaringType;
                     string methodName = mb.Name;
                     bool methodChanged = false;
-                    if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
+                    if (declaringType != null && IsDefinedSafe(declaringType, typeof(CompilerGeneratedAttribute), inherit: false))
                     {
                         isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
                         if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
@@ -265,17 +285,19 @@ namespace System.Diagnostics
                         sb.Append(']');
                     }
 
-                    ParameterInfo[]? pi = null;
+                    ReadOnlySpan<ParameterInfo> pi = default;
+                    bool appendParameters = true;
                     try
                     {
-                        pi = mb.GetParameters();
+                        pi = mb.GetParametersAsSpan();
                     }
                     catch
                     {
                         // The parameter info cannot be loaded, so we don't
                         // append the parameter list.
+                        appendParameters = false;
                     }
-                    if (pi != null)
+                    if (appendParameters)
                     {
                         // arguments printing
                         sb.Append('(');
@@ -331,7 +353,7 @@ namespace System.Diagnostics
                                 sb.Append(' ');
                                 sb.AppendFormat(CultureInfo.InvariantCulture, inFileILOffset, assemblyName, token, sf.GetILOffset());
                             }
-                            catch (InvalidOperationException) {}
+                            catch (InvalidOperationException) { }
                         }
                     }
 
@@ -340,8 +362,7 @@ namespace System.Diagnostics
                     {
                         sb.AppendLine();
                         // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
-                        sb.Append(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
-                            defaultString: "--- End of stack trace from previous location ---"));
+                        sb.Append(SR.UsingResourceKeys() ? "--- End of stack trace from previous location ---" : SR.Exception_EndStackTraceFromPreviousThrow);
                     }
                 }
             }
@@ -364,31 +385,51 @@ namespace System.Diagnostics
                 return false;
             }
 
-            try
+            if (IsDefinedSafe(mb, typeof(StackTraceHiddenAttribute), inherit: false))
             {
-                if (mb.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
-                {
-                    // Don't show where StackTraceHidden is applied to the method.
-                    return false;
-                }
-
-                Type? declaringType = mb.DeclaringType;
-                // Methods don't always have containing types, for example dynamic RefEmit generated methods.
-                if (declaringType != null &&
-                    declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
-                {
-                    // Don't show where StackTraceHidden is applied to the containing Type of the method.
-                    return false;
-                }
+                // Don't show where StackTraceHidden is applied to the method.
+                return false;
             }
-            catch
+
+            Type? declaringType = mb.DeclaringType;
+            // Methods don't always have containing types, for example dynamic RefEmit generated methods.
+            if (declaringType != null &&
+                IsDefinedSafe(declaringType, typeof(StackTraceHiddenAttribute), inherit: false))
             {
-                // Getting the StackTraceHiddenAttribute has failed, behave as if it was not present.
-                // One of the reasons can be that the method mb or its declaring type use attributes
-                // defined in an assembly that is missing.
+                // Don't show where StackTraceHidden is applied to the containing Type of the method.
+                return false;
             }
 
             return true;
+        }
+
+        private static bool IsDefinedSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
+        {
+            try
+            {
+                return memberInfo.IsDefined(attributeType, inherit);
+            }
+            catch
+            {
+                // Checking for the attribute has failed, behave as if it was not present. One of
+                // the reasons can be that the member has attributes defined in an assembly that
+                // is missing.
+                return false;
+            }
+        }
+
+        private static Attribute[] GetCustomAttributesSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
+        {
+            try
+            {
+                return Attribute.GetCustomAttributes(memberInfo, attributeType, inherit);
+            }
+            catch
+            {
+                // Getting the attributes has failed, return an empty array. One of the reasons
+                // can be that the member has attributes defined in an assembly that is missing.
+                return [];
+            }
         }
 
         private static bool TryResolveStateMachineMethod(ref MethodBase method, out Type declaringType)
@@ -418,7 +459,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                StateMachineAttribute[]? attributes = (StateMachineAttribute[])Attribute.GetCustomAttributes(candidateMethod, typeof(StateMachineAttribute), inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[])GetCustomAttributesSafe(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;

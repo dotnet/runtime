@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -19,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestTypeOfFromGeneric<TestType> ();
 			TestGetTypeHandle ();
 			TestGetTypeHandleFromGeneric<TestType> ();
-			TestUnsupportedPatterns (typeof (TestType));
+			TestFlowThroughGetTypeHandleGetTypeFromHandle (typeof (TestType));
 			TestNull ();
 			TestNoValue ();
 		}
@@ -59,8 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type.GetTypeFromHandle (typeof (T).TypeHandle).RequiresPublicFields ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (Type.GetTypeFromHandle), nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-		static void TestUnsupportedPatterns ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods)
+		static void TestFlowThroughGetTypeHandleGetTypeFromHandle ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods)
 		{
 			Type.GetTypeFromHandle (typeWithMethods.TypeHandle).RequiresPublicMethods ();
 		}

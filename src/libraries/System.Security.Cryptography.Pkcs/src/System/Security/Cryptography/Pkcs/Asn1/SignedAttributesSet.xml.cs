@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             bool wroteValue = false;
 

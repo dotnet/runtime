@@ -5,7 +5,7 @@ using System;
 
 namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
-    [AttributeUsage (AttributeTargets.Method, AllowMultiple=true)]
+    [AttributeUsage (AttributeTargets.Method | AttributeTargets.Class, AllowMultiple=true)]
     public class MyDeleteAttribute : Attribute
     {
         public MyDeleteAttribute (string stringValue) { StringValue = stringValue; }
@@ -19,6 +19,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public int IntValue {get; set; }
     }
 
+    [MyDeleteAttribute ("xyz")]
     public class ClassWithCustomAttributeDelete
     {
         [MyDeleteAttribute ("abcd")]

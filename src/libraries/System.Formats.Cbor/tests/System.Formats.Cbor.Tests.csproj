@@ -1,11 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <nullable>enable</nullable>
     <!-- Referenced assembly 'FsCheck' does not have a strong name.-->
     <NoWarn>$(NoWarn);CS8002</NoWarn>
     <!-- FSharp.Core: Could not find embedded resource 'FSharpOptimizationCompressedData.FSharp.Core' to remove in assembly 'FSharp.Core'. See https://github.com/dotnet/fsharp/pull/14395 -->
     <NoWarn>$(NoWarn);IL2040</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs">

@@ -796,7 +796,7 @@ namespace System.Security.Cryptography.Xml
             {
                 string? baseUri = _containingDocument?.BaseURI;
                 XmlResolver? resolver = (_bResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-                XmlDocument doc = Utils.PreProcessElementInput(SignedInfo!.GetXml(), resolver!, baseUri );
+                XmlDocument doc = Utils.PreProcessElementInput(SignedInfo!.GetXml(), resolver!, baseUri);
 
                 // Add non default namespaces in scope
                 CanonicalXmlNodeList? namespaces = (_context == null ? null : Utils.GetPropagatedAttributes(_context));

@@ -10,7 +10,7 @@ namespace Test
     public class Temp
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int x = 10;
             switch (x)
@@ -19,7 +19,6 @@ namespace Test
                     Console.WriteLine("10");
                     break;
             }
-            return 100;
         }
     }
 

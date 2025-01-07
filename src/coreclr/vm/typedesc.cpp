@@ -74,16 +74,7 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
     else
     {
-        PTR_Module retVal = NULL;
-        BOOL fFail = FALSE;
-
-        _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-        PTR_FnPtrTypeDesc asFnPtr = dac_cast<PTR_FnPtrTypeDesc>(this);
-        if (!fFail)
-        {
-            retVal = ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
-        }
-        return retVal;
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->GetLoaderModule();
     }
 }
 
@@ -104,18 +95,28 @@ BOOL TypeDesc::IsSharedByGenericInstantiations()
     return FALSE;
 }
 
-PTR_BaseDomain TypeDesc::GetDomain()
+BOOL TypeDesc::ContainsGenericVariables(BOOL methodOnly)
 {
-    CONTRACTL
+    if (IsGenericVariable())
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
+        if (!methodOnly)
+            return TRUE;
 
-    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
+        PTR_TypeVarTypeDesc pTyVar = dac_cast<PTR_TypeVarTypeDesc>(this);
+        return TypeFromToken(pTyVar->GetTypeOrMethodDef()) == mdtMethodDef;
+    }
+
+    if (HasTypeParam())
+    {
+        return GetRootTypeParam().ContainsGenericVariables(methodOnly);
+    }
+
+    if (IsFnPtr())
+    {
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->ContainsGenericVariables(methodOnly);
+    }
+
+    return FALSE;
 }
 
 PTR_Module TypeDesc::GetModule() {
@@ -499,7 +500,7 @@ TypeHandle TypeDesc::GetParent() {
 
 #ifndef DACCESS_COMPILE
 
-OBJECTREF ParamTypeDesc::GetManagedClassObject()
+OBJECTREF TypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
         THROWS;
@@ -507,15 +508,10 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         MODE_COOPERATIVE;
 
         INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_ARRAY ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_BYREF ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_PTR);
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == NULL)
+    if (m_hExposedClassObject == 0)
     {
         TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
@@ -523,52 +519,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-
-OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-    }
-    CONTRACTL_END;
-
-    if (m_hExposedClassObject == NULL)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
-    }
-    return GetManagedClassObjectIfExists();
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-BOOL TypeDesc::IsRestored()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
-    return IsRestored_NoLogging();
-}
-
-BOOL TypeDesc::IsRestored_NoLogging()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
-    return (m_typeAndFlags & TypeDesc::enum_flag_Unrestored) == 0;
-}
 
 ClassLoadLevel TypeDesc::GetLoadLevel()
 {
@@ -577,15 +527,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    if (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey)
-    {
-        return CLASS_LOAD_UNRESTOREDTYPEKEY;
-    }
-    else if (m_typeAndFlags & TypeDesc::enum_flag_Unrestored)
-    {
-        return CLASS_LOAD_UNRESTORED;
-    }
-    else if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
         if (m_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {
@@ -1513,11 +1455,11 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
         if ((specialConstraints & gpDefaultConstructorConstraint) != 0)
         {
-            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
+            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor() || thArg.IsAbstract()))
                 return FALSE;
         }
 
-        if (thArg.IsByRefLike() && (specialConstraints & gpAcceptByRefLike) == 0)
+        if (thArg.IsByRefLike() && (specialConstraints & gpAllowByRefLike) == 0)
             return FALSE;
     }
 
@@ -1611,7 +1553,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
                                     (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
-                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
+                                        pInterfaceMT, pMD,
+                                        ResolveVirtualStaticMethodFlags::AllowNullResult | ResolveVirtualStaticMethodFlags::VerifyImplemented | ResolveVirtualStaticMethodFlags::AllowVariantMatches,
+                                        /*uniqueResolution*/ NULL, CLASS_DEPENDENCIES_LOADED)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;
@@ -1632,26 +1576,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         }
     }
     return TRUE;
-}
-
-OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(IsGenericVariable());
-    }
-    CONTRACTL_END;
-
-    if (m_hExposedClassObject == NULL)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
-    }
-    return GetManagedClassObjectIfExists();
 }
 
 #endif //!DACCESS_COMPILE
@@ -1678,6 +1602,21 @@ FnPtrTypeDesc::IsSharedByGenericInstantiations()
     }
     return FALSE;
 } // FnPtrTypeDesc::IsSharedByGenericInstantiations
+
+BOOL
+FnPtrTypeDesc::ContainsGenericVariables(BOOL methodOnly)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    for (DWORD i = 0; i <= m_NumArgs; i++)
+    {
+        if (m_RetAndArgTypes[i].ContainsGenericVariables(methodOnly))
+        {
+            return TRUE;
+        }
+    }
+    return FALSE;
+} // FnPtrTypeDesc::ContainsGenericVariables
 
 #ifndef DACCESS_COMPILE
 

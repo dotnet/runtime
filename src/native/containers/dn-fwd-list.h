@@ -7,6 +7,10 @@
 #include "dn-utils.h"
 #include "dn-allocator.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef int32_t (DN_CALLBACK_CALLTYPE *dn_fwd_list_compare_func_t) (const void *a, const void *b);
 typedef bool (DN_CALLBACK_CALLTYPE *dn_fwd_list_equal_func_t) (const void *a, const void *b);
 typedef void (DN_CALLBACK_CALLTYPE *dn_fwd_list_for_each_func_t) (void *data, void *user_data);
@@ -171,12 +175,13 @@ dn_fwd_list_front (const dn_fwd_list_t *list)
 #define dn_fwd_list_front_t(list, type) \
 	(type *)dn_fwd_list_front ((list))
 
+extern dn_fwd_list_node_t _fwd_list_before_begin_it_node;
+
 static inline dn_fwd_list_it_t
 dn_fwd_list_before_begin (dn_fwd_list_t *list)
 {
 	DN_ASSERT (list);
 
-	extern dn_fwd_list_node_t _fwd_list_before_begin_it_node;
 	dn_fwd_list_it_t it = { &_fwd_list_before_begin_it_node, { list } };
 
 	return it;
@@ -320,5 +325,9 @@ dn_fwd_list_find (
 {
 	return dn_fwd_list_custom_find (list, data, NULL);
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __DN_FWD_LIST_H__ */

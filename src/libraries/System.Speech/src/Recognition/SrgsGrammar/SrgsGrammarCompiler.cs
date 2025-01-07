@@ -115,7 +115,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Decide if the input stream is a cfg.
         // If not assume it's an xml grammar.
         // The stream parameter points to the start of the data on entry and is reset to that point on exit.
-        private static bool CheckIfCfg(Stream stream, out int cfgLength)
+        private static bool CheckIfCfg(SeekableReadStream stream, out int cfgLength)
         {
             long initialPosition = stream.Position;
 

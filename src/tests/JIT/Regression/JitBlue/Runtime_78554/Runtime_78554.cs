@@ -22,10 +22,9 @@ public class Runtime_78554
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var arr = new uint[] { 1, 42, 3000 };
         ArrayIndexConsume(arr, 0xffffffff);
-        return 100;
     }
 }

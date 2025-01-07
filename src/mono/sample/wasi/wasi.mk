@@ -24,4 +24,4 @@ clean:
 	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
 
 run-console:
-	cd bin/wasi-wasm/AppBundle && PATH=${WASMTIME_PROV_DIR}:${PATH} ./run-wasmtime.sh $(ARGS)
+	cd bin/wasi-wasm/AppBundle && PATH="${WASMTIME_PROV_DIR}:${PATH}" ./run-wasmtime.sh $(ARGS)

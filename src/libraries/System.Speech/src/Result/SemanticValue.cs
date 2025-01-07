@@ -9,7 +9,7 @@ using System.Speech.Internal;
 namespace System.Speech.Recognition
 {
     [Serializable]
-    [DebuggerDisplay("'{_keyName}'= {Value}  -  Children = {_dictionary.Count}")]
+    [DebuggerDisplay("{_keyName} = {Value}, Children = {_dictionary.Count}")]
     [DebuggerTypeProxy(typeof(SemanticValueDebugDisplay))]
     public sealed class SemanticValue : IDictionary<string, SemanticValue>
     {
@@ -257,7 +257,7 @@ namespace System.Speech.Recognition
             private object _name;
             private object _value;
             private float _confidence;
-            private IDictionary<string, SemanticValue> _dictionary;
+            private Dictionary<string, SemanticValue> _dictionary;
         }
 
         #endregion

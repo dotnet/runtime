@@ -17,37 +17,30 @@ namespace Microsoft.Extensions.Logging.Console
         public ConsoleFormatterOptions() { }
 
         /// <summary>
-        /// Includes scopes when <see langword="true" />.
+        /// Gets or sets a value that indicates whether scopes are included.
         /// </summary>
+        /// <value>
+        /// <see langword="true" /> if scopes are included.
+        /// </value>
         public bool IncludeScopes { get; set; }
 
         /// <summary>
-        /// Gets or sets format string used to format timestamp in logging messages. Defaults to <c>null</c>.
+        /// Gets or sets the format string used to format timestamp in logging messages.
         /// </summary>
+        /// <value>
+        /// The default is <see langword="null" />.
+        /// </value>
         [StringSyntax(StringSyntaxAttribute.DateTimeFormat)]
         public string? TimestampFormat { get; set; }
 
         /// <summary>
-        /// Gets or sets indication whether or not UTC timezone should be used to format timestamps in logging messages. Defaults to <c>false</c>.
+        /// Gets or sets a value that indicates whether or not UTC timezone should be used to format timestamps in logging messages.
         /// </summary>
+        /// <value>
+        /// The default is <see langword="false" />.
+        /// </value>
         public bool UseUtcTimestamp { get; set; }
 
-        internal virtual void Configure(IConfiguration configuration)
-        {
-            if (ConsoleLoggerOptions.ParseBool(configuration, nameof(IncludeScopes), out bool includeScopes))
-            {
-                IncludeScopes = includeScopes;
-            }
-
-            if (configuration[nameof(TimestampFormat)] is string timestampFormat)
-            {
-                TimestampFormat = timestampFormat;
-            }
-
-            if (ConsoleLoggerOptions.ParseBool(configuration, nameof(UseUtcTimestamp), out bool useUtcTimestamp))
-            {
-                UseUtcTimestamp = useUtcTimestamp;
-            }
-        }
+        internal virtual void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }

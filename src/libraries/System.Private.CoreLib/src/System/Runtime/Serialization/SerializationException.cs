@@ -21,13 +21,13 @@ namespace System.Runtime.Serialization
         }
 
         public SerializationException(string? message)
-            : base(message)
+            : base(message ?? SR.SerializationException)
         {
             HResult = HResults.COR_E_SERIALIZATION;
         }
 
         public SerializationException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.SerializationException, innerException)
         {
             HResult = HResults.COR_E_SERIALIZATION;
         }

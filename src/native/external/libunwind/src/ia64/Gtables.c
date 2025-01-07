@@ -624,7 +624,7 @@ validate_cache (unw_addr_space_t as)
   int ret;
 
   SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
-  ret = dl_iterate_phdr (check_callback, as);
+  ret = as->iterate_phdr_function (check_callback, as);
   SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
   return ret;
 }
@@ -655,7 +655,7 @@ tdep_find_proc_info (unw_addr_space_t as, unw_word_t ip,
   di.u.ti.segbase = ip; /* this is cheap... */
 
   SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
-  ret = dl_iterate_phdr (callback, &di);
+  ret = as->iterate_phdr_function (callback, &di);
   SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
 
   if (ret <= 0)

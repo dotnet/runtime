@@ -80,7 +80,7 @@ ds_ipc_advertise_cookie_v1_get (void)
 void
 ds_ipc_advertise_cookie_v1_init (void)
 {
-	ep_rt_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
+	ep_thread_create_activity_id ((uint8_t *)&_ds_ipc_advertise_cooike_v1, EP_GUID_SIZE);
 }
 
 /**
@@ -418,6 +418,23 @@ ds_ipc_message_try_parse_uint64_t (
 	if (result)
 		*value = ep_rt_val_uint64_t (*value);
 	return result;
+}
+
+bool
+ds_ipc_message_try_parse_bool (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	bool *value)
+{
+    EP_ASSERT (buffer != NULL);
+    EP_ASSERT (buffer_len != NULL);
+    EP_ASSERT (value != NULL);
+
+    uint8_t temp_value;
+    bool result = ds_ipc_message_try_parse_value (buffer, buffer_len, (uint8_t *)&temp_value, 1);
+    if (result)
+        *value = temp_value == 0 ? false : true;
+    return result;
 }
 
 bool

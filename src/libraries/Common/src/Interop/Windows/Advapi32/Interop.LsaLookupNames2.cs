@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupNames2",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Interop.Libraries.Advapi32, EntryPoint = "LsaLookupNames2", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint LsaLookupNames2(
             SafeLsaPolicyHandle handle,
             int flags,
@@ -31,6 +31,15 @@ internal static partial class Interop
             [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), MarshalMode.ElementIn, typeof(Marshaller))]
             public static class Marshaller
             {
+                public static MARSHALLED_UNICODE_STRING ConvertToManaged(Native unmanaged)
+                {
+                    MARSHALLED_UNICODE_STRING m;
+                    m.Length = unmanaged.Length;
+                    m.MaximumLength = unmanaged.MaximumLength;
+                    m.Buffer = Marshal.PtrToStringUni(unmanaged.Buffer)!;
+                    return m;
+                }
+
                 public static Native ConvertToUnmanaged(MARSHALLED_UNICODE_STRING managed)
                 {
                     Native n;

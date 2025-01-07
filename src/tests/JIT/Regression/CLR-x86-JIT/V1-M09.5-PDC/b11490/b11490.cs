@@ -12,7 +12,6 @@ namespace DefaultNamespace
         [Fact]
         public static int TestEntryPoint()
         {
-
             try
             {
                 throw new Exception();
@@ -39,7 +38,7 @@ namespace DefaultNamespace
                 }
                 return 100;
             }
+            return 101;
         }
-    };
-};
-
+    }
+}

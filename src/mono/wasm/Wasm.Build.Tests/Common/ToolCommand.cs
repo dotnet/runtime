@@ -13,6 +13,7 @@ namespace Wasm.Build.Tests
 {
     public class ToolCommand : IDisposable
     {
+        private bool isDisposed = false;
         private string _label;
         protected ITestOutputHelper _testOutput;
 
@@ -93,12 +94,15 @@ namespace Wasm.Build.Tests
 
         public virtual void Dispose()
         {
+            if (isDisposed)
+                return;
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
-                CurrentProcess.KillTree();
+                CurrentProcess.Kill(entireProcessTree: true);
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }
+            isDisposed = true;
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
@@ -107,36 +111,38 @@ namespace Wasm.Build.Tests
         {
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
-            CurrentProcess.ErrorDataReceived += (s, e) =>
+            DataReceivedEventHandler errorHandler = (s, e) =>
             {
-                if (e.Data == null)
+                if (e.Data == null || isDisposed)
                     return;
 
                 string msg = $"[{_label}] {e.Data}";
                 output.Add(msg);
                 _testOutput.WriteLine(msg);
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine(msg);
                 ErrorDataReceived?.Invoke(s, e);
             };
 
-            CurrentProcess.OutputDataReceived += (s, e) =>
+            DataReceivedEventHandler outputHandler = (s, e) =>
             {
-                if (e.Data == null)
+                if (e.Data == null || isDisposed)
                     return;
 
                 string msg = $"[{_label}] {e.Data}";
                 output.Add(msg);
                 _testOutput.WriteLine(msg);
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine(msg);
                 OutputDataReceived?.Invoke(s, e);
             };
+
+            CurrentProcess.ErrorDataReceived += errorHandler;
+            CurrentProcess.OutputDataReceived += outputHandler;
 
             var completionTask = CurrentProcess.StartAndWaitForExitAsync();
             CurrentProcess.BeginOutputReadLine();
             CurrentProcess.BeginErrorReadLine();
             await completionTask;
+
+            CurrentProcess.ErrorDataReceived -= errorHandler;
+            CurrentProcess.OutputDataReceived -= outputHandler;
 
             RemoveNullTerminator(output);
 

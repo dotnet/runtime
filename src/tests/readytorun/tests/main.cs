@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Reflection;
 using System.IO;
+using Xunit;
 
 class InstanceFieldTest : MyClass
 {
@@ -48,7 +49,7 @@ static class OpenClosedDelegateExtension
     }
 }
 
-class Program
+public class Program
 {
     static void TestVirtualMethodCalls()
     {
@@ -69,12 +70,31 @@ class Program
         }
     }
 
+    static void TestThrowHelpers()
+    {
+        try
+        {
+            MyClass.ThrowIOE();
+            // JIT is not allowed to assume Throw() will always be "no-return"
+        }
+        catch (InvalidOperationException) {}
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Func<string> GetChangedToNonVirtualDelegate(MyClass o)
+    {
+        return o.ChangedToNonVirtual;
+    }
+
     static void TestMovedVirtualMethods()
     {
         var o = new MyChildClass();
 
         Assert.AreEqual(o.MovedToBaseClass(), "MovedToBaseClass");
         Assert.AreEqual(o.ChangedToVirtual(), "ChangedToVirtual");
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate(o)(), "ChangedToNonVirtual");
 
         o = null;
 
@@ -174,12 +194,21 @@ class Program
             "System.StringSystem.ObjectProgramSystem.Collections.Generic.IEnumerable`1[System.String]");
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Func<string> GetChangedToNonVirtualDelegate<TClass, TMethod>(MyGeneric<TClass, TClass> o)
+    {
+        return o.ChangedToNonVirtual<TMethod>;
+    }
+
     static void TestMovedGenericVirtualMethod()
     {
         var o = new MyChildGeneric<Object>();
 
         Assert.AreEqual(o.MovedToBaseClass<WeakReference>(), typeof(List<WeakReference>).ToString());
         Assert.AreEqual(o.ChangedToVirtual<WeakReference>(), typeof(List<WeakReference>).ToString());
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate<object, WeakReference>(o)(), typeof(List<WeakReference>).ToString());
 
         o = null;
 
@@ -224,6 +253,9 @@ class Program
         var o2 = new MyChildGeneric<MyChangingStruct>();
         Assert.AreEqual(o2.MovedToBaseClass<MyGrowingStruct>(), typeof(List<MyGrowingStruct>).ToString());
         Assert.AreEqual(o2.ChangedToVirtual<MyGrowingStruct>(), typeof(List<MyGrowingStruct>).ToString());
+
+        // Test that changing a virtual to a non-virtual doesn't cause a crash. (Behavior is somewhat undefined, as this change is explicitly defined as a breaking change.)
+        Assert.AreEqual(GetChangedToNonVirtualDelegate<MyChangingStruct, MyGrowingStruct>(o2)(), typeof(List<MyGrowingStruct>).ToString());
     }
 
     static void TestInstanceFields()
@@ -441,12 +473,28 @@ class Program
         Assert.AreEqual(ILInliningTest.TestDifferentIntValue(), actualMethodCallResult);
     }
 
+    private class CallDefaultVsExactStaticVirtual<T> where T : IDefaultVsExactStaticVirtual
+    {
+        public static string CallMethodOnGenericType() => T.Method();
+    }
+
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    static void TestDefaultVsExactStaticVirtualMethodImplementation()
+    {
+        Assert.AreEqual(CallDefaultVsExactStaticVirtual<DefaultVsExactStaticVirtualClass>.CallMethodOnGenericType(), "DefaultVsExactStaticVirtualMethod");
+        // Naively one would expect that the following should do, however Roslyn fails to compile it claiming that the type DVESVC doesn't contain 'Method':
+        // Assert.AreEqual(DefaultVsExactStaticVirtualClass.Method(), "DefaultVsExactStaticVirtualMethod");
+    }
+
     static void RunAllTests()
     {
         Console.WriteLine("TestVirtualMethodCalls");
         TestVirtualMethodCalls();
         Console.WriteLine("TestMovedVirtualMethod");
         TestMovedVirtualMethods();
+
+        Console.WriteLine("TestThrowHelpers");
+        TestThrowHelpers();
 
         Console.WriteLine("TestConstrainedMethodCalls");
         TestConstrainedMethodCalls();
@@ -527,10 +575,14 @@ class Program
 
         Console.WriteLine("TestILBodyChange");
         TestILBodyChange();
+        
+        Console.WriteLine("TestDefaultVsExactStaticVirtualMethodImplementation");
+        TestDefaultVsExactStaticVirtualMethodImplementation();
+        
         ILInliningVersioningTest<LocallyDefinedStructure>.RunAllTests(typeof(Program).Assembly);
     }
 
-    static int Main()
+    public static int Main()
     {
         // Run all tests 3x times to exercise both slow and fast paths work
         for (int i = 0; i < 3; i++)

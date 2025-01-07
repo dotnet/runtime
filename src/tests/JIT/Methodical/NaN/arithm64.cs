@@ -88,11 +88,10 @@ namespace JitTest
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             RunTests(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity);
             Console.WriteLine("=== PASSED ===");
-            return 100;
         }
     }
 }

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Internal.LowLevelLinq
 {
@@ -13,12 +13,12 @@ namespace Internal.LowLevelLinq
         {
             Debug.Assert(values != null);
 
-            LowLevelList<T> list = new LowLevelList<T>();
+            ArrayBuilder<T> arrayBuilder = default;
             foreach (T value in values)
             {
-                list.Add(value);
+                arrayBuilder.Add(value);
             }
-            return list.ToArray();
+            return arrayBuilder.ToArray();
         }
     }
 }

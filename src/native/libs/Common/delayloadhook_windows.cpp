@@ -18,7 +18,7 @@ FARPROC WINAPI secureDelayHook(unsigned dliNotify, PDelayLoadInfo pdli)
     return nullptr;
 }
 
-// See https://docs.microsoft.com/en-us/cpp/build/reference/notification-hooks
+// See https://learn.microsoft.com/cpp/build/reference/notification-hooks
 // This global hook is called prior to all the delay load LoadLibrary/GetProcAddress/etc. calls
 // Hooking this callback allows us to ensure that delay load LoadLibrary calls
 // specify the LOAD_LIBRARY_SEARCH_SYSTEM32 search path

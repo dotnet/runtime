@@ -231,13 +231,12 @@ namespace System.Net.Http
         private static void OnRequestSendingRequest(WinHttpRequestState state)
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
-            Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
             Debug.Assert(state.RequestMessage != null, "OnRequestSendingRequest: state.RequestMessage is null");
             Debug.Assert(state.RequestMessage.RequestUri != null, "OnRequestSendingRequest: state.RequestMessage.RequestUri is null");
 
-            if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https)
+            if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https || state.RequestHandle == null)
             {
-                // Not SSL/TLS.
+                // Not SSL/TLS or request already gone
                 return;
             }
 
@@ -271,9 +270,9 @@ namespace System.Net.Http
                     throw WinHttpException.CreateExceptionUsingError(lastError, "WINHTTP_CALLBACK_STATUS_SENDING_REQUEST/WinHttpQueryOption");
                 }
 
-                    // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
-                    X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
-                    UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle, remoteCertificateStore);
+                // Get any additional certificates sent from the remote server during the TLS/SSL handshake.
+                X509Certificate2Collection remoteCertificateStore = new X509Certificate2Collection();
+                UnmanagedCertificateContext.GetRemoteCertificatesFromStoreContext(certHandle, remoteCertificateStore);
 
                 // Create a managed wrapper around the certificate handle. Since this results in duplicating
                 // the handle, we will close the original handle after creating the wrapper.

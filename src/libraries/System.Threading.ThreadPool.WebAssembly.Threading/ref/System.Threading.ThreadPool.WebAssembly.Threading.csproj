@@ -3,14 +3,14 @@
     <AssemblyName>System.Threading.ThreadPool</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <FeatureWasmThreads>true</FeatureWasmThreads>
+    <FeatureWasmManagedThreads>true</FeatureWasmManagedThreads>
     <!-- tell references.targets to bump the assembly file version -->
     <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
     <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
     <EnableBinPlacing>false</EnableBinPlacing>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\ref\System.Threading.ThreadPool.cs" />

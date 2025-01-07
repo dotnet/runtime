@@ -6,8 +6,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal interface IJSMarshallingGenerator : IMarshallingGenerator
+    internal interface IJSMarshallingGenerator : IBoundMarshallingGenerator
     {
-        IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context);
+        IEnumerable<ExpressionSyntax> GenerateBind();
     }
 }

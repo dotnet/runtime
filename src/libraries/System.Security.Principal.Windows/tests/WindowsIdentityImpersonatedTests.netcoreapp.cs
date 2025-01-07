@@ -28,6 +28,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
     public async Task RunImpersonatedAsync_TaskAndTaskOfT()
     {
         using WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
@@ -69,6 +70,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
     public void RunImpersonated_NameResolution()
     {
         using WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();
@@ -90,6 +92,7 @@ public class WindowsIdentityImpersonatedTests : IClassFixture<WindowsIdentityFix
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanRunImpersonatedTests))]
     [OuterLoop]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
     public async Task RunImpersonatedAsync_NameResolution()
     {
         using WindowsIdentity currentWindowsIdentity = WindowsIdentity.GetCurrent();

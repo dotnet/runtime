@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 
 using BindingFlags = System.Reflection.BindingFlags;
@@ -14,6 +15,9 @@ class FeatureSwitches
     static int GetIntConstant() => 0;
     static bool s_isEnabled = IsEnabled();
 
+    // These are substituted by embedded XML file and re-substituted by XML passed on command line
+    static int GetCookie() => 0;
+
     public static int Run()
     {
         SanityTest.Run();
@@ -22,6 +26,8 @@ class FeatureSwitches
         TestEmptyFinally.Run();
         TestStaticField.Run();
         TestIntConstant.Run();
+        TestResubstitution.Run();
+        TestResourceStripping.Run();
         
         return 100;
     }
@@ -146,6 +152,28 @@ class FeatureSwitches
             }
 
             ThrowIfPresent(typeof(TestIntConstant), nameof(NotPresentType));
+        }
+    }
+
+    class TestResubstitution
+    {
+        public static void Run()
+        {
+            if (GetCookie() != 100)
+                throw new Exception(GetCookie().ToString());
+        }
+    }
+
+    class TestResourceStripping
+    {
+        public static void Run()
+        {
+            string[] names = Assembly.GetExecutingAssembly().GetManifestResourceNames();
+            Console.WriteLine("Resource list");
+            foreach (string n in names)
+                Console.WriteLine(n);
+            if (names.Length != 1 || names[0] != "KeptResource")
+                throw new Exception();
         }
     }
 

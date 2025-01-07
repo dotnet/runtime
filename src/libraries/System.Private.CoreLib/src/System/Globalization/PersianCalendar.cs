@@ -21,7 +21,7 @@ namespace System.Globalization
     {
         public static readonly int PersianEra = 1;
 
-        private static readonly long s_persianEpoch = new DateTime(622, 3, 22).Ticks / TicksPerDay;
+        private static readonly long s_persianEpoch = new DateTime(622, 3, 22).Ticks / TimeSpan.TicksPerDay;
         private const int ApproximateHalfYear = 180;
 
         private const int DatePartYear = 0;
@@ -30,7 +30,7 @@ namespace System.Globalization
         private const int DatePartDay = 3;
         private const int MonthsPerYear = 12;
 
-        private static ReadOnlySpan<int> DaysToMonth => new int[] { 0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366 };
+        private static ReadOnlySpan<int> DaysToMonth => [0, 31, 62, 93, 124, 155, 186, 216, 246, 276, 306, 336, 366];
 
         private const int MaxCalendarYear = 9378;
         private const int MaxCalendarMonth = 10;
@@ -141,13 +141,13 @@ namespace System.Globalization
             return DaysToMonth[month];
         }
 
-        internal int GetDatePart(long ticks, int part)
+        private int GetDatePart(long ticks, int part)
         {
             CheckTicksRange(ticks);
 
             // Get the absolute date. The absolute date is the number of days from January 1st, 1 A.D.
             // 1/1/0001 is absolute date 1.
-            long numDays = ticks / TicksPerDay + 1;
+            long numDays = ticks / TimeSpan.TicksPerDay + 1;
 
             // Calculate the appromixate Persian Year.
             long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(numDays);
@@ -197,7 +197,7 @@ namespace System.Globalization
 
             // Get the absolute date. The absolute date is the number of days from January 1st, 1 A.D.
             // 1/1/0001 is absolute date 1.
-            long numDays = ticks / TicksPerDay + 1;
+            long numDays = ticks / TimeSpan.TicksPerDay + 1;
 
             // Calculate the appromixate Persian Year.
             long yearStart = CalendricalCalculationsHelper.PersianNewYearOnOrBefore(numDays);
@@ -245,7 +245,7 @@ namespace System.Globalization
                 d = days;
             }
 
-            long ticks = GetAbsoluteDatePersian(y, m, d) * TicksPerDay + time.Ticks % TicksPerDay;
+            long ticks = GetAbsoluteDatePersian(y, m, d) * TimeSpan.TicksPerDay + time.Ticks % TimeSpan.TicksPerDay;
             CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
@@ -303,7 +303,7 @@ namespace System.Globalization
             return PersianEra;
         }
 
-        public override int[] Eras => new int[] { PersianEra };
+        public override int[] Eras => [PersianEra];
 
         public override int GetMonth(DateTime time)
         {
@@ -384,7 +384,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
 
-            return new DateTime(lDate * TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(lDate * TimeSpan.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         private const int DefaultTwoDigitYearMax = 1410;

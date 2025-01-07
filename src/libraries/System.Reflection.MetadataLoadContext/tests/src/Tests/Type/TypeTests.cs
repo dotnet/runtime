@@ -365,7 +365,7 @@ namespace System.Reflection.Tests
             }
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [Fact]
         public static void GetEnumValuesAsUnderlyingType()
         {

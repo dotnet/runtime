@@ -165,9 +165,7 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             // Succeed the second connection attempt
-                            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                            await socket.ConnectAsync(context.DnsEndPoint, token);
-                            return new NetworkStream(socket, ownsSocket: true);
+                            return await DefaultConnectCallback(context.DnsEndPoint, token);
                         }
                     };
 
@@ -307,7 +305,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void CancelPendingRequest_DropsStalledConnectionAttempt_CustomPendingConnectionTimeout()
+        public async Task CancelPendingRequest_DropsStalledConnectionAttempt_CustomPendingConnectionTimeout()
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -318,7 +316,7 @@ namespace System.Net.Http.Functional.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_PENDINGCONNECTIONTIMEOUTONREQUESTCOMPLETION"] = "42";
 
-            RemoteExecutor.Invoke(CancelPendingRequest_DropsStalledConnectionAttempt_Impl, UseVersion.ToString(), options).Dispose();
+            await RemoteExecutor.Invoke(CancelPendingRequest_DropsStalledConnectionAttempt_Impl, UseVersion.ToString(), options).DisposeAsync();
         }
 
         private static async Task CancelPendingRequest_DropsStalledConnectionAttempt_Impl(string versionString)
@@ -349,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(20_000)]
         [InlineData(Timeout.Infinite)]
-        public void PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled(int timeout)
+        public async Task PendingConnectionTimeout_HighValue_PendingConnectionIsNotCancelled(int timeout)
         {
             if (UseVersion == HttpVersion.Version30)
             {
@@ -357,7 +355,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (versionString, timoutStr) =>
+            await RemoteExecutor.Invoke(static async (versionString, timoutStr) =>
             {
                 // Setup "infinite" timeout of int.MaxValue milliseconds
                 AppContext.SetData("System.Net.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion", int.Parse(timoutStr));
@@ -392,7 +390,69 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync("https://dummy", requestCts.Token)).WaitAsync(TestHelper.PassingTestTimeout);
 
                 await connectionTestTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
-            }, UseVersion.ToString(), timeout.ToString()).Dispose();
+            }, UseVersion.ToString(), timeout.ToString()).DisposeAsync();
+        }
+
+        [OuterLoop("We wait for PendingConnectionTimeout which defaults to 5 seconds.")]
+        [Fact]
+        public async Task PendingConnectionTimeout_SignalsAllConnectionAttempts()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            int pendingConnectionAttempts = 0;
+            bool connectionAttemptTimedOut = false;
+
+            using var handler = new SocketsHttpHandler
+            {
+                ConnectCallback = async (context, cancellation) =>
+                {
+                    Interlocked.Increment(ref pendingConnectionAttempts);
+                    try
+                    {
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => Task.Delay(-1, cancellation)).WaitAsync(TestHelper.PassingTestTimeout);
+                        cancellation.ThrowIfCancellationRequested();
+                        throw new UnreachableException();
+                    }
+                    catch (TimeoutException)
+                    {
+                        connectionAttemptTimedOut = true;
+                        throw;
+                    }
+                    finally
+                    {
+                        Interlocked.Decrement(ref pendingConnectionAttempts);
+                    }
+                }
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(2);
+
+            // Many of these requests should trigger new connection attempts, and all of those should eventually be cleaned up.
+            await Parallel.ForAsync(0, 100, async (_, _) =>
+            {
+                await Assert.ThrowsAnyAsync<TaskCanceledException>(() => client.GetAsync("https://dummy"));
+            });
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            while (Volatile.Read(ref pendingConnectionAttempts) > 0)
+            {
+                Assert.False(connectionAttemptTimedOut);
+
+                if (stopwatch.Elapsed > 2 * TestHelper.PassingTestTimeout)
+                {
+                    Assert.Fail("Connection attempts took too long to get cleaned up");
+                }
+
+                await Task.Delay(100);
+            }
+
+            Assert.False(connectionAttemptTimedOut);
         }
 
         private sealed class SetTcsContent : StreamContent
@@ -411,6 +471,68 @@ namespace System.Net.Http.Functional.Tests
                 _tcs.SetResult(true);
                 return base.SerializeToStreamAsync(stream, context);
             }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task RequestSent_HandlerDisposed_RequestIsUnaffected(bool post)
+        {
+            byte[] postContent = "Hello world"u8.ToArray();
+
+            TaskCompletionSource serverReceivedRequest = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+                using HttpClient client = CreateHttpClient(handler);
+
+                using HttpRequestMessage request = CreateRequest(post ? HttpMethod.Post : HttpMethod.Get, uri, UseVersion);
+
+                if (post)
+                {
+                    request.Content = new StreamContent(new DelegateDelegatingStream(new MemoryStream())
+                    {
+                        CanSeekFunc = () => false,
+                        CopyToFunc = (destination, _) =>
+                        {
+                            destination.Flush();
+                            Assert.True(serverReceivedRequest.Task.Wait(TestHelper.PassingTestTimeout));
+                            destination.Write(postContent);
+                        },
+                        CopyToAsyncFunc = async (destination, _, ct) =>
+                        {
+                            await destination.FlushAsync(ct);
+                            await serverReceivedRequest.Task.WaitAsync(ct);
+                            await destination.WriteAsync(postContent, ct);
+                        }
+                    });
+                }
+
+                Task<HttpResponseMessage> clientTask = client.SendAsync(TestAsync, request);
+                await serverReceivedRequest.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                handler.Dispose();
+                await Task.Delay(1); // Give any potential disposal/cancellation some time to propagate
+
+                await clientTask;
+            },
+            async server =>
+            {
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestDataAsync(readBody: false);
+                    serverReceivedRequest.SetResult();
+
+                    if (post)
+                    {
+                        byte[] received = await connection.ReadRequestBodyAsync();
+                        Assert.Equal(postContent, received);
+                    }
+
+                    await connection.SendResponseAsync();
+                });
+            });
         }
     }
 }

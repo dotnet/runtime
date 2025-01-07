@@ -29,7 +29,7 @@ extern BOOL     g_fInsertSourceLines;
 extern BOOL     g_fTryInCode;
 extern BOOL     g_fQuoteAllNames;
 extern BOOL     g_fDumpTokens;
-extern DynamicArray<__int32>  *g_pPtrTags;       //to keep track of all "ldptr"
+extern DynamicArray<int32_t>  *g_pPtrTags;       //to keep track of all "ldptr"
 extern DynamicArray<DWORD>    *g_pPtrSize;       //to keep track of all "ldptr"
 extern int                     g_iPtrCount;
 static BOOL ConvToLiteral(__inout __nullterminated char* retBuff, const WCHAR* str, int cbStr);
@@ -94,7 +94,7 @@ OPCODE DecodeOpcode(const BYTE *pCode, DWORD *pdwLen)
 WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
-    if (WszMultiByteToWideChar(CP_UTF8,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
+    if (MultiByteToWideChar(CP_UTF8,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
     {
         wz[UNIBUF_SIZE/2 - 1] = 0;
     }
@@ -103,7 +103,7 @@ WCHAR* UtfToUnicode(_In_ __nullterminated const char* sz)
 char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-    if (WszWideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
+    if (WideCharToMultiByte(g_uConsoleCP,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
     {
         sz[UNIBUF_SIZE - 1] = 0;
     }
@@ -112,7 +112,7 @@ char* UnicodeToAnsi(_In_ __nullterminated const WCHAR* wz)
 WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 {
     WCHAR* wz = wzUniBuf;
-    if (WszMultiByteToWideChar(g_uConsoleCP,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
+    if (MultiByteToWideChar(g_uConsoleCP,0,sz,-1,wz,UNIBUF_SIZE/2) == 0)
     {
         wz[UNIBUF_SIZE/2 - 1] = 0;
     }
@@ -121,7 +121,7 @@ WCHAR* AnsiToUnicode(_In_ __nullterminated const char* sz)
 char* UnicodeToUtf(_In_ __nullterminated const WCHAR* wz)
 {
     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-    if (WszWideCharToMultiByte(CP_UTF8,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
+    if (WideCharToMultiByte(CP_UTF8,0,wz,-1,sz,UNIBUF_SIZE,NULL,NULL) == 0)
     {
         sz[UNIBUF_SIZE - 1] = 0;
     }
@@ -527,7 +527,7 @@ char* DumpDataPtr(__inout __nullterminated char* buffer, DWORD ptr, DWORD size)
     if(i < dwNumberOfSections)
     { // yes, the pointer points to real data
         int j;
-        for(j=0; (j < g_iPtrCount)&&((*g_pPtrTags)[j] != (__int32)ptr); j++);
+        for(j=0; (j < g_iPtrCount)&&((*g_pPtrTags)[j] != (int32_t)ptr); j++);
         if(j == g_iPtrCount)
         {
             if (g_pPtrSize == NULL)
@@ -536,7 +536,7 @@ char* DumpDataPtr(__inout __nullterminated char* buffer, DWORD ptr, DWORD size)
             }
             if (g_pPtrTags == NULL)
             {
-                g_pPtrTags = new DynamicArray<__int32>;
+                g_pPtrTags = new DynamicArray<int32_t>;
             }
 
             (*g_pPtrSize)[g_iPtrCount] = size;
@@ -727,8 +727,7 @@ void OpenScope(ISymUnmanagedScope                        *pIScope,
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
                         _In_reads_(cbString) WCHAR* pszString,
-                        ULONG cbString,
-                        bool SwapString )
+                        ULONG cbString)
 {
     unsigned     i,L;
     char*   szStr=NULL, *szRet = NULL;
@@ -750,8 +749,7 @@ char* DumpUnicodeString(void* GUICookie,
 #endif
 
 #if BIGENDIAN
-    if (SwapString)
-        SwapStringLength(pszString, cbString);
+    SwapStringLength(pszString, cbString);
 #endif
 
     // first, check for embedded zeros:
@@ -762,7 +760,7 @@ char* DumpUnicodeString(void* GUICookie,
     szStr = new char[cbString*3 + 5];
     memset(szStr,0,cbString*3 + 5);
 
-    WszWideCharToMultiByte(CP_UTF8,0,pszString,cbString,&szStr[0],cbString*3,NULL,NULL);
+    WideCharToMultiByte(CP_UTF8,0,pszString,cbString,&szStr[0],cbString*3,NULL,NULL);
     L = (unsigned)strlen(szStr);
 
     szStr[L] = 0;
@@ -782,7 +780,7 @@ DumpAsByteArray:
         strcat_s(szString,SZSTRING_SIZE," (");
 
 #if BIGENDIAN
-    SwapStringLength(pszString, cbString);
+        SwapStringLength(pszString, cbString);
 #endif
         DumpByteArray(szString,(BYTE*)pszString,cbString*sizeof(WCHAR),GUICookie);
         szRet = &szString[strlen(szString)];
@@ -1108,19 +1106,24 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                     {
                         wcscpy_s(wzWasFileName,2048,wzFileName);
                         memset(szFileName,0,2048);
-                        WszWideCharToMultiByte(CP_UTF8,0,wzFileName,-1,szFileName,2048,NULL,NULL);
+                        WideCharToMultiByte(CP_UTF8,0,wzFileName,-1,szFileName,2048,NULL,NULL);
                         if(fShowSource)
                         {
                             if(pFile) fclose(pFile);
                             pFile = NULL;
-                            if(fopen_s(&pFile,szFileName,"rt") != 0)
+#ifdef HOST_WINDOWS
+                            const char* const mode = "rt";
+#else
+                            const char* const mode = "r";
+#endif
+                            if(fopen_s(&pFile,szFileName, mode) != 0)
                             {
                                 char* pch = strrchr(szFileName, DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef HOST_WINDOWS
                                 if(pch == NULL) pch = strrchr(szFileName,':');
 #endif
                                 pFile = NULL;
-                                if(pch) fopen_s(&pFile,pch+1,"rt");
+                                if(pch) fopen_s(&pFile,pch+1, mode);
                             }
                             if(bIsNewFile)
                             {
@@ -1523,14 +1526,14 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case InlineI8:
             {
-                __int64 v = (__int64) pCode[PC] +
-                            (((__int64) pCode[PC+1]) << 8) +
-                            (((__int64) pCode[PC+2]) << 16) +
-                            (((__int64) pCode[PC+3]) << 24) +
-                            (((__int64) pCode[PC+4]) << 32) +
-                            (((__int64) pCode[PC+5]) << 40) +
-                            (((__int64) pCode[PC+6]) << 48) +
-                            (((__int64) pCode[PC+7]) << 56);
+                int64_t v = (int64_t) pCode[PC] +
+                            (((int64_t) pCode[PC+1]) << 8) +
+                            (((int64_t) pCode[PC+2]) << 16) +
+                            (((int64_t) pCode[PC+3]) << 24) +
+                            (((int64_t) pCode[PC+4]) << 32) +
+                            (((int64_t) pCode[PC+5]) << 40) +
+                            (((int64_t) pCode[PC+6]) << 48) +
+                            (((int64_t) pCode[PC+7]) << 56);
 
                 if(g_fShowBytes)
                 {
@@ -1549,10 +1552,10 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case ShortInlineR:
             {
-                __int32 v = (__int32) pCode[PC] +
-                            (((__int32) pCode[PC+1]) << 8) +
-                            (((__int32) pCode[PC+2]) << 16) +
-                            (((__int32) pCode[PC+3]) << 24);
+                int32_t v = (int32_t) pCode[PC] +
+                            (((int32_t) pCode[PC+1]) << 8) +
+                            (((int32_t) pCode[PC+2]) << 16) +
+                            (((int32_t) pCode[PC+3]) << 24);
 
                 float f = (float&)v;
 
@@ -1568,11 +1571,11 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(f==0.0)
                     strcpy_s(szf,32,((v>>24)==0)? "0.0" : "-0.0");
                 else
-                    _gcvt_s(szf,32,(double)f, 8);
+                    sprintf_s(szf, 32, "%.*g", 8, (double)f);
                 float fd = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
-                if(((__int32&)fd == v)&&!IsSpecialNumber(szf))
+                if(((int32_t&)fd == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s (%2.2X %2.2X %2.2X %2.2X)",
@@ -1583,14 +1586,14 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
             case InlineR:
             {
-                __int64 v = (__int64) pCode[PC] +
-                            (((__int64) pCode[PC+1]) << 8) +
-                            (((__int64) pCode[PC+2]) << 16) +
-                            (((__int64) pCode[PC+3]) << 24) +
-                            (((__int64) pCode[PC+4]) << 32) +
-                            (((__int64) pCode[PC+5]) << 40) +
-                            (((__int64) pCode[PC+6]) << 48) +
-                            (((__int64) pCode[PC+7]) << 56);
+                int64_t v = (int64_t) pCode[PC] +
+                            (((int64_t) pCode[PC+1]) << 8) +
+                            (((int64_t) pCode[PC+2]) << 16) +
+                            (((int64_t) pCode[PC+3]) << 24) +
+                            (((int64_t) pCode[PC+4]) << 32) +
+                            (((int64_t) pCode[PC+5]) << 40) +
+                            (((int64_t) pCode[PC+6]) << 48) +
+                            (((int64_t) pCode[PC+7]) << 56);
 
                 double d = (double&)v;
 
@@ -1607,11 +1610,11 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 if(d==0.0)
                     strcpy_s(szf,32,((v>>56)==0)? "0.0" : "-0.0");
                 else
-                    _gcvt_s(szf,32,d, 17);
+                    sprintf_s(szf, 32, "%.*g", 17, d);
                 double df = strtod(szf, &pch); //atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
-                if (((__int64&)df == v)&&!IsSpecialNumber(szf))
+                if (((int64_t&)df == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),
@@ -2541,7 +2544,7 @@ void PrettyPrintToken(__inout __nullterminated char* szString, mdToken tk, IMDIn
             }
             if (pszString != NULL)
             {
-                DumpUnicodeString(GUICookie,szString,(WCHAR *)pszString,cbString, true);
+                DumpUnicodeString(GUICookie,szString,(WCHAR *)pszString,cbString);
             }
             else
             {

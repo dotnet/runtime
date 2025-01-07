@@ -146,7 +146,7 @@ namespace System.Xml.XmlSchemaTests
             xss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
             xss.Add(null, Path.Combine(testData, xsdFile));
 
-            XmlReader vr = CreateReader(Path.Combine(testData, xmlFile), xss, false);
+            using XmlReader vr = CreateReader(Path.Combine(testData, xmlFile), xss, false);
             while (vr.Read()) ;
 
             CError.Compare(errorCount, expectedErrorCount, "Error Count mismatch");

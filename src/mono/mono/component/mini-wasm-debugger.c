@@ -191,6 +191,7 @@ static void
 assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	PRINT_DEBUG_MSG (2, "assembly_loaded callback called for %s\n", assembly->aname.name);
+	mono_dbg_assembly_load (prof, assembly);
 	MonoImage *assembly_image = assembly->image;
 	MonoImage *pdb_image = NULL;
 
@@ -215,11 +216,12 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 			MonoPPDBFile *ppdb = handle->ppdb;
 			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
 				pdb_image = mono_ppdb_get_image (ppdb);
-				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
+				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->storage->raw_data, assembly_image->storage->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
 			}
 		}
-		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, NULL, 0);
+		
+		mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->storage->raw_data, assembly_image->storage->raw_data_len, NULL, 0);
 	}
 }
 
@@ -432,28 +434,6 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		invoke_data.flags = INVOKE_FLAG_DISABLE_BREAKPOINTS_AND_STEPPING;
 		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
-	else if (command_set == MDBGPROT_CMD_SET_VM && (command ==  MDBGPROT_CMD_GET_ASSEMBLY_BYTES))
-	{
-		char* assembly_name = m_dbgprot_decode_string (data, &data, data + size);
-		if (assembly_name == NULL)
-		{
-			m_dbgprot_buffer_init (&buf, 128);
-			m_dbgprot_buffer_add_int (&buf, 0);
-			m_dbgprot_buffer_add_int (&buf, 0);
-		}
-		else
-		{
-			const unsigned char* assembly_bytes = NULL;
-			unsigned int assembly_size = 0;
-			mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
-			const unsigned char* pdb_bytes = NULL;
-			unsigned int symfile_size = 0;
-			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
-			m_dbgprot_buffer_init (&buf, assembly_size + symfile_size);
-			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
-			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);
-		}
-	}
 	else
 	{
 		m_dbgprot_buffer_init (&buf, 128);
@@ -504,4 +484,4 @@ mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_single_step_hit = mono_wasm_single_step_hit;
 }
 
-#endif
+#endif // !HOST_WASI

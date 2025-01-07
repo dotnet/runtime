@@ -3,20 +3,25 @@
 
 using System.Net.Http.Headers;
 using System.Net.Test.Common;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Http.Json.Functional.Tests
 {
-    public abstract class JsonContentTestsBase
+    public abstract partial class JsonContentTestsBase
     {
         protected abstract Task<HttpResponseMessage> SendAsync(HttpClient client, HttpRequestMessage request);
 
         private class Foo { }
         private class Bar { }
+
+        [JsonSerializable(typeof(Foo))]
+        [JsonSerializable(typeof(Bar))]
+        private partial class FooContext : JsonSerializerContext { }
 
         [Fact]
         public void JsonContentObjectType()
@@ -32,6 +37,14 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Equal(fooType, content.ObjectType);
             Assert.Same(foo, content.Value);
 
+            content = JsonContent.Create(foo, FooContext.Default.Foo);
+            Assert.Equal(fooType, content.ObjectType);
+            Assert.Same(foo, content.Value);
+
+            content = JsonContent.Create(null, FooContext.Default.Foo);
+            Assert.Equal(fooType, content.ObjectType);
+            Assert.Null(content.Value);
+
             object fooBoxed = foo;
 
             // ObjectType is the specified type when using the .ctor.
@@ -43,6 +56,16 @@ namespace System.Net.Http.Json.Functional.Tests
             content = JsonContent.Create(fooBoxed);
             Assert.Equal(typeof(object), content.ObjectType);
             Assert.Same(fooBoxed, content.Value);
+
+            // ObjectType is the specified type when JsonTypeInfo.
+            content = JsonContent.Create(fooBoxed, FooContext.Default.Foo);
+            Assert.Equal(fooType, content.ObjectType);
+            Assert.Same(fooBoxed, content.Value);
+
+            // ObjectType is the specified type when null and JsonTypeInfo.
+            content = JsonContent.Create(null, FooContext.Default.Foo);
+            Assert.Equal(fooType, content.ObjectType);
+            Assert.Null(content.Value);
         }
 
         [Fact]
@@ -66,6 +89,12 @@ namespace System.Net.Http.Json.Functional.Tests
             Assert.Same(mediaType, content.Headers.ContentType);
 
             content = JsonContent.Create(foo, mediaType: mediaType);
+            Assert.Same(mediaType, content.Headers.ContentType);
+
+            content = JsonContent.Create(foo, FooContext.Default.Foo, mediaType: mediaType);
+            Assert.Same(mediaType, content.Headers.ContentType);
+
+            content = JsonContent.Create((object) foo, FooContext.Default.Foo, mediaType: mediaType);
             Assert.Same(mediaType, content.Headers.ContentType);
         }
 
@@ -136,6 +165,14 @@ namespace System.Net.Http.Json.Functional.Tests
             content = JsonContent.Create(foo, mediaType: null);
             Assert.Equal("application/json", content.Headers.ContentType.MediaType);
             Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
+
+            content = JsonContent.Create(foo, FooContext.Default.Foo, mediaType: null);
+            Assert.Equal("application/json", content.Headers.ContentType.MediaType);
+            Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
+
+            content = JsonContent.Create(null, FooContext.Default.Foo, mediaType: null);
+            Assert.Equal("application/json", content.Headers.ContentType.MediaType);
+            Assert.Equal("utf-8", content.Headers.ContentType.CharSet);
         }
 
         [Fact]
@@ -149,15 +186,29 @@ namespace System.Net.Http.Json.Functional.Tests
             {
                 var foo = new Foo();
                 Type typeOfBar = typeof(Bar);
-
-                Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar));
-
                 string strTypeOfBar = typeOfBar.ToString();
+
+                // Validate for reflection
+                Exception ex = Assert.Throws<ArgumentException>(() => JsonContent.Create(foo, typeOfBar));
                 Assert.Contains(strTypeOfBar, ex.Message);
 
                 string afterInputTypeMessage = ex.Message.Split(strTypeOfBar.ToCharArray())[1];
                 Assert.Contains(afterInputTypeMessage, ex.Message);
+
+                // Validate for weakly-typed JsonTypeInfo
+                ex = Assert.Throws<ArgumentException>(() => JsonContent.Create((object) foo, FooContext.Default.Bar));
+                Assert.Contains(strTypeOfBar, ex.Message);
+
+                afterInputTypeMessage = ex.Message.Split(strTypeOfBar.ToCharArray())[1];
+                Assert.Contains(afterInputTypeMessage, ex.Message);
             }
+        }
+
+        [Fact]
+        public void JsonContentTypeInfoIsNull()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("jsonTypeInfo", () => JsonContent.Create(null, jsonTypeInfo: (JsonTypeInfo) null, mediaType: null));
+            AssertExtensions.Throws<ArgumentNullException>("jsonTypeInfo", () => JsonContent.Create(null, jsonTypeInfo: (JsonTypeInfo<Foo>) null, mediaType: null));
         }
 
         [Fact]

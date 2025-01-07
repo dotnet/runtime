@@ -10,14 +10,14 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Take<TSource>(this IEnumerable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 ?
-                Empty<TSource>() :
-                TakeIterator<TSource>(source, count);
+            return count <= 0 || IsEmptyArray(source) ?
+                [] :
+                TakeIterator(source, count);
         }
 
         /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
@@ -32,9 +32,14 @@ namespace System.Linq
         /// </remarks>
         public static IEnumerable<TSource> Take<TSource>(this IEnumerable<TSource> source, Range range)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             Index start = range.Start;
@@ -50,14 +55,14 @@ namespace System.Linq
             {
                 if (startIndex == 0 || (isEndIndexFromEnd && endIndex >= startIndex))
                 {
-                    return Empty<TSource>();
+                    return [];
                 }
             }
             else if (!isEndIndexFromEnd)
             {
-                return startIndex >= endIndex
-                    ? Empty<TSource>()
-                    : TakeRangeIterator(source, startIndex, endIndex);
+                return startIndex >= endIndex ?
+                    [] :
+                    TakeRangeIterator(source, startIndex, endIndex);
             }
 
             return TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
@@ -65,7 +70,7 @@ namespace System.Linq
 
         private static IEnumerable<TSource> TakeRangeFromEndIterator<TSource>(IEnumerable<TSource> source, bool isStartIndexFromEnd, int startIndex, bool isEndIndexFromEnd, int endIndex)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
             Debug.Assert(isStartIndexFromEnd || isEndIndexFromEnd);
             Debug.Assert(isStartIndexFromEnd
                 ? startIndex > 0 && (!isEndIndexFromEnd || startIndex > endIndex)
@@ -184,14 +189,19 @@ namespace System.Linq
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return TakeWhileIterator(source, predicate);
@@ -212,14 +222,19 @@ namespace System.Linq
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return TakeWhileIterator(source, predicate);
@@ -246,13 +261,13 @@ namespace System.Linq
 
         public static IEnumerable<TSource> TakeLast<TSource>(this IEnumerable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 ?
-                Empty<TSource>() :
+            return count <= 0 || IsEmptyArray(source) ?
+                [] :
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: true, startIndex: count,
                     isEndIndexFromEnd: true, endIndex: 0);

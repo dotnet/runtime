@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 
 .assembly twopassvariance { }
 
@@ -122,7 +123,7 @@
     }
 }
 
-.class Fooer7
+.class public Fooer7
     implements class IBar<class Base>, class IFoo<class Base>
 {
     .method public specialname rtspecialname instance void .ctor()
@@ -133,193 +134,200 @@
     }
 }
 
-.method static int32 main()
+.class public auto ansi abstract sealed beforefieldinit twopassvariance
+    extends [mscorlib]System.Object
 {
-    .entrypoint
+    .method public static int32 main()
+    {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .entrypoint
 
-    newobj instance void Fooer1::.ctor()
-    castclass class IFoo<class SuperDerived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IFoo<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer1_IFoo_SuperDerivedOK
-    ldc.i4.1
-    ret
+        newobj instance void Fooer1::.ctor()
+        castclass class IFoo<class SuperDerived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IFoo<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer1_IFoo_SuperDerivedOK
+        ldc.i4.1
+        ret
 
-Fooer1_IFoo_SuperDerivedOK:
-    newobj instance void Fooer2::.ctor()
-    castclass class IFoo<class SuperDerived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IFoo<class Derived>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer2_IFoo_SuperDerivedOK
-    ldc.i4.2
-    ret
+    Fooer1_IFoo_SuperDerivedOK:
+        newobj instance void Fooer2::.ctor()
+        castclass class IFoo<class SuperDerived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IFoo<class Derived>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer2_IFoo_SuperDerivedOK
+        ldc.i4.2
+        ret
 
-Fooer2_IFoo_SuperDerivedOK:
-    newobj instance void Fooer3::.ctor()
-    castclass class IFoo<class Base>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer3_IFoo_BaseOK
-    ldc.i4.3
-    ret
+    Fooer2_IFoo_SuperDerivedOK:
+        newobj instance void Fooer3::.ctor()
+        castclass class IFoo<class Base>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer3_IFoo_BaseOK
+        ldc.i4.3
+        ret
 
-Fooer3_IFoo_BaseOK:
-    newobj instance void Fooer3::.ctor()
-    castclass class IFoo<class Derived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Derived>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer3_IFoo_DerivedOK
-    ldc.i4.4
-    ret
+    Fooer3_IFoo_BaseOK:
+        newobj instance void Fooer3::.ctor()
+        castclass class IFoo<class Derived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Derived>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer3_IFoo_DerivedOK
+        ldc.i4.4
+        ret
 
-Fooer3_IFoo_DerivedOK:
-    newobj instance void Fooer3::.ctor()
-    castclass class IFoo<class SuperDerived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer3_IFoo_SuperDerivedOK
-    ldc.i4.5
-    ret
+    Fooer3_IFoo_DerivedOK:
+        newobj instance void Fooer3::.ctor()
+        castclass class IFoo<class SuperDerived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer3_IFoo_SuperDerivedOK
+        ldc.i4.5
+        ret
 
-Fooer3_IFoo_SuperDerivedOK:
-    newobj instance void Fooer4::.ctor()
-    castclass class IFoo<class Base>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken IQux
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer4_IFoo_BaseOK
-    ldc.i4.6
-    ret
+    Fooer3_IFoo_SuperDerivedOK:
+        newobj instance void Fooer4::.ctor()
+        castclass class IFoo<class Base>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken IQux
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer4_IFoo_BaseOK
+        ldc.i4.6
+        ret
 
-Fooer4_IFoo_BaseOK:
-    newobj instance void Fooer4::.ctor()
-    castclass class IFoo<class Derived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Derived>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer4_IFoo_DerivedOK
-    ldc.i4.7
-    ret
+    Fooer4_IFoo_BaseOK:
+        newobj instance void Fooer4::.ctor()
+        castclass class IFoo<class Derived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Derived>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer4_IFoo_DerivedOK
+        ldc.i4.7
+        ret
 
-Fooer4_IFoo_DerivedOK:
-    newobj instance void Fooer4::.ctor()
-    castclass class IFoo<class SuperDerived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken IQux
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer4_IFoo_SuperDerivedOK
-    ldc.i4.8
-    ret
+    Fooer4_IFoo_DerivedOK:
+        newobj instance void Fooer4::.ctor()
+        castclass class IFoo<class SuperDerived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken IQux
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer4_IFoo_SuperDerivedOK
+        ldc.i4.8
+        ret
 
-Fooer4_IFoo_SuperDerivedOK:
-    newobj instance void Fooer5::.ctor()
-    castclass class IFoo<class SuperDerived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Derived>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer5_IFoo_SuperDerivedOK
-    ldc.i4 9
-    ret
+    Fooer4_IFoo_SuperDerivedOK:
+        newobj instance void Fooer5::.ctor()
+        castclass class IFoo<class SuperDerived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class SuperDerived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Derived>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer5_IFoo_SuperDerivedOK
+        ldc.i4 9
+        ret
 
-Fooer5_IFoo_SuperDerivedOK:
-    newobj instance void Fooer6::.ctor()
-    castclass class IFoo<class Base>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer6_IFoo_BaseOK
-    ldc.i4 10
-    ret
+    Fooer5_IFoo_SuperDerivedOK:
+        newobj instance void Fooer6::.ctor()
+        castclass class IFoo<class Base>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer6_IFoo_BaseOK
+        ldc.i4 10
+        ret
 
-Fooer6_IFoo_BaseOK:
-    newobj instance void Fooer6::.ctor()
-    castclass class IFoo<class Derived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer6_IFoo_DerivedOK
-    ldc.i4 11
-    ret
+    Fooer6_IFoo_BaseOK:
+        newobj instance void Fooer6::.ctor()
+        castclass class IFoo<class Derived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer6_IFoo_DerivedOK
+        ldc.i4 11
+        ret
 
-Fooer6_IFoo_DerivedOK:
-    newobj instance void Fooer7::.ctor()
-    castclass class IFoo<class Base>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer7_IFoo_BaseOK
-    ldc.i4 12
-    ret
+    Fooer6_IFoo_DerivedOK:
+        newobj instance void Fooer7::.ctor()
+        castclass class IFoo<class Base>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Base>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer7_IFoo_BaseOK
+        ldc.i4 12
+        ret
 
-Fooer7_IFoo_BaseOK:
-    newobj instance void Fooer7::.ctor()
-    castclass class IFoo<class Derived>
-    callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
-    dup
-    callvirt instance string [mscorlib]System.Object::ToString()
-    call void [mscorlib]System.Console::WriteLine(string)
-    ldtoken class IBar<class Base>
-    call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    ceq
-    brtrue Fooer7_IFoo_DerivedOK
-    ldc.i4 13
-    ret
+    Fooer7_IFoo_BaseOK:
+        newobj instance void Fooer7::.ctor()
+        castclass class IFoo<class Derived>
+        callvirt instance class [mscorlib]System.Type class IFoo<class Derived>::Gimme()
+        dup
+        callvirt instance string [mscorlib]System.Object::ToString()
+        call void [mscorlib]System.Console::WriteLine(string)
+        ldtoken class IBar<class Base>
+        call class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
+        ceq
+        brtrue Fooer7_IFoo_DerivedOK
+        ldc.i4 13
+        ret
 
-Fooer7_IFoo_DerivedOK:
+    Fooer7_IFoo_DerivedOK:
 
-    ldc.i4 100
-    ret
+        ldc.i4 100
+        ret
+    }
 }

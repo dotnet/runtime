@@ -27,6 +27,7 @@ namespace System.CodeDom.Compiler
 
             _writer = writer;
             _tabString = tabString;
+            _tabsPending = true;
         }
 
         public override Encoding Encoding => _writer.Encoding;
@@ -168,6 +169,17 @@ namespace System.CodeDom.Compiler
         }
 
         public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
+        {
+            OutputTabs();
+            _writer.Write(format, arg);
+        }
+
+        /// <summary>
+        /// Writes out a formatted string, using the same semantics as specified.
+        /// </summary>
+        /// <param name="format">The formatting string to use.</param>
+        /// <param name="arg">The argument span to output.</param>
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.Write(format, arg);
@@ -345,6 +357,18 @@ namespace System.CodeDom.Compiler
         }
 
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
+        {
+            OutputTabs();
+            _writer.WriteLine(format, arg);
+            _tabsPending = true;
+        }
+
+        /// <summary>
+        /// Writes out a formatted string, followed by a line terminator, using the same semantics as specified.
+        /// </summary>
+        /// <param name="format">The formatting string to use.</param>
+        /// <param name="arg">The argument span to output.</param>
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
             OutputTabs();
             _writer.WriteLine(format, arg);

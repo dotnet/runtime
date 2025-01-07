@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 using Xunit.Sdk;
 
@@ -35,7 +33,7 @@ namespace System.Text.RegularExpressions.Tests
             throw new XunitException($"Expected ArgumentException with error: ({error}) -> Actual: No exception thrown");
         }
 
-       /// <summary>
+        /// <summary>
         /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
         // environment and the action.
         /// </summary>

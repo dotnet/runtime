@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 namespace System.Dynamic
@@ -8,6 +10,7 @@ namespace System.Dynamic
     internal static partial class UpdateDelegates
     {
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute1<T0, TRet>(CallSite site, T0 arg0)
         {
             //
@@ -153,6 +156,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute2<T0, T1, TRet>(CallSite site, T0 arg0, T1 arg1)
         {
             //
@@ -298,6 +302,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute3<T0, T1, T2, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2)
         {
             //
@@ -443,6 +448,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute4<T0, T1, T2, T3, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3)
         {
             //
@@ -588,6 +594,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute5<T0, T1, T2, T3, T4, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
         {
             //
@@ -733,6 +740,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute6<T0, T1, T2, T3, T4, T5, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
         {
             //
@@ -878,6 +886,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute7<T0, T1, T2, T3, T4, T5, T6, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
         {
             //
@@ -1023,6 +1032,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute8<T0, T1, T2, T3, T4, T5, T6, T7, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
         {
             //
@@ -1168,6 +1178,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute9<T0, T1, T2, T3, T4, T5, T6, T7, T8, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
         {
             //
@@ -1313,6 +1324,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static TRet UpdateAndExecute10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, TRet>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
         {
             //
@@ -1458,6 +1470,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid1<T0>(CallSite site, T0 arg0)
         {
             //
@@ -1602,6 +1615,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid2<T0, T1>(CallSite site, T0 arg0, T1 arg1)
         {
             //
@@ -1746,6 +1760,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid3<T0, T1, T2>(CallSite site, T0 arg0, T1 arg1, T2 arg2)
         {
             //
@@ -1890,6 +1905,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid4<T0, T1, T2, T3>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3)
         {
             //
@@ -2034,6 +2050,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid5<T0, T1, T2, T3, T4>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
         {
             //
@@ -2178,6 +2195,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid6<T0, T1, T2, T3, T4, T5>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
         {
             //
@@ -2322,6 +2340,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid7<T0, T1, T2, T3, T4, T5, T6>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
         {
             //
@@ -2466,6 +2485,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid8<T0, T1, T2, T3, T4, T5, T6, T7>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
         {
             //
@@ -2610,6 +2630,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid9<T0, T1, T2, T3, T4, T5, T6, T7, T8>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
         {
             //
@@ -2754,6 +2775,7 @@ namespace System.Dynamic
 
 
         [Obsolete("pregenerated CallSite<T>.Update delegate", error: true)]
+        [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
         internal static void UpdateAndExecuteVoid10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(CallSite site, T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
         {
             //

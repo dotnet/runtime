@@ -53,16 +53,18 @@
 // TraceType indicates what this 'target' is
 enum TraceType
 {
-    TRACE_ENTRY_STUB,               // Stub goes to an unmanaged entry stub
-    TRACE_STUB,                     // Stub goes to another stub
-    TRACE_UNMANAGED,                // Stub goes to unmanaged code
-    TRACE_MANAGED,                  // Stub goes to Jitted code
-    TRACE_UNJITTED_METHOD,          // Is the prestub, since there is no code, the address will actually be a MethodDesc*
+    TRACE_ENTRY_STUB,                // Stub goes to an unmanaged entry stub
+    TRACE_STUB,                      // Stub goes to another stub
+    TRACE_UNMANAGED,                 // Stub goes to unmanaged code
+    TRACE_MANAGED,                   // Stub goes to Jitted code
+    TRACE_UNJITTED_METHOD,           // Is the prestub, since there is no code, the address will actually be a MethodDesc*
 
-    TRACE_FRAME_PUSH,               // Don't know where stub goes, stop at address, and then ask the frame that is on the stack
-    TRACE_MGR_PUSH,                 // Don't know where stub goes, stop at address then call TraceManager() below to find out
+    TRACE_FRAME_PUSH,                // Don't know where stub goes, stop at address, and then ask the frame that is on the stack
+    TRACE_MGR_PUSH,                  // Don't know where stub goes, stop at address then call TraceManager() below to find out
+    TRACE_MULTICAST_DELEGATE_HELPER, // Stub goes to a multicast delegate helper
+    TRACE_EXTERNAL_METHOD_FIXUP,     // Stub goes to an external method fixup helper
 
-    TRACE_OTHER                     // We are going somewhere you can't step into (eg. ee helper function)
+    TRACE_OTHER                      // We are going somewhere you can't step into (eg. ee helper function)
 };
 
 class StubManager;
@@ -147,6 +149,21 @@ public:
         this->stubManager = NULL;
     }
 
+
+    void InitForMulticastDelegateHelper()
+    {
+        this->type = TRACE_MULTICAST_DELEGATE_HELPER;
+        this->address = (PCODE)NULL;
+        this->stubManager = NULL;
+    }
+
+    void InitForExternalMethodFixup()
+    {
+        this->type = TRACE_EXTERNAL_METHOD_FIXUP;
+        this->address = (PCODE)NULL;
+        this->stubManager = NULL;
+    }
+
     // Nobody recognized the target address. We will not be able to step-in to it.
     // This is ok if the target just calls into mscorwks (such as an Fcall) because
     // there's no managed code to step in to, and we don't support debugging the CLR
@@ -210,13 +227,12 @@ class StubManager
   public:
     // Startup and shutdown the global stubmanager service.
     static void InitializeStubManagers();
-    static void TerminateStubManagers();
 
     // Does any sub manager recognise this EIP?
     static BOOL IsStub(PCODE stubAddress)
     {
         WRAPPER_NO_CONTRACT;
-        return FindStubManager(stubAddress) != NULL;
+        return FindStubManager(stubAddress) != nullptr;
     }
 
     // Find stub manager for given code address
@@ -446,10 +462,14 @@ class StubLinkStubManager : public StubManager
 
     static void Init();
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE)
+    static BOOL TraceDelegateObject(BYTE *orDel, TraceDestination *trace);
+#endif // DACCESS_COMPILE
+
+#if !defined(DACCESS_COMPILE)
     StubLinkStubManager() : StubManager(), m_rangeList() {LIMITED_METHOD_CONTRACT;}
     ~StubLinkStubManager() {WRAPPER_NO_CONTRACT;}
-#endif
+#endif // DACCESS_COMPILE
 
   protected:
     LockedRangeList m_rangeList;
@@ -462,7 +482,6 @@ class StubLinkStubManager : public StubManager
         TADDR addr = PTR_HOST_MEMBER_TADDR(StubLinkStubManager, this, m_rangeList);
         return PTR_RangeList(addr);
     }
-
 
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
@@ -602,13 +621,6 @@ class RangeSectionStubManager : public StubManager
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
-#ifndef DACCESS_COMPILE
-    virtual BOOL TraceManager(Thread *thread,
-                              TraceDestination *trace,
-                              T_CONTEXT *pContext,
-                              BYTE **pRetAddr);
-#endif
-
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 
@@ -623,7 +635,7 @@ class RangeSectionStubManager : public StubManager
 typedef VPTR(class ILStubManager) PTR_ILStubManager;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class ILStubManager : public StubManager
@@ -676,7 +688,7 @@ class ILStubManager : public StubManager
 };
 
 // This is used to recognize
-//   GenericComPlusCallStub()
+//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
@@ -716,68 +728,6 @@ class InteropDispatchStubManager : public StubManager
   protected:
     virtual LPCWSTR GetStubManagerName(PCODE addr)
         { LIMITED_METHOD_CONTRACT; return W("InteropDispatchStub"); }
-#endif
-};
-
-//
-// Since we don't generate delegate invoke stubs at runtime on WIN64, we
-// can't use the StubLinkStubManager for these stubs.  Instead, we create
-// an additional DelegateInvokeStubManager instead.
-//
-typedef VPTR(class DelegateInvokeStubManager) PTR_DelegateInvokeStubManager;
-
-class DelegateInvokeStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(DelegateInvokeStubManager, StubManager)
-
-  public:
-
-    SPTR_DECL(DelegateInvokeStubManager, g_pManager);
-
-    static void Init();
-
-#if !defined(DACCESS_COMPILE)
-    DelegateInvokeStubManager() : StubManager(), m_rangeList() {LIMITED_METHOD_CONTRACT;}
-    ~DelegateInvokeStubManager() {WRAPPER_NO_CONTRACT;}
-#endif // DACCESS_COMPILE
-
-    BOOL AddStub(Stub* pStub);
-    void RemoveStub(Stub* pStub);
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "DelegateInvokeStubManager"; }
-#endif
-
-    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
-
-#if !defined(DACCESS_COMPILE)
-    virtual BOOL TraceManager(Thread *thread, TraceDestination *trace, T_CONTEXT *pContext, BYTE **pRetAddr);
-    static BOOL TraceDelegateObject(BYTE *orDel, TraceDestination *trace);
-#endif // DACCESS_COMPILE
-
-  private:
-
-    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-   protected:
-    LockedRangeList m_rangeList;
-   public:
-    // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(DelegateInvokeStubManager, this, m_rangeList);
-        return PTR_RangeList(addr);
-    }
-
-
-#ifdef DACCESS_COMPILE
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-
-  protected:
-    virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("DelegateInvokeStub"); }
 #endif
 };
 
@@ -855,7 +805,7 @@ public:
         return pContext->Lr;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetReturnAddress");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -891,7 +841,7 @@ public:
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetTailCallTarget");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -907,57 +857,7 @@ public:
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
-        return NULL;
-#endif
-    }
-
-    static PCODE GetRetAddrFromMulticastILStubFrame(T_CONTEXT * pContext)
-    {
-        /*
-                Following is the callstack corresponding to context  received by ILStubManager::TraceManager.
-                This function returns the return address (user code address) where control should return after all
-                delegates in multicast delegate have been executed.
-
-                StubHelpers::MulticastDebuggerTraceHelper
-                IL_STUB_MulticastDelegate_Invoke
-                UserCode which invokes multicast delegate <---
-              */
-
-#if defined(TARGET_X86)
-        return *((PCODE *)pContext->Ebp + 1);
-#elif defined(TARGET_AMD64)
-        T_CONTEXT context(*pContext);
-        Thread::VirtualUnwindCallFrame(&context);
-        Thread::VirtualUnwindCallFrame(&context);
-
-        return context.Rip;
-#elif defined(TARGET_ARM)
-        return *((PCODE *)((TADDR)pContext->R11) + 1);
-#elif defined(TARGET_ARM64)
-        return *((PCODE *)pContext->Fp + 1);
-#else
-        PORTABILITY_ASSERT("StubManagerHelpers::GetRetAddrFromMulticastILStubFrame");
-        return NULL;
-#endif
-    }
-
-    static TADDR GetSecondArg(T_CONTEXT * pContext)
-    {
-#if defined(TARGET_X86)
-        return pContext->Edx;
-#elif defined(TARGET_AMD64)
-#ifdef UNIX_AMD64_ABI
-        return pContext->Rsi;
-#else
-        return pContext->Rdx;
-#endif
-#elif defined(TARGET_ARM)
-        return pContext->R1;
-#elif defined(TARGET_ARM64)
-        return pContext->X1;
-#else
-        PORTABILITY_ASSERT("StubManagerHelpers::GetSecondArg");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 

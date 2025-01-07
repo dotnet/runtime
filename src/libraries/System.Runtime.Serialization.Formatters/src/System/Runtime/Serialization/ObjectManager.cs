@@ -221,7 +221,7 @@ namespace System.Runtime.Serialization
         private bool ResolveObjectReference(ObjectHolder holder)
         {
             object? tempObject;
-            Debug.Assert(holder.IsIncompleteObjectReference, "holder.IsIncompleteObjectReference");
+            Debug.Assert(holder.IsIncompleteObjectReference);
 
             //In the pathological case, an Object implementing IObjectReference could return a reference
             //to a different object which implements IObjectReference.  This makes us vulnerable to a
@@ -496,7 +496,7 @@ namespace System.Runtime.Serialization
                         switch (currentFixup._fixupType)
                         {
                             case FixupHolder.ArrayFixup:
-                                Debug.Assert(holder.ObjectValue is Array, "holder.ObjectValue is Array");
+                                Debug.Assert(holder.ObjectValue is Array);
                                 if (holder.RequiresValueTypeFixup)
                                 {
                                     throw new SerializationException(SR.Serialization_ValueTypeFixup);
@@ -507,7 +507,7 @@ namespace System.Runtime.Serialization
                                 }
                                 break;
                             case FixupHolder.MemberFixup:
-                                Debug.Assert(fixupInfo is MemberInfo, "fixupInfo is MemberInfo");
+                                Debug.Assert(fixupInfo is MemberInfo);
                                 //Fixup the member directly.
                                 MemberInfo tempMember = (MemberInfo)fixupInfo;
                                 if (tempMember is FieldInfo)

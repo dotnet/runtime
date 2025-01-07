@@ -23,5 +23,8 @@ namespace System.Buffers
 
         internal override int LastIndexOfAnyExcept(ReadOnlySpan<T> span) =>
             span.Length - 1;
+
+        internal override int IndexOfAnyMultiString(ReadOnlySpan<char> span) =>
+            -1;
     }
 }

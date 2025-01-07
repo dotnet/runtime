@@ -3,14 +3,16 @@
 using System;
 using System.Collections.Generic;
 using TestHelper;
+using Xunit;
 
 /// <summary>
 /// Type.ToString()
 /// Returns a String representing the name of the current Type
 /// </summary>
-class TypeToString
+public class TypeToString
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TypeToString tts = new TypeToString();
 

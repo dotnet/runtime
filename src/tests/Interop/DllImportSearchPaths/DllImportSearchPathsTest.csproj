@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- This test needs process isolation because it creates a subdirectory structure -->
+    <!-- in its output folder for the purpose of testing assembly loading. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
@@ -8,17 +11,30 @@
     <CMakeProjectReference Include="../NativeLibrary/NativeLibraryToLoad/CMakeLists.txt" />
   </ItemGroup>
 
-  <Target Name="SetUpSubdirectory" AfterTargets="CopyNativeProjectBinaries">
-    <PropertyGroup>
-      <NativeLibrarySubdirectory>$(OutDir)/subdirectory</NativeLibrarySubdirectory>
-      <FileNameSuffix>-in-subdirectory</FileNameSuffix>
-    </PropertyGroup>
+  <PropertyGroup>
+    <LibrarySubdirectory>$(OutputPath)/subdirectory</LibrarySubdirectory>
+  </PropertyGroup>
+
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
     <ItemGroup>
-      <_FilesToCopy Include="$(OutDir)/$(TargetName).dll" />
-      <_FilesToMove Include="$(OutDir)/libNativeLibrary.*" />
-      <_FilesToMove Include="$(OutDir)/NativeLibrary.*" />
+      <NativeLibrariesToMove Include="$(OutDir)/libNativeLibrary.*" />
+      <NativeLibrariesToMove Include="$(OutDir)/NativeLibrary.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="@(_FilesToCopy -> '$(NativeLibrarySubdirectory)/%(Filename)%(Extension)')" />
-    <Move SourceFiles="@(_FilesToMove)" DestinationFiles="@(_FilesToMove -> '$(NativeLibrarySubdirectory)/%(Filename)%(Extension)')" />
+    <Move SourceFiles="@(NativeLibrariesToMove)" DestinationFiles="@(NativeLibrariesToMove -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')"/>
+  </Target>
+
+  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">
+    <ItemGroup>
+      <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')"/>
+  </Target>
+
+  <Target Name="SetUpAOTDirectory" Condition="'$(TestBuildMode)' == 'nativeaot'" AfterTargets="Build">
+    <ItemGroup>
+      <NativeLibrariesToCopy Include="$(LibrarySubdirectory)/libNativeLibrary.*" />
+      <NativeLibrariesToCopy Include="$(LibrarySubdirectory)/NativeLibrary.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(NativeOutputPath)/%(Filename)-in-native%(Extension)')" />
   </Target>
 </Project>

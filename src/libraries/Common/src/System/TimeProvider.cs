@@ -57,6 +57,10 @@ namespace System
 #endif // SYSTEM_PRIVATE_CORELIB
             }
             TimeSpan offset = zoneInfo.GetUtcOffset(utcDateTime);
+            if (offset.Ticks is 0)
+            {
+                return utcDateTime;
+            }
 
             long localTicks = utcDateTime.Ticks + offset.Ticks;
             if ((ulong)localTicks > (ulong)s_maxDateTicks)
@@ -117,7 +121,7 @@ namespace System
         /// Gets the elapsed time since the <paramref name="startingTimestamp"/> value retrieved using <see cref="GetTimestamp"/>.
         /// </summary>
         /// <param name="startingTimestamp">The timestamp marking the beginning of the time period.</param>
-        /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting timestamp and the time of this call./></returns>
+        /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting timestamp and the time of this call.</returns>
         public TimeSpan GetElapsedTime(long startingTimestamp) => GetElapsedTime(startingTimestamp, GetTimestamp());
 
         /// <summary>Creates a new <see cref="ITimer"/> instance, using <see cref="TimeSpan"/> values to measure time intervals.</summary>
@@ -132,7 +136,7 @@ namespace System
         /// The newly created <see cref="ITimer"/> instance.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The number of milliseconds in the value of <paramref name="dueTime"/> or <paramref name="period"/> is negative and not equal to <see cref="Timeout.Infinite"/>, or is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The number of milliseconds in the value of <paramref name="dueTime"/> or <paramref name="period"/> is negative and not equal to <see cref="Timeout.Infinite"/>, or is greater than <see cref="int.MaxValue">int.MaxValue</see>.</exception>
         /// <remarks>
         /// <para>
         /// The delegate specified by the callback parameter is invoked once after <paramref name="dueTime"/> elapses, and thereafter each time the <paramref name="period"/> time interval elapses.
@@ -183,9 +187,8 @@ namespace System
 #endif // SYSTEM_PRIVATE_CORELIB
             public SystemTimeProviderTimer(TimeSpan dueTime, TimeSpan period, TimerCallback callback, object? state)
             {
-                (uint duration, uint periodTime) = CheckAndGetValues(dueTime, period);
 #if SYSTEM_PRIVATE_CORELIB
-                _timer = new TimerQueueTimer(callback, state, duration, periodTime, flowExecutionContext: true);
+                _timer = new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext: true);
 #else
                 // We need to ensure the timer roots itself. Timer created with a duration and period argument
                 // only roots the state object, so to root the timer we need the state object to reference the
@@ -195,7 +198,7 @@ namespace System
                 {
                     TimerState ts = (TimerState)s!;
                     ts.Callback(ts.State);
-                }, timerState, duration, periodTime);
+                }, timerState, dueTime, period);
 #endif // SYSTEM_PRIVATE_CORELIB
             }
 
@@ -210,10 +213,9 @@ namespace System
 
             public bool Change(TimeSpan dueTime, TimeSpan period)
             {
-                (uint duration, uint periodTime) = CheckAndGetValues(dueTime, period);
                 try
                 {
-                    return _timer.Change(duration, periodTime);
+                    return _timer.Change(dueTime, period);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -233,44 +235,6 @@ namespace System
                 return default;
             }
 #endif // SYSTEM_PRIVATE_CORELIB
-
-            private static (uint duration, uint periodTime) CheckAndGetValues(TimeSpan dueTime, TimeSpan periodTime)
-            {
-                long dueTm = (long)dueTime.TotalMilliseconds;
-                long periodTm = (long)periodTime.TotalMilliseconds;
-
-#if SYSTEM_PRIVATE_CORELIB
-                ArgumentOutOfRangeException.ThrowIfLessThan(dueTm, -1, nameof(dueTime));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, Timer.MaxSupportedTimeout, nameof(dueTime));
-
-                ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1, nameof(periodTime));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, Timer.MaxSupportedTimeout, nameof(periodTime));
-#else
-                const uint MaxSupportedTimeout = 0xfffffffe;
-
-                if (dueTm < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(dueTime), -1));
-                }
-
-                if (dueTm > MaxSupportedTimeout)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dueTime), dueTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(dueTime), MaxSupportedTimeout));
-                }
-
-                if (periodTm < -1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeGreaterOrEqual, nameof(periodTm), -1));
-                }
-
-                if (periodTm > MaxSupportedTimeout)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(periodTm), periodTm, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeLessOrEqual, nameof(periodTm), MaxSupportedTimeout));
-                }
-#endif // SYSTEM_PRIVATE_CORELIB
-
-                return ((uint)dueTm, (uint)periodTm);
-            }
         }
 
         /// <summary>

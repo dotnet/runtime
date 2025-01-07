@@ -367,7 +367,7 @@ namespace Internal.TypeSystem
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(value);
 #else
             if (value == null)
@@ -596,7 +596,7 @@ namespace Internal.TypeSystem
         /// <returns>Value from the hashtable if found, otherwise null.</returns>
         public TValue GetValueIfExists(TValue value)
         {
-#if NET5_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(value);
 #else
             if (value == null)
@@ -689,27 +689,24 @@ namespace Internal.TypeSystem
 
             public bool MoveNext()
             {
-                if (_sentinel != null)
+                if ((_sentinel != null) && (_hashtableContentsToEnumerate != null))
                 {
-                    if ((_hashtableContentsToEnumerate != null) && (_index < _hashtableContentsToEnumerate.Length))
+                    for (; _index < _hashtableContentsToEnumerate.Length; _index++)
                     {
-                        for (; _index < _hashtableContentsToEnumerate.Length; _index++)
+                        if ((_hashtableContentsToEnumerate[_index] != null) && (_hashtableContentsToEnumerate[_index] != _sentinel))
                         {
-                            if ((_hashtableContentsToEnumerate[_index] != null) && (_hashtableContentsToEnumerate[_index] != _sentinel))
-                            {
-                                _current = _hashtableContentsToEnumerate[_index];
-                                _index++;
-                                return true;
-                            }
+                            _current = _hashtableContentsToEnumerate[_index];
+                            _index++;
+                            return true;
                         }
                     }
-                }
 
-                if ((_index == _hashtableContentsToEnumerate.Length) && _sentinel != null)
-                {
-                    _current = _sentinel;
-                    _index++;
-                    return true;
+                    if (_index == _hashtableContentsToEnumerate.Length)
+                    {
+                        _current = _sentinel;
+                        _index++;
+                        return true;
+                    }
                 }
 
                 _current = default(TValue);

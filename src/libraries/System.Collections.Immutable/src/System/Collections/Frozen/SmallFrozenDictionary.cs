@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -14,7 +15,7 @@ namespace System.Collections.Frozen
     /// <remarks>
     /// No hashing here, just a straight-up linear scan that compares all the keys.
     /// </remarks>
-    internal sealed class SmallFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
+    internal sealed partial class SmallFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
         where TKey : notnull
     {
         private readonly TKey[] _keys;
@@ -24,8 +25,8 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(source.Count != 0);
 
-            _keys = source.Keys.ToArray(source.Count);
-            _values = source.Values.ToArray(source.Count);
+            _keys = source.Keys.ToArray();
+            _values = source.Values.ToArray();
         }
 
         private protected override TKey[] KeysCore => _keys;

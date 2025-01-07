@@ -7,8 +7,16 @@ namespace System.Globalization
 {
     internal sealed partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId) =>
-            IcuLoadCalendarDataFromSystem(localeName, calendarId);
+        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId)
+        {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ?
+                LoadCalendarDataFromNative(localeName, calendarId) :
+                IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#else
+            return IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#endif
+        }
 
 #pragma warning disable IDE0060
         internal static int GetCalendarsCore(string localeName, bool useUserOverride, CalendarId[] calendars) =>

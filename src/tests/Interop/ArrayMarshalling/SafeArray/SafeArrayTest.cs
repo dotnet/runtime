@@ -9,9 +9,12 @@ using Xunit;
 
 #pragma warning disable CS0612, CS0618
 
-public class Tester
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public class SafeArrayMarshallingTest
 {
-    public static int Main()
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("Requires COM support")]
+    public static int TestEntryPoint()
     {
         try
         {
@@ -114,11 +117,14 @@ class SafeArrayNative
     public struct BlittableRecord
     {
         public int a;
+
+        public override string ToString() => $"BlittableRecord: {a}";
     }
 
     public struct NonBlittableRecord
     {
         public bool b;
+        public override string ToString() => $"NonBlittableRecord: {b}";
     }
 
     [DllImport(nameof(SafeArrayNative))]

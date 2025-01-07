@@ -11,7 +11,7 @@ namespace Test
     {
         static bool m_bFlag = false;
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool B = false;
             if (B)
@@ -35,7 +35,6 @@ namespace Test
                     }
                 }
             }
-            return 100;
         }
     }
 }

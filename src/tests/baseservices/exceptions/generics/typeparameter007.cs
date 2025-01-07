@@ -11,6 +11,7 @@
 // <Code> 
 
 using System;
+using Xunit;
 
 public struct ValX0 {}
 public struct ValY0 {}
@@ -67,7 +68,8 @@ public class Test_typeparameter007
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		new Gen().ExceptionTest<Exception>(new Exception()); 
 		new Gen().ExceptionTest<Exception>(new InvalidOperationException());

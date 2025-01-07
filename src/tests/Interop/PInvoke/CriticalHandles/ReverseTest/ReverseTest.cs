@@ -56,6 +56,7 @@ internal class MyCriticalHandle : CriticalHandle
     }
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class Reverse
 {
     public static void In()
@@ -131,7 +132,8 @@ public class Reverse
         internal static extern IntPtr InvokeRetCallback(RetCallback callback);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

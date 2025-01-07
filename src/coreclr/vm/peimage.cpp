@@ -141,11 +141,11 @@ ULONG PEImage::Release()
         result=InterlockedDecrement(&m_refCount);
         if (result == 0 )
         {
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing Image %s\n", m_path.GetUTF8()));
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Closing %p\n", this));
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);
-                PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetPathHash(), &locator);
+                PEImage* deleted = (PEImage *)s_Images->DeleteValue(m_pathHash, &locator);
                 _ASSERTE(deleted == this);
             }
         }
@@ -186,7 +186,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         {
             // Drive path
             i++;
-            SString sDrivePath(SString::Literal, ":\\");
+            SString sDrivePath(SString::Literal, W(":\\"));
             CCHECK(path.Skip(i, sDrivePath));
         }
         else
@@ -249,12 +249,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-
-#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-        if (pImage->GetPath().Equals(path))
-#else
         if (pImage->GetPath().EqualsCaseInsensitive(path))
-#endif
         {
             ret = TRUE;
         }
@@ -541,9 +536,10 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // these necessary fields enumerated no matter what.
     m_path.EnumMemoryRegions(flags);
 
-    // We always want this field in mini/triage/heap dumps.
+    // SString skips enumeration for triage dumps, but we always want this field, so we specify
+    // CLRDATA_ENUM_MEM_DEFAULT as the flags. This value is used in cases where we either can't
+    // use the full path (triage dumps) or don't have a path (in-memory assembly)
     m_sModuleFileNameHintUsedByDac.EnumMemoryRegions(CLRDATA_ENUM_MEM_DEFAULT);
-
 
     EX_TRY
     {
@@ -620,9 +616,9 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-
-PEImage::PEImage():
-    m_path(),
+PEImage::PEImage(const WCHAR* path):
+    m_path{path},
+    m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_bundleFileLocation(),
@@ -792,7 +788,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
     }
     CONTRACT_END;
 
-    PEImageHolder pImage(new PEImage());
+    PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 
@@ -872,7 +868,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     if (m_hFile!=INVALID_HANDLE_VALUE)
         return S_OK;
 
-    ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+    ErrorModeHolder mode{};
     m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS

@@ -10,7 +10,7 @@ namespace Test
     public struct AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool[] ab = new bool[2];
             try
@@ -22,7 +22,6 @@ namespace Test
             }
             catch (IndexOutOfRangeException) { }
             catch (Exception) { }
-            return 100;
         }
     }
 }

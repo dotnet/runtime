@@ -1,5 +1,5 @@
 # System.Text.RegularExpressions
-This assembly provides regular expression functionality. The main type contained in the assembly is [Regex](https://learn.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex) class, which represents an immutable regular expression object which can be used to test for matches on given input strings or spans.
+This assembly provides regular expression functionality. The main type contained in the assembly is [Regex](https://learn.microsoft.com/dotnet/api/system.text.regularexpressions.regex) class, which represents an immutable regular expression object which can be used to test for matches on given input strings or spans.
 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.text.regularexpressions.
 

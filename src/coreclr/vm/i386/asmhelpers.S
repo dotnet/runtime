@@ -126,45 +126,6 @@ LEAF_ENTRY RestoreFPUContext, _TEXT
     ret     4
 LEAF_END RestoreFPUContext, _TEXT
 
-// -----------------------------------------------------------------------
-//  The out-of-line portion of the code to enable preemptive GC.
-//  After the work is done, the code jumps back to the "pRejoinPoint"
-//  which should be emitted right after the inline part is generated.
-//
-//  Assumptions:
-//       ebx = Thread
-//  Preserves
-//       all registers except ecx.
-//
-// -----------------------------------------------------------------------
-NESTED_ENTRY StubRareEnable, _TEXT, NoHandler
-    push    eax
-    push    edx
-
-    push    ebx
-
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(StubRareEnableWorker)
-
-    pop     edx
-    pop     eax
-    ret
-NESTED_END StubRareEnable, _TEXT
-
-NESTED_ENTRY StubRareDisableTHROW, _TEXT, NoHandler
-    push    eax
-    push    edx
-
-    push    ebx     // Thread
-
-    CHECK_STACK_ALIGNMENT
-    call    C_FUNC(StubRareDisableTHROWWorker)
-
-    pop     edx
-    pop     eax
-    ret
-NESTED_END StubRareDisableTHROW, _TEXT
-
 // ------------------------------------------------------------------------------
 //  This helper routine enregisters the appropriate arguments and makes the
 //  actual call.
@@ -214,10 +175,12 @@ LOCAL_LABEL(donestack):
 
     CHECK_STACK_ALIGNMENT
     call    [ebx + CallDescrData__pTarget]
+LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
+
 #ifdef _DEBUG
     nop     // This is a tag that we use in an assert.  Fcalls expect to
             // be called from Jitted code or from certain blessed call sites like
-            // this one.  (See HelperMethodFrame::InsureInit)
+            // this one.  (See HelperMethodFrame::EnsureInit)
 #endif
 
     // Save FP return value if necessary
@@ -252,6 +215,10 @@ LOCAL_LABEL(ReturnsFloat):
 LOCAL_LABEL(ReturnsDouble):
     fstp    QWORD PTR [ebx + CallDescrData__returnValue]  // Spill the Double return value
     jmp     LOCAL_LABEL(Epilog)
+
+PATCH_LABEL CallDescrWorkerInternalReturnAddressOffset
+    .word LOCAL_LABEL(CallDescrWorkerInternalReturnAddress) - C_FUNC(CallDescrWorkerInternal)
+
 NESTED_END CallDescrWorkerInternal, _TEXT
 
 #ifdef _DEBUG
@@ -591,7 +558,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT, NoHandler
 
     STUB_EPILOG
 
-PATCH_LABEL ExternalMethodFixupPatchLabel
     // Tailcall target
     jmp eax
 
@@ -755,27 +721,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
     // Now jump to the target
     jmp         eax // continue on into the method
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
-#ifdef FEATURE_STUBS_AS_IL
-// ==========================================================================
-// void SinglecastDelegateInvokeStub();
-//
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-    test        ecx, ecx
-    jz          LOCAL_LABEL(NullObject)
-
-    mov         eax, [ecx + DelegateObject___methodPtr]
-    mov         ecx, [ecx + DelegateObject___target]    // replace "this" pointer
-    jmp         eax
-
-LOCAL_LABEL(NullObject):
-
-    mov         ecx, CORINFO_NullReferenceException_ASM
-    jmp         C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-#endif // FEATURE_STUBS_AS_IL
 
 // =======================================================================================
 // void ResolveWorkerChainLookupAsmStub();

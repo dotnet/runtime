@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: The boolean class serves as a wrapper for the primitive
-** type boolean.
-**
-**
-===========================================================*/
-
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,6 +8,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a boolean (<see langword="true"/> or <see langword="false"/>) value.
+    /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Boolean
@@ -103,22 +96,17 @@ namespace System
         {
             if (m_value)
             {
-                if (destination.Length > 3)
+                if (TrueLiteral.TryCopyTo(destination))
                 {
-                    ulong true_val = BitConverter.IsLittleEndian ? 0x65007500720054ul : 0x54007200750065ul; // "True"
-                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), ref true_val);
-                    charsWritten = 4;
+                    charsWritten = TrueLiteral.Length;
                     return true;
                 }
             }
             else
             {
-                if (destination.Length > 4)
+                if (FalseLiteral.TryCopyTo(destination))
                 {
-                    ulong fals_val = BitConverter.IsLittleEndian ? 0x73006C00610046ul : 0x460061006C0073ul; // "Fals"
-                    MemoryMarshal.Write(MemoryMarshal.AsBytes(destination), ref fals_val);
-                    destination[4] = 'e';
-                    charsWritten = 5;
+                    charsWritten = FalseLiteral.Length;
                     return true;
                 }
             }

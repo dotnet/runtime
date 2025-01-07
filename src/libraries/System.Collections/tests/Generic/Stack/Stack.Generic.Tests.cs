@@ -80,7 +80,7 @@ namespace System.Collections.Tests
             _ = numberOfMatchingElements;
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, numberOfDuplicateElements);
             Stack<T> stack = new Stack<T>(enumerable);
-            Assert.Equal(enumerable.ToArray().Reverse(), stack.ToArray());
+            Assert.Equal(Enumerable.Reverse(enumerable.ToArray()), stack.ToArray());
         }
 
         [Fact]
@@ -106,6 +106,15 @@ namespace System.Collections.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Stack<T>(int.MinValue));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public void Stack_CreateWithCapacity_EqualsCapacityProperty(int capacity)
+        {
+            var stack = new Stack<T>(capacity);
+            Assert.Equal(capacity, stack.Capacity);
         }
 
         #endregion
@@ -166,6 +175,27 @@ namespace System.Collections.Tests
         #endregion
 
         #region TrimExcess
+
+        [Theory]
+        [InlineData(1, -1)]
+        [InlineData(2, 1)]
+        public void Stack_TrimAccessWithInvalidArg_ThrowOutOfRange(int size, int newCapacity)
+        {
+            Stack<T> stack = GenericStackFactory(size);
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => stack.TrimExcess(newCapacity));
+        }
+
+        [Fact]
+        public void Stack_TrimAccessCurrentCount_DoesNothing()
+        {
+            var stack = GenericStackFactory(10);
+            stack.TrimExcess(stack.Count);
+            int capacity = stack.Capacity;
+            stack.TrimExcess(stack.Count);
+
+            Assert.Equal(capacity, stack.Capacity);
+        }
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
@@ -394,6 +424,17 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(copiedList[i], stack.Pop());
             }
+        }
+
+        [Fact]
+        public void StackResized_CapacityUpdates()
+        {
+            Stack<T> stack = GenericStackFactory(10);
+            int initialCapacity = stack.Capacity;
+
+            stack.Push(CreateT(85877));
+
+            Assert.True(initialCapacity < stack.Capacity);
         }
     }
 }

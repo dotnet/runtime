@@ -6,19 +6,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    using DynamicGenericsRegistrationData = TypeLoaderEnvironment.DynamicGenericsRegistrationData;
-    using GenericTypeEntry = TypeLoaderEnvironment.GenericTypeEntry;
-    using GenericMethodEntry = TypeLoaderEnvironment.GenericMethodEntry;
-    using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
-
     internal static class LowLevelListExtensions
     {
         public static void Expand<T>(this LowLevelList<T> list, int count)
@@ -28,17 +22,6 @@ namespace Internal.Runtime.TypeLoader
 
             while (list.Count < count)
                 list.Add(default(T));
-        }
-
-        public static bool HasSetBits(this LowLevelList<bool> list)
-        {
-            for (int index = 0; index < list.Count; index++)
-            {
-                if (list[index])
-                    return true;
-            }
-
-            return false;
         }
     }
 
@@ -84,7 +67,7 @@ namespace Internal.Runtime.TypeLoader
 
             IntPtr methodDictionary;
 
-            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out methodDictionary))
+            if (TypeLoaderEnvironment.Instance.TryLookupGenericMethodDictionary(new TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup(method), out methodDictionary))
             {
                 TypeLoaderLogger.WriteLine("Found DICT = " + methodDictionary.LowLevelToString() + " for method " + method.ToString());
                 method.AssociateWithRuntimeMethodDictionary(methodDictionary);
@@ -317,7 +300,7 @@ namespace Internal.Runtime.TypeLoader
             if (method.UnboxingStub)
             {
                 // Strip unboxing stub, note the first parameter which is false
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation, IntPtr.Zero, false);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(false, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             uint nativeLayoutInfoToken;
@@ -328,9 +311,11 @@ namespace Internal.Runtime.TypeLoader
                 throw new MissingTemplateException();
             }
 
-            if (templateMethod.FunctionPointer != IntPtr.Zero)
+            // We might have a mismatch between unboxing/non-unboxing variants so only remember it for static methods
+            if (TypeLoaderEnvironment.IsStaticMethodSignature(templateMethod.NameAndSignature)
+                && templateMethod.FunctionPointer != IntPtr.Zero)
             {
-                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer, isFunctionPointerUSG: false);
+                nonTemplateMethod.SetFunctionPointer(templateMethod.FunctionPointer);
             }
 
             // Ensure that if this method is non-shareable from a normal canonical perspective, then
@@ -386,7 +371,7 @@ namespace Internal.Runtime.TypeLoader
             NativeParser typeInfoParser = state.GetParserForNativeLayoutInfo();
             NativeLayoutInfoLoadContext context = state.NativeLayoutInfo.LoadContext;
 
-            NativeParser baseTypeParser = new NativeParser();
+            NativeParser baseTypeParser = default;
 
             BagElementKind kind;
             while ((kind = typeInfoParser.GetBagElementKind()) != BagElementKind.End)
@@ -480,7 +465,7 @@ namespace Internal.Runtime.TypeLoader
             private int _size;
             private bool _isReferenceTypeGCLayout;
 
-            public static GCLayout None { get { return new GCLayout(); } }
+            public static GCLayout None { get { return default(GCLayout); } }
             public static GCLayout SingleReference { get; } = new GCLayout(new LowLevelList<bool>(new bool[1] { true }), false);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
@@ -854,7 +839,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<GenericTypeEntry> TypesToRegister()
+        private IEnumerable<TypeLoaderEnvironment.GenericTypeEntry> TypesToRegister()
         {
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
@@ -862,7 +847,7 @@ namespace Internal.Runtime.TypeLoader
                 if (typeAsDefType == null)
                     continue;
 
-                yield return new GenericTypeEntry
+                yield return new TypeLoaderEnvironment.GenericTypeEntry
                 {
                     _genericTypeDefinitionHandle = GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()),
                     _genericTypeArgumentHandles = GetRuntimeTypeHandles(typeAsDefType.Instantiation),
@@ -871,12 +856,12 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private IEnumerable<GenericMethodEntry> MethodsToRegister()
+        private IEnumerable<TypeLoaderEnvironment.GenericMethodEntry> MethodsToRegister()
         {
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 InstantiatedMethod method = _methodsThatNeedDictionaries[i];
-                yield return new GenericMethodEntry
+                yield return new TypeLoaderEnvironment.GenericMethodEntry
                 {
                     _declaringTypeHandle = GetRuntimeTypeHandle(method.OwningType),
                     _genericMethodArgumentHandles = GetRuntimeTypeHandles(method.Instantiation),
@@ -895,7 +880,7 @@ namespace Internal.Runtime.TypeLoader
                     typesToRegisterCount++;
             }
 
-            DynamicGenericsRegistrationData registrationData = new DynamicGenericsRegistrationData
+            var registrationData = new TypeLoaderEnvironment.DynamicGenericsRegistrationData
             {
                 TypesToRegisterCount = typesToRegisterCount,
                 TypesToRegister = (typesToRegisterCount != 0) ? TypesToRegister() : null,
@@ -1025,7 +1010,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRefType);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsByRef);
                     }
                     TypeSystemContext.ByRefTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1034,7 +1019,7 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(typeAsParameterizedType is PointerType);
                     unsafe
                     {
-                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointerType);
+                        Debug.Assert(typeAsParameterizedType.RuntimeTypeHandle.ToEETypePtr()->IsPointer);
                     }
                     TypeSystemContext.PointerTypesCache.AddOrGetExisting(typeAsParameterizedType.RuntimeTypeHandle);
                 }
@@ -1097,7 +1082,7 @@ namespace Internal.Runtime.TypeLoader
 
             // The first is a pointer that points to the TypeManager indirection cell.
             // The second is the offset into the native layout info blob in that TypeManager, where the native signature is encoded.
-            IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
+            IntPtr** lazySignature = (IntPtr**)signature;
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
             reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);
@@ -1259,7 +1244,7 @@ namespace Internal.Runtime.TypeLoader
                 pointerTypeHandle = EETypeCreator.CreatePointerEEType((uint)pointerType.GetHashCode(), pointeeTypeHandle, pointerType);
                 unsafe
                 {
-                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointerType);
+                    Debug.Assert(pointerTypeHandle.ToEETypePtr()->IsPointer);
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
@@ -1279,7 +1264,7 @@ namespace Internal.Runtime.TypeLoader
                 byRefTypeHandle = EETypeCreator.CreateByRefEEType((uint)byRefType.GetHashCode(), pointeeTypeHandle, byRefType);
                 unsafe
                 {
-                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRefType);
+                    Debug.Assert(byRefTypeHandle.ToEETypePtr()->IsByRef);
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
@@ -1304,7 +1289,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = EETypeCreator.CreateFunctionPointerEEType((uint)functionPointerType.GetHashCode(), returnTypeHandle, parameterHandles, functionPointerType);
                 unsafe
                 {
-                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointerType);
+                    Debug.Assert(runtimeTypeHandle.ToEETypePtr()->IsFunctionPointer);
                 }
                 TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
 
@@ -1330,45 +1315,6 @@ namespace Internal.Runtime.TypeLoader
                 methodDictionary = IntPtr.Zero;
                 return false;
             }
-        }
-
-        private void ResolveSingleCell_Worker(GenericDictionaryCell cell, out IntPtr fixupResolution)
-        {
-            cell.Prepare(this);
-
-            // Process the pending types
-            ProcessTypesNeedingPreparation();
-            FinishTypeAndMethodBuilding();
-
-            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
-            fixupResolution = cell.Create(this);
-        }
-
-        private void ResolveMultipleCells_Worker(GenericDictionaryCell[] cells, out IntPtr[] fixups)
-        {
-            foreach (var cell in cells)
-            {
-                cell.Prepare(this);
-            }
-
-            // Process the pending types
-            ProcessTypesNeedingPreparation();
-            FinishTypeAndMethodBuilding();
-
-            // At this stage the pointer we need is accessible via a call to Create on the prepared cell
-            fixups = new IntPtr[cells.Length];
-            for (int i = 0; i < fixups.Length; i++)
-                fixups[i] = cells[i].Create(this);
-        }
-
-        internal static void ResolveSingleCell(GenericDictionaryCell cell, out IntPtr fixupResolution)
-        {
-            new TypeBuilder().ResolveSingleCell_Worker(cell, out fixupResolution);
-        }
-
-        public static void ResolveMultipleCells(GenericDictionaryCell [] cells, out IntPtr[] fixups)
-        {
-            new TypeBuilder().ResolveMultipleCells_Worker(cells, out fixups);
         }
 
         public static IntPtr BuildGenericLookupTarget(IntPtr typeContext, IntPtr signature, out IntPtr auxResult)

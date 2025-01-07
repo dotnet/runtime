@@ -9,58 +9,57 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class NativeRefTests : BuildTestBase
+public class NativeTests : BlazorWasmTestBase
 {
-    public NativeRefTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public NativeTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
         _enablePerTestCleanup = true;
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
-    public void WithNativeReference_AOTInProjectFile(string config)
+    public void WithNativeReference_AOTInProjectFile(Configuration config)
     {
-        string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        string extraProperties = config == "Debug"
+        string extraProperties = config == Configuration.Debug
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
-                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-                                    : string.Empty;
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
-
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
-
+                                        "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>" +
+                                        "<RunAOTCompilation>true</RunAOTCompilation>")
+                                    : "<RunAOTCompilation>true</RunAOTCompilation>";
+        ProjectInfo info = CreateProjectWithNativeReference(config, aot: true, extraProperties: extraProperties);
+        BlazorBuild(info, config, isNativeBuild: true);
+        BlazorPublish(info, config, new PublishOptions(UseCache: false), isNativeBuild: true);
         // will relink
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+        BlazorBuild(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82725")]
-    public void WithNativeReference_AOTOnCommandLine(string config)
+    public void WithNativeReference_AOTOnCommandLine(Configuration config)
     {
-        string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        string extraProperties = config == "Debug"
+        string extraProperties = config == Configuration.Debug
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
                                     : string.Empty;
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true), "-p:RunAOTCompilation=true");
-
+        ProjectInfo info = CreateProjectWithNativeReference(config, aot: false, extraProperties: extraProperties);
+        BlazorBuild(info, config, isNativeBuild: true);
+        BlazorPublish(info, config, new PublishOptions(AOT: true), isNativeBuild: true);
         // no aot!
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+        BlazorPublish(info, config, isNativeBuild: true);
+    }
+
+    [Theory]
+    [InlineData(Configuration.Release)]
+    public void BlazorWasm_CannotAOT_WithNoTrimming(Configuration config)
+    {
+        string extraProperties = "<PublishTrimmed>false</PublishTrimmed><RunAOTCompilation>true</RunAOTCompilation>";
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blazorwasm_aot", extraProperties: extraProperties);
+
+        (string _, string output) = BlazorPublish(info, config, new PublishOptions(ExpectSuccess: false));
+        Assert.Contains("AOT is not supported without IL trimming", output);
     }
 }
-
-
-

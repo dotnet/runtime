@@ -259,21 +259,18 @@ namespace System.Text.Json.Reflection
                 }
             }
 
-            // For correctness, throw if multiple ctors have [JsonConstructor], even if one or more are non-public.
-            ConstructorInfo? dummyCtorWithAttribute = ctorWithAttribute;
-
-            constructors = type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach (ConstructorInfo constructor in constructors)
+            // Search for non-public ctors with [JsonConstructor].
+            foreach (ConstructorInfo constructor in type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 if (HasJsonConstructorAttribute(constructor))
                 {
-                    if (dummyCtorWithAttribute != null)
+                    if (ctorWithAttribute != null)
                     {
                         deserializationCtor = null;
                         return false;
                     }
 
-                    dummyCtorWithAttribute = constructor;
+                    ctorWithAttribute = constructor;
                 }
             }
 

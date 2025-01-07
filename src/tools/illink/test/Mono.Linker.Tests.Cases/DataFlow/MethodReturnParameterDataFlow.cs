@@ -2,12 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -38,7 +35,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			instance.ReturnWithRequirementsAlwaysThrows ();
 
-			UnsupportedReturnType ();
+			UnsupportedReturnTypeAndParameter (null);
+			AnnotationOnUnsupportedReturnType.Test ();
 		}
 
 		static Type NoRequirements ()
@@ -183,14 +181,72 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			throw new NotImplementedException ();
 		}
 
-		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnType))]
-		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		static object UnsupportedReturnType () => null;
-
 		[ExpectedWarning ("IL2106", nameof (UnsupportedReturnTypeAndParameter))]
 		[ExpectedWarning ("IL2098", nameof (UnsupportedReturnTypeAndParameter))]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		static object UnsupportedReturnTypeAndParameter ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] object param) => null;
+
+		class AnnotationOnUnsupportedReturnType
+		{
+			class UnsupportedType
+			{
+				public UnsupportedType () {
+					RequirePublicFields (this);
+				}
+			}
+
+			static UnsupportedType GetUnsupportedTypeInstance () => null;
+
+			[ExpectedWarning ("IL2106")]
+			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static UnsupportedType GetWithPublicMethods () {
+				return GetUnsupportedTypeInstance ();
+			}
+
+			[ExpectedWarning ("IL2098")]
+			static void RequirePublicFields (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+				UnsupportedType unsupportedTypeInstance)
+			{
+			}
+
+			static void TestMethodReturnValue () {
+				var t = GetWithPublicMethods ();
+				RequirePublicFields (t);
+			}
+
+			static void TestCtorReturnValue () {
+				var t = new UnsupportedType ();
+				RequirePublicFields (t);
+			}
+
+			class StringRefReturnValue
+			{
+				string f;
+
+				ref string GetRefString () => ref f;
+
+				[ExpectedWarning ("IL2098")]
+				static void RequirePublicFields (
+					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+					ref string s)
+				{
+				}
+
+				public static void Test ()
+				{
+					var instance = new StringRefReturnValue ();
+					ref var s = ref instance.GetRefString ();
+					RequirePublicFields (ref s);
+				}
+			}
+
+			public static void Test () {
+				TestMethodReturnValue ();
+				TestCtorReturnValue ();
+				StringRefReturnValue.Test ();
+			}
+		}
 
 		class TestType
 		{

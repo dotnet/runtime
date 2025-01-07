@@ -625,7 +625,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     if (_nextMessageId.Value != header.Id ||
                         !_messages.TryDequeue(out dropped)) // remove the next message
                     {
-                        Debug.Assert(false, "The target did not follow the protocol.");
+                        Debug.Fail("The target did not follow the protocol.");
                     }
                     _nextMessageId.Value++;
 
@@ -985,7 +985,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             get
             {
                 var displaySource = _owningSource as IDebuggerDisplay;
-                return $"Block=\"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
+                return $"Block = \"{(displaySource != null ? displaySource.Content : _owningSource)}\"";
             }
         }
 

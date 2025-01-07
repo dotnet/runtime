@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [LibraryImport(Libraries.Crypt32, EntryPoint = "CertGetCertificateContextProperty",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Crypt32, EntryPoint = "CertGetCertificateContextProperty", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CertGetCertificateContextPropertyString(SafeCertContextHandle pCertContext, CertContextPropId dwPropId, byte* pvData, ref uint pcbData);
     }

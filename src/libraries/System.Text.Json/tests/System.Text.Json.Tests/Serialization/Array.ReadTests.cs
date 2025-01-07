@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Xunit;
 
@@ -44,7 +45,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public class PocoWithByteArrayProperty
         {
-            public byte[] Value { get; set; }
+            public byte[]? Value { get; set; }
         }
 
         [Fact]
@@ -510,18 +511,21 @@ namespace System.Text.Json.Serialization.Tests
             private ImmutableArray<string> _immutableArray = default;
             private ImmutableList<string> _immutableList = null;
 
+            [AllowNull]
             public string[] Array
             {
                 get => _array ?? new string[] { "-1" };
                 set { _array = value; }
             }
 
+            [AllowNull]
             public List<string> List
             {
                 get => _list ?? new List<string> { "-1" };
                 set { _list = value; }
             }
 
+            [AllowNull]
             public StringListWrapper ListWrapper
             {
                 get => _listWrapper ?? new StringListWrapper { "-1" };
@@ -534,6 +538,7 @@ namespace System.Text.Json.Serialization.Tests
                 set { _immutableArray = value; }
             }
 
+            [AllowNull]
             public ImmutableList<string> MyImmutableList
             {
                 get => _immutableList ?? ImmutableList.CreateRange(new List<string> { "-1" });

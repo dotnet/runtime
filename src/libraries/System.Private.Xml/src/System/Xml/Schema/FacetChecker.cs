@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
-using System.Xml.Serialization;
-using System.Xml.Schema;
-using System.Xml.XPath;
-using System.Diagnostics;
 using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Globalization;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+using System.Xml.XPath;
 
 namespace System.Xml.Schema
 {
@@ -1342,7 +1342,7 @@ namespace System.Xml.Schema
     { //All types derived from string & anyURI
 
         [GeneratedRegex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$", RegexOptions.ExplicitCapture)]
-        private static partial Regex LanguageRegex();
+        private static partial Regex LanguageRegex { get; }
 
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
@@ -1456,7 +1456,7 @@ namespace System.Xml.Schema
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }
-                    if (!LanguageRegex().IsMatch(s))
+                    if (!LanguageRegex.IsMatch(s))
                     {
                         return new XmlSchemaException(SR.Sch_InvalidLanguageId, string.Empty);
                     }

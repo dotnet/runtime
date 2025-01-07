@@ -30,51 +30,57 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> Int_TestData()
         {
-            yield return new object[] { new int[0], null, 0 };
+            yield return [new int[0], null, 0];
 
             Func<int, bool> isEvenFunc = IsEven;
-            yield return new object[] { new int[0], isEvenFunc, 0 };
-            yield return new object[] { new int[] { 4 }, isEvenFunc, 1 };
-            yield return new object[] { new int[] { 5 }, isEvenFunc, 0 };
-            yield return new object[] { new int[] { 2, 5, 7, 9, 29, 10 }, isEvenFunc, 2 };
-            yield return new object[] { new int[] { 2, 20, 22, 100, 50, 10 }, isEvenFunc, 6 };
+            yield return [new int[0], isEvenFunc, 0];
+            yield return [new int[] { 4 }, isEvenFunc, 1];
+            yield return [new int[] { 5 }, isEvenFunc, 0];
+            yield return [new int[] { 2, 5, 7, 9, 29, 10 }, isEvenFunc, 2];
+            yield return [new int[] { 2, 20, 22, 100, 50, 10 }, isEvenFunc, 6];
 
-            yield return new object[] { RepeatedNumberGuaranteedNotCollectionType(0, 0), null, 0 };
-            yield return new object[] { RepeatedNumberGuaranteedNotCollectionType(5, 1), null, 1 };
-            yield return new object[] { RepeatedNumberGuaranteedNotCollectionType(5, 10), null, 10 };
+            yield return [RepeatedNumberGuaranteedNotCollectionType(0, 0), null, 0];
+            yield return [RepeatedNumberGuaranteedNotCollectionType(5, 1), null, 1];
+            yield return [RepeatedNumberGuaranteedNotCollectionType(5, 10), null, 10];
         }
 
         [Theory]
         [MemberData(nameof(Int_TestData))]
         public void Int(IEnumerable<int> source, Func<int, bool> predicate, int expected)
         {
-            if (predicate == null)
+            Assert.All(CreateSources(source), source =>
             {
-                Assert.Equal(expected, source.Count());
-            }
-            else
-            {
-                Assert.Equal(expected, source.Count(predicate));
-            }
+                if (predicate is null)
+                {
+                    Assert.Equal(expected, source.Count());
+                }
+                else
+                {
+                    Assert.Equal(expected, source.Count(predicate));
+                }
+            });
         }
 
         [Theory, MemberData(nameof(Int_TestData))]
         public void IntRunOnce(IEnumerable<int> source, Func<int, bool> predicate, int expected)
         {
-            if (predicate == null)
+            Assert.All(CreateSources(source), source =>
             {
-                Assert.Equal(expected, source.RunOnce().Count());
-            }
-            else
-            {
-                Assert.Equal(expected, source.RunOnce().Count(predicate));
-            }
+                if (predicate is null)
+                {
+                    Assert.Equal(expected, source.RunOnce().Count());
+                }
+                else
+                {
+                    Assert.Equal(expected, source.RunOnce().Count(predicate));
+                }
+            });
         }
 
         [Fact]
         public void NullableIntArray_IncludesNullObjects()
         {
-            int?[] data = { -10, 4, 9, null, 11 };
+            int?[] data = [-10, 4, 9, null, 11];
             Assert.Equal(5, data.Count());
         }
 
@@ -93,10 +99,10 @@ namespace System.Linq.Tests
 
         private static IEnumerable<object[]> EnumerateCollectionTypesAndCounts<T>(int count, IEnumerable<T> enumerable)
         {
-            yield return new object[] { count, enumerable };
-            yield return new object[] { count, enumerable.ToArray() };
-            yield return new object[] { count, enumerable.ToList() };
-            yield return new object[] { count, new Stack<T>(enumerable) };
+            foreach (var transform in IdentityTransforms<T>())
+            {
+                yield return [count, transform(enumerable)];
+            }
         }
 
         public static IEnumerable<object[]> CountsAndTallies()
@@ -166,9 +172,9 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> NonEnumeratedCount_SupportedEnumerables()
         {
-            yield return WrapArgs(4, new int[]{ 1, 2, 3, 4 });
-            yield return WrapArgs(4, new List<int>(new int[] { 1, 2, 3, 4 }));
-            yield return WrapArgs(4, new Stack<int>(new int[] { 1, 2, 3, 4 }));
+            yield return WrapArgs(4, [1, 2, 3, 4]);
+            yield return WrapArgs(4, new List<int>([1, 2, 3, 4]));
+            yield return WrapArgs(4, new Stack<int>([1, 2, 3, 4]));
 
             yield return WrapArgs(0, Enumerable.Empty<string>());
 
@@ -184,14 +190,14 @@ namespace System.Linq.Tests
                 yield return WrapArgs(20, Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
             }
 
-            static object[] WrapArgs<T>(int expectedCount, IEnumerable<T> source) => new object[] { expectedCount, source };
+            static object[] WrapArgs<T>(int expectedCount, IEnumerable<T> source) => [expectedCount, source];
         }
 
         public static IEnumerable<object[]> NonEnumeratedCount_UnsupportedEnumerables()
         {
             yield return WrapArgs(Enumerable.Range(1, 100).Where(x => x % 2 == 0));
             yield return WrapArgs(Enumerable.Range(1, 100).GroupBy(x => x % 2 == 0));
-            yield return WrapArgs(new Stack<int>(new int[] { 1, 2, 3, 4 }).Select(x => x + 1));
+            yield return WrapArgs(new Stack<int>([1, 2, 3, 4]).Select(x => x + 1));
             yield return WrapArgs(Enumerable.Range(1, 100).Distinct());
 
             if (!PlatformDetection.IsSpeedOptimized)
@@ -206,7 +212,7 @@ namespace System.Linq.Tests
                 yield return WrapArgs(Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
             }
 
-            static object[] WrapArgs<T>(IEnumerable<T> source) => new object[] { source };
+            static object[] WrapArgs<T>(IEnumerable<T> source) => [source];
         }
     }
 }

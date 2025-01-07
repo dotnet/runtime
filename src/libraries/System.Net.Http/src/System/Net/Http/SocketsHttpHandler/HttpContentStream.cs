@@ -5,7 +5,7 @@ namespace System.Net.Http
 {
     internal abstract class HttpContentStream : HttpBaseStream
     {
-        protected HttpConnection? _connection;
+        protected internal HttpConnection? _connection;
 
         public HttpContentStream(HttpConnection connection)
         {

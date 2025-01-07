@@ -39,17 +39,7 @@
     <ItemGroup>
       <ProjectReferenceWithConfiguration PrivateAssets="all"
                                          Private="false"
-                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))" />
-    </ItemGroup>
-  </Target>
-
-  <!-- An opt-in target to trim out private assemblies from the ref assembly ReferencePath. -->
-  <Target Name="TrimOutPrivateAssembliesFromReferencePath"
-          Condition="'$(CompileUsingReferenceAssemblies)' == 'true' and '$(TrimOutPrivateAssembliesFromReferencePath)' == 'true'"
-          AfterTargets="FindReferenceAssembliesForReferences">
-    <ItemGroup>
-      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)"
-                                      Condition="$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);')) and '%(ProjectReferenceWithConfiguration.Private)' == ''" />
     </ItemGroup>
   </Target>
 

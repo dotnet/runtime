@@ -96,11 +96,10 @@ public class Test_structret3_3
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         S sM = new S("test");
 
         Console.WriteLine(c(sM, sM, sM));
-        return 100;
     }
 }

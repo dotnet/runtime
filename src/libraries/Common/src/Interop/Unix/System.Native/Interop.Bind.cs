@@ -10,6 +10,10 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Bind")]
-        internal static unsafe partial Error Bind(SafeHandle socket, ProtocolType socketProtocolType, byte* socketAddress, int socketAddressLen);
+        private static partial Error Bind(SafeHandle socket, ProtocolType socketProtocolType, ReadOnlySpan<byte> socketAddress, int socketAddressLen);
+
+        internal static Error Bind(
+            SafeHandle socket, ProtocolType socketProtocolType, ReadOnlySpan<byte> socketAddress)
+            => Bind(socket, socketProtocolType, socketAddress, socketAddress.Length);
     }
 }

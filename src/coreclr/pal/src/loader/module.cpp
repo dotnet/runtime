@@ -21,7 +21,6 @@ Abstract:
 SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do this first
 
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/palinternal.h"
 #include "pal/module.h"
@@ -106,34 +105,6 @@ static BOOL LOADCallDllMainSafe(MODSTRUCT *module, DWORD dwReason, LPVOID lpRese
 
 /*++
 Function:
-  LoadLibraryA
-
-See MSDN doc.
---*/
-HMODULE
-PALAPI
-LoadLibraryA(
-    IN LPCSTR lpLibFileName)
-{
-    return LoadLibraryExA(lpLibFileName, nullptr, 0);
-}
-
-/*++
-Function:
-  LoadLibraryW
-
-See MSDN doc.
---*/
-HMODULE
-PALAPI
-LoadLibraryW(
-    IN LPCWSTR lpLibFileName)
-{
-    return LoadLibraryExW(lpLibFileName, nullptr, 0);
-}
-
-/*++
-Function:
 LoadLibraryExA
 
 See MSDN doc.
@@ -154,7 +125,7 @@ LoadLibraryExA(
 
     HMODULE hModule = nullptr;
 
-    PERF_ENTRY(LoadLibraryA);
+    PERF_ENTRY(LoadLibraryExA);
     ENTRY("LoadLibraryExA (lpLibFileName=%p (%s)) \n",
           (lpLibFileName) ? lpLibFileName : "NULL",
           (lpLibFileName) ? lpLibFileName : "NULL");
@@ -525,6 +496,7 @@ LPCSTR FixLibCName(LPCSTR shortAsciiName)
     //   As a result, we have to use the full name (i.e. lib.so.6) that is defined by LIBC_SO.
     // * For macOS, use constant value absolute path "/usr/lib/libc.dylib".
     // * For FreeBSD, use constant value "libc.so.7".
+    // * For Haiku, use constant value "libroot.so".
     // * For rest of Unices, use constant value "libc.so".
     if (strcmp(shortAsciiName, LIBC_NAME_WITHOUT_EXTENSION) == 0)
     {
@@ -532,6 +504,8 @@ LPCSTR FixLibCName(LPCSTR shortAsciiName)
         return "/usr/lib/libc.dylib";
 #elif defined(__FreeBSD__)
         return "libc.so.7";
+#elif defined(__HAIKU__)
+        return "libroot.so";
 #elif defined(LIBC_SO)
         return LIBC_SO;
 #else
@@ -1576,7 +1550,7 @@ static MODSTRUCT *LOADAllocModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR name)
     LPWSTR wide_name;
 
     /* no match found : try to create a new module structure */
-    module = (MODSTRUCT *)InternalMalloc(sizeof(MODSTRUCT));
+    module = (MODSTRUCT *)malloc(sizeof(MODSTRUCT));
     if (nullptr == module)
     {
         ERROR("malloc() failed! errno is %d (%s)\n", errno, strerror(errno));
@@ -1833,11 +1807,11 @@ MODSTRUCT *LOADGetPalLibrary()
         if (g_szCoreCLRPath == nullptr)
         {
             size_t  cbszCoreCLRPath = strlen(info.dli_fname) + 1;
-            g_szCoreCLRPath = (char*) InternalMalloc(cbszCoreCLRPath);
+            g_szCoreCLRPath = (char*) malloc(cbszCoreCLRPath);
 
             if (g_szCoreCLRPath == nullptr)
             {
-                ERROR("LOADGetPalLibrary: InternalMalloc failed!");
+                ERROR("LOADGetPalLibrary: malloc failed!");
                 goto exit;
             }
 

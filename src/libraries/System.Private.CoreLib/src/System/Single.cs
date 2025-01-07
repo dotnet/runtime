@@ -1,15 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: A wrapper class for the primitive type float.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +12,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a single-precision floating-point number.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -32,7 +26,8 @@ namespace System
           IEquatable<float>,
           IBinaryFloatingPointIeee754<float>,
           IMinMaxValue<float>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<float>
     {
         private readonly float m_value; // Do not rename (binary serialization)
 
@@ -89,6 +84,7 @@ namespace System
 
         internal const uint BiasedExponentMask = 0x7F80_0000;
         internal const int BiasedExponentShift = 23;
+        internal const int BiasedExponentLength = 8;
         internal const byte ShiftedBiasedExponentMask = (byte)(BiasedExponentMask >> BiasedExponentShift);
 
         internal const uint TrailingSignificandMask = 0x007F_FFFF;
@@ -106,6 +102,21 @@ namespace System
 
         internal const uint MinTrailingSignificand = 0x0000_0000;
         internal const uint MaxTrailingSignificand = 0x007F_FFFF;
+
+        internal const int TrailingSignificandLength = 23;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
+
+        // Constants representing the private bit-representation for various default values
+
+        internal const uint PositiveZeroBits = 0x0000_0000;
+        internal const uint NegativeZeroBits = 0x8000_0000;
+
+        internal const uint EpsilonBits = 0x0000_0001;
+
+        internal const uint PositiveInfinityBits = 0x7F80_0000;
+        internal const uint NegativeInfinityBits = 0xFF80_0000;
+
+        internal const uint SmallestNormalBits = 0x0080_0000;
 
         internal byte BiasedExponent
         {
@@ -152,27 +163,28 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            return (bits & 0x7FFFFFFF) < 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return (~bits & PositiveInfinityBits) != 0;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsInfinity(float f)
+        public static bool IsInfinity(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            return (bits & 0x7FFFFFFF) == 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return (bits & ~SignMask) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNaN(float f)
+        public static bool IsNaN(float f)
         {
             // A NaN will never equal itself so this is an
             // easy and efficient way to check for NaN.
@@ -182,10 +194,18 @@ namespace System
 #pragma warning restore CS1718
         }
 
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(float f)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
+        }
+
         /// <summary>Determines whether the specified value is negative.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNegative(float f)
+        public static bool IsNegative(float f)
         {
             return BitConverter.SingleToInt32Bits(f) < 0;
         }
@@ -193,37 +213,44 @@ namespace System
         /// <summary>Determines whether the specified value is negative infinity.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNegativeInfinity(float f)
+        public static bool IsNegativeInfinity(float f)
         {
             return f == NegativeInfinity;
         }
 
-        /// <summary>Determines whether the specified value is normal.</summary>
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
         [NonVersionable]
-        // This is probably not worth inlining, it has branches and should be rarely called
-        public static unsafe bool IsNormal(float f)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNormal(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            bits &= 0x7FFFFFFF;
-            return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsPositiveInfinity(float f)
+        public static bool IsPositiveInfinity(float f)
         {
             return f == PositiveInfinity;
         }
 
-        /// <summary>Determines whether the specified value is subnormal.</summary>
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
         [NonVersionable]
-        // This is probably not worth inlining, it has branches and should be rarely called
-        public static unsafe bool IsSubnormal(float f)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsSubnormal(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            bits &= 0x7FFFFFFF;
-            return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) == 0);
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsZero(float f)
+        {
+            return f == 0;
         }
 
         // Compares this object to another object, returning an integer that
@@ -234,39 +261,38 @@ namespace System
         //
         public int CompareTo(object? value)
         {
-            if (value == null)
+            if (value is not float other)
             {
-                return 1;
+                return (value is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeSingle);
             }
-
-            if (value is float f)
-            {
-                if (m_value < f) return -1;
-                if (m_value > f) return 1;
-                if (m_value == f) return 0;
-
-                // At least one of the values is NaN.
-                if (IsNaN(m_value))
-                    return IsNaN(f) ? 0 : -1;
-                else // f is NaN.
-                    return 1;
-            }
-
-            throw new ArgumentException(SR.Arg_MustBeSingle);
+            return CompareTo(other);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(float value)
         {
-            if (m_value < value) return -1;
-            if (m_value > value) return 1;
-            if (m_value == value) return 0;
+            if (m_value < value)
+            {
+                return -1;
+            }
 
-            // At least one of the values is NaN.
-            if (IsNaN(m_value))
-                return IsNaN(value) ? 0 : -1;
-            else // f is NaN.
+            if (m_value > value)
+            {
                 return 1;
+            }
+
+            if (m_value == value)
+            {
+                return 0;
+            }
+
+            if (IsNaN(m_value))
+            {
+                return IsNaN(value) ? 0 : -1;
+            }
+
+            Debug.Assert(IsNaN(value));
+            return 1;
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
@@ -295,17 +321,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is float))
-            {
-                return false;
-            }
-            float temp = ((float)obj).m_value;
-            if (temp == m_value)
-            {
-                return true;
-            }
-
-            return IsNaN(temp) && IsNaN(m_value);
+            return (obj is float other) && Equals(other);
         }
 
         public bool Equals(float obj)
@@ -314,54 +330,52 @@ namespace System
             {
                 return true;
             }
-
             return IsNaN(obj) && IsNaN(m_value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            int bits = Unsafe.As<float, int>(ref Unsafe.AsRef(in m_value));
+            uint bits = BitConverter.SingleToUInt32Bits(m_value);
 
-            // Optimized check for IsNan() || IsZero()
-            if (((bits - 1) & 0x7FFFFFFF) >= 0x7F800000)
+            if (IsNaNOrZero(m_value))
             {
                 // Ensure that all NaNs and both zeros have the same hash code
-                bits &= 0x7F800000;
+                bits &= PositiveInfinityBits;
             }
 
-            return bits;
+            return (int)bits;
         }
 
         public override string ToString()
         {
-            return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         // Parses a float from a String in the given style.  If
@@ -372,53 +386,36 @@ namespace System
         // PositiveInfinity or NegativeInfinity for a number that is too
         // large or too small.
         //
-        public static float Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
-        }
+        public static float Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
 
-        public static float Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static float Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        public static float Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
-        }
+        public static float Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         public static float Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<char, float>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out float result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out float result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
-            return TryParse((ReadOnlySpan<char>)s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out float result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out float result)
-        {
-            return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
-        }
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its single-precision floating-point number equivalent.</summary>
+        /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
+        /// <param name="result">When this method returns, contains a single-precision floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out float result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
         {
@@ -429,19 +426,13 @@ namespace System
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out float result)
-        {
-            return Number.TryParseSingle(s, style, info, out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         //
@@ -554,12 +545,28 @@ namespace System
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
 
+            if ((int)bits <= 0)
+            {
+                // Zero and negative values cannot be powers of 2
+                return false;
+            }
+
             byte biasedExponent = ExtractBiasedExponentFromBits(bits);
             uint trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
-            return (value > 0)
-                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
-                && (trailingSignificand == MinTrailingSignificand);
+            if (biasedExponent == MinBiasedExponent)
+            {
+                // Subnormal values have 1 bit set when they're powers of 2
+                return uint.PopCount(trailingSignificand) == 1;
+            }
+            else if (biasedExponent == MaxBiasedExponent)
+            {
+                // NaN and Infinite values cannot be powers of 2
+                return false;
+            }
+
+            // Normal values have 0 bits set when they're powers of 2
+            return trailingSignificand == MinTrailingSignificand;
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -643,6 +650,28 @@ namespace System
         [Intrinsic]
         public static float Ceiling(float x) => MathF.Ceiling(x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        [Intrinsic]
+        public static TInteger ConvertToInteger<TInteger>(float value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        [Intrinsic]
+        public static TInteger ConvertToIntegerNative<TInteger>(float value)
+            where TInteger : IBinaryInteger<TInteger>
+        {
+#if !MONO
+            if (typeof(TInteger).IsPrimitive)
+            {
+                // We need this to be recursive so indirect calls (delegates
+                // for example) produce the same result as direct invocation
+                return ConvertToIntegerNative<TInteger>(value);
+            }
+#endif
+
+            return TInteger.CreateSaturating(value);
+        }
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]
         public static float Floor(float x) => MathF.Floor(x);
@@ -693,17 +722,13 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
@@ -711,65 +736,39 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<float>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(uint))
+            if (BinaryPrimitives.TryWriteUInt32BigEndian(destination, Significand))
             {
-                uint significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(uint);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<float>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(uint))
+            if (BinaryPrimitives.TryWriteUInt32LittleEndian(destination, Significand))
             {
-                uint significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(uint);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -828,12 +827,14 @@ namespace System
         public static int ILogB(float x) => MathF.ILogB(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
-        public static float Lerp(float value1, float value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
+        public static float Lerp(float value1, float value2, float amount) => MultiplyAddEstimate(value1, 1.0f - amount, value2 * amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static float ReciprocalSqrtEstimate(float x) => MathF.ReciprocalSqrtEstimate(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />
@@ -1106,7 +1107,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<float>.IsZero(float value) => (value == 0);
+        static bool INumberBase<float>.IsZero(float value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         [Intrinsic]
@@ -1166,6 +1167,19 @@ namespace System
             }
 
             return y;
+        }
+
+
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static float MultiplyAddEstimate(float left, float right, float addend)
+        {
+#if MONO
+            return (left * right) + addend;
+#else
+            return MultiplyAddEstimate(left, right, addend);
+#endif
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
@@ -1777,6 +1791,24 @@ namespace System
             return result;
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static float DegreesToRadians(float degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (degrees * Pi) / 180.0f;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static float RadiansToDegrees(float radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (radians * 180.0f) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         [Intrinsic]
         public static float Sin(float x) => MathF.Sin(x);
@@ -2092,6 +2124,74 @@ namespace System
         static float IUnaryPlusOperators<float, float>.operator +(float value) => (float)(+value);
 
         //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static float Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseFloat<byte, float>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static float Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out float result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<float>.NumberBufferLength => Number.SingleNumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<float>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<float>.InfinityBits => 0x7F800000;
+
+        static ulong IBinaryFloatParseAndFormatInfo<float>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<float>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinDecimalExponent => -45;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxDecimalExponent => 39;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<float>.ExponentBits => 8;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<float>.InfinityExponent => 0xFF;
+
+        static ushort IBinaryFloatParseAndFormatInfo<float>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<float>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinFastFloatDecimalExponent => -65;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxFastFloatDecimalExponent => 38;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MinExponentRoundToEven => -17;
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxExponentRoundToEven => 10;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxExponentFastPath => 10;
+        static ulong IBinaryFloatParseAndFormatInfo<float>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static float IBinaryFloatParseAndFormatInfo<float>.BitsToFloat(ulong bits) => BitConverter.UInt32BitsToSingle((uint)(bits));
+
+        static ulong IBinaryFloatParseAndFormatInfo<float>.FloatToBits(float value) => BitConverter.SingleToUInt32Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxRoundTripDigits => 9;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxPrecisionCustomFormat => 7;
+
+        //
         // Helpers
         //
 
@@ -2167,7 +2267,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float TanForIntervalPiBy4(float  x, bool isReciprocal)
+        private static float TanForIntervalPiBy4(float x, bool isReciprocal)
         {
             // This code is based on `tan_piby4` from amd/aocl-libm-ose
             // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.

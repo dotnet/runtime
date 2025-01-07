@@ -4,11 +4,11 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGenerator.ttinclude
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {

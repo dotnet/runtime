@@ -9,7 +9,6 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
-#include "perfinfo.h"
 #include "pal.h"
 
 
@@ -18,6 +17,14 @@
 // make the output more compact.
 
 #define FMT_CODE_ADDR "%p"
+
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp"
+#endif
 
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
@@ -36,6 +43,20 @@ void PerfMap::Initialize()
     PerfMap::Enable(perfMapType, false);
 }
 
+const char * PerfMap::InternalConstructPath()
+{
+#ifdef HOST_WINDOWS
+    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+#else
+    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath", /* noPrefix */ false, &PAL_getenv);
+#endif
+    if (value.IsSet())
+    {
+        return value.AsString();
+    }
+    return TEMP_DIRECTORY_PATH;
+}
+
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
     LIMITED_METHOD_CONTRACT;
@@ -47,6 +68,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     {
         CrstHolder ch(&(s_csPerfMap));
+
+        const char* basePath = InternalConstructPath();
 
         if (s_Current == nullptr && (type == PerfMapType::ALL || type == PerfMapType::PERFMAP))
         {
@@ -64,27 +87,13 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             }
 
             int currentPid = GetCurrentProcessId();
-            s_Current->OpenFileForPid(currentPid);
+            s_Current->OpenFileForPid(currentPid, basePath);
             s_enabled = true;
         }
 
         if (!PAL_PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
-        {   
-            const char* jitdumpPath;
-            char jitdumpPathBuffer[4096];
-
-            CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-            if (value.IsSet())
-            {
-                jitdumpPath = value.AsString();
-            }
-            else
-            {
-                GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
-                jitdumpPath = jitdumpPathBuffer;
-            }
-
-            PAL_PerfJitDump_Start(jitdumpPath);
+        {
+            PAL_PerfJitDump_Start(basePath);
 
             if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
             {
@@ -99,12 +108,9 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
     {
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        while (assemblyIterator.Next(pDomainAssembly.This()))
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+        while (assemblyIterator.Next(pAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-            PerfMap::LogImageLoad(pAssembly->GetPEAssembly());
-
             // PerfMap does not log R2R methods so only proceed if we are emitting jitdumps
             if (type == PerfMapType::ALL || type == PerfMapType::JITDUMP)
             {
@@ -117,7 +123,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                     {
                         // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods.
                         MethodDesc *hotDesc = (MethodDesc *)mi.GetMethodDesc_NoRestore();
-                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != NULL)
+                        if (hotDesc != nullptr && hotDesc->GetNativeCode() != (PCODE)NULL)
                         {
                             PerfMap::LogPreCompiledMethod(hotDesc, hotDesc->GetNativeCode());
                         }
@@ -194,7 +200,6 @@ PerfMap::PerfMap()
 
     // Initialize with no failures.
     m_ErrorEncountered = false;
-    m_PerfInfo = nullptr;
 }
 
 // Clean-up resources.
@@ -204,28 +209,15 @@ PerfMap::~PerfMap()
 
     delete m_FileStream;
     m_FileStream = nullptr;
-
-    delete m_PerfInfo;
-    m_PerfInfo = nullptr;
 }
 
-void PerfMap::OpenFileForPid(int pid)
+void PerfMap::OpenFileForPid(int pid, const char* basePath)
 {
-    // Build the path to the map file on disk.
-    WCHAR tempPath[MAX_LONGPATH+1];
-    if(!GetTempPathW(MAX_LONGPATH, tempPath))
-    {
-        return;
-    }
-
-    SString path;
-    path.Append(tempPath);
-    path.AppendPrintf("perf-%d.map", pid);
+    SString fullPath;
+    fullPath.Printf("%s/perf-%d.map", basePath, pid);
 
     // Open the map file for writing.
-    OpenFile(path);
-
-    m_PerfInfo = new PerfInfo(pid);
+    OpenFile(fullPath);
 }
 
 // Open the specified destination map file.
@@ -275,43 +267,6 @@ void PerfMap::WriteLine(SString& line)
             m_ErrorEncountered = true;
         }
 
-    }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-}
-
-void PerfMap::LogImageLoad(PEAssembly * pPEAssembly)
-{
-    CrstHolder ch(&(s_csPerfMap));
-
-    if (s_enabled && s_Current != nullptr)
-    {
-        s_Current->LogImage(pPEAssembly);
-    }
-}
-
-// Log an image load to the map.
-void PerfMap::LogImage(PEAssembly * pPEAssembly)
-{
-    CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(pPEAssembly != nullptr);
-    } CONTRACTL_END;
-
-
-    if (m_FileStream == nullptr || m_ErrorEncountered)
-    {
-        // A failure occurred, do not log.
-        return;
-    }
-
-    EX_TRY
-    {
-        CHAR szSignature[GUID_STR_BUFFER_LEN];
-        GetNativeImageSignature(pPEAssembly, szSignature, ARRAY_SIZE(szSignature));
-
-        m_PerfInfo->LogImage(pPEAssembly, szSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }

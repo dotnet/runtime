@@ -8,18 +8,19 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public class Sha256Tests : HashAlgorithmTestDriver<Sha256Tests.Traits>
+    public sealed class FactorySha256Tests : Sha256Tests<FactorySha256Tests.Traits>
     {
         public sealed class Traits : IHashTrait
         {
             public static bool IsSupported => true;
             public static int HashSizeInBytes => SHA256.HashSizeInBytes;
+            public static HashAlgorithm Create() => SHA256.Create();
         }
+    }
 
-        protected override HashAlgorithm Create()
-        {
-            return SHA256.Create();
-        }
+    public abstract class Sha256Tests<THashTrait> : HashAlgorithmTestDriver<THashTrait> where THashTrait : IHashTrait
+    {
+        protected override HashAlgorithmName HashAlgorithm => HashAlgorithmName.SHA256;
 
         protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
@@ -67,7 +68,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Sha256_VerifyLargeStream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha256
             VerifyRepeating(
                 "0102030405060708",
@@ -78,7 +79,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Sha256_VerifyLargeStream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha256
             VerifyRepeating(
                 "0102030405060708",
@@ -89,7 +90,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task Sha256_VerifyLargeStream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha256
             await VerifyRepeatingAsync(
                 "0102030405060708",
@@ -100,7 +101,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task Sha256_VerifyLargeStream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha256
             await VerifyRepeatingAsync(
                 "0102030405060708",

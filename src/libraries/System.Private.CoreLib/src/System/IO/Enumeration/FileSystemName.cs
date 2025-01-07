@@ -30,7 +30,7 @@ namespace System.IO.Enumeration
                         modified = true;
                         if (i >= 1 && i == length - 1 && expression[i - 1] == '*')
                         {
-                            sb[sb.Length - 1] = '<'; // DOS_STAR (ends in *.)
+                            sb[^1] = '<'; // DOS_STAR (ends in *.)
                         }
                         else if (i < length - 1 && (expression[i + 1] == '?' || expression[i + 1] == '*'))
                         {
@@ -51,7 +51,13 @@ namespace System.IO.Enumeration
                 }
             }
 
-            return modified ? sb.ToString() : expression;
+            if (!modified)
+            {
+                sb.Dispose();
+                return expression;
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>Verifies whether the given Win32 expression matches the given name. Supports the following wildcards: '*', '?', '&lt;', '&gt;', '"'. The backslash character '\' escapes.</summary>

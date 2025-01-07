@@ -313,10 +313,13 @@
     <value>Error: multiple input files are only supported in composite build mode: {0}</value>
   </data>
   <data name="MethodLayoutOption" xml:space="preserve">
-    <value>Layout algorithm used by profile-driven optimization for arranging methods in a file: DefaultSort, ExclusiveWeight, HotCold, or HotWarmCold). The default value is DefaultSort, which indicates that complex layout is disabled.</value>
+    <value>Layout algorithm used by profile-driven optimization for arranging methods in a file.</value>
   </data>
   <data name="FileLayoutOption" xml:space="preserve">
-    <value>Layout algorithm used by profile-driven optimization for arranging non-method contents in a file: DefaultSort or MethodOrder. The default value is DefaultSort, which indicates that complex layout is disabled.</value>
+    <value>Layout algorithm used by profile-driven optimization for arranging non-method contents in a file.</value>
+  </data>
+  <data name="LayoutOptionExtraHelp" xml:space="preserve">
+    <value>Note for {0}: Valid options are {1}. The default value is DefaultSort, which indicates that complex layout is disabled.</value>
   </data>
   <data name="CompositeRootPath" xml:space="preserve">
     <value>Logical root folder for composite builds; defaults to directory of 1st input file.</value>
@@ -382,13 +385,19 @@
     <value>Hexadecimal value to set target PE-file ImageBase field</value>
   </data>
   <data name="CrossModuleInlining" xml:space="preserve">
-    <value>Allow inclusion of code from the specified module into the module being compiled. In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
+    <value>Allow inclusion of code from the specified module into the module being compiled.</value>
+  </data>
+  <data name="CrossModuleInliningExtraHelp" xml:space="preserve">
+    <value>Note for --opt-cross-module: In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
   </data>
   <data name="AsyncModuleOptimization" xml:space="preserve">
     <value>Attempt to compile as much async infrastructure as possible for async methods. Defaults to enabled. To disable, specify false to this flag explicitly.</value>
   </data>
   <data name="NonLocalGenericsModule" xml:space="preserve">
-    <value>Specify the module which is permitted to contain generics defined or instantiated in any other module. Specify "*" to indicate that any module may hold arbitrary generics.</value>
+    <value>Specify "*" to indicate that any module may hold arbitrary generics.</value>
+  </data>
+  <data name="NonLocalGenericsModuleExtraHelp" xml:space="preserve">
+    <value>Note for --non-local-generics-module: Specify "*" to indicate that any module may hold arbitrary generics.</value>
   </data>
   <data name="ErrorNonLocalGenericsModule" xml:space="preserve">
     <value>"{0}" was specified to the --non-local-generics-module switch, but was not in the set of modules associated with the compile</value>

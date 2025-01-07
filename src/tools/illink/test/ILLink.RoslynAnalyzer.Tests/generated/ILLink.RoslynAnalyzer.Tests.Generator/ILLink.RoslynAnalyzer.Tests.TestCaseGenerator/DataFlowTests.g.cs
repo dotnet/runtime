@@ -20,7 +20,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task GenericParameterWarningLocation ()
+		public Task InterfaceImplementedThroughBaseValidation ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
@@ -32,7 +32,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task MethodOutParameterDataFlow ()
+		public Task ModifierDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

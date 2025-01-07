@@ -22,10 +22,15 @@ class MapViewHolder
 #endif // STRESS_LOG
 #define STRESS_LOG_READONLY
 #include "../../../inc/stresslog.h"
+#include "StressMsgReader.h"
+
+#ifdef HOST_WINDOWS
+#include <malloc.h>
+#endif
 
 
 void GcHistClear();
-void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg);
+void GcHistAddLog(LPCSTR msg, StressMsgReader stressMsg);
 
 
 /*********************************************************************************/
@@ -45,9 +50,9 @@ static const char* getTime(const FILETIME* time, _Out_writes_ (buffLen) char* bu
 }
 
 /*********************************************************************************/
-static inline __int64& toInt64(FILETIME& t)
+static inline int64_t& toInt64(FILETIME& t)
 {
-    return *((__int64 *) &t);
+    return *((int64_t *) &t);
 }
 
 /*********************************************************************************/
@@ -57,7 +62,7 @@ ThreadStressLog* ThreadStressLog::FindLatestThreadLog() const
     for (const ThreadStressLog* ptr = this; ptr != NULL; ptr = ptr->next)
     {
         if (ptr->readPtr != NULL)
-            if (latestLog == 0 || ptr->readPtr->GetTimeStamp() > latestLog->readPtr->GetTimeStamp())
+            if (latestLog == 0 || StressMsgReader(ptr->readPtr).GetTimeStamp() > StressMsgReader(latestLog->readPtr).GetTimeStamp())
                 latestLog = ptr;
     }
     return const_cast<ThreadStressLog*>(latestLog);
@@ -242,7 +247,7 @@ void formatOutput(struct IDebugDataSpaces* memCallBack, ___in FILE* file, __inou
                                     fprintf (file, " (%s", Symbol);
                                     if (Displacement)
                                     {
-                                        fprintf (file, "+%#llx", Displacement);
+                                        fprintf (file, "+%#llx", (unsigned long long)Displacement);
                                     }
                                     fprintf (file, ")");
                                 }
@@ -357,7 +362,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     ThreadStressLog* inProcPtr;
     ThreadStressLog** logsPtr = &logs;
     int threadCtr = 0;
-    unsigned __int64 lastTimeStamp = 0;// timestamp of last log entry
+    uint64_t lastTimeStamp = 0;// timestamp of last log entry
 
     while(outProcPtr != 0) {
         inProcPtr = new ThreadStressLog;
@@ -376,7 +381,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
         do
         {
             StressLogChunk * inProcChunkPtr = new StressLogChunk;
-            hr = memCallBack->ReadVirtual (outProcChunkPtr, inProcChunkPtr, sizeof (*inProcChunkPtr), NULL);
+            hr = memCallBack->ReadVirtual (outProcChunkPtr, inProcChunkPtr, sizeof (*inProcChunkPtr), 0);
             if (hr != S_OK || !inProcChunkPtr->IsValid ())
             {
                 if (hr != S_OK)
@@ -423,9 +428,9 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
 
         // TODO: fix on 64 bit
         inProcPtr->Activate ();
-        if (inProcPtr->readPtr->GetTimeStamp() > lastTimeStamp)
+        if (StressMsgReader(inProcPtr->readPtr).GetTimeStamp() > lastTimeStamp)
         {
-            lastTimeStamp = inProcPtr->readPtr->GetTimeStamp();
+            lastTimeStamp = StressMsgReader(inProcPtr->readPtr).GetTimeStamp();
         }
 
         outProcPtr = TO_CDADDR(inProcPtr->next);
@@ -454,7 +459,7 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     FILETIME endTime;
     double totalSecs;
     totalSecs = ((double) (lastTimeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
-    toInt64(endTime) = toInt64(inProcLog.startTime) + ((__int64) (totalSecs * 1.0E7));
+    toInt64(endTime) = toInt64(inProcLog.startTime) + ((int64_t) (totalSecs * 1.0E7));
 
     char timeBuff[64];
     vDoOut(bDoGcHist, file, "    Clock frequency  = %5.3f GHz\n", inProcLog.tickFrequency / 1.0E9);
@@ -488,20 +493,20 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             break;
         }
 
-        StressMsg* latestMsg = latestLog->readPtr;
-        if (latestMsg->GetFormatOffset() != 0 && !latestLog->CompletedDump())
+        StressMsgReader latestMsg = latestLog->readPtr;
+        if (latestMsg.GetFormatOffset() != 0 && !latestLog->CompletedDump())
         {
-            TADDR taFmt = (latestMsg->GetFormatOffset()) + TO_TADDR(g_hThisInst);
+            TADDR taFmt = (latestMsg.GetFormatOffset()) + TO_TADDR(g_hThisInst);
             hr = memCallBack->ReadVirtual(TO_CDADDR(taFmt), format, 256, 0);
             if (hr != S_OK)
                 strcpy_s(format, ARRAY_SIZE(format), "Could not read address of format string");
 
-            double deltaTime = ((double) (latestMsg->GetTimeStamp() - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
+            double deltaTime = ((double) (latestMsg.GetTimeStamp() - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
             if (bDoGcHist)
             {
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
                 {
-                    latestLog->threadId = (unsigned)(size_t)latestMsg->args[0];
+                    latestLog->threadId = (unsigned)(size_t)latestMsg.GetArgs()[0];
                 }
                 GcHistAddLog(format, latestMsg);
             }
@@ -509,25 +514,25 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
             {
                 if (strcmp(format, ThreadStressLog::TaskSwitchMsg()) == 0)
                 {
-                    fprintf (file, "Task was switched from %x\n", (unsigned)(size_t)latestMsg->args[0]);
-                    latestLog->threadId = (unsigned)(size_t)latestMsg->args[0];
+                    fprintf (file, "Task was switched from %x\n", (unsigned)(size_t)latestMsg.GetArgs()[0]);
+                    latestLog->threadId = (unsigned)(size_t)latestMsg.GetArgs()[0];
                 }
                 else
                 {
-                    args = latestMsg->args;
-                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg->GetFacility(), args);
+                    args = latestMsg.GetArgs();
+                    formatOutput(memCallBack, file, format, (unsigned)latestLog->threadId, deltaTime, latestMsg.GetFacility(), args);
                 }
             }
             msgCtr++;
         }
 
-        latestLog->readPtr = latestLog->AdvanceRead(latestMsg->GetNumberOfArgs());
+        latestLog->readPtr = latestLog->AdvanceRead(latestMsg.GetNumberOfArgs());
         if (latestLog->CompletedDump())
         {
             latestLog->readPtr = NULL;
             if (!bDoGcHist)
             {
-                fprintf(file, "------------ Last message from thread %llx -----------\n", latestLog->threadId);
+                fprintf(file, "------------ Last message from thread %llx -----------\n", (unsigned long long)latestLog->threadId);
             }
         }
 

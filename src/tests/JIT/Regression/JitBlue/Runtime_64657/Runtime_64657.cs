@@ -19,10 +19,10 @@ public unsafe class Runtime_64657
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         if (!OperatingSystem.IsWindows())
-            return 100; // VirtualAlloc is only for Windows
+            return; // VirtualAlloc is only for Windows
 
         uint length = (uint)Environment.SystemPageSize;
         byte* ptr = VirtualAlloc(IntPtr.Zero, length, 0x1000 | 0x2000 /* reserve commit */, 0x04 /*readonly guard*/);
@@ -45,8 +45,6 @@ public unsafe class Runtime_64657
         Validate((S4*)(ptr + length - sizeof(S4)), 0);
 
         TestStructures();
-
-        return 100;
     }
 
     private static void TestStructures()

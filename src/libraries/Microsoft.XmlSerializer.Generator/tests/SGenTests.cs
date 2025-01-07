@@ -12,6 +12,7 @@ namespace Microsoft.XmlSerializer.Generator.Tests
     public static class SgenTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96796", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void SgenCommandTest()
         {
             /*

@@ -34,8 +34,8 @@ namespace System
             private const int MaximalTargetExponent = -32;
             private const int MinimalTargetExponent = -60;
 
-            private static ReadOnlySpan<short> CachedPowersBinaryExponent => new short[]
-            {
+            private static ReadOnlySpan<short> CachedPowersBinaryExponent =>
+            [
                 -1220,
                 -1193,
                 -1166,
@@ -123,10 +123,10 @@ namespace System
                 1013,
                 1039,
                 1066,
-            };
+            ];
 
-            private static ReadOnlySpan<short> CachedPowersDecimalExponent => new short[]
-            {
+            private static ReadOnlySpan<short> CachedPowersDecimalExponent =>
+            [
                 CachedPowersMinDecimalExponent,
                 -340,
                 -332,
@@ -214,10 +214,10 @@ namespace System
                 324,
                 332,
                 CachedPowersPowerMaxDecimalExponent,
-            };
+            ];
 
-            private static ReadOnlySpan<ulong> CachedPowersSignificand => new ulong[]
-            {
+            private static ReadOnlySpan<ulong> CachedPowersSignificand =>
+            [
                 0xFA8FD5A0081C0288,
                 0xBAAEE17FA23EBF76,
                 0x8B16FB203055AC76,
@@ -305,10 +305,10 @@ namespace System
                 0x9E19DB92B4E31BA9,
                 0xEB96BF6EBADF77D9,
                 0xAF87023B9BF0EE6B,
-            };
+            ];
 
-            private static ReadOnlySpan<uint> SmallPowersOfTen => new uint[]
-            {
+            private static ReadOnlySpan<uint> SmallPowersOfTen =>
+            [
                 1,          // 10^0
                 10,         // 10^1
                 100,        // 10^2
@@ -319,14 +319,15 @@ namespace System
                 10000000,   // 10^7
                 100000000,  // 10^8
                 1000000000, // 10^9
-            };
+            ];
 
-            public static bool TryRunDouble(double value, int requestedDigits, ref NumberBuffer number)
+            public static bool TryRun<TNumber>(TNumber value, int requestedDigits, ref NumberBuffer number)
+                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             {
-                double v = double.IsNegative(value) ? -value : value;
+                TNumber v = TNumber.IsNegative(value) ? -value : value;
 
-                Debug.Assert(v > 0);
-                Debug.Assert(double.IsFinite(v));
+                Debug.Assert(v > TNumber.Zero);
+                Debug.Assert(TNumber.IsFinite(v));
 
                 int length;
                 int decimalExponent;
@@ -339,75 +340,7 @@ namespace System
                 }
                 else
                 {
-                    DiyFp w = new DiyFp(v).Normalize();
-                    result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
-                }
-
-                if (result)
-                {
-                    Debug.Assert((requestedDigits == -1) || (length == requestedDigits));
-
-                    number.Scale = length + decimalExponent;
-                    number.Digits[length] = (byte)('\0');
-                    number.DigitsCount = length;
-                }
-
-                return result;
-            }
-
-            public static bool TryRunHalf(Half value, int requestedDigits, ref NumberBuffer number)
-            {
-                Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
-
-                Debug.Assert((double)v > 0);
-                Debug.Assert(Half.IsFinite(v));
-
-                int length;
-                int decimalExponent;
-                bool result;
-
-                if (requestedDigits == -1)
-                {
-                    DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
-                    result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
-                }
-                else
-                {
-                    DiyFp w = new DiyFp(v).Normalize();
-                    result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
-                }
-
-                if (result)
-                {
-                    Debug.Assert((requestedDigits == -1) || (length == requestedDigits));
-
-                    number.Scale = length + decimalExponent;
-                    number.Digits[length] = (byte)('\0');
-                    number.DigitsCount = length;
-                }
-
-                return result;
-            }
-
-            public static bool TryRunSingle(float value, int requestedDigits, ref NumberBuffer number)
-            {
-                float v = float.IsNegative(value) ? -value : value;
-
-                Debug.Assert(v > 0);
-                Debug.Assert(float.IsFinite(v));
-
-                int length;
-                int decimalExponent;
-                bool result;
-
-                if (requestedDigits == -1)
-                {
-                    DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
-                    result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
-                }
-                else
-                {
-                    DiyFp w = new DiyFp(v).Normalize();
+                    DiyFp w = DiyFp.Create(v).Normalize();
                     result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
                 }
 

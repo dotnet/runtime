@@ -15,7 +15,18 @@
     <!-- Create breadcrumb to disable dynamic linking of release crt for debug runtime -->
     <WriteLinesToFile
       File="$(RuntimeBinDir)/aotsdk/debugucrt.txt"
+      Overwrite="true"
       Condition="'$(TargetsWindows)'=='true' and '$(Configuration)' != 'Release'" />
+
+    <!-- Create breadcrumb to add additional libraries for non-portable builds -->
+    <WriteLinesToFile
+      File="$(RuntimeBinDir)/aotsdk/nonportable.txt"
+      Overwrite="true"
+      Condition="'$(TargetsWindows)'!='true' and '$(PortableBuild)' != 'true'" />
+    <Delete
+      Files="$(RuntimeBinDir)/aotsdk/nonportable.txt"
+      Condition="'$(TargetsWindows)'=='true' or '$(PortableBuild)' == 'true'" />
+
   </Target>
 
   <Target Name="Restore" />

@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     string info = CharKind.DescribePrev(state.PrevCharKind);
                     string deriv = WebUtility.HtmlEncode(state.Node.ToString());
-                    string nodeDgmlView = $"{(info == string.Empty ? info : $"Previous: {info}&#13;")}{(deriv == string.Empty ? "()" : deriv)}";
+                    string nodeDgmlView = $"{(string.IsNullOrEmpty(info) ? info : $"Previous: {info}&#13;")}{(string.IsNullOrEmpty(deriv) ? "()" : deriv)}";
 
                     writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state.Id, nodeDgmlView);
                     if (_stateFlagsArray[state.Id].IsInitial())
@@ -147,8 +147,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 foreach (MatchingState<TSet> source in matcher._stateCache.Values)
                 {
                     // Get the span of entries in delta that gives the transitions for the different minterms
-                    Span<int> deltas = matcher.GetDeltasFor(source);
-                    Span<int[]?> nfaDeltas = matcher.GetNfaDeltasFor(source);
+                    ReadOnlySpan<int> deltas = matcher.GetDeltasFor(source);
+                    ReadOnlySpan<int[]?> nfaDeltas = matcher.GetNfaDeltasFor(source);
                     Debug.Assert(deltas.Length == matcher._minterms.Length);
                     for (int i = 0; i < deltas.Length; ++i)
                     {

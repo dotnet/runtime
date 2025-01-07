@@ -28,7 +28,7 @@ namespace System.Xml.XmlSchemaTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v2 - Resolver=NULL, add schema which imports schema on internet", Priority = 1)]
@@ -54,7 +54,6 @@ namespace System.Xml.XmlSchemaTests
 
         //[Variation(Desc = "v4 - schema(Local)->schema(Local)", Priority = 1)]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75183", TestPlatforms.Browser)]
         public void v4()
         {
             using (new AllowDefaultResolverContext())
@@ -70,7 +69,6 @@ namespace System.Xml.XmlSchemaTests
 
         //[Variation(Desc = "v5 - schema(Local)->schema(Local)->schema(Local)", Priority = 1)]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/75183", TestPlatforms.Browser)]
         public void v5()
         {
             using (new AllowDefaultResolverContext())

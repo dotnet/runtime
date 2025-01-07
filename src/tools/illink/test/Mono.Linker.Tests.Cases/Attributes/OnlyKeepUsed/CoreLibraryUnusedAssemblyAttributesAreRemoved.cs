@@ -10,10 +10,9 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 	[SetupLinkerTrimMode ("link")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[RemovedAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
-#if !NETCOREAPP
+#if !NET
 	[RemovedAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
 #endif
-	[SkipPeVerify]
 	public class CoreLibraryUnusedAssemblyAttributesAreRemoved
 	{
 		public static void Main ()

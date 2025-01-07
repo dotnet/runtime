@@ -8,7 +8,7 @@ using System.Runtime.ExceptionServices;
 
 namespace System.IO.Pipelines
 {
-    [DebuggerDisplay("IsCompleted: {" + nameof(IsCompleted) + "}")]
+    [DebuggerDisplay("IsCompleted = {" + nameof(IsCompleted) + "}")]
     internal struct PipeCompletion
     {
         private static readonly object s_completedSuccessfully = new object();

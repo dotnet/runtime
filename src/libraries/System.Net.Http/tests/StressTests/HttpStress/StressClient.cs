@@ -57,6 +57,8 @@ namespace HttpStress
                     return new SocketsHttpHandler()
                     {
                         PooledConnectionLifetime = _config.ConnectionLifetime.GetValueOrDefault(Timeout.InfiniteTimeSpan),
+                        EnableMultipleHttp2Connections = true,
+                        EnableMultipleHttp3Connections = true,
                         SslOptions = new SslClientAuthenticationOptions
                         {
                             RemoteCertificateValidationCallback = delegate { return true; }
@@ -140,10 +142,10 @@ namespace HttpStress
 
             async Task SendTestRequestToServer(int maxRetries)
             {
-                using HttpClient client = CreateHttpClient();
-                client.Timeout = TimeSpan.FromSeconds(5);
                 for (int remainingRetries = maxRetries; ; remainingRetries--)
                 {
+                    using HttpClient client = CreateHttpClient();
+                    client.Timeout = TimeSpan.FromSeconds(5);
                     var sw = Stopwatch.StartNew();
                     try
                     {

@@ -22,14 +22,13 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
                 AA aa = ((AA)(BB.Method1(new String[4])));
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

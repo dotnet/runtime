@@ -476,7 +476,6 @@ namespace System.Data.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have the fix for this bug")]
         public void XsdSchemaDeserializationIgnoresLocale()
         {
             var serializer = new BinaryFormatter();

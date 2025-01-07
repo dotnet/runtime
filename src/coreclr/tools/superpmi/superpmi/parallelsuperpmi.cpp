@@ -8,8 +8,8 @@
 #include "lightweightmap.h"
 #include "commandline.h"
 #include "errorhandling.h"
-#include "metricssummary.h"
 #include "fileio.h"
+#include <minipal/random.h>
 
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers
 // that cause build breaks.
@@ -197,7 +197,7 @@ void ProcessChildStdErr(char* stderrFilename)
         if (buff[buffLen - 1] == '\n')
             buff[buffLen - 1] = 0;
 
-        LogPassThroughStderr(buff);
+        LogPassThroughStderr("%s", buff);
     }
 
 Cleanup:
@@ -235,7 +235,7 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         if (strncmp(buff, g_SuperPMIUsageFirstLine, strlen(g_SuperPMIUsageFirstLine)) == 0)
         {
             *usageError = true; // Signals that we had a SuperPMI command line usage error
-            LogPassThroughStdout(buff);
+            LogPassThroughStdout("%s", buff);
         }
         else if (strncmp(buff, g_AllFormatStringFixedPrefix, strlen(g_AllFormatStringFixedPrefix)) == 0)
         {
@@ -273,7 +273,7 @@ void ProcessChildStdOut(const CommandLine::Options& o,
         {
             // Do output pass-through.
             // Note that the same logging verbosity level is passed to the child processes.
-            LogPassThroughStdout(buff);
+            LogPassThroughStdout("%s", buff);
         }
     }
 
@@ -282,39 +282,6 @@ Cleanup:
     {
         fclose(fp);
     }
-}
-
-static bool ProcessChildMetrics(
-    const char* baseMetricsSummaryPath,
-    MetricsSummaries* baseMetrics,
-    const char* diffMetricsSummaryPath,
-    MetricsSummaries* diffMetrics)
-{
-    if (baseMetricsSummaryPath != nullptr)
-    {
-        MetricsSummaries childBaseMetrics;
-        if (!MetricsSummaries::LoadFromFile(baseMetricsSummaryPath, &childBaseMetrics))
-        {
-            LogError("Couldn't load base metrics summary created by child process");
-            return false;
-        }
-
-        baseMetrics->AggregateFrom(childBaseMetrics);
-    }
-
-    if (diffMetricsSummaryPath != nullptr)
-    {
-        MetricsSummaries childDiffMetrics;
-        if (!MetricsSummaries::LoadFromFile(diffMetricsSummaryPath, &childDiffMetrics))
-        {
-            LogError("Couldn't load diff metrics summary created by child process");
-            return false;
-        }
-
-        diffMetrics->AggregateFrom(childDiffMetrics);
-    }
-
-    return true;
 }
 
 #ifndef TARGET_UNIX // TODO-Porting: handle Ctrl-C signals gracefully on Unix
@@ -335,27 +302,14 @@ int __cdecl compareInt(const void* arg1, const void* arg2)
 
 struct PerWorkerData
 {
-    HANDLE hStdOutput;
-    HANDLE hStdError;
+    HANDLE hStdOutput = INVALID_HANDLE_VALUE;
+    HANDLE hStdError = INVALID_HANDLE_VALUE;
 
-    char* failingMCListPath;
-    char* diffsInfoPath;
-    char* stdOutputPath;
-    char* stdErrorPath;
-    char* baseMetricsSummaryPath;
-    char* diffMetricsSummaryPath;
-
-    PerWorkerData()
-        : hStdOutput(INVALID_HANDLE_VALUE)
-        , hStdError(INVALID_HANDLE_VALUE)
-        , failingMCListPath(nullptr)
-        , diffsInfoPath(nullptr)
-        , stdOutputPath(nullptr)
-        , stdErrorPath(nullptr)
-        , baseMetricsSummaryPath(nullptr)
-        , diffMetricsSummaryPath(nullptr)
-    {
-    }
+    char* failingMCListPath = nullptr;
+    char* detailsPath = nullptr;
+    char* stdOutputPath = nullptr;
+    char* stdErrorPath = nullptr;
+    SpmiResult resultCode = SpmiResult::GeneralFailure;
 };
 
 static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
@@ -402,6 +356,19 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
     bool hasHeader = false;
     for (int i = 0; i < workerCount; i++)
     {
+        switch (workerData[i].resultCode)
+        {
+            case SpmiResult::Success:
+            case SpmiResult::Diffs:
+            case SpmiResult::Misses:
+            case SpmiResult::Error:
+                break;
+
+            default:
+                LogWarning("Skipping merging CSV from child %d due to result code %d", i, (int)workerData[i].resultCode);
+                continue;
+        }
+
         FileLineReader reader;
         if (!FileLineReader::Open(workerData[i].*csvPath, &reader))
         {
@@ -443,10 +410,10 @@ void addJitOptionArgument(LightWeightMap<DWORD, DWORD>* jitOptions,
     {
         for (unsigned i = 0; i < jitOptions->GetCount(); i++)
         {
-            std::string key   = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetKey(i)));
-            std::string value = ConvertToUtf8((WCHAR*)jitOptions->GetBuffer(jitOptions->GetItem(i)));
+            const char* key   = (const char*)jitOptions->GetBuffer(jitOptions->GetKey(i));
+            const char* value = (const char*)jitOptions->GetBuffer(jitOptions->GetItem(i));
             bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -%s %s=%s",
-                                      optionName, key.c_str(), value.c_str());
+                                      optionName, key, value);
         }
     }
 }
@@ -474,6 +441,14 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
         bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %s", arg, s);         \
     }
 
+    // Only pass through an integer argument if it is not the same as the default (which must be specified here).
+    // (This is a proxy for "did the command-line parser actually parse something for this argument".)
+#define ADDARG_INT(i, arg, defaultValue)                                                                               \
+    if (i != defaultValue)                                                                                             \
+    {                                                                                                                  \
+        bytesWritten += sprintf_s(spmiArgs + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " %s %d", arg, i);         \
+    }
+
     // We don't pass through:
     //
     //    -parallel
@@ -486,7 +461,6 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     //    -diffMetricsSummary
     //    -failingMCList
     //    -diffMCList
-    //    -failureLimit
     //
     // Everything else we need to reconstruct and pass through.
     //
@@ -505,6 +479,8 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
     ADDARG_STRING(o.hash, "-matchHash");
     ADDARG_STRING(o.targetArchitecture, "-target");
     ADDARG_STRING(o.compileList, "-compile");
+    ADDARG_INT(o.failureLimit, "-failureLimit", -1);
+    ADDARG_INT(o.repeatCount, "-repeatCount", 1);
 
     addJitOptionArgument(o.forceJitOptions, bytesWritten, spmiArgs, "jitoption force");
     addJitOptionArgument(o.forceJit2Options, bytesWritten, spmiArgs, "jit2option force");
@@ -519,6 +495,7 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 #undef ADDSTRING
 #undef ADDARG_BOOL
 #undef ADDARG_STRING
+#undef ADDARG_INT
 
     return spmiArgs;
 }
@@ -573,19 +550,15 @@ int doParallelSuperPMI(CommandLine::Options& o)
     LogVerbose("Using child (%s) with args (%s)", spmiFilename, spmiArgs);
     if (o.mclFilename != nullptr)
         LogVerbose(" failingMCList=%s", o.mclFilename);
-    if (o.diffsInfo != nullptr)
-        LogVerbose(" diffsInfo=%s", o.diffsInfo);
+    if (o.details != nullptr)
+        LogVerbose(" details=%s", o.details);
     LogVerbose(" workerCount=%d, skipCleanup=%d.", o.workerCount, o.skipCleanup);
 
     PerWorkerData* perWorkerData = new PerWorkerData[o.workerCount];
 
     // Add a random number to the temporary file names to allow multiple parallel SuperPMI to happen at once.
     unsigned int randNumber = 0;
-#ifdef TARGET_UNIX
-    PAL_Random(&randNumber, sizeof(randNumber));
-#else  // !TARGET_UNIX
-    rand_s(&randNumber);
-#endif // !TARGET_UNIX
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&randNumber, sizeof(randNumber));
 
     for (int i = 0; i < o.workerCount; i++)
     {
@@ -596,22 +569,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
             sprintf_s(wd.failingMCListPath, MAX_PATH, "%sParallelSuperPMI-%u-%d.mcl", tempPath, randNumber, i);
         }
 
-        if (o.diffsInfo != nullptr)
+        if (o.details != nullptr)
         {
-            wd.diffsInfoPath = new char[MAX_PATH];
-            sprintf_s(wd.diffsInfoPath, MAX_PATH, "%sParallelSuperPMI-Diff-%u-%d.mcl", tempPath, randNumber, i);
-        }
-
-        if (o.baseMetricsSummaryFile != nullptr)
-        {
-            wd.baseMetricsSummaryPath = new char[MAX_PATH];
-            sprintf_s(wd.baseMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-BaseMetricsSummary-%u-%d.csv", tempPath, randNumber, i);
-        }
-
-        if (o.diffMetricsSummaryFile != nullptr)
-        {
-            wd.diffMetricsSummaryPath = new char[MAX_PATH];
-            sprintf_s(wd.diffMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-DiffMetricsSummary-%u-%d.csv", tempPath, randNumber, i);
+            wd.detailsPath = new char[MAX_PATH];
+            sprintf_s(wd.detailsPath, MAX_PATH, "%sParallelSuperPMI-Details-%u-%d.csv", tempPath, randNumber, i);
         }
 
         wd.stdOutputPath = new char[MAX_PATH];
@@ -638,28 +599,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
                                       wd.failingMCListPath);
         }
 
-        if (wd.diffsInfoPath != nullptr)
+        if (wd.detailsPath != nullptr)
         {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffsInfo %s",
-                                      wd.diffsInfoPath);
-        }
-
-        if (wd.baseMetricsSummaryPath != nullptr)
-        {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -baseMetricsSummary %s",
-                                      wd.baseMetricsSummaryPath);
-        }
-
-        if (wd.diffMetricsSummaryPath != nullptr)
-        {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffMetricsSummary %s",
-                                      wd.diffMetricsSummaryPath);
-        }
-
-        if (o.failureLimit > 0)
-        {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failureLimit %d",
-                                      o.failureLimit);
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -details %s",
+                                      wd.detailsPath);
         }
 
         bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -v ewmin %s", spmiArgs);
@@ -713,37 +656,64 @@ int doParallelSuperPMI(CommandLine::Options& o)
         {
             DWORD      exitCodeTmp;
             BOOL       ok          = GetExitCodeProcess(hProcesses[i], &exitCodeTmp);
-            SpmiResult childResult = (SpmiResult)exitCodeTmp;
-            if (ok && (childResult != result))
+            if (ok)
             {
-                if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                SpmiResult childResult = (SpmiResult)exitCodeTmp;
+
+                switch (childResult)
                 {
-                    result = SpmiResult::Error;
+                case SpmiResult::Success:
+                case SpmiResult::Diffs:
+                case SpmiResult::Misses:
+                case SpmiResult::Error:
+                case SpmiResult::JitFailedToInit:
+                    break;
+
+                default:
+                    // We may get here for OOM-killed, for example.
+                    LogError("Child process %d exited with code %u", i, exitCodeTmp);
+                    childResult = SpmiResult::GeneralFailure;
+                    break;
                 }
-                else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+
+                perWorkerData[i].resultCode = childResult;
+
+                if (childResult != result)
                 {
-                    result = SpmiResult::Diffs;
+                    // In priority: first failures are more important to propagate
+                    if (result == SpmiResult::GeneralFailure || childResult == SpmiResult::GeneralFailure)
+                    {
+                        result = SpmiResult::GeneralFailure;
+                    }
+                    else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
+                    {
+                        result = SpmiResult::JitFailedToInit;
+                    }
+                    else if (result == SpmiResult::Error || childResult == SpmiResult::Error)
+                    {
+                        result = SpmiResult::Error;
+                    }
+                    else if (result == SpmiResult::Diffs || childResult == SpmiResult::Diffs)
+                    {
+                        result = SpmiResult::Diffs;
+                    }
+                    else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
+                    {
+                        result = SpmiResult::Misses;
+                    }
+                    // Keep success result
                 }
-                else if (result == SpmiResult::Misses || childResult == SpmiResult::Misses)
-                {
-                    result = SpmiResult::Misses;
-                }
-                else if (result == SpmiResult::JitFailedToInit || childResult == SpmiResult::JitFailedToInit)
-                {
-                    result = SpmiResult::JitFailedToInit;
-                }
-                else
-                {
-                    result = SpmiResult::GeneralFailure;
-                }
+            }
+            else
+            {
+                LogError("Could not get exit code for child process %d\n", i);
+                result = SpmiResult::GeneralFailure;
             }
         }
 
         bool usageError = false; // variable to flag if we hit a usage error in SuperPMI
 
         int loaded = 0, jitted = 0, failed = 0, excluded = 0, missing = 0, diffs = 0;
-        MetricsSummaries baseMetrics;
-        MetricsSummaries diffMetrics;
 
         // Read the stderr files and log them as errors
         // Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
@@ -752,7 +722,6 @@ int doParallelSuperPMI(CommandLine::Options& o)
             PerWorkerData& wd = perWorkerData[i];
             ProcessChildStdErr(wd.stdErrorPath);
             ProcessChildStdOut(o, wd.stdOutputPath, &loaded, &jitted, &failed, &excluded, &missing, &diffs, &usageError);
-            ProcessChildMetrics(wd.baseMetricsSummaryPath, &baseMetrics, wd.diffMetricsSummaryPath, &diffMetrics);
 
             if (usageError)
                 break;
@@ -764,20 +733,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
             MergeWorkerMCLs(o.mclFilename, perWorkerData, o.workerCount, &PerWorkerData::failingMCListPath);
         }
 
-        if (o.diffsInfo != nullptr && !usageError)
+        if (o.details != nullptr && !usageError)
         {
             // Concat the resulting diff .mcl files
-            MergeWorkerCsvs(o.diffsInfo, perWorkerData, o.workerCount, &PerWorkerData::diffsInfoPath);
-        }
-
-        if (o.baseMetricsSummaryFile != nullptr && !usageError)
-        {
-            baseMetrics.SaveToFile(o.baseMetricsSummaryFile);
-        }
-
-        if (o.diffMetricsSummaryFile != nullptr && !usageError)
-        {
-            diffMetrics.SaveToFile(o.diffMetricsSummaryFile);
+            MergeWorkerCsvs(o.details, perWorkerData, o.workerCount, &PerWorkerData::detailsPath);
         }
 
         if (!usageError)
@@ -806,17 +765,9 @@ int doParallelSuperPMI(CommandLine::Options& o)
             {
                 remove(wd.failingMCListPath);
             }
-            if (wd.diffsInfoPath != nullptr)
+            if (wd.detailsPath != nullptr)
             {
-                remove(wd.diffsInfoPath);
-            }
-            if (wd.baseMetricsSummaryPath != nullptr)
-            {
-                remove(wd.baseMetricsSummaryPath);
-            }
-            if (wd.diffMetricsSummaryPath != nullptr)
-            {
-                remove(wd.diffMetricsSummaryPath);
+                remove(wd.detailsPath);
             }
             remove(wd.stdOutputPath);
             remove(wd.stdErrorPath);

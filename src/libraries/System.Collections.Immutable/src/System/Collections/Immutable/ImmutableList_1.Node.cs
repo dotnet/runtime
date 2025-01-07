@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// A node in the AVL tree storing this set.
         /// </summary>
         [DebuggerDisplay("{_key}")]
-        internal sealed class Node : IBinaryTree<T>, IEnumerable<T>
+        internal sealed class Node : IEnumerable<T>
         {
             /// <summary>
             /// The default empty node.
@@ -121,29 +121,9 @@ namespace System.Collections.Immutable
             public Node? Left => _left;
 
             /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Left => _left;
-
-            /// <summary>
             /// Gets the right branch of this node.
             /// </summary>
             public Node? Right => _right;
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree? IBinaryTree.Right => _right;
-
-            /// <summary>
-            /// Gets the left branch of this node.
-            /// </summary>
-            IBinaryTree<T>? IBinaryTree<T>.Left => _left;
-
-            /// <summary>
-            /// Gets the right branch of this node.
-            /// </summary>
-            IBinaryTree<T>? IBinaryTree<T>.Right => _right;
 
             /// <summary>
             /// Gets the value represented by the current node.
@@ -260,7 +240,7 @@ namespace System.Collections.Immutable
             /// <param name="start">The starting index within <paramref name="items"/> that should be captured by the node tree.</param>
             /// <param name="length">The number of elements from <paramref name="items"/> that should be captured by the node tree.</param>
             /// <returns>The root of the created node tree.</returns>
-            internal static Node NodeTreeFromList(IOrderedCollection<T> items, int start, int length)
+            internal static Node NodeTreeFromList(IReadOnlyList<T> items, int start, int length)
             {
                 Requires.NotNull(items, nameof(items));
                 Requires.Range(start >= 0, nameof(start));
@@ -276,6 +256,25 @@ namespace System.Collections.Immutable
                 Node left = NodeTreeFromList(items, start, leftCount);
                 Node right = NodeTreeFromList(items, start + leftCount + 1, rightCount);
                 return new Node(items[start + leftCount], left, right, true);
+            }
+
+            /// <summary>
+            /// Creates a node tree that contains the contents of a span.
+            /// </summary>
+            /// <param name="items">A span with the contents that the new node tree should contain.</param>
+            /// <returns>The root of the created node tree.</returns>
+            internal static Node NodeTreeFromList(ReadOnlySpan<T> items)
+            {
+                if (items.IsEmpty)
+                {
+                    return EmptyNode;
+                }
+
+                int rightCount = (items.Length - 1) / 2;
+                int leftCount = (items.Length - 1) - rightCount;
+                Node left = NodeTreeFromList(items.Slice(0, leftCount));
+                Node right = NodeTreeFromList(items.Slice(leftCount + 1));
+                return new Node(items[leftCount], left, right, frozen: true);
             }
 
             /// <summary>
@@ -336,6 +335,23 @@ namespace System.Collections.Immutable
                 if (this.IsEmpty)
                 {
                     return CreateRange(keys);
+                }
+
+                Node newRight = _right!.AddRange(keys);
+                Node result = this.MutateRight(newRight);
+                return result.BalanceMany();
+            }
+
+            /// <summary>
+            /// Adds the specified keys to this tree.
+            /// </summary>
+            /// <param name="keys">The keys.</param>
+            /// <returns>The new tree.</returns>
+            internal Node AddRange(ReadOnlySpan<T> keys)
+            {
+                if (this.IsEmpty)
+                {
+                    return NodeTreeFromList(keys);
                 }
 
                 Node newRight = _right!.AddRange(keys);
@@ -561,7 +577,7 @@ namespace System.Collections.Immutable
                 var array = new T[this.Count];
                 this.CopyTo(array);
                 Array.Sort(array, comparison);
-                return NodeTreeFromList(array.AsOrderedCollection(), 0, this.Count);
+                return NodeTreeFromList(array.AsReadOnlyList(), 0, this.Count);
             }
 
             /// <summary>
@@ -600,7 +616,7 @@ namespace System.Collections.Immutable
                 var array = new T[this.Count];
                 this.CopyTo(array);
                 Array.Sort(array, index, count, comparer);
-                return NodeTreeFromList(array.AsOrderedCollection(), 0, this.Count);
+                return NodeTreeFromList(array.AsReadOnlyList(), 0, this.Count);
             }
 
             /// <summary>
@@ -1107,7 +1123,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(match, nameof(match));
                 Requires.Range(startIndex >= 0, nameof(startIndex));
                 Requires.Range(count >= 0, nameof(count));
-                Requires.Range(startIndex + count <= this.Count, nameof(count));
+                Requires.Range(startIndex <= this.Count - count, nameof(count));
 
                 using (var enumerator = new Enumerator(this, startIndex: startIndex, count: count))
                 {
@@ -1542,7 +1558,7 @@ namespace System.Collections.Immutable
                     return other._root;
                 }
 
-                IOrderedCollection<T> list = keys.AsOrderedCollection();
+                IReadOnlyList<T> list = keys.AsReadOnlyList();
                 return NodeTreeFromList(list, 0, list.Count);
             }
 

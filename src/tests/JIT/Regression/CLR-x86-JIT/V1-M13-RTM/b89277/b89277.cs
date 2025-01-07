@@ -7,10 +7,9 @@ using Xunit;
 public class A
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Main1();
-        return 100;
     }
     internal static void Main1()
     {

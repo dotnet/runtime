@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Net;
-using System.Text;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -60,8 +60,11 @@ namespace System.DirectoryServices.Protocols
                     }
                     temp.Append(scheme);
                     temp.Append(servers[i]);
-                    temp.Append(':');
-                    temp.Append(directoryIdentifier.PortNumber);
+                    if (!servers[i].Contains(':'))
+                    {
+                        temp.Append(':');
+                        temp.Append(directoryIdentifier.PortNumber);
+                    }
                 }
                 if (temp.Length != 0)
                 {
@@ -88,7 +91,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                     error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
+                    error = LdapPal.BindToDirectory(_ldapHandle, cred.user, cred.password);
                 }
             }
             else
@@ -124,6 +127,8 @@ namespace System.DirectoryServices.Protocols
             Marshal.StructureToPtr(defaults, ptrToDefaults, false);
             try
             {
+                // Bump up the protocol version because ldap_sasl_interactive_bind requires LDAP V3 else it returns LDAP_NOT_SUPPORTED and this ends up throwing LdapException: The feature is not supported.
+                SessionOptions.ProtocolVersion = 3;
                 return Interop.Ldap.ldap_sasl_interactive_bind(_ldapHandle, null, Interop.KerberosDefaultMechanism, IntPtr.Zero, IntPtr.Zero, Interop.LDAP_SASL_QUIET, LdapPal.SaslInteractionProcedure, ptrToDefaults);
             }
             finally

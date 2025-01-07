@@ -10,12 +10,12 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class NullableJSGenerator : PrimitiveJSGenerator
     {
-        public NullableJSGenerator(MarshalerType resultMarshalerType)
-            : base(resultMarshalerType)
+        public NullableJSGenerator(TypePositionInfo info, StubCodeContext context, MarshalerType resultMarshalerType)
+            : base(info, context, resultMarshalerType)
         {
         }
 
-        public override IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context)
+        public override IEnumerable<ExpressionSyntax> GenerateBind()
         {
             yield return InvocationExpression(MarshalerTypeName(MarshalerType.Nullable),
                     ArgumentList(SingletonSeparatedList(Argument(MarshalerTypeName(Type)))));

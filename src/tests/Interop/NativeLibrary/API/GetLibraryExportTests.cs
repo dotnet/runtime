@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Xunit;
 using static TestHelpers;
 
-class GetLibraryExportTests : IDisposable
+public class GetLibraryExportTests : IDisposable
 {
     private readonly IntPtr handle;
 

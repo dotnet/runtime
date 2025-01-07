@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 
 using Internal.Reflection.Augments;
 
@@ -18,7 +18,7 @@ using Internal.Reflection.Augments;
 
 namespace Internal.Reflection.Extensions.NonPortable
 {
-    public static class CustomAttributeInheritanceRules
+    internal static class CustomAttributeInheritanceRules
     {
         //==============================================================================================================================
         // Api helpers: Computes the effective set of custom attributes for various Reflection elements and returns them
@@ -171,7 +171,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
             public sealed override MethodInfo GetParent(MethodInfo e)
             {
-                return ReflectionAugments.ReflectionCoreCallbacks.GetImplicitlyOverriddenBaseClassMethod(e);
+                return ReflectionAugments.GetImplicitlyOverriddenBaseClassMethod(e);
             }
 
             public static readonly MethodCustomAttributeSearcher Default = new MethodCustomAttributeSearcher();
@@ -189,7 +189,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
             public sealed override PropertyInfo GetParent(PropertyInfo e)
             {
-                return ReflectionAugments.ReflectionCoreCallbacks.GetImplicitlyOverriddenBaseClassProperty(e);
+                return ReflectionAugments.GetImplicitlyOverriddenBaseClassProperty(e);
             }
 
             public static readonly PropertyCustomAttributeSearcher Default = new PropertyCustomAttributeSearcher();
@@ -208,7 +208,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
             public sealed override EventInfo GetParent(EventInfo e)
             {
-                return ReflectionAugments.ReflectionCoreCallbacks.GetImplicitlyOverriddenBaseClassEvent(e);
+                return ReflectionAugments.GetImplicitlyOverriddenBaseClassEvent(e);
             }
 
             public static readonly EventCustomAttributeSearcher Default = new EventCustomAttributeSearcher();
@@ -235,7 +235,7 @@ namespace Internal.Reflection.Extensions.NonPortable
 
                 if (e.Position >= 0)
                 {
-                    return methodParent.GetParametersNoCopy()[e.Position];
+                    return methodParent.GetParametersAsSpan()[e.Position];
                 }
                 else
                 {

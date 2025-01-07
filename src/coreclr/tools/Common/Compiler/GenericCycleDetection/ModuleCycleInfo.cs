@@ -72,6 +72,22 @@ namespace ILCompiler
             }
         }
 
+        internal static bool CheckForECMAIllegalGenericRecursion(EcmaType type)
+        {
+            GraphBuilder gb = new GraphBuilder(type);
+            Graph<EcmaGenericParameter> graph = gb.Graph;
+
+            var flaggedCycleData = graph.ComputeVerticesInvolvedInAFlaggedCycle();
+
+            foreach (var _ in flaggedCycleData)
+            {
+                // If the list isn't empty, there is an illegal generic recursion
+                return true;
+            }
+
+            return false;
+        }
+
         internal sealed class GenericCycleDetector
         {
             private readonly CycleInfoHashtable _hashtable = new CycleInfoHashtable();

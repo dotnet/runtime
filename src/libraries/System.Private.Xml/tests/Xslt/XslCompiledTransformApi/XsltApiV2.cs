@@ -210,11 +210,11 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Expected Exception : {0}", _expectedErrorCode);
                 _output.WriteLine("Actual Exception : {0}", handler.res);
-                Assert.True(false);
+                Assert.Fail();
             }
             if (!result)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -227,7 +227,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             CExceptionHandler handler = new CExceptionHandler(Path.Combine(_strPath, "Exceptions.xml"), assembly, _output);
             if (!handler.VerifyException(ex, res, strParams))
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

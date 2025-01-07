@@ -4,7 +4,7 @@
 namespace System.Runtime.CompilerServices;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct,
-                AllowMultiple=false, Inherited=false)]
+                AllowMultiple = false, Inherited = false)]
 public class MetadataUpdateOriginalTypeAttribute : Attribute
 {
     /// <summary> This attribute is emitted by Roslyn when a type that is marked with (or derives

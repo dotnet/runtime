@@ -15,10 +15,9 @@ namespace Test
             return loc *= loc;
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             AA_Static1();
-            return 100;
         }
     }
 }

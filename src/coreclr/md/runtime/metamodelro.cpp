@@ -116,7 +116,7 @@ CMiniMd::Impl_GetStringW(
             *pcchBuffer = 0;
         goto ErrExit;
     }
-    iSize = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer);
+    iSize = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, szOut, cchBuffer);
     if (iSize == 0)
     {
         // What was the problem?
@@ -128,7 +128,7 @@ CMiniMd::Impl_GetStringW(
 
         // Truncation error; get the size required.
         if (pcchBuffer != NULL)
-            *pcchBuffer = ::WszMultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
+            *pcchBuffer = ::MultiByteToWideChar(CP_UTF8, 0, szString, -1, NULL, 0);
 
         if ((szOut != NULL) && (cchBuffer > 0))
         {   // null-terminate the truncated output string
@@ -264,7 +264,7 @@ CMiniMd::vSearchTable(
     {   // Look at the one in the middle.
         mid = (lo + hi) / 2;
         IfFailRet(getRow(ixTbl, mid, &pRow));
-        val = getIX_NoLogging(pRow, sColumn);
+        val = getIX(pRow, sColumn);
         // If equal to the target, done.
         if (val == ulTarget)
         {
@@ -318,7 +318,7 @@ CMiniMd::vSearchTableNotGreater(
     {   // Look at the one in the middle.
         mid = (lo + hi) / 2;
         IfFailRet(getRow(ixTbl, mid, &pRow));
-        val = getIX_NoLogging(pRow, sColumn);
+        val = getIX(pRow, sColumn);
         // If equal to the target, done searching.
         if (val == ulTarget)
             break;

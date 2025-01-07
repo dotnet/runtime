@@ -54,7 +54,8 @@ namespace JitTest_hanoi_etc_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
         {
             int NUM = 17;
             s_cols = new int[3][];
@@ -69,7 +70,6 @@ namespace JitTest_hanoi_etc_cs
             CI F, T;
             F.index = 0;
             T.index = 1;
-            return 100;
         }
     }
 }

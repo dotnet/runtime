@@ -52,13 +52,13 @@ ShimProcess::ShimProcess() :
 
     m_machineInfo.Clear();
 
-    m_markAttachPendingEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+    m_markAttachPendingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (m_markAttachPendingEvent == NULL)
     {
         ThrowLastError();
     }
 
-    m_terminatingEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+    m_terminatingEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (m_terminatingEvent == NULL)
     {
         ThrowLastError();
@@ -789,6 +789,14 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             }
         }
     }
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    else if (pEvent->dwDebugEventCode == CREATE_THREAD_DEBUG_EVENT || 
+            pEvent->dwDebugEventCode == EXIT_THREAD_DEBUG_EVENT ||
+            pEvent->dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT)
+    {
+        m_pProcess->HandleDebugEventForInPlaceStepping(pEvent);
+    }
+#endif
 
     // Do standard event handling, including Handling loader-breakpoint,
     // and callback into CordbProcess for Attach if needed.
@@ -1609,11 +1617,7 @@ HMODULE ShimProcess::GetDacModule(PathString& dacModulePath)
             ThrowLastError();
         }
 
-        // Dac Dll is named:
-        //   mscordaccore.dll  <-- coreclr
-        //   mscordacwks.dll   <-- desktop
         PCWSTR eeFlavor = MAKEDLLNAME_W(W("mscordaccore"));
-
         wszAccessDllPath.Append(eeFlavor);
     }
     hDacDll = WszLoadLibrary(wszAccessDllPath);
@@ -1657,4 +1661,13 @@ RSLock * ShimProcess::GetShimLock()
 bool ShimProcess::IsThreadSuspendedOrHijacked(ICorDebugThread * pThread)
 {
     return m_pProcess->IsThreadSuspendedOrHijacked(pThread);
+}
+
+bool ShimProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pThread)
+{
+#ifdef FEATURE_INTEROP_DEBUGGING
+    return m_pProcess->IsUnmanagedThreadHijacked(pThread);
+#else
+    return false;
+#endif
 }

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for NativeAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Testing TypeLoad/MissingMethod exceptions in situations that are expensive to detect -->
     <NativeAotIncompatible>true</NativeAotIncompatible>

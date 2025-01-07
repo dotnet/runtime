@@ -3,8 +3,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
 using System.IO;
+using System.Text;
 
 namespace System.Net.Sockets
 {
@@ -64,19 +64,13 @@ namespace System.Net.Sockets
 
         internal static int MaxAddressSize => s_nativeAddressSize;
 
-        internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
+        internal UnixDomainSocketEndPoint(ReadOnlySpan<byte> socketAddress)
         {
-            ArgumentNullException.ThrowIfNull(socketAddress);
+            Debug.Assert(AddressFamily.Unix == SocketAddressPal.GetAddressFamily(socketAddress));
 
-            if (socketAddress.Family != EndPointAddressFamily ||
-                socketAddress.Size > s_nativeAddressSize)
+            if (socketAddress.Length > s_nativePathOffset)
             {
-                throw new ArgumentOutOfRangeException(nameof(socketAddress));
-            }
-
-            if (socketAddress.Size > s_nativePathOffset)
-            {
-                _encodedPath = new byte[socketAddress.Size - s_nativePathOffset];
+                _encodedPath = new byte[socketAddress.Length - s_nativePathOffset];
                 for (int i = 0; i < _encodedPath.Length; i++)
                 {
                     _encodedPath[i] = socketAddress[s_nativePathOffset + i];
@@ -118,7 +112,7 @@ namespace System.Net.Sockets
         /// <summary>Creates an <see cref="EndPoint"/> instance from a <see cref="SocketAddress"/> instance.</summary>
         /// <param name="socketAddress">The socket address that serves as the endpoint for a connection.</param>
         /// <returns>A new <see cref="EndPoint"/> instance that is initialized from the specified <see cref="SocketAddress"/> instance.</returns>
-        public override EndPoint Create(SocketAddress socketAddress) => new UnixDomainSocketEndPoint(socketAddress);
+        public override EndPoint Create(SocketAddress socketAddress) => new UnixDomainSocketEndPoint(socketAddress.Buffer.Span.Slice(0, socketAddress.Size));
 
         /// <summary>Gets the address family to which the endpoint belongs.</summary>
         /// <value>One of the <see cref="AddressFamily"/> values.</value>

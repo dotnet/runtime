@@ -27,6 +27,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor) { }
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
         public int Count { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<object> Keys { get { throw null; } }
         public void Clear() { }
         public void Compact(double percentage) { }
         public Microsoft.Extensions.Caching.Memory.ICacheEntry CreateEntry(object key) { throw null; }

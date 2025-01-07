@@ -7,9 +7,14 @@
       Microsoft.Extensions.DependencyInjection
     </AdditionalProjectReferences>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="ConfigureTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- reference the options source generator -->
+    <_additionalProjectReference Include="&lt;ProjectReference Include=&quot;$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\Microsoft.Extensions.Options.SourceGeneration.csproj&quot; OutputItemType=&quot;Analyzer&quot; ReferenceOutputAssembly=&quot;true&quot; SetTargetFramework=&quot;TargetFramework=netstandard2.0&quot; /&gt;" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

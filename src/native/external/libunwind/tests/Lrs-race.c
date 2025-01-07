@@ -43,7 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 int verbose;
 
-void
+NOINLINE void
 foo_0 (void)
 {
   void *buf[20];
@@ -53,7 +53,7 @@ foo_0 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_1 (void)
 {
   void *buf[20];
@@ -63,7 +63,7 @@ foo_1 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_2 (void)
 {
   void *buf[20];
@@ -73,7 +73,7 @@ foo_2 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_3 (void)
 {
   void *buf[20];
@@ -83,7 +83,7 @@ foo_3 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_4 (void)
 {
   void *buf[20];
@@ -93,7 +93,7 @@ foo_4 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_5 (void)
 {
   void *buf[20];
@@ -103,7 +103,7 @@ foo_5 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_6 (void)
 {
   void *buf[20];
@@ -113,7 +113,7 @@ foo_6 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_7 (void)
 {
   void *buf[20];
@@ -123,7 +123,7 @@ foo_7 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_8 (void)
 {
   void *buf[20];
@@ -133,7 +133,7 @@ foo_8 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_9 (void)
 {
   void *buf[20];
@@ -143,7 +143,7 @@ foo_9 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_10 (void)
 {
   void *buf[20];
@@ -153,7 +153,7 @@ foo_10 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_11 (void)
 {
   void *buf[20];
@@ -163,7 +163,7 @@ foo_11 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_12 (void)
 {
   void *buf[20];
@@ -173,7 +173,7 @@ foo_12 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_13 (void)
 {
   void *buf[20];
@@ -183,7 +183,7 @@ foo_13 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_14 (void)
 {
   void *buf[20];
@@ -193,7 +193,7 @@ foo_14 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_15 (void)
 {
   void *buf[20];
@@ -203,7 +203,7 @@ foo_15 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_16 (void)
 {
   void *buf[20];
@@ -213,7 +213,7 @@ foo_16 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_17 (void)
 {
   void *buf[20];
@@ -223,7 +223,7 @@ foo_17 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_18 (void)
 {
   void *buf[20];
@@ -233,7 +233,7 @@ foo_18 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_19 (void)
 {
   void *buf[20];
@@ -243,7 +243,7 @@ foo_19 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_20 (void)
 {
   void *buf[20];
@@ -253,7 +253,7 @@ foo_20 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_21 (void)
 {
   void *buf[20];
@@ -263,7 +263,7 @@ foo_21 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_22 (void)
 {
   void *buf[20];
@@ -273,7 +273,7 @@ foo_22 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_23 (void)
 {
   void *buf[20];
@@ -283,7 +283,7 @@ foo_23 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_24 (void)
 {
   void *buf[20];
@@ -293,7 +293,7 @@ foo_24 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_25 (void)
 {
   void *buf[20];
@@ -303,7 +303,7 @@ foo_25 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_26 (void)
 {
   void *buf[20];
@@ -313,7 +313,7 @@ foo_26 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_27 (void)
 {
   void *buf[20];
@@ -323,7 +323,7 @@ foo_27 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_28 (void)
 {
   void *buf[20];
@@ -333,7 +333,7 @@ foo_28 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_29 (void)
 {
   void *buf[20];
@@ -343,7 +343,7 @@ foo_29 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_30 (void)
 {
   void *buf[20];
@@ -353,7 +353,7 @@ foo_30 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_31 (void)
 {
   void *buf[20];
@@ -363,7 +363,7 @@ foo_31 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_32 (void)
 {
   void *buf[20];
@@ -373,7 +373,7 @@ foo_32 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_33 (void)
 {
   void *buf[20];
@@ -383,7 +383,7 @@ foo_33 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_34 (void)
 {
   void *buf[20];
@@ -393,7 +393,7 @@ foo_34 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_35 (void)
 {
   void *buf[20];
@@ -403,7 +403,7 @@ foo_35 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_36 (void)
 {
   void *buf[20];
@@ -413,7 +413,7 @@ foo_36 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_37 (void)
 {
   void *buf[20];
@@ -423,7 +423,7 @@ foo_37 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_38 (void)
 {
   void *buf[20];
@@ -433,7 +433,7 @@ foo_38 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_39 (void)
 {
   void *buf[20];
@@ -443,7 +443,7 @@ foo_39 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_40 (void)
 {
   void *buf[20];
@@ -453,7 +453,7 @@ foo_40 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_41 (void)
 {
   void *buf[20];
@@ -463,7 +463,7 @@ foo_41 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_42 (void)
 {
   void *buf[20];
@@ -473,7 +473,7 @@ foo_42 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_43 (void)
 {
   void *buf[20];
@@ -483,7 +483,7 @@ foo_43 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_44 (void)
 {
   void *buf[20];
@@ -493,7 +493,7 @@ foo_44 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_45 (void)
 {
   void *buf[20];
@@ -503,7 +503,7 @@ foo_45 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_46 (void)
 {
   void *buf[20];
@@ -513,7 +513,7 @@ foo_46 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_47 (void)
 {
   void *buf[20];
@@ -523,7 +523,7 @@ foo_47 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_48 (void)
 {
   void *buf[20];
@@ -533,7 +533,7 @@ foo_48 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_49 (void)
 {
   void *buf[20];
@@ -543,7 +543,7 @@ foo_49 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_50 (void)
 {
   void *buf[20];
@@ -553,7 +553,7 @@ foo_50 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_51 (void)
 {
   void *buf[20];
@@ -563,7 +563,7 @@ foo_51 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_52 (void)
 {
   void *buf[20];
@@ -573,7 +573,7 @@ foo_52 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_53 (void)
 {
   void *buf[20];
@@ -583,7 +583,7 @@ foo_53 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_54 (void)
 {
   void *buf[20];
@@ -593,7 +593,7 @@ foo_54 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_55 (void)
 {
   void *buf[20];
@@ -603,7 +603,7 @@ foo_55 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_56 (void)
 {
   void *buf[20];
@@ -613,7 +613,7 @@ foo_56 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_57 (void)
 {
   void *buf[20];
@@ -623,7 +623,7 @@ foo_57 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_58 (void)
 {
   void *buf[20];
@@ -633,7 +633,7 @@ foo_58 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_59 (void)
 {
   void *buf[20];
@@ -643,7 +643,7 @@ foo_59 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_60 (void)
 {
   void *buf[20];
@@ -653,7 +653,7 @@ foo_60 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_61 (void)
 {
   void *buf[20];
@@ -663,7 +663,7 @@ foo_61 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_62 (void)
 {
   void *buf[20];
@@ -673,7 +673,7 @@ foo_62 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_63 (void)
 {
   void *buf[20];
@@ -683,7 +683,7 @@ foo_63 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_64 (void)
 {
   void *buf[20];
@@ -693,7 +693,7 @@ foo_64 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_65 (void)
 {
   void *buf[20];
@@ -703,7 +703,7 @@ foo_65 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_66 (void)
 {
   void *buf[20];
@@ -713,7 +713,7 @@ foo_66 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_67 (void)
 {
   void *buf[20];
@@ -723,7 +723,7 @@ foo_67 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_68 (void)
 {
   void *buf[20];
@@ -733,7 +733,7 @@ foo_68 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_69 (void)
 {
   void *buf[20];
@@ -743,7 +743,7 @@ foo_69 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_70 (void)
 {
   void *buf[20];
@@ -753,7 +753,7 @@ foo_70 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_71 (void)
 {
   void *buf[20];
@@ -763,7 +763,7 @@ foo_71 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_72 (void)
 {
   void *buf[20];
@@ -773,7 +773,7 @@ foo_72 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_73 (void)
 {
   void *buf[20];
@@ -783,7 +783,7 @@ foo_73 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_74 (void)
 {
   void *buf[20];
@@ -793,7 +793,7 @@ foo_74 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_75 (void)
 {
   void *buf[20];
@@ -803,7 +803,7 @@ foo_75 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_76 (void)
 {
   void *buf[20];
@@ -813,7 +813,7 @@ foo_76 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_77 (void)
 {
   void *buf[20];
@@ -823,7 +823,7 @@ foo_77 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_78 (void)
 {
   void *buf[20];
@@ -833,7 +833,7 @@ foo_78 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_79 (void)
 {
   void *buf[20];
@@ -843,7 +843,7 @@ foo_79 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_80 (void)
 {
   void *buf[20];
@@ -853,7 +853,7 @@ foo_80 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_81 (void)
 {
   void *buf[20];
@@ -863,7 +863,7 @@ foo_81 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_82 (void)
 {
   void *buf[20];
@@ -873,7 +873,7 @@ foo_82 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_83 (void)
 {
   void *buf[20];
@@ -883,7 +883,7 @@ foo_83 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_84 (void)
 {
   void *buf[20];
@@ -893,7 +893,7 @@ foo_84 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_85 (void)
 {
   void *buf[20];
@@ -903,7 +903,7 @@ foo_85 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_86 (void)
 {
   void *buf[20];
@@ -913,7 +913,7 @@ foo_86 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_87 (void)
 {
   void *buf[20];
@@ -923,7 +923,7 @@ foo_87 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_88 (void)
 {
   void *buf[20];
@@ -933,7 +933,7 @@ foo_88 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_89 (void)
 {
   void *buf[20];
@@ -943,7 +943,7 @@ foo_89 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_90 (void)
 {
   void *buf[20];
@@ -953,7 +953,7 @@ foo_90 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_91 (void)
 {
   void *buf[20];
@@ -963,7 +963,7 @@ foo_91 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_92 (void)
 {
   void *buf[20];
@@ -973,7 +973,7 @@ foo_92 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_93 (void)
 {
   void *buf[20];
@@ -983,7 +983,7 @@ foo_93 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_94 (void)
 {
   void *buf[20];
@@ -993,7 +993,7 @@ foo_94 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_95 (void)
 {
   void *buf[20];
@@ -1003,7 +1003,7 @@ foo_95 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_96 (void)
 {
   void *buf[20];
@@ -1013,7 +1013,7 @@ foo_96 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_97 (void)
 {
   void *buf[20];
@@ -1023,7 +1023,7 @@ foo_97 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_98 (void)
 {
   void *buf[20];
@@ -1033,7 +1033,7 @@ foo_98 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_99 (void)
 {
   void *buf[20];
@@ -1043,7 +1043,7 @@ foo_99 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_100 (void)
 {
   void *buf[20];
@@ -1053,7 +1053,7 @@ foo_100 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_101 (void)
 {
   void *buf[20];
@@ -1063,7 +1063,7 @@ foo_101 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_102 (void)
 {
   void *buf[20];
@@ -1073,7 +1073,7 @@ foo_102 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_103 (void)
 {
   void *buf[20];
@@ -1083,7 +1083,7 @@ foo_103 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_104 (void)
 {
   void *buf[20];
@@ -1093,7 +1093,7 @@ foo_104 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_105 (void)
 {
   void *buf[20];
@@ -1103,7 +1103,7 @@ foo_105 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_106 (void)
 {
   void *buf[20];
@@ -1113,7 +1113,7 @@ foo_106 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_107 (void)
 {
   void *buf[20];
@@ -1123,7 +1123,7 @@ foo_107 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_108 (void)
 {
   void *buf[20];
@@ -1133,7 +1133,7 @@ foo_108 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_109 (void)
 {
   void *buf[20];
@@ -1143,7 +1143,7 @@ foo_109 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_110 (void)
 {
   void *buf[20];
@@ -1153,7 +1153,7 @@ foo_110 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_111 (void)
 {
   void *buf[20];
@@ -1163,7 +1163,7 @@ foo_111 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_112 (void)
 {
   void *buf[20];
@@ -1173,7 +1173,7 @@ foo_112 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_113 (void)
 {
   void *buf[20];
@@ -1183,7 +1183,7 @@ foo_113 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_114 (void)
 {
   void *buf[20];
@@ -1193,7 +1193,7 @@ foo_114 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_115 (void)
 {
   void *buf[20];
@@ -1203,7 +1203,7 @@ foo_115 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_116 (void)
 {
   void *buf[20];
@@ -1213,7 +1213,7 @@ foo_116 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_117 (void)
 {
   void *buf[20];
@@ -1223,7 +1223,7 @@ foo_117 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_118 (void)
 {
   void *buf[20];
@@ -1233,7 +1233,7 @@ foo_118 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_119 (void)
 {
   void *buf[20];
@@ -1243,7 +1243,7 @@ foo_119 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_120 (void)
 {
   void *buf[20];
@@ -1253,7 +1253,7 @@ foo_120 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_121 (void)
 {
   void *buf[20];
@@ -1263,7 +1263,7 @@ foo_121 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_122 (void)
 {
   void *buf[20];
@@ -1273,7 +1273,7 @@ foo_122 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_123 (void)
 {
   void *buf[20];
@@ -1283,7 +1283,7 @@ foo_123 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_124 (void)
 {
   void *buf[20];
@@ -1293,7 +1293,7 @@ foo_124 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_125 (void)
 {
   void *buf[20];
@@ -1303,7 +1303,7 @@ foo_125 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_126 (void)
 {
   void *buf[20];
@@ -1313,7 +1313,7 @@ foo_126 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_127 (void)
 {
   void *buf[20];
@@ -1323,7 +1323,7 @@ foo_127 (void)
     abort ();
 }
 
-void
+NOINLINE void
 foo_128 (void)
 {
   void *buf[20];
@@ -1333,7 +1333,7 @@ foo_128 (void)
     abort ();
 }
 
-void *
+NOINLINE void *
 bar(void *p UNUSED)
 {
   int i;

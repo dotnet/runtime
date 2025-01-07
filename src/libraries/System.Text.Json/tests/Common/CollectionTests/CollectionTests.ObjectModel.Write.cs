@@ -31,6 +31,15 @@ namespace System.Text.Json.Serialization.Tests
 
             ReadOnlyDictionary<string, bool> rod = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool> { ["true"] = false });
             Assert.Equal(@"{""true"":false}", await Serializer.SerializeWrapper(rod));
+
+            MyKeyedCollection mkc = new MyKeyedCollection() { 1, 2, 3 };
+            Assert.Equal("[1,2,3]", await Serializer.SerializeWrapper(mkc));
+            Assert.Equal("[1,2,3]", await Serializer.SerializeWrapper<KeyedCollection<int, int>>(mkc));
         }
+    }
+
+    public class MyKeyedCollection : KeyedCollection<int, int>
+    {
+        protected override int GetKeyForItem(int k) => k;
     }
 }

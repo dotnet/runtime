@@ -33,7 +33,12 @@ C_FUNC(\Name):
 .endm
 
 .macro ALTERNATE_ENTRY Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
         .global C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
@@ -230,21 +235,6 @@ C_FUNC(\Name):
 
 .endm
 
-.macro EXPORT_POINTER_TO_ADDRESS Name
-
-// NOTE: The label is intentionally left as 2 - otherwise on OSX 0b or 1b will be incorrectly interpreted as binary integers
-
-2:
-
-        .data
-        .align      8
-C_FUNC(\Name):
-        .quad       2b
-        .global     C_FUNC(\Name)
-        .text
-
-.endm
-
 //
 // CONSTANTS -- INTEGER
 //
@@ -252,14 +242,11 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-#define STATUS_REDHAWK_THREAD_ABORT     0x43
-
 //
 // Rename fields of nested structs
 //
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr    OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-#define OFFSETOF__Thread__m_alloc_context__alloc_limit  OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+#define OFFSETOF__Thread__m_eeAllocContext__combined_limit   OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
 
 // GC type flags
 #define GC_ALLOC_FINALIZE           1
@@ -276,6 +263,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_RDX            0x00000400   // RDX is saved in hijack handler - in case it contains a GC ref
 #define PTFF_SAVE_ALL_SCRATCH    0x00007F00
 #define PTFF_THREAD_ABORT        0x00100000   // indicates that ThreadAbortException should be thrown when returning from the transition
+#define PTFF_THREAD_HIJACK       0x00200000   // indicates that this is a frame for a hijacked call
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
@@ -288,17 +276,24 @@ C_FUNC(\Name):
         movq    _\Var@TLVP(%rip), %rdi
         callq   *(%rdi)
 #else
-        leaq    \Var@TLSLD(%rip), %rdi
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    \Var@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
         callq   __tls_get_addr@PLT
-        addq    $\Var@DTPOFF, %rax
 #endif
        .intel_syntax noprefix
 .endm
 
 
 .macro INLINE_GETTHREAD
+#ifdef FEATURE_EMULATED_TLS
+        call        C_FUNC(RhpGetThread)
+#else
         // Inlined version of call C_FUNC(RhpGetThread)
         INLINE_GET_TLS_VAR tls_CurrentThread
+#endif
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
@@ -317,7 +312,7 @@ C_FUNC(\Name):
 1:
 .endm
 
-DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
+#define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP)
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
     push_nonvol_reg rbp                         // push RBP frame

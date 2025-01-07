@@ -10,6 +10,7 @@
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
+#include <eventpipe/ep-string.h>
 
 #include <glib.h>
 #include <mono/utils/checked-build.h>
@@ -17,7 +18,6 @@
 #include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-time.h>
-#include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/assembly.h>
@@ -58,6 +58,7 @@ extern bool ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *bu
 extern void * ep_rt_mono_thread_attach (bool background_thread);
 extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
 extern void ep_rt_mono_thread_detach (void);
+extern void ep_rt_mono_component_init (void);
 extern void ep_rt_mono_init (void);
 extern void ep_rt_mono_init_finish (void);
 extern void ep_rt_mono_fini (void);
@@ -68,7 +69,6 @@ extern void ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *pro
 extern void ep_rt_mono_init_providers_and_events (void);
 extern bool ep_rt_mono_providers_validate_all_disabled (void);
 extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
-extern bool ep_rt_mono_rand_try_get_bytes (uint8_t *buffer,size_t buffer_size);
 extern void ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 extern int64_t ep_rt_mono_perf_counter_query (void);
 extern int64_t ep_rt_mono_perf_frequency_query (void);
@@ -382,8 +382,6 @@ void
 ep_rt_init (void)
 {
 	ep_rt_mono_init ();
-
-	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
 }
 
 static
@@ -401,8 +399,6 @@ ep_rt_shutdown (void)
 {
 	mono_lazy_cleanup (managed_command_line_get_init (), managed_command_line_lazy_clean);
 	mono_lazy_cleanup (os_command_line_get_init (), os_command_line_lazy_clean);
-
-	ep_rt_spin_lock_free (ep_rt_mono_config_lock_get ());
 
 	ep_rt_mono_fini ();
 }
@@ -777,42 +773,6 @@ ep_rt_process_shutdown (void)
 
 static
 inline
-void
-ep_rt_create_activity_id (
-	uint8_t *activity_id,
-	uint32_t activity_id_len)
-{
-	EP_ASSERT (activity_id != NULL);
-	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-
-	ep_rt_mono_rand_try_get_bytes ((guchar *)activity_id, EP_ACTIVITY_ID_SIZE);
-
-	const uint16_t version_mask = 0xF000;
-	const uint16_t random_guid_version = 0x4000;
-	const uint8_t clock_seq_hi_and_reserved_mask = 0xC0;
-	const uint8_t clock_seq_hi_and_reserved_value = 0x80;
-
-	// Modify bits indicating the type of the GUID
-	uint8_t *activity_id_c = activity_id + sizeof (uint32_t) + sizeof (uint16_t);
-	uint8_t *activity_id_d = activity_id + sizeof (uint32_t) + sizeof (uint16_t) + sizeof (uint16_t);
-
-	uint16_t c;
-	memcpy (&c, activity_id_c, sizeof (c));
-
-	uint8_t d;
-	memcpy (&d, activity_id_d, sizeof (d));
-
-	// time_hi_and_version
-	c = ((c & ~version_mask) | random_guid_version);
-	// clock_seq_hi_and_reserved
-	d = ((d & ~clock_seq_hi_and_reserved_mask) | clock_seq_hi_and_reserved_value);
-
-	memcpy (activity_id_c, &c, sizeof (c));
-	memcpy (activity_id_d, &d, sizeof (d));
-}
-
-static
-inline
 bool
 ep_rt_is_running (void)
 {
@@ -1093,10 +1053,12 @@ ep_rt_temp_path_get (
 
 	const ep_char8_t *path = g_get_tmp_dir ();
 	int32_t result = snprintf (buffer, buffer_len, "%s", path);
-	if (result <= 0 || GINT32_TO_UINT32(result) > buffer_len)
+	if (result <= 0 || GINT32_TO_UINT32(result) >= buffer_len)
 		ep_raise_error ();
 
 	if (buffer [result - 1] != G_DIR_SEPARATOR) {
+		if (GINT32_TO_UINT32(result) >= buffer_len - 1)
+			ep_raise_error ();
 		buffer [result++] = G_DIR_SEPARATOR;
 		buffer [result] = '\0';
 	}
@@ -1295,22 +1257,6 @@ ep_rt_utf8_string_compare_ignore_case (
 
 static
 inline
-bool
-ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
-{
-	if (str == NULL)
-		return true;
-
-	while (*str) {
-		if (!isspace(*str))
-			return false;
-		str++;
-	}
-	return true;
-}
-
-static
-inline
 ep_char8_t *
 ep_rt_utf8_string_dup (const ep_char8_t *str)
 {
@@ -1385,16 +1331,6 @@ ep_rt_utf8_string_replace (
 static
 inline
 ep_char16_t *
-ep_rt_utf8_to_utf16le_string (
-	const ep_char8_t *str,
-	size_t len)
-{
-	return (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, NULL, NULL));
-}
-
-static
-inline
-ep_char16_t *
 ep_rt_utf16_string_dup (const ep_char16_t *str)
 {
 	size_t str_size = (ep_rt_utf16_string_len (str) + 1) * sizeof (ep_char16_t);
@@ -1402,6 +1338,13 @@ ep_rt_utf16_string_dup (const ep_char16_t *str)
 	if (str_dup)
 		memcpy (str_dup, str, str_size);
 	return str_dup;
+}
+
+static
+ep_char8_t *
+ep_rt_utf8_string_alloc (size_t len)
+{
+	return g_new(ep_char8_t, len);
 }
 
 static
@@ -1421,23 +1364,10 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 }
 
 static
-inline
-ep_char8_t *
-ep_rt_utf16_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len)
+ep_char16_t *
+ep_rt_utf16_string_alloc (size_t len)
 {
-	return g_utf16_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
-}
-
-static
-inline
-ep_char8_t *
-ep_rt_utf16le_to_utf8_string (
-	const ep_char16_t *str,
-	size_t len)
-{
-	return g_utf16le_to_utf8 ((const gunichar2 *)str, (glong)len, NULL, NULL, NULL);
+	return g_new(ep_char16_t, len);
 }
 
 static
@@ -1818,90 +1748,7 @@ ep_rt_volatile_store_ptr_without_barrier (
  */
 
 bool
-ep_rt_mono_write_event_ee_startup_start (void);
-
-typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
-
-void
-ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
-
-int
-ep_rt_mono_log_single_type (
-	BulkTypeEventLogger *p_type_logger,
-	MonoType *mono_type);
-
-void
-ep_rt_mono_log_type_and_parameters (
-	BulkTypeEventLogger *p_type_logger,
-	MonoType *mono_type);
-
-void
-ep_rt_mono_log_type_and_parameters_if_necessary (
-	BulkTypeEventLogger *p_type_logger,
-	MonoType *mono_type);
-
-void
-ep_rt_mono_send_method_details_event (MonoMethod *method);
-
-bool
-ep_rt_mono_write_event_jit_start (MonoMethod *method);
-
-bool
-ep_rt_mono_write_event_method_il_to_native_map (
-	MonoMethod *method,
-	MonoJitInfo *ji);
-
-bool
-ep_rt_mono_write_event_method_load (
-	MonoMethod *method,
-	MonoJitInfo *ji);
-
-bool
-ep_rt_mono_write_event_module_load (MonoImage *image);
-
-bool
-ep_rt_mono_write_event_module_unload (MonoImage *image);
-
-bool
-ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
-
-bool
-ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
-
-bool
-ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid);
-
-bool
-ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid);
-
-bool
-ep_rt_mono_write_event_type_load_start (MonoType *type);
-
-bool
-ep_rt_mono_write_event_type_load_stop (MonoType *type);
-
-bool
-ep_rt_mono_write_event_exception_thrown (MonoObject *object);
-
-bool
-ep_rt_mono_write_event_exception_clause (
-	MonoMethod *method,
-	uint32_t clause_num,
-	MonoExceptionEnum clause_type,
-	MonoObject *obj);
-
-bool
-ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj);
-
-bool
-ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj);
-
-bool
-ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
-	const uint8_t *buffer,
-	uint64_t size,
-	MonoProfilerCodeBufferType type,
-	const void *data);
+ep_rt_write_event_ee_startup_start (void);
 
 bool
 ep_rt_write_event_threadpool_worker_thread_start (
@@ -1999,11 +1846,22 @@ ep_rt_write_event_contention_stop (
 	uint16_t clr_instance_id,
 	double duration_ns);
 
+bool
+ep_rt_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id);
+
 /*
 * EventPipe provider callbacks.
 */
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntime (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -2014,6 +1872,7 @@ EventPipeEtwCallbackDotNETRuntime (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeRundown (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -2024,6 +1883,7 @@ EventPipeEtwCallbackDotNETRuntimeRundown (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimePrivate (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -2034,6 +1894,7 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeStress (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -2044,6 +1905,7 @@ EventPipeEtwCallbackDotNETRuntimeStress (
 	void *callback_data);
 
 void
+EP_CALLBACK_CALLTYPE
 EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -2053,6 +1915,65 @@ EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	EventFilterDescriptor *filter_data,
 	void *callback_data);
 
+/*
+* Shared EventPipe provider defines/types/functions.
+*/
+
+#define GC_KEYWORD 0x1
+#define GC_HANDLE_KEYWORD 0x2
+#define LOADER_KEYWORD 0x8
+#define JIT_KEYWORD 0x10
+#define APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD 0x800
+#define CONTENTION_KEYWORD 0x4000
+#define EXCEPTION_KEYWORD 0x8000
+#define THREADING_KEYWORD 0x10000
+#define TYPE_KEYWORD 0x80000
+#define GC_HEAP_DUMP_KEYWORD 0x100000
+#define GC_ALLOCATION_KEYWORD 0x200000
+#define GC_MOVES_KEYWORD 0x400000
+#define GC_HEAP_COLLECT_KEYWORD 0x800000
+#define GC_HEAP_AND_TYPE_NAMES_KEYWORD 0x1000000
+#define GC_FINALIZATION_KEYWORD 0x1000000
+#define GC_RESIZE_KEYWORD 0x2000000
+#define GC_ROOT_KEYWORD 0x4000000
+#define GC_HEAP_DUMP_VTABLE_CLASS_REF_KEYWORD 0x8000000
+#define METHOD_TRACING_KEYWORD 0x20000000
+#define TYPE_DIAGNOSTIC_KEYWORD 0x8000000000
+#define TYPE_LOADING_KEYWORD 0x8000000000
+#define MONITOR_KEYWORD 0x10000000000
+#define METHOD_INSTRUMENTATION_KEYWORD 0x40000000000
+
+// Custom Mono EventPipe thread data.
+typedef struct _EventPipeMonoThreadData EventPipeMonoThreadData;
+struct _EventPipeMonoThreadData {
+	void *gc_heap_dump_context;
+	bool prevent_profiler_event_recursion;
+};
+
+extern gboolean _ep_rt_mono_runtime_initialized;
+
+static
+inline
+bool
+ep_rt_mono_is_runtime_initialized (void)
+{
+	return !!_ep_rt_mono_runtime_initialized;
+}
+
+extern EventPipeMonoThreadData * ep_rt_mono_thread_data_get_or_create (void);
+extern uint64_t ep_rt_mono_session_calculate_and_count_all_keywords (const ep_char8_t *provider, uint64_t keywords[], uint64_t count[], size_t len);
+extern bool ep_rt_mono_sesion_has_all_started (void);
+
+extern void ep_rt_mono_runtime_provider_component_init (void);
+extern void ep_rt_mono_runtime_provider_init (void);
+extern void ep_rt_mono_runtime_provider_fini (void);
+extern void ep_rt_mono_runtime_provider_thread_started_callback (MonoProfiler *prof, uintptr_t tid);
+extern void ep_rt_mono_runtime_provider_thread_stopped_callback (MonoProfiler *prof, uintptr_t tid);
+
+extern void ep_rt_mono_profiler_provider_component_init (void);
+extern void ep_rt_mono_profiler_provider_init (void);
+extern void ep_rt_mono_profiler_provider_fini (void);
+extern bool ep_rt_mono_profiler_provider_parse_options (const char *options);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_MONO_H__ */

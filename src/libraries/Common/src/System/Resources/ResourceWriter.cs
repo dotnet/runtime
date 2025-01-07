@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
@@ -488,7 +488,11 @@ namespace System.Resources
                 if (typeName.StartsWith("ResourceTypeCode.", StringComparison.Ordinal))
                 {
                     typeName = typeName.Substring(17);  // Remove through '.'
+#if NET
+                    ResourceTypeCode typeCode = Enum.Parse<ResourceTypeCode>(typeName);
+#else
                     ResourceTypeCode typeCode = (ResourceTypeCode)Enum.Parse(typeof(ResourceTypeCode), typeName);
+#endif
                     return typeCode;
                 }
             }

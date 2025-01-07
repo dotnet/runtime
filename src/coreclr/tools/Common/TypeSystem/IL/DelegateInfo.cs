@@ -20,7 +20,7 @@ namespace Internal.IL
         private readonly TypeDesc _delegateType;
         private readonly DelegateFeature _supportedFeatures;
 
-        private MethodSignature _signature;
+        private MethodDesc _invokeMethod;
 
         private MethodDesc _getThunkMethod;
         private DelegateThunkCollection _thunks;
@@ -71,8 +71,16 @@ namespace Internal.IL
         {
             get
             {
-                _signature ??= _delegateType.GetKnownMethod("Invoke", null).Signature;
-                return _signature;
+                return InvokeMethod.Signature;
+            }
+        }
+
+        public MethodDesc InvokeMethod
+        {
+            get
+            {
+                _invokeMethod ??= _delegateType.GetKnownMethod("Invoke", null);
+                return _invokeMethod;
             }
         }
 
@@ -126,77 +134,77 @@ namespace Internal.IL
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
             _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
 
-            // Methods that have a byref-like type in the signature cannot be invoked with the object array thunk.
-            // We would need to box the parameter and these can't be boxed.
-            // Neither can be methods that have pointers in the signature.
             MethodSignature delegateSignature = owningDelegate.Signature;
-            bool generateObjectArrayThunk = true;
-            for (int i = 0; i < delegateSignature.Length; i++)
-            {
-                TypeDesc paramType = delegateSignature[i];
-                if (paramType.IsByRef)
-                    paramType = ((ByRefType)paramType).ParameterType;
-                if (!paramType.IsSignatureVariable && paramType.IsByRefLike)
-                {
-                    generateObjectArrayThunk = false;
-                    break;
-                }
-                if (paramType.IsPointer || paramType.IsFunctionPointer)
-                {
-                    generateObjectArrayThunk = false;
-                    break;
-                }
-            }
-            TypeDesc returnType = delegateSignature.ReturnType;
-            if (returnType.IsByRef)
-                generateObjectArrayThunk = false;
-            if (!returnType.IsSignatureVariable && returnType.IsByRefLike)
-                generateObjectArrayThunk = false;
-            if (returnType.IsPointer || returnType.IsFunctionPointer)
-                generateObjectArrayThunk = false;
 
-            if ((owningDelegate.SupportedFeatures & DelegateFeature.ObjectArrayThunk) != 0 && generateObjectArrayThunk)
+            //
+            // Check whether we have an object array thunk
+            //
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.ObjectArrayThunk) != 0
+                && SignatureSupportsObjectArrayThunk(delegateSignature))
+            {
                 _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
+            }
 
             //
             // Check whether we have an open instance thunk
             //
-
-            if ((owningDelegate.SupportedFeatures & DelegateFeature.OpenInstanceThunk) != 0 && delegateSignature.Length > 0)
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.OpenInstanceThunk) != 0
+                && delegateSignature.Length > 0
+                && SignatureSupportsOpenInstanceThunks(delegateSignature))
             {
-                TypeDesc firstParam = delegateSignature[0];
-
-                bool generateOpenInstanceMethod;
-
-                switch (firstParam.Category)
-                {
-                    case TypeFlags.Pointer:
-                    case TypeFlags.FunctionPointer:
-                        generateOpenInstanceMethod = false;
-                        break;
-
-                    case TypeFlags.ByRef:
-                        firstParam = ((ByRefType)firstParam).ParameterType;
-                        generateOpenInstanceMethod = firstParam.IsSignatureVariable || firstParam.IsValueType;
-                        break;
-
-                    case TypeFlags.Array:
-                    case TypeFlags.SzArray:
-                    case TypeFlags.SignatureTypeVariable:
-                        generateOpenInstanceMethod = true;
-                        break;
-
-                    default:
-                        Debug.Assert(firstParam.IsDefType);
-                        generateOpenInstanceMethod = !firstParam.IsValueType;
-                        break;
-                }
-
-                if (generateOpenInstanceMethod)
-                {
-                    _openInstanceThunk = new DelegateInvokeOpenInstanceThunk(owningDelegate);
-                }
+                _openInstanceThunk = new DelegateInvokeOpenInstanceThunk(owningDelegate);
             }
+        }
+
+        public bool SignatureSupportsOpenInstanceThunks(MethodSignature signature)
+        {
+            TypeDesc firstParam = signature[0];
+
+            switch (firstParam.Category)
+            {
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    return false;
+
+                case TypeFlags.ByRef:
+                    firstParam = ((ByRefType)firstParam).ParameterType;
+                    return firstParam.IsSignatureVariable || firstParam.IsValueType;
+
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.SignatureTypeVariable:
+                    return true;
+
+                default:
+                    Debug.Assert(firstParam.IsDefType);
+                    return !firstParam.IsValueType;
+            }
+        }
+
+        public bool SignatureSupportsObjectArrayThunk(MethodSignature signature)
+        {
+            // Methods that have a byref-like type in the signature cannot be invoked with the object array thunk.
+            // We would need to box the parameter and these can't be boxed.
+            // Neither can be methods that have pointers in the signature.
+            for (int i = 0; i < signature.Length; i++)
+            {
+                TypeDesc paramType = signature[i];
+                if (paramType.IsByRef)
+                    paramType = ((ByRefType)paramType).ParameterType;
+                if (!paramType.IsSignatureVariable && paramType.IsByRefLike)
+                    return false;
+                if (paramType.IsPointer || paramType.IsFunctionPointer)
+                    return false;
+            }
+            TypeDesc returnType = signature.ReturnType;
+            if (returnType.IsByRef)
+                return false;
+            if (!returnType.IsSignatureVariable && returnType.IsByRefLike)
+                return false;
+            if (returnType.IsPointer || returnType.IsFunctionPointer)
+                return false;
+
+            return true;
         }
 
         public MethodDesc this[DelegateThunkKind kind]

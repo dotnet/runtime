@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
@@ -34,12 +34,13 @@ namespace System.Reflection
 
         public static void* Unbox(object ptr)
         {
-            if (!(ptr is Pointer))
-                throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
-            return ((Pointer)ptr)._ptr;
+            if (ptr is Pointer p)
+                return p._ptr;
+
+            throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
         }
 
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is Pointer pointer)
             {
@@ -49,7 +50,7 @@ namespace System.Reflection
             return false;
         }
 
-        public override unsafe int GetHashCode() => ((nuint)_ptr).GetHashCode();
+        public override int GetHashCode() => ((nuint)_ptr).GetHashCode();
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {

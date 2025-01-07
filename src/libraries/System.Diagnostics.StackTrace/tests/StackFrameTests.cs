@@ -75,6 +75,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(int.MinValue)]
         [InlineData(int.MaxValue)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void SkipFrames_ManyFrames_HasNoMethod(int skipFrames)
         {
             var stackFrame = new StackFrame(skipFrames);
@@ -123,6 +124,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/mono/mono/issues/15186", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103156", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(StackFrame stackFrame, string expectedToString)
         {
@@ -168,7 +170,10 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Assert.True(stackFrame.GetILOffset() >= 0, $"Expected GetILOffset() {stackFrame.GetILOffset()} for {stackFrame} to be greater or equal to zero.");
+                if (PlatformDetection.IsILOffsetsSupported)
+                {
+                    Assert.True(stackFrame.GetILOffset() >= 0, $"Expected GetILOffset() {stackFrame.GetILOffset()} for {stackFrame} to be greater or equal to zero.");
+                }
             }
 
             // GetMethod returns null for unknown frames.

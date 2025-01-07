@@ -51,7 +51,7 @@ namespace System.Collections.Immutable.Tests
                         int[] values = Enumerable.Range(0, inputLength).Select(i => random.Next()).ToArray();
                         Debug.WriteLine("Adding {0} elements to the list.", inputLength);
                         expected.AddRange(values);
-                        actual = actual.AddRange(values);
+                        actual = actual.AddRange((IEnumerable<int>)values);
                         VerifyBalanced(actual);
                         break;
                     case Operation.Insert:
@@ -139,10 +139,10 @@ namespace System.Collections.Immutable.Tests
         public void AddRangeTest()
         {
             ImmutableList<int> list = ImmutableList<int>.Empty;
-            list = list.AddRange(new[] { 1, 2, 3 });
+            list = list.AddRange((IEnumerable<int>)new[] { 1, 2, 3 });
             list = list.AddRange(Enumerable.Range(4, 2));
-            list = list.AddRange(ImmutableList<int>.Empty.AddRange(new[] { 6, 7, 8 }));
-            list = list.AddRange(new int[0]);
+            list = list.AddRange(ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 6, 7, 8 }));
+            list = list.AddRange((IEnumerable<int>)new int[0]);
             list = list.AddRange(ImmutableList<int>.Empty.AddRange(Enumerable.Range(9, 1000)));
             Assert.Equal(Enumerable.Range(1, 1008), list);
         }
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<string> emptyList = ImmutableList.Create<string>();
 
             // Adding an empty list to an empty list should yield the original list.
-            Assert.Same(emptyList, emptyList.AddRange(new string[0]));
+            Assert.Same(emptyList, emptyList.AddRange(Enumerable.Empty<string>()));
 
             // Adding a non-empty immutable list to an empty one should return the added list.
             ImmutableList<string> nonEmptyListDefaultComparer = ImmutableList.Create("5");
@@ -206,7 +206,7 @@ namespace System.Collections.Immutable.Tests
 
             Assert.Equal(Enumerable.Range(1, expectedTotalSize), list);
 
-            list.Root.VerifyHeightIsWithinTolerance();
+            list.GetBinaryTreeProxy().VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
@@ -235,10 +235,10 @@ namespace System.Collections.Immutable.Tests
                 list.InsertRange(startPosition, values);
 
                 Assert.Equal(list, immutableList);
-                immutableList.Root.VerifyBalanced();
+                immutableList.GetBinaryTreeProxy().VerifyBalanced();
             }
 
-            immutableList.Root.VerifyHeightIsWithinTolerance();
+            immutableList.GetBinaryTreeProxy().VerifyHeightIsWithinTolerance();
         }
 
         [Fact]
@@ -584,7 +584,10 @@ namespace System.Collections.Immutable.Tests
             list = ImmutableList.Create("a");
             Assert.Equal(1, list.Count);
 
-            list = ImmutableList.Create("a", "b");
+            list = ImmutableList.Create(new[] { "a", "b" });
+            Assert.Equal(2, list.Count);
+
+            list = ImmutableList.Create((ReadOnlySpan<string>)new[] { "a", "b" });
             Assert.Equal(2, list.Count);
 
             list = ImmutableList.CreateRange((IEnumerable<string>)new[] { "a", "b" });
@@ -625,6 +628,7 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list.RemoveRange(4, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.RemoveRange(0, 4));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.RemoveRange(2, 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => list.RemoveRange(2, int.MaxValue));
             Assert.Equal(list, list.RemoveRange(3, 0));
         }
 
@@ -790,7 +794,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
-#if NETCOREAPP
+#if NET
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void UsableWithCollectibleAssemblies()
         {
@@ -817,7 +821,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<int> list = new[] { 1, 2, 3 }.ToImmutableList();
 
             ref readonly int safeRef = ref list.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, list.ItemRef(1));
 
@@ -836,7 +840,7 @@ namespace System.Collections.Immutable.Tests
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
-            return ImmutableList<T>.Empty.AddRange(contents);
+            return ImmutableList<T>.Empty.AddRange((IEnumerable<T>)contents);
         }
 
         protected override void RemoveAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)
@@ -875,14 +879,14 @@ namespace System.Collections.Immutable.Tests
             return list.Sort(index, count, comparer).ToList();
         }
 
-        internal override IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
+        internal override ImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
         {
-            return list;
+            return new ImmutableListQuery<T>(list);
         }
 
         private static void VerifyBalanced<T>(ImmutableList<T> tree)
         {
-            tree.Root.VerifyBalanced();
+            tree.GetBinaryTreeProxy().VerifyBalanced();
         }
 
         private struct Person
@@ -902,6 +906,30 @@ namespace System.Collections.Immutable.Tests
             {
                 return obj.Name.GetHashCode();
             }
+        }
+
+        private sealed class ImmutableListQuery<T>(ImmutableList<T> list) : ImmutableListQueries<T>(list)
+        {
+            public override int BinarySearch(T item) => list.BinarySearch(item);
+            public override int BinarySearch(T item, IComparer<T>? comparer) => list.BinarySearch(item, comparer);
+            public override int BinarySearch(int index, int count, T item, IComparer<T>? comparer) => list.BinarySearch(index, count, item, comparer);
+            public override ImmutableList<TOutput> ConvertAll<TOutput>(Func<T, TOutput> converter) => list.ConvertAll(converter);
+            public override void CopyTo(T[] array) => list.CopyTo(array);
+            public override void CopyTo(T[] array, int arrayIndex) => list.CopyTo(array, arrayIndex);
+            public override void CopyTo(int index, T[] array, int arrayIndex, int count) => list.CopyTo(index, array, arrayIndex, count);
+            public override bool Exists(Predicate<T> match) => list.Exists(match);
+            public override T? Find(Predicate<T> match) => list.Find(match);
+            public override ImmutableList<T> FindAll(Predicate<T> match) => list.FindAll(match);
+            public override int FindIndex(Predicate<T> match) => list.FindIndex(match);
+            public override int FindIndex(int startIndex, Predicate<T> match) => list.FindIndex(startIndex, match);
+            public override int FindIndex(int startIndex, int count, Predicate<T> match) => list.FindIndex(startIndex, count, match);
+            public override T? FindLast(Predicate<T> match) => list.FindLast(match);
+            public override int FindLastIndex(Predicate<T> match) => list.FindLastIndex(match);
+            public override int FindLastIndex(int startIndex, Predicate<T> match) => list.FindLastIndex(startIndex, match);
+            public override int FindLastIndex(int startIndex, int count, Predicate<T> match) => list.FindLastIndex(startIndex, count, match);
+            public override void ForEach(Action<T> action) => list.ForEach(action);
+            public override ImmutableList<T> GetRange(int index, int count) => list.GetRange(index, count);
+            public override bool TrueForAll(Predicate<T> match) => list.TrueForAll(match);
         }
     }
 }

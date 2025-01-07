@@ -39,6 +39,7 @@ struct MonoMethodDesc {
 	char *args;
 	guint num_args;
 	gboolean include_namespace, klass_glob, name_glob;
+	gboolean match_wrappers;
 };
 
 // This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
@@ -341,7 +342,7 @@ mono_context_get_desc (MonoGenericContext *context)
  * Creates a method description for \p name, which conforms to the following
  * specification:
  *
- * <code>[namespace.]classname:methodname[(args...)]</code>
+ * <code>[w:][namespace.]classname:methodname[(args...)]</code>
  *
  * in all the loaded assemblies.
  *
@@ -356,7 +357,13 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	char *class_name, *class_nspace, *method_name, *use_args, *end;
 	int use_namespace;
 	int generic_delim_stack;
+	int match_wrappers = 0;
 
+	/* if the name starts with w: or W: allow matching wrappers */
+	if (strstr(name, "W:") == name || strstr(name, "w:") == name) {
+		name += 2;
+		match_wrappers = 1;
+	}
 	class_nspace = g_strdup (name);
 	use_args = strchr (class_nspace, '(');
 	if (use_args) {
@@ -414,6 +421,8 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 			++end;
 		}
 	}
+	if (match_wrappers)
+		result->match_wrappers = TRUE;
 
 	return result;
 }
@@ -431,6 +440,8 @@ mono_method_desc_from_method (MonoMethod *method)
 	result->name = g_strdup (method->name);
 	result->klass = g_strdup (method->klass->name);
 	result->name_space = g_strdup (method->klass->name_space);
+	if (method->wrapper_type)
+		result->match_wrappers = TRUE;
 
 	return result;
 }
@@ -466,6 +477,9 @@ mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 	char *sig;
 	gboolean name_match;
 
+	if (desc->match_wrappers && method->wrapper_type == MONO_WRAPPER_NONE) {
+		return FALSE;
+	}
 	if (desc->name_glob && !strcmp (desc->name, "*"))
 		return TRUE;
 #if 0

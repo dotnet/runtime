@@ -26,9 +26,10 @@ unsafe partial class GenericsNative
     public static extern Point3<bool> AddPoint3Bs(in Point3<bool> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestPoint3B()
+    [Fact]
+    public static void TestPoint3B()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint3B(true, false, true));
 

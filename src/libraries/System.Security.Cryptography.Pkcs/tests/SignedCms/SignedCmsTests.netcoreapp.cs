@@ -399,7 +399,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 {
                     ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
                     SignedCms cms = new SignedCms(content, false);
-                    CmsSigner signer = new CmsSigner(certWithEphemeralKey);
+                    CmsSigner signer = new CmsSigner(certWithEphemeralKey)
+                    {
+                        IncludeOption = X509IncludeOption.EndCertOnly
+                    };
                     cms.ComputeSignature(signer);
                 }
             }
@@ -429,7 +432,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
                     SignedCms cms = new SignedCms(content, false);
                     CmsSigner signer = new CmsSigner(certWithEphemeralKey)
                     {
-                        DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1)
+                        DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1),
+                        IncludeOption = X509IncludeOption.EndCertOnly
                     };
                     cms.ComputeSignature(signer);
                 }
@@ -458,7 +462,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 {
                     ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
                     SignedCms cms = new SignedCms(content, false);
-                    CmsSigner signer = new CmsSigner(certWithEphemeralKey);
+                    CmsSigner signer = new CmsSigner(certWithEphemeralKey)
+                    {
+                        IncludeOption = X509IncludeOption.EndCertOnly
+                    };
                     cms.ComputeSignature(signer);
                 }
             }
@@ -821,6 +828,20 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
             }
+        }
+
+        [Fact]
+        public static void ExistingDocument_Ecdsa_Sha256_FromNetFX()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.Ecdsa_Sha256_FromNetFX_SignedDocument);
+
+            cms.CheckSignature(true); // Assert.NoThrow
+            Assert.Single(cms.SignerInfos);
+
+            SignerInfo signerInfo = cms.SignerInfos[0];
+            Assert.Equal(Oids.Sha256, signerInfo.DigestAlgorithm.Value);
+            Assert.Equal(Oids.EcPublicKey, signerInfo.SignatureAlgorithm.Value);
         }
 
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)

@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Data.Common;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.Data.SqlTypes;
-using System.Xml.Serialization;
-using System.Runtime.CompilerServices;
+using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
+using System.ComponentModel;
+using System.Data.Common;
+using System.Data.SqlTypes;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Reflection;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data
 {
@@ -442,6 +442,7 @@ namespace System.Data
         // If the column type is not string, or the column type is string and the value is not empty string, then a non-empty string is returned
         // This method does not throw any formatting exceptions, since we can always format the field value to a string.
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal string? GetColumnValueAsString(DataRow row, DataRowVersion version)
         {
             object objValue = this[row.GetRecordFromVersion(version)];
@@ -1739,12 +1740,12 @@ namespace System.Data
             OnPropertyChanging(new PropertyChangedEventArgs(name));
         }
 
-        private DataStorage InsureStorage() =>
+        private DataStorage EnsureStorage() =>
             _storage ??= DataStorage.CreateStorage(this, _dataType, _storageType);
 
         internal void SetCapacity(int capacity)
         {
-            InsureStorage().SetCapacity(capacity);
+            EnsureStorage().SetCapacity(capacity);
         }
 
         private bool ShouldSerializeDefaultValue() => !DefaultValueIsNull;
@@ -1755,35 +1756,39 @@ namespace System.Data
             ColumnName + " + " + Expression;
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal object ConvertXmlToObject(string s)
         {
             Debug.Assert(s != null, "Caller is responsible for missing element/attribute case");
-            return InsureStorage().ConvertXmlToObject(s);
+            return EnsureStorage().ConvertXmlToObject(s);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
-            return InsureStorage().ConvertXmlToObject(xmlReader, xmlAttrib);
+            return EnsureStorage().ConvertXmlToObject(xmlReader, xmlAttrib);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal string ConvertObjectToXml(object value)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is responsible for checking on DBNull");
-            return InsureStorage().ConvertObjectToXml(value);
+            return EnsureStorage().ConvertObjectToXml(value);
         }
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
         internal void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             Debug.Assert(value != null && (value != DBNull.Value), "Caller is responsible for checking on DBNull");
-            InsureStorage().ConvertObjectToXml(value, xmlWriter, xmlAttrib);
+            EnsureStorage().ConvertObjectToXml(value, xmlWriter, xmlAttrib);
         }
 
         internal object GetEmptyColumnStore(int recordCount)
         {
-            return InsureStorage().GetEmptyStorageInternal(recordCount);
+            return EnsureStorage().GetEmptyStorageInternal(recordCount);
         }
 
         internal void CopyValueIntoStore(int record, object store, BitArray nullbits, int storeIndex)
@@ -1795,7 +1800,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void SetStorage(object store, BitArray nullbits)
         {
-            InsureStorage().SetStorageInternal(store, nullbits);
+            EnsureStorage().SetStorageInternal(store, nullbits);
         }
 
         internal void AddDependentColumn(DataColumn expressionColumn)

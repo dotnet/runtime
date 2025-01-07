@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, IlasmRoundTripIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
+    <!-- This test uses very custom execution logic including explicit Main -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+
     <!-- ilasm round-trip testing works, but is not interesting for this test:
          we already get round-trip testing for the referenced projects, so doing
          it here only adds round-trip testing of the harness, as well as doing
@@ -25,9 +30,10 @@
   <ItemGroup>
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Bytemark\Bytemark.csproj" />
     <_SpmiTestProjects Include="..\Performance\CodeQuality\Roslyn\CscBench.csproj" />
-    <_SpmiTestProjects Include="..\Methodical\fp\exgen\10w5d_cs_do.csproj" />
+    <_SpmiTestProjects Include="..\Methodical\cctor\xassem\xprecise1_cs_do.csproj" />
+    <_SpmiTestSupportProjects Include="..\Methodical\cctor\xassem\testlib_xassem.csproj" />
 
-    <ProjectReference Include="@(_SpmiTestProjects)">
+    <ProjectReference Include="@(_SpmiTestProjects);@(_SpmiTestSupportProjects)">
       <Targets>Build</Targets>
       <OutputItemType>_SpmiTest</OutputItemType>
       <TargetPath>%(FileName)</TargetPath>

@@ -12,7 +12,7 @@ public class Program
 {
     public static bool s_26;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var vr2 = new uint[,] { { 0 } };
         int vr7 = default(int);
@@ -23,6 +23,5 @@ public class Program
         }
 
         vr2[0, 0] = (uint)(vr5 & (sbyte)~(vr2[0, 0] % 1));
-        return 100;
     }
 }

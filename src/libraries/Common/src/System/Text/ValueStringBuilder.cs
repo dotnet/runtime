@@ -161,7 +161,7 @@ namespace System.Text
             int remaining = _pos - index;
             _chars.Slice(index, remaining).CopyTo(_chars.Slice(index + count));
             s
-#if !NETCOREAPP
+#if !NET
                 .AsSpan()
 #endif
                 .CopyTo(_chars.Slice(index));
@@ -213,7 +213,7 @@ namespace System.Text
             }
 
             s
-#if !NETCOREAPP
+#if !NET
                 .AsSpan()
 #endif
                 .CopyTo(_chars.Slice(pos));
@@ -251,7 +251,7 @@ namespace System.Text
             _pos += length;
         }
 
-        public void Append(ReadOnlySpan<char> value)
+        public void Append(scoped ReadOnlySpan<char> value)
         {
             int pos = _pos;
             if (pos > _chars.Length - value.Length)

@@ -22,7 +22,7 @@ namespace System.Reflection
         }
 
         public InvalidFilterCriteriaException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_InvalidFilterCriteriaException, inner)
         {
             HResult = HResults.COR_E_INVALIDFILTERCRITERIA;
         }

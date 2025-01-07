@@ -19,6 +19,7 @@ namespace BasicEventSourceTests
         /// Tests the ETW code path
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_T_ETW()
         {
             using (var listener = new EtwListener())
@@ -27,9 +28,8 @@ namespace BasicEventSourceTests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/25035")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_T_In_Manifest_Serialization_WithEtwListener()
         {
             using (var eventListener = new EventListenerListener())

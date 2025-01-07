@@ -12,6 +12,7 @@ public unsafe class Runtime_61510
     [Fact]
     public static int TestEntryPoint()
     {
+        // Unsafe.AsPointer is safe since static field is marked with [FixedAddressValueType]
         ref byte result = ref AddZeroByrefToNativeInt((nint)Unsafe.AsPointer(ref s_field));
 
         return Unsafe.AreSame(ref s_field, ref result) ? 100 : 101;

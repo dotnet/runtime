@@ -2,11 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -231,17 +227,25 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			type.RequiresNone ();
 			type.RequiresPublicParameterlessConstructor ();
 			type.RequiresPublicConstructors ();
+			type.RequiresPublicConstructorsWithInherited ();
 			type.RequiresNonPublicConstructors ();
+			type.RequiresNonPublicConstructorsWithInherited ();
 			type.RequiresPublicMethods ();
 			type.RequiresNonPublicMethods ();
+			type.RequiresNonPublicMethodsWithInherited ();
 			type.RequiresPublicFields ();
 			type.RequiresNonPublicFields ();
+			type.RequiresNonPublicFieldsWithInherited ();
 			type.RequiresPublicNestedTypes ();
+			type.RequiresPublicNestedTypesWithInherited ();
 			type.RequiresNonPublicNestedTypes ();
+			type.RequiresNonPublicNestedTypesWithInherited ();
 			type.RequiresPublicProperties ();
 			type.RequiresNonPublicProperties ();
+			type.RequiresNonPublicPropertiesWithInherited ();
 			type.RequiresPublicEvents ();
 			type.RequiresNonPublicEvents ();
+			type.RequiresNonPublicEventsWithInherited ();
 			type.RequiresInterfaces ();
 		}
 

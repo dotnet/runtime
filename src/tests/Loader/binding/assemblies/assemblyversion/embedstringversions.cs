@@ -48,6 +48,7 @@
 
 using System;
 using System.Globalization;
+using Xunit;
 
 
 public class StringVersionClass {
@@ -61,7 +62,8 @@ public class StringVersionClass {
 
     private bool[] result = new bool[MAX_TEST];
 
-    public static int Main()    {
+    [Fact]
+    public static int TestEntryPoint()    {
 	
         StringVersionClass Me = new StringVersionClass();
 	int ret = -1;

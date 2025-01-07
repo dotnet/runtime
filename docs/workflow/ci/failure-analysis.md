@@ -12,6 +12,19 @@
 
 ## Triaging errors seen in CI
 
+## Summary
+
+**Passing Build Analysis is required to merge into the runtime repo**.
+
+To resolve failures, do the following, in order:
+
+1. Fix the problem if your PR is the cause.
+2. For all failures not in the "Known test errors" section, [try to file a Known Build Error issue](#what-to-do-if-you-determine-the-failure-is-unrelated).
+3. If all else fails, perform a [manual bypass](#bypassing-build-analysis).
+
+
+## Details
+
 In case of failure, any PR on the runtime will have a failed GitHub check - PR Build Analysis - which has a summary of all failures, including a list of matching  known issues as well as any regressions introduced to the build or the tests. This tab should be your first stop for analyzing the PR failures.
 
 ![Build analysis check](analysis-check.png)
@@ -78,6 +91,7 @@ If you have considered all the diagnostic artifacts and determined the failure i
     ````
     It already contains most of the essential information, but *it is very important that you fill out the json blob*.
 
+    - You can now use the [Build Analysis Known Issue Helper](https://helix.dot.net/BuildAnalysis/CreateKnownIssues) to create an issue. It assists in adding the right set of labels, fill the necessary paths in the json blob, and it will validate that it matches the text presented for the issue found in the logs.
     - You can add into the `ErrorMessage` field the string that you found uniquely identifies the issue. In case you need to use a regex, use the `ErrorPattern` field instead. This is a limited to a single-line, non-backtracking regex as described [here](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#regex-matching). This regex also needs to be appropriately escaped. Check the [arcade known issues](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#filling-out-known-issues-json-blob) documentation for a good guide on proper regex and JSON escaping.
     - The field `ExcludeConsoleLog` describes if the execution logs should be considered on top of the individual test results. **For most cases, this should be set to `true` as the failure will happen within a single test**. Setting it to `false` will mean all failures within an xUnit set of tests will also get attributed to this particular error, since there's one log describing all the problems. Due to limitations in Known Issues around rate limiting and xUnit resiliency, setting `ExcludeConsoleLog=false` is necessary in two scenarios:
       + Nested tests as reported to Azure DevOps. Essentially this means theory failures, which look like this when reported in Azure DevOps: ![xUnit theory seen in azure devops](theory-azdo.png).
@@ -85,7 +99,11 @@ If you have considered all the diagnostic artifacts and determined the failure i
       + Native crashes in libraries also require using the console log. This is needed as the crash corrupts the test results to be reported to Azure DevOps, so only the console logs are left.
     - Optionally you can add specifics as needed like leg, configuration parameters, available dump links.
 
-Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue. If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag  @dotnet/runtime-infrastructure to request infrastructure team for help.
+Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue.
+
+The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
+
+If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag  @dotnet/runtime-infrastructure to request infrastructure team for help.
 
 After you do this, if the failure is occurring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding tracking issue link in a follow-up Pull Request.
 
@@ -94,6 +112,18 @@ After you do this, if the failure is occurring frequently as per the data captur
 * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
 
 There are plenty of intermittent failures that won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
+
+### Bypassing build analysis
+
+To unconditionally bypass the build analysis check (turn it green), you can add a comment to your PR with the following text:
+
+```
+/ba-g <reason>
+```
+
+The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
+
+For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md
 
 ### Examples of Build Analysis
 

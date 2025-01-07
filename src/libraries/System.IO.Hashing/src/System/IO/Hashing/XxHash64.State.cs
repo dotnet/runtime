@@ -97,6 +97,10 @@ namespace System.IO.Hashing
                 return acc;
             }
 
+            // Inliner may decide to inline this method into HashToUInt64() with help of PGO and
+            // can run out of "time budget" producing non-inlined simple calls such as Span.Slice.
+            // TODO: Remove NoInlining when https://github.com/dotnet/runtime/issues/85531 is fixed.
+            [MethodImpl(MethodImplOptions.NoInlining)]
             internal readonly ulong Complete(long length, ReadOnlySpan<byte> remaining)
             {
                 ulong acc = _hadFullStripe ? Converge() : _smallAcc;

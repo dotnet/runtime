@@ -6,11 +6,17 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
+    [Flags]
+    public enum EnvironmentFlags
+    {
+        None = 0,
+        SkipLocalsInit = 0x1,
+        DisableRuntimeMarshalling = 0x2,
+    }
+
     public sealed record StubEnvironment(
         Compilation Compilation,
-        TargetFramework TargetFramework,
-        Version TargetFrameworkVersion,
-        bool ModuleSkipLocalsInit)
+        EnvironmentFlags EnvironmentFlags)
     {
         private Optional<INamedTypeSymbol?> _lcidConversionAttrType;
         public INamedTypeSymbol? LcidConversionAttrType
@@ -65,6 +71,20 @@ namespace Microsoft.Interop
                 }
                 _defaultDllImportSearchPathsAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.DefaultDllImportSearchPathsAttribute));
                 return _defaultDllImportSearchPathsAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _wasmImportLinkageAttrType;
+        public INamedTypeSymbol? WasmImportLinkageAttrType
+        {
+            get
+            {
+                if (_wasmImportLinkageAttrType.HasValue)
+                {
+                    return _wasmImportLinkageAttrType.Value;
+                }
+                _wasmImportLinkageAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.WasmImportLinkageAttribute));
+                return _wasmImportLinkageAttrType.Value;
             }
         }
     }

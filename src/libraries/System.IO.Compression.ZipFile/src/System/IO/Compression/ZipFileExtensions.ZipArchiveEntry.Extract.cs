@@ -6,8 +6,8 @@ namespace System.IO.Compression
     public static partial class ZipFileExtensions
     {
         /// <summary>
-        /// Creates a file on the file system with the entry?s contents and the specified name. The last write time of the file is set to the
-        /// entry?s last write time. This method does not allow overwriting of an existing file with the same name. Attempting to extract explicit
+        /// Creates a file on the file system with the entry's contents and the specified name. The last write time of the file is set to the
+        /// entry's last write time. This method does not allow overwriting of an existing file with the same name. Attempting to extract explicit
         /// directories (entries with names that end in directory separator characters) will not result in the creation of a directory.
         /// </summary>
         ///
@@ -34,8 +34,8 @@ namespace System.IO.Compression
             ExtractToFile(source, destinationFileName, false);
 
         /// <summary>
-        /// Creates a file on the file system with the entry?s contents and the specified name.
-        /// The last write time of the file is set to the entry?s last write time.
+        /// Creates a file on the file system with the entry's contents and the specified name.
+        /// The last write time of the file is set to the entry's last write time.
         /// This method does allows overwriting of an existing file with the same name.
         /// </summary>
         ///
@@ -76,7 +76,7 @@ namespace System.IO.Compression
             const UnixFileMode OwnershipPermissions =
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                 UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
             // Restore Unix permissions.
             // For security, limit to ownership permissions, and respect umask (through UnixCreateMode).

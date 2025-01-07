@@ -287,13 +287,8 @@ int HOSTPOLICY_CALLTYPE run_app(const int argc, const pal::char_t *argv[])
 
 void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
 {
-    trace::info(_X("--- Invoked hostpolicy [commit hash: %s] [%s,%s,%s][%s] %s = {"),
-        _STRINGIFY(REPO_COMMIT_HASH),
-        _STRINGIFY(HOST_POLICY_PKG_NAME),
-        _STRINGIFY(HOST_POLICY_PKG_VER),
-        _STRINGIFY(HOST_POLICY_PKG_REL_DIR),
-        get_current_arch_name(),
-        entryPointName.c_str());
+    if (trace::is_enabled())
+        trace::info(_X("--- Invoked hostpolicy [version: %s] %s = {"), get_host_version_description().c_str(), entryPointName.c_str());
 }
 
 //
@@ -468,7 +463,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
     else
     {
         trace::error(_X("Unknown command: %s"), g_init.host_command.c_str());
-        rc = StatusCode::LibHostUnknownCommand;
+        rc = StatusCode::LibHostInvalidArgs;
     }
 
     return rc;
@@ -556,8 +551,10 @@ namespace
 
     int HOSTPOLICY_CALLTYPE get_property(const pal::char_t *key, const pal::char_t **value)
     {
-        if (key == nullptr)
+        if (key == nullptr || value == nullptr)
             return StatusCode::InvalidArgFailure;
+
+        *value = nullptr;
 
         const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ false);
         if (context == nullptr)
@@ -600,7 +597,10 @@ namespace
 
         const std::shared_ptr<hostpolicy_context_t> context = get_hostpolicy_context(/*require_runtime*/ false);
         if (context == nullptr)
+        {
+            *count = 0;
             return StatusCode::HostInvalidState;
+        }
 
         size_t actualCount = context->coreclr_properties.count();
         size_t input_count = *count;

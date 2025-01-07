@@ -20,7 +20,7 @@ using System;
 
 namespace Internal.Runtime.Augments
 {
-    public static class DynamicDelegateAugments
+    internal static class DynamicDelegateAugments
     {
         //
         // Helper to create a interpreted delegate for LINQ and DLR expression trees

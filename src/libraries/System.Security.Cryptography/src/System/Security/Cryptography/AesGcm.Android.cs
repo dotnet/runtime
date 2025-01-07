@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
                 key,
-                Span<byte>.Empty,
+                ReadOnlySpan<byte>.Empty,
                 Interop.Crypto.EvpCipherDirection.NoChange);
             Interop.Crypto.CipherSetNonceLength(_ctxHandle, NonceSize);
         }
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
 
             Interop.Crypto.EvpCipherSetKeyAndIV(
                 _ctxHandle,
-                Span<byte>.Empty,
+                ReadOnlySpan<byte>.Empty,
                 nonce,
                 Interop.Crypto.EvpCipherDirection.Encrypt);
 
@@ -173,10 +173,10 @@ namespace System.Security.Cryptography
         {
             return keySizeInBits switch
             {
-                 128 => Interop.Crypto.EvpAes128Gcm(),
-                 192 => Interop.Crypto.EvpAes192Gcm(),
-                 256 => Interop.Crypto.EvpAes256Gcm(),
-                 _ => IntPtr.Zero
+                128 => Interop.Crypto.EvpAes128Gcm(),
+                192 => Interop.Crypto.EvpAes192Gcm(),
+                256 => Interop.Crypto.EvpAes256Gcm(),
+                _ => IntPtr.Zero
             };
         }
 

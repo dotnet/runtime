@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using Internal.TypeSystem;
 
@@ -9,6 +10,8 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    // There is small set of ObjectDataBuilder in at src/installer/managed/Microsoft.NET.HostModel/ObjectDataBuilder.cs
+    // only for ResourceData.WriteResources
     public struct ObjectDataBuilder
 #if !READYTORUN
         : Internal.Runtime.ITargetBinaryWriter
@@ -83,42 +86,27 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitShort(short emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
+            BinaryPrimitives.WriteInt16LittleEndian(_data.AppendSpan(sizeof(short)), emit);
         }
 
         public void EmitUShort(ushort emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
+            BinaryPrimitives.WriteUInt16LittleEndian(_data.AppendSpan(sizeof(ushort)), emit);
         }
 
         public void EmitInt(int emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
-            EmitByte((byte)((emit >> 16) & 0xFF));
-            EmitByte((byte)((emit >> 24) & 0xFF));
+            BinaryPrimitives.WriteInt32LittleEndian(_data.AppendSpan(sizeof(int)), emit);
         }
 
         public void EmitUInt(uint emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
-            EmitByte((byte)((emit >> 16) & 0xFF));
-            EmitByte((byte)((emit >> 24) & 0xFF));
+            BinaryPrimitives.WriteUInt32LittleEndian(_data.AppendSpan(sizeof(uint)), emit);
         }
 
         public void EmitLong(long emit)
         {
-            EmitByte((byte)(emit & 0xFF));
-            EmitByte((byte)((emit >> 8) & 0xFF));
-            EmitByte((byte)((emit >> 16) & 0xFF));
-            EmitByte((byte)((emit >> 24) & 0xFF));
-            EmitByte((byte)((emit >> 32) & 0xFF));
-            EmitByte((byte)((emit >> 40) & 0xFF));
-            EmitByte((byte)((emit >> 48) & 0xFF));
-            EmitByte((byte)((emit >> 56) & 0xFF));
+            BinaryPrimitives.WriteInt64LittleEndian(_data.AppendSpan(sizeof(long)), emit);
         }
 
         public void EmitNaturalInt(int emit)
@@ -243,8 +231,7 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitShort(Reservation reservation, short emit)
         {
             int offset = ReturnReservationTicket(reservation);
-            _data[offset] = (byte)(emit & 0xFF);
-            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+            BinaryPrimitives.WriteInt16LittleEndian(_data.AsSpan(offset), emit);
         }
 
         public Reservation ReserveInt()
@@ -255,19 +242,13 @@ namespace ILCompiler.DependencyAnalysis
         public void EmitInt(Reservation reservation, int emit)
         {
             int offset = ReturnReservationTicket(reservation);
-            _data[offset] = (byte)(emit & 0xFF);
-            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
-            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
-            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+            BinaryPrimitives.WriteInt32LittleEndian(_data.AsSpan(offset), emit);
         }
 
         public void EmitUInt(Reservation reservation, uint emit)
         {
             int offset = ReturnReservationTicket(reservation);
-            _data[offset] = (byte)(emit & 0xFF);
-            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
-            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
-            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+            BinaryPrimitives.WriteUInt32LittleEndian(_data.AsSpan(offset), emit);
         }
 
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
@@ -291,6 +272,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                 case RelocType.IMAGE_REL_BASED_HIGHLOW:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_TLSGD:
+                case RelocType.IMAGE_REL_TPOFF:
                 case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
@@ -302,11 +285,22 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                 case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
+                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
+
+                case RelocType.IMAGE_REL_BASED_RISCV64_PC:
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.

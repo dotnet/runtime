@@ -50,15 +50,8 @@ namespace System.Runtime.InteropServices.Tests
         {
             if (type.HasElementType)
             {
-                if (PlatformDetection.IsNetCore)
-                {
-                    Assert.Equal(Guid.Empty, type.GUID);
-                    Assert.Equal(type.GUID, Marshal.GenerateGuidForType(type));
-                }
-                else
-                {
-                    Assert.NotEqual(type.GUID, Marshal.GenerateGuidForType(type));
-                }
+                Assert.Equal(Guid.Empty, type.GUID);
+                Assert.Equal(type.GUID, Marshal.GenerateGuidForType(type));
             }
             else
             {

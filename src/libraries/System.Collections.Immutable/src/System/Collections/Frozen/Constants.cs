@@ -53,8 +53,6 @@ namespace System.Collections.Frozen
             typeof(T) == typeof(uint) ||
             typeof(T) == typeof(long) ||
             typeof(T) == typeof(ulong) ||
-            typeof(T) == typeof(nint) ||
-            typeof(T) == typeof(nuint) ||
             typeof(T) == typeof(decimal) ||
             typeof(T) == typeof(float) ||
             typeof(T) == typeof(double) ||
@@ -63,20 +61,24 @@ namespace System.Collections.Frozen
             typeof(T) == typeof(DateTime) ||
             typeof(T) == typeof(DateTimeOffset) ||
             typeof(T) == typeof(Guid) ||
-#if NETCOREAPP3_0_OR_GREATER
+#if NET
             typeof(T) == typeof(Rune) ||
-#endif
-#if NET5_0_OR_GREATER
             typeof(T) == typeof(Half) ||
-#endif
-#if NET6_0_OR_GREATER
+            typeof(T) == typeof(nint) ||
+            typeof(T) == typeof(nuint) ||
             typeof(T) == typeof(DateOnly) ||
             typeof(T) == typeof(TimeOnly) ||
-#endif
-#if NET7_0_OR_GREATER
             typeof(T) == typeof(Int128) ||
             typeof(T) == typeof(UInt128) ||
 #endif
             typeof(T).IsEnum;
+
+        // for these types GetHashCode returns their value casted to int, so when we receive a Dictionary/HashSet where there are key
+        // we know that all hash codes are unique and we can avoid some work later
+        internal static bool KeysAreHashCodes<T>()
+            => typeof(T) == typeof(int) || typeof(T) == typeof(uint)
+            || typeof(T) == typeof(short) || typeof(T) == typeof(ushort)
+            || typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)
+            || ((typeof(T) == typeof(nint) || typeof(T) == typeof(nuint)) && IntPtr.Size == 4);
     }
 }

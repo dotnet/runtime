@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Sockets;
-using System.Net.Test.Common;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -208,6 +206,16 @@ namespace System.Net.NetworkInformation.Tests
             Assert.NotEmpty(props.GetUnicastAddresses());
             Assert.NotEmpty(await props.GetUnicastAddressesAsync());
             Assert.NotEmpty(await Task.Factory.FromAsync(props.BeginGetUnicastAddresses, props.EndGetUnicastAddresses, null));
+        }
+
+        [Fact]
+        public void IPGlobalProperties_DomainName_ReturnsEmptyStringWhenNotSet()
+        {
+            IPGlobalProperties gp = IPGlobalProperties.GetIPGlobalProperties();
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/109280")]
+            string expectedDomainName = PlatformDetection.IsAndroid ? "localdomain" : string.Empty;
+            Assert.Equal(expectedDomainName, gp.DomainName);
         }
     }
 }

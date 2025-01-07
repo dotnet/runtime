@@ -7,9 +7,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace System.Linq.Parallel
 {
@@ -17,7 +17,9 @@ namespace System.Linq.Parallel
     /// This is a bounded channel meant for single-producer/single-consumer scenarios.
     /// </summary>
     /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
+#if !FEATURE_WASM_MANAGED_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
     internal sealed class AsynchronousChannel<T> : IDisposable
     {
         // The producer will be blocked once the channel reaches a capacity, and unblocked
@@ -84,10 +86,10 @@ namespace System.Linq.Parallel
         private ManualResetEventSlim? _producerEvent;
         private IntValueEvent? _consumerEvent;
 
-        // These two-valued ints track whether a producer or consumer _might_ be waiting. They are marked
+        // These bools track whether a producer or consumer _might_ be waiting. They are marked
         // volatile because they are used in synchronization critical regions of code (see usage below).
-        private volatile int _producerIsWaiting;
-        private volatile int _consumerIsWaiting;
+        private volatile bool _producerIsWaiting;
+        private volatile bool _consumerIsWaiting;
         private readonly CancellationToken _cancellationToken;
 
         //-----------------------------------------------------------------------------------
@@ -307,11 +309,11 @@ namespace System.Linq.Parallel
             // our producer index doesn't pass the read of the consumer waiting flags; the CLR memory
             // model unfortunately permits this reordering. That is handled by using a CAS above.)
 
-            if (_consumerIsWaiting == 1 && !IsChunkBufferEmpty)
+            if (_consumerIsWaiting && !IsChunkBufferEmpty)
             {
                 TraceHelpers.TraceInfo("AsynchronousChannel::EnqueueChunk - producer waking consumer");
                 Debug.Assert(_consumerEvent != null);
-                _consumerIsWaiting = 0;
+                _consumerIsWaiting = false;
                 _consumerEvent.Set(_index);
             }
         }
@@ -339,7 +341,7 @@ namespace System.Linq.Parallel
                 // very quickly, suddenly seeing an empty queue. This would lead to deadlock
                 // if we aren't careful. Therefore we check the empty/full state AGAIN after
                 // setting our flag to see if a real wait is warranted.
-                Interlocked.Exchange(ref _producerIsWaiting, 1);
+                Interlocked.Exchange(ref _producerIsWaiting, true);
 
                 // (We have to prevent the reads that go into determining whether the buffer
                 // is full from moving before the write to the producer-wait flag. Hence the CAS.)
@@ -357,7 +359,7 @@ namespace System.Linq.Parallel
                 else
                 {
                     // Reset the flags, we don't actually have to wait after all.
-                    _producerIsWaiting = 0;
+                    _producerIsWaiting = false;
                 }
             }
             while (IsFull);
@@ -556,7 +558,7 @@ namespace System.Linq.Parallel
                 // very quickly, suddenly seeing a full queue. This would lead to deadlock
                 // if we aren't careful. Therefore we check the empty/full state AGAIN after
                 // setting our flag to see if a real wait is warranted.
-                Interlocked.Exchange(ref _consumerIsWaiting, 1);
+                Interlocked.Exchange(ref _consumerIsWaiting, true);
 
                 // (We have to prevent the reads that go into determining whether the buffer
                 // is full from moving before the write to the producer-wait flag. Hence the CAS.)
@@ -578,7 +580,7 @@ namespace System.Linq.Parallel
                 {
                     // Reset the wait flags, we don't need to wait after all. We loop back around
                     // and recheck that the queue isn't empty, done, etc.
-                    _consumerIsWaiting = 0;
+                    _consumerIsWaiting = false;
                 }
             }
 
@@ -622,11 +624,11 @@ namespace System.Linq.Parallel
             // that the write to _consumerBufferIndex doesn't pass the read of the wait-flags; the CLR memory
             // model sadly permits this reordering. Hence the CAS above.)
 
-            if (_producerIsWaiting == 1 && !IsFull)
+            if (_producerIsWaiting && !IsFull)
             {
                 TraceHelpers.TraceInfo("BoundedSingleLockFreeChannel::DequeueChunk - consumer waking producer");
                 Debug.Assert(_producerEvent != null);
-                _producerIsWaiting = 0;
+                _producerIsWaiting = false;
                 _producerEvent.Set();
             }
 
@@ -641,7 +643,7 @@ namespace System.Linq.Parallel
         internal void DoneWithDequeueWait()
         {
             // On our way out, be sure to reset the flags.
-            _consumerIsWaiting = 0;
+            _consumerIsWaiting = false;
         }
 
         //-----------------------------------------------------------------------------------

@@ -42,7 +42,7 @@ namespace System.Net
         private readonly HttpListener _listener;
         private readonly IPEndPoint _endpoint;
         private readonly Socket _socket;
-        private readonly Dictionary<HttpConnection, HttpConnection> _unregisteredConnections;
+        private readonly HashSet<HttpConnection> _unregisteredConnections;
         private Dictionary<ListenerPrefix, HttpListener> _prefixes;
         private List<ListenerPrefix>? _unhandledPrefixes; // host = '*'
         private List<ListenerPrefix>? _allPrefixes;       // host = '+'
@@ -70,7 +70,7 @@ namespace System.Net
             Accept(args);
 
             _prefixes = new Dictionary<ListenerPrefix, HttpListener>();
-            _unregisteredConnections = new Dictionary<HttpConnection, HttpConnection>();
+            _unregisteredConnections = new HashSet<HttpConnection>();
         }
 
         internal HttpListener Listener
@@ -131,7 +131,7 @@ namespace System.Net
 
             lock (_unregisteredConnections)
             {
-                _unregisteredConnections[conn] = conn;
+                _unregisteredConnections.Add(conn);
             }
             conn.BeginReadRequest();
         }
@@ -309,7 +309,7 @@ namespace System.Net
             lock (_unregisteredConnections)
             {
                 // Clone the list because RemoveConnection can be called from Close
-                var connections = new List<HttpConnection>(_unregisteredConnections.Keys);
+                var connections = new List<HttpConnection>(_unregisteredConnections);
 
                 foreach (HttpConnection c in connections)
                     c.Close(true);

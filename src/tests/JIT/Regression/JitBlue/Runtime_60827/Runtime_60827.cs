@@ -24,10 +24,9 @@ public struct S0
 public class Runtime_60827
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new S0().M21();
 
-        return 100;
     }
 }

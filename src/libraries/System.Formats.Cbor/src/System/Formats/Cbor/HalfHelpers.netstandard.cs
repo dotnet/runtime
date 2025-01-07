@@ -28,7 +28,7 @@ namespace System.Formats.Cbor
         public static double HalfToDouble(ushort value)
             => (double)HalfToFloat(value);
 
-        public static unsafe float HalfToFloat(ushort value)
+        public static float HalfToFloat(ushort value)
         {
             const ushort ExponentMask = 0x7C00;
             const ushort ExponentShift = 10;
@@ -65,6 +65,11 @@ namespace System.Formats.Cbor
                 => CborHelpers.Int32BitsToSingle((int)(((sign ? 1U : 0U) << FloatSignShift) + ((uint)exp << FloatExponentShift) + sig));
         }
 
+        public static bool HalfIsNaN(ushort value)
+        {
+            return (value & ~((ushort)1 << HalfSignShift)) > HalfPositiveInfinityBits;
+        }
+
         private static (int Exp, uint Sig) NormSubnormalF16Sig(uint sig)
         {
             int shiftDist = LeadingZeroCount(sig) - 16 - 5;
@@ -82,13 +87,13 @@ namespace System.Formats.Cbor
             return 31 ^ Log2SoftwareFallback(value);
         }
 
-        private static ReadOnlySpan<byte> Log2DeBruijn => new byte[32]
-        {
-                    00, 09, 01, 10, 13, 21, 02, 29,
-                    11, 14, 16, 18, 22, 25, 03, 30,
-                    08, 12, 20, 28, 15, 17, 24, 07,
-                    19, 27, 23, 06, 26, 05, 04, 31
-        };
+        private static ReadOnlySpan<byte> Log2DeBruijn => // 32
+        [
+            00, 09, 01, 10, 13, 21, 02, 29,
+            11, 14, 16, 18, 22, 25, 03, 30,
+            08, 12, 20, 28, 15, 17, 24, 07,
+            19, 27, 23, 06, 26, 05, 04, 31
+        ];
 
         private static int Log2SoftwareFallback(uint value)
         {
@@ -102,12 +107,9 @@ namespace System.Formats.Cbor
             value |= value >> 08;
             value |= value >> 16;
 
-            // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
-            return Unsafe.AddByteOffset(
-                // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
-                ref MemoryMarshal.GetReference(Log2DeBruijn),
-                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
-                (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
+            // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_1100_0100_1010_1100_1101_1101u
+            // uint.MaxValue >> 27 is always in range [0 - 31] so no bounds check
+            return Log2DeBruijn[(int)((value * 0x07C4ACDDu) >> 27)];
         }
 
         private static float CreateSingleNaN(bool sign, ulong significand)

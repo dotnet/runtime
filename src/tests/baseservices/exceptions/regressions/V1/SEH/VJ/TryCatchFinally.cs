@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 
 public class TryCatchFinally{
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 			int i = 1;
 			String m_str = "Failed";
 			String str = "Done";

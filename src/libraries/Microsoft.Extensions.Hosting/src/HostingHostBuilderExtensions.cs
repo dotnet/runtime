@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.EventLog;
@@ -24,7 +25,7 @@ namespace Microsoft.Extensions.Hosting
     public static class HostingHostBuilderExtensions
     {
         /// <summary>
-        /// Specify the environment to be used by the host. To avoid the environment being overwritten by a default
+        /// Specifies the environment to be used by the host. To avoid the environment being overwritten by a default
         /// value, ensure this is called after defaults are configured.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
@@ -44,7 +45,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Specify the content root directory to be used by the host. To avoid the content root directory being
+        /// Specifies the content root directory to be used by the host. To avoid the content root directory being
         /// overwritten by a default value, ensure this is called after defaults are configured.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
@@ -64,7 +65,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Specify the <see cref="IServiceProvider"/> to be the default one.
+        /// Specifies the <see cref="IServiceProvider"/> to be the default one.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
@@ -73,7 +74,7 @@ namespace Microsoft.Extensions.Hosting
             => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
 
         /// <summary>
-        /// Specify the <see cref="IServiceProvider"/> to be the default one.
+        /// Specifies the <see cref="IServiceProvider"/> to be the default one.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to configure.</param>
         /// <param name="configure">The delegate that configures the <see cref="IServiceProvider"/>.</param>
@@ -89,7 +90,7 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This may be called multiple times.
+        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This can be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureLogging">The delegate that configures the <see cref="ILoggingBuilder"/>.</param>
@@ -100,14 +101,14 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
-        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This may be called multiple times.
+        /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This can be called multiple times.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
         /// <param name="configureLogging">The delegate that configures the <see cref="ILoggingBuilder"/>.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         public static IHostBuilder ConfigureLogging(this IHostBuilder hostBuilder, Action<ILoggingBuilder> configureLogging)
         {
-            return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(builder => configureLogging(builder)));
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddLogging(configureLogging));
         }
 
         /// <summary>
@@ -274,7 +275,7 @@ namespace Microsoft.Extensions.Hosting
             services.AddLogging(logging =>
             {
                 bool isWindows =
-#if NETCOREAPP
+#if NET
                     OperatingSystem.IsWindows();
 #elif NETFRAMEWORK
                     Environment.OSVersion.Platform == PlatformID.Win32NT;
@@ -291,8 +292,8 @@ namespace Microsoft.Extensions.Hosting
                 }
 
                 logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-#if NETCOREAPP
-                if (!OperatingSystem.IsBrowser())
+#if NET
+                if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
 #endif
                 {
                     logging.AddConsole();
@@ -313,6 +314,11 @@ namespace Microsoft.Extensions.Hosting
                         ActivityTrackingOptions.TraceId |
                         ActivityTrackingOptions.ParentId;
                 });
+            });
+
+            services.AddMetrics(metrics =>
+            {
+                metrics.AddConfiguration(hostingContext.Configuration.GetSection("Metrics"));
             });
         }
 
@@ -390,6 +396,28 @@ namespace Microsoft.Extensions.Hosting
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This can be called multiple times.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<IMetricsBuilder> configureMetrics)
+        {
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(configureMetrics));
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This can be called multiple times.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<HostBuilderContext, IMetricsBuilder> configureMetrics)
+        {
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(context, builder)));
         }
     }
 }

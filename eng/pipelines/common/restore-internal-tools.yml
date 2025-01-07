@@ -1,5 +1,5 @@
 steps:
-  - task: NuGetAuthenticate@0
+  - task: NuGetAuthenticate@1
     inputs:
       nuGetServiceConnections: 'devdiv/dotnet-core-internal-tooling'
       forceReinstallCredentialProvider: true

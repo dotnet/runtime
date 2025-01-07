@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //Covers various negative binding cases for delegates and generics...
 using System;
+using Xunit;
 
 
 //Define some classes and method for use in our scenarios...
@@ -18,10 +19,11 @@ delegate void Closed();
 delegate void Open(B<int> b);
 delegate void GClosed<T>();
 
-class Test_negativegenerics{
+public class Test_negativegenerics{
 	public static int retVal=100;
 
-	public static int Main(){
+	[Fact]
+	public static int TestEntryPoint(){
 		//Try to create an open-instance delegate to a virtual generic method (@TODO - Need early bound case here too)
 		//Try to create a generic delegate of a non-instantiated type
 		//Try to create a delegate over a non-instantiated target type

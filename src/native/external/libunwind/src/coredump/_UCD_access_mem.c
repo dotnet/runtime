@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include "ucd_file_table.h"
 
 int
-_UCD_access_mem (unw_addr_space_t  as,
+_UCD_access_mem (unw_addr_space_t  as UNUSED,
                  unw_word_t        addr,
                  unw_word_t       *val,
                  int               write,

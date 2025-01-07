@@ -392,42 +392,27 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
+            [UnsupportedOSPlatform("android")]
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
-            set
-            {
-                if (Console.IsOutputRedirected)
-                {
-                    throw new IOException(SR.InvalidOperation_SetWindowSize);
-                }
-
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
-
-                ConsolePal.WindowWidth = value;
-            }
+            [SupportedOSPlatform("windows")]
+            set { ConsolePal.WindowWidth = value; }
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
+            [UnsupportedOSPlatform("android")]
+            [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
+            [SupportedOSPlatform("windows")]
             set
             {
-                if (Console.IsOutputRedirected)
-                {
-                    throw new IOException(SR.InvalidOperation_SetWindowSize);
-                }
-
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
-
                 ConsolePal.WindowHeight = value;
             }
         }
@@ -438,20 +423,9 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("windows")]
         public static void SetWindowSize(int width, int height)
         {
-            if (Console.IsOutputRedirected)
-            {
-                throw new IOException(SR.InvalidOperation_SetWindowSize);
-            }
-
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
-
             ConsolePal.SetWindowSize(width, height);
         }
 
@@ -528,7 +502,8 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                ConsolePal.Title = value;
             }
         }
 
@@ -839,6 +814,12 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine(ReadOnlySpan<char> value)
+        {
+            Out.WriteLine(value);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.WriteLine(format, arg0);
@@ -863,6 +844,17 @@ namespace System
                 Out.WriteLine(format, null, null); // faster than Out.WriteLine(format, (Object)arg);
             else
                 Out.WriteLine(format, arg);
+        }
+
+        /// <summary>
+        /// Writes the text representation of the specified span of objects, followed by the current line terminator, to the standard output stream using the specified format information.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">A span of objects to write using format.</param>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            Out.WriteLine(format, arg);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -890,6 +882,17 @@ namespace System
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
             else
                 Out.Write(format, arg);
+        }
+
+        /// <summary>
+        /// Writes the text representation of the specified span of objects to the standard output stream using the specified format information.
+        /// </summary>
+        /// <param name="format">A composite format string.</param>
+        /// <param name="arg">A span of objects to write using format.</param>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
+        {
+            Out.Write(format, arg);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -968,6 +971,12 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write(string? value)
+        {
+            Out.Write(value);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        public static void Write(ReadOnlySpan<char> value)
         {
             Out.Write(value);
         }

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -185,6 +186,7 @@ namespace System.IO.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96728", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         private void FileMove_FromWatchedToUnwatched(WatcherChangeTypes eventType)
         {
             string dir_watched = CreateTestDirectory(TestDirectory, "dir_watched");

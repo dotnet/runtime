@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if NETFRAMEWORK || NETCOREAPP
+#if NETFRAMEWORK || NET
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -11,20 +11,24 @@ using System.Reflection.Emit;
 namespace System.Text.Json.Serialization.Metadata
 {
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        public override Func<object>? CreateConstructor(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+        public ReflectionEmitMemberAccessor()
+        {
+        }
+
+        public override Func<object>? CreateParameterlessConstructor(Type type, ConstructorInfo? constructorInfo)
         {
             Debug.Assert(type != null);
-            ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+            Debug.Assert(constructorInfo is null || constructorInfo.GetParameters().Length == 0);
 
             if (type.IsAbstract)
             {
                 return null;
             }
 
-            if (realMethod == null && !type.IsValueType)
+            if (constructorInfo is null && !type.IsValueType)
             {
                 return null;
             }
@@ -38,8 +42,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             ILGenerator generator = dynamicMethod.GetILGenerator();
 
-            if (realMethod == null)
+            if (constructorInfo is null)
             {
+                Debug.Assert(type.IsValueType);
+
                 LocalBuilder local = generator.DeclareLocal(type);
 
                 generator.Emit(OpCodes.Ldloca_S, local);
@@ -49,7 +55,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                generator.Emit(OpCodes.Newobj, realMethod);
+                generator.Emit(OpCodes.Newobj, constructorInfo);
                 if (type.IsValueType)
                 {
                     // Since C# 10 it's now possible to have parameterless constructors in structs
@@ -112,7 +118,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Debug.Assert(type != null);
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(constructor.IsPublic && !constructor.IsStatic);
+            Debug.Assert(!constructor.IsStatic);
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
@@ -173,13 +179,10 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableEnumerableCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableEnumerableCreateRangeMethod(elementType);
@@ -200,13 +203,10 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
-        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
             CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
                 CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
 
-        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type keyType, Type valueType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(keyType, valueType);

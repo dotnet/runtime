@@ -12,7 +12,7 @@
 
 .assembly DefaultImplementationsOfInterfaces{}
 
-.class interface private abstract auto ansi DefaultInterface
+.class interface public abstract auto ansi DefaultInterface
 {
   .method public hidebysig newslot virtual
           instance void  Method() cil managed
@@ -32,7 +32,7 @@
     ret
 }
 
-.method private hidebysig static bool  SupportsDefaultInterfaces() cil managed
+.method public hidebysig static bool  SupportsDefaultInterfaces() cil managed
 {
     .maxstack  1
     .try
@@ -56,23 +56,27 @@
     ret
   }
 
-.method private hidebysig static int32
-        Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit DefaultImplementationsOfInterfaces
+    extends [System.Runtime]System.Object
 {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
-    .entrypoint
-    .maxstack  2
-    ldstr      "DefaultImplementationsOfInterfaces"
-    call       bool [System.Runtime]System.Runtime.CompilerServices.RuntimeFeature::IsSupported(string)
-    call       bool SupportsDefaultInterfaces()
-    beq        Good
+  .method public hidebysig static int32
+          Main() cil managed
+  {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
+      .entrypoint
+      .maxstack  2
+      ldstr      "DefaultImplementationsOfInterfaces"
+      call       bool [System.Runtime]System.Runtime.CompilerServices.RuntimeFeature::IsSupported(string)
+      call       bool SupportsDefaultInterfaces()
+      beq        Good
 
-    ldc.i4.m1
-    ret
+      ldc.i4.m1
+      ret
 
-  Good:
-    ldc.i4     100
-    ret
+    Good:
+      ldc.i4     100
+      ret
+  }
 }

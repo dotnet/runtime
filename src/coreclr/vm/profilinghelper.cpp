@@ -53,26 +53,28 @@
 // following format:
 //    {
 //        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAppDomainLoads());
-//        g_profControlBlock.pProfInterface->AppDomainCreationStarted(MyAppDomainID);
+//        // call the ProfControlBlock callback wrapper
+//        (&g_profControlBlock)->AppDomainCreationStarted(MyAppDomainID);
 //        END_PROFILER_CALLBACK();
 //    }
-// The BEGIN / END macros do the following:
-// * Evaluate the expression argument (e.g., CORProfilerTrackAppDomainLoads()). This is a
+// The BEGIN / END macros evaluates the expression argument (CORProfiler*). This is a
 //     "dirty read" as the profiler could be detached at any moment during or after that
 //     evaluation.
-// * If true, push a code:EvacuationCounterHolder on the stack, which increments the
-//     per-thread evacuation counter (not interlocked).
-// * Re-evaluate the expression argument. This time, it's a "clean read" (see below for
-//     why).
-// * If still true, execute the statements inside the BEGIN/END block. Inside that block,
-//     the profiler is guaranteed to remain loaded, because the evacuation counter
-//     remains nonzero (again, see below).
-// * Once the BEGIN/END block is exited, the evacuation counter is decremented, and the
-//     profiler is unpinned and allowed to detach.
+//
+// The ProfControlBlock callback wrappers call DoOneProfilerIteration, doing the following:
+// * Pushes a code:EvacuationCounterHolder on the stack for the ProfilerInfo, which
+//     increments the per-thread evacuation counter (not interlocked).
+// * Checks the profiler status (code:ProfilerStatus) to see if the profiler is active.
+// * Evaluates the ProfControlBlock condition func (e.g. IsProfilerTrackingAppDomainLoads).
+// * If true, invokes the callback func (e.g. AppDomainCreationStartedHelper) which in turn
+//     calls the EEToProfInterfaceImpl implementation where the profiler is guaranteed to
+//     remain loaded, because the evacuation counter remains nonzero (again, see below).
+// * Once the DoOneProfilerIteration block is exited, the evacuation counter is decremented
+//     and the profiler is unpinned and allowed to detach.
 //
 // READER / WRITER COORDINATION
 //
-// The above ensures that a reader never touches g_profControlBlock.pProfInterface and
+// The above ensures that a reader never touches EEToProfInterfaceImpl and
 // all it embodies (including the profiler DLL code and callback implementations) unless
 // the reader was able to increment its thread's evacuation counter AND re-verify that
 // the profiler's status is still active (the status check is included in the macro's
@@ -436,6 +438,20 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     // NULL out / initialize members of the global profapi structure
     g_profControlBlock.Init();
 
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics) == 0)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled via EnableDiagnostics config.\n"));
+
+        return S_OK;
+    }
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableDiagnostics_Profiler) == 0)
+    {
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling disabled via EnableDiagnostics_Profiler config.\n"));
+
+        return S_OK;
+    }
+
+
     AttemptLoadProfilerForStartup();
     AttemptLoadDelayedStartupProfilers();
     AttemptLoadProfilerList();
@@ -493,11 +509,10 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 //    corresponding CLSID structure.
 //
 // Arguments:
-//    * wszClsid - [in / out] CLSID string to convert. This may also be a progid. This
+//    * wszClsid - [in] CLSID string to convert. This may also be a progid. This
 //        ensures our behavior is backward-compatible with previous CLR versions. I don't
 //        know why previous versions allowed the user to set a progid in the environment,
-//        but well whatever. On [out], this string is normalized in-place (e.g.,
-//        double-quotes around progid are removed).
+//        but well whatever. For back-compatibility, we also strip all double-quotes from the passed in ProgId.
 //    * pClsid - [out] CLSID structure corresponding to wszClsid
 //
 // Return Value:
@@ -509,7 +524,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 
 // static
 HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
-    __inout_z LPWSTR wszClsid,
+    __in_z LPCWSTR wszClsid,
     CLSID * pClsid)
 {
     CONTRACTL
@@ -538,27 +553,15 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
     else
     {
 #ifndef TARGET_UNIX
-        WCHAR *szFrom, *szTo;
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26000) // "espX thinks there is an overflow here, but there isn't any"
-#endif
-        for (szFrom=szTo=wszClsid;  *szFrom;  )
+        SString progId{wszClsid};
+        for (auto it = progId.Begin(); it != progId.End(); ++it)
         {
-            if (*szFrom == W('"'))
+            while (it != progId.End() && *it == W('"'))
             {
-                ++szFrom;
-                continue;
+                progId.Delete(it, 1);
             }
-            *szTo++ = *szFrom++;
         }
-        *szTo = 0;
-        hr = CLSIDFromProgID(wszClsid, pClsid);
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
-
+        hr = CLSIDFromProgID(progId.GetUnicode(), pClsid);
 #else // !TARGET_UNIX
         // ProgID not supported on TARGET_UNIX
         hr = E_INVALIDARG;
@@ -759,7 +762,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    NewArrayHolder<WCHAR> wszProfilerList(NULL);
+    CLRConfigStringHolder wszProfilerList(NULL);
 
 #if defined(TARGET_ARM64)
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);
@@ -792,23 +795,26 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         return S_OK;
     }
 
-    WCHAR *pOuter = NULL;
-    WCHAR *pInner = NULL;
-    WCHAR *currentSection = NULL;
-    WCHAR *currentPath = NULL;
-    WCHAR *currentGuid = NULL;
+    SString profilerList{wszProfilerList};
 
     HRESULT storedHr = S_OK;
-    // Get each semicolon delimited config
-    currentSection = wcstok_s(wszProfilerList, W(";"), &pOuter);
-    for (;currentSection != NULL; currentSection = wcstok_s(NULL, W(";"), &pOuter))
+    for (SString::Iterator sectionStart = profilerList.Begin(), sectionEnd = profilerList.Begin();
+        profilerList.Find(sectionEnd, W(';'));
+        sectionStart = ++sectionEnd)
     {
-        // Parse this config "path={guid}"
-        currentPath = wcstok_s(currentSection, W("="), &pInner);
-        currentGuid = wcstok_s(NULL, W("="), &pInner);
+        SString::Iterator pathEnd = sectionStart;
+        if (!profilerList.Find(pathEnd, W('=')) || pathEnd > sectionEnd)
+        {
+            ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_PATH);
+            storedHr = E_FAIL;
+            continue;
+        }
+        SString::Iterator clsidStart = pathEnd + 1;
 
+        PathString path{profilerList, sectionStart, pathEnd};
+        StackSString clsidString{profilerList, clsidStart, sectionEnd};
         CLSID clsid;
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(currentGuid, &clsid);
+        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
         if (FAILED(hr))
         {
             // ProfilerCLSIDFromString already logged an event if there was a failure
@@ -822,7 +828,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             kStartupLoad,
             &clsid,
             (LPCSTR)clsidUtf8,
-            currentPath,
+            path.GetUnicode(),
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
         if (FAILED(hr))

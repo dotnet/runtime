@@ -19,13 +19,12 @@ public unsafe class Runtime_65942
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         double d = 0;
         Test1(&d, 0);
 
         float f = 0;
         Test2(&f, 0);
-        return 100;
     }
 }

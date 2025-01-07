@@ -131,8 +131,8 @@
   <data name="InvalidRegexArgumentsMessage" xml:space="preserve">
     <value>The specified regex is invalid. '{0}'</value>
   </data>
-  <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
-    <value>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</value>
+  <data name="RegexMemberMustHaveValidSignatureMessage" xml:space="preserve">
+    <value>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</value>
   </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
     <value>Regex generator limitation reached.</value>
@@ -269,10 +269,6 @@
   </data>
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
-  </data>
-  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
-    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
-    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
   <data name="UseRegexSourceGeneratorMessage" xml:space="preserve">
     <value>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</value>

@@ -40,7 +40,7 @@ public class Runtime_57061_3
     static S0[][][] s_3;
     static S0 s_4;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         C1 vr3 = default(C1);
         for (int vr4 = 0; vr4 < Bound(); vr4++)
@@ -73,8 +73,6 @@ public class Runtime_57061_3
                 }
             }
         }
-
-        return 100;
     }
 
     static uint M4(ref S0 arg2, byte arg3)

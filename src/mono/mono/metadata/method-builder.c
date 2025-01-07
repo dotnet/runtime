@@ -77,7 +77,7 @@ get_mb_cb (void)
 MonoMethodBuilder *
 mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType type)
 {
-	MonoMethodBuilder *mb = get_mb_cb ()->new_base (klass, type);
+	MonoMethodBuilder *mb = get_mb_cb ()->new_base (klass, type, FALSE);
 	mb->name = (char*)name;
 	mb->no_dup_name = TRUE;
 	return mb;
@@ -89,7 +89,15 @@ mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType typ
 MonoMethodBuilder *
 mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 {
-	MonoMethodBuilder *mb = get_mb_cb ()->new_base (klass, type);
+	MonoMethodBuilder *mb = get_mb_cb ()->new_base (klass, type, FALSE);
+	mb->name = g_strdup (name);
+	return mb;
+}
+
+MonoMethodBuilder *
+mono_mb_new_dynamic (MonoClass *klass, const char *name, MonoWrapperType type)
+{
+	MonoMethodBuilder *mb = get_mb_cb ()->new_base (klass, type, TRUE);
 	mb->name = g_strdup (name);
 	return mb;
 }

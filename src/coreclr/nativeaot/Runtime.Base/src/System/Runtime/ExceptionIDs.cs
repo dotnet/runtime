@@ -3,7 +3,12 @@
 
 namespace System.Runtime
 {
-    public enum ExceptionIDs
+#if NATIVEAOT
+    public
+#else
+    internal
+#endif
+    enum ExceptionIDs
     {
         OutOfMemory = 1,
         Arithmetic = 2,
@@ -17,5 +22,8 @@ namespace System.Runtime
         DataMisaligned = 10,
         EntrypointNotFound = 11,
         AmbiguousImplementation = 12,
+        IllegalInstruction = 13,
+        PrivilegedInstruction = 14,
+        InPageError = 15,
     }
 }

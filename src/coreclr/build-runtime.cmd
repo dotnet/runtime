@@ -65,12 +65,13 @@ set __UnprocessedBuildArgs=
 set __BuildNative=1
 set __RestoreOptData=1
 set __HostArch=
-set __HostArch2=
 set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
 set __OutputRid=
+set __ExplicitHostArch=
+set __SubDir=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -127,9 +128,10 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-hostarch"            (set __HostArch=%2&set __ExplicitHostArch=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-subdir"              (set __SubDir=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set __remainingArgs="!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
@@ -140,8 +142,9 @@ if /i "%1" == "-ninja"               (shift&goto Arg_Loop)
 if /i "%1" == "-msbuild"             (set __Ninja=0&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&shift&goto Arg_Loop)
-if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
+if /i "%1" == "-pgodatapath"         (set __PgoOptDataPath=%~2&set __PgoOptimize=1&shift&shift&goto Arg_Loop)
 if /i "%1" == "-component"           (set __RequestedBuildComponents=%__RequestedBuildComponents%-%2&set "__remainingArgs=!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
+if /i "%1" == "-fsanitize"           (set __CMakeArgs=%__CMakeArgs% "-DCLR_CMAKE_ENABLE_SANITIZERS=%2"&shift&shift&goto Arg_Loop)
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
@@ -170,9 +173,6 @@ if %__TotalSpecifiedTargetArch% GTR 1 (
     echo Error: more than one build architecture specified, but "all" not specified.
     goto Usage
 )
-
-set __ProcessorArch=%PROCESSOR_ARCHITEW6432%
-if "%__ProcessorArch%"=="" set __ProcessorArch=%PROCESSOR_ARCHITECTURE%
 
 if %__TargetArchX64%==1   set __TargetArch=x64
 if %__TargetArchX86%==1   set __TargetArch=x86
@@ -208,17 +208,28 @@ if NOT "%__BuildType%"=="Release" (
     set __PgoOptimize=0
 )
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
-set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOS%.%__TargetArch%.%__BuildType%"
+set __TargetOSDirName=%__TargetOS%
+if "%__TargetOS%"=="alpine" (
+    set __TargetOSDirName=linux_musl
+)
+
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
+set "__IntermediatesDir=%__RootBinDir%\obj\coreclr\%__TargetOSDirName%.%__TargetArch%.%__BuildType%"
 set "__LogsDir=%__RootBinDir%\log\!__BuildType!"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
 
+if "%__ExplicitHostArch%" == "1" (
+    set __BinDir=%__BinDir%\%__HostArch%
+    set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
+)
 
-if NOT "%__HostArch%" == "%__TargetArch%" set __BinDir=%__BinDir%\%__HostArch%
-if NOT "%__HostArch%" == "%__TargetArch%" set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
+if NOT "%__SubDir%"=="" (
+    set __BinDir=%__BinDir%\%__SubDir%
+    set __IntermediatesDir=%__IntermediatesDir%\%__SubDir%
+)
 
 REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -318,6 +329,9 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-crosscomponents-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! crosscomponents
     )
+    if not "!string:-debug-=!"=="!string!" (
+        set __CMakeTarget=!__CMakeTarget! debug
+    )
 )
 if "!__CMakeTarget!" == "" (
     set __CMakeTarget=install
@@ -344,17 +358,20 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Commencing build of native components for %__TargetOS%.%__TargetArch%.%__BuildType%
 
     REM Set the environment for the native build
-    set __VCTargetArch=amd64
-    if /i "%__HostArch%" == "x86" ( set __VCTargetArch=x86 )
-    if /i "%__HostArch%" == "arm" (
-        set __VCTargetArch=x86_arm
-    )
-    if /i "%__HostArch%" == "arm64" (
-        set __VCTargetArch=x86_arm64
+    if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
+        set __VCBuildArch=arm64
+        if /i "%__HostArch%" == "x64" ( set __VCBuildArch=arm64_amd64 )
+        if /i "%__HostArch%" == "x86" ( set __VCBuildArch=arm64_x86 )
+    ) else (
+        set __VCBuildArch=amd64
+        if /i "%__HostArch%" == "x86" ( set __VCBuildArch=amd64_x86 )
+        if /i "%__HostArch%" == "arm64" ( set __VCBuildArch=amd64_arm64 )
     )
 
-    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
-    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCTargetArch!
+    if NOT DEFINED SkipVCEnvInit (
+        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+    )
     @if defined _echo @echo on
 
     if defined __SkipConfigure goto SkipConfigure
@@ -555,6 +572,7 @@ echo -cmakeargs: user-settable additional arguments passed to CMake.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
 echo -skipnative: skip building native components ^(default: native components are built^).
+echo -fsanitize ^<name^>: Enable the specified sanitizers. This script does not handle converting 'true' to the default sanitizers.
 echo.
 echo Examples:
 echo     build-runtime

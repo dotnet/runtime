@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.FileProviders
             IChangeToken token = provider.Watch(useWildcard ? "*" : linkName);
 
             var tcs = new TaskCompletionSource();
-            token.RegisterChangeCallback(_ => { Assert.True(false, "Change event was raised when it was not expected."); }, null);
+            token.RegisterChangeCallback(_ => { Assert.Fail("Change event was raised when it was not expected."); }, null);
 
             var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             cts.Token.Register(() => tcs.TrySetCanceled());

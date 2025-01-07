@@ -19,7 +19,8 @@ using System.Xml.Linq;
 using System.Xml.Schema;
 using Xunit;
 using System.Runtime.Serialization.Tests;
-
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 public static partial class DataContractSerializerTests
 {
@@ -1116,6 +1117,88 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void DCS_TypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: false, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [Fact]
+#if XMLSERIALIZERGENERATORTESTS
+    // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
+    // loaded in the default ALC, which causes problems for this test.
+    [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
+#endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
+    public static void DCS_CollectionTypeInCollectibleALC()
+    {
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", makeCollection: true, out var weakRef);
+
+        for (int i = 0; weakRef.IsAlive && i < 10; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        Assert.True(!weakRef.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ExecuteAndUnload(string assemblyfile, string typename, bool makeCollection, out WeakReference wref)
+    {
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("DataContractSerializerTests", true, fullPath);
+        object obj;
+        wref = new WeakReference(alc);
+
+        // Load assembly by path. By name, and it gets loaded in the default ALC.
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        // Ensure the type loaded in the intended non-Default ALC
+        var type = asm.GetType(typename);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
+
+        if (makeCollection)
+        {
+            int arrayLength = 3;
+            var array = Array.CreateInstance(type, arrayLength);
+            for (int i = 0; i < arrayLength; i++)
+            {
+                array.SetValue(Activator.CreateInstance(type), i);
+            }
+            type = array.GetType();
+            obj = array;
+        }
+        else
+        {
+            obj = Activator.CreateInstance(type);
+        }
+
+        // Round-Trip the instance
+        var dcs = new DataContractSerializer(type);
+        var rtobj = DataContractSerializerHelper.SerializeAndDeserialize<object>(obj, null, null, () => dcs, true, false);
+        Assert.NotNull(rtobj);
+        if (makeCollection)
+            Assert.Equal(obj, rtobj);
+        else
+            Assert.True(rtobj.Equals(obj));
+
+        alc.Unload();
+    }
+
+    [Fact]
     public static void DCS_JaggedArrayAsRoot()
     {
         int[][] jaggedIntegerArray = new int[][] { new int[] { 1, 3, 5, 7, 9 }, new int[] { 0, 2, 4, 6 }, new int[] { 11, 22 } };
@@ -1128,9 +1211,9 @@ public static partial class DataContractSerializerTests
         string[][] jaggedStringArray = new string[][] { new string[] { "1", "3", "5", "7", "9" }, new string[] { "0", "2", "4", "6" }, new string[] { "11", "22" } };
         var actualJaggedStringArray = DataContractSerializerHelper.SerializeAndDeserialize<string[][]>(jaggedStringArray, @"<ArrayOfArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ArrayOfstring><string>1</string><string>3</string><string>5</string><string>7</string><string>9</string></ArrayOfstring><ArrayOfstring><string>0</string><string>2</string><string>4</string><string>6</string></ArrayOfstring><ArrayOfstring><string>11</string><string>22</string></ArrayOfstring></ArrayOfArrayOfstring>");
 
-        Assert.Equal<string>(jaggedStringArray[0], actualJaggedStringArray[0]);
-        Assert.Equal<string>(jaggedStringArray[1], actualJaggedStringArray[1]);
-        Assert.Equal<string>(jaggedStringArray[2], actualJaggedStringArray[2]);
+        Assert.Equal(jaggedStringArray[0], actualJaggedStringArray[0]);
+        Assert.Equal(jaggedStringArray[1], actualJaggedStringArray[1]);
+        Assert.Equal(jaggedStringArray[2], actualJaggedStringArray[2]);
 
         object[] objectArray = new object[] { 1, 1.0F, 1.0, "string", Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"), new DateTime(2013, 1, 2) };
         var actualObjectArray = DataContractSerializerHelper.SerializeAndDeserialize<object[]>(objectArray, @"<ArrayOfanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><anyType i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">1</anyType><anyType i:type=""a:float"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">1</anyType><anyType i:type=""a:double"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">1</anyType><anyType i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">string</anyType><anyType i:type=""a:guid"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/"">2054fd3e-e118-476a-9962-1a882be51860</anyType><anyType i:type=""a:dateTime"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">2013-01-02T00:00:00</anyType></ArrayOfanyType>");
@@ -1875,18 +1958,18 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_ClassImplementingIXmlSerialiable()
+    public static void DCS_ClassImplementingIXmlSerializable()
     {
-        ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value, @"<ClassImplementingIXmlSerialiable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
+        ClassImplementingIXmlSerializable value = new ClassImplementingIXmlSerializable() { StringValue = "Foo" };
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerializable>(value, @"<ClassImplementingIXmlSerializable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
     [Fact]
-    public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerialiable()
+    public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerializable()
     {
-        TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
+        TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>() { StringValue = "Foo" };
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
@@ -2090,7 +2173,7 @@ public static partial class DataContractSerializerTests
                 messageBuilder.AppendLine($"Actual exception type: {actualExceptionType.FullName}, {actualExceptionType.GetTypeInfo().Assembly.FullName}");
                 messageBuilder.AppendLine($"The type of {nameof(expectedExceptionType)} was: {expectedExceptionType.GetType()}");
                 messageBuilder.AppendLine($"The type of {nameof(actualExceptionType)} was: {actualExceptionType.GetType()}");
-                Assert.True(false, messageBuilder.ToString());
+                Assert.Fail(messageBuilder.ToString());
             }
 
             exceptionThrown = true;
@@ -3458,8 +3541,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(genericBase2, $@"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.GenericBase2`2[[SerializationTestTypes.KT1Base, {assemblyName}],[SerializationTestTypes.NonDCPerson, {assemblyName}]]***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.GenericBase2`2[[SerializationTestTypes.KT1Base, {assemblyName}],[SerializationTestTypes.NonDCPerson, {assemblyName}]]***""><genericData1 z:Id=""i2""><BData z:Id=""i3"" i:type=""b:SerializationTestTypes.KT1Derived***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.KT1Derived***""><BData i:nil=""true""/><DData>TestData</DData></BData></genericData1><genericData2><Age>20</Age><Name>jeff</Name></genericData2></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
     }
 
-
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 
@@ -4110,6 +4192,7 @@ public static partial class DataContractSerializerTests
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
     public static void DCS_MemoryStream_Serialize_UsesBuiltInAdapter()
     {
         ValidateObject(
@@ -4170,6 +4253,7 @@ public static partial class DataContractSerializerTests
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/73961", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
     public static void DCS_MemoryStream_Deserialize_CompatibleWithFullFramework()
     {
         // The payloads in this test were generated by a Full Framework application.
@@ -4392,9 +4476,11 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/1417", TestPlatforms.OSX)]
+    // Random OSR might cause a stack overflow on Windows x64
+    private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsRandomOSR))]
     public static void DCS_DeeplyLinkedData()
     {
         TypeWithLinkedProperty head = new TypeWithLinkedProperty();

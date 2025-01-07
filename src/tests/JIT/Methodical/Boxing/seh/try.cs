@@ -51,7 +51,8 @@ namespace SinCalc_try_seh_cs
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
         {
             object i;
             object Angle;
@@ -93,7 +94,6 @@ namespace SinCalc_try_seh_cs
                 }
             }
             Console.WriteLine("**** PASSED ****");
-            return 100;
         }
     }
 }

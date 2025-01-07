@@ -11,7 +11,7 @@ internal static partial class Interop
         //  Idn APIs
         //
 
-        [LibraryImport("Normaliz.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int IdnToAscii(
                                         uint dwFlags,
                                         char* lpUnicodeCharStr,
@@ -19,7 +19,7 @@ internal static partial class Interop
                                         char* lpASCIICharStr,
                                         int cchASCIIChar);
 
-        [LibraryImport("Normaliz.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport("Normaliz.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int IdnToUnicode(
                                         uint dwFlags,
                                         char* lpASCIICharStr,

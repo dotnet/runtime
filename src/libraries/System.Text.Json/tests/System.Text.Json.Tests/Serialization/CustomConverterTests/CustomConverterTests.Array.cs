@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -103,6 +106,76 @@ namespace System.Text.Json.Serialization.Tests
 
             string jsonSerialized = JsonSerializer.Serialize(obj, options);
             Assert.Equal(json, jsonSerialized);
+        }
+
+        [Theory]
+        [InlineData(typeof(ProxyClassConverter))]
+        [InlineData(typeof(ProxyClassWithConstructorConverter))]
+        public static async Task ClassWithProxyConverter_WorksWithAsyncDeserialization(Type converterType)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/74108
+
+            const int Count = 1000;
+
+            var stream = new MemoryStream();
+            var data = Enumerable.Range(1, Count).Select(_ => new { OtherValue = "otherValue", Value = "value" });
+            await JsonSerializer.SerializeAsync(stream, data);
+            stream.Position = 0;
+
+            var options = new JsonSerializerOptions
+            {
+                Converters = { (JsonConverter)Activator.CreateInstance(converterType) },
+            };
+
+            PocoWithValue[] result = await JsonSerializer.DeserializeAsync<PocoWithValue[]>(stream, options);
+            Assert.Equal(Count, result.Length);
+            Assert.All(result, entry => Assert.Equal("value", entry.Value));
+        }
+
+        class PocoWithValue
+        {
+            public string? Value { get; set; }
+        }
+
+        class ProxyClass
+        {
+            public string? Value { get; set; }
+        }
+
+        class ProxyClassConverter : JsonConverter<PocoWithValue>
+        {
+            private JsonConverter<ProxyClass> GetConverter(JsonSerializerOptions options)
+                => (JsonConverter<ProxyClass>)options.GetConverter(typeof(ProxyClass));
+
+            public override PocoWithValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var proxy = GetConverter(options).Read(ref reader, typeof(ProxyClass), options);
+                return new PocoWithValue { Value = proxy.Value };
+            }
+
+            public override void Write(Utf8JsonWriter writer, PocoWithValue value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
+        }
+
+        class ProxyClassWithConstructor
+        {
+            public ProxyClassWithConstructor(string? value) => Value = value;
+            public string? Value { get; }
+        }
+
+        class ProxyClassWithConstructorConverter : JsonConverter<PocoWithValue>
+        {
+            private JsonConverter<ProxyClassWithConstructor> GetConverter(JsonSerializerOptions options)
+                => (JsonConverter<ProxyClassWithConstructor>)options.GetConverter(typeof(ProxyClassWithConstructor));
+
+            public override PocoWithValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var proxy = GetConverter(options).Read(ref reader, typeof(ProxyClassWithConstructor), options);
+                return new PocoWithValue { Value = proxy.Value };
+            }
+
+            public override void Write(Utf8JsonWriter writer, PocoWithValue value, JsonSerializerOptions options)
+                => throw new NotImplementedException();
         }
     }
 }

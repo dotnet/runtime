@@ -199,7 +199,7 @@ namespace Tests.Collections
             Exception exception = Record.Exception(testCode);
             if (exception == null)
             {
-                throw new AssertActualExpectedException(
+                throw EqualException.ForMismatchedValues(
                     exceptionTypes,
                     null,
                     "Expected an exception but got null.");
@@ -207,7 +207,7 @@ namespace Tests.Collections
             Type exceptionType = exception.GetType();
             if (!exceptionTypes.Contains(exceptionType))
             {
-                throw new AssertActualExpectedException(
+                throw EqualException.ForMismatchedValues(
                     exceptionTypes,
                     exceptionType,
                     "Caught wrong exception.");

@@ -776,6 +776,7 @@ buffer_manager_try_convert_buffer_to_read_only (
 	EventPipeThread *thread = ep_buffer_get_writer_thread (new_read_buffer);
 	EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section1);
 		EventPipeThreadSessionState *thread_session_state = ep_thread_get_session_state (thread, buffer_manager->session);
+		EP_ASSERT(thread_session_state != NULL);
 		if (ep_thread_session_state_get_write_buffer (thread_session_state) == new_read_buffer) {
 			ep_thread_session_state_set_write_buffer (thread_session_state, NULL);
 			EP_ASSERT (ep_buffer_get_volatile_state (new_read_buffer) == EP_BUFFER_STATE_READ_ONLY);
@@ -1079,6 +1080,7 @@ ep_buffer_manager_suspend_write_event (
 	DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, &thread_vector) {
 		EP_SPIN_LOCK_ENTER (ep_thread_get_rt_lock_ref (thread), section2)
 			EventPipeThreadSessionState *thread_session_state = ep_thread_get_session_state (thread, buffer_manager->session);
+			EP_ASSERT(thread_session_state != NULL);
 			ep_thread_session_state_set_write_buffer (thread_session_state, NULL);
 		EP_SPIN_LOCK_EXIT (ep_thread_get_rt_lock_ref (thread), section2)
 	} DN_VECTOR_PTR_FOREACH_END;

@@ -3,22 +3,29 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+#if NETFRAMEWORK || (NETSTANDARD && !NETSTANDARD2_1_OR_GREATER)
+        private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
+#endif
+
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool HasSymmetricEncryption { get; } =
-#if NETCOREAPP
-            !OperatingSystem.IsBrowser();
+#if NET
+            !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
             true;
 #endif
 
-#if NETCOREAPP
+#if NET
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
         public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
@@ -26,18 +33,20 @@ namespace Internal.Cryptography
         public static bool IsDSASupported => true;
 #endif
 
-#if NETCOREAPP
+#if NET
         [UnsupportedOSPlatformGuard("android")]
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
 #else
         public static bool IsRC2Supported => true;
 #endif
 
         [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
         internal static bool HasMD5 { get; } =
-#if NETCOREAPP
-            !OperatingSystem.IsBrowser();
+#if NET
+            !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
             true;
 #endif
@@ -45,12 +54,36 @@ namespace Internal.Cryptography
         [return: NotNullIfNotNull(nameof(src))]
         public static byte[]? CloneByteArray(this byte[]? src)
         {
-            if (src == null)
+            return src switch
             {
-                return null;
-            }
+                null => null,
+                { Length: 0 } => src,
+                _ => (byte[])src.Clone(),
+            };
+        }
 
-            return (byte[])(src.Clone());
+        internal static bool ContainsNull<T>(this ReadOnlySpan<T> span)
+        {
+            return Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span));
+        }
+
+#if NETFRAMEWORK || (NETSTANDARD && !NETSTANDARD2_1_OR_GREATER)
+        internal static void RngFill(byte[] destination)
+        {
+            s_rng.GetBytes(destination);
+        }
+#endif
+
+        internal static void RngFill(Span<byte> destination)
+        {
+#if NET || NETSTANDARD2_1_OR_GREATER
+            RandomNumberGenerator.Fill(destination);
+#else
+            byte[] temp = CryptoPool.Rent(destination.Length);
+            s_rng.GetBytes(temp, 0, destination.Length);
+            temp.AsSpan(0, destination.Length).CopyTo(destination);
+            CryptoPool.Return(temp, destination.Length);
+#endif
         }
 
         internal static bool TryCopyToDestination(this ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)

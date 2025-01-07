@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -73,7 +74,7 @@ namespace ILCompiler.Dataflow
             internal TypeCache(MetadataType type, Logger? logger, ILProvider ilProvider)
             {
                 Debug.Assert(type == type.GetTypeDefinition());
-                Debug.Assert(!CompilerGeneratedNames.IsGeneratedMemberName(type.Name));
+                Debug.Assert(!CompilerGeneratedNames.IsStateMachineOrDisplayClass(type.Name));
 
                 Type = type;
 
@@ -158,8 +159,10 @@ namespace ILCompiler.Dataflow
                                     break;
 
                                 case ILOpcode.stsfld:
+                                case ILOpcode.ldsfld:
                                     {
                                         // Same as above, but stsfld instead of a call to the constructor
+                                        // Ldsfld may also trigger a cctor that creates a closure environment
                                         FieldDesc? field = methodBody.GetObject(reader.ReadILToken()) as FieldDesc;
                                         if (field == null)
                                             continue;
@@ -194,7 +197,7 @@ namespace ILCompiler.Dataflow
                     if (TryGetStateMachineType(method, out MetadataType? stateMachineType))
                     {
                         Debug.Assert(stateMachineType.ContainingType == type ||
-                            (CompilerGeneratedNames.IsGeneratedMemberName(stateMachineType.ContainingType.Name) &&
+                            (CompilerGeneratedNames.IsStateMachineOrDisplayClass(stateMachineType.ContainingType.Name) &&
                              stateMachineType.ContainingType.ContainingType == type));
                         Debug.Assert(stateMachineType == stateMachineType.GetTypeDefinition());
 
@@ -321,7 +324,7 @@ namespace ILCompiler.Dataflow
                     MetadataType generatedType,
                     Dictionary<MetadataType, TypeArgumentInfo> generatedTypeToTypeArgs)
                 {
-                    Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
+                    Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
                     Debug.Assert(generatedType == generatedType.GetTypeDefinition());
 
                     var typeInfo = generatedTypeToTypeArgs[generatedType];
@@ -361,7 +364,7 @@ namespace ILCompiler.Dataflow
                             else
                             {
                                 // Must be a type ref
-                                if (method.OwningType is not MetadataType owningType || !CompilerGeneratedNames.IsGeneratedType(owningType.Name))
+                                if (method.OwningType is not MetadataType owningType || !CompilerGeneratedNames.IsStateMachineOrDisplayClass(owningType.Name))
                                 {
                                     userAttrs = param;
                                 }
@@ -375,7 +378,7 @@ namespace ILCompiler.Dataflow
                                     }
                                     else
                                     {
-                                        Debug.Assert(false, "This should be impossible in valid code");
+                                        Debug.Fail("This should be impossible in valid code");
                                     }
                                 }
                             }
@@ -417,6 +420,7 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case ILOpcode.stsfld:
+                            case ILOpcode.ldsfld:
                                 {
                                     if (body.GetObject(reader.ReadILToken()) is FieldDesc { OwningType: MetadataType owningType }
                                         && compilerGeneratedType == owningType.GetTypeDefinition())
@@ -501,7 +505,7 @@ namespace ILCompiler.Dataflow
         {
             foreach (var nestedType in type.GetNestedTypes())
             {
-                if (!CompilerGeneratedNames.IsGeneratedMemberName(nestedType.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(nestedType.Name))
                     continue;
 
                 yield return nestedType;
@@ -565,7 +569,7 @@ namespace ILCompiler.Dataflow
             // State machines can be emitted into display classes, so we may also need to go one more level up.
             // To avoid depending on implementation details, we go up until we see a non-compiler-generated type.
             // This is the counterpart to GetCompilerGeneratedNestedTypes.
-            while (userType != null && CompilerGeneratedNames.IsGeneratedMemberName(userType.Name))
+            while (userType != null && CompilerGeneratedNames.IsStateMachineOrDisplayClass(userType.Name))
                 userType = userType.ContainingType as MetadataType;
 
             if (userType is null)
@@ -607,7 +611,7 @@ namespace ILCompiler.Dataflow
         public IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(MetadataType type)
         {
             MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
-            Debug.Assert(CompilerGeneratedNames.IsGeneratedType(generatedType.Name));
+            Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
 
             var typeCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeCache is null)

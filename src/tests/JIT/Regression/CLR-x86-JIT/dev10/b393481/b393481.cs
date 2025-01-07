@@ -17,7 +17,7 @@ namespace TestAnonymousTypes
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Customer c = new Customer { Name = "Sree", Address = "something somethwere", Zip = 98007 };
 
@@ -105,8 +105,6 @@ namespace TestAnonymousTypes
                 Address26 = c.Address,
                 Zip26 = c.Zip
             };
-
-            return 100;
         }
     }
 }

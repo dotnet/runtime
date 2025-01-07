@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
   </PropertyGroup>
-  <PropertyGroup>
-    <DebugType />
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="hole.il" />
   </ItemGroup>

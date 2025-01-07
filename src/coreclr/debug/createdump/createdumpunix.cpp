@@ -30,6 +30,12 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
 
+    if (options.DumpType != DumpType::Full && options.AppModel == AppModelType::NativeAOT)
+    {
+        printf_error("The app model only supports full dump generation\n");
+        goto exit;
+    }
+
     // Initialize the crash info 
     if (!crashInfo->Initialize())
     {

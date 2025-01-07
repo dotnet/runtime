@@ -5,7 +5,7 @@ using System;
 using System.Data.Odbc;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Runtime.Versioning;
@@ -38,7 +38,7 @@ internal static partial class Interop
             /*SQLUSMALLINT*/ushort ColumnNumber,
             /*SQLSMALLINT*/ODBC32.SQL_C TargetType,
             /*SQLPOINTER*/
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef TargetValue,
@@ -64,13 +64,13 @@ internal static partial class Interop
             /*SQLULEN*/IntPtr cbColDef,
             /*SQLSMALLINT*/IntPtr ibScale,
             /*SQLPOINTER*/
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef rgbValue,
             /*SQLLEN*/IntPtr BufferLength,
             /*SQLLEN* */
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef StrLen_or_Ind);
@@ -326,7 +326,7 @@ internal static partial class Interop
             /*SQLSMALLINT*/short ColumnNumber,
             /*SQLSMALLINT*/ODBC32.SQL_DESC FieldIdentifier,
             /*SQLPOINTER*/
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef CharacterAttribute,

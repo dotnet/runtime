@@ -382,7 +382,7 @@ namespace System.IO.Tests
             Assert.False(TryErrorEvent(watcher, action, cleanup, attempts, expected: true), message);
         }
 
-        /// /// <summary>
+        /// <summary>
         /// Helper method for the ExpectError/ExpectNoError functions.
         /// </summary>
         /// <param name="watcher">The FileSystemWatcher to test</param>
@@ -545,7 +545,7 @@ namespace System.IO.Tests
 
             if (error != null)
             {
-                Assert.False(true, $"Filewatcher error event triggered: { error.GetException()?.Message ?? "Unknow error" }");
+                Assert.Fail($"Filewatcher error event triggered: { error.GetException()?.Message ?? "Unknow error" }");
             }
 
             return events;

@@ -17,6 +17,38 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 
+#ifndef DACCESS_COMPILE
+static PCODE g_pMethodWithSlotAndModule = (PCODE)NULL;
+static PCODE g_pClassWithSlotAndModule = (PCODE)NULL;
+
+PCODE DynamicHelpers::GetDictionaryLookupHelper(CorInfoHelpFunc jitHelper)
+{
+    _ASSERTE(jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD || jitHelper == CORINFO_HELP_RUNTIMEHANDLE_CLASS);
+    if (jitHelper == CORINFO_HELP_RUNTIMEHANDLE_METHOD)
+    {
+        PCODE pFunc = VolatileLoadWithoutBarrier(&g_pMethodWithSlotAndModule);
+        if (pFunc == (PCODE)NULL)
+        {
+            pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__METHODWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
+            VolatileStore(&g_pMethodWithSlotAndModule, pFunc);
+        }
+
+        return pFunc;
+    }
+    else
+    {
+        PCODE pFunc = VolatileLoadWithoutBarrier(&g_pClassWithSlotAndModule);
+        if (pFunc == (PCODE)NULL)
+        {
+            pFunc = CoreLibBinder::GetMethod(METHOD__GENERICSHELPERS__CLASSWITHSLOTANDMODULE)->GetMultiCallableAddrOfCode();
+            VolatileStore(&g_pClassWithSlotAndModule, pFunc);
+        }
+
+        return pFunc;
+    }
+}
+#endif // DACCESS_COMPILE
+
 using namespace NativeFormat;
 
 ReadyToRunCoreInfo::ReadyToRunCoreInfo()
@@ -94,42 +126,21 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
-    // Reserve stack space for parsing out the namespace in a name-based lookup
-    // at this scope so the stack space is in scope for all usages in this method.
-    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
     //
     int dwHashCode = 0;
 
+    _ASSERTE(pName->GetName() != NULL);
+    _ASSERTE(pName->GetNameSpace() != NULL);
+
     if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
     {
         // Name-based lookups (ex: Type.GetType()).
 
         pszName = pName->GetName();
-        pszNameSpace = "";
-        if (pName->GetNameSpace() != NULL)
-        {
-            pszNameSpace = pName->GetNameSpace();
-        }
-        else
-        {
-            LPCUTF8 p;
-
-            if ((p = ns::FindSep(pszName)) != NULL)
-            {
-                SIZE_T d = p - pszName;
-
-                FAULT_NOT_FATAL();
-                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
-
-                if (pszNameSpace == NULL)
-                    return FALSE;
-
-                pszName = (p + 1);
-            }
-        }
+        pszNameSpace = pName->GetNameSpace();
 
         _ASSERT(pszNameSpace != NULL);
         dwHashCode ^= ComputeNameHashCode(pszNameSpace, pszName);
@@ -372,6 +383,12 @@ void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, M
     }
     CONTRACTL_END;
 
+    // We are entering coop mode here so that we don't do it later inside LookupMap while we are already holding the Crst.
+    // Doing it in the other order can block the debugger from running func-evals. For example thread A would acquire the Crst,
+    // then block at the coop transition inside LookupMap waiting for the debugger to resume from a break state. The debugger then
+    // requests thread B to run a funceval, the funceval tries to load some R2R method calling in here, then it blocks because
+    // thread A is holding the Crst.
+    GCX_COOP();
     CrstHolder ch(&m_Crst);
 
     if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
@@ -429,7 +446,8 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, pPEAssembly->GetPath().GetUTF8());
+    SString assemblyPath{ pPEAssembly->GetPath() };
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
     fflush(r2rLogFile);
 }
 
@@ -717,7 +735,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
-    m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
+    m_Crst(CrstReadyToRunEntryPointToMethodDescMap, CRST_UNSAFE_COOPGC),
     m_pPersistentInlineTrackingMap(NULL),
     m_pNextR2RForUnrelatedCode(NULL)
 {
@@ -762,7 +780,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
                 const GUID *componentMvids = (const GUID *)m_pComposite->GetLayout()->GetDirectoryData(pComponentAssemblyMvids);
                 // Take load lock so that DeclareDependencyOnMvid can be called
 
-                BaseDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
+                AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain(), pNativeImage == NULL); // LoadLock is already held for composite images
                 AppDomain::GetCurrentDomain()->AssertLoadLockHeld();
 
                 while (pNativeMDImport->EnumNext(&assemblyEnum, &assemblyRef))
@@ -1039,7 +1057,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1112,7 +1130,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     bool printedStart = false;
 #endif
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1416,7 +1434,7 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
     STANDARD_VM_CONTRACT;
 
     PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), NULL, FALSE);
-    _ASSERTE(ret != NULL);
+    _ASSERTE(ret != (PCODE)NULL);
     return ret;
 }
 
@@ -1546,7 +1564,7 @@ public:
         return GetModuleIfLoaded(kFile);
     }
 
-    DomainAssembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
+    Assembly * LoadAssemblyImpl(mdAssemblyRef kAssemblyRef) final
     {
         STANDARD_VM_CONTRACT;
         // Since we can only load via ModuleRef, this should never fail unless the module is improperly formatted
@@ -1713,7 +1731,7 @@ public:
         RETURN module;
     }
 
-    DomainAssembly *LoadModule(mdFile kFile) final
+    Module *LoadModule(mdFile kFile) final
     {
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -1722,7 +1740,7 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            return module->GetDomainAssembly();
+            return module;
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
@@ -1771,8 +1789,8 @@ public:
         m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
 
-        return module->GetDomainAssembly();
-    }
+       return module;
+   }
 
     virtual void DECLSPEC_NORETURN ThrowTypeLoadExceptionImpl(IMDInternalImport *pInternalImport,
                                                   mdToken token,
@@ -1797,9 +1815,11 @@ const ReadyToRun_MethodIsGenericMap ReadyToRun_MethodIsGenericMap::EmptyInstance
 
 mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInternalImport* pImport) const
 {
+#ifndef DACCESS_COMPILE
     uint32_t rid = RidFromToken(input);
     _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
     if ((rid > TypeCount) || (rid == 0))
+#endif
     {
         mdTypeDef enclosingType;
         HRESULT hr = pImport->GetNestedClassProps(input, &enclosingType);
@@ -1813,18 +1833,22 @@ mdTypeDef ReadyToRun_EnclosingTypeMap::GetEnclosingType(mdTypeDef input, IMDInte
 
         return enclosingType;
     }
+#ifndef DACCESS_COMPILE
     return TokenFromRid((&TypeCount)[rid], mdtTypeDef);
+#endif
 }
 
 HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, mdTypeDef *pEnclosingType, IMDInternalImport* pImport) const
 {
+#ifndef DACCESS_COMPILE
     uint32_t rid = RidFromToken(input);
     _ASSERTE(TypeCount <= (uint32_t)ReadyToRunEnclosingTypeMap::MaxTypeCount);
     if ((rid > TypeCount) || (rid == 0))
+#endif
     {
         return pImport->GetNestedClassProps(input, pEnclosingType);
     }
-
+#ifndef DACCESS_COMPILE
     *pEnclosingType = TokenFromRid((&TypeCount)[rid], mdtTypeDef);
 
     if (*pEnclosingType == mdTypeDefNil)
@@ -1832,10 +1856,15 @@ HRESULT ReadyToRun_EnclosingTypeMap::GetEnclosingTypeNoThrow(mdTypeDef input, md
         return CLDB_E_RECORD_NOTFOUND;
     }
     return  S_OK;
+#endif
 }
 
 ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTypeDef input, bool *foundResult) const
 {
+#ifdef DACCESS_COMPILE
+    *foundResult = false;
+    return (ReadyToRunTypeGenericInfo)0;
+#else
     uint32_t rid = RidFromToken(input);
     if ((rid > TypeCount) || (rid == 0))
     {
@@ -1851,6 +1880,7 @@ ReadyToRunTypeGenericInfo ReadyToRun_TypeGenericInfoMap::GetTypeGenericInfo(mdTy
     }
     *foundResult = true;
     return static_cast<ReadyToRunTypeGenericInfo>(entry);
+#endif
 }
 
 bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const
@@ -1892,7 +1922,7 @@ uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input,
     uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
     if (count > 2)
         foundResult = false;
-    
+
     if (!foundResult)
     {
         HENUMInternalHolder hEnumTyPars(pImport);
@@ -1910,7 +1940,7 @@ HRESULT ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCountNoThrow(mdTypeDef 
     uint32_t count = ((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
     if (count > 2)
         foundResult = false;
-    
+
     if (!foundResult)
     {
         HENUMInternalHolder hEnumTyPars(pImport);
@@ -1932,20 +1962,22 @@ bool ReadyToRun_TypeGenericInfoMap::HasVariance(mdTypeDef input, bool *foundResu
 bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundResult) const
 {
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
-    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasVariance);
+    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasConstraints);
 }
 
 bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const
 {
+#ifndef DACCESS_COMPILE
     uint32_t rid = RidFromToken(input);
-    if ((rid > MethodCount) || (rid == 0))
+    if ((rid <= MethodCount) && (rid != 0))
     {
-        *foundResult = false;
-        return 0;
+        uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
+        chunk >>= 7 - ((rid - 1) % 8);
+        *foundResult = true;
+        return !!(chunk & 1);
     }
-
-    uint8_t chunk = ((uint8_t*)&MethodCount)[((rid - 1) / 8) + sizeof(uint32_t)];
-    chunk >>= 7 - ((rid - 1) % 8);
-    return !!(chunk & 1);
+#endif // !DACCESS_COMPILE
+    *foundResult = false;
+    return false;
 }
 

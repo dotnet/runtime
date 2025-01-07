@@ -86,7 +86,7 @@ namespace System
             };
         }
 
-        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method)
         {
             ArgumentNullException.ThrowIfNull(target);
 
@@ -174,7 +174,7 @@ namespace System
             return CreateDelegate_internal(new QCallTypeHandle(ref rtType), target, info, throwOnBindFailure);
         }
 
-        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(target);
@@ -202,15 +202,13 @@ namespace System
             return CreateDelegate_internal(new QCallTypeHandle(ref rtType), null, info, throwOnBindFailure);
         }
 
-        // GetCandidateMethod is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
-        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
-        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, BindingFlags bflags, bool ignoreCase)
+        private static MethodInfo? GetCandidateMethod(RuntimeType type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, BindingFlags bflags, bool ignoreCase)
         {
             MethodInfo? invoke = GetDelegateInvokeMethod(type);
             if (invoke is null)
                 return null;
 
-            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> delargs = invoke.GetParametersAsSpan();
             Type[] delargtypes = new Type[delargs.Length];
 
             for (int i = 0; i < delargs.Length; i++)
@@ -250,8 +248,8 @@ namespace System
                 return false;
             }
 
-            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
-            ParameterInfo[] args = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> delargs = invoke.GetParametersAsSpan();
+            ReadOnlySpan<ParameterInfo> args = method.GetParametersAsSpan();
 
             bool argLengthMatch;
 
@@ -437,7 +435,7 @@ namespace System
             MethodInfo? invoke = GetType().GetMethod("Invoke");
             if (invoke != null && args != null)
             {
-                ParameterInfo[] delegateParameters = invoke.GetParameters();
+                ReadOnlySpan<ParameterInfo> delegateParameters = invoke.GetParametersAsSpan();
                 for (int i = 0; i < args.Length; i++)
                 {
                     if (args[i] == Type.Missing)
@@ -556,7 +554,7 @@ namespace System
             return delegate_data;
         }
 
-        private static bool InternalEqualTypes(object source, object value)
+        internal static bool InternalEqualTypes(object source, object value)
         {
             return source.GetType() == value.GetType();
         }

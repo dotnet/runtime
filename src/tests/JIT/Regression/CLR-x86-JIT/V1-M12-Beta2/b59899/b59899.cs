@@ -6,7 +6,7 @@ using Xunit;
 public class SamplesArray
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         int[] myLens = new int[1] { 5 };
         int[] myLows = new int[1] { -2 };
@@ -27,6 +27,5 @@ public class SamplesArray
         {
             Console.WriteLine("Exception: " + myException.ToString());
         }
-        return 100;
     }
 }

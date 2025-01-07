@@ -4,7 +4,7 @@
 //
 
 //
-//	Adding tests for BoolArrayMarshaler code coverage
+//  Adding tests for BoolArrayMarshaler code coverage
 //
 //Rule for Passing Value
 //        Reverse Pinvoke
@@ -15,7 +15,9 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class MarshalBoolArray
 {
     #region"variable"
@@ -77,7 +79,7 @@ public class MarshalBoolArray
     [DllImport("MarshalBoolArrayNative")]
     private static extern bool DoCallBackInOut(CallBackInOut callback);
     private delegate bool CallBackInOut([In]int size, [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1, SizeConst = SIZE)] bool[] array);
-    
+
     private static bool TestMethod_CallBackInOut(int size, bool[] array)
     {
         bool retVal = true;
@@ -114,7 +116,7 @@ public class MarshalBoolArray
     [DllImport("MarshalBoolArrayNative")]
     private static extern bool DoCallBackRefIn(CallBackRefIn callback);
     private delegate bool CallBackRefIn([In]int size, [In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] ref bool[] array);
-    
+
     private static bool TestMethod_CallBackRefIn(int size, ref bool[] array)
     {
         bool retVal = true;
@@ -128,7 +130,7 @@ public class MarshalBoolArray
         //Since now the sizeconst doesnt support on ref,so only check the first item instead.
         //Unhandled Exception: System.Runtime.InteropServices.MarshalDirectiveException: Cannot marshal 'parameter #2': Cannot use SizeParamIndex for ByRef array parameters.
         //for (int i = 0; i < size; ++i) //Reverse PInvoke, true,false,true false,true
-        //{	
+        //{
         //    if ((0 == i % 2) && !array[i])
         //    {
         //      ReportFailure("Failed on the Managed Side:TestMethod_CallBackRefIn. The " + (i + 1) + "st Item failed", true.ToString(), false.ToString());
@@ -151,7 +153,7 @@ public class MarshalBoolArray
     [DllImport("MarshalBoolArrayNative")]
     private static extern bool DoCallBackRefOut(CallBackRefOut callback);
     private delegate bool CallBackRefOut([In]int size, [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] out bool[] array);
-    
+
     private static bool TestMethod_CallBackRefOut(int size, out bool[] array)
     {
         bool retVal = true;
@@ -174,7 +176,7 @@ public class MarshalBoolArray
     [DllImport("MarshalBoolArrayNative")]
     private static extern bool DoCallBackRefInOut(CallBackRefInOut callback);
     private delegate bool CallBackRefInOut([In]int size, [In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] ref bool[] array);
-    
+
     private static bool TestMethod_CallBackRefInOut(int size, ref bool[] array)
     {
         bool retVal = true;
@@ -217,10 +219,12 @@ public class MarshalBoolArray
     #endregion
 
     [System.Security.SecuritySafeCritical]
-    static int Main()
+    [Fact]
+    [OuterLoop]
+    public static void TestEntryPoint()
     {
         bool retVal = true;
-        
+
         //TestFramework.BeginScenario("Reverse PInvoke with In attribute");
         if (!DoCallBackIn(new CallBackIn(TestMethod_CallBackIn)))
         {
@@ -263,13 +267,9 @@ public class MarshalBoolArray
             //TestFramework.LogError("019","Error happens in Native side:DoCallBackRefInOut");
         }
 
-	if(retVal)
-	{
-       //Console.WriteLine("Succeeded!");
-	  return 100;
-	}
-
-      throw new Exception("Failed");
-      // return 101;
+        if(!retVal)
+        {
+          throw new Exception("Failed");
+        }
     }
 }

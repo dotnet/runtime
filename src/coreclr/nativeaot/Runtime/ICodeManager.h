@@ -28,83 +28,36 @@ enum GCRefKind : unsigned char
     GCRK_Scalar         = 0x00,
     GCRK_Object         = 0x01,
     GCRK_Byref          = 0x02,
-#ifdef TARGET_64BIT
-    // Composite return kinds for value types returned in two registers (encoded with two bits per register)
-    GCRK_Scalar_Obj     = (GCRK_Object << 2) | GCRK_Scalar,
-    GCRK_Obj_Obj        = (GCRK_Object << 2) | GCRK_Object,
-    GCRK_Byref_Obj      = (GCRK_Object << 2) | GCRK_Byref,
-    GCRK_Scalar_Byref   = (GCRK_Byref  << 2) | GCRK_Scalar,
-    GCRK_Obj_Byref      = (GCRK_Byref  << 2) | GCRK_Object,
-    GCRK_Byref_Byref    = (GCRK_Byref  << 2) | GCRK_Byref,
-
-    GCRK_LastValid      = GCRK_Byref_Byref,
-#else // TARGET_ARM64
     GCRK_LastValid      = GCRK_Byref,
-#endif // TARGET_ARM64
     GCRK_Unknown        = 0xFF,
 };
 
-#ifdef TARGET_ARM64
-// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
-C_ASSERT(PTFF_X0_IS_GCREF == ((uint64_t)GCRK_Object << 32));
-C_ASSERT(PTFF_X0_IS_BYREF == ((uint64_t)GCRK_Byref << 32));
-C_ASSERT(PTFF_X1_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 32));
-C_ASSERT(PTFF_X1_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 32));
-
-inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
-{
-    // just need to report gc ref bits here.
-    // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
-    return ((uint64_t)returnKind << 32);
-}
-
-inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
-{
-    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
-    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
-    return returnKind;
-}
-
-#elif defined(TARGET_AMD64) 
-
+#if defined(TARGET_X86)
 // Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
 C_ASSERT(PTFF_RAX_IS_GCREF == ((uint64_t)GCRK_Object << 16));
 C_ASSERT(PTFF_RAX_IS_BYREF == ((uint64_t)GCRK_Byref << 16));
-C_ASSERT(PTFF_RDX_IS_GCREF == ((uint64_t)GCRK_Scalar_Obj << 16));
-C_ASSERT(PTFF_RDX_IS_BYREF == ((uint64_t)GCRK_Scalar_Byref << 16));
 
-inline uint64_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+inline uintptr_t ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
 {
     // just need to report gc ref bits here.
     // appropriate PTFF_SAVE_ bits will be added by the frame building routine.
-    return ((uint64_t)returnKind << 16);
+    return ((uintptr_t)returnKind << 16);
 }
 
-inline GCRefKind TransitionFrameFlagsToReturnKind(uint64_t transFrameFlags)
+inline GCRefKind TransitionFrameFlagsToReturnKind(uintptr_t transFrameFlags)
 {
-    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF | PTFF_RDX_IS_GCREF | PTFF_RDX_IS_BYREF)) >> 16);
-#if defined(TARGET_UNIX)
-    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_RAX) && (transFrameFlags & PTFF_SAVE_RDX)));
-#else
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_RAX_IS_GCREF | PTFF_RAX_IS_BYREF)) >> 16);
     ASSERT((returnKind == GCRK_Scalar) || (transFrameFlags & PTFF_SAVE_RAX));
-#endif
     return returnKind;
 }
 
-#endif
-
 // Extract individual GCRefKind components from a composite return kind
-inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
+inline GCRefKind ExtractReturnKind(GCRefKind returnKind)
 {
     ASSERT(returnKind <= GCRK_LastValid);
     return (GCRefKind)(returnKind & (GCRK_Object | GCRK_Byref));
 }
-
-inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
-{
-    ASSERT(returnKind <= GCRK_LastValid);
-    return (GCRefKind)(returnKind >> 2);
-}
+#endif
 
 //
 // MethodInfo is placeholder type used to allocate space for MethodInfo. Maximum size
@@ -189,6 +142,11 @@ public:
     virtual PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                                      REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
 
+#ifdef TARGET_X86
+    virtual uintptr_t GetResumeSp(MethodInfo *   pMethodInfo,
+                                  REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
+#endif
+
     virtual void EnumGcRefs(MethodInfo *    pMethodInfo,
                             PTR_VOID        safePointAddress,
                             REGDISPLAY *    pRegisterSet,
@@ -206,9 +164,14 @@ public:
     virtual bool IsUnwindable(PTR_VOID pvAddress) PURE_VIRTUAL
 
     virtual bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
-                                            REGDISPLAY *    pRegisterSet,           // in
-                                            PTR_PTR_VOID *  ppvRetAddrLocation,     // out
-                                            GCRefKind *     pRetValueKind) PURE_VIRTUAL     // out
+                                            REGDISPLAY *    pRegisterSet,          // in
+                                            PTR_PTR_VOID *  ppvRetAddrLocation     // out
+                                            ) PURE_VIRTUAL
+
+#ifdef TARGET_X86
+    virtual GCRefKind GetReturnValueKind(MethodInfo *   pMethodInfo,
+                                  REGDISPLAY *   pRegisterSet) PURE_VIRTUAL
+#endif
 
     virtual PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC) PURE_VIRTUAL
 

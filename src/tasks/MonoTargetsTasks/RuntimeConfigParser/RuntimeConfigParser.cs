@@ -30,6 +30,16 @@ public class RuntimeConfigParserTask : Task
     /// </summary>
     public ITaskItem[] RuntimeConfigReservedProperties { get; set; } = Array.Empty<ITaskItem>();
 
+    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
+    {
+        AllowTrailingCommas = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        Converters =
+        {
+            new StringConverter()
+        }
+    };
+
     public override bool Execute()
     {
         if (string.IsNullOrEmpty(RuntimeConfigFile))
@@ -61,7 +71,7 @@ public class RuntimeConfigParserTask : Task
         ConvertDictionaryToBlob(configProperties, blobBuilder);
 
         Directory.CreateDirectory(Path.GetDirectoryName(OutputFile!)!);
-        using var stream = File.OpenWrite(OutputFile);
+        using var stream = new FileStream(OutputFile, FileMode.Create, FileAccess.Write, FileShare.None);
         blobBuilder.WriteContentTo(stream);
 
         return !Log.HasLoggedErrors;
@@ -72,17 +82,8 @@ public class RuntimeConfigParserTask : Task
     {
         result = null;
 
-        var options = new JsonSerializerOptions {
-            AllowTrailingCommas = true,
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            Converters =
-            {
-                new StringConverter()
-            }
-        };
-
         var jsonString = File.ReadAllText(inputFilePath);
-        var parsedJson = JsonSerializer.Deserialize<Root>(jsonString, options);
+        var parsedJson = JsonSerializer.Deserialize<Root>(jsonString, s_jsonOptions);
 
         if (parsedJson == null)
         {

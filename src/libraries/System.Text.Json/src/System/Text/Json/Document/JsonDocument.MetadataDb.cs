@@ -6,6 +6,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+// We need to target netstandard2.0, so keep using ref for MemoryMarshal.Write
+// CS9191: The 'ref' modifier for argument 2 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
+#pragma warning disable CS9191
+
 namespace System.Text.Json
 {
     public sealed partial class JsonDocument
@@ -64,7 +68,7 @@ namespace System.Text.Json
         //   * 31 bits for token offset
         // * Second int
         //   * Top bit is unassigned / always clear
-        //   * 31 bits for the token length (always 1, effectively unassigned)
+        //   * 31 bits for the number of properties in this object
         // * Third int
         //   * 4 bits JsonTokenType
         //   * 28 bits for the number of rows until the next value (never 0)
@@ -236,7 +240,7 @@ namespace System.Text.Json
                 // Note: Array.MaxLength exists only on .NET 6 or greater,
                 // so for the other versions value is hardcoded
                 const int MaxArrayLength = 0x7FFFFFC7;
-#if NET6_0_OR_GREATER
+#if NET
                 Debug.Assert(MaxArrayLength == Array.MaxLength);
 #endif
 
@@ -377,7 +381,7 @@ namespace System.Text.Json
                 byte[] newDatabase = new byte[length];
                 _data.AsSpan(startIndex, length).CopyTo(newDatabase);
 
-                Span<int> newDbInts = MemoryMarshal.Cast<byte, int>(newDatabase);
+                Span<int> newDbInts = MemoryMarshal.Cast<byte, int>(newDatabase.AsSpan());
                 int locationOffset = newDbInts[0];
 
                 // Need to nudge one forward to account for the hidden quote on the string.

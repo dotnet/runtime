@@ -12,8 +12,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef  _WIN32
+    #include <unistd.h>
+#endif
 #include <limits.h>
+
+#include <minipal/utils.h>
 
 #ifdef DEBUG
 #define assert_err(cond, msg, err) do \
@@ -43,16 +47,6 @@
 #define CONST_CAST2(TOTYPE, FROMTYPE, X) ((union { FROMTYPE _q; TOTYPE _nq; }){ ._q = (X) }._nq)
 #define CONST_CAST(TYPE, X) CONST_CAST2(TYPE, const TYPE, (X))
 
-#ifndef __has_attribute
-#define __has_attribute(x) (0)
-#endif
-
-#if __has_attribute(fallthrough)
-#define FALLTHROUGH __attribute__((fallthrough))
-#else
-#define FALLTHROUGH
-#endif
-
 /**
  * Abstraction helper method to safely copy strings using strlcpy or strcpy_s
  * or a different safe copy method, depending on the current platform.
@@ -77,6 +71,7 @@ inline static int ToFileDescriptorUnchecked(intptr_t fd)
     return (int)fd;
 }
 
+#ifndef _WIN32
 /**
 * Converts an intptr_t to a file descriptor.
 * intptr_t is the type used to marshal file descriptors so we can use SafeHandles effectively.
@@ -94,6 +89,7 @@ static inline bool CheckInterrupted(ssize_t result)
 {
     return result < 0 && errno == EINTR;
 }
+#endif
 
 inline static uint32_t Int32ToUint32(int32_t value)
 {

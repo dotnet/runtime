@@ -47,6 +47,37 @@ namespace System.Text.Json.Nodes.Tests
             JsonType_Deserializes_Null<JsonObject>();
         }
 
+        [Fact]
+        public static void Parse_AllowMultipleValues_TrailingJson()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             [43]"u8, options);
+
+            JsonNode node = JsonNode.Parse(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", node.ToJsonString());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.True(reader.Read());
+            node = JsonNode.Parse(ref reader);
+            Assert.Equal("[43]", node.ToJsonString());
+
+            Assert.False(reader.Read());
+        }
+
+
+        [Fact]
+        public static void Parse_AllowMultipleValues_TrailingContent()
+        {
+            var options = new JsonReaderOptions { AllowMultipleValues = true };
+            var reader = new Utf8JsonReader("[null,false,42,{},[1]]             <NotJson/>"u8, options);
+
+            JsonNode node = JsonNode.Parse(ref reader);
+            Assert.Equal("[null,false,42,{},[1]]", node.ToJsonString());
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            JsonTestHelper.AssertThrows<JsonException>(ref reader, (ref Utf8JsonReader reader) => reader.Read());
+        }
+
         private static void JsonType_Deserializes_Null<TNode>() where TNode : JsonNode
         {
             Assert.Null(JsonSerializer.Deserialize<TNode>("null"));
@@ -85,6 +116,58 @@ namespace System.Text.Json.Nodes.Tests
         {
             Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("{}").GetValue<object>());
             Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("[]").GetValue<object>());
+        }
+
+        [Fact]
+        public static void GetValueKind()
+        {
+            Assert.Equal(JsonValueKind.Object, JsonNode.Parse("{}").GetValueKind());
+            Assert.Equal(JsonValueKind.Array, JsonNode.Parse("[]").GetValueKind());
+            Assert.Equal(JsonValueKind.Number, JsonNode.Parse("12").GetValueKind());
+            Assert.Equal(JsonValueKind.String, JsonNode.Parse("\"12\"").GetValueKind());
+            Assert.Equal(JsonValueKind.True, JsonNode.Parse("true").GetValueKind());
+            Assert.Equal(JsonValueKind.False, JsonNode.Parse("false").GetValueKind());
+        }
+
+        [Fact]
+        public static void GetPropertyName()
+        {
+            JsonNode jsonNode = JsonNode.Parse("{\"a\" : \"b\"}");
+            Assert.Equal("a", jsonNode["a"].GetPropertyName());
+
+            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("[]").GetPropertyName());
+            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("5").GetPropertyName());
+        }
+
+        [Fact]
+        public static void GetElementIndex()
+        {
+            JsonNode jsonNode = JsonNode.Parse("[90, \"str\", true, false]");
+            Assert.Equal(0, jsonNode[0].GetElementIndex());
+            Assert.Equal(1, jsonNode[1].GetElementIndex());
+            Assert.Equal(2, jsonNode[2].GetElementIndex());
+            Assert.Equal(3, jsonNode[3].GetElementIndex());
+
+            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("{}").GetElementIndex());
+            Assert.Throws<InvalidOperationException>(() => JsonNode.Parse("5").GetElementIndex());
+        }
+
+
+        [Fact]
+        public static void ReplaceWith()
+        {
+            JsonNode jsonNode = JsonNode.Parse("[90, 2, 3]");
+            jsonNode[1].ReplaceWith(12);
+            jsonNode[2].ReplaceWith("str");
+
+            Assert.Equal(12, jsonNode[1].GetValue<int>());
+            Assert.Equal("str", jsonNode[2].GetValue<string>());
+
+            Assert.Equal("[90,12,\"str\"]", jsonNode.ToJsonString());
+
+            jsonNode = JsonNode.Parse("{\"a\": \"b\"}");
+            jsonNode["a"].ReplaceWith("c");
+            Assert.Equal("{\"a\":\"c\"}", jsonNode.ToJsonString());
         }
     }
 }

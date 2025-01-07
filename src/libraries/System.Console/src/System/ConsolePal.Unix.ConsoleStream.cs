@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -47,7 +47,7 @@ namespace System
                     ConsolePal.Read(_handle, buffer);
 
             public override void Write(ReadOnlySpan<byte> buffer) =>
-                ConsolePal.Write(_handle, buffer);
+                ConsolePal.WriteFromConsoleStream(_handle, buffer);
 
             public override void Flush()
             {

@@ -18,7 +18,9 @@ namespace AssemblyStripper
         {
             CustomAttributeRow row_left = (CustomAttributeRow)left;
             CustomAttributeRow row_right = (CustomAttributeRow)right;
-            return row_left.Parent.RID.CompareTo(row_right.Parent.RID);
+            var leftParentCodedIdx = Utilities.CompressMetadataToken(CodedIndex.HasCustomAttribute, row_left.Parent);
+            var rightParentCodedIdx = Utilities.CompressMetadataToken(CodedIndex.HasCustomAttribute, row_right.Parent);
+            return leftParentCodedIdx.CompareTo(rightParentCodedIdx);
         }
     }
 
@@ -234,6 +236,20 @@ namespace AssemblyStripper
         {
             AssemblyDefinition assembly = AssemblyFactory.GetAssembly(assemblyFile);
             AssemblyStripper.StripAssembly(assembly, outputPath);
+        }
+
+        public static bool TryStripAssembly(string assemblyFile, string outputPath)
+        {
+            try
+            {
+                StripAssembly(assemblyFile, outputPath);
+                return true;
+            }
+            // Skip unmanged assemblies
+            catch (ImageFormatException)
+            {
+                return false;
+            }
         }
     }
 }

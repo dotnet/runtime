@@ -188,7 +188,7 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
  *
  *   Call the original signal handler for the signal given by the arguments, which
  * should be the same as for a signal handler. Returns TRUE if the original handler
- * was called, false otherwise.
+ * was called, false otherwise. NOTE: sigaction.sa_handler == SIG_DFL handlers are not considered.
  */
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
@@ -196,6 +196,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	int signal = MONO_SIG_HANDLER_GET_SIGNO ();
 	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (signal);
 
+	// Ignores chaining to default signal handlers i.e. when saved_handler->sa_handler == SIG_DFL
 	if (saved_handler && saved_handler->sa_handler) {
 		if (!(saved_handler->sa_flags & SA_SIGINFO)) {
 			saved_handler->sa_handler (signal);
@@ -208,6 +209,27 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	}
 	return FALSE;
 }
+
+
+/*
+ * mono_chain_signal_to_default_sigsegv_handler:
+ *
+ *   Call the original SIGSEGV signal handler in cases when the original handler is
+ * sigaction.sa_handler == SIG_DFL. This is used to propagate the crash to the OS.
+ */
+void
+mono_chain_signal_to_default_sigsegv_handler (void)
+{
+	struct sigaction *saved_handler = (struct sigaction *)get_saved_signal_handler (SIGSEGV);
+
+	if (saved_handler && saved_handler->sa_handler == SIG_DFL) {
+		sigaction (SIGSEGV, saved_handler, NULL);
+		raise (SIGSEGV);
+	} else {
+		g_async_safe_printf ("\nFailed to chain SIGSEGV signal to the default handler.\n");
+	}
+}
+
 
 MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 {
@@ -348,8 +370,14 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 
 	/* if there was already a handler in place for this signal, store it */
 	if (! (previous_sa.sa_flags & SA_SIGINFO) &&
-			(SIG_DFL == previous_sa.sa_handler)) {
-		/* it there is no sa_sigaction function and the sa_handler is default, we can safely ignore this */
+			(SIG_DFL == previous_sa.sa_handler) && signo != SIGSEGV) {
+		/* 
+		 * If there is no sa_sigaction function and the sa_handler is default, 
+		 * it means the currently registered handler for this signal is the default one.
+		 * For signal chaining, we need to store the default SIGSEGV handler so that the crash 
+		 * is properly propagated, while default handlers for other signals are ignored and 
+		 * are not considered.
+		 */
 	} else {
 		if (mono_do_signal_chaining)
 			save_old_signal_handler (signo, &previous_sa);
@@ -390,6 +418,8 @@ mono_runtime_posix_install_handlers (void)
 	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
 	sigaddset (&signal_set, SIGQUIT);
+	add_signal_handler (SIGTERM, mono_sigterm_signal_handler, SA_RESTART);
+	sigaddset (&signal_set, SIGTERM);
 	add_signal_handler (SIGILL, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
@@ -786,7 +816,8 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		g_assertion_disable_global (assert_printer_callback);
 	} else {
 		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
-
+		g_async_safe_printf ("\nExiting early due to double fault.\n");
+		_exit (-1);
 	}
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -845,11 +876,6 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		// If we can't fork, do as little as possible before exiting
 	}
 
-	if (double_faulted) {
-		g_async_safe_printf("\nExiting early due to double fault.\n");
-		_exit (-1);
-	}
-
 #endif
 #else
 #ifdef HOST_ANDROID
@@ -885,23 +911,15 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 }
 #endif /* !MONO_CROSS_COMPILE */
 
-static gchar *gdb_path;
-static gchar *lldb_path;
-
 void
 mono_init_native_crash_info (void)
 {
-	gdb_path = g_find_program_in_path ("gdb");
-	lldb_path = g_find_program_in_path ("lldb");
 }
 
 static gboolean
 native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)
 {
-	if (!gdb_path)
-		return FALSE;
-
-	argv [0] = gdb_path;
+	argv [0] = "gdb";
 	argv [1] = "-batch";
 	argv [2] = "-x";
 	argv [3] = commands_filename;
@@ -926,10 +944,7 @@ native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char*
 static gboolean
 native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char* commands_filename)
 {
-	if (!lldb_path)
-		return FALSE;
-
-	argv [0] = lldb_path;
+	argv [0] = "lldb";
 	argv [1] = "--batch";
 	argv [2] = "--source";
 	argv [3] = commands_filename;
@@ -955,7 +970,7 @@ native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char
 void
 mono_gdb_render_native_backtraces (pid_t crashed_pid)
 {
-#ifdef HAVE_EXECV
+#ifdef HAVE_EXECVP
 	const char *argv [10];
 	memset (argv, 0, sizeof (char*) * 10);
 
@@ -993,12 +1008,12 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 exec:
 	close (commands_handle);
-	execv (argv [0], (char**)argv);
+	execvp (argv [0], (char**)argv);
 
 	_exit (-1);
 #else
 	g_async_safe_printf ("mono_gdb_render_native_backtraces not supported on this platform\n");
-#endif // HAVE_EXECV
+#endif // HAVE_EXECVP
 }
 
 #if !defined (__MACH__)

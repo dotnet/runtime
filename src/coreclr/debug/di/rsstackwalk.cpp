@@ -595,6 +595,11 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - native stack frame (%p)", this);
         return S_FALSE;
     }
+    else if (ft == IDacDbiInterface::kManagedExceptionHandlingCodeFrame)
+    {
+        STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - managed exception handling code frame (%p)", this);
+        return S_FALSE;
+    }
     else if (ft == IDacDbiInterface::kExplicitFrame)
     {
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "CSW::GFW - explicit frame (%p)", this);
@@ -771,7 +776,8 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                                 frameData.v.exactGenericArgsToken,
                                                                 frameData.v.dwExactGenericArgsTokenIndex,
                                                                 !!frameData.v.fVarArgs,
-                                                                pReJitCode));
+                                                                pReJitCode,
+                                                                pJITFuncData->justAfterILThrow));
 
             // Initialize the frame.  This is a nop if the method is not a vararg method.
             hr = pJITILFrame->Init();

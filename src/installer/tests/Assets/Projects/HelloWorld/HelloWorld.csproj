@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <!-- FileVersion always gets set for projects in this repo by _InitializeAssemblyVersion. Update the file version afterwards. -->
+  <Target Name="SetFileVersion" AfterTargets="_InitializeAssemblyVersion">
+    <PropertyGroup>
+      <FileVersion>$(ProductVersion)</FileVersion>
+    </PropertyGroup>
+  </Target>
+
+</Project>

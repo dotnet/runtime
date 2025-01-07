@@ -8,7 +8,7 @@ namespace System.Reflection.Tests
 {
     public class InvokeEmitTests
     {
-        [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
+        [ConditionalFact(typeof(InvokeEmitTests), nameof(IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Method()
         {
             MethodInfo method = typeof(TestClassThatThrows).GetMethod(nameof(TestClassThatThrows.Throw))!;
@@ -17,10 +17,10 @@ namespace System.Reflection.Tests
 
             Assert.Contains("Here", exInner.ToString());
             Assert.Contains("InvokeStub_TestClassThatThrows", exInner.ToString());
-            Assert.DoesNotContain(InterpretedMethodName, exInner.ToString());
+            Assert.DoesNotContain("InterpretedInvoke_Method", exInner.ToString());
         }
 
-        [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
+        [ConditionalFact(typeof(InvokeEmitTests), nameof(IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Constructor()
         {
             ConstructorInfo ctor = typeof(TestClassThatThrows).GetConstructor(Type.EmptyTypes)!;
@@ -29,7 +29,7 @@ namespace System.Reflection.Tests
 
             Assert.Contains("Here", exInner.ToString());
             Assert.Contains("InvokeStub_TestClassThatThrows", exInner.ToString());
-            Assert.DoesNotContain(InterpretedMethodName, exInner.ToString());
+            Assert.DoesNotContain("InterpretedInvoke_Constructor", exInner.ToString());
         }
 
         private static bool IsEmitInvokeSupported()
@@ -38,11 +38,7 @@ namespace System.Reflection.Tests
             return RuntimeFeature.IsDynamicCodeSupported;
         }
 
-        private static string InterpretedMethodName => PlatformDetection.IsMonoRuntime ?
-                "System.Reflection.MethodInvoker.InterpretedInvoke" :
-                "System.RuntimeMethodHandle.InvokeMethod";
-
-    private class TestClassThatThrows
+        private class TestClassThatThrows
         {
             public TestClassThatThrows()
             {

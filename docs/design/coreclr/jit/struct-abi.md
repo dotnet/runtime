@@ -85,8 +85,7 @@ This method is responsible for the first part of what is currently `fgMorphArgs(
     - Note that the `isSplit` property would evaluate to false on targets where
       it is not supported, reducing the need for `ifdef`s (we can rely on the compiler
       to eliminate those dead paths).
-- Validate that each struct argument is either a `GT_LCL_VAR`, a `GT_OBJ`,
-  or a `GT_MKREFANY`.
+- Validate that each struct argument is either a `GT_LCL_VAR` or a `GT_OBJ`
 
 During the initial `fgMorph` phase, `fgMorphArgs()` does the following:
 

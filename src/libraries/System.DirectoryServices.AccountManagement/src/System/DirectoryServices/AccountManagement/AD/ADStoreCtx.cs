@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Net;
-using System.Security.Principal;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.DirectoryServices;
+using System.DirectoryServices.ActiveDirectory;
+using System.Globalization;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using MACLPrinc = System.Security.Principal;
-using System.Security.AccessControl;
-using System.DirectoryServices.ActiveDirectory;
 
 namespace System.DirectoryServices.AccountManagement
 {
@@ -2405,6 +2405,9 @@ namespace System.DirectoryServices.AccountManagement
         // Must be called inside of lock(domainInfoLock)
         protected virtual void LoadDomainInfo()
         {
+            const int LdapDefaultPort = 389;
+            const int LdapsDefaultPort = 636;
+
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");
 
             Debug.Assert(this.ctxBase != null);
@@ -2417,9 +2420,23 @@ namespace System.DirectoryServices.AccountManagement
             // From that, we can build the DNS Domain Name
             this.dnsHostName = ADUtils.GetServerName(this.ctxBase);
 
+            // Pull the requested port number
+            int port = LdapDefaultPort;
+            if (Uri.TryCreate(ctxBase.Path, UriKind.Absolute, out Uri ldapUri))
+            {
+                if (ldapUri.Port != -1)
+                {
+                    port = ldapUri.Port;
+                }
+                else if (string.Equals(ldapUri.Scheme, "LDAPS", StringComparison.OrdinalIgnoreCase))
+                {
+                    port = LdapsDefaultPort;
+                }
+            }
+
             string dnsDomainName = "";
 
-            using (DirectoryEntry rootDse = new DirectoryEntry("LDAP://" + this.dnsHostName + "/rootDse", "", "", AuthenticationTypes.Anonymous))
+            using (DirectoryEntry rootDse = new DirectoryEntry($"LDAP://{this.dnsHostName}:{port}/rootDse", "", "", AuthenticationTypes.Anonymous))
             {
                 this.defaultNamingContext = (string)rootDse.Properties["defaultNamingContext"][0];
                 this.contextBasePartitionDN = this.defaultNamingContext;

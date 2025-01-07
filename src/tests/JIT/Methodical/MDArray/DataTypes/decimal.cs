@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@decimal;
+
 public struct VT
 {
     public decimal[,] decimal2darr;
@@ -35,6 +37,7 @@ public class decimalMDArrTest
     static decimal[][, ,] ja2_b = new decimal[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

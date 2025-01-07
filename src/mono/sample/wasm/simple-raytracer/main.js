@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnet } from './dotnet.js'
+import { dotnet } from './_framework/dotnet.js'
 
 function renderCanvas(rgbaView) {
     const canvas = document.getElementById("out");
@@ -19,8 +19,9 @@ const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 globalThis.onClick = exports.Program.OnClick;
 
-await dotnet
+const runtime = await dotnet
     .withRuntimeOptions(["--jiterpreter-stats-enabled"])
-    .run();
+    .create();
+await runtime.runMain();
 const btnRender = document.getElementById("btnRender");
 btnRender.disabled = false;
