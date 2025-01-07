@@ -171,7 +171,6 @@ else()
         System.IO.Compression.Native-Static
         System.Net.Security.Native-Static
         System.Native-Static
-        System.Security.Cryptography.Native.OpenSsl-Static
 
         coreclrpal_dac
         corguids
@@ -179,6 +178,10 @@ else()
         eventprovider
         nativeresourcestring
     )
+
+    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID)
+        LIST(APPEND NATIVE_LIBS System.Security.Cryptography.Native.OpenSsl-Static)
+    endif()
 
     # additional requirements for System.IO.Compression.Native
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
@@ -201,7 +204,6 @@ else()
     endif()
 
     set(RUNTIMEINFO_LIB runtimeinfo)
-
 endif()
 
 if(CLR_CMAKE_TARGET_APPLE)
@@ -219,13 +221,11 @@ endif()
 #
 if(CLR_CMAKE_TARGET_APPLE)
    find_library(COREFOUNDATION CoreFoundation)
-   find_library(CORESERVICES CoreServices)
    find_library(SECURITY Security)
    find_library(SYSTEM System)
 
    LIST(APPEND NATIVE_LIBS
      ${COREFOUNDATION}
-     ${CORESERVICES}
      ${SECURITY}
      ${SYSTEM}
    )

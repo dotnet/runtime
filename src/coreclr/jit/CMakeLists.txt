@@ -624,7 +624,7 @@ set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
   set(TARGET_OS_NAME unix_osx)
 elseif (CLR_CMAKE_TARGET_UNIX)
   set(TARGET_OS_NAME unix)
