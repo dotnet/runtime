@@ -1037,9 +1037,13 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
         //
         fgRemoveEHTableEntry(XTnum);
 
-        // (6) The old try entry no longer needs special protection.
+        // (6) The old try entry may no longer need special protection.
+        // (it may still be an entry of an enclosing try)
         //
-        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        if (!bbIsTryBeg(firstTryBlock))
+        {
+            firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        }
 
         // Another one bites the dust...
         emptyCount++;
