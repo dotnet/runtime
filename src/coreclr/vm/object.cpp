@@ -301,18 +301,6 @@ STRINGREF AllocateString(SString sstr)
     return strObj;
 }
 
-CHARARRAYREF AllocateCharArray(DWORD dwArrayLength)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    return (CHARARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_CHAR, dwArrayLength);
-}
-
 void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;

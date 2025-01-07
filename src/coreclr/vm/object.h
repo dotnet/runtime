@@ -1579,7 +1579,6 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 #define ArgSlotToBool(s)  ((BOOL)(s))
 
 STRINGREF AllocateString(SString sstr);
-CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 
 #ifdef FEATURE_COMINTEROP
 
