@@ -47,9 +47,6 @@ VPTR_CLASS(CLRToCOMMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INTERPRETER
-VPTR_CLASS(InterpreterFrame)
-#endif // FEATURE_INTERPRETER
 VPTR_CLASS(DebuggerClassInitMarkFrame)
 VPTR_CLASS(DebuggerSecurityCodeMarkFrame)
 VPTR_CLASS(DebuggerExitFrame)

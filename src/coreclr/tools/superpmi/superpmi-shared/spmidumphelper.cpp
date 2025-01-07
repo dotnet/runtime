@@ -233,7 +233,6 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(OSR);
     AddFlag(ALT_JIT);
     AddFlag(FROZEN_ALLOC_ALLOWED);
-    AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
     AddFlag(PROF_NO_PINVOKE_INLINE);
