@@ -81,11 +81,10 @@ SupportedISA DetermineSupportedISA()
     return SupportedISA::None;
 }
 
-#elif defined(TARGET_UNIX)
+#elif defined(TARGET_AMD64) && defined(TARGET_UNIX)
 
 SupportedISA DetermineSupportedISA()
 {
-#if defined(TARGET_AMD64)
     __builtin_cpu_init();
     if (__builtin_cpu_supports("avx2"))
     {
@@ -98,13 +97,18 @@ SupportedISA DetermineSupportedISA()
     {
         return SupportedISA::None;
     }
-#elif defined(TARGET_ARM64)
-    // Assume all Arm64 targets have NEON.
-    return SupportedISA::NEON;
-#endif
+
 }
 
-#endif // defined(TARGET_UNIX)
+#elif defined(TARGET_ARM64)
+
+SupportedISA DetermineSupportedISA()
+{
+    // Assume all Arm64 targets have NEON.
+    return SupportedISA::NEON;
+}
+
+#endif // TARGET_AMD64 && TARGET_WINDOWS
 
 static bool s_initialized;
 static SupportedISA s_supportedISA;
