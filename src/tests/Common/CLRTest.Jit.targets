@@ -297,16 +297,7 @@ import shutil
 import subprocess
 import sys
 import glob
-import hashlib
-
-def hash_file(filename):
-    h  = hashlib.sha256()
-    b  = bytearray(128*1024)
-    mv = memoryview(b)
-    with open(filename, 'rb', buffering=0) as f:
-        for n in iter(lambda : f.readinto(mv), 0):
-            h.update(mv[:n])
-    return h.hexdigest()
+import filecmp
 
 def is_managed_assembly(file):
     proc = subprocess.Popen([f'{os.environ["CORE_ROOT"]}/corerun', f'{os.environ["CORE_ROOT"]}/AssemblyChecker/AssemblyChecker.dll', file])
@@ -386,9 +377,7 @@ for inputAssemblyName in glob.glob("*.dll"):
       # Test determinism
       if test_det:
 
-        hash = hash_file(inputAssemblyName)
-
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output=diff.{inputAssemblyName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -398,7 +387,7 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
-        if hash != hash_file(inputAssemblyName):
+        if not filecmp.cmp(inputAssemblyName, f'diff.{inputAssemblyName}', shallow=False):
           print("ILASM determinism failed")
           sys.exit(1)
         else:
@@ -421,9 +410,7 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
-        hash = hash_file(pdbName)
-
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output=diff.{pdbName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -433,7 +420,7 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
-        if hash != hash_file(pdbName):
+        if not filecmp.cmp(pdbName, f'diff.{pdbName}', shallow=False):
           print("ILASM PDB determinism failed")
           sys.exit(1)
         else:
