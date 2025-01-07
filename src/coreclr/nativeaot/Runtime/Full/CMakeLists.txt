@@ -43,10 +43,10 @@ if(CLR_CMAKE_TARGET_WIN32)
   add_dependencies(standalonegc-enabled aot_etw_headers)
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortEnabled STATIC ${VXSORT_SOURCES})
   add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
 
