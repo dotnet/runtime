@@ -125,7 +125,7 @@ typedef enum ReplacesGeneralNumericDefines
 
 typedef enum ReplacesCorHdrNumericDefines
 {
-// CLR Header entry point flags.
+// COM+ Header entry point flags.
     COMIMAGE_FLAGS_ILONLY               =0x00000001,
     COMIMAGE_FLAGS_32BITREQUIRED        =0x00000002,    // *** Do not manipulate this bit directly (see notes above)
     COMIMAGE_FLAGS_IL_LIBRARY           =0x00000004,
