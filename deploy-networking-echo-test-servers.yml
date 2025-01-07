@@ -41,7 +41,8 @@ extends:
         - script: echo "{}" > ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/global.json
           displayName: Bypass global.json
 
-        - script: dotnet publish ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=$(FrameworkVersion)
+        - script: dotnet publish -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=$(FrameworkVersion)
+          workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
           displayName: Run dotnet publish
 
         - task: zip@0
