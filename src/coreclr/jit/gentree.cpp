@@ -21097,9 +21097,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             assert(varTypeIsByte(simdBaseType) || (varTypeIsLong(simdBaseType) && (op == GT_RSH)));
 
             // We will emulate arithmetic shift by using logical shift and then masking in the sign bits.
-            genTreeOps simdOp = op == GT_RSH ? GT_RSZ : op;
-            intrinsic         = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, simdOp, op1, op2ForLookup,
-                                                                             genActualType(simdBaseType), simdSize, false);
+            genTreeOps instrOp = op == GT_RSH ? GT_RSZ : op;
+            intrinsic          = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, instrOp, op1, op2ForLookup,
+                                                                              genActualType(simdBaseType), simdSize, false);
             assert(intrinsic != NI_Illegal);
 
             GenTree* maskAmountOp;
@@ -21133,8 +21133,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 maskAmountOp =
                     varTypeIsByte(simdBaseType)
-                        ? gtNewOperNode(op, TYP_INT, gtNewIconNode(0xFF), shiftCountDup)
-                        : gtNewOperNode(op, simdBaseType, gtNewLconNode(0xFFFFFFFFFFFFFFFFULL), shiftCountDup);
+                        ? gtNewOperNode(instrOp, TYP_INT, gtNewIconNode(0xFF), shiftCountDup)
+                        : gtNewOperNode(instrOp, simdBaseType, gtNewLconNode(0xFFFFFFFFFFFFFFFFULL), shiftCountDup);
             }
 
             if (op == GT_RSH)
