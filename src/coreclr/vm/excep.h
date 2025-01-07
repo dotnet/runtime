@@ -11,8 +11,8 @@
 
 #include "exstatecommon.h"
 #include "exceptmacros.h"
-#include "corerror.h"  // HResults for the CLR Runtime
-#include "corexcep.h"  // Exception codes for the CLR Runtime
+#include "corerror.h"
+#include "corexcep.h"
 
 class Thread;
 

@@ -2718,7 +2718,6 @@ interface ICorProfilerInfo : IUnknown
      *
      * The code profiler calls GetEventMask to obtain the current event
      * categories for which it is to receive event notifications from the CLR
-     * Runtime.
      */
     HRESULT GetEventMask(
                 [out] DWORD *pdwEvents);
