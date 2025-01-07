@@ -283,12 +283,12 @@ namespace Wasm.Build.Tests
         }
 
         [Theory]
-        [InlineData("Microsoft.NET.Sdk", false)]
-        [InlineData("Microsoft.NET.Sdk.WebAssembly", true)]
-        public void LibraryModeBuild(string sdk, bool hasWasmAppBundle)
+        [InlineData("Microsoft.NET.Sdk", false, "<TargetIdentifier>browser-wasm</TargetIdentifier>")]
+        [InlineData("Microsoft.NET.Sdk.WebAssembly", true, "")] // targetId is implicityly set to browser-wasm
+        public void LibraryModeBuild(string sdk, bool hasWasmAppBundle, string explicitTargetId)
         {
             var config = Configuration.Release;
-            string extraProperties = $"<OutputType>Library</OutputType>";
+            string extraProperties = $"<OutputType>Library</OutputType>{explicitTargetId}";
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "libraryMode", extraProperties: extraProperties);
             string wasmBrowserSdkFromTemplate = """Microsoft.NET.Sdk.WebAssembly""";
             if (wasmBrowserSdkFromTemplate != sdk)
@@ -296,7 +296,7 @@ namespace Wasm.Build.Tests
                 UpdateFile($"{info.ProjectName}.csproj",  new Dictionary<string, string>() { 
                     { wasmBrowserSdkFromTemplate, sdk } 
                 });
-            }            
+            }
             ReplaceFile("Program.cs", Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "LibraryMode.cs"));
             BuildProject(info, config, new BuildOptions(AssertAppBundle: hasWasmAppBundle));
         }
