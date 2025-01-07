@@ -37,7 +37,7 @@
     <MonoSupported Condition="'$(_MonoSupportedOS)' == 'true' and '$(_MonoSupportedArch)' == 'true'">true</MonoSupported>
 
     <!-- Determine if the Mono AOT compiler can run on the target (cross-targeting other RIDs) -->
-    <_MonoAotCrossSupportedOS Condition="'$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsLinuxGlibc)' == 'true' or '$(TargetsLinuxMusl)' == 'true'">true</_MonoAotCrossSupportedOS>
+    <_MonoAotCrossSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_MonoAotCrossSupportedOS>
     <_MonoAotCrossSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64'">true</_MonoAotCrossSupportedArch>
     <MonoAOTCrossCompilerSupported Condition="'$(_MonoAotCrossSupportedOS)' == 'true' and '$(_MonoAotCrossSupportedArch)' == 'true'">true</MonoAOTCrossCompilerSupported>
 
@@ -56,6 +56,7 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. On Windows mono is supported for x86/x64 only. -->
