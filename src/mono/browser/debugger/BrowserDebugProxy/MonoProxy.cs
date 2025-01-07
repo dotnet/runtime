@@ -916,13 +916,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 logger.LogDebug($"Unable to evaluate breakpoint condition '{condition}': {ree}");
                 SendLog(sessionId, $"Unable to evaluate breakpoint condition '{condition}': {ree.Message}", token, type: "error");
                 bp.ConditionAlreadyEvaluatedWithError = true;
-                SendExceptionToTelemetry(ree, "EvaluateCondition", sessionId, token);
+                ReportDebuggerExceptionToTelemetry("EvaluateCondition", sessionId, token);
             }
             catch (Exception e)
             {
                 Log("info", $"Unable to evaluate breakpoint condition '{condition}': {e}");
                 bp.ConditionAlreadyEvaluatedWithError = true;
-                SendExceptionToTelemetry(e, "EvaluateCondition", sessionId, token);
+                ReportDebuggerExceptionToTelemetry("EvaluateCondition", sessionId, token);
             }
             return false;
         }
@@ -1521,25 +1521,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (ReturnAsErrorException ree)
             {
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
-                SendExceptionToTelemetry(ree, "OnEvaluateOnCallFrame", msg_id, token);
+                ReportDebuggerExceptionToTelemetry("OnEvaluateOnCallFrame", msg_id, token);
             }
             catch (Exception e)
             {
                 logger.LogDebug($"Error in EvaluateOnCallFrame for expression '{expression}' with '{e}.");
                 var ree = new ReturnAsErrorException(e.Message, e.GetType().Name);
                 SendResponse(msg_id, AddCallStackInfoToException(ree.Error, context, scopeId), token);
-                SendExceptionToTelemetry(e, "OnEvaluateOnCallFrame", msg_id, token);
+                ReportDebuggerExceptionToTelemetry("OnEvaluateOnCallFrame", msg_id, token);
             }
 
             return true;
         }
 
-        private void SendExceptionToTelemetry(Exception exc, string callingFunction, SessionId msg_id, CancellationToken token)
+        private void ReportDebuggerExceptionToTelemetry(string callingFunction, SessionId msg_id, CancellationToken token)
         {
             JObject reportBlazorDebugError = JObject.FromObject(new
             {
                 exceptionType = "uncaughtException",
-                error = $"{exc.Message} at {callingFunction}",
+                error = $"BlazorDebugger exception at {callingFunction}",
             });
             SendEvent(msg_id, "DotnetDebugger.reportBlazorDebugError", reportBlazorDebugError, token);
         }
