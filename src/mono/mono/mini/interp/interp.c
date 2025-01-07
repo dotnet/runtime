@@ -502,8 +502,9 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->is_invoke = (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp(method->name, "Invoke");
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		imethod->optimized = TRUE;
+
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
@@ -3916,6 +3917,7 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 		if (method_entry_ex)
 			THROW_EX (method_entry_ex, NULL);
 		EXCEPTION_CHECKPOINT;
+		CHECK_RESUME_STATE (context);
 	}
 
 	if (!clause_args) {
@@ -4372,6 +4374,7 @@ interp_call:
 				if (call_ex)
 					THROW_EX (call_ex, NULL);
 				EXCEPTION_CHECKPOINT;
+				CHECK_RESUME_STATE (context);
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
@@ -4474,12 +4477,26 @@ interp_call:
 #define BACK_BRANCH_PROFILE(offset)
 #endif
 
+		MINT_IN_CASE(MINT_BR_S) {
+			short br_offset = (short) *(ip + 1);
+			BACK_BRANCH_PROFILE (br_offset);
+			ip += br_offset;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BR) {
 			gint32 br_offset = (gint32) READ32(ip + 1);
 			BACK_BRANCH_PROFILE (br_offset);
 			ip += br_offset;
 			MINT_IN_BREAK;
 		}
+
+#define ZEROP_S(datatype, op) \
+	if (LOCAL_VAR (ip [1], datatype) op 0) { \
+		gint16 br_offset = (gint16) ip [2]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		ip += br_offset; \
+	} else \
+		ip += 3;
 
 #define ZEROP(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op 0) { \
@@ -4489,11 +4506,23 @@ interp_call:
 	} else \
 		ip += 4;
 
+		MINT_IN_CASE(MINT_BRFALSE_I4_S)
+			ZEROP_S(gint32, ==);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BRFALSE_I8_S)
+			ZEROP_S(gint64, ==);
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I4)
 			ZEROP(gint32, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I8)
 			ZEROP(gint64, ==);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BRTRUE_I4_S)
+			ZEROP_S(gint32, !=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BRTRUE_I8_S)
+			ZEROP_S(gint64, !=);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I4)
 			ZEROP(gint32, !=);
@@ -4501,6 +4530,15 @@ interp_call:
 		MINT_IN_CASE(MINT_BRTRUE_I8)
 			ZEROP(gint64, !=);
 			MINT_IN_BREAK;
+#define CONDBR_S(cond) \
+	if (cond) { \
+		gint16 br_offset = (gint16) ip [3]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		ip += br_offset; \
+	} else \
+		ip += 4;
+#define BRELOP_S(datatype, op) \
+	CONDBR_S(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 
 #define CONDBR(cond) \
 	if (cond) { \
@@ -4513,6 +4551,24 @@ interp_call:
 #define BRELOP(datatype, op) \
 	CONDBR(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 
+		MINT_IN_CASE(MINT_BEQ_I4_S)
+			BRELOP_S(gint32, ==)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BEQ_I8_S)
+			BRELOP_S(gint64, ==)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BEQ_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(!isunordered (f1, f2) && f1 == f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BEQ_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(!mono_isunordered (d1, d2) && d1 == d2)
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BEQ_I4)
 			BRELOP(gint32, ==)
 			MINT_IN_BREAK;
@@ -4529,6 +4585,24 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(!mono_isunordered (d1, d2) && d1 == d2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BGE_I4_S)
+			BRELOP_S(gint32, >=)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I8_S)
+			BRELOP_S(gint64, >=)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(!isunordered (f1, f2) && f1 >= f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BGE_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(!mono_isunordered (d1, d2) && d1 >= d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BGE_I4)
@@ -4549,6 +4623,24 @@ interp_call:
 			CONDBR(!mono_isunordered (d1, d2) && d1 >= d2)
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_BGT_I4_S)
+			BRELOP_S(gint32, >)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I8_S)
+			BRELOP_S(gint64, >)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(!isunordered (f1, f2) && f1 > f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BGT_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(!mono_isunordered (d1, d2) && d1 > d2)
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BGT_I4)
 			BRELOP(gint32, >)
 			MINT_IN_BREAK;
@@ -4565,6 +4657,24 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(!mono_isunordered (d1, d2) && d1 > d2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BLT_I4_S)
+			BRELOP_S(gint32, <)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I8_S)
+			BRELOP_S(gint64, <)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(!isunordered (f1, f2) && f1 < f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BLT_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(!mono_isunordered (d1, d2) && d1 < d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BLT_I4)
@@ -4585,6 +4695,24 @@ interp_call:
 			CONDBR(!mono_isunordered (d1, d2) && d1 < d2)
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_BLE_I4_S)
+			BRELOP_S(gint32, <=)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I8_S)
+			BRELOP_S(gint64, <=)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(!isunordered (f1, f2) && f1 <= f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BLE_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(!mono_isunordered (d1, d2) && d1 <= d2)
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BLE_I4)
 			BRELOP(gint32, <=)
 			MINT_IN_BREAK;
@@ -4601,6 +4729,24 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(!mono_isunordered (d1, d2) && d1 <= d2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BNE_UN_I4_S)
+			BRELOP_S(gint32, !=)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BNE_UN_I8_S)
+			BRELOP_S(gint64, !=)
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BNE_UN_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(isunordered (f1, f2) || f1 != f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BNE_UN_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(mono_isunordered (d1, d2) || d1 != d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BNE_UN_I4)
@@ -4622,6 +4768,14 @@ interp_call:
 			MINT_IN_BREAK;
 		}
 
+#define BRELOP_S_CAST(datatype, op) \
+	if (LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype)) { \
+		gint16 br_offset = (gint16) ip [3]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		ip += br_offset; \
+	} else \
+		ip += 4;
+
 #define BRELOP_CAST(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype)) { \
 		gint32 br_offset = (gint32)READ32(ip + 3); \
@@ -4630,6 +4784,24 @@ interp_call:
 	} else \
 		ip += 5;
 
+		MINT_IN_CASE(MINT_BGE_UN_I4_S)
+			BRELOP_S_CAST(guint32, >=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I8_S)
+			BRELOP_S_CAST(guint64, >=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(isunordered (f1, f2) || f1 >= f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BGE_UN_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(mono_isunordered (d1, d2) || d1 >= d2)
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BGE_UN_I4)
 			BRELOP_CAST(guint32, >=);
 			MINT_IN_BREAK;
@@ -4646,6 +4818,24 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(mono_isunordered (d1, d2) || d1 >= d2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BGT_UN_I4_S)
+			BRELOP_S_CAST(guint32, >);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I8_S)
+			BRELOP_S_CAST(guint64, >);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(isunordered (f1, f2) || f1 > f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BGT_UN_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(mono_isunordered (d1, d2) || d1 > d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BGT_UN_I4)
@@ -4666,6 +4856,24 @@ interp_call:
 			CONDBR(mono_isunordered (d1, d2) || d1 > d2)
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_BLE_UN_I4_S)
+			BRELOP_S_CAST(guint32, <=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I8_S)
+			BRELOP_S_CAST(guint64, <=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(isunordered (f1, f2) || f1 <= f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BLE_UN_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(mono_isunordered (d1, d2) || d1 <= d2)
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_BLE_UN_I4)
 			BRELOP_CAST(guint32, <=);
 			MINT_IN_BREAK;
@@ -4682,6 +4890,24 @@ interp_call:
 			double d1 = LOCAL_VAR (ip [1], double);
 			double d2 = LOCAL_VAR (ip [2], double);
 			CONDBR(mono_isunordered (d1, d2) || d1 <= d2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BLT_UN_I4_S)
+			BRELOP_S_CAST(guint32, <);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I8_S)
+			BRELOP_S_CAST(guint64, <);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_R4_S) {
+			float f1 = LOCAL_VAR (ip [1], float);
+			float f2 = LOCAL_VAR (ip [2], float);
+			CONDBR_S(isunordered (f1, f2) || f1 < f2)
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BLT_UN_R8_S) {
+			double d1 = LOCAL_VAR (ip [1], double);
+			double d2 = LOCAL_VAR (ip [2], double);
+			CONDBR_S(mono_isunordered (d1, d2) || d1 < d2)
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BLT_UN_I4)
@@ -4705,12 +4931,12 @@ interp_call:
 
 #define ZEROP_SP(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op 0) { \
-		gint32 br_offset = (gint32)READ32(ip + 2); \
+		gint16 br_offset = (gint16) ip [2]; \
 		BACK_BRANCH_PROFILE (br_offset); \
 		SAFEPOINT; \
 		ip += br_offset; \
 	} else \
-		ip += 4;
+		ip += 3;
 
 MINT_IN_CASE(MINT_BRFALSE_I4_SP) ZEROP_SP(gint32, ==); MINT_IN_BREAK;
 MINT_IN_CASE(MINT_BRFALSE_I8_SP) ZEROP_SP(gint64, ==); MINT_IN_BREAK;
@@ -4719,12 +4945,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 #define CONDBR_SP(cond) \
 	if (cond) { \
-		gint32 br_offset = (gint32)READ32(ip + 3); \
+		gint16 br_offset = (gint16) ip [3]; \
 		BACK_BRANCH_PROFILE (br_offset); \
 		SAFEPOINT; \
 		ip += br_offset; \
 	} else \
-		ip += 5;
+		ip += 4;
 #define BRELOP_SP(datatype, op) \
 	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 
@@ -6905,25 +7131,31 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip = ret_ip;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALL_HANDLER) {
-			const guint16 *ret_ip = ip + 4;
+		MINT_IN_CASE(MINT_CALL_HANDLER)
+		MINT_IN_CASE(MINT_CALL_HANDLER_S) {
+			gboolean short_offset = *ip == MINT_CALL_HANDLER_S;
+			const guint16 *ret_ip = short_offset ? (ip + 3) : (ip + 4);
 			guint16 clause_index = *(ret_ip - 1);
 
 			*(const guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]) = ret_ip;
 
 			// jump to clause
-			ip += (gint32)READ32 (ip + 1);
+			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LEAVE_CHECK) {
+		MINT_IN_CASE(MINT_LEAVE_CHECK)
+		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
+			int leave_opcode = *ip;
+
 			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				MonoException *abort_exc = mono_interp_leave (frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, ip);
 			}
 
-			ip += (gint32)READ32 (ip + 1);
+			gboolean const short_offset = leave_opcode == MINT_LEAVE_S_CHECK;
+			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_ICALL) {
@@ -6959,6 +7191,46 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			mono_memory_barrier ();
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_U1) {
+			guint8 *dest = LOCAL_VAR (ip [2], guint8*);
+			guint8 exch = LOCAL_VAR (ip[3], guint8);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u8(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I1) {
+			gint8 *dest = LOCAL_VAR (ip [2], gint8*);
+			gint8 exch = LOCAL_VAR (ip[3], gint8);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint8)mono_atomic_xchg_u8((guint8*)dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_U2) {
+			guint16 *dest = LOCAL_VAR (ip [2], guint16*);
+			guint16 exch = LOCAL_VAR (ip[3], guint16);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_xchg_u16(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I2) {
+			gint16 *dest = LOCAL_VAR (ip [2], gint16*);
+			gint16 exch = LOCAL_VAR (ip[3], gint16);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_xchg_u16((guint16*)dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_EXCHANGE_I4) {
+			gint32 *dest = LOCAL_VAR (ip [2], gint32*);
+			gint32 exch = LOCAL_VAR (ip[3], gint32);
+			NULL_CHECK(dest);
+			LOCAL_VAR(ip[1], gint32) = mono_atomic_xchg_i32(dest, exch);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_EXCHANGE_I8) {
 			gboolean flag = FALSE;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);
@@ -6978,6 +7250,46 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			if (!flag)
 				LOCAL_VAR (ip [1], gint64) = mono_atomic_xchg_i64 (dest, exch);
 			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_U1) {
+			guint8 *dest = LOCAL_VAR(ip[2], guint8*);
+			guint8 value = LOCAL_VAR(ip[3], guint8);
+			guint8 comparand = LOCAL_VAR(ip[4], guint8);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u8(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I1) {
+			gint8 *dest = LOCAL_VAR(ip[2], gint8*);
+			gint8 value = LOCAL_VAR(ip[3], gint8);
+			gint8 comparand = LOCAL_VAR(ip[4], gint8);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint8)mono_atomic_cas_u8((guint8*)dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_U2) {
+			guint16 *dest = LOCAL_VAR(ip[2], guint16*);
+			guint16 value = LOCAL_VAR(ip[3], guint16);
+			guint16 comparand = LOCAL_VAR(ip[4], guint16);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], guint32) = (guint32)mono_atomic_cas_u16(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I2) {
+			gint16 *dest = LOCAL_VAR(ip[2], gint16*);
+			gint16 value = LOCAL_VAR(ip[3], gint16);
+			gint16 comparand = LOCAL_VAR(ip[4], gint16);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = (gint32)(gint16)mono_atomic_cas_u16((guint16*)dest, value, comparand);
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_MONO_CMPXCHG_I4) {
@@ -7348,7 +7660,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDLOCA_S)
 			LOCAL_VAR (ip [1], gpointer) = locals + ip [2];
-			ip += 3;
+			// ip[3] reserved for size data for jiterpreter
+			ip += 4;
 			MINT_IN_BREAK;
 
 #define MOV(argtype1,argtype2) \

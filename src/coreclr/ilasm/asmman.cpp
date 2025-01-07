@@ -245,7 +245,8 @@ void    AsmMan::EmitFiles()
 
 void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef)
 {
-    if(!isRef && (0==strcmp(szName, "mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
+    Assembler *mPA = ((Assembler*)m_pAssembler);
+    if(!isRef && (0==strcmp(szName, "mscorlib"))) mPA->m_fIsMscorlib = TRUE;
     if(!isRef && (m_pAssembly != NULL))
     {
         if(strcmp(szName, m_pAssembly->szName))
@@ -257,11 +258,12 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     {
         if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
+            bool hasOverride = (!isRef && mPA->m_pOverrideAssemblyName);
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
             m_pCurAsmRef->usVerMinor = (USHORT)0xFFFF;
             m_pCurAsmRef->usBuild = (USHORT)0xFFFF;
             m_pCurAsmRef->usRevision = (USHORT)0xFFFF;
-            m_pCurAsmRef->szName = szName;
+            m_pCurAsmRef->szName = hasOverride ? mPA->m_pOverrideAssemblyName : szName;
             m_pCurAsmRef->szAlias = szAlias ? szAlias : szName;
             m_pCurAsmRef->dwAlias = (DWORD)strlen(m_pCurAsmRef->szAlias);
             m_pCurAsmRef->dwAttr = dwAttr;
@@ -273,9 +275,9 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
         else
             report->error("Failed to allocate AsmManAssembly structure\n");
     }
-    ((Assembler*)m_pAssembler)->m_tkCurrentCVOwner = 0;
-    ((Assembler*)m_pAssembler)->m_CustomDescrListStack.PUSH(((Assembler*)m_pAssembler)->m_pCustomDescrList);
-    ((Assembler*)m_pAssembler)->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
+    mPA->m_tkCurrentCVOwner = 0;
+    mPA->m_CustomDescrListStack.PUSH(mPA->m_pCustomDescrList);
+    mPA->m_pCustomDescrList = m_pCurAsmRef ? &(m_pCurAsmRef->m_CustomDescrList) : NULL;
 
 }
 // copied from asmparse.y

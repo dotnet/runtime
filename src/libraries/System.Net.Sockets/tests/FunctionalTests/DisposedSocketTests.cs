@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class DisposedSocket
     {
         private static readonly byte[] s_buffer = new byte[1];
@@ -138,12 +139,14 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Linger")]
         public void LingerState_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().LingerState);
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Linger")]
         public void SetLingerState_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() =>
@@ -258,12 +261,14 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void DualMode_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket(AddressFamily.InterNetworkV6).DualMode);
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
         public void SetDualMode_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() =>

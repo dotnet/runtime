@@ -958,7 +958,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__), /* invalidateDFSTreeOnFGChange */ false);
     Metrics.RedundantBranchesEliminated++;
     return true;
 }
@@ -976,8 +976,9 @@ struct JumpThreadInfo
         , m_trueTarget(block->GetTrueTarget())
         , m_falseTarget(block->GetFalseTarget())
         , m_ambiguousVNBlock(nullptr)
-        , m_truePreds(BlockSetOps::MakeEmpty(comp))
-        , m_ambiguousPreds(BlockSetOps::MakeEmpty(comp))
+        , traits(comp->m_dfsTree->PostOrderTraits())
+        , m_truePreds(BitVecOps::MakeEmpty(&traits))
+        , m_ambiguousPreds(BitVecOps::MakeEmpty(&traits))
         , m_numPreds(0)
         , m_numAmbiguousPreds(0)
         , m_numTruePreds(0)
@@ -995,11 +996,13 @@ struct JumpThreadInfo
     BasicBlock* const m_falseTarget;
     // Block that brings in the ambiguous VN
     BasicBlock* m_ambiguousVNBlock;
+    // Traits for the below BitVecs
+    BitVecTraits traits;
     // Pred blocks for which the predicate will be true
-    BlockSet m_truePreds;
+    BitVec m_truePreds;
     // Pred blocks that can't be threaded or for which the predicate
     // value can't be determined
-    BlockSet m_ambiguousPreds;
+    BitVec m_ambiguousPreds;
     // Total number of predecessors
     int m_numPreds;
     // Number of predecessors that can't be threaded or for which the predicate
@@ -1024,12 +1027,6 @@ struct JumpThreadInfo
 //
 bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock)
 {
-    if (fgCurBBEpochSize != (fgBBNumMax + 1))
-    {
-        JITDUMP("Looks like we've added a new block (e.g. during optLoopHoist) since last renumber, so no threading\n");
-        return false;
-    }
-
     // If the block is the first block of try-region, then skip jump threading
     if (bbIsTryBeg(block))
     {
@@ -1286,7 +1283,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
         if (predBlock->KindIs(BBJ_SWITCH))
         {
             JITDUMP(FMT_BB " is a switch pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
             continue;
         }
@@ -1307,7 +1304,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             // lead to more complications, and it isn't that common. So we tolerate it.
             //
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
             continue;
         }
@@ -1318,12 +1315,12 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
                 jti.m_numAmbiguousPreds++;
-                BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                 continue;
             }
 
             jti.m_numTruePreds++;
-            BlockSetOps::AddElemD(this, jti.m_truePreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
             JITDUMP(FMT_BB " is a true pred\n", predBlock->bbNum);
         }
         else
@@ -1333,7 +1330,7 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             if (!BasicBlock::sameEHRegion(predBlock, jti.m_falseTarget))
             {
                 JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
-                BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                 jti.m_numAmbiguousPreds++;
                 continue;
             }
@@ -1515,7 +1512,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         {
             JITDUMP("Could not map phi inputs from pred " FMT_BB "\n", predBlock->bbNum);
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
             continue;
         }
@@ -1547,12 +1544,12 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 {
                     JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
                     jti.m_numAmbiguousPreds++;
-                    BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                    BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                     continue;
                 }
 
                 jti.m_numTruePreds++;
-                BlockSetOps::AddElemD(this, jti.m_truePreds, predBlock->bbNum);
+                BitVecOps::AddElemD(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
                 JITDUMP(FMT_BB " is a true pred\n", predBlock->bbNum);
             }
             else
@@ -1560,7 +1557,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 if (!BasicBlock::sameEHRegion(predBlock, jti.m_falseTarget))
                 {
                     JITDUMP(FMT_BB " is an eh constrained pred\n", predBlock->bbNum);
-                    BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+                    BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
                     jti.m_numAmbiguousPreds++;
                     continue;
                 }
@@ -1572,7 +1569,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         else
         {
             JITDUMP(FMT_BB " is an ambiguous pred\n", predBlock->bbNum);
-            BlockSetOps::AddElemD(this, jti.m_ambiguousPreds, predBlock->bbNum);
+            BitVecOps::AddElemD(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
             jti.m_numAmbiguousPreds++;
 
             // If this was the first ambiguous pred, remember the substVN
@@ -1659,7 +1656,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     {
         // If this was an ambiguous pred, skip.
         //
-        if (BlockSetOps::IsMember(this, jti.m_ambiguousPreds, predBlock->bbNum))
+        if (BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
         {
             if (setNoCseIn && !jti.m_block->HasFlag(BBF_NO_CSE_IN))
             {
@@ -1669,7 +1666,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
             continue;
         }
 
-        const bool isTruePred = BlockSetOps::IsMember(this, jti.m_truePreds, predBlock->bbNum);
+        const bool isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
 
         // Jump to the appropriate successor.
         //
@@ -1712,7 +1709,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     BasicBlock* const ambBlock = jti.m_ambiguousVNBlock;
     if ((ambBlock != nullptr) && jti.m_block->KindIs(BBJ_COND) && (jti.m_block->GetUniquePred(this) == ambBlock))
     {
-        JITDUMP(FMT_BB " has just one remaining predcessor " FMT_BB "\n", jti.m_block->bbNum, ambBlock->bbNum);
+        JITDUMP(FMT_BB " has just one remaining predecessor " FMT_BB "\n", jti.m_block->bbNum, ambBlock->bbNum);
 
         Statement* const stmt = jti.m_block->lastStmt();
         assert(stmt != nullptr);
@@ -2173,6 +2170,16 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     if (!usedCopy)
     {
         fgRemoveStmt(block, candidateStmt);
+
+        // Make sure the removed store node isn't referenced by an SSA definition
+        assert(candidateStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
+        GenTreeLclVarCommon* const rootNode = candidateStmt->GetRootNode()->AsLclVarCommon();
+        LclVarDsc* const           varDsc   = lvaGetDesc(rootNode);
+        LclSsaVarDsc* const        defDsc   = varDsc->GetPerSsaData(rootNode->GetSsaNum());
+        assert(defDsc->GetDefNode() == rootNode);
+        defDsc->SetDefNode(nullptr);
+
+        DEBUG_DESTROY_NODE(rootNode);
     }
     else
     {

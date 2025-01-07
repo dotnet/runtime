@@ -1,7 +1,7 @@
 #ifndef PAL_HOST_CONFIGURE_H_INCLUDED
 #define PAL_HOST_CONFIGURE_H_INCLUDED
 
-#cmakedefine01 CLR_SINGLE_FILE_HOST_ONLY
+#cmakedefine CLR_SINGLE_FILE_HOST_ONLY
 
 #ifdef CLR_SINGLE_FILE_HOST_ONLY
 // When hosting components are all statically linked,

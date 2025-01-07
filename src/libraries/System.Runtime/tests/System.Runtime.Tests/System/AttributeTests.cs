@@ -190,6 +190,24 @@ namespace System.Tests
             yield return new object[] { new StringValueAttribute("hello"), new StringValueIntValueAttribute("hello", 1), false, true }; // GetHashCode() ignores the int value
             yield return new object[] { new StringValueAttribute("hello"), "hello", false, false };
             yield return new object[] { new StringValueAttribute("hello"), null, false, false };
+
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<int, string>(1), true, true };
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<int, string>(2), false, false };
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<short, string>(1), false, true }; // GetHashCode() converts short to int
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<long, string>(1), false, true }; // GetHashCode() converts long to int
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<long, string>(long.MaxValue), false, false };
+            yield return new object[] { new GenericAttribute<int, string>(int.MaxValue), new GenericAttribute<long, string>(long.MaxValue), false, false };
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<double, string>(1.0), false, false };
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<AttributeTargets, string>((AttributeTargets)1), false, true }; // GetHashCode() uses the base type of the enum
+            yield return new object[] { new GenericAttribute<int, string>(1), new GenericAttribute<int, Array>(1), false, true }; // GetHashCode() ignores the property
+
+            yield return new object[] { new GenericAttribute<int, string>(1) { OptionalValue = "hello", }, new GenericAttribute<int, string>(1) { OptionalValue = "hello", }, true, true };
+            yield return new object[] { new GenericAttribute<int, string>(1) { OptionalValue = "hello", }, new GenericAttribute<int, string>(1) { OptionalValue = "goodbye", }, false, true }; // GetHashCode() ignores the property
+            yield return new object[] { new GenericAttribute<int, string>(1) { OptionalValue = "hello", }, new GenericAttribute<int, string>(1), false, true }; // GetHashCode() ignores the property
+
+            yield return new object[] { new GenericAttribute<int, double>(1) { OptionalValue = 2.0, }, new GenericAttribute<int, double>(1) { OptionalValue = 2.0, }, true, true };
+            yield return new object[] { new GenericAttribute<int, double>(1) { OptionalValue = 2.0, }, new GenericAttribute<int, double>(1) { OptionalValue = 2.1, }, false, true }; // GetHashCode() ignores the property
+            yield return new object[] { new GenericAttribute<int, double>(1) { OptionalValue = 2.0, }, new GenericAttribute<int, float>(1) { OptionalValue = 2.0f, }, false, true }; // GetHashCode() ignores the property
         }
 
         [Theory]
@@ -237,6 +255,18 @@ namespace System.Tests
             Assert.False(sav.IsDefaultAttribute());
             Assert.Equal(sav.GetType(), sav.TypeId);
             Assert.True(sav.Match(sav));
+        }
+
+        [AttributeUsage(AttributeTargets.Method)]
+        private sealed class GenericAttribute<T1, T2> : Attribute
+        {
+            public GenericAttribute(T1 value)
+            {
+                Value = value;
+            }
+
+            public T1 Value { get; }
+            public T2 OptionalValue { get; set; }
         }
     }
 }

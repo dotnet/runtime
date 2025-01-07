@@ -139,14 +139,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private class SimpleType
 		{
 			[Kept]
-			public static int field;
+			public static int fieldKept;
 
 			[Kept]
 			public int memberKept {
 				[Kept]
-				get { return field; }
+				get { return fieldKept; }
 				[Kept]
-				set { field = value; }
+				set { fieldKept = value; }
 			}
 
 			[Kept]

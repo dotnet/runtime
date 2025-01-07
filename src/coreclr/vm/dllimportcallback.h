@@ -308,12 +308,6 @@ public:
         RETURN m_pMD;
     }
 
-    static DWORD GetOffsetOfMethodDesc()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(class UMEntryThunk, m_pMD);
-    }
-
     static DWORD GetCodeOffset()
     {
         LIMITED_METHOD_CONTRACT;
@@ -398,9 +392,9 @@ private:
     AppDomain *m_pDomain;
 };
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
+#ifndef FEATURE_EH_FUNCLETS
 EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
+#endif // FEATURE_EH_FUNCLETS
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);

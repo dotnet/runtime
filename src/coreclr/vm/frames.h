@@ -190,6 +190,9 @@ FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
+#ifdef FEATURE_EH_FUNCLETS
+FRAME_TYPE_NAME(SoftwareExceptionFrame)
+#endif // FEATURE_EH_FUNCLETS
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED
@@ -723,7 +726,7 @@ private:
     friend class TailCallFrame;
     friend class AppDomain;
     friend VOID RealCOMPlusThrow(OBJECTREF);
-    friend FCDECL0(VOID, JIT_StressGC);
+
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
@@ -1064,6 +1067,10 @@ class FaultingExceptionFrame : public Frame
     T_CONTEXT               m_ctx;
 #endif // !FEATURE_EH_FUNCLETS
 
+#ifdef TARGET_AMD64
+    TADDR                   m_SSP;
+#endif
+
     VPTR_VTABLE_CLASS(FaultingExceptionFrame, Frame)
 
 public:
@@ -1124,6 +1131,13 @@ public:
     }
 #endif // FEATURE_EH_FUNCLETS
 
+#ifdef TARGET_AMD64
+    void SetSSP(TADDR value)
+    {
+        m_SSP = value;
+    }
+#endif
+
     virtual BOOL NeedsUpdateRegDisplay()
     {
         return TRUE;
@@ -1134,6 +1148,69 @@ public:
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_DTOR(FaultingExceptionFrame)
 };
+
+#ifdef FEATURE_EH_FUNCLETS
+
+class SoftwareExceptionFrame : public Frame
+{
+    TADDR                           m_ReturnAddress;
+    T_CONTEXT                       m_Context;
+    T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
+
+    VPTR_VTABLE_CLASS(SoftwareExceptionFrame, Frame)
+
+public:
+#ifndef DACCESS_COMPILE
+    SoftwareExceptionFrame() {
+        LIMITED_METHOD_CONTRACT;
+    }
+#endif
+
+    virtual TADDR GetReturnAddressPtr()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return PTR_HOST_MEMBER_TADDR(SoftwareExceptionFrame, this, m_ReturnAddress);
+    }
+
+    void Init();
+    void InitAndLink(Thread *pThread);
+
+    Interception GetInterception()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return INTERCEPTION_EXCEPTION;
+    }
+
+    virtual ETransitionType GetTransitionType()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return TT_InternalCall;
+    }
+
+    unsigned GetFrameAttribs()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_EXCEPTION;
+    }
+
+    T_CONTEXT* GetContext()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return &m_Context;
+    }
+
+    virtual BOOL NeedsUpdateRegDisplay()
+    {
+        return TRUE;
+    }
+
+    virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
+
+    // Keep as last entry in class
+    DEFINE_VTABLE_GETTER_AND_DTOR(SoftwareExceptionFrame)
+};
+
+#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
 // Frame for debugger function evaluation
@@ -1231,7 +1308,7 @@ class HelperMethodFrame : public Frame
 public:
 #ifndef DACCESS_COMPILE
     // Lazy initialization of HelperMethodFrame.  Need to
-    // call InsureInit to complete initialization
+    // call EnsureInit to complete initialization
     // If this is an FCall, the first param is the entry point for the FCALL.
     // The MethodDesc will be looked up form this (lazily), and this method
     // will be used in stack reporting, if this is not an FCall pass a 0
@@ -1259,7 +1336,7 @@ public:
         {
 #if defined(DACCESS_COMPILE)
             MachState unwoundState;
-            InsureInit(&unwoundState);
+            EnsureInit(&unwoundState);
             return unwoundState.GetRetAddr();
 #else  // !DACCESS_COMPILE
             _ASSERTE(!"HMF's should always be initialized in the non-DAC world.");
@@ -1342,7 +1419,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    BOOL InsureInit(struct MachState* unwindState);
+    BOOL EnsureInit(struct MachState* unwindState);
 
     LazyMachState * MachineState() {
         LIMITED_METHOD_CONTRACT;
@@ -1793,7 +1870,7 @@ public:
     static BYTE GetOffsetOfArgs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         size_t ofs = offsetof(UnmanagedToManagedFrame, m_argumentRegisters);
 #else
         size_t ofs = sizeof(UnmanagedToManagedFrame);
@@ -1808,20 +1885,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pvDatum;
     }
-
-    static int GetOffsetOfDatum()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UnmanagedToManagedFrame, m_pvDatum);
-    }
-
-#ifdef TARGET_X86
-    static int GetOffsetOfCalleeSavedRegisters()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(UnmanagedToManagedFrame, m_calleeSavedRegisters);
-    }
-#endif
 
     int GetFrameType()
     {
@@ -2034,7 +2097,22 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
+
+#ifdef TARGET_X86
+    // On x86 we need to specialcase return values
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
+#else
+    // On non-x86 platforms HijackFrame is just a more compact form of a resumable
+    // frame with main difference that OnHijackTripThread captures just the registers
+    // that can possibly contain GC roots.
+    // The regular reporting of a top frame will report everything that is live
+    // after the call as specified in GC info, thus we do not need to worry about
+    // return values.
+    virtual unsigned GetFrameAttribs() {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FRAME_ATTR_RESUMABLE;    // Treat the next frame as the top frame.
+    }
+#endif
 
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
@@ -3188,11 +3266,12 @@ public:
     FrameType* operator&() { LIMITED_METHOD_CONTRACT; return &m_frame; }
     LazyMachState * MachineState() { WRAPPER_NO_CONTRACT; return m_frame.MachineState(); }
     Thread * GetThread() { WRAPPER_NO_CONTRACT; return m_frame.GetThread(); }
-    BOOL InsureInit(struct MachState* unwindState)
-        { WRAPPER_NO_CONTRACT; return m_frame.InsureInit(unwindState); }
+    BOOL EnsureInit(struct MachState* unwindState)
+        { WRAPPER_NO_CONTRACT; return m_frame.EnsureInit(unwindState); }
     void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
     void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
     void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }
+    void InitAndLink(Thread *pThread) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pThread); }
     void Init(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
         { WRAPPER_NO_CONTRACT; m_frame.Init(pThread, pObjRefs, numObjRefs, maybeInterior); }
     ValueClassInfo ** GetValueClassInfoList() { WRAPPER_NO_CONTRACT; return m_frame.GetValueClassInfoList(); }

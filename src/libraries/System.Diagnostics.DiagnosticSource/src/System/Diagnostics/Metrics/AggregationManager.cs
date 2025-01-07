@@ -328,13 +328,23 @@ namespace System.Diagnostics.Metrics
                     }
                 };
             }
-            else if (genericDefType == typeof(ObservableGauge<>) || genericDefType == typeof(Gauge<>))
+            else if (genericDefType == typeof(ObservableGauge<>))
             {
                 return () =>
                 {
                     lock (this)
                     {
                         return CheckTimeSeriesAllowed() ? new LastValue() : null;
+                    }
+                };
+            }
+            else if (genericDefType == typeof(Gauge<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new SynchronousLastValue() : null;
                     }
                 };
             }

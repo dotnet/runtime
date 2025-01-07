@@ -319,7 +319,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.S8 = unwoundstate->captureCalleeSavedRegisters[8] = baseState->captureCalleeSavedRegisters[8];
     context.Fp = unwoundstate->captureCalleeSavedRegisters[9] = baseState->captureCalleeSavedRegisters[9];
     context.Tp = unwoundstate->captureCalleeSavedRegisters[10] = baseState->captureCalleeSavedRegisters[10];
-    context.Ra = NULL; // Filled by the unwinder
+    context.Ra = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -340,7 +340,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.S8 = &unwoundstate->captureCalleeSavedRegisters[8];
     nonVolContextPtrs.Fp = &unwoundstate->captureCalleeSavedRegisters[9];
     nonVolContextPtrs.Tp = &unwoundstate->captureCalleeSavedRegisters[10];
-    nonVolContextPtrs.Ra = NULL; // Filled by the unwinder
+    nonVolContextPtrs.Ra = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -472,7 +472,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(pUnwoundState);
+        EnsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -487,7 +487,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->S8 = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[8]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[9]);
         pRD->pCurrentContext->Tp = (DWORD64)(pUnwoundState->captureCalleeSavedRegisters[10]);
-        pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+        pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->S0 = pUnwoundState->ptrCalleeSavedRegisters[0];
         pRD->pCurrentContextPointers->S1 = pUnwoundState->ptrCalleeSavedRegisters[1];
@@ -525,7 +525,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S8 = m_MachState.ptrCalleeSavedRegisters[8] ? *m_MachState.ptrCalleeSavedRegisters[8] : m_MachState.captureCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = m_MachState.ptrCalleeSavedRegisters[9] ? *m_MachState.ptrCalleeSavedRegisters[9] : m_MachState.captureCalleeSavedRegisters[9];
     pRD->pCurrentContext->Tp = m_MachState.ptrCalleeSavedRegisters[10] ? *m_MachState.ptrCalleeSavedRegisters[10] : m_MachState.captureCalleeSavedRegisters[10];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #else // TARGET_UNIX
     pRD->pCurrentContext->S0 = *m_MachState.ptrCalleeSavedRegisters[0];
     pRD->pCurrentContext->S1 = *m_MachState.ptrCalleeSavedRegisters[1];
@@ -538,7 +538,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->S8 = *m_MachState.ptrCalleeSavedRegisters[8];
     pRD->pCurrentContext->Fp = *m_MachState.ptrCalleeSavedRegisters[9];
     pRD->pCurrentContext->Tp = *m_MachState.ptrCalleeSavedRegisters[10];
-    pRD->pCurrentContext->Ra = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Ra = 0; // Unwind again to get Caller's PC
 #endif
 
 #if !defined(DACCESS_COMPILE)
@@ -819,6 +819,10 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
     pRD->pCurrentContext->A0 = m_Args->A0;
+    pRD->pCurrentContext->A1 = m_Args->A1;
+
+    pRD->volatileCurrContextPointers.A0 = &m_Args->A0;
+    pRD->volatileCurrContextPointers.A1 = &m_Args->A1;
 
     pRD->pCurrentContext->S0 = m_Args->S0;
     pRD->pCurrentContext->S1 = m_Args->S1;
@@ -1187,7 +1191,7 @@ void StubLinkerCPU::EmitMovConstant(IntReg target, UINT64 constant)
 void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
 {
     // jirl $r0,$regTarget,0
-    Emit32(0x4c000000 | (regTarget.reg << 5));
+    Emit32(0x4c000000 | (regTarget << 5));
 }
 
 void StubLinkerCPU::EmitLoadStoreRegPairImm(DWORD flags, IntReg Rt1, IntReg Rt2, IntReg Rn, int offset)
@@ -1225,18 +1229,6 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, IntReg Rt, IntReg Rn, int o
     EmitLoadStoreRegImm(flags, (int)Rt, Rn, offset, FALSE, log2Size);
 }
 
-void StubLinkerCPU::EmitFloatLoadStoreRegImm(DWORD flags, FloatReg Ft, IntReg Rn, int offset)
-{
-    BOOL isLoad    = flags & 1;
-    if (isLoad) {
-        // fld.d(Ft, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xae, (int)Ft & 0x1f, Rn, offset));
-    } else {
-        // fst.d(Ft, Rn, offset);
-        Emit32(emitIns_O_R_R_I(0xaf, (int)Ft & 0x1f, Rn, offset));
-    }
-}
-
 void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int offset, BOOL isVec, int log2Size)
 {
     _ASSERTE((log2Size & ~0x3ULL) == 0);
@@ -1252,31 +1244,10 @@ void StubLinkerCPU::EmitLoadStoreRegImm(DWORD flags, int regNum, IntReg Rn, int 
     }
 }
 
-void StubLinkerCPU::EmitLoadFloatRegImm(FloatReg ft, IntReg base, int offset)
-{
-    // fld.d ft,base,offset
-    _ASSERTE(offset <= 2047 && offset >= -2048);
-    Emit32(0x2b800000 | (base.reg << 5) | ((offset & 0xfff)<<10) | ft.reg);
-}
-
 void StubLinkerCPU::EmitMovReg(IntReg Rd, IntReg Rm)
 {
     // ori(Rd, Rm, 0);
     Emit32(0x03800000 | (Rm.reg << 5) | Rd.reg);
-}
-
-void StubLinkerCPU::EmitMovFloatReg(FloatReg Fd, FloatReg Fs)
-{
-    // fmov.d fd, fs
-    Emit32(0x01149800 | Fd.reg | (Fs.reg << 5));
-}
-
-void StubLinkerCPU::EmitSubImm(IntReg Rd, IntReg Rn, unsigned int value)
-{
-    _ASSERTE(value <= 2047);
-    int tmp_value = -(int)value;
-    // addi.d(Rd, Rn, -value);
-    Emit32(0x02c00000 | (Rn.reg << 5) | Rd.reg | ((tmp_value & 0xfff)<<10));
 }
 
 void StubLinkerCPU::EmitAddImm(IntReg Rd, IntReg Rn, unsigned int value)
@@ -1293,6 +1264,31 @@ void StubLinkerCPU::Init()
     //new (gLoadFromLabelIF) LoadFromLabelInstructionFormat();
 }
 
+static bool InRegister(UINT16 ofs)
+{
+    _ASSERTE(ofs != ShuffleEntry::SENTINEL);
+    return (ofs & ShuffleEntry::REGMASK);
+}
+
+static bool IsRegisterFloating(UINT16 ofs)
+{
+    _ASSERTE(InRegister(ofs));
+    return (ofs & ShuffleEntry::FPREGMASK);
+}
+
+static int GetRegister(UINT16 ofs)
+{
+    _ASSERTE(InRegister(ofs));
+    _ASSERTE(!(ofs & ShuffleEntry::FPREGMASK));
+    return (ofs & ShuffleEntry::OFSREGMASK) + 4; // First GPR argument register: a0
+}
+
+static unsigned GetStackSlot(UINT16 ofs)
+{
+    _ASSERTE(!InRegister(ofs));
+    return ofs;
+}
+
 // Emits code to adjust arguments for static delegate target.
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
@@ -1303,109 +1299,43 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // addi.d  t8, a0, DelegateObject::GetOffsetOfMethodPtrAux() - load the indirection cell into t8 used by ResolveWorkerAsmStub
     EmitAddImm(20/*$t8*/, 4, DelegateObject::GetOffsetOfMethodPtrAux());
 
-    int delay_index[8] = {-1};
-    bool is_store = false;
-    UINT16 index = 0;
-    int i = 0;
-    for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++, i++)
+    const ShuffleEntry* entry = pShuffleEntryArray;
+    // Shuffle integer argument registers
+    for (; entry->srcofs != ShuffleEntry::SENTINEL && InRegister(entry->dstofs) && InRegister(entry->srcofs); ++entry)
     {
-        if (pEntry->srcofs & ShuffleEntry::REGMASK)
+        _ASSERTE(!IsRegisterFloating(entry->srcofs));
+        _ASSERTE(!IsRegisterFloating(entry->dstofs));
+        IntReg src = GetRegister(entry->srcofs);
+        IntReg dst = GetRegister(entry->dstofs);
+        _ASSERTE((src - dst) == 1 || (src - dst) == 2);
+        EmitMovReg(dst, src);
+    }
+
+    if (entry->srcofs != ShuffleEntry::SENTINEL)
+    {
+        _ASSERTE(!IsRegisterFloating(entry->dstofs));
+        _ASSERTE(GetStackSlot(entry->srcofs) == 0);
+        _ASSERTE(11/*a7*/ == GetRegister(entry->dstofs));
+        //  ld.d a7, sp, 0
+        EmitLoadStoreRegImm(eLOAD, IntReg(11)/*a7*/, RegSp, 0);
+        ++entry;
+
+        // All further shuffling is (stack) <- (stack+1)
+        for (unsigned dst = 0; entry->srcofs != ShuffleEntry::SENTINEL; ++entry, ++dst)
         {
-            // Source in register, destination in register
+            unsigned src = dst + 1;
+            _ASSERTE(src == GetStackSlot(entry->srcofs));
+            _ASSERTE(dst == GetStackSlot(entry->dstofs));
 
-            // Both the srcofs and dstofs must be of the same kind of registers - float or general purpose.
-            // If source is present in register then destination may be a stack-slot.
-            _ASSERTE(((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK)) || !(pEntry->dstofs & (ShuffleEntry::FPREGMASK | ShuffleEntry::REGMASK)));
-            _ASSERTE((pEntry->dstofs & ShuffleEntry::OFSREGMASK) <= 8);//should amend for offset!
-            _ASSERTE((pEntry->srcofs & ShuffleEntry::OFSREGMASK) <= 8);
-
-            if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
-            {
-                // FirstFloatReg is 0;
-                int j = 1;
-                while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
-                {
-                    j++;
-                }
-                assert((pEntry->dstofs - pEntry->srcofs) == index);
-                assert(8 > index);
-
-                int tmp_reg = 11;//f11.
-                ShuffleEntry* tmp_entry = pShuffleEntryArray + delay_index[0];
-                while (index)
-                {
-                    // fld.d/s(Ft, sp, offset);
-                    Emit32(emitIns_O_R_R_I(0xae, tmp_reg++, 3/*sp*/, tmp_entry->srcofs << 3));
-
-                    index--;
-                    tmp_entry++;
-                }
-
-                j -= 1;
-                tmp_entry = pEntry + j;
-                i += j;
-                while (pEntry[j].srcofs & ShuffleEntry::FPREGMASK)
-                {
-                    if (pEntry[j].dstofs & ShuffleEntry::FPREGMASK)// fmov.d fd, fs
-                        Emit32(0x01149800 | (pEntry[j].dstofs & ShuffleEntry::OFSREGMASK) | ((pEntry[j].srcofs & ShuffleEntry::OFSREGMASK) << 5));
-                    else //// fst.d(Ft, Rn, offset);
-                        Emit32(emitIns_O_R_R_I(0xaf, (pEntry[j].srcofs & ShuffleEntry::OFSREGMASK), 3, pEntry[j].dstofs * sizeof(long)));
-                    j--;
-                }
-                while (tmp_reg > 11)
-                {
-                    tmp_reg--;
-                    // fmov.d fd, fs
-                    Emit32(0x01149800 | index | (tmp_reg << 5));
-                    index++;
-                }
-                index = 0;
-                pEntry = tmp_entry;
-            }
-            else
-            {
-                // 4 is the offset of FirstGenArgReg to FirstGenReg
-                assert(pEntry->dstofs & ShuffleEntry::REGMASK);
-                assert((pEntry->dstofs & ShuffleEntry::OFSMASK) < (pEntry->srcofs & ShuffleEntry::OFSMASK));
-                EmitMovReg(IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 4), IntReg((pEntry->srcofs & ShuffleEntry::OFSMASK) + 4));
-            }
-        }
-        else if (pEntry->dstofs & ShuffleEntry::REGMASK)
-        {
-            // source must be on the stack
-            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
-
-            if (pEntry->dstofs & ShuffleEntry::FPREGMASK)
-            {
-                if (!is_store)
-                {
-                    delay_index[index++] = i;
-                    continue;
-                }
-                EmitLoadFloatRegImm(FloatReg((pEntry->dstofs & ShuffleEntry::OFSREGMASK)), RegSp, pEntry->srcofs * sizeof(void*));
-            }
-            else
-            {
-                assert(pEntry->dstofs & ShuffleEntry::REGMASK);
-                EmitLoadStoreRegImm(eLOAD, IntReg((pEntry->dstofs & ShuffleEntry::OFSMASK) + 4), RegSp, pEntry->srcofs * sizeof(void*));
-            }
-        }
-        else
-        {
-            // source must be on the stack
-            _ASSERTE(!(pEntry->srcofs & ShuffleEntry::REGMASK));
-
-            // dest must be on the stack
-            _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
-
-            EmitLoadStoreRegImm(eLOAD, IntReg(16)/*t4*/, RegSp, pEntry->srcofs * sizeof(void*));
-            EmitLoadStoreRegImm(eSTORE, IntReg(16)/*t4*/, RegSp, pEntry->dstofs * sizeof(void*));
+            //  ld.d t4, sp, src * sizeof(void*)
+            EmitLoadStoreRegImm(eLOAD, IntReg(16)/*t4*/, RegSp, src * sizeof(void*));
+            //  st.d t4, sp, dst * sizeof(void*)
+            EmitLoadStoreRegImm(eSTORE, IntReg(16)/*t4*/, RegSp, dst * sizeof(void*));
         }
     }
 
-    // Tailcall to target
     // jirl  $r0,$r21,0
-    EmitJumpRegister(21);
+    EmitJumpRegister(21); // Tailcall to target
 }
 
 // Emits code to adjust arguments for static delegate target.
@@ -1772,9 +1702,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

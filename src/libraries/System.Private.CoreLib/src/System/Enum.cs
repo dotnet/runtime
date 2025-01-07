@@ -911,7 +911,7 @@ namespace System
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
-        private static unsafe bool TryParseByValueOrName<TUnderlying, TStorage>(
+        private static bool TryParseByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : unmanaged, IBinaryIntegerParseAndFormatInfo<TUnderlying>
             where TStorage : unmanaged, IBinaryIntegerParseAndFormatInfo<TStorage>
@@ -969,7 +969,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
+        private static bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : struct, INumber<TUnderlying>, IBitwiseOperators<TUnderlying, TUnderlying, TUnderlying>, IMinMaxValue<TUnderlying>
             where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>, IMinMaxValue<TStorage>
@@ -2214,8 +2214,8 @@ namespace System
                 valueType = valueType.GetEnumUnderlyingType();
             }
 
-            if (valueType == typeof(nint)) ToObject(enumType, (nint)value);
-            if (valueType == typeof(nuint)) ToObject(enumType, (nuint)value);
+            if (valueType == typeof(nint)) return ToObject(enumType, (nint)value);
+            if (valueType == typeof(nuint)) return ToObject(enumType, (nuint)value);
 
             throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
         }

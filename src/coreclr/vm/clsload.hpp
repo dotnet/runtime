@@ -564,11 +564,6 @@ private:
         Module *              pLookInThisModuleOnly,
         Loader::LoadFlag      loadFlag);
 
-    static PTR_Module ComputeLoaderModuleForCompilation(Module *pDefinitionModule,      // the module that declares the generic type or method
-                                                        mdToken token,
-                                                        Instantiation classInst,        // the type arguments to the type (if any)
-                                                        Instantiation methodInst);      // the type arguments to the method (if any)
-
 public:
     void Init(AllocMemTracker *pamTracker);
 
@@ -718,7 +713,6 @@ public:
                                              BOOL *           pfUsesTypeForwarder = NULL);
 
     static void EnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
-    static void TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level = CLASS_LOADED);
 
 public:
     // Look up a class by name
@@ -889,24 +883,7 @@ private:
 
     static void DECLSPEC_NORETURN  ThrowTypeLoadException(const TypeKey *pKey, UINT resIDWhy);
 
-
-    BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
-    static BOOL IsNested(ModuleBase *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
-
 public:
-    // Helpers for FindClassModule()
-    BOOL CompareNestedEntryWithTypeDef(IMDInternalImport *pImport,
-                                       mdTypeDef mdCurrent,
-                                       EEClassHashTable *pClassHash,
-                                       PTR_EEClassHashEntry pEntry);
-    BOOL CompareNestedEntryWithTypeRef(IMDInternalImport *pImport,
-                                       mdTypeRef mdCurrent,
-                                       EEClassHashTable *pClassHash,
-                                       PTR_EEClassHashEntry pEntry);
-    BOOL CompareNestedEntryWithExportedType(IMDInternalImport *pImport,
-                                            mdExportedType mdCurrent,
-                                            EEClassHashTable *pClassHash,
-                                            PTR_EEClassHashEntry pEntry);
 
     //Attempts to find/load/create a type handle but does not throw
     // if used in "find" mode.

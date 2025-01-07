@@ -207,4 +207,10 @@
   <data name="JsonSerializableAttributeOnNonContextTypeMessageFormat" xml:space="preserve">
     <value>The type '{0}' has been annotated with JsonSerializableAttribute but does not derive from JsonSerializerContext. No source code will be generated.</value>
   </data>
+  <data name="TypeContainsRefLikeMemberTitle" xml:space="preserve">
+    <value>Type includes ref like property, field or constructor parameter.</value>
+  </data>
+  <data name="TypeContainsRefLikeMemberFormat" xml:space="preserve">
+    <value>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</value>
+  </data>
 </root>

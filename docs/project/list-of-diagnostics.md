@@ -112,6 +112,8 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0055`__ | The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead. |
 |  __`SYSLIB0056`__ |  LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm. |
 |  __`SYSLIB0057`__ | Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates. |
+|  __`SYSLIB0058`__ | KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead. |
+|  __`SYSLIB0059`__ | SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead. |
 
 ## Analyzer Warnings
 
@@ -225,20 +227,20 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 12.|
 |  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
 |  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
-|  __`SYSLIB1105`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1106`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1107`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1108`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1109`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1110`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1111`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1112`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1113`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1114`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1115`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1116`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1117`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-|  __`SYSLIB1118`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
+|  __`SYSLIB1105`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1106`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1107`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1108`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1109`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1110`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1111`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1112`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1113`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1114`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1115`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1116`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1117`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1118`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
 |  __`SYSLIB1201`__ | Options validation generator: Can't use 'ValidateObjectMembersAttribute' or `ValidateEnumeratedItemsAttribute` on fields or properties with open generic types. |
 |  __`SYSLIB1202`__ | Options validation generator: A member type has no fields or properties to validate. |
 |  __`SYSLIB1203`__ | Options validation generator: A type has no fields or properties to validate. |
@@ -256,28 +258,28 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1215`__ | Options validation generator: Validation attribute on the member is inaccessible from the validator type. |
 |  __`SYSLIB1216`__ | C# language version not supported by the options validation source generator. |
 |  __`SYSLIB1217`__ | The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types. |
-|  __`SYSLIB1218`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
-|  __`SYSLIB1219`__ | *_`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1218`__ | _`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration._ |
+|  __`SYSLIB1219`__ | _`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration._ |
 |  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
 |  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
 |  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
-|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1225`__ | Type includes ref like property, field or constructor parameter. |
+|  __`SYSLIB1226`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1227`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1228`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1229`__ | _`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration._ |
 |  __`SYSLIB1230`__ | Deriving from a `GeneratedComInterface`-attributed interface defined in another assembly is not supported. |
-|  __`SYSLIB1231`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1232`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1233`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1234`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1235`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1236`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1237`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1238`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
-|  __`SYSLIB1239`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1231`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1232`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1233`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1234`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1235`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1236`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1237`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1238`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1239`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 
@@ -306,7 +308,8 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 
 | Diagnostic ID     | Introduced | Removed | Description |
 | :---------------- | ---------: | ------: | :---------- |
-|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental in .NET 9 |
-|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental in .NET 9 |
-|  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental in .NET 9 |
-|  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental in .NET 9 since performance is not as optimized as `T.DivRem` |
+|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental |
+|  __`SYSLIB5002`__ |     .NET 9 |     TBD | `SystemColors` alternate colors are experimental |
+|  __`SYSLIB5003`__ |     .NET 9 |     TBD | `System.Runtime.Intrinsics.Arm.Sve` is experimental |
+|  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
+|  __`SYSLIB5005`__ |     .NET 9 |     TBD | `System.Formats.Nrbf` is experimental |

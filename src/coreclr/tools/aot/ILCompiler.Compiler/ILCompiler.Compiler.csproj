@@ -37,6 +37,7 @@
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="..\..\Common\Microsoft\SourceLink\Tools\SourceLinkMap.cs" Link="Common\SourceLinkMap.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -427,6 +428,7 @@
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeCalledNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedDelegateNode.cs" />
@@ -455,6 +457,9 @@
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
     <Compile Include="Compiler\ObjectDataInterner.cs" />
+    <Compile Include="Compiler\ReachabilityInstrumentationFilter.cs" />
+    <Compile Include="Compiler\ReachabilityInstrumentationProvider.cs" />
+    <Compile Include="Compiler\SourceLinkWriter.cs" />
     <Compile Include="Compiler\SubstitutedILProvider.cs" />
     <Compile Include="Compiler\SubstitutionProvider.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
@@ -530,7 +535,6 @@
     <Compile Include="Compiler\DependencyAnalysis\StringAllocatorMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VTableSliceNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\EETypeOptionalFieldsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
@@ -689,9 +693,6 @@
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\MethodTable.Constants.cs">
       <Link>Common\MethodTable.Constants.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\Internal\Runtime\EETypeOptionalFieldsBuilder.cs">
-      <Link>Common\EETypeOptionalFieldsBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\EETypeBuilderHelpers.cs">
       <Link>Common\EETypeBuilderHelpers.cs</Link>

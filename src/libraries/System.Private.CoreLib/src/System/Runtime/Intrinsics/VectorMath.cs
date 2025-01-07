@@ -3,14 +3,13 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
-    internal static unsafe class VectorMath
+    internal static class VectorMath
     {
         public static TVectorDouble CosDouble<TVectorDouble, TVectorInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
@@ -391,9 +390,6 @@ namespace System.Runtime.Intrinsics
             const ulong V_ARG_MAX = 0x40862000_00000000;
             const ulong V_DP64_BIAS = 1023;
 
-            const double V_EXPF_MIN = -709.782712893384;
-            const double V_EXPF_MAX = +709.782712893384;
-
             const double V_EXPF_HUGE = 6755399441055744;
             const double V_TBL_LN2 = 1.4426950408889634;
 
@@ -411,66 +407,69 @@ namespace System.Runtime.Intrinsics
             const double C11 = 2.7632293298250954E-07;
             const double C12 = 2.499430431958571E-08;
 
-            // x * (64.0 / ln(2))
-            TVectorDouble dn = TVectorDouble.MultiplyAddEstimate(x, TVectorDouble.Create(V_TBL_LN2), TVectorDouble.Create(V_EXPF_HUGE));
-
-            // n = (int)z
-            TVectorUInt64 n = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(dn);
-
-            // dn = (double)n
-            dn -= TVectorDouble.Create(V_EXPF_HUGE);
-
-            // r = x - (dn * (ln(2) / 64))
-            // where ln(2) / 64 is split into Head and Tail values
-            TVectorDouble r = TVectorDouble.MultiplyAddEstimate(dn, TVectorDouble.Create(-V_LN2_HEAD), x);
-            r = TVectorDouble.MultiplyAddEstimate(dn, TVectorDouble.Create(-V_LN2_TAIL), r);
-
-            TVectorDouble r2 = r * r;
-            TVectorDouble r4 = r2 * r2;
-            TVectorDouble r8 = r4 * r4;
-
-            // Compute polynomial
-            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
-                TVectorDouble.MultiplyAddEstimate(
-                    TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C12), r, TVectorDouble.Create(C11)),
-                    r2,
-                    TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C10), r, TVectorDouble.Create(C09))),
-                r8,
-                TVectorDouble.MultiplyAddEstimate(
-                    TVectorDouble.MultiplyAddEstimate(
-                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C08), r, TVectorDouble.Create(C07)),
-                        r2,
-                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C06), r, TVectorDouble.Create(C05))),
-                    r4,
-                    TVectorDouble.MultiplyAddEstimate(
-                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C04), r, TVectorDouble.Create(C03)),
-                        r2,
-                        r + TVectorDouble.One
-                    )
-                )
-            );
-
-            // m = (n - j) / 64
-            // result = polynomial * 2^m
-            TVectorDouble result = poly * Unsafe.BitCast<TVectorUInt64, TVectorDouble>((n + TVectorUInt64.Create(V_DP64_BIAS)) << 52);
-
             // Check if -709 < vx < 709
-            if (TVectorUInt64.GreaterThanAny(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(x)), TVectorUInt64.Create(V_ARG_MAX)))
+            if (TVectorUInt64.LessThanOrEqualAll(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(x)), TVectorUInt64.Create(V_ARG_MAX)))
             {
-                // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
-                TVectorDouble infinityMask = TVectorDouble.GreaterThan(x, TVectorDouble.Create(V_EXPF_MAX));
+                // x * (64.0 / ln(2))
+                TVectorDouble dn = TVectorDouble.MultiplyAddEstimate(x, TVectorDouble.Create(V_TBL_LN2), TVectorDouble.Create(V_EXPF_HUGE));
 
-                result = TVectorDouble.ConditionalSelect(
-                    infinityMask,
-                    TVectorDouble.Create(double.PositiveInfinity),
-                    result
+                // n = (int)z
+                TVectorUInt64 n = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(dn);
+
+                // dn = (double)n
+                dn -= TVectorDouble.Create(V_EXPF_HUGE);
+
+                // r = x - (dn * (ln(2) / 64))
+                // where ln(2) / 64 is split into Head and Tail values
+                TVectorDouble r = TVectorDouble.MultiplyAddEstimate(dn, TVectorDouble.Create(-V_LN2_HEAD), x);
+                r = TVectorDouble.MultiplyAddEstimate(dn, TVectorDouble.Create(-V_LN2_TAIL), r);
+
+                TVectorDouble r2 = r * r;
+                TVectorDouble r4 = r2 * r2;
+                TVectorDouble r8 = r4 * r4;
+
+                // Compute polynomial
+                TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C12), r, TVectorDouble.Create(C11)),
+                        r2,
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C10), r, TVectorDouble.Create(C09))),
+                    r8,
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C08), r, TVectorDouble.Create(C07)),
+                            r2,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C06), r, TVectorDouble.Create(C05))),
+                        r4,
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C04), r, TVectorDouble.Create(C03)),
+                            r2,
+                            r + TVectorDouble.One
+                        )
+                    )
                 );
 
-                // (x < V_EXPF_MIN) ? 0 : x
-                result = TVectorDouble.AndNot(result, TVectorDouble.LessThan(x, TVectorDouble.Create(V_EXPF_MIN)));
+                // m = (n - j) / 64
+                // result = polynomial * 2^m
+                return poly * Unsafe.BitCast<TVectorUInt64, TVectorDouble>((n + TVectorUInt64.Create(V_DP64_BIAS)) << 52);
             }
+            else
+            {
+                return ScalarFallback(x);
 
-            return result;
+                static TVectorDouble ScalarFallback(TVectorDouble x)
+                {
+                    TVectorDouble expResult = TVectorDouble.Zero;
+
+                    for (int i = 0; i < TVectorDouble.Count; i++)
+                    {
+                        double expScalar = double.Exp(x[i]);
+                        expResult = expResult.WithElement(i, expScalar);
+                    }
+
+                    return expResult;
+                }
+            }
         }
 
         public static TVectorSingle ExpSingle<TVectorSingle, TVectorUInt32, TVectorDouble, TVectorUInt64>(TVectorSingle x)

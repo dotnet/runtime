@@ -96,7 +96,7 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        internal int GetPropertyCount()
+        public int GetPropertyCount()
         {
             CheckValidInstance();
 

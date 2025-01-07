@@ -46,6 +46,11 @@ namespace System.Diagnostics.Metrics
     {
         public static readonly MetricsEventSource Log = new();
 
+        // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
+        // consideration as a public API. See EventSource.InitializeDefaultEventSources() in System.Private.CoreLib source for more
+        // details. We have a unit test GetInstanceMethodIsReflectable that verifies this method isn't accidentally removed or renamed.
+        public static MetricsEventSource GetInstance() { return Log; }
+
         private const string SharedSessionId = "SHARED";
         private const string ClientIdKey = "ClientId";
         private const string MaxHistogramsKey = "MaxHistograms";
@@ -273,11 +278,28 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(18, Keywords = Keywords.Messages)]
+        public void Version(int Major, int Minor, int Patch)
+        {
+            WriteEvent(18, Major, Minor, Patch);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable)
+            {
+                Version(
+                    ThisAssembly.AssemblyFileVersion.Major,
+                    ThisAssembly.AssemblyFileVersion.Minor,
+                    ThisAssembly.AssemblyFileVersion.Build);
+            }
+
             lock (this)
             {
                 Handler.OnEventCommand(command);
@@ -314,7 +336,7 @@ namespace System.Diagnostics.Metrics
                 try
                 {
 #if OS_ISBROWSER_SUPPORT
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
                         // and browser doesn't support Thread.Start()
@@ -322,7 +344,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser and wasi");
                         return;
                     }
 #endif
@@ -693,6 +715,11 @@ namespace System.Diagnostics.Metrics
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "", instrumentId);
+                }
+                else if (stats.AggregationStatistics is SynchronousLastValueStatistics synchronousLastValueStats)
+                {
+                    Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
+                        synchronousLastValueStats.LastValue.ToString(CultureInfo.InvariantCulture), instrumentId);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {

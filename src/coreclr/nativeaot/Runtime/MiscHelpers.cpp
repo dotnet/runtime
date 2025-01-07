@@ -36,6 +36,7 @@
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
+#include <minipal/debugger.h>
 
 FCIMPL0(void, RhDebugBreak)
 {
@@ -392,6 +393,11 @@ EXTERN_C int32_t QCALLTYPE RhpGetCurrentThreadStackTrace(void* pOutputBuffer, ui
     ThreadStore::GetCurrentThread()->DeferTransitionFrame();
 
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength, pAddressInCurrentFrame);
+}
+
+EXTERN_C UInt32_BOOL QCALLTYPE DebugDebugger_IsNativeDebuggerAttached()
+{
+    return minipal_is_native_debugger_present();
 }
 
 FCIMPL2(FC_BOOL_RET, RhCompareObjectContentsAndPadding, Object* pObj1, Object* pObj2)

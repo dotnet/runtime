@@ -25,8 +25,8 @@
 //
 // Put ranges first so we can override individual opcodes after
 //
-OP(MINT_BR, BEGIN_BRANCH_BLOCK)
-OP(MINT_CALL_HANDLER, BEGIN_BRANCH_BLOCK)
+OPRANGE(MINT_BR, MINT_BR_S, BEGIN_BRANCH_BLOCK)
+OPRANGE(MINT_CALL_HANDLER, MINT_CALL_HANDLER_S, BEGIN_BRANCH_BLOCK)
 OPRANGE(MINT_BRFALSE_I4, MINT_BLT_UN_I8_IMM_SP, BEGIN_BRANCH_BLOCK)
 
 OPRANGE(MINT_CALL, MINT_CALLI_NAT_FAST, ABORT_OUTSIDE_BRANCH_BLOCK_NONE)
@@ -85,6 +85,7 @@ OP(MINT_SDB_SEQ_POINT, NONE)
 // These are only generated inside catch clauses, so it's safe to assume that
 //  during normal execution they won't run, and compile them as a bailout.
 OP(MINT_LEAVE_CHECK, NONE)
+OP(MINT_LEAVE_S_CHECK, NONE)
 
 OP(MINT_CKNULL, NORMAL)
 OP(MINT_LDLOCA_S, NORMAL)
@@ -97,6 +98,7 @@ OP(MINT_BOX, NORMAL)
 OP(MINT_BOX_VT, NORMAL)
 OP(MINT_UNBOX, NORMAL)
 OP(MINT_NEWSTR, NORMAL)
+OP(MINT_NEWARR, NORMAL)
 OP(MINT_LD_DELEGATE_METHOD_PTR, NORMAL)
 OP(MINT_LDTSFLDA, NORMAL)
 OP(MINT_ADD_MUL_I4_IMM, NORMAL)
@@ -171,6 +173,10 @@ OP(MINT_LOG2_I8, HIGH)
 OP(MINT_SHL_AND_I4, HIGH)
 OP(MINT_SHL_AND_I8, HIGH)
 
+// Produces a bailout at compile time, may produce an actual jump table
+//  later in the future. Treat it as a low value branch
+OP(MINT_SWITCH, BRANCH)
+
 // Produces either a backwards branch or a bailout depending on JIT-time
 //  information, so treat it as a low value branch
 OP(MINT_ENDFINALLY, BRANCH)
@@ -181,6 +187,10 @@ OP(MINT_THROW, ABORT_OUTSIDE_BRANCH_BLOCK_NONE)
 // These opcodes will turn into supported MOVs later
 OP(MINT_MOV_SRC_OFF, NORMAL)
 OP(MINT_MOV_DST_OFF, NORMAL)
+
+OP(MINT_MONO_MEMORY_BARRIER, NORMAL)
+OPRANGE(MINT_MONO_EXCHANGE_U1, MINT_MONO_EXCHANGE_I8, HIGH)
+OPRANGE(MINT_MONO_CMPXCHG_U1, MINT_MONO_CMPXCHG_I8, HIGH)
 
 // FIXME: Not implemented individual opcodes
 OP(MINT_CONV_U4_R8, ABORT)

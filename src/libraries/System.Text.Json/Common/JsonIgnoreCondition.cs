@@ -30,5 +30,13 @@ namespace System.Text.Json.Serialization
         /// This is applied only to reference-type properties and fields.
         /// </summary>
         WhenWritingNull = 3,
+        /// <summary>
+        /// Property is ignored during serialization
+        /// </summary>
+        WhenWriting = 4,
+        /// <summary>
+        /// Property is ignored during deserialization
+        /// </summary>
+        WhenReading = 5,
     }
 }

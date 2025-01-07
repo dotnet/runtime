@@ -803,7 +803,10 @@ interp_compute_eh_vars (TransformData *td)
 				c->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
 			InterpBasicBlock *bb = td->offset_to_bb [c->try_offset];
 			int try_end = c->try_offset + c->try_len;
-			g_assert (bb);
+			// If the bblock is detected as dead while traversing the IL code, the mapping for
+			// it is cleared. We can skip it.
+			if (!bb)
+				continue;
 			while (bb->il_offset != -1 && bb->il_offset < try_end) {
 				for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 					if (mono_interp_op_dregs [ins->opcode])
@@ -3387,12 +3390,15 @@ can_propagate_var_def (TransformData *td, int var, InterpLivenessPosition cur_li
 static void
 interp_super_instructions (TransformData *td)
 {
+	interp_compute_native_offset_estimates (td, FALSE);
+
 	// Add some actual super instructions
 	for (int bb_dfs_index = 0; bb_dfs_index < td->bblocks_count_eh; bb_dfs_index++) {
 		InterpBasicBlock *bb = td->bblocks [bb_dfs_index];
 
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
+		int noe = bb->native_offset_estimate;
 		InterpLivenessPosition current_liveness;
 		current_liveness.bb_dfs_index = bb->dfs_index;
 		current_liveness.ins_index = 0;
@@ -3717,7 +3723,7 @@ interp_super_instructions (TransformData *td)
 					interp_clear_ins (def);
 					td->var_values [obj_sreg].ref_count--;
 				}
-			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
+			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				gint32 imm;
 				int imm_mt;
 				int sreg_imm = ins->sregs [1];
@@ -3754,7 +3760,7 @@ interp_super_instructions (TransformData *td)
 						}
 					}
 				}
-			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
+			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode) && interp_is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				if (opcode == MINT_BRFALSE_I4 || opcode == MINT_BRTRUE_I4) {
 					gboolean negate = opcode == MINT_BRFALSE_I4;
 					int cond_sreg = ins->sregs [0];
@@ -3864,6 +3870,7 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			}
+			noe += interp_get_ins_length (ins);
 		}
 	}
 }

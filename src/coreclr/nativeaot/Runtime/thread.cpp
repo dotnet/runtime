@@ -35,6 +35,13 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+ee_alloc_context::PerThreadRandom::PerThreadRandom()
+{
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
+}
+
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
+
 PInvokeTransitionFrame* Thread::GetTransitionFrame()
 {
     if (ThreadStore::GetSuspendingThread() == this)
@@ -444,24 +451,16 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
     GCRefKind        returnValueKind      = GCRK_Unknown;
 
+#ifdef TARGET_X86
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
-        GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
-        if (reg0Kind != GCRK_Scalar)
+        GCRefKind returnKind = ExtractReturnKind(returnValueKind);
+        if (returnKind != GCRK_Scalar)
         {
-            EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
+            EnumGcRef(pHijackedReturnValue, returnKind, pfnEnumCallback, pvCallbackData);
         }
-
-#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
-        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
-        if (reg1Kind != GCRK_Scalar)
-        {
-            // X0/X1 or RAX/RDX are saved in hijack frame next to each other in this order
-            EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
-        }
-#endif  // TARGET_ARM64 || TARGET_UNIX
-
     }
+#endif
 
 #ifndef DACCESS_COMPILE
     if (GetRuntimeInstance()->IsConservativeStackReportingEnabled())
@@ -786,13 +785,11 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     void** ppvRetAddrLocation;
-    GCRefKind retValueKind;
 
     frameIterator->CalculateCurrentMethodState();
     if (frameIterator->GetCodeManager()->GetReturnAddressHijackInfo(frameIterator->GetMethodInfo(),
         frameIterator->GetRegisterSet(),
-        &ppvRetAddrLocation,
-        &retValueKind))
+        &ppvRetAddrLocation))
     {
         ASSERT(ppvRetAddrLocation != NULL);
 
@@ -809,7 +806,12 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
-        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
+#if defined(TARGET_X86)
+        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(
+            frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(),
+                                                                frameIterator->GetRegisterSet()));
+#endif
+
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
@@ -943,7 +945,9 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
+#ifdef TARGET_X86
     m_uHijackedReturnValueFlags         = 0;
+#endif
 }
 
 bool Thread::IsHijacked()
@@ -1346,3 +1350,13 @@ FCIMPLEND
 #endif //USE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
+
+
+EXTERN_C void QCALLTYPE RhSetCurrentThreadName(const TCHAR* name)
+{
+#ifdef TARGET_WINDOWS
+    PalSetCurrentThreadNameW(name);
+#else
+    PalSetCurrentThreadName(name);
+#endif
+}

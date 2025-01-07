@@ -12,6 +12,9 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography.X509Certificates
 {
+    /// <summary>
+    ///   Provides methods for loading an X.509 certificate or a PKCS#12 PFX containing certificates.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
     public static partial class X509CertificateLoader
     {
@@ -30,7 +33,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <remarks>
         ///   This method only loads plain certificates, which are identified as
-        ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(byte[])"/>
+        ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(byte[])"/>.
         /// </remarks>
         /// <seealso cref="X509Certificate2.GetCertContentType(string)"/>
         public static partial X509Certificate2 LoadCertificate(ReadOnlySpan<byte> data);
@@ -51,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <remarks>
         ///   This method only loads plain certificates, which are identified as
-        ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(byte[])"/>
+        ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(byte[])"/>.
         /// </remarks>
         /// <seealso cref="X509Certificate2.GetCertContentType(string)"/>
         public static partial X509Certificate2 LoadCertificate(byte[] data);
@@ -75,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <remarks>
         ///   This method only loads plain certificates, which are identified as
-        ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(string)"/>
+        ///   <see cref="X509ContentType.Cert" /> by <see cref="X509Certificate2.GetCertContentType(string)"/>.
         /// </remarks>
         /// <seealso cref="X509Certificate2.GetCertContentType(string)"/>
         public static partial X509Certificate2 LoadCertificateFromFile(string path);

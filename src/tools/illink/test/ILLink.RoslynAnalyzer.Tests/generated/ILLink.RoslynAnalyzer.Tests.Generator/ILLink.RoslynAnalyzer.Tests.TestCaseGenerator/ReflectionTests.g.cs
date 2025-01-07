@@ -44,25 +44,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task ObjectGetTypeLibraryMode ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task ParametersUsedViaReflection ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task RunClassConstructorUsedViaReflection ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task TypeHierarchyLibraryModeSuppressions ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

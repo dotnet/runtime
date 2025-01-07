@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -101,6 +102,85 @@ namespace Internal.Runtime
             return flags;
         }
 
+        public static int GetMinimumObjectSize(TypeSystemContext typeSystemContext)
+            => typeSystemContext.Target.PointerSize * 3;
+
+        public static int ComputeBaseSize(TypeDesc type)
+        {
+            int pointerSize = type.Context.Target.PointerSize;
+            int objectSize;
+
+            if (type.IsInterface)
+            {
+                // Interfaces don't live on the GC heap. Don't bother computing a number.
+                // Zero compresses better than any useless number we would come up with.
+                return 0;
+            }
+            else if (type.IsDefType)
+            {
+                LayoutInt instanceByteCount = ((DefType)type).InstanceByteCount;
+
+                if (instanceByteCount.IsIndeterminate)
+                {
+                    // Some value must be put in, but the specific value doesn't matter as it
+                    // isn't used for specific instantiations, and the universal canon MethodTable
+                    // is never associated with an allocated object.
+                    objectSize = pointerSize;
+                }
+                else
+                {
+                    objectSize = pointerSize +
+                        ((DefType)type).InstanceByteCount.AsInt; // +pointerSize for SyncBlock
+                }
+
+                if (type.IsValueType)
+                    objectSize += pointerSize; // + EETypePtr field inherited from System.Object
+            }
+            else if (type.IsArray)
+            {
+                objectSize = 3 * pointerSize; // SyncBlock + EETypePtr + Length
+                if (type.IsMdArray)
+                    objectSize +=
+                        2 * sizeof(int) * ((ArrayType)type).Rank;
+            }
+            else if (type.IsPointer)
+            {
+                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                return ParameterizedTypeShapeConstants.Pointer;
+            }
+            else if (type.IsByRef)
+            {
+                // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
+                return ParameterizedTypeShapeConstants.ByRef;
+            }
+            else if (type.IsFunctionPointer)
+            {
+                // These never get boxed and don't have a base size. We store the 'unmanaged' flag and number of parameters.
+                MethodSignature sig = ((FunctionPointerType)type).Signature;
+                return (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                {
+                    0 => sig.Length,
+                    _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                };
+            }
+            else
+                throw new NotImplementedException();
+
+            objectSize = AlignmentHelper.AlignUp(objectSize, pointerSize);
+            objectSize = Math.Max(GetMinimumObjectSize(type.Context), objectSize);
+
+            if (type.IsString)
+            {
+                // If this is a string, throw away objectSize we computed so far. Strings are special.
+                // SyncBlock + EETypePtr + length + firstChar
+                objectSize = 2 * pointerSize +
+                    sizeof(int) +
+                    StringComponentSize.Value;
+            }
+
+            return objectSize;
+        }
+
         public static ushort ComputeFlagsEx(TypeDesc type)
         {
             ushort flagsEx = 0;
@@ -128,9 +208,57 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.IDynamicInterfaceCastableFlag;
             }
 
+            if (type.IsByRefLike)
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.IsByRefLikeFlag;
+            }
+
             if (type.RequiresAlign8())
             {
                 flagsEx |= (ushort)EETypeFlagsEx.RequiresAlign8Flag;
+            }
+
+            if (type.IsValueType && type != type.Context.UniversalCanonType)
+            {
+                int numInstanceFieldBytes = ((DefType)type).InstanceByteCountUnaligned.AsInt;
+
+                // Value types should have at least 1 byte of size
+                Debug.Assert(numInstanceFieldBytes >= 1);
+
+                // The size of value types doesn't include the MethodTable pointer.  We need to add this so that
+                // the number of instance field bytes consistently represents the boxed size.
+                numInstanceFieldBytes += type.Context.Target.PointerSize;
+
+                // For unboxing to work correctly and for supporting dynamic type loading for derived types we need
+                // to record the actual size of the fields of a type without any padding for GC heap allocation (since
+                // we can unbox into locals or arrays where this padding is not used, and because field layout for derived
+                // types is effected by the unaligned base size). We don't want to store this information for all EETypes
+                // since it's only relevant for value types, so it's added as an optional field. It's
+                // also enough to simply store the size of the padding which cuts down our storage requirements.
+
+                int valueTypeFieldPadding = (ComputeBaseSize(type) - type.Context.Target.PointerSize) - numInstanceFieldBytes;
+                Debug.Assert(int.TrailingZeroCount((int)EETypeFlagsEx.ValueTypeFieldPaddingMask) == ValueTypeFieldPaddingConsts.Shift);
+                Debug.Assert((valueTypeFieldPadding & ((int)EETypeFlagsEx.ValueTypeFieldPaddingMask >> ValueTypeFieldPaddingConsts.Shift)) == valueTypeFieldPadding);
+                flagsEx |= (ushort)(valueTypeFieldPadding << ValueTypeFieldPaddingConsts.Shift);
+            }
+
+            if (type.IsNullable)
+            {
+                FieldDesc field = type.GetField("value");
+
+                int nullableValueOffset = field.Offset.AsInt;
+
+                // In the definition of Nullable<T>, the first field should be the boolean representing "hasValue"
+                Debug.Assert(nullableValueOffset > 0);
+
+                // The field is offset due to alignment. This should be a power of two.
+                Debug.Assert((nullableValueOffset & (nullableValueOffset - 1)) == 0);
+
+                int log2nullableOffset = int.TrailingZeroCount(nullableValueOffset);
+
+                Debug.Assert(int.TrailingZeroCount((int)EETypeFlagsEx.NullableValueOffsetMask) == NullableValueOffsetConsts.Shift);
+                Debug.Assert((log2nullableOffset & ((int)EETypeFlagsEx.NullableValueOffsetMask >> NullableValueOffsetConsts.Shift)) == log2nullableOffset);
+                flagsEx |= (ushort)(log2nullableOffset << NullableValueOffsetConsts.Shift);
             }
 
             return flagsEx;
@@ -171,45 +299,6 @@ namespace Internal.Runtime
             while (type != null);
 
             return false;
-        }
-
-        // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data
-        // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
-        // the rest of the padding data.
-        // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
-        private const uint ValueTypePaddingLowMask = 0x7;
-#pragma warning disable CA1823 // Avoid unused private fields
-        private const uint ValueTypePaddingHighMask = 0xFFFFFF00;
-#pragma warning restore CA1823 // Avoid unused private fields
-        private const uint ValueTypePaddingMax = 0x07FFFFFF;
-        private const int ValueTypePaddingHighShift = 8;
-        private const uint ValueTypePaddingAlignmentMask = 0xF8;
-        private const int ValueTypePaddingAlignmentShift = 3;
-
-        /// <summary>
-        /// Compute the encoded value type padding and alignment that are stored as optional fields on an
-        /// <c>MethodTable</c>. This padding as added to naturally align value types when laid out as fields
-        /// of objects on the GCHeap. The amount of padding is recorded to allow unboxing to locals /
-        /// arrays of value types which don't need it.
-        /// </summary>
-        internal static uint ComputeValueTypeFieldPaddingFieldValue(uint padding, uint alignment, int targetPointerSize)
-        {
-            // For the default case, return 0
-            if ((padding == 0) && (alignment == targetPointerSize))
-                return 0;
-
-            uint alignmentLog2 = uint.TrailingZeroCount(alignment);
-
-            Debug.Assert(ValueTypePaddingMax >= padding);
-
-            // Our alignment values here are adjusted by one to allow for a default of 0 (which represents pointer alignment)
-            alignmentLog2++;
-
-            uint paddingLowBits = padding & ValueTypePaddingLowMask;
-            uint paddingHighBits = ((padding & ~ValueTypePaddingLowMask) >> ValueTypePaddingAlignmentShift) << ValueTypePaddingHighShift;
-            uint alignmentLog2Bits = alignmentLog2 << ValueTypePaddingAlignmentShift;
-            Debug.Assert((alignmentLog2Bits & ~ValueTypePaddingAlignmentMask) == 0);
-            return paddingLowBits | paddingHighBits | alignmentLog2Bits;
         }
     }
 }

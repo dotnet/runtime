@@ -11,7 +11,7 @@ namespace System.Threading.Tasks
     {
         /// <summary>Configures how awaits on the tasks returned from an async disposable will be performed.</summary>
         /// <param name="source">The source async disposable.</param>
-        /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
+        /// <param name="continueOnCapturedContext"><see langword="true" /> to capture and marshal back to the current context; otherwise, <see langword="false" />.</param>
         /// <returns>The configured async disposable.</returns>
         public static ConfiguredAsyncDisposable ConfigureAwait(this IAsyncDisposable source, bool continueOnCapturedContext) =>
             new ConfiguredAsyncDisposable(source, continueOnCapturedContext);
@@ -19,7 +19,7 @@ namespace System.Threading.Tasks
         /// <summary>Configures how awaits on the tasks returned from an async iteration will be performed.</summary>
         /// <typeparam name="T">The type of the objects being iterated.</typeparam>
         /// <param name="source">The source enumerable being iterated.</param>
-        /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
+        /// <param name="continueOnCapturedContext"><see langword="true" /> to capture and marshal back to the current context; otherwise, <see langword="false" />.</param>
         /// <returns>The configured enumerable.</returns>
         public static ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(
             this IAsyncEnumerable<T> source, bool continueOnCapturedContext) =>

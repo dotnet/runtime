@@ -2,16 +2,21 @@
 <Project>
   <PropertyGroup>
     <_RuntimePackInWorkloadVersionCurrent>${PackageVersion}</_RuntimePackInWorkloadVersionCurrent>
+    <_RuntimePackInWorkloadVersion9>${PackageVersionNet9}</_RuntimePackInWorkloadVersion9>
     <_RuntimePackInWorkloadVersion8>${PackageVersionNet8}</_RuntimePackInWorkloadVersion8>
     <_RuntimePackInWorkloadVersion7>${PackageVersionNet7}</_RuntimePackInWorkloadVersion7>
     <_RuntimePackInWorkloadVersion6>${PackageVersionNet6}</_RuntimePackInWorkloadVersion6>
 
-    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsCurrent>
-    <!-- force net8 to use the current targets until the SDK can target net9 -->
-    <ForceNet8Current Condition="'$(ForceNet8Current)' == ''">false</ForceNet8Current>
-    <TargetsCurrent Condition="'$(ForceNet8Current)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsCurrent>
+    <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsCurrent>
+
+    <!-- Disabled until next release: force net10.0 to use the current targets until the SDK can target net11.0 -->
+    <!--
+    <TreatPreviousAsCurrent Condition="'$(TreatPreviousAsCurrent)' == ''">true</TreatPreviousAsCurrent>
+    <TargetsCurrent Condition="'$(TreatPreviousAsCurrent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsCurrent>
+    -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
+    <TargetsNet9    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsNet9>
     <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
     <TargetsNet7    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
     <TargetsNet6    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '6.0'))">true</TargetsNet6>
@@ -31,15 +36,16 @@
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
     <SelfContained>true</SelfContained>
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true'">$(WasmNativeWorkload7)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true'">$(WasmNativeWorkload)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(WasmNativeWorkloadAvailable)' == '' or '$(WasmNativeWorkload)' == 'false'">false</WasmNativeWorkloadAvailable>
     <WasmNativeWorkload>$(WasmNativeWorkloadAvailable)</WasmNativeWorkload>
-
-    <!-- Runtime feature defaults to trim unnecessary code -->
   </PropertyGroup>
+
+  <!-- Runtime feature defaults to trim unnecessary code -->
   <Import Project="$(MSBuildThisFileDirectory)WasmFeatures.props" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm'" />
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
@@ -80,12 +86,74 @@
     <UsingMobileWorkload>true</UsingMobileWorkload>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingMobileWorkload)' == 'true' or '$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')">
+    <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(UsingBrowserRuntimeWorkload)' == 'true'">
     <WasmGenerateAppBundle>false</WasmGenerateAppBundle>
     <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
   </PropertyGroup>
 
-  <!-- TFM specific -->
+  <!-- Support for "browser" target platform identifier -->
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <SdkSupportedTargetPlatformVersion Include="1.0" />
+  </ItemGroup>
+
+  <!-- Support for "wasi" target platform identifier -->
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <SdkSupportedTargetPlatformVersion Include="1.0" />
+  </ItemGroup>
+
+  <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
+  and emit a warning -->
+  <Target Name="_CheckBrowserWorkloadNeededButNotAvailable"
+    Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled)' != 'true' and '$(WasmNativeWorkloadAvailable)' != 'true'"
+    BeforeTargets="Build">
+
+    <Warning Condition="@(NativeFileReference->Count()) > 0"
+      Text="%40(NativeFileReference) is not empty, but the native references won't be linked in, because neither %24(WasmBuildNative), nor %24(RunAOTCompilation) are 'true'. NativeFileReference=@(NativeFileReference)" />
+  </Target>
+
+  <Target Name="_ErrorWorkloadDisabledForTFMLessThan6" Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'" BeforeTargets="Build">
+    <Error Condition="'$(RunAOTCompilation)' == 'true'"
+      Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
+
+    <Error Condition="@(NativeFileReference->Count()) > 0"
+      Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
+
+    <Error Condition="'$(WasmBuildNative)' == 'true'"
+      Text="WebAssembly workloads, required for native relinking, are only supported for projects targeting net6.0+ . Set %24(WasmBuildNative)=false to disable it." />
+  </Target>
+
+  <Target Name="_ErrorDualWasmThreadPropsOn7"
+    Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
+    '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
+    BeforeTargets="Build">
+    <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
+  </Target>
+
+  <Target Name="_SuggestWasmWorkloadForBlazor" BeforeTargets="Publish">
+    <Message
+        Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(WasmNativeWorkloadAvailable)' != 'true'"
+        Text="Publishing without optimizations. Although it's optional for Blazor, we strongly recommend using `wasm-tools` workload! You can install it by running `dotnet workload install wasm-tools` from the command line."
+        Importance="High" />
+  </Target>
+
+  <Import Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'"
+          Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
+
+  <!-- end of common logic -->
+
+  <!-- start of TFM specific logic, make sure every node has a TargetsCurrent/TargetsNet* condition -->
 
   <Import Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true' or '$(UsingWasiRuntimeWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task.${NetVersion}" />
 
@@ -93,7 +161,7 @@
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
-  <ImportGroup Condition="'$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true'">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
   </ImportGroup>
@@ -154,83 +222,27 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
 
-  <PropertyGroup Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0')) and ('$(UsingMobileWorkload)' == 'true' or '$(RuntimeIdentifier)' == 'browser-wasm' or '$(RuntimeIdentifier)' == 'wasi-wasm')">
-    <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
+  <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersionCurrent)</_MonoWorkloadRuntimePackPackageVersion>
     <_KnownWebAssemblySdkPackVersion>$(_RuntimePackInWorkloadVersionCurrent)</_KnownWebAssemblySdkPackVersion>
   </PropertyGroup>
 
-  <!-- Support for "browser" target platform identifier -->
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
-    <TargetPlatformSupported>true</TargetPlatformSupported>
-    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
-    <SdkSupportedTargetPlatformVersion Include="1.0" />
-  </ItemGroup>
-
-    <!-- Support for "wasi" target platform identifier -->
-  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
-    <TargetPlatformSupported>true</TargetPlatformSupported>
-    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
-    <SdkSupportedTargetPlatformVersion Include="1.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition="(('$(RuntimeIdentifier)' == 'wasi-wasm' and '$(TargetsNet8)' == 'true') or '$(TargetsCurrent)' == 'true') and '$(_MonoWorkloadTargetsMobile)' == 'true'">
+  <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
-      <RuntimePackRuntimeIdentifiers Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
+      <RuntimePackRuntimeIdentifiers Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}.0' and '$(RuntimeIdentifier)' == 'wasi-wasm'">%(RuntimePackRuntimeIdentifiers);wasi-wasm</RuntimePackRuntimeIdentifiers>
 
-      <LatestRuntimeFrameworkVersion Condition="'$(TargetsCurrent)' == 'true' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
+      <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}.0' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
       <!-- Overrides for wasm threading support -->
-      <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
+      <RuntimePackNamePatterns Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetVersion}.0' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
-      <TargetingPackVersion Condition="'$(TargetsCurrent)' == 'true'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
+      <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '${NetVersion}.0'">$(_MonoWorkloadRuntimePackPackageVersion)</TargetingPackVersion>
     </KnownFrameworkReference>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-      <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetCoreAppCurrent}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
-      <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net8.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
+      <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetVersion}.0'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>
     </KnownWebAssemblySdkPack>
   </ItemGroup>
 
-  <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
-  and emit a warning -->
-  <Target Name="_CheckBrowserWorkloadNeededButNotAvailable"
-    Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled)' != 'true' and '$(WasmNativeWorkloadAvailable)' != 'true'"
-    BeforeTargets="Build">
 
-    <Warning Condition="@(NativeFileReference->Count()) > 0"
-      Text="%40(NativeFileReference) is not empty, but the native references won't be linked in, because neither %24(WasmBuildNative), nor %24(RunAOTCompilation) are 'true'. NativeFileReference=@(NativeFileReference)" />
-  </Target>
-
-  <Target Name="_ErrorWorkloadDisabledForTFMLessThan6" Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'" BeforeTargets="Build">
-    <Error Condition="'$(RunAOTCompilation)' == 'true'"
-      Text="WebAssembly workloads, required for AOT, are only supported for projects targeting net6.0+ . Set %24(RunAOTCompilation)=false to disable it." />
-
-    <Error Condition="@(NativeFileReference->Count()) > 0"
-      Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
-
-    <Error Condition="'$(WasmBuildNative)' == 'true'"
-      Text="WebAssembly workloads, required for native relinking, are only supported for projects targeting net6.0+ . Set %24(WasmBuildNative)=false to disable it." />
-  </Target>
-
-  <Target Name="_ErrorDualWasmThreadPropsOn7"
-    Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and
-    '$(BrowserWorkloadDisabled)' != 'true' and '$(WasmEnableThreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
-    BeforeTargets="Build">
-    <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreads or WasmEnablePerfTracing to true, but not both." />
-  </Target>
-
-  <Target Name="_SuggestWasmWorkloadForBlazor" BeforeTargets="Publish">
-    <Message
-        Condition="'$(_UsingBlazorOrWasmSdk)' == 'true' and '$(WasmNativeWorkloadAvailable)' != 'true'"
-        Text="Publishing without optimizations. Although it's optional for Blazor, we strongly recommend using `wasm-tools` workload! You can install it by running `dotnet workload install wasm-tools` from the command line."
-        Importance="High" />
-  </Target>
-
-  <Import Condition="'$(_MonoWorkloadTargetsMobile)' == 'true'"
-          Project="$(MSBuildThisFileDirectory)WorkloadTelemetry.targets" />
 </Project>

@@ -104,6 +104,7 @@ PCSTR GetRegName (UINT32 regnum)
     case 29: return "s6";
     case 30: return "s7";
     case 31: return "s8";
+    case 32: return "pc";
     }
 
     return "???";
@@ -142,6 +143,7 @@ PCSTR GetRegName (UINT32 regnum)
     case 29: return "t4";
     case 30: return "t5";
     case 31: return "t6";
+    case 32: return "pc";
     }
 
     return "???";
@@ -359,7 +361,6 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
                                                   | DECODE_GENERICS_INST_CONTEXT
                                                   | DECODE_GC_LIFETIMES
                                                   | DECODE_PROLOG_LENGTH
-                                                  | DECODE_RETURN_KIND
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
                                                   | DECODE_HAS_TAILCALLS
 #endif
@@ -499,9 +500,6 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     gcPrintf("Size of parameter area: %x\n", hdrdecoder.GetSizeOfStackParameterArea());
 #endif
-
-    ReturnKind returnKind = hdrdecoder.GetReturnKind();
-    gcPrintf("Return Kind: %s\n", ReturnKindToString(returnKind));
 
     UINT32 cbEncodedMethodSize = hdrdecoder.GetCodeLength();
     gcPrintf("Code size: %x\n", cbEncodedMethodSize);

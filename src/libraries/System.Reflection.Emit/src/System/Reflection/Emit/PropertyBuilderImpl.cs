@@ -57,7 +57,6 @@ namespace System.Reflection.Emit
         protected override void SetConstantCore(object? defaultValue)
         {
             _containingType.ThrowIfCreated();
-            FieldBuilderImpl.ValidateDefaultValueType(defaultValue, _propertyType);
             _defaultValue = defaultValue;
         }
 

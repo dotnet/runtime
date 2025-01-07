@@ -115,13 +115,6 @@ extends:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr+libs+host+packs -rc Release -c Release -lc $(_BuildConfig)
             timeoutInMinutes: 120
-            postBuildSteps:
-              - template: /eng/pipelines/installer/steps/build-linux-package.yml
-                parameters:
-                  packageType: rpm
-                  target: rpmpkg
-                  packagingArgs: -c Release -lc $(_BuildConfig) /p:BuildRpmPackage=true
-                  condition: and(succeeded(), eq(variables.osSubgroup, ''))
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -590,7 +583,7 @@ extends:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
+                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;JIT/HardwareIntrinsics;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
@@ -692,7 +685,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: CLR_Tools_Tests
-            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreadertests -c $(_BuildConfig) -test
+            buildArgs: -s clr.aot+clr.iltools+libs.sfx+clr.toolstests+tools.cdacreader+tools.cdacreadertests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
             # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
@@ -728,7 +721,7 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # Build Mono AOT offset headers once, for consumption elsewhere
+      # Build Mono AOT offset headers once, for validation
       # Only when mono changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -739,8 +732,7 @@ extends:
           - android_x64
           - browser_wasm
           - wasi_wasm
-          - tvos_arm64
-          - ios_arm64
+          - ios_arm64 # tvos and ios use the same offsets so we only need to build once
           - maccatalyst_x64
           variables:
             - name: _osParameter
@@ -749,20 +741,21 @@ extends:
               value: -arch x64
           jobParameters:
             nameSuffix: MonoAOTOffsets
-            buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup)
+            buildArgs: -s mono.aotcross -c $(_BuildConfig) /p:MonoGenerateOffsetsOSGroups=$(osGroup) /p:ValidateMonoOffsets=true
             postBuildSteps:
               # Upload offset files
               - task: CopyFiles@2
                 displayName: Collect offset files
+                condition: failed()
                 inputs:
-                  sourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/'
-                  contents: '**/offsets-*.h'
+                  sourceFolder: '$(Build.SourcesDirectory)/src/mono/mono/offsets'
+                  contents: '*.h.new'
                   targetFolder: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles/'
 
               - publish: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-                artifact: Mono_Offsets_$(osGroup)$(osSubGroup)
+                condition: failed()
+                artifact: MonoAOTOffsets_$(osGroup)$(osSubGroup)
                 displayName: Upload offset files
-            # needed by crossaot
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -823,7 +816,6 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
-            - WasmTestOnV8
             - WasmTestOnChrome
             - WasmTestOnFirefox
 
@@ -849,8 +841,6 @@ extends:
           shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
             - WasmTestOnChrome
-            - WasmTestOnFirefox
-            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -869,7 +859,6 @@ extends:
           platforms:
             - browser_wasm
             - browser_wasm_win
-            - wasi_wasm
           nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true
@@ -901,15 +890,6 @@ extends:
 
       # Browser Wasm.Build.Tests
       - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-            - browser_wasm_win
-          alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Wasm Debugger tests
-      - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
         parameters:
           platforms:
             - browser_wasm
@@ -1008,17 +988,19 @@ extends:
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
             - name: monoContainsChange
               value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+            - name: illinkContainsChange
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            # Tracking issue: https://github.com/dotnet/runtime/issues/82637
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=false
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 480
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
             postBuildSteps:
@@ -1031,6 +1013,7 @@ extends:
                     or(
                     eq(variables['librariesContainsChange'], true),
                     eq(variables['monoContainsChange'], true),
+                    eq(variables['illinkContainsChange'], true),
                     eq(variables['isRollingBuild'], true))
 
       #
@@ -1189,6 +1172,7 @@ extends:
 
       #
       # Build Mono release AOT cross-compilers
+      # Only when mono changed
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1200,83 +1184,14 @@ extends:
           - linux_musl_x64
           - linux_arm64
           - linux_musl_arm64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            dependsOn:
-            - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_linux_release_MonoAOTOffsets
-            - build_wasi_wasm_linux_release_MonoAOTOffsets
-            monoCrossAOTTargetOS:
-            - android
-            - browser
-            - wasi
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - windows_arm64
           - windows_x64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            dependsOn:
-            - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_linux_release_MonoAOTOffsets
-            - build_wasi_wasm_linux_release_MonoAOTOffsets
-            monoCrossAOTTargetOS:
-            - android
-            - browser
-            - wasi
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-      #
-      # Build Mono release AOT cross-compilers
-      # Only when mono changed
-      #
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
           - osx_x64
           - osx_arm64
           jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildMonoCrossAOT=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
-            dependsOn:
-            - build_android_x64_release_MonoAOTOffsets
-            - build_browser_wasm_linux_release_MonoAOTOffsets
-            - build_wasi_wasm_linux_release_MonoAOTOffsets
-            - build_tvos_arm64_release_MonoAOTOffsets
-            - build_ios_arm64_release_MonoAOTOffsets
-            - build_maccatalyst_x64_release_MonoAOTOffsets
-            monoCrossAOTTargetOS:
-            - android
-            - browser
-            - wasi
-            - tvos
-            - ios
-            - maccatalyst
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
@@ -1310,7 +1225,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build and test libraries AllConfigurations
+      # Build and test libraries for all TFMs and create packages
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1319,8 +1234,8 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
-            nameSuffix: Libraries_AllConfigurations
+            buildArgs: -test -s tools+libs+libs.tests -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_WithPackages
             timeoutInMinutes: 150
             condition: >-
               or(
@@ -1390,16 +1305,6 @@ extends:
               - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
                 parameters:
                   name: $(osGroup)$(osSubgroup)_$(archType)
-              - template: /eng/pipelines/installer/steps/build-linux-package.yml
-                parameters:
-                  packageType: deb
-                  target: debpkg
-                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildDebPackage=true
-              - template: /eng/pipelines/installer/steps/build-linux-package.yml
-                parameters:
-                  packageType: rpm
-                  target: rpmpkg
-                  packagingArgs: -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} /p:BuildRpmPackage=true
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -1847,21 +1752,21 @@ extends:
         #
         # Sourcebuild legs
         # We have 3 important legs for source-build:
-        # - Centos.8 (ensures that known non-portable RID is working)
+        # - Centos.9 (ensures that known non-portable RID is working)
         # - Linux-x64 portable (used for dependency flow and downstream PR verification)
         # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
         #
-        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
+        # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.9 in rolling CI,
         # Run Linux-x64 in PR.
         - template: /eng/common/templates/jobs/source-build.yml
           parameters:
             platforms:
-              - name: CentOS8
-                targetRid: centos.8-x64
-                nonPortable: true
+              - name: CentOS9
+                targetRID: centos.9-x64
+                portableBuild: false
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
                 baseOS: linux
-                targetRid: banana.24-x64
-                nonPortable: true
+                targetRID: banana.24-x64
+                portableBuild: false
                 container: SourceBuild_centos_x64

@@ -5,9 +5,11 @@
 #define __INSTALL_INFO_H__
 
 #include "pal.h"
+#include <functional>
 
 namespace install_info
 {
+    bool enumerate_other_architectures(std::function<void(pal::architecture, const pal::string_t&, bool)> callback);
     bool print_environment(const pal::char_t* leading_whitespace);
     bool print_other_architectures(const pal::char_t* leading_whitespace);
 };

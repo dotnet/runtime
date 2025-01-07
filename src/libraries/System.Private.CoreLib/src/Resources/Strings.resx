@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -813,9 +813,6 @@
   <data name="Arg_TypeLoadNullStr" xml:space="preserve">
     <value>A null or zero length string does not represent a valid Type.</value>
   </data>
-  <data name="Arg_TypeRefPrimitive" xml:space="preserve">
-    <value>TypedReferences cannot be redefined as primitives. Field name '{0}'.</value>
-  </data>
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
     <value>Type had been unloaded.</value>
   </data>
@@ -1317,6 +1314,9 @@
   </data>
   <data name="Argument_InvalidNormalizationForm" xml:space="preserve">
     <value>Invalid or unsupported normalization form.</value>
+  </data>
+  <data name="Argument_UnsupportedNormalizationFormInBrowser" xml:space="preserve">
+    <value>`NormalizationForm.FormKC` and `NormalizationForm.FormKD` are not supported in browser environments or WebAssembly.</value>
   </data>
   <data name="Argument_InvalidNumberStyles" xml:space="preserve">
     <value>An undefined NumberStyles value is being used.</value>
@@ -2574,6 +2574,9 @@
   </data>
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
+  </data>
+  <data name="InvalidOperation_CannotRegisterSecondHandler" xml:space="preserve">
+    <value>A handler for unhandled exceptions is already set.</value>
   </data>
   <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
@@ -4319,9 +4322,6 @@
   <data name="UnsupportedType" xml:space="preserve">
     <value>Unsupported type</value>
   </data>
-  <data name="Reflection_Disabled" xml:space="preserve">
-    <value>This operation is not available because the reflection support was disabled at compile time.</value>
-  </data>
   <data name="RFLCT_CannotSetInitonlyStaticField" xml:space="preserve">
     <value>Cannot set initonly static field '{0}' after type '{1}' is initialized.</value>
   </data>
@@ -4339,5 +4339,20 @@
   </data>
   <data name="Argument_BadArrayForInitializeArray" xml:space="preserve">
     <value>Only array or span of primitive or enum types can be initialized from static data.</value>
+  </data>
+  <data name="ComVariant_CriticalHandle_In_Variant" xml:space="preserve">
+    <value>CriticalHandle derived types cannot be stored in Variants.</value>
+  </data>
+  <data name="ComVariant_SafeHandle_In_Variant" xml:space="preserve">
+    <value>SafeHandle derived types cannot be stored in Variants.</value>
+  </data>
+  <data name="ComVariant_UnsupportedSignature" xml:space="preserve">
+    <value>Method's type signature is not Interop compatible.</value>
+  </data>
+  <data name="ComVariant_UnsupportedType" xml:space="preserve">
+    <value>The method returned a COM Variant type that is not Interop compatible.</value>
+  </data>
+  <data name="ComVariant_VariantWrapper_In_Variant" xml:space="preserve">
+    <value>VariantWrappers cannot be stored in Variants.</value>
   </data>
 </root>

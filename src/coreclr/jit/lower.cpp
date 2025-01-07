@@ -1315,7 +1315,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    true if the switch has been lowered to a bit test
 //
 // Notes:
-//    If the jump table contains less than 32 (64 on 64 bit targets) entries and there
+//    If the jump table contains less than 32 (64 on 64-bit targets) entries and there
 //    are at most 2 distinct jump targets then the jump table can be converted to a word
 //    of bits where a 0 bit corresponds to one jump target and a 1 bit corresponds to the
 //    other jump target. Instead of the indirect jump a BT-JCC sequence is used to jump
@@ -1398,17 +1398,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
     BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
 
-    //
-    // One of the case blocks has to follow the switch block. This requirement could be avoided
-    // by adding a BBJ_ALWAYS block after the switch block but doing that sometimes negatively
-    // impacts register allocation.
-    //
-
-    if (!bbSwitch->NextIs(bbCase0) && !bbSwitch->NextIs(bbCase1))
-    {
-        return false;
-    }
-
     JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
@@ -1428,10 +1417,9 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 #endif
 
     //
-    // Rewire the blocks as needed and figure out the condition to use for JCC.
+    // Rewire the blocks as needed.
     //
 
-    GenCondition bbSwitchCondition;
     comp->fgRemoveAllRefPreds(bbCase1, bbSwitch);
     comp->fgRemoveAllRefPreds(bbCase0, bbSwitch);
 
@@ -1457,20 +1445,7 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         case1Edge->setLikelihood(0.5);
     }
 
-    if (bbSwitch->NextIs(bbCase0))
-    {
-        // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
-        bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetCond(case1Edge, case0Edge);
-    }
-    else
-    {
-        assert(bbSwitch->NextIs(bbCase1));
-
-        // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
-        bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetCond(case0Edge, case1Edge);
-    }
+    bbSwitch->SetCond(case1Edge, case0Edge);
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
@@ -1481,13 +1456,13 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     //
     GenTree* bitTest = comp->gtNewOperNode(GT_BT, TYP_VOID, bitTableIcon, switchValue);
     bitTest->gtFlags |= GTF_SET_FLAGS;
-    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, bbSwitchCondition);
+    GenTreeCC* jcc = comp->gtNewCC(GT_JCC, TYP_VOID, GenCondition::C);
     LIR::AsRange(bbSwitch).InsertAfter(switchValue, bitTableIcon, bitTest, jcc);
 #else  // TARGET_XARCH
     //
     // Fallback to AND(RSZ(bitTable, switchValue), 1)
     //
-    GenTree* tstCns = comp->gtNewIconNode(bbSwitch->NextIs(bbCase0) ? 1 : 0, bitTableType);
+    GenTree* tstCns = comp->gtNewIconNode(1, bitTableType);
     GenTree* shift  = comp->gtNewOperNode(GT_RSZ, bitTableType, bitTableIcon, switchValue);
     GenTree* one    = comp->gtNewIconNode(1, bitTableType);
     GenTree* andOp  = comp->gtNewOperNode(GT_AND, bitTableType, shift, one);
@@ -1994,8 +1969,147 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
         LowerArg(call, &arg, true);
     }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    LowerSpecialCopyArgs(call);
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
+
     LegalizeArgPlacement(call);
 }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+//------------------------------------------------------------------------
+// LowerSpecialCopyArgs: Lower special copy arguments for P/Invoke IL stubs
+//
+// Arguments:
+//    call - the call node
+//
+// Notes:
+//    This method is used for P/Invoke IL stubs on x86 to handle arguments with special copy semantics.
+//    In particular, this method implements copy-constructor semantics for managed-to-unmanaged IL stubs
+//    for C++/CLI. In this case, the managed argument is passed by (managed or unmanaged) pointer in the
+//    P/Invoke signature with a speial modreq, but is passed to the unmanaged function by value.
+//    The value passed to the unmanaged function must be created through a copy-constructor call copying from
+//    the original source argument.
+//    We assume that the IL stub will be generated such that the following holds true:
+//       - If an argument to the IL stub has the special modreq, then its corresponding argument to the
+//         unmanaged function will be passed as the same argument index. Therefore, we can introduce the copy call
+//         from the original source argument to the argument slot in the unmanaged call.
+void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
+{
+    // We only need to use the special copy helper on P/Invoke IL stubs
+    // for the unmanaged call.
+    if (comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && comp->compMethodRequiresPInvokeFrame() &&
+        call->IsUnmanaged() && comp->compHasSpecialCopyArgs())
+    {
+        // Unmanaged calling conventions on Windows x86 are passed in reverse order
+        // of managed args, so we need to count down the number of args.
+        // If the call is thiscall, we need to account for the this parameter,
+        // which will be first in the list.
+        // The this parameter is always passed in registers, so we can ignore it.
+        unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
+        assert(call->gtArgs.CountUserArgs() == comp->info.compILargsCount);
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            if (!arg.IsUserArg())
+            {
+                continue;
+            }
+
+            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall &&
+                argIndex == call->gtArgs.CountUserArgs() - 1)
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
+                continue;
+            }
+
+            unsigned paramLclNum = comp->compMapILargNum(argIndex);
+            assert(paramLclNum < comp->info.compArgsCount);
+
+            // check if parameter at the same index as the IL argument is marked as requiring special copy, assuming
+            // that it is being passed 1:1 to the pinvoke
+            if (comp->argRequiresSpecialCopy(paramLclNum) && (arg.GetSignatureType() == TYP_STRUCT))
+            {
+                assert(arg.GetNode()->OperIs(GT_PUTARG_STK));
+                InsertSpecialCopyArg(arg.GetNode()->AsPutArgStk(), arg.GetSignatureClassHandle(), paramLclNum);
+            }
+
+            argIndex--;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertSpecialCopyArg: Insert a call to the special copy helper to copy from the (possibly value pointed-to by) local
+// lclnum to the argument slot represented by putArgStk
+//
+// Arguments:
+//    putArgStk - the PutArgStk node representing the stack slot of the argument
+//    argType - the struct type of the argument
+//    lclNum - the local to use as the source for the special copy helper
+//
+// Notes:
+//   This method assumes that lclNum is either a by-ref to a struct of type argType
+//   or a struct of type argType.
+//   We use this to preserve special copy semantics for interop calls where we pass in a byref to a struct into a
+//   P/Invoke with a special modreq and the native function expects to recieve the struct by value with the argument
+//   being passed in having been created by the special copy helper.
+//
+void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_HANDLE argType, unsigned lclNum)
+{
+    assert(putArgStk != nullptr);
+    GenTree* dest = comp->gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+
+    GenTree*  src;
+    var_types lclType = comp->lvaGetRealType(lclNum);
+
+    if (lclType == TYP_BYREF || lclType == TYP_I_IMPL)
+    {
+        src = comp->gtNewLclVarNode(lclNum, lclType);
+    }
+    else
+    {
+        assert(lclType == TYP_STRUCT);
+        src = comp->gtNewLclAddrNode(lclNum, 0, TYP_I_IMPL);
+    }
+
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* srcPlaceholder  = comp->gtNewZeroConNode(src->TypeGet());
+
+    GenTreeCall* call =
+        comp->gtNewCallNode(CT_USER_FUNC, comp->info.compCompHnd->getSpecialCopyHelper(argType), TYP_VOID);
+
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(destPlaceholder));
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(srcPlaceholder));
+
+    comp->fgMorphArgs(call);
+
+    LIR::Range callRange      = LIR::SeqTree(comp, call);
+    GenTree*   callRangeStart = callRange.FirstNode();
+    GenTree*   callRangeEnd   = callRange.LastNode();
+
+    BlockRange().InsertAfter(putArgStk, std::move(callRange));
+    BlockRange().InsertAfter(putArgStk, dest);
+    BlockRange().InsertAfter(putArgStk, src);
+
+    LIR::Use destUse;
+    LIR::Use srcUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(srcPlaceholder, &srcUse);
+    destUse.ReplaceWith(dest);
+    srcUse.ReplaceWith(src);
+    destPlaceholder->SetUnusedValue();
+    srcPlaceholder->SetUnusedValue();
+
+    LowerRange(callRangeStart, callRangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
+
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(srcPlaceholder);
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 //------------------------------------------------------------------------
 // LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal
@@ -5742,9 +5856,6 @@ void Lowering::InsertPInvokeMethodProlog()
 
     JITDUMP("======= Inserting PInvoke method prolog\n");
 
-    // The first BB must be a scratch BB in order for us to be able to safely insert the P/Invoke prolog.
-    assert(comp->fgFirstBBisScratch());
-
     LIR::Range& firstBlockRange = LIR::AsRange(comp->fgFirstBB);
 
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
@@ -6859,20 +6970,72 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             return next;
         }
 
-        // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
-        // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
-        // the original object from a byref constant for optimizations.
-        if (comp->opts.OptimizationEnabled() && op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
-            (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
-            !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (comp->opts.OptimizationEnabled())
         {
-            assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+            // Fold (x + c1) + c2
+            while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
+                   !node->gtOverflow() && !op1->gtOverflow())
+            {
+                GenTreeIntConCommon* cns1 = op1->gtGetOp2()->AsIntConCommon();
+                GenTreeIntConCommon* cns2 = op2->AsIntConCommon();
 
-            // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
-            // will be lowered as the original handle with offset in a reloc.
-            BlockRange().Remove(op1);
-            BlockRange().Remove(op2);
-            node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+                if (cns1->ImmedValNeedsReloc(comp) || cns2->ImmedValNeedsReloc(comp))
+                {
+                    break;
+                }
+
+                if (varTypeIsGC(cns1) || (cns1->TypeGet() != cns2->TypeGet()))
+                {
+                    break;
+                }
+
+                JITDUMP("Folding (x + c1) + c2. Before:\n");
+                DISPTREERANGE(BlockRange(), node);
+
+                int64_t c1 = cns1->IntegralValue();
+                int64_t c2 = cns2->IntegralValue();
+
+                int64_t result;
+                if (genTypeSize(node) == sizeof(int64_t))
+                {
+                    result = c1 + c2;
+                }
+                else
+                {
+                    result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
+                }
+
+                cns2->SetIntegralValue(result);
+                node->gtOp1 = op1->gtGetOp1();
+
+                BlockRange().Remove(cns1);
+                BlockRange().Remove(op1);
+
+                op1 = node->gtGetOp1();
+
+                // We will recompute containment/reg optionality below.
+                op1->ClearRegOptional();
+                op1->ClearContained();
+
+                JITDUMP("\nAfter:\n");
+                DISPTREERANGE(BlockRange(), node);
+            }
+
+            // Fold ADD(CNS1, CNS2). We mainly target a very specific pattern - byref ADD(frozen_handle, cns_offset)
+            // We could do this folding earlier, but that is not trivial as we'll have to introduce a way to restore
+            // the original object from a byref constant for optimizations.
+            if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && !node->gtOverflow() &&
+                (op1->IsIconHandle(GTF_ICON_OBJ_HDL) || op2->IsIconHandle(GTF_ICON_OBJ_HDL)) &&
+                !op1->AsIntCon()->ImmedValNeedsReloc(comp) && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
+            {
+                assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
+                // will be lowered as the original handle with offset in a reloc.
+                BlockRange().Remove(op1);
+                BlockRange().Remove(op2);
+                node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+            }
         }
 
 #ifdef TARGET_XARCH
@@ -7687,6 +7850,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7719,9 +7887,7 @@ PhaseStatus Lowering::DoPhase()
 
         comp->fgLocalVarLiveness();
         // local var liveness can delete code, which may create empty blocks
-        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
-                                                /* doAggressiveCompaction */ false);
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
         if (modified)
         {
@@ -7739,6 +7905,84 @@ PhaseStatus Lowering::DoPhase()
     comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Lowering::MapParameterRegisterLocals:
+//   Create mappings between parameter registers and locals corresponding to
+//   them.
+//
+void Lowering::MapParameterRegisterLocals()
+{
+    comp->m_paramRegLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(comp->getAllocator(CMK_ABI));
+
+    // Create initial mappings for promotions.
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        {
+            // If not promoted, then we do not need to create any mappings.
+            // If dependently promoted then the fields are never enregistered
+            // by LSRA, so no reason to try to create any mappings.
+            continue;
+        }
+
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            // If the parameter is not passed in any registers, then there are
+            // no mappings to create.
+            continue;
+        }
+
+        // Currently we do not support promotion of split parameters, so we
+        // should not see any split parameters here.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+
+        for (int i = 0; i < lclDsc->lvFieldCnt; i++)
+        {
+            unsigned   fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
+
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
+                {
+                    // This register does not map to this field (ends before the field starts)
+                    continue;
+                }
+
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                {
+                    // This register does not map to this field (starts after the field ends)
+                    continue;
+                }
+
+                comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
+            }
+
+            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+            assert(!fieldLclDsc->lvIsParamRegTarget);
+            fieldLclDsc->lvIsParamRegTarget = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("%d parameter register to local mappings\n", comp->m_paramRegLocalMappings->Height());
+        for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
+            printf("  ");
+            mapping.RegisterSegment->Dump();
+            printf(" -> V%02u\n", mapping.LclNum);
+        }
+    }
+#endif
 }
 
 #ifdef DEBUG
@@ -8593,19 +8837,17 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         BlockRange().Remove(dataPlaceholder);
     }
 
-// Wrap with memory barriers on weak memory models
-// if the block store was volatile
-#ifndef TARGET_XARCH
+    // Wrap with memory barriers if the block store was volatile
+    // Note: on XARCH these half-barriers only have optimization inhibiting effects, and do not emit anything
     if (isVolatile)
     {
-        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
-        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
+        GenTree* firstBarrier  = comp->gtNewMemoryBarrier(BARRIER_STORE_ONLY);
+        GenTree* secondBarrier = comp->gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
         BlockRange().InsertBefore(call, firstBarrier);
         BlockRange().InsertAfter(call, secondBarrier);
         LowerNode(firstBarrier);
         LowerNode(secondBarrier);
     }
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -8823,8 +9065,18 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         assert(prevData.IsStore());
         assert(currData.IsStore());
 
-        // For now, only constants are supported for data.
+        // For now, only non-relocatable constants are supported for data.
         if (!prevData.value->OperIsConst() || !currData.value->OperIsConst())
+        {
+            return;
+        }
+
+        if (prevData.value->IsCnsIntOrI() && prevData.value->AsIntCon()->ImmedValNeedsReloc(comp))
+        {
+            return;
+        }
+
+        if (currData.value->IsCnsIntOrI() && currData.value->AsIntCon()->ImmedValNeedsReloc(comp))
         {
             return;
         }

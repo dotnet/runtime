@@ -229,7 +229,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(JsonElement.DeepEquals(element, element));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsNotMonoInterpreter))]
         public static async Task DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
         {
             var tcs = new TaskCompletionSource<bool>();
@@ -237,7 +237,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 try
                 {
-                    using JsonDocument jDoc = CreateDeepJsonDocument(10_000);
+                    using JsonDocument jDoc = CreateDeepJsonDocument(100_000);
                     JsonElement element = jDoc.RootElement;
                     Assert.Throws<InsufficientExecutionStackException>(() => JsonElement.DeepEquals(element, element));
                     tcs.SetResult(true);

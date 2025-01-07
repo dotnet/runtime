@@ -20,7 +20,6 @@ struct ReplayResults
 {
     ReplayResult Result = ReplayResult::Success;
     bool IsMinOpts = false;
-    uint32_t NumCodeBytes = 0;
     uint64_t NumExecutedInstructions = 0;
     CompileResult* CompileResults = nullptr;
 };
@@ -72,9 +71,9 @@ public:
 
     ReplayResults CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
-    const WCHAR* getForceOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options);
+    const char* getForceOption(const char* key);
+    const char* getOption(const char* key);
+    const char* getOption(const char* key, LightWeightMap<DWORD, DWORD>* options);
 
     const MethodContext::Environment& getEnvironment();
 

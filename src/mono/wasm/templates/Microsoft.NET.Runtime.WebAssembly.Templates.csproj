@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates</PackageId>
+    <!-- when changing the net version also change it in template.json in the templates -->
+    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates.net10</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
     <Description>Templates to create WebAssembly projects.</Description>
@@ -16,6 +17,9 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <IsPackable>true</IsPackable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <!-- TODO: Add package readme -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,10 +28,5 @@
 
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />
-  <Target Name="_SetProductVersion" DependsOnTargets="GetProductVersions" BeforeTargets="Pack">
-    <PropertyGroup>
-      <PackageVersion>$(ProductVersion)</PackageVersion>
-    </PropertyGroup>
-  </Target>
 
 </Project>

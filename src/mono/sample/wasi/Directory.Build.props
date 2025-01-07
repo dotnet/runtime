@@ -15,6 +15,12 @@
 
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
+    <_ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</_ScriptExt>
+    <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
+    <_Dotnet>$(RepoRoot)dotnet$(_ScriptExt)</_Dotnet>
+    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
+    <_Nodejs>$(RepoRoot)node$(_ScriptExt)</_Nodejs>
+    <_Npm>$(RepoRoot)npm$(_ScriptExt)</_Npm>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasiNativeStrip>false</WasiNativeStrip>

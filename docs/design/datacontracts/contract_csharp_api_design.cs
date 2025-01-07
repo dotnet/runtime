@@ -37,6 +37,18 @@ namespace DataContracts
         // Add a full set of operators to support pointer arithmetic
     }
 
+    public readonly struct TargetSpan
+    {
+        public TargetSpan(TargetPointer address, ulong size)
+        {
+            Address = address;
+            Size = size;
+        }
+
+        public TargetPointer Address { get; }
+        public ulong Size { get; }
+    }
+
     struct TargetNInt
     {
         public long Value;

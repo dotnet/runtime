@@ -271,12 +271,6 @@ bool
 ep_rt_process_shutdown (void);
 
 static
-void
-ep_rt_create_activity_id (
-	uint8_t *activity_id,
-	uint32_t activity_id_len);
-
-static
 bool
 ep_rt_is_running (void);
 

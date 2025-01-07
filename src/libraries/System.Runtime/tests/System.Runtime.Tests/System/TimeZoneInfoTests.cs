@@ -2434,10 +2434,8 @@ namespace System.Tests
             }
         }
 
-        private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
-
-        [GeneratedRegex(IanaAbbreviationPattern)]
-        private static partial Regex IanaAbbreviationRegex();
+        [GeneratedRegex(@"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$")]
+        private static partial Regex IanaAbbreviationRegex { get; }
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // (This list is not likely to change.)
@@ -2487,10 +2485,10 @@ namespace System.Tests
                 else
                 {
                     // For other time zones, match any valid IANA time zone abbreviation, including numeric forms
-                    Assert.True(IanaAbbreviationRegex().IsMatch(timeZone.StandardName),
-                        $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
-                    Assert.True(IanaAbbreviationRegex().IsMatch(timeZone.DaylightName),
-                        $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+                    Assert.True(IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
+                        $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationRegex}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                    Assert.True(IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
+                        $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationRegex}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
                 }
             }
             else if (isUtc)
@@ -3169,7 +3167,7 @@ namespace System.Tests
             Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
         }
 
-        [Fact]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         public static void NoBackwardTimeZones()
         {

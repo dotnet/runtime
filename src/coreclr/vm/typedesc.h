@@ -204,7 +204,7 @@ public:
 
     // internal RuntimeType object handle
     RUNTIMETYPEHANDLE m_hExposedClassObject;
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<TypeDesc>;
 };
 
 template<>
@@ -269,7 +269,7 @@ protected:
 
     // The type that is being modified
     TypeHandle        m_Arg;
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ParamTypeDesc>;
 };
 
 template<>
@@ -395,7 +395,7 @@ protected:
     // index within declaring type or method, numbered from zero
     unsigned int m_index;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<TypeVarTypeDesc>;
 };
 
 template<>
@@ -415,8 +415,8 @@ class FnPtrTypeDesc : public TypeDesc
 
 public:
 #ifndef DACCESS_COMPILE
-    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes)
-        : TypeDesc(ELEMENT_TYPE_FNPTR), m_NumArgs(numArgs), m_CallConv(callConv)
+    FnPtrTypeDesc(BYTE callConv, DWORD numArgs, TypeHandle * retAndArgTypes, PTR_Module pLoaderModule)
+        : TypeDesc(ELEMENT_TYPE_FNPTR), m_pLoaderModule(pLoaderModule), m_NumArgs(numArgs), m_CallConv(callConv)
     {
         LIMITED_METHOD_CONTRACT;
         for (DWORD i = 0; i <= numArgs; i++)
@@ -469,6 +469,8 @@ public:
     BOOL IsExternallyVisible() const;
 #endif //DACCESS_COMPILE
 
+    PTR_Module GetLoaderModule() const { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderModule; }
+
 #ifdef DACCESS_COMPILE
     static ULONG32 DacSize(TADDR addr)
     {
@@ -481,6 +483,9 @@ public:
 #endif //DACCESS_COMPILE
 
 protected:
+    // LoaderModule of the TypeDesc
+    PTR_Module m_pLoaderModule;
+
     // Number of arguments
     DWORD m_NumArgs;
 
@@ -490,7 +495,7 @@ protected:
     // Return type first, then argument types
     TypeHandle m_RetAndArgTypes[1];
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<FnPtrTypeDesc>;
 }; // class FnPtrTypeDesc
 
 template<>
@@ -499,6 +504,7 @@ struct cdac_data<FnPtrTypeDesc>
     static constexpr size_t NumArgs = offsetof(FnPtrTypeDesc, m_NumArgs);
     static constexpr size_t RetAndArgTypes = offsetof(FnPtrTypeDesc, m_RetAndArgTypes);
     static constexpr size_t CallConv = offsetof(FnPtrTypeDesc, m_CallConv);
+    static constexpr size_t LoaderModule = offsetof(FnPtrTypeDesc, m_pLoaderModule);
 };
 
 #endif // TYPEDESC_H

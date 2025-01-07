@@ -15,280 +15,55 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmTemplateTests : BlazorWasmTestBase
+    public class WasmTemplateTests : WasmTemplateTestsBase
     {
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
         {
         }
 
-        private string StringReplaceWithAssert(string oldContent, string oldValue, string newValue)
-        {
-            string newContent = oldContent.Replace(oldValue, newValue);
-            if (oldValue != newValue && oldContent == newContent)
-                throw new XunitException($"Replacing '{oldValue}' with '{newValue}' did not change the content '{oldContent}'");
-
-            return newContent;
-        }
-
-        private void UpdateBrowserProgramCs()
-        {
-            var path = Path.Combine(_projectDir!, "Program.cs");
-            string text = File.ReadAllText(path);
-            text = StringReplaceWithAssert(text, "while(true)", $"int i = 0;{Environment.NewLine}while(i++ < 10)");
-            text = StringReplaceWithAssert(text, "partial class StopwatchSample", $"return 42;{Environment.NewLine}partial class StopwatchSample");
-            File.WriteAllText(path, text);
-        }
-
-        private void UpdateConsoleProgramCs()
-        {
-            string programText = """
-            Console.WriteLine("Hello, Console!");
-
-            for (int i = 0; i < args.Length; i ++)
-                Console.WriteLine ($"args[{i}] = {args[i]}");
-            """;
-            var path = Path.Combine(_projectDir!, "Program.cs");
-            string text = File.ReadAllText(path);
-            text = StringReplaceWithAssert(text, @"Console.WriteLine(""Hello, Console!"");", programText);
-            text = StringReplaceWithAssert(text, "return 0;", "return 42;");
-            File.WriteAllText(path, text);
-        }
-
-        private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
-        {
-            base.UpdateBrowserMainJs(
-                (mainJsContent) =>
-                {
-                    // .withExitOnUnhandledError() is available only only >net7.0
-                    mainJsContent = StringReplaceWithAssert(
-                        mainJsContent,
-                        ".create()",
-                        (targetFramework == "net8.0" || targetFramework == "net9.0")
-                            ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()"
-                    );
-
-                    // dotnet.run() is already used in <= net8.0
-                    if (targetFramework != "net8.0")
-                        mainJsContent = StringReplaceWithAssert(mainJsContent, "runMain()", "dotnet.run()");
-
-                    mainJsContent = StringReplaceWithAssert(mainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
-                    return mainJsContent;
-                },
-                targetFramework,
-                runtimeAssetsRelativePath
-            );
-        }
-
-        private void UpdateConsoleMainJs()
-        {
-            string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
-            string mainJsContent = File.ReadAllText(mainJsPath);
-
-            mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", ".withConsoleForwarding().create()");
-
-            File.WriteAllText(mainJsPath, mainJsContent);
-        }
-
-        private void UpdateMainJsEnvironmentVariables(params (string key, string value)[] variables)
-        {
-            string mainJsPath = Path.Combine(_projectDir!, "main.mjs");
-            string mainJsContent = File.ReadAllText(mainJsPath);
-
-            StringBuilder js = new();
-            foreach (var variable in variables)
-            {
-                js.Append($".withEnvironmentVariable(\"{variable.key}\", \"{variable.value}\")");
-            }
-
-            mainJsContent = StringReplaceWithAssert(mainJsContent, ".create()", js.ToString() + ".create()");
-
-            File.WriteAllText(mainJsPath, mainJsContent);
-        }
-
         [Theory, TestCategory("no-fingerprinting")]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void BrowserBuildThenPublish(string config)
+        [InlineData(Configuration.Debug)]
+        [InlineData(Configuration.Release)]
+        public void BrowserBuildThenPublish(Configuration config)
         {
-            string id = $"browser_{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
-            UpdateBrowserProgramCs();
-            UpdateBrowserMainJs(DefaultTargetFramework);
-
-            var buildArgs = new BuildArgs(projectName, config, false, id, null);
-
-            AddItemsPropertiesToProject(projectFile,
-                atTheEnd:
-                    """
+            string atEnd = """
                     <Target Name="CheckLinkedFiles" AfterTargets="ILLink">
                         <ItemGroup>
                             <_LinkedOutFile Include="$(IntermediateOutputPath)\linked\*.dll" />
                         </ItemGroup>
                         <Error Text="No file was linked-out. Trimming probably doesn't work (PublishTrimmed=$(PublishTrimmed))" Condition="@(_LinkedOutFile->Count()) == 0" />
                     </Target>
-                    """
-            );
+                    """;
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", insertAtEnd: atEnd);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-            buildArgs = ExpandBuildArgs(buildArgs);
+            BuildProject(info, config);
 
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: true,
-                            CreateProject: false,
-                            HasV8Script: false,
-                            MainJS: "main.js",
-                            Publish: false,
-                            TargetFramework: BuildTestBase.DefaultTargetFramework
-                        ));
+            if (!_buildContext.TryGetBuildFor(info, out BuildResult? result))
+                throw new XunitException($"Test bug: could not get the build result in the cache");
 
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
-
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
+            File.Move(result!.LogFile, Path.ChangeExtension(result.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
-            bool expectRelinking = config == "Release";
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: !expectRelinking,
-                            CreateProject: false,
-                            HasV8Script: false,
-                            MainJS: "main.js",
-                            Publish: true,
-                            TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false));
+            PublishProject(info, config, new PublishOptions(UseCache: false));
         }
 
-        [Theory]
-        [InlineData("Debug")]
-        [InlineData("Release")]
-        public void ConsoleBuildThenPublish(string config)
+        public static TheoryData<bool, string> TestDataForAppBundleDir()
         {
-            string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+            var data = new TheoryData<bool, string>();
+            AddTestData(runOutsideProjectDirectory: false);
+            AddTestData(runOutsideProjectDirectory: true);
 
-            UpdateConsoleMainJs();
-
-            var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                        DotnetWasmFromRuntimePack: true,
-                        CreateProject: false,
-                        HasV8Script: false,
-                        MainJS: "main.mjs",
-                        Publish: false,
-                        TargetFramework: BuildTestBase.DefaultTargetFramework,
-                        IsBrowserProject: false
-                        ));
-
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config}")
-                                        .EnsureSuccessful();
-            Assert.Contains("Hello, Console!", res.Output);
-
-            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
-                throw new XunitException($"Test bug: could not get the build product in the cache");
-
-            File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
-
-            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-
-            bool expectRelinking = config == "Release";
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: !expectRelinking,
-                            CreateProject: false,
-                            HasV8Script: false,
-                            MainJS: "main.mjs",
-                            Publish: true,
-                            TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false,
-                            IsBrowserProject: false));
-        }
-
-        [Theory]
-        [InlineData("Debug", false)]
-        [InlineData("Debug", true)]
-        [InlineData("Release", false)]
-        [InlineData("Release", true)]
-        public void ConsoleBuildAndRunDefault(string config, bool relinking)
-            => ConsoleBuildAndRun(config, relinking, string.Empty, DefaultTargetFramework, addFrameworkArg: true);
-
-        [Theory]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/79313")]
-        // [InlineData("Debug", "-f net7.0", "net7.0")]
-        //[InlineData("Debug", "-f net8.0", "net8.0")]
-        [InlineData("Debug", "-f net9.0", "net9.0")]
-        public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
-            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
-
-        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM, bool addFrameworkArg)
-        {
-            string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs, addFrameworkArg: addFrameworkArg);
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
-            UpdateConsoleProgramCs();
-            UpdateConsoleMainJs();
-            if (relinking)
-                AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
-
-            var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: !relinking,
-                            CreateProject: false,
-                            HasV8Script: false,
-                            MainJS: "main.mjs",
-                            Publish: false,
-                            TargetFramework: expectedTFM,
-                            IsBrowserProject: false
-                            ));
-
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
-                                        .EnsureExitCode(42);
-
-            Assert.Contains("args[0] = x", res.Output);
-            Assert.Contains("args[1] = y", res.Output);
-            Assert.Contains("args[2] = z", res.Output);
-        }
-
-        public static TheoryData<bool, bool, string> TestDataForAppBundleDir()
-        {
-            var data = new TheoryData<bool, bool, string>();
-            AddTestData(forConsole: true, runOutsideProjectDirectory: false);
-            AddTestData(forConsole: true, runOutsideProjectDirectory: true);
-
-            AddTestData(forConsole: false, runOutsideProjectDirectory: false);
-            AddTestData(forConsole: false, runOutsideProjectDirectory: true);
-
-            void AddTestData(bool forConsole, bool runOutsideProjectDirectory)
+            void AddTestData(bool runOutsideProjectDirectory)
             {
                 // FIXME: Disabled for `main` right now, till 7.0 gets the fix
-                data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
-
-                data.Add(runOutsideProjectDirectory, forConsole,
+                data.Add(runOutsideProjectDirectory, string.Empty);
+                data.Add(runOutsideProjectDirectory,
                                 $"<OutputPath>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</OutputPath>");
-                data.Add(runOutsideProjectDirectory, forConsole,
+                data.Add(runOutsideProjectDirectory,
                                 $"<WasmAppDir>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</WasmAppDir>");
             }
 
@@ -297,30 +72,24 @@ namespace Wasm.Build.Tests
 
         [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
-        public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
-            => await (forConsole
-                    ? ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory)
-                    : BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory));
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
+        public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
+            => await BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration.Release, extraProperties, runOutsideProjectDirectory);
 
-        private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+        private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration config, string extraProperties = "", bool runOutsideProjectDirectory = false)
         {
-            string id = $"browser_{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "browser", extraProperties: extraProperties);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-            UpdateBrowserProgramCs();
-            UpdateBrowserMainJs(DefaultTargetFramework);
-
-            if (!string.IsNullOrEmpty(extraProperties))
-                AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-
-            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
 
             {
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFile}\" --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{info.ProjectName}.csproj\" --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -330,131 +99,22 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{info.ProjectName}.csproj\" --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
-        }
-
-        private Task ConsoleRunWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
-        {
-            string id = $"console_{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
-
-            UpdateConsoleProgramCs();
-            UpdateConsoleMainJs();
-
-            if (!string.IsNullOrEmpty(extraProperties))
-                AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
-
-            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
-
-            {
-                string runArgs = $"run --no-silent -c {config} --project \"{projectFile}\"";
-                runArgs += " x y z";
-                using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
-                                    .WithWorkingDirectory(workingDir)
-                                    .WithEnvironmentVariables(s_buildEnv.EnvVars);
-                var res = cmd.ExecuteWithCapturedOutput(runArgs).EnsureExitCode(42);
-
-                Assert.Contains("args[0] = x", res.Output);
-                Assert.Contains("args[1] = y", res.Output);
-                Assert.Contains("args[2] = z", res.Output);
-            }
-
-            _testOutput.WriteLine($"{Environment.NewLine}[{id}] Running again with --no-build{Environment.NewLine}");
-
-            {
-                // Run with --no-build
-                string runArgs = $"run --no-silent -c {config} --project \"{projectFile}\" --no-build";
-                runArgs += " x y z";
-                using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
-                                .WithWorkingDirectory(workingDir);
-                var res = cmd.ExecuteWithCapturedOutput(runArgs).EnsureExitCode(42);
-
-                Assert.Contains("args[0] = x", res.Output);
-                Assert.Contains("args[1] = y", res.Output);
-                Assert.Contains("args[2] = z", res.Output);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
-        {
-            var data = new TheoryData<string, bool, bool>();
-            data.Add("Debug", false, false);
-            data.Add("Debug", false, true);
-            data.Add("Release", false, false); // Release relinks by default
-            data.Add("Release", true, false);
-
-            return data;
-        }
-
-        [Theory]
-        [MemberData(nameof(TestDataForConsolePublishAndRun))]
-        public void ConsolePublishAndRun(string config, bool aot, bool relinking)
-        {
-            string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
-            UpdateConsoleProgramCs();
-            UpdateConsoleMainJs();
-
-            if (aot)
-            {
-                // FIXME: pass envvars via the environment, once that is supported
-                UpdateMainJsEnvironmentVariables(("MONO_LOG_MASK", "aot"), ("MONO_LOG_LEVEL", "debug"));
-                AddItemsPropertiesToProject(projectFile, "<RunAOTCompilation>true</RunAOTCompilation>");
-            }
-            else if (relinking)
-            {
-                AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
-            }
-
-            var buildArgs = new BuildArgs(projectName, config, aot, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
-
-            bool expectRelinking = config == "Release" || aot || relinking;
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            DotnetWasmFromRuntimePack: !expectRelinking,
-                            CreateProject: false,
-                            HasV8Script: false,
-                            MainJS: "main.mjs",
-                            Publish: true,
-                            TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false,
-                            IsBrowserProject: false));
-
-            new RunCommand(s_buildEnv, _testOutput, label: id)
-                                .WithWorkingDirectory(_projectDir!)
-                                .ExecuteWithCapturedOutput("--info")
-                                .EnsureExitCode(0);
-
-            string runArgs = $"run --no-silent --no-build -c {config} -v diag";
-            runArgs += " x y z";
-            var res = new RunCommand(s_buildEnv, _testOutput, label: id)
-                                .WithWorkingDirectory(_projectDir!)
-                                .ExecuteWithCapturedOutput(runArgs)
-                                .EnsureExitCode(42);
-
-            if (aot)
-                Assert.Contains($"AOT: image '{Path.GetFileNameWithoutExtension(projectFile)}' found", res.Output);
-            Assert.Contains("args[0] = x", res.Output);
-            Assert.Contains("args[1] = y", res.Output);
-            Assert.Contains("args[2] = z", res.Output);
         }
 
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
             yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "-f net10.0", "net10.0", DefaultRuntimeAssetsRelativePath };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
+            {
+                yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
                 yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+            }
 
             // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
             // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
@@ -465,126 +125,87 @@ namespace Wasm.Build.Tests
         [MemberData(nameof(BrowserBuildAndRunTestData))]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
-            string config = "Debug";
-            string id = $"browser_{config}_{GetRandomId()}";
-            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs, addFrameworkArg: extraNewArgs.Length == 0);
+            Configuration config = Configuration.Debug;
+            string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
+                "" :
+                $"<WasmRuntimeAssetsLocation>{runtimeAssetsRelativePath}</WasmRuntimeAssetsLocation>";
+            ProjectInfo info = CreateWasmTemplateProject(
+                Template.WasmBrowser,
+                config,
+                aot: false,
+                "browser",
+                extraProperties: extraProperties,
+                extraArgs: extraNewArgs,
+                addFrameworkArg: extraNewArgs.Length == 0
+            );
 
-            if (targetFramework != "net8.0")
-                UpdateBrowserProgramCs();
-
+            if (new Version(targetFramework.Replace("net", "")).Major > 8)
+                UpdateBrowserProgramFile();
             UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
 
-            new DotNetCommand(s_buildEnv, _testOutput)
-                    .WithWorkingDirectory(_projectDir!)
-                    .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")} {(runtimeAssetsRelativePath != DefaultRuntimeAssetsRelativePath ? "-p:WasmRuntimeAssetsLocation=" + runtimeAssetsRelativePath : "")}")
-                    .EnsureSuccessful();
+            PublishProject(info, config, new PublishOptions(UseCache: false));
 
-            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!);
-
-            await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build -r browser-wasm --forward-console");
-            await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
-            Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            var runOutput = await RunForPublishWithWebServer(new BrowserRunOptions(config, ExpectedExitCode: 42));
+            Assert.Contains("Hello, Browser!", runOutput.TestOutput);
         }
 
         [Theory]
-        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ false)]
-        [InlineData("Debug", /*appendRID*/ true, /*useArtifacts*/ true)]
-        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ true)]
-        [InlineData("Debug", /*appendRID*/ false, /*useArtifacts*/ false)]
-        public void BuildAndRunForDifferentOutputPaths(string config, bool appendRID, bool useArtifacts)
+        [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ false)]
+        [InlineData(Configuration.Debug, /*appendRID*/ true, /*useArtifacts*/ true)]
+        [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ true)]
+        [InlineData(Configuration.Debug, /*appendRID*/ false, /*useArtifacts*/ false)]
+        public async Task BuildAndRunForDifferentOutputPaths(Configuration config, bool appendRID, bool useArtifacts)
         {
-            string id = $"{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-            string extraPropertiesForDBP = "";
-            if (appendRID)
-                extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
-            if (useArtifacts)
-                extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
+            bool isPublish = false;
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath) ?? "";
+            // browser app does not allow appending RID
+            string frameworkDir = useArtifacts ?
+                Path.Combine(projectDirectory, "bin", info.ProjectName, config.ToString().ToLower(), "wwwroot", "_framework") :
+                GetBinFrameworkDir(config, isPublish);
 
-            string projectDirectory = Path.GetDirectoryName(projectFile)!;
-            if (!string.IsNullOrEmpty(extraPropertiesForDBP))
-                AddItemsPropertiesToProject(Path.Combine(projectDirectory, "Directory.Build.props"),
-                                            extraPropertiesForDBP);
-
-            var buildOptions = new BuildProjectOptions(
-                                    DotnetWasmFromRuntimePack: true,
-                                    CreateProject: false,
-                                    HasV8Script: false,
-                                    MainJS: "main.mjs",
-                                    Publish: false,
-                                    TargetFramework: DefaultTargetFramework,
-                                    IsBrowserProject: false);
+            string extraPropertiesForDBP = string.Empty;
             if (useArtifacts)
             {
-                buildOptions = buildOptions with
-                {
-                    BinFrameworkDir = Path.Combine(
-                                            projectDirectory,
-                                            "bin",
-                                            id,
-                                            $"{config.ToLower()}_{BuildEnvironment.DefaultRuntimeIdentifier}",
-                                            "AppBundle",
-                                            "_framework")
-                };
+                extraPropertiesForDBP += "<UseArtifactsOutput>true</UseArtifactsOutput><ArtifactsPath>.</ArtifactsPath>";
             }
+            if (appendRID)
+            {
+                extraPropertiesForDBP += "<AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>";
+            }
+            // UseArtifactsOutput cannot be set in a project file, due to MSBuild ordering constraints.
+            string propsPath = Path.Combine(projectDirectory, "Directory.Build.props");
+            AddItemsPropertiesToProject(propsPath, extraPropertiesForDBP);
 
-            var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
-            BuildTemplateProject(buildArgs, id: id, buildOptions);
-
-            CommandResult res = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .ExecuteWithCapturedOutput($"run --no-silent --no-build -c {config} x y z")
-                                        .EnsureSuccessful();
+            BuildProject(info, config, new BuildOptions(NonDefaultFrameworkDir: frameworkDir));
+            await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42, ExtraArgs: "x y z"));
         }
 
         [Theory]
         [InlineData("", true)] // Default case
         [InlineData("false", false)] // the other case
-        public void Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
+        public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
         {
-            string config = "Release";
-            string id = $"strip_{config}_{GetRandomId()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
-            string projectName = Path.GetFileNameWithoutExtension(projectFile);
-            string projectDirectory = Path.GetDirectoryName(projectFile)!;
+            Configuration config = Configuration.Release;
             bool aot = true;
-
-            UpdateConsoleProgramCs();
-            UpdateConsoleMainJs();
-
             string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
             if (!string.IsNullOrEmpty(stripILAfterAOT))
                 extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
-            AddItemsPropertiesToProject(projectFile, extraProperties);
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot, "strip", extraProperties: extraProperties);
 
-            var buildArgs = new BuildArgs(projectName, config, aot, id, null);
-            buildArgs = ExpandBuildArgs(buildArgs);
+            UpdateBrowserProgramFile();
+            UpdateBrowserMainJs();
 
-            BuildTemplateProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            CreateProject: false,
-                            HasV8Script: false,
-                            MainJS: "main.mjs",
-                            Publish: true,
-                            TargetFramework: BuildTestBase.DefaultTargetFramework,
-                            UseCache: false,
-                            IsBrowserProject: false,
-                            AssertAppBundle: false));
+            PublishProject(info, config, new PublishOptions(UseCache: false, AssertAppBundle: false));
+            await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 42));
 
-            string runArgs = $"run --no-silent --no-build -c {config}";
-            var res = new RunCommand(s_buildEnv, _testOutput, label: id)
-                                .WithWorkingDirectory(_projectDir!)
-                                .ExecuteWithCapturedOutput(runArgs)
-                                .EnsureExitCode(42);
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+            string objBuildDir = Path.Combine(projectDirectory, "obj", config.ToString(), BuildTestBase.DefaultTargetFramework, "wasm", "for-publish");
 
-            string frameworkDir = Path.Combine(projectDirectory, "bin", config, BuildTestBase.DefaultTargetFramework, "browser-wasm", "AppBundle", "_framework");
-            string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFramework, "browser-wasm", "wasm", "for-publish");
+            string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
             TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
         }
 
@@ -646,21 +267,20 @@ namespace Wasm.Build.Tests
         [InlineData(true)]
         public void PublishPdb(bool copyOutputSymbolsToPublishDirectory)
         {
-            string config = "Release";
-            string id = $"publishpdb_{copyOutputSymbolsToPublishDirectory.ToString().ToLower()}_{GetRandomId()}";
-            CreateWasmTemplateProject(id, "wasmbrowser");
+            Configuration config = Configuration.Release;
+            string shouldCopy = copyOutputSymbolsToPublishDirectory.ToString().ToLower();
+            string extraProperties = $"<CopyOutputSymbolsToPublishDirectory>{shouldCopy}</CopyOutputSymbolsToPublishDirectory>";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "publishpdb", extraProperties: extraProperties);
 
-            (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(id, config), $"-p:CopyOutputSymbolsToPublishDirectory={copyOutputSymbolsToPublishDirectory.ToString().ToLower()}");
-            result.EnsureSuccessful();
-
-            string publishFrameworkPath = Path.GetFullPath(FindBlazorBinFrameworkDir(config, forPublish: true));
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: "-p:CompressionEnabled=true"));
+            string publishPath = GetBinFrameworkDir(config, forPublish: true);
             AssertFile(".pdb");
             AssertFile(".pdb.gz");
             AssertFile(".pdb.br");
 
             void AssertFile(string suffix)
             {
-                var fileName = Directory.EnumerateFiles(publishFrameworkPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(id));
+                var fileName = Directory.EnumerateFiles(publishPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(info.ProjectName));
                 Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
@@ -25,6 +25,7 @@
     <Compile Include="PipeCompletionCallbacksTests.cs" />
     <Compile Include="PipeOptionsTests.cs" />
     <Compile Include="PipeReaderWriterFacts.cs" />
+    <Compile Include="PipeReaderStreamTests.cs" />
     <Compile Include="PipePoolTests.cs" />
     <Compile Include="PipeResetTests.cs" />
     <Compile Include="PipeTest.cs" />
@@ -43,15 +44,14 @@
     <Compile Include="StreamPipeWriterTests.cs" />
     <Compile Include="Infrastructure\ThrowAfterNWritesStream.cs" />
     <Compile Include="UnflushedBytesTests.cs" />
+    <Compile Include="PipeLengthTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="PipeLengthTests.cs" />
     <Compile Include="BufferSegmentPoolTest.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
     <Compile Include="PipeResetTests.nonnetstandard.cs" />
     <Compile Include="PipePoolTests.nonnetstandard.cs" />
     <Compile Include="PipeWriterStreamTests.nonnetstandard.cs" />
-    <Compile Include="PipeReaderStreamTests.nonnetstandard.cs" />
     <Compile Include="PipeReaderWriterStreamTests.nonnetstandard.cs" />
   </ItemGroup>
   <ItemGroup>

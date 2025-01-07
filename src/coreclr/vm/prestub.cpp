@@ -21,6 +21,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
@@ -1294,7 +1295,7 @@ namespace
         Instantiation targetMethodInst;
         if (targetType->HasInstantiation())
         {
-            declClassInst = declaration->GetMethodTable()->GetInstantiation();
+            declClassInst = declaration->GetMethodTable()->GetTypicalMethodTable()->GetInstantiation();
             targetClassInst = targetType->GetTypicalMethodTable()->GetInstantiation();
         }
         if (targetMethod->HasMethodInstantiation())
@@ -1497,7 +1498,7 @@ namespace
 
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
-            state.IgnoreCustomModifiers = false;
+            state.IgnoreCustomModifiers = true;
             if (!DoesFieldMatchUnsafeAccessorDeclaration(cxt, pField, state))
                 continue;
 
@@ -2112,11 +2113,11 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
     // Any code build stages that do just in time configuration should
     // be configured now
 #ifdef FEATURE_REJIT
-    if (m_ilCodeVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (m_ilCodeVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         ReJitManager::ConfigureILCodeVersion(m_ilCodeVersion);
     }
-    _ASSERTE(m_ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive);
+    _ASSERTE(m_ilCodeVersion.GetRejitState() == RejitFlags::kStateActive);
 #endif
 
     return S_OK;
@@ -2662,7 +2663,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 pDispatchingMT = curobj->GetMethodTable();
 
-                if (pDispatchingMT->IsICastable() || pDispatchingMT->IsIDynamicInterfaceCastable())
+                if (pDispatchingMT->IsIDynamicInterfaceCastable())
                 {
                     MethodTable* pMDMT = pMD->GetMethodTable();
                     TypeHandle objectType(pDispatchingMT);
@@ -2672,7 +2673,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
                     INDEBUG(curobj = NULL); // curobj is unprotected and CanCastTo() can trigger GC
                     if (!objectType.CanCastTo(methodType))
                     {
-                        // Apparently ICastable magic was involved when we chose this method to be called
+                        // Apparently IDynamicInterfaceCastable magic was involved when we chose this method to be called
                         // that's why we better stick to the MethodTable it belongs to, otherwise
                         // DoPrestub() will fail not being able to find implementation for pMD in pDispatchingMT.
 
@@ -2949,8 +2950,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else if (IsEEImpl())
     {
         _ASSERTE(GetMethodTable()->IsDelegate());
-        pCode = COMDelegate::GetInvokeMethodStub((EEImplMethodDesc*)this);
-        GetOrCreatePrecode();
+        pStub = COMDelegate::GetInvokeMethodStub((EEImplMethodDesc*)this);
     }
     else
     {
@@ -3393,7 +3393,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -3493,6 +3496,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
 
     switch(helpFunc)
     {
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+        {
+            pMT->EnsureTlsIndexAllocated();
+            pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo()->NonGCTlsIndex.GetIndexOffset();
+            break;
+        }
+
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
@@ -3534,7 +3545,7 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
     bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
     CorInfoHelpFunc helper;
-    
+
     if (threadStatic)
     {
         if (GCStatic)
@@ -3925,8 +3936,11 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                         pArgs->classHnd = (CORINFO_CLASS_HANDLE)th.AsPtr();
                         pArgs->methodHnd = (CORINFO_METHOD_HANDLE)pMD;
 
+                        MethodDesc *pVirtualDispatchHelper = CoreLibBinder::GetMethod(METHOD__VIRTUALDISPATCHHELPERS__VIRTUALFUNCTIONPOINTER_DYNAMIC);
+                        PCODE pHelperCode = pVirtualDispatchHelper->GetMultiCallableAddrOfCode();
+
                         pHelper = DynamicHelpers::CreateHelperWithArg(pModule->GetLoaderAllocator(), (TADDR)pArgs,
-                            GetEEFuncEntryPoint(JIT_VirtualFunctionPointer_Dynamic));
+                            pHelperCode);
 
                         amTracker.SuppressRelease();
                     }
@@ -4015,7 +4029,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
                 else
                 {
-                    target = ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE));
+                    target = CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE)->GetMultiCallableAddrOfCode();
                     ctorData.pArg3 = NULL;
                 }
 

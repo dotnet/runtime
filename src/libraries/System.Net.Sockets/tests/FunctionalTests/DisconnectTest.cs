@@ -13,7 +13,7 @@ namespace System.Net.Sockets.Tests
     {
         protected Disconnect(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [InlineData(true)]
         [InlineData(false)]
         public async Task Disconnect_Success(bool reuseSocket)
@@ -50,7 +50,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task DisconnectAndReuse_ReconnectSync_ThrowsInvalidOperationException()
         {
             IPEndPoint loopback = new IPEndPoint(IPAddress.Loopback, 0);
@@ -97,16 +97,19 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class Disconnect_Sync : Disconnect<SocketHelperArraySync>
     {
         public Disconnect_Sync(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class Disconnect_SyncForceNonBlocking : Disconnect<SocketHelperSyncForceNonBlocking>
     {
         public Disconnect_SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class Disconnect_Apm : Disconnect<SocketHelperApm>
     {
         public Disconnect_Apm(ITestOutputHelper output) : base(output) { }
@@ -131,7 +134,7 @@ namespace System.Net.Sockets.Tests
     {
         public Disconnect_CancellableTask(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [InlineData(true)]
         [InlineData(false)]
         public async Task Disconnect_Precanceled_ThrowsOperationCanceledException(bool reuseSocket)

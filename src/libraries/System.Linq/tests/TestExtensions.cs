@@ -38,7 +38,7 @@ namespace System.Linq.Tests
         private class RunOnceList<T> : IList<T>
         {
             private readonly IList<T> _source;
-            private readonly HashSet<int> _called = new HashSet<int>();
+            private readonly HashSet<int> _called = [];
 
             private void AssertAll()
             {

@@ -27,7 +27,6 @@ namespace Microsoft.Interop
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             SequenceEqualImmutableArray<AttributeSyntax> ForwardedAttributes,
             LibraryImportData LibraryImportData,
-            TargetFrameworkSettings TargetFramework,
             LibraryImportGeneratorOptions Options,
             EnvironmentFlags EnvironmentFlags,
             SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
@@ -66,15 +65,17 @@ namespace Microsoft.Interop
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
                 .Select(static (options, ct) => new LibraryImportGeneratorOptions(options.GlobalOptions));
 
-            IncrementalValueProvider<TargetFrameworkSettings> targetFramework = context.AnalyzerConfigOptionsProvider.Select((options, ct) => options.GlobalOptions.GetTargetFrameworkSettings());
             IncrementalValueProvider<StubEnvironment> stubEnvironment = context.CreateStubEnvironmentProvider();
 
             // Validate environment that is being used to generate stubs.
-            context.RegisterDiagnostics(context.CompilationProvider.Combine(attributedMethods.Collect()).Combine(targetFramework).SelectMany((data, ct) =>
+            context.RegisterDiagnostics(
+                context.CompilationProvider
+                .Select((comp, ct) => comp.Options is CSharpCompilationOptions { AllowUnsafe: true })
+                .Combine(attributedMethods.Collect())
+                .SelectMany((data, ct) =>
             {
-                if (data.Left.Right.IsEmpty // no attributed methods
-                    || data.Left.Left.Options is CSharpCompilationOptions { AllowUnsafe: true } // Unsafe code enabled
-                    || data.Right.TargetFramework != TargetFramework.Net) // Downlevel scenarios use forwarders and don't need unsafe code
+                if (data.Right.IsEmpty // no attributed methods
+                    || data.Left) // Unsafe code enabled
                 {
                     return ImmutableArray<DiagnosticInfo>.Empty;
                 }
@@ -85,17 +86,15 @@ namespace Microsoft.Interop
             IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Combine(stubOptions)
-                .Combine(targetFramework)
                 .Select(static (data, ct) => new
                 {
-                    data.Left.Left.Left.Syntax,
-                    data.Left.Left.Left.Symbol,
-                    Environment = data.Left.Left.Right,
-                    Options = data.Left.Right,
-                    TargetFramework = data.Right
+                    data.Left.Left.Syntax,
+                    data.Left.Left.Symbol,
+                    Environment = data.Left.Right,
+                    Options = data.Right,
                 })
                 .Select(
-                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.TargetFramework, data.Options, ct)
+                    static (data, ct) => CalculateStubInformation(data.Syntax, data.Symbol, data.Environment, data.Options, ct)
                 )
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
@@ -110,7 +109,7 @@ namespace Microsoft.Interop
             context.RegisterConcatenatedSyntaxOutputs(generateSingleStub.Select((data, ct) => data.Item1), "LibraryImports.g.cs");
         }
 
-        private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute, AttributeData? defaultDllImportSearchPathsAttribute)
+        private static List<AttributeSyntax> GenerateSyntaxForForwardedAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute, AttributeData? defaultDllImportSearchPathsAttribute, AttributeData? wasmImportLinkageAttribute)
         {
             const string CallConvsField = "CallConvs";
             // Manually rehydrate the forwarded attributes with fully qualified types so we don't have to worry about any using directives.
@@ -153,6 +152,10 @@ namespace Microsoft.Interop
                             CastExpression(TypeSyntaxes.DllImportSearchPath,
                                 LiteralExpression(SyntaxKind.NumericLiteralExpression,
                                     Literal((int)defaultDllImportSearchPathsAttribute.ConstructorArguments[0].Value!))))));
+            }
+            if (wasmImportLinkageAttribute is not null)
+            {
+                attributes.Add(Attribute(NameSyntaxes.WasmImportLinkageAttribute));
             }
             return attributes;
         }
@@ -216,7 +219,6 @@ namespace Microsoft.Interop
             MethodDeclarationSyntax originalSyntax,
             IMethodSymbol symbol,
             StubEnvironment environment,
-            TargetFrameworkSettings targetFramework,
             LibraryImportGeneratorOptions options,
             CancellationToken ct)
         {
@@ -225,12 +227,14 @@ namespace Microsoft.Interop
             INamedTypeSymbol? suppressGCTransitionAttrType = environment.SuppressGCTransitionAttrType;
             INamedTypeSymbol? unmanagedCallConvAttrType = environment.UnmanagedCallConvAttrType;
             INamedTypeSymbol? defaultDllImportSearchPathsAttrType = environment.DefaultDllImportSearchPathsAttrType;
+            INamedTypeSymbol? wasmImportLinkageAttrType = environment.WasmImportLinkageAttrType;
             // Get any attributes of interest on the method
             AttributeData? generatedDllImportAttr = null;
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
             AttributeData? unmanagedCallConvAttribute = null;
             AttributeData? defaultDllImportSearchPathsAttribute = null;
+            AttributeData? wasmImportLinkageAttribute = null;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
@@ -253,6 +257,10 @@ namespace Microsoft.Interop
                 else if (defaultDllImportSearchPathsAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, defaultDllImportSearchPathsAttrType))
                 {
                     defaultDllImportSearchPathsAttribute = attr;
+                }
+                else if (wasmImportLinkageAttrType is not null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, wasmImportLinkageAttrType))
+                {
+                    wasmImportLinkageAttribute = attr;
                 }
             }
 
@@ -292,16 +300,16 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(
                 symbol,
-                LibraryImportGeneratorHelpers.CreateMarshallingInfoParser(environment, targetFramework, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
+                DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr),
                 environment,
-                new CodeEmitOptions(SkipInit: targetFramework.TargetFramework == TargetFramework.Net),
+                new CodeEmitOptions(SkipInit: true),
                 typeof(LibraryImportGenerator).Assembly);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
             var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
-            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute);
+            List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute, wasmImportLinkageAttribute);
             return new IncrementalStubGenerationContext(
                 signatureContext,
                 containingTypeContext,
@@ -309,7 +317,6 @@ namespace Microsoft.Interop
                 locations,
                 new SequenceEqualImmutableArray<AttributeSyntax>(additionalAttributes.ToImmutableArray(), SyntaxEquivalentComparer.Instance),
                 LibraryImportData.From(libraryImportData),
-                targetFramework,
                 options,
                 environment.EnvironmentFlags,
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray())
@@ -326,47 +333,33 @@ namespace Microsoft.Interop
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: true, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
-            bool supportsTargetFramework = !pinvokeStub.LibraryImportData.SetLastError
-                || options.GenerateForwarders
-                || (pinvokeStub.TargetFramework is (TargetFramework.Net, { Major: >= 6 }));
-
-            foreach (TypePositionInfo typeInfo in pinvokeStub.SignatureContext.ElementTypeInformation)
-            {
-                if (typeInfo.MarshallingAttributeInfo is MissingSupportMarshallingInfo)
-                {
-                    supportsTargetFramework = false;
-                    break;
-                }
-            }
+            IMarshallingGeneratorResolver resolver = options.GenerateForwarders
+                ? new ForwarderResolver()
+                : DefaultMarshallingGeneratorResolver.Create(pinvokeStub.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged, TypeNames.LibraryImportAttribute_ShortName, []);
 
             // Generate stub code
-            var stubGenerator = new PInvokeStubCodeGenerator(
+            var stubGenerator = new ManagedToNativeStubGenerator(
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 diagnostics,
-                LibraryImportGeneratorHelpers.CreateGeneratorResolver(pinvokeStub.TargetFramework, pinvokeStub.Options, pinvokeStub.EnvironmentFlags),
-                new CodeEmitOptions(SkipInit: pinvokeStub.TargetFramework is (TargetFramework.Net, _)));
-
-            // For down-level support, if some parameters cannot be marshalled, consider the target framework as not supported
-            if (stubGenerator.HasForwardedTypes
-                && (pinvokeStub.TargetFramework.TargetFramework != TargetFramework.Net || pinvokeStub.TargetFramework.Version.Major < 7))
-            {
-                supportsTargetFramework = false;
-            }
+                resolver,
+                new CodeEmitOptions(SkipInit: true));
 
             // Check if the generator should produce a forwarder stub - regular DllImport.
-            // This is done if the signature is blittable or the target framework is not supported.
-            if (stubGenerator.StubIsBasicForwarder
-                || !supportsTargetFramework)
+            // This is done if the stub doesn't contain any marshalling logic.
+            if (stubGenerator.NoMarshallingRequired)
             {
-                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, !supportsTargetFramework, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+                // If we have any forwarded types, we're generating a "partial" stub.
+                // In this case, we'll already emit errors for whatever type we failed to marshal.
+                // So, don't emit additional errors for the stub itself.
+                return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, explicitForwarding: false, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes.Array;
 
             const string innerPInvokeName = "__PInvoke";
 
-            BlockSyntax code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
+            BlockSyntax code = stubGenerator.GenerateStubBody(innerPInvokeName);
 
             LocalFunctionStatementSyntax dllImport = CreateTargetDllImportAsLocalStatement(
                 stubGenerator,
@@ -393,7 +386,7 @@ namespace Microsoft.Interop
             if (pinvokeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling)
                 && pinvokeData.StringMarshalling != StringMarshalling.Utf16)
             {
-                // Report a diagnostic when forwarding explicitly due to generator options or down-level support. Otherwise, StringMarshalling can just be omitted
+                // Report a diagnostic when forwarding explicitly. Otherwise, StringMarshalling can just be omitted
                 if (explicitForwarding)
                 {
                     diagnostics.ReportCannotForwardToDllImport(
@@ -407,7 +400,7 @@ namespace Microsoft.Interop
 
             if (pinvokeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
-                // Report a diagnostic when forwarding explicitly due to generator options or down-level support. Otherwise, StringMarshallingCustomType can just be omitted
+                // Report a diagnostic when forwarding explicitly. Otherwise, StringMarshalling can just be omitted
                 if (explicitForwarding)
                 {
                     diagnostics.ReportCannotForwardToDllImport(
@@ -437,7 +430,7 @@ namespace Microsoft.Interop
         }
 
         private static LocalFunctionStatementSyntax CreateTargetDllImportAsLocalStatement(
-            PInvokeStubCodeGenerator stubGenerator,
+            ManagedToNativeStubGenerator stubGenerator,
             LibraryImportGeneratorOptions options,
             LibraryImportData libraryImportData,
             string stubTargetName,

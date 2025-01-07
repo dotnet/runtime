@@ -350,11 +350,6 @@ GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
 
 GPTR_DECL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
-
-#ifdef FEATURE_ICASTABLE
-GPTR_DECL(MethodTable,      g_pICastableInterface);
-#endif // FEATURE_ICASTABLE
-
 GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -416,6 +411,12 @@ GPTR_DECL(DebugInterface,     g_pDebugInterface);
 GVAL_DECL(DWORD,              g_CORDebuggerControlFlags);
 #ifdef DEBUGGING_SUPPORTED
 GPTR_DECL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
+
+#ifndef DACCESS_COMPILE
+GVAL_DECL(DWORD, g_multicastDelegateTraceActiveCount);
+GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
+#endif // DACCESS_COMPILE
+
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED

@@ -31,7 +31,7 @@ namespace System.Linq.Tests
 
         private static void TestEmptyIList<T>()
         {
-            T[] source = { };
+            T[] source = [];
 
             Assert.NotNull(source as IList<T>);
 
@@ -50,7 +50,7 @@ namespace System.Linq.Tests
         [Fact]
         public void IListTOneElement()
         {
-            int[] source = { 5 };
+            int[] source = [5];
             int expected = 5;
 
             Assert.NotNull(source as IList<int>);
@@ -61,7 +61,7 @@ namespace System.Linq.Tests
         [Fact]
         public void IListTManyElementsLastIsDefault()
         {
-            int?[] source = { -10, 2, 4, 3, 0, 2, null };
+            int?[] source = [-10, 2, 4, 3, 0, 2, null];
             int? expected = null;
 
             Assert.IsAssignableFrom<IList<int?>>(source);
@@ -72,7 +72,7 @@ namespace System.Linq.Tests
         [Fact]
         public void IListTManyElementsLastIsNotDefault()
         {
-            int?[] source = { -10, 2, 4, 3, 0, 2, null, 19 };
+            int?[] source = [-10, 2, 4, 3, 0, 2, null, 19];
             int? expected = 19;
 
             Assert.IsAssignableFrom<IList<int?>>(source);
@@ -128,7 +128,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySourcePredicate()
         {
-            int[] source = { };
+            int[] source = [];
 
             Assert.All(CreateSources(source), source =>
             {
@@ -140,7 +140,7 @@ namespace System.Linq.Tests
         [Fact]
         public void OneElementTruePredicate()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             Func<int, bool> predicate = IsEven;
             int expected = 4;
 
@@ -153,7 +153,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementsPredicateFalseForAll()
         {
-            int[] source = { 9, 5, 1, 3, 17, 21 };
+            int[] source = [9, 5, 1, 3, 17, 21];
             Func<int, bool> predicate = IsEven;
 
             Assert.All(CreateSources(source), source =>
@@ -165,7 +165,7 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueOnlyForLast()
         {
-            int[] source = { 9, 5, 1, 3, 17, 21, 50 };
+            int[] source = [9, 5, 1, 3, 17, 21, 50];
             Func<int, bool> predicate = IsEven;
             int expected = 50;
 
@@ -178,7 +178,7 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueForSome()
         {
-            int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
+            int[] source = [3, 7, 10, 7, 9, 2, 11, 18, 13, 9];
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 
@@ -191,7 +191,7 @@ namespace System.Linq.Tests
         [Fact]
         public void PredicateTrueForSomeRunOnce()
         {
-            int[] source = { 3, 7, 10, 7, 9, 2, 11, 18, 13, 9 };
+            int[] source = [3, 7, 10, 7, 9, 2, 11, 18, 13, 9];
             Func<int, bool> predicate = IsEven;
             int expected = 18;
 

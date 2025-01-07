@@ -448,7 +448,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(pUnwoundState);
+        EnsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -635,6 +635,10 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool update
     // Copy the context to regdisplay
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(T_CONTEXT));
 
+    // Clear the CONTEXT_XSTATE, since the REGDISPLAY contains just plain CONTEXT structure
+    // that cannot contain any extended state.
+    pRD->pCurrentContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+
     pRD->ControlPC = ::GetIP(&m_ctx);
     pRD->SP = ::GetSP(&m_ctx);
 
@@ -785,6 +789,10 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
      pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
      pRD->pCurrentContext->X0 = m_Args->X0;
+     pRD->pCurrentContext->X1 = m_Args->X1;
+
+     pRD->volatileCurrContextPointers.X0 = &m_Args->X0;
+     pRD->volatileCurrContextPointers.X1 = &m_Args->X1;
 
      pRD->pCurrentContext->X19 = m_Args->X19;
      pRD->pCurrentContext->X20 = m_Args->X20;
@@ -1170,143 +1178,6 @@ void StubLinkerCPU::EmitJumpRegister(IntReg regTarget)
     Emit32((DWORD) (0x3587C0<<10 | regTarget<<5));
 }
 
-void StubLinkerCPU::EmitProlog(unsigned short cIntRegArgs, unsigned short cVecRegArgs, unsigned short cCalleeSavedRegs, unsigned short cbStackSpace)
-{
-
-    _ASSERTE(!m_fProlog);
-
-    unsigned short numberOfEntriesOnStack  = 2 + cIntRegArgs + cVecRegArgs + cCalleeSavedRegs; // 2 for fp, lr
-
-    // Stack needs to be 16 byte (2 qword) aligned. Compute the required padding before saving it
-    unsigned short totalPaddedFrameSize = static_cast<unsigned short>(ALIGN_UP(cbStackSpace + numberOfEntriesOnStack *sizeof(void*), 2*sizeof(void*)));
-    // The padding is going to be applied to the local stack
-    cbStackSpace =  totalPaddedFrameSize - numberOfEntriesOnStack *sizeof(void*);
-
-    // Record the parameters of this prolog so that we can generate a matching epilog and unwind info.
-    DescribeProlog(cIntRegArgs, cVecRegArgs, cCalleeSavedRegs, cbStackSpace);
-
-
-
-    // N.B Despite the range of a jump with a sub sp is 4KB, we're limiting to 504 to save from emitting right prolog that's
-    // expressable in unwind codes efficiently. The largest offset in typical unwindinfo encodings that we use is 504.
-    // so allocations larger than 504 bytes would require setting the SP in multiple strides, which would complicate both
-    // prolog and epilog generation as well as unwindinfo generation.
-    _ASSERTE((totalPaddedFrameSize <= 504) && "NYI:ARM64 Implement StubLinker prologs with larger than 504 bytes of frame size");
-    if (totalPaddedFrameSize > 504)
-        COMPlusThrow(kNotSupportedException);
-
-    // Here is how the stack would look like (Stack grows up)
-    // [Low Address]
-    //            +------------+
-    //      SP -> |            | <-+
-    //            :            :   | Stack Frame, (i.e outgoing arguments) including padding
-    //            |            | <-+
-    //            +------------+
-    //            | FP         |
-    //            +------------+
-    //            | LR         |
-    //            +------------+
-    //            | X19        | <-+
-    //            +------------+   |
-    //            :            :   | Callee-saved registers
-    //            +------------+   |
-    //            | X28        | <-+
-    //            +------------+
-    //            | V0         | <-+
-    //            +------------+   |
-    //            :            :   | Vec Args
-    //            +------------+   |
-    //            | V7         | <-+
-    //            +------------+
-    //            | X0         | <-+
-    //            +------------+   |
-    //            :            :   | Int Args
-    //            +------------+   |
-    //            | X7         | <-+
-    //            +------------+
-    //  Old SP -> |[Stack Args]|
-    // [High Address]
-
-
-
-    // Regarding the order of operations in the prolog and epilog;
-    // If the prolog and the epilog matches each other we can simplify emitting the unwind codes and save a few
-    // bytes of unwind codes by making prolog and epilog share the same unwind codes.
-    // In order to do that we need to make the epilog be the reverse of the prolog.
-    // But we wouldn't want to add restoring of the argument registers as that's completely unnecessary.
-    // Besides, saving argument registers cannot be expressed by the unwind code encodings.
-    // So, we'll push saving the argument registers to the very last in the prolog, skip restoring it in epilog,
-    // and also skip reporting it to the OS.
-    //
-    // Another bit that we can save is resetting the frame pointer.
-    // This is not necessary when the SP doesn't get modified beyond prolog and epilog. (i.e no alloca/localloc)
-    // And in that case we don't need to report setting up the FP either.
-
-
-
-    // 1. Relocate SP
-    EmitSubImm(RegSp, RegSp, totalPaddedFrameSize);
-
-    unsigned cbOffset = 2*sizeof(void*) + cbStackSpace; // 2 is for fp,lr
-
-    // 2. Store callee-saved registers
-    _ASSERTE(cCalleeSavedRegs <= 10);
-    for (unsigned short i=0; i<(cCalleeSavedRegs/2)*2; i+=2)
-        EmitLoadStoreRegPairImm(eSTORE, IntReg(19+i), IntReg(19+i+1), RegSp, cbOffset + i*sizeof(void*));
-    if ((cCalleeSavedRegs %2) ==1)
-        EmitLoadStoreRegImm(eSTORE, IntReg(cCalleeSavedRegs-1), RegSp, cbOffset + (cCalleeSavedRegs-1)*sizeof(void*));
-
-    // 3. Store FP/LR
-    EmitLoadStoreRegPairImm(eSTORE, RegFp, RegLr, RegSp, cbStackSpace);
-
-    // 4. Set the frame pointer
-    EmitMovReg(RegFp, RegSp);
-
-    // 5. Store floating point argument registers
-    cbOffset += cCalleeSavedRegs*sizeof(void*);
-    _ASSERTE(cVecRegArgs <= 8);
-    for (unsigned short i=0; i<(cVecRegArgs/2)*2; i+=2)
-        EmitLoadStoreRegPairImm(eSTORE, VecReg(i), VecReg(i+1), RegSp, cbOffset + i*sizeof(void*));
-    if ((cVecRegArgs % 2) == 1)
-        EmitLoadStoreRegImm(eSTORE, VecReg(cVecRegArgs-1), RegSp, cbOffset + (cVecRegArgs-1)*sizeof(void*));
-
-    // 6. Store int argument registers
-    cbOffset += cVecRegArgs*sizeof(void*);
-    _ASSERTE(cIntRegArgs <= 8);
-    for (unsigned short i=0 ; i<(cIntRegArgs/2)*2; i+=2)
-        EmitLoadStoreRegPairImm(eSTORE, IntReg(i), IntReg(i+1), RegSp, cbOffset + i*sizeof(void*));
-    if ((cIntRegArgs % 2) == 1)
-        EmitLoadStoreRegImm(eSTORE,IntReg(cIntRegArgs-1), RegSp, cbOffset + (cIntRegArgs-1)*sizeof(void*));
-}
-
-void StubLinkerCPU::EmitEpilog()
-{
-    _ASSERTE(m_fProlog);
-
-    // 6. Restore int argument registers
-    //    nop: We don't need to. They are scratch registers
-
-    // 5. Restore floating point argument registers
-    //    nop: We don't need to. They are scratch registers
-
-    // 4. Restore the SP from FP
-    //    N.B. We're assuming that the stublinker stubs doesn't do alloca, hence nop
-
-    // 3. Restore FP/LR
-    EmitLoadStoreRegPairImm(eLOAD, RegFp, RegLr, RegSp, m_cbStackSpace);
-
-    // 2. restore the calleeSavedRegisters
-    unsigned cbOffset = 2*sizeof(void*) + m_cbStackSpace; // 2 is for fp,lr
-    if ((m_cCalleeSavedRegs %2) ==1)
-        EmitLoadStoreRegImm(eLOAD, IntReg(m_cCalleeSavedRegs-1), RegSp, cbOffset + (m_cCalleeSavedRegs-1)*sizeof(void*));
-    for (int i=(m_cCalleeSavedRegs/2)*2-2; i>=0; i-=2)
-        EmitLoadStoreRegPairImm(eLOAD, IntReg(19+i), IntReg(19+i+1), RegSp, cbOffset + i*sizeof(void*));
-
-    // 1. Restore SP
-    EmitAddImm(RegSp, RegSp, GetStackFrameSize());
-    EmitRet(RegLr);
-}
-
 void StubLinkerCPU::EmitRet(IntReg Xn)
 {
     // Encoding: 1101011001011111000000| Rn |00000
@@ -1447,19 +1318,6 @@ void StubLinkerCPU::EmitMovReg(IntReg Xd, IntReg Xm)
         //  Xn = XZR
         Emit32((DWORD) ( (0xAA << 24) | (Xm << 16) | (0x1F << 5) | Xd));
     }
-}
-
-void StubLinkerCPU::EmitSubImm(IntReg Xd, IntReg Xn, unsigned int value)
-{
-    // sub <Xd|SP>, <Xn|SP>, #imm{, <shift>}
-    // Encoding: sf|1|0|1|0|0|0|1|shift(2)|imm(12)|Rn|Rd
-    // where <shift> is encoded as LSL #0 (no shift) when shift=00 and LSL #12 when shift=01. (No shift in this impl)
-    // imm(12) is an unsigned immediate in the range of 0 to 4095
-    // Rn and Rd are both encoded as SP=31
-    // sf = 1 for 64-bit variant
-    _ASSERTE((0 <= value) && (value <= 4095));
-    Emit32((DWORD) ((0xD1 << 24) | (value << 10) | (Xd << 5) | Xn));
-
 }
 
 void StubLinkerCPU::EmitAddImm(IntReg Xd, IntReg Xn, unsigned int value)
@@ -1942,9 +1800,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
-        GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
-        GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
+    PCODE helperAddress = GetDictionaryLookupHelper(pLookup->helper);
 
     GenericHandleArgs * pArgs = (GenericHandleArgs *)(void *)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(sizeof(GenericHandleArgs), DYNAMIC_HELPER_ALIGNMENT);
     ExecutableWriterHolder<GenericHandleArgs> argsWriterHolder(pArgs, sizeof(GenericHandleArgs));

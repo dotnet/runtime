@@ -86,15 +86,20 @@ namespace System.Numerics.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_Subspan_Success_TestData()
+        {
+            yield return new object[] { "123456789", 0, 9, "123456789" };
+            yield return new object[] { "123456789", 0, 1, "1" };
+            yield return new object[] { "123456789", 1, 3, "234" };
+            yield return new object[] { "123456789", 8, 1, "9" };
+            yield return new object[] { "123456789abc", 8, 1, "9" };
+            yield return new object[] { "1\03456789", 0, 1, "1" };
+            yield return new object[] { "1\03456789", 0, 2, "1" };
+            yield return new object[] { "123456789\0", 0, 10, "123456789" };
+        }
+
         [Theory]
-        [InlineData("123456789", 0, 9, "123456789")]
-        [InlineData("123456789", 0, 1, "1")]
-        [InlineData("123456789", 1, 3, "234")]
-        [InlineData("123456789", 8, 1, "9")]
-        [InlineData("123456789abc", 8, 1, "9")]
-        [InlineData("1\03456789", 0, 1, "1")]
-        [InlineData("1\03456789", 0, 2, "1")]
-        [InlineData("123456789\0", 0, 10, "123456789")]
+        [MemberData(nameof(Parse_Subspan_Success_TestData))]
         public static void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
             Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
@@ -228,10 +233,23 @@ namespace System.Numerics.Tests
             // BasicTests
             VerifyFailParseToString(null, typeof(ArgumentNullException));
             VerifyFailParseToString(string.Empty, typeof(FormatException));
-            VerifyParseToString("0");
-            VerifyParseToString("000");
-            VerifyParseToString("1");
-            VerifyParseToString("001");
+
+            foreach (var value in new string[]
+            {
+                "0",
+                "000",
+                "1",
+                "001",
+                int.MaxValue.ToString(),
+                int.MinValue.ToString(),
+                long.MaxValue.ToString(),
+                long.MinValue.ToString(),
+                Int128.MaxValue.ToString(),
+                Int128.MinValue.ToString(),
+            })
+            {
+                VerifyParseToString(value);
+            }
 
             // SimpleNumbers - Small
             for (int i = 0; i < s_samples; i++)
@@ -1171,6 +1189,7 @@ namespace System.Numerics.Tests
     public class parseTestThreshold
     {
         public static IEnumerable<object[]> Cultures => parseTest.Cultures;
+
         [Theory]
         [MemberData(nameof(Cultures))]
         [OuterLoop]
@@ -1183,15 +1202,10 @@ namespace System.Numerics.Tests
             }));
         }
 
+        public static IEnumerable<object[]> Parse_Subspan_Success_TestData() => parseTest.Parse_Subspan_Success_TestData();
+
         [Theory]
-        [InlineData("123456789", 0, 9, "123456789")]
-        [InlineData("123456789", 0, 1, "1")]
-        [InlineData("123456789", 1, 3, "234")]
-        [InlineData("123456789", 8, 1, "9")]
-        [InlineData("123456789abc", 8, 1, "9")]
-        [InlineData("1\03456789", 0, 1, "1")]
-        [InlineData("1\03456789", 0, 2, "1")]
-        [InlineData("123456789\0", 0, 10, "123456789")]
+        [MemberData(nameof(Parse_Subspan_Success_TestData))]
         public static void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
             BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
