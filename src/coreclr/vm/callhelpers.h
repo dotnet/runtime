@@ -153,12 +153,7 @@ private:
         m_argIt.ForceSigWalk();
 }
 
-#ifdef FEATURE_INTERPRETER
-public:
-    void CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue, bool transitionToPreemptive = false);
-#else
     void CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue);
-#endif
 
 public:
     // Used to avoid touching metadata for CoreLib methods.
@@ -298,27 +293,6 @@ public:
 
         m_argIt.ForceSigWalk();
     }
-
-#ifdef FEATURE_INTERPRETER
-    MethodDescCallSite(MethodDesc* pMD, MetaSig* pSig, PCODE pCallTarget) :
-        m_pMD(pMD),
-        m_pCallTarget(pCallTarget),
-        m_methodSig(*pSig),
-        m_argIt(pSig, pMD)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        m_pMD->EnsureActive();
-
-        m_argIt.ForceSigWalk();
-    }
-#endif // FEATURE_INTERPRETER
 
     MetaSig* GetMetaSig()
     {

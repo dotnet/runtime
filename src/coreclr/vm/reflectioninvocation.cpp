@@ -254,14 +254,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (*m_ppNativeSig)->NumFixedArgs();
     }
-
-#ifdef FEATURE_INTERPRETER
-    BYTE CallConv()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IMAGE_CEE_CS_CALLCONV_DEFAULT;
-    }
-#endif // FEATURE_INTERPRETER
 };
 
 class ArgIteratorForMethodInvoke : public ArgIteratorTemplate<ArgIteratorBaseForMethodInvoke>

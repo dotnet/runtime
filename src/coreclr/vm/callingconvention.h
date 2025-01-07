@@ -949,9 +949,6 @@ protected:
 
 #ifdef TARGET_X86
     int                 m_numRegistersUsed;
-#ifdef FEATURE_INTERPRETER
-    bool                m_fUnmanagedCallConv;
-#endif
 #endif
 
 #ifdef UNIX_AMD64_ABI
@@ -1182,31 +1179,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             numRegistersUsed = NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
         }
 
-#ifdef FEATURE_INTERPRETER
-        BYTE callconv = CallConv();
-        switch (callconv)
-        {
-        case IMAGE_CEE_CS_CALLCONV_C:
-        case IMAGE_CEE_CS_CALLCONV_STDCALL:
-            m_numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-            m_fUnmanagedCallConv = true;
-            break;
-
-        case IMAGE_CEE_CS_CALLCONV_THISCALL:
-        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-            _ASSERTE_MSG(false, "Unsupported calling convention.");
-
-        default:
-            m_fUnmanagedCallConv = false;
-            m_numRegistersUsed = numRegistersUsed;
-            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
-            break;
-        }
-#else
         m_numRegistersUsed = numRegistersUsed;
         m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
-#endif
 
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -1264,14 +1238,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #endif
 
 #ifdef TARGET_X86
-#ifdef FEATURE_INTERPRETER
-    if (m_fUnmanagedCallConv)
-    {
-        int argOfs = m_ofsStack;
-        m_ofsStack += StackElemSize(argSize);
-        return argOfs;
-    }
-#endif
     if (IsArgumentInRegister(&m_numRegistersUsed, argType, thValueType))
     {
         return TransitionBlock::GetOffsetOfArgumentRegisters() + (NUM_ARGUMENT_REGISTERS - m_numRegistersUsed) * sizeof(void *);
@@ -1990,24 +1956,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         numRegistersUsed = NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
     }
 
-#ifdef FEATURE_INTERPRETER
-    BYTE callconv = CallConv();
-    switch (callconv)
-    {
-    case IMAGE_CEE_CS_CALLCONV_C:
-    case IMAGE_CEE_CS_CALLCONV_STDCALL:
-        numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-        nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-        break;
-
-    case IMAGE_CEE_CS_CALLCONV_THISCALL:
-    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-        _ASSERTE_MSG(false, "Unsupported calling convention.");
-    default:
-        break;
-    }
-#endif // FEATURE_INTERPRETER
-
     DWORD nArgs = this->NumFixedArgs();
     for (DWORD i = 0; i < nArgs; i++)
     {
@@ -2187,13 +2135,6 @@ public:
         return m_pSig->NumFixedArgs();
     }
 
-#ifdef FEATURE_INTERPRETER
-    BYTE CallConv()
-    {
-        return m_pSig->GetCallingConvention();
-    }
-#endif // FEATURE_INTERPRETER
-
     //
     // The following is used by the profiler to dig into the iterator for
     // discovering if the method has a This pointer or a return buffer.
@@ -2213,16 +2154,6 @@ public:
     {
         m_pSig = pSig;
     }
-
-#ifdef FEATURE_INTERPRETER
-    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
-    {
-        m_pSig = pSig;
-        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
-        if (fCtorOfVariableSizedObject)
-            m_pSig->ClearHasThis();
-    }
-#endif // FEATURE_INTERPRETER
 
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()
