@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Xml;
-using System.Net;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Reflection;
 using System.Runtime.Versioning;
+using System.Text;
+using System.Xml;
 
 namespace System.Xml.Resolvers
 {
@@ -352,14 +352,7 @@ namespace System.Xml.Resolvers
             Debug.Assert(uri != null);
 
             // override if exists
-            if (_mappings.ContainsKey(uri))
-            {
-                _mappings[uri] = data;
-            }
-            else
-            {
-                _mappings.Add(uri, data);
-            }
+            _mappings[uri] = data;
         }
 
         private void AddKnownDtd(XmlKnownDtdData[] dtdSet)

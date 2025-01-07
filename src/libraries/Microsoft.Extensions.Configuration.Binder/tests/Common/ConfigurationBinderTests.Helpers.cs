@@ -109,7 +109,7 @@ namespace Microsoft.Extensions
 
         public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; }
 
-#if NETCOREAPP
+#if NET
         public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
         public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
             new HashSet<string>(new[] { "existing1", "existing2" });
@@ -159,6 +159,18 @@ namespace Microsoft.Extensions
 
         public int Count => _items.Count;
         public bool IsReadOnly => false;
+    }
+
+    public interface IGeolocation
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
+    public sealed record GeolocationRecord : IGeolocation
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
     #endregion
 }

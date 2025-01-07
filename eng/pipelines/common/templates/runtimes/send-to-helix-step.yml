@@ -17,11 +17,11 @@ parameters:
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   runCrossGen2: ''
-  runPALTestsDir: ''
   compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
+  hotColdSplitting: ''
   nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
@@ -38,7 +38,6 @@ steps:
 - template: send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
-    restoreParams: /p:DotNetPublishToBlobFeed=true -restore -projects $(Build.SourcesDirectory)$(dir)eng$(dir)empty.csproj
     sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
@@ -55,11 +54,11 @@ steps:
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _TieringTest: ${{ parameters.tieringTest }}
+      _HotColdSplitting: ${{ parameters.hotColdSplitting }}
       _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
-      _PALTestsDir: ${{ parameters.runPALTestsDir }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}

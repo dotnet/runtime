@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections;
-using System.Xml;
-using System.Text;
 using System.Diagnostics;
+using System.Text;
+using System.Xml;
 
 namespace System.IO.Packaging
 {

@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Utility methods and constants for manipulating Configuration paths
+    /// Provides utility methods and constants for manipulating Configuration paths.
     /// </summary>
     public static class ConfigurationPath
     {
@@ -54,8 +54,8 @@ namespace Microsoft.Extensions.Configuration
                 return path;
             }
 
-            int lastDelimiterIndex = path.LastIndexOf(KeyDelimiter, StringComparison.OrdinalIgnoreCase);
-            return lastDelimiterIndex == -1 ? path : path.Substring(lastDelimiterIndex + 1);
+            int lastDelimiterIndex = path.LastIndexOf(':');
+            return lastDelimiterIndex < 0 ? path : path.Substring(lastDelimiterIndex + 1);
         }
 
         /// <summary>
@@ -70,8 +70,8 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            int lastDelimiterIndex = path.LastIndexOf(KeyDelimiter, StringComparison.OrdinalIgnoreCase);
-            return lastDelimiterIndex == -1 ? null : path.Substring(0, lastDelimiterIndex);
+            int lastDelimiterIndex = path.LastIndexOf(':');
+            return lastDelimiterIndex < 0 ? null : path.Substring(0, lastDelimiterIndex);
         }
     }
 }

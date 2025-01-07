@@ -1,9 +1,12 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- SDK Style projects auto-magically include this file. -->
-  <Import Project="..\Directory.Build.props" />
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Merged.props', $(MSBuildThisFileDirectory)..))" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', $(MSBuildThisFileDirectory)..))" />
 
-  <!-- Properties for all Interop managed test assets -->
   <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <InteropCommonDir>$(MSBuildThisFileDirectory)common/</InteropCommonDir>
   </PropertyGroup>
 </Project>

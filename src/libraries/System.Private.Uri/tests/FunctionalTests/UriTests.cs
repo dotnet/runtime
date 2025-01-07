@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -17,16 +18,16 @@ namespace System.PrivateUri.Tests
                 if (PlatformDetection.IsWindows)
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1/path2/path3/path4", @"/path1/path2/path3/path4", @"file:///path1/path2/path3/path4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost" };
                 }
                 else
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", @"/path1\path2/path3\path4", @"file:///path1%5Cpath2/path3%5Cpath4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost" };
                 }
             }
         }
@@ -861,6 +862,94 @@ namespace System.PrivateUri.Tests
             Assert.Equal(port, uri.Port);
             Assert.Equal(isDefaultPort, uri.IsDefaultPort);
             Assert.Equal(uriString + "/", uri.ToString());
+        }
+
+        public static IEnumerable<object[]> ToStringTest_MemberData()
+        {
+            // Return funcs rather than Uri instances directly so that:
+            // a) We can test each method without it being impacted by implicit caching of a previous method's results
+            // b) xunit's implicit formatting of arguments doesn't similarly disturb the results
+
+            yield return new object[] { () => new Uri("http://test"), "http://test/" };
+            yield return new object[] { () => new Uri("   http://test   "), "http://test/" };
+            yield return new object[] { () => new Uri("/test", UriKind.Relative), "/test" };
+            yield return new object[] { () => new Uri("test", UriKind.Relative), "test" };
+            yield return new object[] { () => new Uri("http://foo/bar/baz#frag"), "http://foo/bar/baz#frag" };
+            yield return new object[] { () => new Uri(new Uri(@"http://www.contoso.com/"), "catalog/shownew.htm?date=today"), "http://www.contoso.com/catalog/shownew.htm?date=today" };
+            yield return new object[] { () => new Uri("http://test/a/b/c/d/../../e/f"), "http://test/a/b/e/f" };
+            yield return new object[] { () => { var uri = new Uri("http://test/a/b/c/d/../../e/f"); uri.ToString(); return uri; }, "http://test/a/b/e/f" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringTest_MemberData))]
+        public static void ToStringTest(Func<Uri> func, string expected)
+        {
+            // object.ToString
+            Assert.Equal(expected, func().ToString());
+
+            // IFormattable.ToString
+            Assert.Equal(expected, ((IFormattable)func()).ToString("asdfasdf", new CultureInfo("fr-FR")));
+
+            // TryFormat - Big enough destination
+            foreach (int length in new[] { expected.Length, expected.Length + 1 })
+            {
+                // TryFormat
+                char[] formatted = new char[length];
+                Assert.True(func().TryFormat(formatted, out int charsWritten));
+                AssertExtensions.SequenceEqual(expected, (ReadOnlySpan<char>)formatted.AsSpan(0, charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+
+                // ISpanFormattable.TryFormat
+                Array.Clear(formatted);
+                Assert.True(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, "asdfasdf", new CultureInfo("fr-FR")));
+                AssertExtensions.SequenceEqual(expected, (ReadOnlySpan<char>)formatted.AsSpan(0, charsWritten));
+                Assert.Equal(expected.Length, charsWritten);
+            }
+
+            // TryFormat - Too small destination
+            {
+                char[] formatted = new char[expected.Length - 1];
+
+                // TryFormat
+                Assert.False(func().TryFormat(formatted, out int charsWritten));
+                Assert.Equal(0, charsWritten);
+
+                // ISpanFormattable.TryFormat
+                Assert.False(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, default, null));
+                Assert.Equal(0, charsWritten);
+            }
+        }
+
+        [Fact]
+        public static void IsLoopback()
+        {
+            string[] validLoopback =
+            [
+                "localhost", "Localhost", "LOCALHOST",
+                "127.0.0.1", "127.4.5.6",
+                "[::1]", "[0:0:0:0:0:0:0:1]", "[0:0:0:0:0:0:127.0.0.1]", "[0:0:0:0:0:FFFF:127.0.0.1]"
+            ];
+
+            string[] invalidLoopback =
+            [
+                "something", "ELSE", "dot.net",
+                "128.0.0.1",
+                "[::2]", "[0:0:0:0:0:1234:127.0.0.1]"
+            ];
+
+            foreach (bool expected in new[] { false, true })
+            {
+                foreach (string scheme in new[] { "http", "https" })
+                {
+                    foreach (string host in (expected ? validLoopback : invalidLoopback))
+                    {
+                        foreach (bool hasPort in new[] { false, true })
+                        {
+                            Assert.Equal(expected, new Uri($"{scheme}://{host}{(hasPort ? ":12345" : "")}").IsLoopback);
+                        }
+                    }
+                }
+            }
         }
     }
 }

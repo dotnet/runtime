@@ -23,7 +23,7 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -31,7 +31,6 @@ namespace Test
                 Static1(ref aa, m_nStaticFld);
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

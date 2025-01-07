@@ -670,6 +670,7 @@ public class test
 
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         int x;

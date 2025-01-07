@@ -192,7 +192,7 @@ namespace System
         /// <summary>
         /// Returns a span from the memory.
         /// </summary>
-        public unsafe ReadOnlySpan<T> Span
+        public ReadOnlySpan<T> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -249,7 +249,9 @@ namespace System
                     // least to be in-bounds when compared with the original Memory<T> instance, so using the span won't
                     // AV the process.
 
+                    // We use 'nuint' because it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
                     nuint desiredStartIndex = (uint)_index & (uint)RemoveFlagsBitMask;
+
                     int desiredLength = _length;
 
 #if TARGET_64BIT
@@ -265,7 +267,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, (IntPtr)(void*)desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 
@@ -313,6 +315,7 @@ namespace System
             {
                 if (typeof(T) == typeof(char) && tmpObject is string s)
                 {
+                    // Unsafe.AsPointer is safe since the handle pins it
                     GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
                     ref char stringData = ref Unsafe.Add(ref s.GetRawStringData(), _index);
                     return new MemoryHandle(Unsafe.AsPointer(ref stringData), handle);
@@ -325,11 +328,13 @@ namespace System
                     // Array is already pre-pinned
                     if (_index < 0)
                     {
+                        // Unsafe.AsPointer is safe since it's pinned
                         void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<T[]>(tmpObject))), _index & RemoveFlagsBitMask);
                         return new MemoryHandle(pointer);
                     }
                     else
                     {
+                        // Unsafe.AsPointer is safe since the handle pins it
                         GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
                         void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<T[]>(tmpObject))), _index);
                         return new MemoryHandle(pointer, handle);

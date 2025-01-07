@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // DataMisalignment
 // NullRef (generic, nullable, object)
@@ -22,7 +23,8 @@ public class HardwareEh
 	public const long c_VALUE = 34252;
 	public delegate bool TestDelegate();
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		HardwareEh e = new HardwareEh();
 

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -30,9 +30,9 @@ namespace System.Diagnostics
 
         private void BuildStackFrame(int skipFrames, bool needFileInfo)
         {
-            StackFrameHelper StackF = new StackFrameHelper(null);
+            StackFrameHelper StackF = new StackFrameHelper();
 
-            StackF.InitializeSourceInfo(0, needFileInfo, null);
+            StackF.InitializeSourceInfo(needFileInfo, null);
 
             int iNumOfFrames = StackF.GetNumberOfFrames();
 

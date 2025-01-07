@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -116,7 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                 JsonElement element = JsonElement.ParseValue(ref reader);
 
                 // Edge case where we want to lookup for a reference when parsing into typeof(object)
-                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
+                if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve &&
                     JsonSerializer.TryHandleReferenceFromJsonElement(ref reader, ref state, element, out referenceValue))
                 {
                     value = referenceValue;
@@ -131,9 +132,9 @@ namespace System.Text.Json.Serialization.Converters
 
             Debug.Assert(options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonNode);
 
-            JsonNode node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options)!;
+            JsonNode? node = JsonNodeConverter.Instance.Read(ref reader, typeToConvert, options);
 
-            if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve &&
+            if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve &&
                 JsonSerializer.TryHandleReferenceFromJsonNode(ref reader, ref state, node, out referenceValue))
             {
                 value = referenceValue;
@@ -145,5 +146,7 @@ namespace System.Text.Json.Serialization.Converters
 
             return true;
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

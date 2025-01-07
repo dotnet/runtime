@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
@@ -118,12 +119,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData("{ \"key\" : \"value\" }")]
         public void RoundtripJsonDocument(string json)
         {
-            JsonDocument jsonDocument = JsonDocument.Parse(json);
+            using JsonDocument jsonDocument = JsonDocument.Parse(json);
 
             string actualJson = JsonSerializer.Serialize(jsonDocument, DefaultContext.JsonDocument);
             JsonTestHelper.AssertJsonEqual(json, actualJson);
 
-            JsonDocument actualJsonDocument = JsonSerializer.Deserialize(actualJson, DefaultContext.JsonDocument);
+            using JsonDocument actualJsonDocument = JsonSerializer.Deserialize(actualJson, DefaultContext.JsonDocument);
             JsonTestHelper.AssertJsonEqual(jsonDocument.RootElement, actualJsonDocument.RootElement);
         }
 
@@ -135,7 +136,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData("{ \"key\" : \"value\" }")]
         public void RoundtripJsonElement(string json)
         {
-            JsonElement jsonElement = JsonDocument.Parse(json).RootElement;
+            using JsonDocument jsonDocument = JsonDocument.Parse(json);
+            JsonElement jsonElement = jsonDocument.RootElement;
 
             string actualJson = JsonSerializer.Serialize(jsonElement, DefaultContext.JsonElement);
             JsonTestHelper.AssertJsonEqual(json, actualJson);
@@ -250,10 +252,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterProperty);
                 Assert.Equal(ExpectedJson, json);
-            }
 
-            obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson);
-            Assert.Equal(42, obj.Property.Value);
+                obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson, DefaultContext.ClassWithCustomConverterProperty);
+                Assert.Equal(42, obj.Property.Value);
+            }
         }
 
         [Fact]
@@ -331,10 +333,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 string json = JsonSerializer.Serialize(obj, DefaultContext.StructWithCustomConverterProperty);
                 Assert.Equal(ExpectedJson, json);
-            }
 
-            obj = JsonSerializer.Deserialize<StructWithCustomConverterProperty>(ExpectedJson);
-            Assert.Equal(42, obj.Property.Value);
+                obj = JsonSerializer.Deserialize<StructWithCustomConverterProperty>(ExpectedJson, DefaultContext.StructWithCustomConverterProperty);
+                Assert.Equal(42, obj.Property.Value);
+            }
         }
 
         [Fact]
@@ -891,7 +893,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
-#if NETCOREAPP
+#if NET
         [Fact]
         public virtual void ClassWithDateOnlyAndTimeOnlyValues_Roundtrip()
         {
@@ -931,9 +933,9 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public class ClassWithNullableProperties
         {
-            public Uri Uri { get; set; }
-            public int[] Array { get; set; }
-            public MyPoco Poco { get; set; }
+            public Uri? Uri { get; set; }
+            public int[]? Array { get; set; }
+            public MyPoco? Poco { get; set; }
 
             public Uri? NullableUri { get; set; }
             public int[]? NullableArray { get; set; }
@@ -1109,6 +1111,37 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 JsonTestHelper.AssertJsonEqual(@"{""Id"":""0""}", JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
             }
+        }
+
+        [Theory]
+        [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.PublicProperty))]
+        [InlineData(MemberTypes.Field, nameof(PocoWithMixedVisibilityMembers.PublicField))]
+        [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.InternalProperty))]
+        [InlineData(MemberTypes.Field, nameof(PocoWithMixedVisibilityMembers.InternalField))]
+        [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.PropertyWithCustomName), "customProp")]
+        [InlineData(MemberTypes.Field, nameof(PocoWithMixedVisibilityMembers.FieldWithCustomName), "customField")]
+        [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.BaseProperty))]
+        [InlineData(MemberTypes.Property, nameof(PocoWithMixedVisibilityMembers.ShadowProperty))]
+        public void JsonPropertyInfo_PopulatesAttributeProvider(MemberTypes memberType, string propertyName, string? jsonPropertyName = null)
+        {
+            if (DefaultContext.JsonSourceGenerationMode is JsonSourceGenerationMode.Serialization)
+            {
+                return; // No metadata generated
+            }
+
+            JsonTypeInfo typeInfo = DefaultContext.PocoWithMixedVisibilityMembers;
+            string name = jsonPropertyName ?? propertyName;
+            JsonPropertyInfo prop = typeInfo.Properties.FirstOrDefault(prop => prop.Name == name);
+            Assert.NotNull(prop);
+
+            MemberInfo memberInfo = Assert.IsAssignableFrom<MemberInfo>(prop.AttributeProvider);
+            string? actualJsonPropertyName = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name;
+
+            Assert.True(memberInfo.DeclaringType.IsAssignableFrom(typeInfo.Type));
+            Assert.Equal(memberType, memberInfo.MemberType);
+            Assert.Equal(prop.PropertyType, memberInfo is PropertyInfo p ? p.PropertyType : ((FieldInfo)memberInfo).FieldType);
+            Assert.Equal(propertyName, memberInfo.Name);
+            Assert.Equal(jsonPropertyName, actualJsonPropertyName);
         }
     }
 }

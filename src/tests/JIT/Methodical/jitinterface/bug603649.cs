@@ -10,6 +10,7 @@ public class foo
 {
     private static object s_o = typeof(string);
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool f = typeof(string) == s_o as Type;

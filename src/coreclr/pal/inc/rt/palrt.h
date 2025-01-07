@@ -135,18 +135,6 @@ typedef enum tagEFaultRepRetVal
 
 #include "pal.h"
 
-#ifndef PAL_STDCPP_COMPAT
-#ifdef __cplusplus
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void *__cdecl operator new(size_t, void *_P)
-{
-    return (_P);
-}
-#endif // __PLACEMENT_NEW_INLINE
-#endif // __cplusplus
-#endif // !PAL_STDCPP_COMPAT
-
 #include <pal_assert.h>
 
 #define NTAPI       __cdecl
@@ -280,18 +268,12 @@ typedef union _ULARGE_INTEGER {
         DWORD HighPart;
 #endif
     }
-#ifndef PAL_STDCPP_COMPAT
     u
-#endif // PAL_STDCPP_COMPAT
      ;
     ULONGLONG QuadPart;
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
 /******************* OLE, BSTR, VARIANT *************************/
-
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
-
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
 #define VARIANT_FALSE ((VARIANT_BOOL)0)
@@ -503,9 +485,6 @@ struct tagVARIANT
 
 typedef VARIANT VARIANTARG, *LPVARIANTARG;
 
-STDAPI_(void) VariantInit(VARIANT * pvarg);
-STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
-
 #define V_VT(X)         ((X)->n1.n2.vt)
 #define V_UNION(X, Y)   ((X)->n1.n2.n3.Y)
 #define V_RECORDINFO(X) ((X)->n1.n2.n3.brecVal.pRecInfo)
@@ -570,8 +549,6 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 
 #define V_ISBYREF(X)     (V_VT(X)&VT_BYREF)
 
-STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface IStream** ppstm);
-
 #define STGM_DIRECT             0x00000000L
 
 #define STGM_READ               0x00000000L
@@ -630,10 +607,6 @@ typedef unsigned int ALG_ID;
 // 1 null termination
 #define LOCALE_NAME_MAX_LENGTH   85
 
-#define CSTR_LESS_THAN            1
-#define CSTR_EQUAL                2
-#define CSTR_GREATER_THAN         3
-
 
 #ifdef __cplusplus
 /*
@@ -685,9 +658,9 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     }
 }
 
-inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
+inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
 {
-    PAL_FILE *result = _wfopen(fileName, mode);
+    FILE *result = _wfopen(fileName, mode);
     if(result == 0) {
         return 1;
     } else {
@@ -696,9 +669,9 @@ inline errno_t __cdecl _wfopen_unsafe(PAL_FILE * *ff, const WCHAR *fileName, con
     }
 }
 
-inline errno_t __cdecl _fopen_unsafe(PAL_FILE * *ff, const char *fileName, const char *mode)
+inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
 {
-  PAL_FILE *result = PAL_fopen(fileName, mode);
+  FILE *result = fopen(fileName, mode);
   if(result == 0) {
     return 1;
   } else {
@@ -734,23 +707,12 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
 
-typedef DWORD OLE_COLOR;
-
-#define PF_COMPARE_EXCHANGE_DOUBLE          2
-
-typedef VOID (NTAPI * WAITORTIMERCALLBACKFUNC) (PVOID, BOOLEAN );
-
 typedef HANDLE HWND;
-
-#define IS_TEXT_UNICODE_SIGNATURE             0x0008
-#define IS_TEXT_UNICODE_UNICODE_MASK          0x000F
 
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;
    struct _LIST_ENTRY *Blink;
 } LIST_ENTRY, *PLIST_ENTRY;
-
-typedef VOID (NTAPI *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 
 // PORTABILITY_ASSERT and PORTABILITY_WARNING macros are meant to be used to
 // mark places in the code that needs attention for portability. The usual
@@ -865,11 +827,6 @@ interface IDispatch;
 interface ITypeInfo;
 interface ITypeLib;
 interface IMoniker;
-
-typedef VOID (WINAPI *LPOVERLAPPED_COMPLETION_ROUTINE)(
-    DWORD dwErrorCode,
-    DWORD dwNumberOfBytesTransferred,
-    LPOVERLAPPED lpOverlapped);
 
 //
 // Debug APIs
@@ -1107,53 +1064,6 @@ typedef LONG (WINAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
     IN struct _EXCEPTION_POINTERS *ExceptionInfo
     );
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
-
-/******************* ntdef ************************************/
-
-#ifndef ANYSIZE_ARRAY
-#define ANYSIZE_ARRAY 1       // winnt
-#endif
-
-/******************* winnt ************************************/
-
-typedef struct LIST_ENTRY32 {
-    ULONG Flink;
-    ULONG Blink;
-} LIST_ENTRY32;
-typedef LIST_ENTRY32 *PLIST_ENTRY32;
-
-typedef struct LIST_ENTRY64 {
-    ULONGLONG Flink;
-    ULONGLONG Blink;
-} LIST_ENTRY64;
-typedef LIST_ENTRY64 *PLIST_ENTRY64;
-
-/******************** PAL RT APIs *******************************/
-
-typedef struct _HSATELLITE *HSATELLITE;
-
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW(LPCWSTR SatelliteResourceFileName);
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceA(LPCSTR SatelliteResourceFileName);
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource(HSATELLITE SatelliteResource);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringA(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPSTR lpBuffer,
-             UINT nBufferMax);
-
-EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
-                             REFIID     riid,
-                             void     **ppv);
-
-// So we can have CoCreateInstance in most of the code base,
-// instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
-#define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
-
-STDAPI
-CoCreateGuid(OUT GUID * pguid);
 
 /************** Byte swapping & unaligned access ******************/
 

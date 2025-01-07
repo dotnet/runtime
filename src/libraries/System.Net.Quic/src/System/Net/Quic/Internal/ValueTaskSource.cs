@@ -27,10 +27,10 @@ internal sealed class ValueTaskSource : IValueTaskSource
     private CancellationTokenRegistration _cancellationRegistration;
     private GCHandle _keepAlive;
 
-    public ValueTaskSource(bool runContinuationsAsynchronously = true)
+    public ValueTaskSource()
     {
         _state = State.None;
-        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = true };
         _cancellationRegistration = default;
         _keepAlive = default;
     }
@@ -55,7 +55,7 @@ internal sealed class ValueTaskSource : IValueTaskSource
     {
         lock (this)
         {
-            // Set up value task either way, so the the caller can get the result even if they do not start the operation.
+            // Set up value task either way, so the caller can get the result even if they do not start the operation.
             valueTask = new ValueTask(this, _valueTaskSource.Version);
 
             // Cancellation might kick off synchronously, re-entering the lock and changing the state to completed.

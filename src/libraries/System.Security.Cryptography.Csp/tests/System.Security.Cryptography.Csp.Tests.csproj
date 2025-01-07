@@ -3,7 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <!-- SYSLIB0021: Derived cryptographic types are obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
-    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
+    <!-- These APIs are not trim safe but IlcTrimMetadata happens to make the tests using them work -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>
@@ -22,6 +22,8 @@
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
+             Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\ImportExport.cs"

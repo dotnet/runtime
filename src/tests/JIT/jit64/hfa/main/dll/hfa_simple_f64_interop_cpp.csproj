@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <CLRTestKind>BuildOnly</CLRTestKind>
-    <GenerateRunScript>false</GenerateRunScript>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <DefineConstants>$(DefineConstants);SIMPLE_HFA;FLOAT64;NATIVE_CPP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

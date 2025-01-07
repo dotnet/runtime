@@ -8,13 +8,7 @@
     <Description Condition="'$(Description)' == ''">$(AssemblyName)</Description>
   </PropertyGroup>
 
-  <!-- Assembly metadata indicating that an assembly is a framework (as opposed to user) assembly:
-       Test projects need to not have this because of the way "IsFrameworkAssembly" APIs work to check this. -->
   <ItemGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
-      <_Parameter1>.NETFrameworkAssembly</_Parameter1>
-      <_Parameter2></_Parameter2>
-    </AssemblyAttribute>
     <AssemblyAttribute Include="System.Reflection.AssemblyMetadata">
       <_Parameter1>Serviceable</_Parameter1>
       <_Parameter2>True</_Parameter2>
@@ -186,7 +180,11 @@
 
   <Target Name="GenerateNativeSourcelinkFile"
           Condition="'$(EnableSourceLink)' == 'true'"
-          DependsOnTargets="_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+          DependsOnTargets="_CreateIntermediateOutputPath;_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+
+  <Target Name="_CreateIntermediateOutputPath">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+  </Target>
 
   <Target Name="_CopyGeneratedSourcelinkFile"
           DependsOnTargets="GenerateSourceLinkFile"

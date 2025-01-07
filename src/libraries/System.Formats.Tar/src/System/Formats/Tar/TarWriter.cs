@@ -81,7 +81,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// The format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
-        public TarEntryFormat Format { get; private set; }
+        public TarEntryFormat Format { get; }
 
         /// <summary>
         /// Disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
@@ -283,8 +283,12 @@ namespace System.Formats.Tar
 
             switch (entry.Format)
             {
-                case TarEntryFormat.V7 or TarEntryFormat.Ustar:
-                    entry._header.WriteAs(entry.Format, _archiveStream, buffer);
+                case TarEntryFormat.V7:
+                    entry._header.WriteAsV7(_archiveStream, buffer);
+                    break;
+
+                case TarEntryFormat.Ustar:
+                    entry._header.WriteAsUstar(_archiveStream, buffer);
                     break;
 
                 case TarEntryFormat.Pax:
@@ -321,7 +325,8 @@ namespace System.Formats.Tar
 
             Task task = entry.Format switch
             {
-                TarEntryFormat.V7 or TarEntryFormat.Ustar => entry._header.WriteAsAsync(entry.Format, _archiveStream, buffer, cancellationToken),
+                TarEntryFormat.V7 => entry._header.WriteAsV7Async(_archiveStream, buffer, cancellationToken),
+                TarEntryFormat.Ustar => entry._header.WriteAsUstarAsync(_archiveStream, buffer, cancellationToken),
                 TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesAsync(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
                 TarEntryFormat.Pax => entry._header.WriteAsPaxAsync(_archiveStream, buffer, cancellationToken),
                 TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),

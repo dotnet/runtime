@@ -1,7 +1,5 @@
 using System;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 

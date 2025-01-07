@@ -55,7 +55,8 @@ namespace Mono.Linker.Tests.Tests
 		/// <returns></returns>
 		protected virtual IEnumerable<NPath> ExpectationAssemblies ()
 		{
-			yield return PathUtilities.GetTestAssemblyPath ("Mono.Linker.Tests.Cases.Expectations").ToNPath ();
+			const string expectations = "Mono.Linker.Tests.Cases.Expectations";
+			yield return PathUtilities.GetTestAssemblyRoot (expectations).ToNPath ().Combine ($"{expectations}.dll");
 		}
 
 		static bool IsAcceptableExpectationsAssemblyType (TypeDefinition type)
@@ -73,6 +74,10 @@ namespace Mono.Linker.Tests.Tests
 
 			// Attributes are OK because that is the purpose of the Expectations assembly, to provide attributes for annotating test cases
 			if (IsAttributeType (type))
+				return true;
+
+			// Extension types extending public enums
+			if (type.Name.EndsWith ("Ex") && type.IsAbstract && type.IsSealed)
 				return true;
 
 			// Anything else is not OK and should probably be defined in Mono.Linker.Tests.Cases and use SandboxDependency in order to be included

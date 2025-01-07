@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -1297,7 +1297,7 @@ namespace System.Text
                     {
                         // Throw maybe
                         _bytes -= numBytes;                                        // Didn't encode these bytes
-                        _enc.ThrowCharsOverflow(_decoder, _bytes <= _byteStart);    // Throw?
+                        _enc.ThrowCharsOverflow(_decoder, _chars == _charStart);    // Throw?
                         return false;                                           // No throw, but no store either
                     }
 
@@ -1316,7 +1316,7 @@ namespace System.Text
                 {
                     // Throw maybe
                     _bytes -= numBytes;                                        // Didn't encode these bytes
-                    _enc.ThrowCharsOverflow(_decoder, _bytes <= _byteStart);    // Throw?
+                    _enc.ThrowCharsOverflow(_decoder, _chars == _charStart);    // Throw?
                     return false;                                           // No throw, but no store either
                 }
                 return AddChar(ch1, numBytes) && AddChar(ch2, numBytes);
@@ -1347,7 +1347,7 @@ namespace System.Text
             internal bool Fallback(byte fallbackByte)
             {
                 // Build our buffer
-                byte[] byteBuffer = new byte[] { fallbackByte };
+                byte[] byteBuffer = [fallbackByte];
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);
@@ -1356,7 +1356,7 @@ namespace System.Text
             internal bool Fallback(byte byte1, byte byte2)
             {
                 // Build our buffer
-                byte[] byteBuffer = new byte[] { byte1, byte2 };
+                byte[] byteBuffer = [byte1, byte2];
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);
@@ -1365,7 +1365,7 @@ namespace System.Text
             internal bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
             {
                 // Build our buffer
-                byte[] byteBuffer = new byte[] { byte1, byte2, byte3, byte4 };
+                byte[] byteBuffer = [byte1, byte2, byte3, byte4];
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);

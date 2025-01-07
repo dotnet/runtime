@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -23,39 +23,13 @@ namespace System.Reflection.Runtime.TypeInfos
             _key = key;
         }
 
-        public sealed override bool IsTypeDefinition => false;
-        public sealed override bool IsGenericTypeDefinition => false;
-        protected sealed override bool HasElementTypeImpl() => true;
-        protected abstract override bool IsArrayImpl();
-        public abstract override bool IsSZArray { get; }
-        public abstract override bool IsVariableBoundArray { get; }
-        protected abstract override bool IsByRefImpl();
-        protected abstract override bool IsPointerImpl();
-        public sealed override bool IsConstructedGenericType => false;
-        public sealed override bool IsGenericParameter => false;
-        public sealed override bool IsGenericTypeParameter => false;
-        public sealed override bool IsGenericMethodParameter => false;
-        public sealed override bool IsByRefLike => false;
-
-        //
-        // Implements IKeyedItem.PrepareKey.
-        //
-        // This method is the keyed item's chance to do any lazy evaluation needed to produce the key quickly.
-        // Concurrent unifiers are guaranteed to invoke this method at least once and wait for it
-        // to complete before invoking the Key property. The unifier lock is NOT held across the call.
-        //
-        // PrepareKey() must be idempodent and thread-safe. It may be invoked multiple times and concurrently.
-        //
-        public void PrepareKey()
-        {
-        }
+        public sealed override bool HasElementType => true;
 
         //
         // Implements IKeyedItem.Key.
         //
         // Produce the key. This is a high-traffic property and is called while the hash table's lock is held. Thus, it should
-        // return a precomputed stored value and refrain from invoking other methods. If the keyed item wishes to
-        // do lazy evaluation of the key, it should do so in the PrepareKey() method.
+        // return a precomputed stored value and refrain from invoking other methods.
         //
         public UnificationKey Key
         {
@@ -105,7 +79,7 @@ namespace System.Reflection.Runtime.TypeInfos
             ArgumentNullException.ThrowIfNull(other);
 
             // This logic is written to match CoreCLR's behavior.
-            return other is Type && other is IRuntimeMemberInfoWithNoMetadataDefinition;
+            return other is RuntimeType runtimeType && runtimeType.GetRuntimeTypeInfo() is IRuntimeMemberInfoWithNoMetadataDefinition;
         }
 
         public sealed override string Namespace
@@ -140,18 +114,21 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Left unsealed because this implementation is correct for ByRefs and Pointers but not Arrays.
         //
-        protected override TypeAttributes GetAttributeFlagsImpl()
+        public override TypeAttributes Attributes
         {
-            Debug.Assert(IsByRef || IsPointer);
-            return TypeAttributes.Public;
+            get
+            {
+                Debug.Assert(IsByRef || IsPointer);
+                return TypeAttributes.Public;
+            }
         }
 
-        protected sealed override int InternalGetHashCode()
+        public sealed override int GetHashCode()
         {
             return _key.ElementType.GetHashCode();
         }
 
-        internal sealed override Type InternalDeclaringType
+        internal sealed override RuntimeTypeInfo InternalDeclaringType
         {
             get
             {

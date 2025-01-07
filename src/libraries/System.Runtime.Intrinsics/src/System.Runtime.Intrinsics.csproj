@@ -1,9 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)System\Experimentals.cs" Link="Common\System\Experimentals.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
+
 </Project>

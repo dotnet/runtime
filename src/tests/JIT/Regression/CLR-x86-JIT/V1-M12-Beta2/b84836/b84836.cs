@@ -7,7 +7,7 @@ using Xunit;
 public struct AA
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         bool f = false;
         if (f) f = false;
@@ -19,6 +19,5 @@ public struct AA
                 do { } while (f);
             }
         }
-        return 100;
     }
 }

@@ -3,10 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Runtime;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime.Augments;
 
@@ -19,10 +17,10 @@ namespace Internal.Runtime.CompilerServices
     //    so that repeated allocation of the same resolver will not leak.
     // 3) Use the ResolveMethod function to do the virtual lookup. This function takes advantage of
     //    a lockless cache so the resolution is very fast for repeated lookups.
-    public struct OpenMethodResolver : IEquatable<OpenMethodResolver>
+    public unsafe struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
         // Lazy initialized to point to the type loader method when the first `GVMResolve` resolver is created
-        private static unsafe delegate*<object, RuntimeMethodHandle, nint> s_lazyGvmLookupForSlot;
+        private static delegate*<object, RuntimeMethodHandle, nint> s_lazyGvmLookupForSlot;
 
         public const short DispatchResolve = 0;
         public const short GVMResolve = 1;
@@ -34,23 +32,23 @@ namespace Internal.Runtime.CompilerServices
         private readonly int _handle;
         private readonly IntPtr _methodHandleOrSlotOrCodePointer;
         private readonly IntPtr _nonVirtualOpenInvokeCodePointer;
-        private readonly EETypePtr _declaringType;
+        private readonly MethodTable* _declaringType;
 
         public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, int slot, GCHandle readerGCHandle, int handle)
         {
             _resolveType = DispatchResolve;
-            _declaringType = declaringTypeOfSlot.ToEETypePtr();
+            _declaringType = declaringTypeOfSlot.ToMethodTable();
             _methodHandleOrSlotOrCodePointer = new IntPtr(slot);
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
         }
 
-        public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
+        public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
         {
             _resolveType = GVMResolve;
             _methodHandleOrSlotOrCodePointer = *(IntPtr*)&gvmSlot;
-            _declaringType = declaringTypeOfSlot.ToEETypePtr();
+            _declaringType = declaringTypeOfSlot.ToMethodTable();
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
@@ -59,20 +57,11 @@ namespace Internal.Runtime.CompilerServices
                 s_lazyGvmLookupForSlot = &TypeLoaderExports.GVMLookupForSlot;
         }
 
-        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle)
-        {
-            _resolveType = OpenNonVirtualResolve;
-            _nonVirtualOpenInvokeCodePointer = _methodHandleOrSlotOrCodePointer = codePointer;
-            _declaringType = declaringType.ToEETypePtr();
-            _handle = handle;
-            _readerGCHandle = readerGCHandle;
-        }
-
         public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle, short resolveType)
         {
             _resolveType = resolveType;
             _methodHandleOrSlotOrCodePointer = codePointer;
-            _declaringType = declaringType.ToEETypePtr();
+            _declaringType = declaringType.ToMethodTable();
             _handle = handle;
             _readerGCHandle = readerGCHandle;
             if (resolveType == OpenNonVirtualResolve)
@@ -99,7 +88,7 @@ namespace Internal.Runtime.CompilerServices
             }
         }
 
-        public unsafe RuntimeMethodHandle GVMMethodHandle
+        public RuntimeMethodHandle GVMMethodHandle
         {
             get
             {
@@ -148,7 +137,7 @@ namespace Internal.Runtime.CompilerServices
             }
         }
 
-        private unsafe IntPtr ResolveMethod(object thisObject)
+        private IntPtr ResolveMethod(object thisObject)
         {
             if (_resolveType == DispatchResolve)
             {
@@ -164,12 +153,12 @@ namespace Internal.Runtime.CompilerServices
             }
         }
 
-        internal static unsafe IntPtr ResolveMethodWorker(IntPtr resolver, object thisObject)
+        internal static IntPtr ResolveMethodWorker(IntPtr resolver, object thisObject)
         {
             return ((OpenMethodResolver*)resolver)->ResolveMethod(thisObject);
         }
 
-        public static unsafe IntPtr ResolveMethod(IntPtr resolver, object thisObject)
+        public static IntPtr ResolveMethod(IntPtr resolver, object thisObject)
         {
             IntPtr nonVirtualOpenInvokeCodePointer = ((OpenMethodResolver*)resolver)->_nonVirtualOpenInvokeCodePointer;
             if (nonVirtualOpenInvokeCodePointer != IntPtr.Zero)
@@ -178,20 +167,14 @@ namespace Internal.Runtime.CompilerServices
             return TypeLoaderExports.OpenInstanceMethodLookup(resolver, thisObject);
         }
 
-        public static unsafe IntPtr ResolveMethod(IntPtr resolverPtr, RuntimeTypeHandle thisType)
+        public static IntPtr ResolveMethod(IntPtr resolverPtr, RuntimeTypeHandle thisType)
         {
             OpenMethodResolver* resolver = ((OpenMethodResolver*)resolverPtr);
             IntPtr nonVirtualOpenInvokeCodePointer = resolver->_nonVirtualOpenInvokeCodePointer;
             if (nonVirtualOpenInvokeCodePointer != IntPtr.Zero)
                 return nonVirtualOpenInvokeCodePointer;
 
-            return RuntimeImports.RhResolveDispatchOnType(thisType.ToEETypePtr(), resolver->_declaringType, (ushort)resolver->_methodHandleOrSlotOrCodePointer);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
+            return RuntimeImports.RhResolveDispatchOnType(thisType.ToMethodTable(), resolver->_declaringType, (ushort)resolver->_methodHandleOrSlotOrCodePointer);
         }
 
         private static int CalcHashCode(int hashCode1, int hashCode2, int hashCode3, int hashCode4)
@@ -201,20 +184,20 @@ namespace Internal.Runtime.CompilerServices
             int hash1 = 0x449b3ad6;
             int hash2 = (length << 3) + 0x55399219;
 
-            hash1 = (hash1 + _rotl(hash1, 5)) ^ hashCode1;
-            hash2 = (hash2 + _rotl(hash2, 5)) ^ hashCode2;
-            hash1 = (hash1 + _rotl(hash1, 5)) ^ hashCode3;
-            hash2 = (hash2 + _rotl(hash2, 5)) ^ hashCode4;
+            hash1 = (hash1 + int.RotateLeft(hash1, 5)) ^ hashCode1;
+            hash2 = (hash2 + int.RotateLeft(hash2, 5)) ^ hashCode2;
+            hash1 = (hash1 + int.RotateLeft(hash1, 5)) ^ hashCode3;
+            hash2 = (hash2 + int.RotateLeft(hash2, 5)) ^ hashCode4;
 
-            hash1 += _rotl(hash1, 8);
-            hash2 += _rotl(hash2, 8);
+            hash1 += int.RotateLeft(hash1, 8);
+            hash2 += int.RotateLeft(hash2, 8);
 
             return hash1 ^ hash2;
         }
 
         public override int GetHashCode()
         {
-            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType.IsNull ? 0 : _declaringType.GetHashCode());
+            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType == null ? 0 : (int)_declaringType->HashCode);
         }
 
         public bool Equals(OpenMethodResolver other)
@@ -228,7 +211,7 @@ namespace Internal.Runtime.CompilerServices
             if (other._methodHandleOrSlotOrCodePointer != _methodHandleOrSlotOrCodePointer)
                 return false;
 
-            return other._declaringType.Equals(_declaringType);
+            return other._declaringType == _declaringType;
         }
 
         public override bool Equals(object? obj)
@@ -243,7 +226,7 @@ namespace Internal.Runtime.CompilerServices
 
         private static LowLevelDictionary<OpenMethodResolver, IntPtr> s_internedResolverHash = new LowLevelDictionary<OpenMethodResolver, IntPtr>();
 
-        public unsafe IntPtr ToIntPtr()
+        public IntPtr ToIntPtr()
         {
             lock (s_internedResolverHash)
             {

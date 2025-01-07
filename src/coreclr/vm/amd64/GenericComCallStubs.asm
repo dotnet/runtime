@@ -107,14 +107,10 @@ OFFSETOF_GSCookie = GenericComCallStub_ComMethodFrame_OFFSET - SIZEOF_GSCookie
         mov            [rsp + OFFSETOF_GSCookie], rcx
 
         ;
-        ; Call COMToCLRWorker.  Note that the first parameter (pThread) is
-        ; filled in by callee.
+        ; Call COMToCLRWorker.
         ;
 
-ifdef _DEBUG
-        mov             rcx, 0cccccccccccccccch
-endif
-        mov             rdx, r10
+        mov             rcx, r10
         call            COMToCLRWorker
 
 ifdef _DEBUG

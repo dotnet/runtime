@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -164,6 +164,18 @@ namespace System.Diagnostics
         }
 
         protected internal virtual string[]? GetSupportedAttributes() => null;
+
+        internal void SetSwitchValues(int switchSetting, string switchValueString)
+        {
+            Initialize();
+
+            Debug.Assert(switchValueString is not null, "Unexpected 'switchValueString' null value");
+            lock (InitializedLock)
+            {
+                _switchSetting = switchSetting;
+                _switchValueString = switchValueString;
+            }
+        }
 
         /// <summary>
         /// The default value assigned in the constructor.

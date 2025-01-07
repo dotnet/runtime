@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         // secp521r1 maxes out at 139 bytes, so 256 should always be enough
         private const int SignatureStackBufSize = 256;
 
-        private ECOpenSsl? _key;
+        private Lazy<SafeEvpPKeyHandle>? _key;
 
         /// <summary>
         /// Create an ECDsaOpenSsl algorithm with a named curve.
@@ -30,8 +30,8 @@ namespace System.Security.Cryptography
         public ECDsaOpenSsl(ECCurve curve)
         {
             ThrowIfNotSupported();
-            _key = new ECOpenSsl(curve);
-            ForceSetKeySize(_key.KeySize);
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(curve, out int keySize));
+            ForceSetKeySize(keySize);
         }
 
         /// <summary>
@@ -59,10 +59,8 @@ namespace System.Security.Cryptography
         public ECDsaOpenSsl(int keySize)
         {
             ThrowIfNotSupported();
-            // Use the base setter to get the validation and field assignment without the
-            // side effect of dereferencing _key.
             base.KeySize = keySize;
-            _key = new ECOpenSsl(this);
+            _key = new Lazy<SafeEvpPKeyHandle>(GenerateKeyFromSize);
         }
 
         /// <summary>
@@ -84,13 +82,13 @@ namespace System.Security.Cryptography
         public override byte[] SignHash(byte[] hash)
         {
             ArgumentNullException.ThrowIfNull(hash);
-
             ThrowIfDisposed();
-            SafeEcKeyHandle key = _key.Value;
-            int signatureLength = Interop.Crypto.EcDsaSize(key);
 
-            Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
-            ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
+            SafeEvpPKeyHandle key = GetKey();
+
+            Span<byte> derSignature = stackalloc byte[SignatureStackBufSize];
+            int written = Interop.Crypto.EcDsaSignHash(key, hash, derSignature);
+            derSignature = derSignature.Slice(0, written);
 
             byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize);
             return converted;
@@ -112,80 +110,46 @@ namespace System.Security.Cryptography
             out int bytesWritten)
         {
             ThrowIfDisposed();
-            SafeEcKeyHandle key = _key.Value;
-
-            int signatureLength = Interop.Crypto.EcDsaSize(key);
-            Span<byte> signDestination = stackalloc byte[SignatureStackBufSize];
 
             if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
-                int encodedSize = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
+                int encodedSize = GetMaxSignatureSize(DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
+                // IeeeP1363FixedFieldConcatenation has a constant signature size therefore we can shortcut here
                 if (destination.Length < encodedSize)
                 {
                     bytesWritten = 0;
                     return false;
                 }
 
-                ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
+                SafeEvpPKeyHandle key = GetKey();
+
+                Span<byte> derSignature = stackalloc byte[SignatureStackBufSize];
+                int written = Interop.Crypto.EcDsaSignHash(key, hash, derSignature);
+                derSignature = derSignature.Slice(0, written);
+
                 bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
                 Debug.Assert(bytesWritten == encodedSize);
+
                 return true;
             }
             else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
             {
-                if (destination.Length >= signatureLength)
-                {
-                    signDestination = destination;
-                }
-                else if (signatureLength > signDestination.Length)
-                {
-                    Debug.Fail($"Stack-based signDestination is insufficient ({signatureLength} needed)");
-                    bytesWritten = 0;
-                    return false;
-                }
+                SafeEvpPKeyHandle key = GetKey();
 
-                ReadOnlySpan<byte> derSignature = SignHash(hash, signDestination, signatureLength, key);
+                // We need to distinguish between the case where the destination buffer is too small and the case where something else went wrong
+                // Since Rfc3279DerSequence signature size is not constant (DER is not constant size) we will use temporary buffer with max size.
+                // If that succeeds we can copy to destination buffer if it's large enough.
+                Span<byte> tmpDerSignature = stackalloc byte[SignatureStackBufSize];
+                bytesWritten = Interop.Crypto.EcDsaSignHash(key, hash, tmpDerSignature);
+                tmpDerSignature = tmpDerSignature.Slice(0, bytesWritten);
 
-                if (destination == signDestination)
-                {
-                    bytesWritten = derSignature.Length;
-                    return true;
-                }
-
-                return Helpers.TryCopyToDestination(derSignature, destination, out bytesWritten);
+                return Helpers.TryCopyToDestination(tmpDerSignature, destination, out bytesWritten);
             }
             else
             {
                 throw new ArgumentOutOfRangeException(nameof(signatureFormat));
             }
-        }
-
-        private static ReadOnlySpan<byte> SignHash(
-            ReadOnlySpan<byte> hash,
-            Span<byte> destination,
-            int signatureLength,
-            SafeEcKeyHandle key)
-        {
-            if (signatureLength > destination.Length)
-            {
-                Debug.Fail($"Stack-based signDestination is insufficient ({signatureLength} needed)");
-                destination = new byte[signatureLength];
-            }
-
-            if (!Interop.Crypto.EcDsaSign(hash, destination, out int actualLength, key))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            Debug.Assert(
-                actualLength <= signatureLength,
-                "ECDSA_sign reported an unexpected signature size",
-                "ECDSA_sign reported signatureSize was {0}, when <= {1} was expected",
-                actualLength,
-                signatureLength);
-
-            return destination.Slice(0, actualLength);
         }
 
         public override bool VerifyHash(byte[] hash, byte[] signature)
@@ -242,16 +206,19 @@ namespace System.Security.Cryptography
                     signatureFormat.ToString());
             }
 
-            SafeEcKeyHandle key = _key.Value;
-            int verifyResult = Interop.Crypto.EcDsaVerify(hash, toVerify, key);
-            return verifyResult == 1;
+            SafeEvpPKeyHandle key = GetKey();
+
+            return Interop.Crypto.EcDsaVerifyHash(
+                key,
+                hash,
+                toVerify);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _key?.Dispose();
+                FreeKey();
                 _key = null;
             }
 
@@ -273,38 +240,73 @@ namespace System.Security.Cryptography
                 base.KeySize = value;
 
                 ThrowIfDisposed();
-                _key.Dispose();
-                _key = new ECOpenSsl(this);
+
+                FreeKey();
+                _key = new Lazy<SafeEvpPKeyHandle>(GenerateKeyFromSize);
             }
         }
 
         public override void GenerateKey(ECCurve curve)
         {
             ThrowIfDisposed();
-            _key.GenerateKey(curve);
+
+            FreeKey();
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(curve, out int keySize));
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(_key.KeySize);
+            ForceSetKeySize(keySize);
         }
 
         public override void ImportParameters(ECParameters parameters)
         {
             ThrowIfDisposed();
-            _key.ImportParameters(parameters);
-            ForceSetKeySize(_key.KeySize);
+
+            FreeKey();
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.ImportECKey(parameters, out int keySize));
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(keySize);
+        }
+
+        private SafeEvpPKeyHandle GetKey()
+        {
+            ThrowIfDisposed();
+
+            SafeEvpPKeyHandle key = _key.Value;
+
+            if (key == null || key.IsInvalid)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
+            return key;
+        }
+
+        private SafeEvpPKeyHandle GenerateKeyFromSize()
+        {
+            return ECOpenSsl.GenerateECKey(KeySize);
         }
 
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
         {
             ThrowIfDisposed();
-            return ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters);
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
+            {
+                return ECOpenSsl.ExportExplicitParameters(ecKey, includePrivateParameters);
+            }
         }
 
         public override ECParameters ExportParameters(bool includePrivateParameters)
         {
             ThrowIfDisposed();
-            return ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters);
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
+            {
+                return ECOpenSsl.ExportParameters(ecKey, includePrivateParameters);
+            }
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(
@@ -323,6 +325,15 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+        }
+
+        private void FreeKey()
+        {
+            if (_key != null && _key.IsValueCreated)
+            {
+                SafeEvpPKeyHandle handle = _key.Value;
+                handle?.Dispose();
+            }
         }
 
         [MemberNotNull(nameof(_key))]

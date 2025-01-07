@@ -870,5 +870,15 @@ namespace System.Reflection.PortableExecutable.Tests
                 }
             }
         }
+
+        [Fact]
+        public void HasMetadataShouldReturnFalseWhenPrefetchingMetadataOfImageWithoutMetadata()
+        {
+            using (var fileStream = new MemoryStream(Misc.KeyPair))
+            using (var peReader = new PEReader(fileStream, PEStreamOptions.PrefetchMetadata | PEStreamOptions.LeaveOpen))
+            {
+                Assert.False(peReader.HasMetadata);
+            }
+        }
     }
 }

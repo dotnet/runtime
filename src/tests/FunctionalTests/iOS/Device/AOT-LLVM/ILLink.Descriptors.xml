@@ -1,7 +1,0 @@
-<linker>
-  <assembly fullname="iOS.Device.Aot-Llvm.Test">
-    <type fullname="Program">
-      <method name="SayHello" />
-    </type>
-  </assembly>
-</linker>

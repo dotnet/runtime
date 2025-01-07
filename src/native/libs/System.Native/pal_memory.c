@@ -26,9 +26,7 @@
 void* SystemNative_AlignedAlloc(uintptr_t alignment, uintptr_t size)
 {
 #if HAVE_ALIGNED_ALLOC
-    // We want to prefer the standardized aligned_alloc function. However
-    // it cannot be used on __APPLE__ since we target 10.13 and it was
-    // only added in 10.15, but we might be compiling on a 10.15 box.
+    // We want to prefer the standardized aligned_alloc function.
     return aligned_alloc(alignment, size);
 #elif HAVE_POSIX_MEMALIGN
     void* result = NULL;

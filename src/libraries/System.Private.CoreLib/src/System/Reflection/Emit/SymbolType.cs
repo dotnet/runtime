@@ -271,29 +271,44 @@ namespace System.Reflection.Emit
             return FormCompoundType(_format + "&", _baseType, 0)!;
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return FormCompoundType(_format + "[]", _baseType, 0)!;
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
-            string s = GetRankString(rank);
+            string s = FormatRank(rank);
             SymbolType? st = FormCompoundType(_format + s, _baseType, 0) as SymbolType;
             return st!;
+        }
+
+        internal static string FormatRank(int rank)
+        {
+            if (rank <= 0)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
+            return rank == 1 ? "[*]" : "[" + new string(',', rank - 1) + "]";
         }
 
         public override int GetArrayRank()
         {
             if (!IsArray)
-                throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+                throw new ArgumentException(SR.Argument_HasToBeArrayClass);
 
             return _rank;
         }
 
         public override Guid GUID => throw new NotSupportedException(SR.NotSupported_NonReflectedType);
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -440,17 +455,24 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
+        [DynamicallyAccessedMembers(GetAllMembersInternal)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        [DynamicallyAccessedMembers(GetAllMembers)]
+        [DynamicallyAccessedMembers(GetAllMembersInternal)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
+
+        private const DynamicallyAccessedMemberTypes GetAllMembersInternal = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
 
         public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType)
         {

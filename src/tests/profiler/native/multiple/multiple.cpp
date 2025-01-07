@@ -24,7 +24,6 @@ HRESULT MultiplyLoaded::InitializeCommon(IUnknown* pICorProfilerInfoUnk)
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
-    printf("Setting exception mask\n");
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_EXCEPTIONS, 0)))
     {
         _failures++;
@@ -37,11 +36,13 @@ HRESULT MultiplyLoaded::InitializeCommon(IUnknown* pICorProfilerInfoUnk)
 
 HRESULT MultiplyLoaded::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
+    printf("MultiplyLoaded::Initialize\n");
     return InitializeCommon(pICorProfilerInfoUnk);
 }
 
 HRESULT MultiplyLoaded::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData)
 {
+    printf("MultiplyLoaded::InitializeForAttach\n");
     return InitializeCommon(pICorProfilerInfoUnk);
 }
 
@@ -56,11 +57,14 @@ HRESULT MultiplyLoaded::ProfilerDetachSucceeded()
     ++_detachCount;
 
     printf("ProfilerDetachSucceeded _detachCount=%d\n", _detachCount.load());
-    if (_detachCount == (MAX_PROFILERS - 1)
-        &&  _exceptionThrownSeenCount >= (MAX_PROFILERS - 1)
-        &&  _failures == 0)
+    if (_detachCount == MAX_PROFILERS)
     {
-        printf("PROFILER TEST PASSES\n");
+        if (_exceptionThrownSeenCount >= MAX_PROFILERS &&  _failures == 0)
+        {
+            printf("PROFILER TEST PASSES\n");
+            fflush(stdout);
+        }
+
         NotifyManagedCodeViaCallback(pCorProfilerInfo);
     }
 
@@ -69,9 +73,7 @@ HRESULT MultiplyLoaded::ProfilerDetachSucceeded()
 
 HRESULT MultiplyLoaded::ExceptionThrown(ObjectID thrownObjectId)
 {
-    int seen = _exceptionThrownSeenCount++;
-
-    printf("MultiplyLoaded::ExceptionThrown, number seen = %d\n", seen);
+    printf("MultiplyLoaded::ExceptionThrown, number seen = %d\n", ++_exceptionThrownSeenCount);
 
     thread detachThread([&]()
         {

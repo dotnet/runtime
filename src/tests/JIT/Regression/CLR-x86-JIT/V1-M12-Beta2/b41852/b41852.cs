@@ -18,10 +18,9 @@ namespace Test
             param2.Method1(ref param2.m_aulField4);
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Method1(new BB(), __arglist());
-            return 100;
         }
     }
 }

@@ -33,6 +33,8 @@ namespace System.ComponentModel.DataAnnotations
             Justification = "The ctor is marked with RequiresUnreferencedCode informing the caller to preserve the other property.")]
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
+            ArgumentNullException.ThrowIfNull(validationContext);
+
             var otherPropertyInfo = validationContext.ObjectType.GetRuntimeProperty(OtherProperty);
             if (otherPropertyInfo == null)
             {
@@ -64,7 +66,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (attribute is DisplayAttribute display)
                 {
-                   return display.GetName();
+                    return display.GetName();
                 }
             }
 

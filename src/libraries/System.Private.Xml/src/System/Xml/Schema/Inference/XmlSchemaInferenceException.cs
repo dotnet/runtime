@@ -3,12 +3,12 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Resources;
 using System.Runtime.Serialization;
 using System.Text;
-using System.Diagnostics;
-using System.Globalization;
 
 namespace System.Xml.Schema
 {

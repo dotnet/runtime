@@ -13,7 +13,7 @@ namespace System.Collections.Frozen
     /// This dictionary type is specialized as a memory optimization, as the frozen hash table already contains the array of all
     /// int values, and we can thus use its array as the keys rather than maintaining a duplicate copy.
     /// </remarks>
-    internal sealed class Int32FrozenDictionary<TValue> : FrozenDictionary<int, TValue>
+    internal sealed partial class Int32FrozenDictionary<TValue> : FrozenDictionary<int, TValue>
     {
         private readonly FrozenHashTable _hashTable;
         private readonly TValue[] _values;
@@ -35,9 +35,14 @@ namespace System.Collections.Frozen
                 hashCodes[i] = entries[i].Key;
             }
 
-            _hashTable = FrozenHashTable.Create(
-                hashCodes,
-                (destIndex, srcIndex) => _values[destIndex] = entries[srcIndex].Value);
+            _hashTable = FrozenHashTable.Create(hashCodes, hashCodesAreUnique: true);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _values[destIndex] = entries[srcIndex].Value;
+            }
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }

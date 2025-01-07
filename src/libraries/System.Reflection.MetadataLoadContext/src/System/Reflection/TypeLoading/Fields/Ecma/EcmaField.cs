@@ -3,9 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading.Ecma
 {

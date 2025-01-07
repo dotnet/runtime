@@ -6,10 +6,10 @@ namespace System.Buffers.Text
     public static partial class Utf8Formatter
     {
         /// <summary>
-        /// Formats a Decimal as a UTF8 string.
+        /// Formats a Decimal as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>

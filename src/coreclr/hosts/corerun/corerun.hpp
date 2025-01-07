@@ -37,13 +37,6 @@ namespace pal
 
     template<typename T>
     using malloc_ptr = std::unique_ptr<T, free_delete>;
-
-    enum class debugger_state_t
-    {
-        na,
-        attached,
-        not_attached,
-    };
 }
 
 #ifdef TARGET_WINDOWS
@@ -136,11 +129,6 @@ namespace pal
         return (uint32_t)::GetCurrentProcessId();
     }
 
-    inline debugger_state_t is_debugger_attached()
-    {
-        return (::IsDebuggerPresent() == TRUE) ? debugger_state_t::attached : debugger_state_t::not_attached;
-    }
-
     inline bool does_file_exist(const string_t& file_path)
     {
         return INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(file_path.c_str());
@@ -222,6 +210,17 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load mock hostpolicy at path '%s'. Error: 0x%08x\n"), mock_hostpolicy_value.c_str(), ::GetLastError());
 
         return hMod != nullptr;
+    }
+
+    inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
+    {
+        hMod = (pal::mod_t)::LoadLibraryExW(path.c_str(), nullptr, 0);
+        if (hMod == nullptr)
+        {
+            pal::fprintf(stderr, W("Failed to load: '%s'. Error: 0x%08x\n"), path.c_str(), ::GetLastError());
+            return false;
+        }
+        return true;
     }
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
@@ -409,83 +408,6 @@ namespace pal
         return (uint32_t)getpid();
     }
 
-    inline debugger_state_t is_debugger_attached()
-    {
-#if defined(__APPLE__)
-        // Taken from https://developer.apple.com/library/archive/qa/qa1361/_index.html
-        int                 junk;
-        int                 mib[4];
-        struct kinfo_proc   info;
-        size_t              size;
-
-        // Initialize the flags so that, if sysctl fails for some bizarre
-        // reason, we get a predictable result.
-
-        info.kp_proc.p_flag = 0;
-
-        // Initialize mib, which tells sysctl the info we want, in this case
-        // we're looking for information about a specific process ID.
-
-        mib[0] = CTL_KERN;
-        mib[1] = KERN_PROC;
-        mib[2] = KERN_PROC_PID;
-        mib[3] = getpid();
-
-        // Call sysctl.
-
-        size = sizeof(info);
-        junk = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
-        assert(junk == 0);
-
-        // We're being debugged if the P_TRACED flag is set.
-
-        return ( (info.kp_proc.p_flag & P_TRACED) != 0 ) ? debugger_state_t::attached : debugger_state_t::not_attached;
-
-#else // !__APPLE__
-        // Use procfs to detect if there is a tracer process.
-        // See https://www.kernel.org/doc/html/latest/filesystems/proc.html
-        char status[2048] = { 0 };
-        int fd = ::open("/proc/self/status", O_RDONLY);
-        if (fd == -1)
-        {
-            // If the file can't be opened assume we are on a not supported platform.
-            return debugger_state_t::na;
-        }
-
-        // Attempt to read
-        ssize_t bytes_read = ::read(fd, status, sizeof(status) - 1);
-        ::close(fd);
-
-        if (bytes_read > 0)
-        {
-            // We have data. At this point we can likely make a strong decision.
-            const char tracer_pid_name[] = "TracerPid:";
-            const char* tracer_pid_ptr = ::strstr(status, tracer_pid_name);
-            if (tracer_pid_ptr == nullptr)
-                return debugger_state_t::not_attached;
-
-            // The number after the name is the process ID of the
-            // tracer application or 0 if none exists.
-            const char* curr = tracer_pid_ptr + (sizeof(tracer_pid_name) - 1);
-            const char* end = status + bytes_read;
-            for (;curr < end; ++curr)
-            {
-                if (::isspace(*curr))
-                    continue;
-
-                // Check the first non-space if it is 0. If so, we have
-                // a non-zero process ID and a tracer is attached.
-                return (::isdigit(*curr) && *curr != '0') ? debugger_state_t::attached : debugger_state_t::not_attached;
-            }
-        }
-
-        // The read in data is either incomplete (i.e. small buffer) or
-        // the returned content is not expected. Let's fallback to not available.
-        return debugger_state_t::na;
-
-#endif // !__APPLE__
-    }
-
     inline bool does_file_exist(const char_t* file_path)
     {
         // Check if the specified path exists
@@ -552,9 +474,7 @@ namespace pal
             case DT_LNK:
             case DT_UNKNOWN:
                 {
-                    string_t full_filename;
-                    full_filename.append(directory);
-                    full_filename.append(1, pal::dir_delim);
+                    string_t full_filename{directory};
                     full_filename.append(entry->d_name);
                     if (!does_file_exist(full_filename.c_str()))
                         continue;
@@ -572,7 +492,7 @@ namespace pal
             // Make sure if we have an assembly with multiple extensions present,
             // we insert only one version of it.
             if (should_add(entry->d_name))
-                file_list << directory << dir_delim << entry->d_name << env_path_delim;
+                file_list << directory << entry->d_name << env_path_delim;
         }
 
         closedir(dir);
@@ -601,6 +521,18 @@ namespace pal
 
         return hMod != nullptr;
     }
+
+    inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
+    {
+        hMod = (pal::mod_t)dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+        if (hMod == nullptr)
+        {
+            pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), path.c_str(), dlerror());
+            return false;
+        }
+        return true;
+    }
+
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {

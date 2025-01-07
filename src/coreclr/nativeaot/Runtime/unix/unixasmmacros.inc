@@ -3,6 +3,14 @@
 
 #define INVALIDGCVALUE 0xCCCCCCCD
 
+// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+#define STATUS_REDHAWK_THREAD_ABORT     0x43
+
+// Enforce subsections via symbols to workaround bugs in Xcode 15 linker.
+#if defined(__APPLE__)
+.subsections_via_symbols
+#endif
+
 #if defined(__APPLE__)
 #define C_FUNC(name) _##name
 #define EXTERNAL_C_FUNC(name) C_FUNC(name)
@@ -34,4 +42,6 @@
 #include "unixasmmacrosarm64.inc"
 #elif defined(HOST_X86)
 #include "unixasmmacrosx86.inc"
+#elif defined(HOST_LOONGARCH64)
+#include "unixasmmacrosloongarch64.inc"
 #endif

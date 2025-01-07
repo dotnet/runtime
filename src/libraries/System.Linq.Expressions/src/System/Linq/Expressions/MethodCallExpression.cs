@@ -1138,6 +1138,7 @@ namespace System.Linq.Expressions
         /// <paramref name="instance"/> or <paramref name="methodName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">No method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="instance"/>.Type or its base types.-or-More than one method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="instance"/>.Type or its base types.</exception>
         [RequiresUnreferencedCode(ExpressionRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         public static MethodCallExpression Call(Expression instance, string methodName, Type[]? typeArguments, params Expression[]? arguments)
         {
             ArgumentNullException.ThrowIfNull(instance);
@@ -1161,6 +1162,7 @@ namespace System.Linq.Expressions
         /// <paramref name="type"/> or <paramref name="methodName"/> is null.</exception>
         /// <exception cref="InvalidOperationException">No method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="type"/> or its base types.-or-More than one method whose name is <paramref name="methodName"/>, whose type parameters match <paramref name="typeArguments"/>, and whose parameter types match <paramref name="arguments"/> is found in <paramref name="type"/> or its base types.</exception>
         [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         public static MethodCallExpression Call(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type,
             string methodName,
@@ -1291,6 +1293,7 @@ namespace System.Linq.Expressions
         }
 
         [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         private static MethodInfo? FindMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type type,
             string methodName,
@@ -1366,6 +1369,7 @@ namespace System.Linq.Expressions
         }
 
         [RequiresUnreferencedCode(GenericMethodRequiresUnreferencedCode)]
+        [RequiresDynamicCode(GenericMethodRequiresDynamicCode)]
         private static MethodInfo? ApplyTypeArgs(MethodInfo m, Type[]? typeArgs)
         {
             if (typeArgs == null || typeArgs.Length == 0)

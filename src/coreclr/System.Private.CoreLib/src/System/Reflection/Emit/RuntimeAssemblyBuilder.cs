@@ -54,14 +54,9 @@ namespace System.Reflection.Emit
 
             EnsureDynamicCodeSupported();
 
-            AssemblyLoadContext? assemblyLoadContext =
-                AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly);
-
-            if (assemblyLoadContext == null)
-            {
+            AssemblyLoadContext assemblyLoadContext =
+                (AssemblyLoadContext.CurrentContextualReflectionContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)) ??
                 throw new InvalidOperationException();
-            }
-
             return new RuntimeAssemblyBuilder(name, access, assemblyLoadContext, assemblyAttributes);
         }
     }
@@ -236,7 +231,7 @@ namespace System.Reflection.Emit
 
         public override string? FullName => InternalAssembly.FullName;
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase) =>
             InternalAssembly.GetType(name, throwOnError, ignoreCase);
 

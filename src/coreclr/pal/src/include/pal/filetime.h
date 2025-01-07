@@ -63,12 +63,6 @@ extern "C"
 
 FILETIME FILEUnixTimeToFileTime( time_t sec, long nsec );
 
-#ifdef __APPLE__
-#include <CoreFoundation/CFDate.h>
-
-FILETIME FILECFAbsoluteTimeToFileTime( CFAbsoluteTime sec );
-#endif // __APPLE__
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus

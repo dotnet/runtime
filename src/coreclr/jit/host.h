@@ -3,6 +3,8 @@
 
 /*****************************************************************************/
 
+int jitprintf(const char* fmt, ...);
+
 #ifdef DEBUG
 
 #undef printf
@@ -26,10 +28,10 @@ public:
 };
 
 bool vlogf(unsigned level, const char* fmt, va_list args);
-int vflogf(FILE* file, const char* fmt, va_list args);
+int  vflogf(FILE* file, const char* fmt, va_list args);
 
-int logf(const char* fmt, ...);
-int flogf(FILE* file, const char* fmt, ...);
+int  logf(const char* fmt, ...);
+int  flogf(FILE* file, const char* fmt, ...);
 void gcDump_logf(const char* fmt, ...);
 
 void logf(unsigned level, const char* fmt, ...);
@@ -44,7 +46,6 @@ extern "C" void ANALYZER_NORETURN __cdecl assertAbort(const char* why, const cha
 // Re-define printf in Release to use jitstdout (can be overwritten with DOTNET_JitStdOutFile=file)
 #undef printf
 #define printf jitprintf
-void jitprintf(const char* fmt, ...);
 
 #undef assert
 #define assert(p) (void)0
@@ -55,7 +56,7 @@ void jitprintf(const char* fmt, ...);
 #define _HOST_H_
 /*****************************************************************************/
 
-extern FILE* jitstdout;
+FILE* jitstdout();
 
 inline FILE* procstdout()
 {

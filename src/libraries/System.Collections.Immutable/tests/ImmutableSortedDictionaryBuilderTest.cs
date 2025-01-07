@@ -255,27 +255,6 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(5, populated.GetValueOrDefault("a", 1));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public void DebuggerAttributesValid()
-        {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedDictionary.CreateBuilder<string, int>());
-            ImmutableSortedDictionary<int, string>.Builder builder = ImmutableSortedDictionary.CreateBuilder<int, string>();
-            builder.Add(1, "One");
-            builder.Add(2, "Two");
-            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(builder);
-            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            KeyValuePair<int, string>[] items = itemProperty.GetValue(info.Instance) as KeyValuePair<int, string>[];
-            Assert.Equal(builder, items);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes_Null()
-        {
-            Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedDictionary.CreateBuilder<int, string>());
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
-            Assert.IsType<ArgumentNullException>(tie.InnerException);
-        }
-
         [Fact]
         public void ValueRef()
         {
@@ -286,7 +265,7 @@ namespace System.Collections.Immutable.Tests
             }.ToImmutableSortedDictionary().ToBuilder();
 
             ref readonly int safeRef = ref builder.ValueRef("a");
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(1, builder.ValueRef("a"));
 

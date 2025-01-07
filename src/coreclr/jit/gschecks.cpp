@@ -35,12 +35,6 @@ PhaseStatus Compiler::gsPhase()
             gsCopyShadowParams();
         }
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         madeChanges = true;
     }
     else
@@ -94,7 +88,7 @@ void Compiler::gsCopyShadowParams()
 
     // Find groups of variables assigned to each other, and also
     // tracks variables which are dereferenced and marks them as ptrs.
-    // Look for assignments to *p, and ptrs passed to functions
+    // Look for stores to *p, and ptrs passed to functions
     //
     if (gsFindVulnerableParams())
     {
@@ -117,7 +111,7 @@ struct MarkPtrsInfo
 {
     Compiler* comp;
     unsigned  lvStoreDef;   // Which local variable is the tree being assigned to?
-    bool      isStoreSrc;   // Is this the source value for an assignment?
+    bool      isStoreSrc;   // Is this the source value for a local store?
     bool      isUnderIndir; // Is this a pointer value tree that is being dereferenced?
     bool      skipNextNode; // Skip a single node during the tree-walk
 
@@ -416,6 +410,7 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
         shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
+        shadowVarDsc->SetHiddenBufferStructArg(varDsc->IsHiddenBufferStructArg());
 #endif
 
         if (varTypeIsStruct(type))
@@ -455,7 +450,8 @@ void Compiler::gsParamsToShadows()
             DoPostOrder = true
         };
 
-        ReplaceShadowParamsVisitor(Compiler* compiler) : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
+        ReplaceShadowParamsVisitor(Compiler* compiler)
+            : GenTreeVisitor<ReplaceShadowParamsVisitor>(compiler)
         {
         }
 
@@ -502,6 +498,7 @@ void Compiler::gsParamsToShadows()
         }
     }
 
+    compCurBB = fgFirstBB;
     // Now insert code to copy the params to their shadow copy.
     for (UINT lclNum = 0; lclNum < lvaOldCount; lclNum++)
     {
@@ -513,28 +510,118 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-        GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        src->gtFlags |= GTF_DONT_CSE;
-        GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
+        {
+            JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
+                    shadowVarNum);
+            CORINFO_METHOD_HANDLE copyHelper =
+                info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
+            GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
 
-        fgEnsureFirstBBisScratch();
-        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+            GenTree* src = gtNewLclVarAddrNode(lclNum);
+            GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);
+
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
+
+            compCurBB = fgFirstBB; // Needed by some morphing
+            if (opts.IsReversePInvoke())
+            {
+                // If we are in a reverse P/Invoke, then we need to insert
+                // the call at the end of the first block as we need to do the GC transition
+                // before we can call the helper.
+                //
+                // TODO-Cleanup: These gymnastics indicate that we are
+                // inserting reverse pinvoke transitions way too early in the
+                // JIT.
+
+                struct HasReversePInvokeEnterVisitor : GenTreeVisitor<HasReversePInvokeEnterVisitor>
+                {
+                    enum
+                    {
+                        DoPreOrder = true,
+                    };
+
+                    HasReversePInvokeEnterVisitor(Compiler* comp)
+                        : GenTreeVisitor(comp)
+                    {
+                    }
+
+                    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    {
+                        if (((*use)->gtFlags & GTF_CALL) == 0)
+                        {
+                            return fgWalkResult::WALK_SKIP_SUBTREES;
+                        }
+
+                        if ((*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                            (*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                        {
+                            return fgWalkResult::WALK_ABORT;
+                        }
+
+                        return fgWalkResult::WALK_CONTINUE;
+                    }
+                };
+
+                HasReversePInvokeEnterVisitor checker(this);
+
+                Statement* reversePInvokeStmt = nullptr;
+                for (Statement* const stmt : fgFirstBB->Statements())
+                {
+                    // assert that we don't have any uses of the local variable
+                    // at the point before we insert the shadow copy statement.
+                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
+
+                    if (checker.WalkTree(stmt->GetRootNodePointer(), nullptr) == fgWalkResult::WALK_ABORT)
+                    {
+                        reversePInvokeStmt = stmt;
+                        break;
+                    }
+                }
+
+                noway_assert(reversePInvokeStmt != nullptr);
+
+                JITDUMP("Inserting special copy helper call after Reverse P/Invoke transition " FMT_STMT "\n",
+                        reversePInvokeStmt->GetID());
+
+                (void)fgInsertStmtAfter(fgFirstBB, reversePInvokeStmt, gtNewStmt(fgMorphTree(call)));
+            }
+            else
+            {
+                JITDUMP("Inserting special copy helper call at the beginning of the first block\n");
+                (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(call));
+            }
+        }
+        else
+#endif // TARGET_X86 && FEATURE_IJW
+        {
+            GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
+            src->gtFlags |= GTF_DONT_CSE;
+
+            GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
+
+            compCurBB = fgFirstBB; // Needed by some morphing
+            fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+        }
     }
+    compCurBB = nullptr;
 
     // If the method has "Jmp CalleeMethod", then we need to copy shadow params back to original
     // params before "jmp" to CalleeMethod.
     if (compJmpOpUsed)
     {
         // There could be more than one basic block ending with a "Jmp" type tail call.
-        // We would have to insert assignments in all such blocks, just before GT_JMP stmnt.
+        // We would have to insert stores in all such blocks, just before GT_JMP stmnt.
         for (BasicBlock* const block : Blocks())
         {
-            if (block->bbJumpKind != BBJ_RETURN)
+            if (!block->KindIs(BBJ_RETURN))
             {
                 continue;
             }
 
-            if ((block->bbFlags & BBF_HAS_JMP) == 0)
+            if (!block->HasFlag(BBF_HAS_JMP))
             {
                 continue;
             }

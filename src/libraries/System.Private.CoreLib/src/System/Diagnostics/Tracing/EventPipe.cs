@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-#if FEATURE_PERFTRACING
-
 namespace System.Diagnostics.Tracing
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -31,7 +29,7 @@ namespace System.Diagnostics.Tracing
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct EventPipeProviderConfiguration
+    internal readonly struct EventPipeProviderConfiguration
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         private readonly string m_providerName;
@@ -150,5 +148,3 @@ namespace System.Diagnostics.Tracing
         }
     }
 }
-
-#endif // FEATURE_PERFTRACING

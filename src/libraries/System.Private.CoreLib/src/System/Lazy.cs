@@ -152,7 +152,7 @@ namespace System
             }
         }
 
-        internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>()
+        internal static T CreateViaDefaultConstructor<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>()
         {
             try
             {
@@ -182,8 +182,8 @@ namespace System
     /// </para>
     /// </remarks>
     [DebuggerTypeProxy(typeof(LazyDebugView<>))]
-    [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
-    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
+    [DebuggerDisplay("ThreadSafetyMode = {Mode}, IsValueCreated = {IsValueCreated}, IsValueFaulted = {IsValueFaulted}, Value = {ValueForDebugDisplay}")]
+    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
     {
         private static T CreateViaDefaultConstructor() => LazyHelper.CreateViaDefaultConstructor<T>();
 
@@ -231,7 +231,7 @@ namespace System
         /// needed.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
+        /// reference (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <remarks>
         /// An instance created with this constructor may be used concurrently from multiple threads.
         /// </remarks>
@@ -272,7 +272,7 @@ namespace System
         /// <param name="isThreadSafe">true if this instance should be usable by multiple threads concurrently; false if the instance will only be used by one thread at a time.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
-        /// a null reference (Nothing in Visual Basic).</exception>
+        /// a null reference (<see langword="Nothing" /> in Visual Basic).</exception>
         public Lazy(Func<T> valueFactory, bool isThreadSafe) :
             this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: false)
         {
@@ -287,7 +287,7 @@ namespace System
         /// </param>
         /// <param name="mode">The lazy thread-safety mode.</param>
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
-        /// a null reference (Nothing in Visual Basic).</exception>
+        /// a null reference (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value.</exception>
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
             : this(valueFactory, mode, useDefaultConstructor: false)
@@ -315,9 +315,7 @@ namespace System
         {
             try
             {
-                Func<T>? factory = _factory;
-                if (factory == null)
-                    throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
+                Func<T> factory = _factory ?? throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
 
                 _value = factory();

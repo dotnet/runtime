@@ -3,8 +3,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.Versioning;
 
 namespace System.Xml.Schema

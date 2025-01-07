@@ -1,0 +1,23 @@
+<linker>
+
+  <!-- Internal implementation details that are always fine to strip -->
+  <assembly fullname="System.Private.CoreLib">
+    <type fullname="System.Runtime.CompilerServices.IntrinsicAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.ForceDictionaryLookupsAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <assembly fullname="*">
+    <!-- Internal attributes shared as implementation, so they could be in any assembly -->
+    <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+</linker>

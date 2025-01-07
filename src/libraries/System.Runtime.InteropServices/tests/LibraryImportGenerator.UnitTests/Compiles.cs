@@ -1,25 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Interop.UnitTests;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using Xunit;
-using SourceGenerators.Tests;
-
-using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
-using Microsoft.CodeAnalysis.Testing;
-using System.Collections.Immutable;
-using System.Threading;
-using Microsoft.CodeAnalysis.Text;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Text;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
+using Microsoft.Interop.UnitTests;
+using Xunit;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -42,6 +41,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
+            yield return new[] { ID(), CodeSnippets.ExplicitThis };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -56,6 +57,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+
+            // Parameter / return types for specially considered "strictly blittable" types.
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CLong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CULong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<NFloat>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<Guid>() };
 
             // Arrays
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
@@ -248,6 +255,10 @@ namespace LibraryImportGenerator.UnitTests
 
             // Type-level interop generator trigger attributes
             yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
+
+            // Parameter modifiers
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "ref readonly") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -427,7 +438,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.DefaultModeByValueInParameter };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.DefaultModeReturnValue };
             yield return new[] { ID(), customCollectionMarshallingCodeSnippets.Stateful.CustomElementMarshalling };
-            yield return new[] { ID(), CodeSnippets.CollectionsOfCollectionsStress };
         }
 
         [Theory]
@@ -438,6 +448,12 @@ namespace LibraryImportGenerator.UnitTests
             TestUtils.Use(id);
 
             await VerifyCS.VerifySourceGeneratorAsync(source);
+        }
+
+        [Fact]
+        public async Task CollectionsOfCollectionsStress()
+        {
+            await VerifyCS.VerifySourceGeneratorAsync(CodeSnippets.CollectionsOfCollectionsStress);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithPreprocessorSymbols()
@@ -470,7 +486,7 @@ namespace LibraryImportGenerator.UnitTests
             private readonly IEnumerable<string> _preprocessorSymbols;
 
             public PreprocessorTest(IEnumerable<string> preprocessorSymbols)
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
                 _preprocessorSymbols = preprocessorSymbols;
             }
@@ -481,41 +497,67 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> CodeSnippetsToValidateFallbackForwarder()
         {
-            //yield return new object[] { ID(), CodeSnippets.UserDefinedEntryPoint, TestTargetFramework.Net, true };
-
             // Confirm that all unsupported target frameworks can be generated.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
-                //yield return new object[] { ID(), code, TestTargetFramework.Net6, false };
-                yield return new object[] { ID(), code, TestTargetFramework.Core, false };
-                yield return new object[] { ID(), code, TestTargetFramework.Standard, false };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, false };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, false };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, false };
             }
 
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
-                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
-                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
 
             // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
-                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
-                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
 
-            // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
+            // Confirm that if support is missing for a type with an ITypeBasedMarshallingInfoProvider (like arrays and SafeHandles), we fall back to a forwarder even if other types are supported.
             {
-                string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
-                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
-                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
-                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Runtime.InteropServices.SafeHandle", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("System.Runtime.InteropServices.SafeHandle", "int", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that if support is missing for a type without an ITypeBasedMarshallingInfoProvider (like StringBuilder), we fall back to a forwarder even if other types are supported.
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_0, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard2_1, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
         }
@@ -535,12 +577,12 @@ namespace LibraryImportGenerator.UnitTests
             await test.RunAsync();
         }
 
-        class FallbackForwarderTest : VerifyCS.Test
+        class FallbackForwarderTest : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.DownlevelLibraryImportGenerator>.Test
         {
             private readonly bool _expectFallbackForwarder;
 
             public FallbackForwarderTest(TestTargetFramework targetFramework, bool expectFallbackForwarder)
-                :base(targetFramework)
+                : base(targetFramework)
             {
                 _expectFallbackForwarder = expectFallbackForwarder;
             }
@@ -583,7 +625,7 @@ namespace LibraryImportGenerator.UnitTests
         class BlittableAutoForwarderTest : VerifyCS.Test
         {
             public BlittableAutoForwarderTest()
-                :base(referenceAncillaryInterop: false)
+                : base(referenceAncillaryInterop: false)
             {
             }
 
@@ -647,8 +689,8 @@ namespace LibraryImportGenerator.UnitTests
         }
 
 #pragma warning disable xUnit1004 // Test methods should not be skipped.
-                                  // If we have any new experimental APIs that we are implementing that have not been approved,
-                                  // we will add new scenarios for this test.
+        // If we have any new experimental APIs that we are implementing that have not been approved,
+        // we will add new scenarios for this test.
         [Theory(Skip = "No current scenarios to test.")]
 #pragma warning restore xUnit1004
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
@@ -696,23 +738,15 @@ namespace LibraryImportGenerator.UnitTests
             return sourceWithoutMarkup;
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToVerifyNoTreesProduced()
+        [Fact]
+        public async Task ValidateNoGeneratedOutputForNoImport()
         {
             string source = """
                 using System.Runtime.InteropServices;
                 public class Basic { }
                 """;
-            yield return new object[] { ID(), source, TestTargetFramework.Standard };
-            yield return new object[] { ID(), source, TestTargetFramework.Framework };
-            yield return new object[] { ID(), source, TestTargetFramework.Net };
-        }
 
-        [Theory]
-        [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
-        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
-        {
-            TestUtils.Use(id);
-            var test = new NoChangeTest(framework)
+            var test = new NoChangeTest<Microsoft.Interop.LibraryImportGenerator>()
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -721,14 +755,40 @@ namespace LibraryImportGenerator.UnitTests
             await test.RunAsync();
         }
 
-        class NoChangeTest : VerifyCS.Test
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        [InlineData(TestTargetFramework.Standard2_0)]
+        [InlineData(TestTargetFramework.Framework)]
+        [Theory]
+        public async Task ValidateNoGeneratedOutputForNoImportDownlevel(TestTargetFramework framework)
         {
-            public NoChangeTest(TestTargetFramework framework)
-                :base(framework)
+            string source = """
+                using System.Runtime.InteropServices;
+                public class Basic { }
+                """;
+
+            var test = new NoChangeTest<Microsoft.Interop.DownlevelLibraryImportGenerator>(framework)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
+        }
+
+        class NoChangeTest<TSourceGenerator> : Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<TSourceGenerator>.Test
+            where TSourceGenerator : new()
+        {
+            public NoChangeTest()
+                : base(referenceAncillaryInterop: false)
             {
             }
 
-            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            public NoChangeTest(TestTargetFramework framework)
+                : base(framework)
+            {
+            }
+
+            protected override async Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
             {
                 var originalCompilation = await project.GetCompilationAsync(cancellationToken);
                 var (newCompilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);

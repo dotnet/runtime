@@ -3,8 +3,8 @@ parameters:
   osSubgroup: ''
   archType: ''
   buildConfig: ''
-  liveLibrariesBuildConfig: ''
   testBuildArgs: ''
+  buildAllTestsAsStandalone: false
   #arcade-specific parameters
   condition: always()
   continueOnError: false
@@ -17,8 +17,15 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
       displayName: Build Tests
+      env:
+        ${{ if eq(parameters.buildAllTestsAsStandalone, true) }}:
+          BuildAllTestsAsStandalone: true
+
   - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) /p:LibrariesConfiguration=${{ coalesce(parameters.liveLibrariesBuildConfig, parameters.buildConfig) }}
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
       displayName: Build Tests
+      env:
+        ${{ if eq(parameters.buildAllTestsAsStandalone, true) }}:
+          BuildAllTestsAsStandalone: true

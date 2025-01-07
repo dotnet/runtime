@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -40,6 +40,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial BOOL BrotliEncoderHasMoreOutput(SafeBrotliEncoderHandle state);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint BrotliEncoderMaxCompressedSize(nuint inputSize);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial void BrotliEncoderDestroyInstance(IntPtr state);

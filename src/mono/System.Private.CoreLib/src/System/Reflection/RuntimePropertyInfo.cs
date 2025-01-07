@@ -27,8 +27,8 @@
 //
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -77,7 +77,7 @@ namespace System.Reflection
                                    PInfo req_info);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type[] GetTypeModifiers(RuntimePropertyInfo prop, bool optional);
+        internal static extern Type[] GetTypeModifiers(RuntimePropertyInfo prop, bool optional, int genericArgumentPosition = -1);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object get_default_value(RuntimePropertyInfo prop);
@@ -506,5 +506,9 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return pi;
         }
+
+        internal Type[] GetCustomModifiersFromModifiedType(bool optional, int genericArgumentPosition) => GetTypeModifiers(this, optional, genericArgumentPosition) ?? Type.EmptyTypes;
+
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, this);
     }
 }

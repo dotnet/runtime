@@ -416,5 +416,14 @@ namespace System.Data.OleDb.Tests
             string connStr = builder.ConnectionString;
             Assert.Equal($"Provider={provider};Data Source=myDB.mdb", connStr);
         }
+
+        // Bug #96278 fixed only on .NET, not on .NET Framework
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void DbConnectionFactories_GetFactory_from_connection()
+        {
+            DbProviderFactory factory = DbProviderFactories.GetFactory(connection);
+            Assert.Same(OleDbFactory.Instance, factory);
+        }
     }
 }

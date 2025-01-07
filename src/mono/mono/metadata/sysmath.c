@@ -44,12 +44,6 @@ ves_icall_System_Math_Round (gdouble x)
 }
 
 gdouble
-ves_icall_System_Math_FMod (gdouble x, gdouble y)
-{
-	return fmod (x, y);
-}
-
-gdouble
 ves_icall_System_Math_ModF (gdouble x, gdouble *d)
 {
 	return modf (x, d);
@@ -311,12 +305,6 @@ float
 ves_icall_System_MathF_Tanh (float x)
 {
 	return tanhf (x);
-}
-
-float
-ves_icall_System_MathF_FMod (float x, float y)
-{
-	return fmodf (x, y);
 }
 
 float

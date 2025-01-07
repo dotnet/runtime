@@ -94,12 +94,35 @@ REGDEF(V29,  29+VBASE, VMASK(29), "d29", "s29")
 REGDEF(V30,  30+VBASE, VMASK(30), "d30", "s30")
 REGDEF(V31,  31+VBASE, VMASK(31), "d31", "s31")
 
-// The registers with values 64 (NBASE) and above are not real register numbers
-#define NBASE 64
+#define PBASE 64
+#define PMASK(x) (1ULL << x)
+
+/*
+REGDEF(name,  rnum,         mask,  xname,  wname) */
+REGDEF(P0,    0+PBASE,  PMASK(0),  "p0" ,  "na")
+REGDEF(P1,    1+PBASE,  PMASK(1),  "p1" ,  "na")
+REGDEF(P2,    2+PBASE,  PMASK(2),  "p2" ,  "na")
+REGDEF(P3,    3+PBASE,  PMASK(3),  "p3" ,  "na")
+REGDEF(P4,    4+PBASE,  PMASK(4),  "p4" ,  "na")
+REGDEF(P5,    5+PBASE,  PMASK(5),  "p5" ,  "na")
+REGDEF(P6,    6+PBASE,  PMASK(6),  "p6" ,  "na")
+REGDEF(P7,    7+PBASE,  PMASK(7),  "p7" ,  "na")
+REGDEF(P8,    8+PBASE,  PMASK(8),  "p8" ,  "na")
+REGDEF(P9,    9+PBASE,  PMASK(9),  "p9" ,  "na")
+REGDEF(P10,  10+PBASE, PMASK(10),  "p10",  "na")
+REGDEF(P11,  11+PBASE, PMASK(11),  "p11",  "na")
+REGDEF(P12,  12+PBASE, PMASK(12),  "p12",  "na")
+REGDEF(P13,  13+PBASE, PMASK(13),  "p13",  "na")
+REGDEF(P14,  14+PBASE, PMASK(14),  "p14",  "na")
+REGDEF(P15,  15+PBASE, PMASK(15),  "p15",  "na")
+
+// The registers with values 80 (NBASE) and above are not real register numbers
+#define NBASE 80
 
 REGDEF(SP,    0+NBASE, 0x0000,    "sp",  "wsp?")
+REGDEF(FFR,   1+NBASE, 0x0000,    "ffr",  "na")
 // This must be last!
-REGDEF(STK,   1+NBASE, 0x0000,    "STK", "STK")
+REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 
 /*****************************************************************************/
 #undef  RMASK

@@ -24,17 +24,7 @@ Abstract:
 #include <dlfcn.h>
 
 #define UNW_LOCAL_ONLY
-// Sub-headers included from the libunwind.h contain an empty struct
-// and clang issues a warning. Until the libunwind is fixed, disable
-// the warning.
-#ifdef __llvm__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wextern-c-compat"
-#endif
 #include <libunwind.h>
-#ifdef __llvm__
-#pragma clang diagnostic pop
-#endif
 #else // HOST_UNIX
 
 #include <windows.h>
@@ -735,7 +725,11 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 #endif
 
     st = unw_step(&cursor);
-    if (st < 0)
+    if (st == -UNW_ESTOPUNWIND)
+    {
+        st = 0;
+    }
+    else if (st < 0)
     {
         return FALSE;
     }

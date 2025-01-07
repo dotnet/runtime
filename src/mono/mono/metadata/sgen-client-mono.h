@@ -90,7 +90,7 @@ enum {
 };
 
 static inline mword
-sgen_mono_array_size (GCVTable vtable, MonoArray *array, mword *bounds_size, mword descr)
+sgen_mono_array_size (GCVTable vtable, MonoArray *array, mword *bounds_size, SgenDescriptor descr)
 {
 	mword size, size_without_bounds;
 	int element_size;

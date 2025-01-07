@@ -92,9 +92,6 @@ ep_thread_release (EventPipeThread *thread);
 void
 ep_thread_init (void);
 
-void
-ep_thread_fini (void);
-
 bool
 ep_thread_register (EventPipeThread *thread);
 
@@ -117,7 +114,10 @@ ep_thread_create_activity_id (
 	uint8_t *activity_id,
 	uint32_t activity_id_len)
 {
-	ep_rt_create_activity_id (activity_id, activity_id_len);
+	EP_ASSERT (activity_id != NULL);
+	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
+
+	minipal_guid_v4_create ((minipal_guid_t *)(activity_id));
 }
 
 static

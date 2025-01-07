@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
             // Verify Nullable<> semantics. NSE is not thrown because the serializer handles null.
             if (isNullableOfT)
             {
-                Assert.Null(JsonSerializer.Deserialize<T>("null"));
+                Assert.Null(await Serializer.DeserializeWrapper<T>("null"));
 
                 json = $@"{{""Prop"":null}}";
                 ClassWithType<T> obj = await Serializer.DeserializeWrapper<ClassWithType<T>>(json);
@@ -129,8 +129,6 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs((IntPtr)123);
             yield return WrapArgs<IntPtr?>(new IntPtr(123)); // One nullable variation.
             yield return WrapArgs((UIntPtr)123);
-            yield return WrapArgs((Memory<byte>)new byte[] { 1, 2, 3 });
-            yield return WrapArgs((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 });
 
             static object[] WrapArgs<T>(T value) => new object[] { new ValueWrapper<T>(value) };
         }
@@ -170,6 +168,7 @@ namespace System.Text.Json.Serialization.Tests
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "NullableContextAttribute is public in corelib in .NET 8+")]
         public async Task TypeWithNullConstructorParameterName_ThrowsNotSupportedException()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/58690

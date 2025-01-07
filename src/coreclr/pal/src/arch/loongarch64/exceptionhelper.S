@@ -11,7 +11,7 @@
 // Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
 #pragma error("LLVM v3.9 ASAN unimplemented on LOONGARCH yet")
 #endif
     addi.d  $sp, $sp, -16

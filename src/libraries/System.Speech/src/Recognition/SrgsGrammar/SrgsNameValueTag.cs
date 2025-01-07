@@ -11,7 +11,7 @@ using System.Xml;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     [Serializable]
-    [DebuggerDisplay("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsNameValueTag : SrgsElement, IPropertyTag
     {
         #region Constructors
@@ -131,7 +131,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new("SrgsNameValue ");
+            StringBuilder sb = new("SrgsNameValue = ");
 
             if (_name != null)
             {

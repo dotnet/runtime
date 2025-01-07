@@ -56,5 +56,71 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = Helpers.DynamicModule();
             AssertExtensions.Throws<ArgumentNullException>("customBuilder", () => module.SetCustomAttribute(null));
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void SetCustomAttribute_GetCustomAttributesData_NonPublicVisibility_DefinedInternally()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+
+            TypeBuilder internalAttributeType = module.DefineType("DynamicInternalAttribute", TypeAttributes.NotPublic, typeof(Attribute));
+            ConstructorBuilder internalAttributeCtor = internalAttributeType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            internalAttributeCtor.GetILGenerator().Emit(OpCodes.Ret);
+
+            ConstructorInfo internalAttributeCtorInfo = internalAttributeType.CreateTypeInfo().GetConstructor(Array.Empty<Type>());
+            CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
+
+            module.SetCustomAttribute(customAttribute);
+            Assert.Single(module.GetCustomAttributesData());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void SetCustomAttribute_GetCustomAttributes_NonPublicVisibility_DefinedInternally()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+
+            TypeBuilder internalAttributeType = module.DefineType("DynamicInternalAttribute", TypeAttributes.NotPublic, typeof(Attribute));
+            ConstructorBuilder internalAttributeCtor = internalAttributeType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            internalAttributeCtor.GetILGenerator().Emit(OpCodes.Ret);
+
+            ConstructorInfo internalAttributeCtorInfo = internalAttributeType.CreateTypeInfo().GetConstructor(Array.Empty<Type>());
+            CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
+
+            module.SetCustomAttribute(customAttribute);
+            Assert.Single(module.GetCustomAttributes(false));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void SetCustomAttribute_GetCustomAttributesData_NonPublicVisibility_DefinedExternally()
+        {
+            ModuleBuilder module1 = Helpers.DynamicModule();
+            ModuleBuilder module2 = Helpers.DynamicModule("AnotherTestAssembly", "AnotherTestModule");
+
+            TypeBuilder internalAttributeType = module1.DefineType("DynamicInternalAttribute", TypeAttributes.NotPublic, typeof(Attribute));
+            ConstructorBuilder internalAttributeCtor = internalAttributeType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            internalAttributeCtor.GetILGenerator().Emit(OpCodes.Ret);
+
+            ConstructorInfo internalAttributeCtorInfo = internalAttributeType.CreateTypeInfo().GetConstructor(Array.Empty<Type>());
+            CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
+
+            module2.SetCustomAttribute(customAttribute);
+            Assert.Single(module2.GetCustomAttributesData());
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void SetCustomAttribute_GetCustomAttributes_NonPublicVisibility_DefinedExternally()
+        {
+            ModuleBuilder module1 = Helpers.DynamicModule();
+            ModuleBuilder module2 = Helpers.DynamicModule("AnotherTestAssembly", "AnotherTestModule");
+
+            TypeBuilder internalAttributeType = module1.DefineType("DynamicInternalAttribute", TypeAttributes.NotPublic, typeof(Attribute));
+            ConstructorBuilder internalAttributeCtor = internalAttributeType.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);
+            internalAttributeCtor.GetILGenerator().Emit(OpCodes.Ret);
+
+            ConstructorInfo internalAttributeCtorInfo = internalAttributeType.CreateTypeInfo().GetConstructor(Array.Empty<Type>());
+            CustomAttributeBuilder customAttribute = new CustomAttributeBuilder(internalAttributeCtorInfo, Array.Empty<object>());
+
+            module2.SetCustomAttribute(customAttribute);
+            Assert.Empty(module2.GetCustomAttributes(false));
+        }
     }
 }

@@ -7,8 +7,7 @@
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
     <NoWarn>$(NoWarn);436;SYSLIB0037</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants> 
+    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +25,7 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="Metadata\AssemblyNameInfoTests.cs" />
 
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
@@ -37,6 +37,9 @@
     <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
     <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
+    <Compile Include="Metadata\TypeNameParserHelpersTests.cs" />
+    <Compile Include="Metadata\TypeNameTests.cs" />
+    <Compile Include="Metadata\TypeNameParserSamples.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyDefinitionTests.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyReferenceTests.cs" />
     <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
@@ -148,6 +151,12 @@
     <!-- For IncrementalHash -->
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">

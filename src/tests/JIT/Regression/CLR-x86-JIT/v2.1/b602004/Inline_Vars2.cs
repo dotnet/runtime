@@ -2823,7 +2823,7 @@ public class Test_Inline_Vars2
         return 100;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
 
         (new Test_Inline_Vars2()).RunTest0_Inline();
@@ -3627,7 +3627,6 @@ public class Test_Inline_Vars2
         (new Test_Inline_Vars2()).RunTest399_Inline();
 
         (new Test_Inline_Vars2()).RunTest400_Inline();
-        return 100;
 
     }
 

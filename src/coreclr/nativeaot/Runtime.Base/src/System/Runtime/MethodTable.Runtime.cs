@@ -11,68 +11,28 @@ namespace Internal.Runtime
     // Extensions to MethodTable that are specific to the use in Runtime.Base.
     internal unsafe partial struct MethodTable
     {
-#pragma warning disable CA1822
+#if !INPLACE_RUNTIME
         internal MethodTable* GetArrayEEType()
         {
-#if INPLACE_RUNTIME
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
-#else
-            fixed (MethodTable* pThis = &this)
-            {
-                void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
-                return ((delegate* <MethodTable*>)pGetArrayEEType)();
-            }
-#endif
+            MethodTable* pThis = (MethodTable*)Unsafe.Pointer(ref this);
+            void* pGetArrayEEType = InternalCalls.RhpGetClasslibFunctionFromEEType(pThis, ClassLibFunctionId.GetSystemArrayEEType);
+            return ((delegate* <MethodTable*>)pGetArrayEEType)();
         }
 
         internal Exception GetClasslibException(ExceptionIDs id)
         {
-#if INPLACE_RUNTIME
-            return RuntimeExceptionHelpers.GetRuntimeException(id);
-#else
             if (IsParameterizedType)
             {
                 return RelatedParameterType->GetClasslibException(id);
             }
 
-            return EH.GetClasslibExceptionFromEEType(id, GetAssociatedModuleAddress());
-#endif
+            return EH.GetClasslibExceptionFromEEType(id, (MethodTable*)Unsafe.AsPointer(ref this));
         }
-#pragma warning restore CA1822
+#endif
 
         internal IntPtr GetClasslibFunction(ClassLibFunctionId id)
         {
             return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
-        }
-
-        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
-        {
-            if (mt1 == mt2)
-                return true;
-
-            return mt1->IsEquivalentTo(mt2);
-        }
-
-        internal bool IsEquivalentTo(MethodTable* pOtherEEType)
-        {
-            fixed (MethodTable* pThis = &this)
-            {
-                if (pThis == pOtherEEType)
-                    return true;
-
-                MethodTable* pThisEEType = pThis;
-
-                if (pThisEEType == pOtherEEType)
-                    return true;
-
-                if (pThisEEType->IsParameterizedType && pOtherEEType->IsParameterizedType)
-                {
-                    return pThisEEType->RelatedParameterType->IsEquivalentTo(pOtherEEType->RelatedParameterType) &&
-                        pThisEEType->ParameterizedTypeShape == pOtherEEType->ParameterizedTypeShape;
-                }
-            }
-
-            return false;
         }
     }
 

@@ -12,8 +12,10 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[IgnoreDescriptors (false)]
 	[SetupLinkerAction ("copy", "CopyLibrary")]
 
-	[KeptTypeInAssembly ("CopyLibrary.dll", typeof (CopyLibrary))]
-	[KeptTypeInAssembly ("Library.dll", typeof (OtherLibrary))]
+	// NativeAOT doesn't support reading embedded descriptors from a resource called "AssemblyName"
+	// It only supports "ILLink.Descriptor.xml" name
+	[KeptTypeInAssembly ("CopyLibrary.dll", typeof (CopyLibrary), Tool = Tool.Trimmer)]
+	[KeptTypeInAssembly ("Library.dll", typeof (OtherLibrary), Tool = Tool.Trimmer)]
 	public class EmbeddedLinkXmlFromCopyAssemblyIsProcessed
 	{
 		public static void Main ()

@@ -101,7 +101,7 @@ namespace Internal.TypeSystem
             return builder.ToGCMap();
         }
 
-        private static void MapThreadStaticsForType(GCPointerMapBuilder builder, MetadataType type, int baseOffset)
+        private static void MapThreadStaticsForType(ref GCPointerMapBuilder builder, MetadataType type, int baseOffset)
         {
             foreach (FieldDesc field in type.GetFields())
             {
@@ -133,7 +133,7 @@ namespace Internal.TypeSystem
         {
             GCPointerMapBuilder builder = new GCPointerMapBuilder(type.ThreadGcStaticFieldSize.AsInt, type.Context.Target.PointerSize);
 
-            MapThreadStaticsForType(builder, type, baseOffset: 0);
+            MapThreadStaticsForType(ref builder, type, baseOffset: 0);
 
             Debug.Assert(builder.ToGCMap().Size * type.Context.Target.PointerSize >= type.ThreadGcStaticFieldSize.AsInt);
             return builder.ToGCMap();
@@ -148,7 +148,7 @@ namespace Internal.TypeSystem
             GCPointerMapBuilder builder = new GCPointerMapBuilder(threadStaticSize, pointerSize);
             foreach (var type in types)
             {
-                MapThreadStaticsForType(builder, type, offsets[type]);
+                MapThreadStaticsForType(ref builder, type, offsets[type]);
             }
 
             return builder.ToGCMap();

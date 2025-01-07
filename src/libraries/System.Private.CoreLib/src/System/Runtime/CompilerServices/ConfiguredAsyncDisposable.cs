@@ -18,6 +18,8 @@ namespace System.Runtime.CompilerServices
             _continueOnCapturedContext = continueOnCapturedContext;
         }
 
+        /// <summary>Asynchronously releases the unmanaged resources used by the <see cref="T:System.Runtime.CompilerServices.ConfiguredAsyncDisposable" />.</summary>
+        /// <returns>A task that represents the asynchronous dispose operation.</returns>
         public ConfiguredValueTaskAwaitable DisposeAsync() =>
             // as with other "configured" awaitable-related type in CompilerServices, we don't null check to defend against
             // misuse like `default(ConfiguredAsyncDisposable).DisposeAsync()`, which will null ref by design.

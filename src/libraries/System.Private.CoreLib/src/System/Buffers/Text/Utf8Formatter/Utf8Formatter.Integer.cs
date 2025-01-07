@@ -11,10 +11,10 @@ namespace System.Buffers.Text
     public static partial class Utf8Formatter
     {
         /// <summary>
-        /// Formats a Byte as a UTF8 string.
+        /// Formats a Byte as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -35,10 +35,10 @@ namespace System.Buffers.Text
             TryFormat((uint)value, destination, out bytesWritten, format);
 
         /// <summary>
-        /// Formats an SByte as a UTF8 string.
+        /// Formats an SByte as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -60,10 +60,10 @@ namespace System.Buffers.Text
             TryFormat(value, 0xFF, destination, out bytesWritten, format);
 
         /// <summary>
-        /// Formats a Unt16 as a UTF8 string.
+        /// Formats a Unt16 as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -85,10 +85,10 @@ namespace System.Buffers.Text
             TryFormat((uint)value, destination, out bytesWritten, format);
 
         /// <summary>
-        /// Formats an Int16 as a UTF8 string.
+        /// Formats an Int16 as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -109,10 +109,10 @@ namespace System.Buffers.Text
             TryFormat(value, 0xFFFF, destination, out bytesWritten, format);
 
         /// <summary>
-        /// Formats a UInt32 as a UTF8 string.
+        /// Formats a UInt32 as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -163,10 +163,10 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Formats an Int32 as a UTF8 string.
+        /// Formats an Int32 as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -223,10 +223,10 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Formats a UInt64 as a UTF8 string.
+        /// Formats a UInt64 as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -277,10 +277,10 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Formats an Int64 as a UTF8 string.
+        /// Formats an Int64 as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>

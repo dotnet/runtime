@@ -113,7 +113,7 @@ namespace System.Text.Json.Serialization.Tests
                     }
                     else
                     {
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                 }
 

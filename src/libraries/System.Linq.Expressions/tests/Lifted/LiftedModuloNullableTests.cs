@@ -179,14 +179,17 @@ namespace System.Linq.Expressions.Tests
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedModuloNullableNumberTest(bool useInterpreter)
         {
-            Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
-            for (int i = 0; i < values.Length; i++)
+            AssertExtensions.ThrowsOnAot<NotSupportedException>(() =>
             {
-                for (int j = 0; j < values.Length; j++)
+                Number?[] values = new Number?[] { null, new Number(0), new Number(1), Number.MaxValue };
+                for (int i = 0; i < values.Length; i++)
                 {
-                    VerifyModuloNullableNumber(values[i], values[j], useInterpreter);
+                    for (int j = 0; j < values.Length; j++)
+                    {
+                        VerifyModuloNullableNumber(values[i], values[j], useInterpreter);
+                    }
                 }
-            }
+            });
         }
 
         #endregion

@@ -9,14 +9,13 @@ namespace DefaultNamespace
     public class NStructTun
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Mainy();
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
             Console.Out.WriteLine(STRMAP.icFinal + " finalized.");
-            return 100;
         }
 
         internal static void Mainy()

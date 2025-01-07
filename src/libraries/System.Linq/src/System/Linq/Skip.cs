@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -10,40 +9,52 @@ namespace System.Linq
     {
         public static IEnumerable<TSource> Skip<TSource>(this IEnumerable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             if (count <= 0)
             {
                 // Return source if not actually skipping, but only if it's a type from here, to avoid
                 // issues if collections are used as keys or otherwise must not be aliased.
-                if (source is Iterator<TSource> || source is IPartition<TSource>)
+                if (source is Iterator<TSource>)
                 {
                     return source;
                 }
 
                 count = 0;
             }
-            else if (source is IPartition<TSource> partition)
+#if !OPTIMIZE_FOR_SIZE
+            else if (source is Iterator<TSource> iterator)
             {
-                return partition.Skip(count);
+                return iterator.Skip(count) ?? Empty<TSource>();
             }
+#endif
 
             return SkipIterator(source, count);
         }
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SkipWhileIterator(source, predicate);
@@ -51,35 +62,38 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, bool> predicate)
         {
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
+                TSource element = e.Current;
+                if (!predicate(element))
                 {
-                    TSource element = e.Current;
-                    if (!predicate(element))
+                    yield return element;
+                    while (e.MoveNext())
                     {
-                        yield return element;
-                        while (e.MoveNext())
-                        {
-                            yield return e.Current;
-                        }
-
-                        yield break;
+                        yield return e.Current;
                     }
+
+                    yield break;
                 }
             }
         }
 
         public static IEnumerable<TSource> SkipWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (predicate == null)
+            if (predicate is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SkipWhileIterator(source, predicate);
@@ -87,40 +101,39 @@ namespace System.Linq
 
         private static IEnumerable<TSource> SkipWhileIterator<TSource>(IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
         {
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            int index = -1;
+            while (e.MoveNext())
             {
-                int index = -1;
-                while (e.MoveNext())
+                checked
                 {
-                    checked
+                    index++;
+                }
+
+                TSource element = e.Current;
+                if (!predicate(element, index))
+                {
+                    yield return element;
+                    while (e.MoveNext())
                     {
-                        index++;
+                        yield return e.Current;
                     }
 
-                    TSource element = e.Current;
-                    if (!predicate(element, index))
-                    {
-                        yield return element;
-                        while (e.MoveNext())
-                        {
-                            yield return e.Current;
-                        }
-
-                        yield break;
-                    }
+                    yield break;
                 }
             }
         }
 
         public static IEnumerable<TSource> SkipLast<TSource>(this IEnumerable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 ?
-                source.Skip(0) :
+            return
+                IsEmptyArray(source) ? [] :
+                count <= 0 ? source.Skip(0) :
                 TakeRangeFromEndIterator(source,
                     isStartIndexFromEnd: false, startIndex: 0,
                     isEndIndexFromEnd: true, endIndex: count);

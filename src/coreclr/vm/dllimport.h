@@ -16,9 +16,9 @@ struct StubSigDesc
 {
 public:
     StubSigDesc(MethodDesc* pMD);
-    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* m_pModule);
-    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* m_pModule);
-    StubSigDesc(const Signature& sig, Module* m_pModule);
+    StubSigDesc(MethodDesc*  pMD, const Signature& sig, Module* pModule, Module* pLoaderModule = NULL);
+    StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule);
+    StubSigDesc(const Signature& sig, Module* pModule);
 
     MethodDesc        *m_pMD;
     MethodTable       *m_pMT;
@@ -56,6 +56,17 @@ public:
         }
     }
 #endif // _DEBUG
+
+#ifndef DACCESS_COMPILE
+    void InitTypeContext(Instantiation classInst, Instantiation methodInst)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(m_typeContext.IsEmpty());
+
+        m_typeContext = SigTypeContext(classInst, methodInst);
+    }
+#endif
 };
 
 //=======================================================================
@@ -90,8 +101,9 @@ public:
     // is compiling a method containing a P/Invoke that is being considered for inlining.
     static BOOL MarshalingRequired(
         _In_opt_ MethodDesc* pMD,
-        _In_opt_ PCCOR_SIGNATURE pSig = NULL,
+        _In_opt_ SigPointer sigPointer = {},
         _In_opt_ Module* pModule = NULL,
+        _In_opt_ SigTypeContext* pTypeContext = NULL,
         _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
 
     static void PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD);
@@ -121,7 +133,6 @@ public:
                              DWORD dwStubFlags,
                              MethodDesc* pMD);
 
-    static MethodDesc*      GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
     static PCODE            GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
 
@@ -137,7 +148,7 @@ enum NDirectStubFlags
     NDIRECTSTUB_FL_CONVSIGASVARARG          = 0x00000001,
     NDIRECTSTUB_FL_BESTFIT                  = 0x00000002,
     NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR    = 0x00000004,
-    // unused                               = 0x00000008,
+    NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY   = 0x00000008,
     NDIRECTSTUB_FL_DELEGATE                 = 0x00000010,
     NDIRECTSTUB_FL_DOHRESULTSWAPPING        = 0x00000020,
     NDIRECTSTUB_FL_REVERSE_INTEROP          = 0x00000040,
@@ -179,14 +190,10 @@ enum NDirectStubFlags
 enum ILStubTypes
 {
     ILSTUB_INVALID                       = 0x80000000,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     ILSTUB_ARRAYOP_GET                   = 0x80000001,
     ILSTUB_ARRAYOP_SET                   = 0x80000002,
     ILSTUB_ARRAYOP_ADDRESS               = 0x80000003,
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     ILSTUB_MULTICASTDELEGATE_INVOKE      = 0x80000004,
-#endif
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     ILSTUB_UNBOXINGILSTUB                = 0x80000005,
     ILSTUB_INSTANTIATINGSTUB             = 0x80000006,
@@ -194,6 +201,9 @@ enum ILStubTypes
     ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
+    ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x8000000A,
+    ILSTUB_DELEGATE_INVOKE_METHOD        = 0x8000000B,
+    ILSTUB_DELEGATE_SHUFFLE_THUNK        = 0x8000000C,
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -205,6 +215,7 @@ enum ILStubTypes
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)); }
 inline bool SF_IsBestFit               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_BESTFIT)); }
 inline bool SF_IsThrowOnUnmappableChar (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR)); }
+inline bool SF_SkipTransitionNotify    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_SKIP_TRANSITION_NOTIFY)); }
 inline bool SF_IsDelegateStub          (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_DELEGATE)); }
 inline bool SF_IsHRESULTSwapping       (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_DOHRESULTSWAPPING)); }
 inline bool SF_IsReverseStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)); }
@@ -214,15 +225,14 @@ inline bool SF_IsForNumParamBytes      (DWORD dwStubFlags) { LIMITED_METHOD_CONT
 inline bool SF_IsStructMarshalStub     (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_STRUCT_MARSHAL)); }
 inline bool SF_IsCheckPendingException (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION)); }
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
+inline bool SF_IsVirtualStaticMethodDispatchStub(DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return dwStubFlags == ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB; }
+
 inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return ((dwStubFlags == ILSTUB_ARRAYOP_GET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_SET) ||
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_ADDRESS)); }
-#endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
-#endif
+inline bool SF_IsDelegateInvokeMethod  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_INVOKE_METHOD); }
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
@@ -231,6 +241,7 @@ inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CON
 #endif
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
+inline bool SF_IsDelegateShuffleThunk (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_SHUFFLE_THUNK); }
 
 inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
 inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
@@ -479,7 +490,6 @@ public:
     void    EmitLoadRCWThis(ILCodeStream *pcsEmit, DWORD dwStubFlags);
 #endif // FEATURE_COMINTEROP
     DWORD   GetCleanupWorkListLocalNum();
-    DWORD   GetThreadLocalNum();
     DWORD   GetReturnValueLocalNum();
     void    SetCleanupNeeded();
     void    SetExceptionCleanupNeeded();
@@ -554,7 +564,6 @@ protected:
     BOOL                m_fHasExceptionCleanupCode;
     BOOL                m_fCleanupWorkListIsSetup;
     BOOL                m_targetHasThis;
-    DWORD               m_dwThreadLocalNum;                 // managed-to-native only
     DWORD               m_dwArgMarshalIndexLocalNum;
     DWORD               m_dwCleanupWorkListLocalNum;
     DWORD               m_dwRetValLocalNum;
@@ -585,6 +594,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 #ifndef DACCESS_COMPILE
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList = nullptr);
+bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader);
 #endif // DACCESS_COMPILE
 
 //

@@ -135,18 +135,17 @@ namespace System
                 if (!fatalOutOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
-                // UNIX-TODO: RhpEtwExceptionThrown
-#if TARGET_WINDOWS
+#if FEATURE_PERFTRACING
                 if (isFirstFrame)
                 {
-                    string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";
-                    string message = !fatalOutOfMemory  ? ex.Message :
+                    string typeName = !fatalOutOfMemory ? ex.GetType().ToString() : "System.OutOfMemoryException";
+                    string message = !fatalOutOfMemory ? ex.Message :
                         "Insufficient memory to continue the execution of the program.";
 
                     unsafe
                     {
                         fixed (char* exceptionTypeName = typeName, exceptionMessage = message)
-                            RuntimeImports.RhpEtwExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
+                            RuntimeImports.NativeRuntimeEventSource_LogExceptionThrown(exceptionTypeName, exceptionMessage, IP, ex.HResult);
                     }
                 }
 #endif

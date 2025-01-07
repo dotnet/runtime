@@ -16,7 +16,6 @@ C_FUNC(SignalHandlerWorkerReturnOffset\Alignment):
 NESTED_ENTRY CallSignalHandlerWrapper\Alignment, _TEXT, NoHandler
 __StackAllocationSize = (128 + 8 + 8 + \Alignment) // red zone + fp + ra + alignment
     PROLOG_STACK_ALLOC __StackAllocationSize
-    .cfi_adjust_cfa_offset __StackAllocationSize
 
     PROLOG_SAVE_REG_PAIR fp, ra, 0
 
@@ -25,7 +24,6 @@ __StackAllocationSize = (128 + 8 + 8 + \Alignment) // red zone + fp + ra + align
 LOCAL_LABEL(SignalHandlerWorkerReturn\Alignment):
     EPILOG_RESTORE_REG_PAIR fp, ra, 0
     EPILOG_STACK_FREE __StackAllocationSize
-    .cfi_adjust_cfa_offset -__StackAllocationSize
     ret
 
 NESTED_END CallSignalHandlerWrapper\Alignment, _TEXT

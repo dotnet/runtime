@@ -10,8 +10,6 @@
 #include "fstream.h"
 #include "volatile.h"
 
-class PerfInfo;
-
 // Generates a perfmap file.
 class PerfMap
 {
@@ -32,19 +30,20 @@ private:
     // The file stream to write the map to.
     CFileStream * m_FileStream;
 
-    // The perfinfo file to log images to.
-    PerfInfo * m_PerfInfo;
-
     // Set to true if an error is encountered when writing to the file.
     bool m_ErrorEncountered;
 
-    // Construct a new map for the specified pid.
+    // Construct a new map
     PerfMap();
 
-    void OpenFileForPid(int pid);
+    // Open a perfmap map for the specified pid
+    void OpenFileForPid(int pid, const char* basePath);
 
     // Write a line to the map file.
     void WriteLine(SString & line);
+
+    // Default to /tmp or use DOTNET_PerfMapJitDumpPath if set
+    static const char* InternalConstructPath();
 
 protected:
     // Open the perf map file for write.
@@ -52,9 +51,6 @@ protected:
 
     // Does the actual work to log a method to the map.
     void LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, const char *optimizationTier);
-
-    // Does the actual work to log an image
-    void LogImage(PEAssembly * pPEAssembly);
 
     // Get the image signature and store it as a string.
     static void GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, unsigned int nSigSize);
@@ -82,9 +78,6 @@ public:
     static void Initialize();
 
     static void Enable(PerfMapType type, bool sendExisting);
-
-    // Log a native image load to the map.
-    static void LogImageLoad(PEAssembly * pPEAssembly);
 
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig);
 

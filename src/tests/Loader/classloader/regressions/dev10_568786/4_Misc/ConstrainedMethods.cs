@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 interface I<S> { string Method(S param); string Method<M>(S param); }
 
@@ -43,7 +44,7 @@ class Conversion2<U> where U : I<string>, new()
     }
 }
 
-class Test_ConstrainedMethods
+public class Test_ConstrainedMethods
 {
     static string Caller1<T, U>(T param) where U : I<T>, new()
     {
@@ -69,10 +70,11 @@ class Test_ConstrainedMethods
         return instance.Method<object>("mystring");
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-		int numFailures = 0;
-		
+        int numFailures = 0;
+        
         Conversion1<string, MyStruct> c1 = new Conversion1<string, MyStruct>();
         Conversion2<MyStruct> c2 = new Conversion2<MyStruct>();
 
@@ -80,31 +82,27 @@ class Test_ConstrainedMethods
         string res2 = Caller2<string, MyStruct>("mystring");
         Console.WriteLine(res1);
         Console.WriteLine(res2);
-		if(res1 != "string" && res2 != "GEN-string") numFailures++;
-
-
+        if(res1 != "string" && res2 != "GEN-string") numFailures++;
 
         res1 = Caller3<MyStruct>();
         res2 = Caller4<MyStruct>();
         Console.WriteLine(res1);
         Console.WriteLine(res2);
-		if(res1 != "string" && res2 != "GEN-string") numFailures++;
-
-
+        if(res1 != "string" && res2 != "GEN-string") numFailures++;
 
         res1 = c1.Caller1("mystring");
         res2 = c1.Caller2("mystring");
         Console.WriteLine(res1);
         Console.WriteLine(res2);
-		if(res1 != "string" && res2 != "GEN-string") numFailures++;
+        if(res1 != "string" && res2 != "GEN-string") numFailures++;
 
         
         res1 = c2.Caller1();
         res2 = c2.Caller2();
         Console.WriteLine(res1);
         Console.WriteLine(res2);
-		if(res1 != "string" && res2 != "GEN-string") numFailures++;
+        if(res1 != "string" && res2 != "GEN-string") numFailures++;
 
-		return ((numFailures == 0)?(100):(-1));
+        return ((numFailures == 0)?(100):(-1));
     }
 }

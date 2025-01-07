@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// Creates an instance of <see cref="ConsoleLoggerProvider"/>.
         /// </summary>
         /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
-        /// <param name="formatters">Log formatters added for <see cref="ConsoleLogger"/> insteaces.</param>
+        /// <param name="formatters">Log formatters added for <see cref="ConsoleLogger"/> instances.</param>
         public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IEnumerable<ConsoleFormatter>? formatters)
         {
             _options = options;
@@ -68,6 +68,13 @@ namespace Microsoft.Extensions.Logging.Console
         [UnsupportedOSPlatformGuard("windows")]
         private static bool DoesConsoleSupportAnsi()
         {
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION");
+            if (envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            {
+                // ANSI color support forcibly enabled via environment variable. This logic matches the behaviour
+                // found in System.ConsoleUtils.EmitAnsiColorCodes.
+                return true;
+            }
             if (
 #if NETFRAMEWORK
                 Environment.OSVersion.Platform != PlatformID.Win32NT

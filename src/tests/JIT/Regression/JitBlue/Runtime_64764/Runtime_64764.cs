@@ -128,11 +128,9 @@ public class TestClass
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new TestClass().Method0();
-
-        return 100;
     }
 }
 /*

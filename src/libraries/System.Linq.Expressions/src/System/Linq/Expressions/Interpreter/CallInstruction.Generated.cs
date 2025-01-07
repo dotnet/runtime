@@ -32,6 +32,7 @@ namespace System.Linq.Expressions.Interpreter
         /// One relaxation is that for return types which are non-primitive types
         /// we can fall back to object due to relaxed delegates.
         /// </summary>
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static CallInstruction FastCreate(MethodInfo target, ParameterInfo[] pi)
         {
             Type t = TryGetParameterOrReturnType(target, pi, 0);
@@ -71,6 +72,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static CallInstruction FastCreate<T0>(MethodInfo target, ParameterInfo[] pi)
         {
             Type t = TryGetParameterOrReturnType(target, pi, 1);
@@ -114,6 +116,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static CallInstruction FastCreate<T0, T1>(MethodInfo target, ParameterInfo[] pi)
         {
             Type t = TryGetParameterOrReturnType(target, pi, 2);
@@ -157,6 +160,7 @@ namespace System.Linq.Expressions.Interpreter
 #endif
 
         [return: DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes.PublicConstructors)]
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
         private static Type GetHelperType(MethodInfo info, Type[] arrTypes)
         {
             Type t;

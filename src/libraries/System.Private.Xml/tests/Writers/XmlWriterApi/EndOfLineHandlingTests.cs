@@ -733,7 +733,7 @@ namespace System.Xml.XmlWriterApiTests
                 w.Dispose();
             }
             catch (ArgumentException e) { CError.WriteLine(e.Message); return; }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

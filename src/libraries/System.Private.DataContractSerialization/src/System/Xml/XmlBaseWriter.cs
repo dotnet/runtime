@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Collections;
-using System.Text;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Xml
 {
@@ -1126,8 +1126,7 @@ namespace System.Xml
 
             if (_attributeValue != null)
             {
-                Span<char> chars = stackalloc char[2] { highChar, lowChar };
-                WriteAttributeText(new string(chars));
+                WriteAttributeText(new string([highChar, lowChar]));
             }
 
             if (!_isXmlnsAttribute)

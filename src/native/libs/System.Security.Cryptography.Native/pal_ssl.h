@@ -5,6 +5,10 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
+// index for storing an opaque pointer of used (client) certificate in SSL_SESSION.
+// we need dedicated index in order to tell OpenSSL how to copy the pointer during SSL_SESSION_dup.
+extern int g_ssl_sess_cert_index;
+
 /*
 These values should be kept in sync with System.Security.Authentication.SslProtocols.
 */
@@ -124,6 +128,9 @@ typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* session);
 // the function pointer used for new  session
 typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 
+// the function pointer for keylog
+typedef void (*SslCtxSetKeylogCallback)(const SSL* ssl, const char *line);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -165,10 +172,25 @@ Sets session caching. 0 is disabled.
 PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb);
 
 /*
+Removes a session from internal cache.
+*/
+PALEXPORT int CryptoNative_SslCtxRemoveSession(SSL_CTX* ctx, SSL_SESSION* session);
+
+/*
+Sets callback to log TLS session keys
+*/
+PALEXPORT void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback callback);
+
+/*
 Returns name associated with given ssl session.
 OpenSSL holds reference to it and it must not be freed.
 */
 PALEXPORT const char* CryptoNative_SslGetServerName(SSL* ssl);
+
+/*
+Returns session associated with given ssl.
+*/
+PALEXPORT SSL_SESSION* CryptoNative_SslGetSession(SSL* ssl);
 
 /*
 This function will attach existing ssl session for possible TLS resume.
@@ -314,6 +336,13 @@ Returns the certificate presented by the peer.
 PALEXPORT X509* CryptoNative_SslGetPeerCertificate(SSL* ssl);
 
 /*
+Shims the SSL_get_certificate method.
+
+Returns the certificate representing local peer.
+*/
+PALEXPORT X509* CryptoNative_SslGetCertificate(SSL* ssl);
+
+/*
 Shims the SSL_get_peer_cert_chain method.
 
 Returns the certificate chain presented by the peer.
@@ -436,6 +465,16 @@ Returns true/false based on if existing ssl session was re-used or not.
 Shims the SSL_session_reused macro.
 */
 PALEXPORT int32_t CryptoNative_SslSessionReused(SSL* ssl);
+
+/*
+Sets the app data pointer for the given session instance.
+*/
+PALEXPORT void CryptoNative_SslSessionSetData(SSL_SESSION* session, void* val);
+
+/*
+Returns the stored application data pointer.
+*/
+PALEXPORT void* CryptoNative_SslSessionGetData(SSL_SESSION* session);
 
 /*
 Adds the given certificate to the extra chain certificates associated with ctx.

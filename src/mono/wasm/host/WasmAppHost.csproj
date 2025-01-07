@@ -3,14 +3,14 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <NoWarn>$(NoWarn),CA2007</NoWarn>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
     <Nullable>enable</Nullable>
     <UseAppHost>false</UseAppHost>
     <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
+    <ProjectReference Include="$(BrowserProjectRoot)debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
 
     <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.dll" />
     <_browserDebugHostFiles Include="$(ArtifactsDir)bin\BrowserDebugHost\$(TargetArchitecture)\$(Configuration)\BrowserDebugHost.runtimeconfig.json" />

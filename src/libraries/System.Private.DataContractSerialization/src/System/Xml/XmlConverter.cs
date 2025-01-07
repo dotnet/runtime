@@ -2,19 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Xml;
-using System.Xml.Schema;
+using System.Buffers;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Text;
-using System.Globalization;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Buffers;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Text;
+using System.Xml;
+using System.Xml.Schema;
 
 namespace System.Xml
 {
@@ -1038,8 +1038,6 @@ namespace System.Xml
 
         public static int ToChars(DateTime value, byte[] chars, int offset)
         {
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
             int offsetMin = offset;
             // "yyyy-MM-ddTHH:mm:ss.fffffff";
             offset += ToCharsD4(value.Year, chars, offset);
@@ -1053,7 +1051,7 @@ namespace System.Xml
             offset += ToCharsD2(value.Minute, chars, offset);
             chars[offset++] = (byte)':';
             offset += ToCharsD2(value.Second, chars, offset);
-            int ms = (int)(value.Ticks % TicksPerSecond);
+            int ms = (int)(value.Ticks % TimeSpan.TicksPerSecond);
             if (ms != 0)
             {
                 chars[offset++] = (byte)'.';

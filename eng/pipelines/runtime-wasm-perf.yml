@@ -2,7 +2,27 @@
 # wasm jobs. This file is essentially so we can point the pipeline in azdo
 # UI to this, and thus avoid any scheduled triggers
 
+parameters:
+- name: perfBranch
+  displayName: Performance Repo Branch
+  type: string
+  default: 'main'
+
 trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/runtime-wasm-perf.yml
+    - eng/pipelines/coreclr/perf*.yml
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/coreclr/templates/run-scenarios-job.yml
+    - eng/testing/performance/*
+    - eng/testing/BrowserVersions.props
 
 variables:
   - template: /eng/pipelines/common/variables.yml
@@ -13,21 +33,12 @@ extends:
     stages:
     - stage: Build
       jobs:
-
-      #
-      # Evaluate paths
-      #
-      #- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-        #- template: /eng/pipelines/common/evaluate-default-paths.yml
-
       - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
         parameters:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          #perfForkToUse:
-            #url: https://github.com/radical/performance
-            #branch: fix-build
+          perfBranch: ${{ parameters.perfBranch }}
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'

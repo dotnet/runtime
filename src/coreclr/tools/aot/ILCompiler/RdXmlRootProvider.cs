@@ -4,12 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Xml.Linq;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using AssemblyName = System.Reflection.AssemblyName;
 
 namespace ILCompiler
 {
@@ -59,7 +58,7 @@ namespace ILCompiler
             if (assemblyNameAttribute == null)
                 throw new Exception("The \"Name\" attribute is required on the \"Assembly\" Runtime Directive.");
 
-            ModuleDesc assembly = _context.ResolveAssembly(new AssemblyName(assemblyNameAttribute.Value));
+            ModuleDesc assembly = _context.ResolveAssembly(new AssemblyNameInfo(assemblyNameAttribute.Value));
 
             rootProvider.RootModuleMetadata(assembly, "RD.XML root");
 
@@ -71,7 +70,7 @@ namespace ILCompiler
 
                 foreach (TypeDesc type in ((EcmaModule)assembly).GetAllTypes())
                 {
-                    RootingHelpers.TryRootType(rootProvider, type, "RD.XML root");
+                    RootingHelpers.TryRootType(rootProvider, type, rootBaseTypes: true, "RD.XML root");
                 }
             }
 
@@ -103,7 +102,7 @@ namespace ILCompiler
                 if (dynamicDegreeAttribute.Value != "Required All")
                     throw new NotSupportedException($"\"{dynamicDegreeAttribute.Value}\" is not a supported value for the \"Dynamic\" attribute of the \"Type\" Runtime Directive. Supported values are \"Required All\".");
 
-                RootingHelpers.RootType(rootProvider, type, "RD.XML root");
+                RootingHelpers.RootType(rootProvider, type, rootBaseTypes: true, "RD.XML root");
             }
 
             var marshalStructureDegreeAttribute = typeElement.Attribute("MarshalStructure");

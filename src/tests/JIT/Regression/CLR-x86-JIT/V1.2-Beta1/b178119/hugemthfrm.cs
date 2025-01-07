@@ -134,9 +134,8 @@ public class bug178119
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Console.WriteLine(foo1());
-        return 100;
     }
 }

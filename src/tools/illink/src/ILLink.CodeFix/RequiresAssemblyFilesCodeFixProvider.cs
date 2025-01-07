@@ -15,7 +15,7 @@ using Microsoft.CodeAnalysis.Editing;
 namespace ILLink.CodeFix
 {
 	[ExportCodeFixProvider (LanguageNames.CSharp, Name = nameof (RequiresAssemblyFilesCodeFixProvider)), Shared]
-	public class RequiresAssemblyFilesCodeFixProvider : BaseAttributeCodeFixProvider
+	public sealed class RequiresAssemblyFilesCodeFixProvider : BaseAttributeCodeFixProvider
 	{
 		public static ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (
 			DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.AvoidAssemblyLocationInSingleFile),

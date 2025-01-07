@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for NativeAotIncompatible, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <NativeAotIncompatible>true</NativeAotIncompatible>
@@ -11,7 +12,7 @@
   <ItemGroup>
     <!-- This is needed to make sure native binary gets installed in the right location -->
     <CMakeProjectReference Include="CMakeLists.txt" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="InvalidCSharp.ilproj" />
   </ItemGroup>
 </Project>

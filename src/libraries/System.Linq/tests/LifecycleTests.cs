@@ -21,7 +21,7 @@ namespace System.Linq.Tests
                 from sink in Sinks()
                 select (source, unary1, unary2, sink);
 
-            Assert.All(inputs, input =>
+            foreach (var input in inputs)
             {
                 var (source, unary1, unary2, sink) = input;
                 var e = new LifecycleTrackingEnumerable<int>(source.Work);
@@ -43,7 +43,7 @@ namespace System.Linq.Tests
                 bool shortCircuits = argError || ShortCircuits(source, unary1, unary2, sink);
                 Assert.InRange(e.EnumeratorCtorCalls, shortCircuits ? 0 : 1, 1);
                 Assert.Equal(e.EnumeratorCtorCalls, e.EnumeratorDisposeCalls);
-            });
+            }
         }
 
         [Fact]
@@ -57,7 +57,7 @@ namespace System.Linq.Tests
                 from sink in Sinks()
                 select (source, unary, binary, sink);
 
-            Assert.All(inputs, input =>
+            foreach (var input in inputs)
             {
                 var (source, unary, binary, sink) = input;
                 var es = new[] { new LifecycleTrackingEnumerable<int>(source.Work), new LifecycleTrackingEnumerable<int>(source.Work) };
@@ -82,7 +82,7 @@ namespace System.Linq.Tests
                     Assert.InRange(e.EnumeratorCtorCalls, shortCircuits ? 0 : 1, 1);
                     Assert.Equal(e.EnumeratorCtorCalls, e.EnumeratorDisposeCalls);
                 });
-            });
+            }
         }
 
         private static bool ShortCircuits(params Operation[] ops) => ops.Any(o => o.ShortCircuits);
@@ -162,9 +162,9 @@ namespace System.Linq.Tests
             yield return new Sink(nameof(Enumerable.First), e => e.First(i => false));
             yield return new Sink(nameof(Enumerable.FirstOrDefault), e => e.FirstOrDefault(), shortCircuits: true);
             yield return new Sink(nameof(Enumerable.FirstOrDefault), e => e.FirstOrDefault(i => false));
-            yield return new Sink(nameof(Enumerable.Last), e => e.Last());
+            yield return new Sink(nameof(Enumerable.Last), e => e.Last(), shortCircuits: true);
             yield return new Sink(nameof(Enumerable.Last), e => e.Last(i => true));
-            yield return new Sink(nameof(Enumerable.LastOrDefault), e => e.LastOrDefault());
+            yield return new Sink(nameof(Enumerable.LastOrDefault), e => e.LastOrDefault(), shortCircuits: true);
             yield return new Sink(nameof(Enumerable.LastOrDefault), e => e.LastOrDefault(i => true));
             yield return new Sink(nameof(Enumerable.LongCount), e => e.LongCount());
             yield return new Sink(nameof(Enumerable.LongCount), e => e.LongCount(i => true));

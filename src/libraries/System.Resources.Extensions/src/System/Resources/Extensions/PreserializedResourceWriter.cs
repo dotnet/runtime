@@ -152,6 +152,7 @@ namespace System.Resources.Extensions
         /// <param name="name">Resource name</param>
         /// <param name="value">Value of the resource in byte[] form understood by BinaryFormatter</param>
         /// <param name="typeName">Assembly qualified type name of the resource</param>
+        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void AddBinaryFormattedResource(string name, byte[] value, string? typeName = null)
         {
             if (name is null)

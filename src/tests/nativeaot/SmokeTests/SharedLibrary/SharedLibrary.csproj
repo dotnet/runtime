@@ -5,18 +5,29 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeLib>Shared</NativeLib>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <!-- Unable to compile a project with the Library output type for apple mobile devices -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+
+    <!-- Regression test for https://github.com/dotnet/runtime/issues/105330: make sure the UnmanagedCallersOnly are completely unreferenced,
+         not even from stack trace mapping data -->
+    <StackTraceSupport>false</StackTraceSupport>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <SkipInferOutputType>true</SkipInferOutputType>
   </PropertyGroup>
 
   <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 mkdir native 2>nul
+copy /y clang_rt.* native\
 copy /y SharedLibraryDriver.exe native\SharedLibrary.exe
 ]]></CLRTestBatchPreCommands>
 
     <CLRTestBashPreCommands><![CDATA[
 $(CLRTestBashPreCommands)
 mkdir -p native
+cp libclang_rt.* native/
 cp SharedLibraryDriver native/SharedLibrary
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>

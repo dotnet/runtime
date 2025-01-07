@@ -24,6 +24,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             => generator switch
             {
                 GeneratorKind.VTableIndexStubGenerator => new VirtualMethodIndexAttributeProvider(),
+                GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ManagedObjectWrapper),
+                GeneratorKind.ComInterfaceGeneratorComObjectWrapper => new GeneratedComInterfaceAttributeProvider(System.Runtime.InteropServices.Marshalling.ComInterfaceOptions.ComObjectWrapper),
                 GeneratorKind.ComInterfaceGenerator => new GeneratedComInterfaceAttributeProvider(),
                 _ => throw new UnreachableException(),
             };
@@ -333,14 +335,34 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeWithShadowingMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeShadowsNonComMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeShadowsComAndNonComMethod };
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeTwoLevelShadows};
             yield return new object[] { ID(), codeSnippets.DerivedWithParametersDeclaredInOtherNamespace };
             yield return new object[] { ID(), codeSnippets.ComInterfaceParameters };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref") };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("ref readonly") };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("in") };
+            yield return new object[] { ID(), codeSnippets.ForwarderWithPreserveSigAndRefKind("out") };
+        }
+
+        public static IEnumerable<object[]> ManagedToUnmanagedComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(GeneratorKind.ComInterfaceGeneratorComObjectWrapper);
+
+            // MarshalAs
+            yield return new[] { ID(), codeSnippets.MarshalAsParameterAndModifiers("object", System.Runtime.InteropServices.UnmanagedType.Struct) };
         }
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
+        [MemberData(nameof(ManagedToUnmanagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGeneratorComObjectWrapper)]
+        [MemberData(nameof(UnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGeneratorManagedObjectWrapper)]
+        [MemberData(nameof(CustomCollectionsManagedToUnmanaged), GeneratorKind.ComInterfaceGeneratorComObjectWrapper)]
         [MemberData(nameof(ComInterfaceSnippetsToCompile))]
+        [MemberData(nameof(ManagedToUnmanagedComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;

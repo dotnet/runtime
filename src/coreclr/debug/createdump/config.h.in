@@ -4,3 +4,5 @@
 #pragma once
 
 #cmakedefine HAVE_PROCESS_VM_READV
+#cmakedefine01 HAVE_CLOCK_GETTIME_NSEC_NP
+#cmakedefine01 HAVE_CLOCK_MONOTONIC

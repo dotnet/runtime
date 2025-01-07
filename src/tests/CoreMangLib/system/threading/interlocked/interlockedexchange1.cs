@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 public class InterlockedExchange1
 {
@@ -9,7 +10,8 @@ public class InterlockedExchange1
     private const int c_MIN_STRING_LEN = 64;
     private const int c_MAX_STRING_LEN = 1024;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedExchange1 test = new InterlockedExchange1();
 

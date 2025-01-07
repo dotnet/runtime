@@ -13,12 +13,6 @@
     <NoWarn>$(NoWarn);NU5131</NoWarn>
   </PropertyGroup>
 
-  <!-- Always generate this package during servicing to flow the dependency to AspNetCore. -->
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <ServicingVersion>$(PatchVersion)</ServicingVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. -->
     <ProjectReference Include="@(AspNetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj')"
@@ -26,12 +20,14 @@
                       PrivateAssets="all"
                       Private="true"
                       IncludeReferenceAssemblyInPackage="true" />
-    <!-- This generator only provides an implementation targeting Roslyn 4.4 and upwards. -->
+    <!-- These generators only provides an implementation targeting Roslyn 4.4 and upwards. -->
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
-    <!-- Only include the 4.4 version in the ref pack, since targeting net7.0 or greater requires Roslyn 4.4 -->
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
+                      ReferenceOutputAssembly="false"
+                      PackAsAnalyzer="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\gen\Microsoft.Extensions.Options.SourceGeneration.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
   </ItemGroup>

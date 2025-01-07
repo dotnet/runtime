@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="GitHub_93770.cs" />
+  </ItemGroup>
+</Project>

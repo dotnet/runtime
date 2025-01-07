@@ -5,6 +5,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using System.Collections.Generic;
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -20,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppContextDataWithValueMinusTwo_ActsAsDefaultLimit_IterationCountNotExceedingDefaultLimit(string name, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueMinusTwo_ActsAsDefaultLimit_IterationCountNotExceedingDefaultLimit(string name, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
             _ = iterationCount;
             _ = blob;
@@ -28,6 +29,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
                 throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+            }
+
+            if (usesRC2 && !PlatformSupport.IsRC2Supported)
+            {
+                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -43,7 +49,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountExceedingDefaultLimit_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppContextDataWithValueMinusTwo_ActsAsDefaultLimit_IterationCountLimitExceeded_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueMinusTwo_ActsAsDefaultLimit_IterationCountLimitExceeded_Throws(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
             _ = password;
             _ = iterationCount;
@@ -52,6 +58,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
                 throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+            }
+
+            if (usesRC2 && !PlatformSupport.IsRC2Supported)
+            {
+                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -67,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppContextDataWithValueZero_IterationCountNotExceedingDefaultLimit_Throws(string name, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueZero_IterationCountNotExceedingDefaultLimit_Throws(string name, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
             _ = iterationCount;
             _ = blob;
@@ -75,6 +86,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (usesPbes2 && !PfxTests.Pkcs12PBES2Supported)
             {
                 throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
+            }
+
+            if (usesRC2 && !PlatformSupport.IsRC2Supported)
+            {
+                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
             }
 
             RemoteExecutor.Invoke((certName) =>
@@ -90,7 +106,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountExceedingDefaultLimit_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public void Import_AppContextDataWithValueMinusOne_IterationCountExceedingDefaultLimit(string name, string password, bool usesPbes2, byte[] blob, long iterationCount)
+        public void Import_AppContextDataWithValueMinusOne_IterationCountExceedingDefaultLimit(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
             _ = password;
             _ = blob;
@@ -101,22 +117,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 throw new SkipTestException(name + " uses PBES2, which is not supported on this version.");
             }
 
+            if (usesRC2 && !PlatformSupport.IsRC2Supported)
+            {
+                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
+            }
+
             RemoteExecutor.Invoke((certName) =>
             {
                 AppContext.SetData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit", -1);
 
                 PfxInfo pfxInfo = s_certificatesDictionary[certName];
 
-                if (OperatingSystem.IsWindows())
-                {
-                    // Opting-out with AppContext data value -1 will still give us error because cert is beyond Windows limit.
-                    // But we will get the CryptoThrowHelper+WindowsCryptographicException.
-                    PfxIterationCountTests.VerifyThrowsCryptoExButDoesNotThrowPfxWithoutPassword(() => Import(pfxInfo.Blob));
-                }
-                else
-                {
-                    Assert.NotNull(Import(pfxInfo.Blob));
-                }
+                // The total iteration count filter is disabled, but individual items are
+                // still limited to 600k.
+                CryptographicException ce = Assert.Throws<CryptographicException>(() => Import(pfxInfo.Blob));
+                Assert.Contains(PfxIterationCountTests.FwlinkId, ce.Message);
             }, name).Dispose();
         }
     }

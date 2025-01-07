@@ -4,6 +4,10 @@
 #include "pal_searchpath.h"
 #import <Foundation/Foundation.h>
 
+#if __has_feature(objc_arc)
+#error This file uses manual memory management and must not use ARC, but ARC is enabled.
+#endif
+
 const char* SystemNative_SearchPath(int32_t folderId)
 {
     NSSearchPathDirectory spd = (NSSearchPathDirectory) folderId;
@@ -12,7 +16,7 @@ const char* SystemNative_SearchPath(int32_t folderId)
     return path == NULL ? NULL : strdup (path);
 }
 
-const char* SystemNative_SearchPath_TempDirectory()
+const char* SystemNative_SearchPath_TempDirectory(void)
 {
     NSString* tempPath = NSTemporaryDirectory();
     const char *path = [tempPath UTF8String];

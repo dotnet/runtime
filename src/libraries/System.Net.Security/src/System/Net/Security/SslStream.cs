@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -31,7 +33,7 @@ namespace System.Net.Security
     public delegate bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors);
 
     // A user delegate used to select local SSL certificate.
-    public delegate X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
+    public delegate X509Certificate? LocalCertificateSelectionCallback(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers);
 
     public delegate X509Certificate ServerCertificateSelectionCallback(object sender, string? hostName);
 
@@ -83,7 +85,7 @@ namespace System.Net.Security
 
             public ReadOnlySpan<byte> DecryptedReadOnlySpanSliced(int length)
             {
-                Debug.Assert(length <= DecryptedLength, "length <= DecryptedLength");
+                Debug.Assert(length <= DecryptedLength);
                 return _buffer.ActiveSpan.Slice(0, length);
             }
 
@@ -165,13 +167,18 @@ namespace System.Net.Security
             }
         }
 
-        // used to track ussage in _nested* variables bellow
-        private const int StreamNotInUse = 0;
-        private const int StreamInUse = 1;
-        private const int StreamDisposed = 2;
+        private enum NestedState
+        {
+            StreamNotInUse = 0,
+            StreamInUse = 1,
+            StreamDisposed = 2,
+        }
 
-        private int _nestedWrite;
-        private int _nestedRead;
+        private NestedState _nestedWrite;
+        private NestedState _nestedRead;
+
+        private PoolingPointerMemoryManager? _readPointerMemoryManager;
+        private PoolingPointerMemoryManager? _writePointerMemoryManager;
 
         public SslStream(Stream innerStream)
                 : this(innerStream, false, null, null)
@@ -441,11 +448,11 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
-            byte[]? message = CreateShutdownToken();
+            ProtocolToken token = CreateShutdownToken();
             _shutdown = true;
-            if (message != null)
+            if (token.Size > 0 && token.Payload != null)
             {
-                return InnerStream.WriteAsync(message, default).AsTask();
+                return InnerStream.WriteAsync(new ReadOnlyMemory<byte>(token.Payload, 0, token.Size), default).AsTask();
             }
 
             return Task.CompletedTask;
@@ -481,7 +488,7 @@ namespace System.Net.Security
         }
 
         // Skips the ThrowIfExceptionalOrNotHandshake() check
-        private SslProtocols GetSslProtocolInternal()
+        internal SslProtocols GetSslProtocolInternal()
         {
             if (_connectionInfo.Protocol == 0)
             {
@@ -573,6 +580,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual CipherAlgorithmType CipherAlgorithm
         {
             get
@@ -582,6 +590,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int CipherStrength
         {
             get
@@ -591,6 +600,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual HashAlgorithmType HashAlgorithm
         {
             get
@@ -600,6 +610,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int HashStrength
         {
             get
@@ -609,6 +620,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual ExchangeAlgorithmType KeyExchangeAlgorithm
         {
             get
@@ -618,6 +630,7 @@ namespace System.Net.Security
             }
         }
 
+        [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public virtual int KeyExchangeStrength
         {
             get
@@ -712,10 +725,25 @@ namespace System.Net.Security
             }
         }
 
+        private static unsafe PoolingPointerMemoryManager RentPointerMemoryManager(ref PoolingPointerMemoryManager? field, byte* pointer, int length)
+        {
+            // we get null when called for the first-time, or concurrent read or write operation
+            var manager = Interlocked.Exchange(ref field, null) ?? new PoolingPointerMemoryManager();
+
+            manager.Reset(pointer, length);
+            return manager;
+        }
+
+        private static unsafe void ReturnPointerMemoryManager(ref PoolingPointerMemoryManager? field, PoolingPointerMemoryManager manager)
+        {
+            manager.Reset(null, 0);
+            field = manager;
+        }
+
         public override int ReadByte()
         {
             ThrowIfExceptionalOrNotAuthenticated();
-            if (Interlocked.Exchange(ref _nestedRead, StreamInUse) == StreamInUse)
+            if (Interlocked.Exchange(ref _nestedRead, NestedState.StreamInUse) == NestedState.StreamInUse)
             {
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, "read"));
             }
@@ -736,16 +764,37 @@ namespace System.Net.Security
                 // Regardless of whether we were able to read a byte from the buffer,
                 // reset the read tracking.  If we weren't able to read a byte, the
                 // subsequent call to Read will set the flag again.
-                _nestedRead = StreamNotInUse;
+                _nestedRead = NestedState.StreamNotInUse;
             }
 
             // Otherwise, fall back to reading a byte via Read, the same way Stream.ReadByte does.
             // This allocation is unfortunate but should be relatively rare, as it'll only occur once
             // per buffer fill internally by Read.
-            byte[] oneByte = new byte[1];
-            int bytesRead = Read(oneByte, 0, 1);
+            byte oneByte = default;
+            int bytesRead = Read(new Span<byte>(ref oneByte));
             Debug.Assert(bytesRead == 0 || bytesRead == 1);
-            return bytesRead == 1 ? oneByte[0] : -1;
+            return bytesRead == 1 ? oneByte : -1;
+        }
+
+        public override unsafe int Read(Span<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _readPointerMemoryManager, ptr, buffer.Length);
+
+                try
+                {
+                    ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    return vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    ReturnPointerMemoryManager(ref _readPointerMemoryManager, memoryManager);
+                }
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -755,6 +804,29 @@ namespace System.Net.Security
             ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken));
             Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
             return vt.GetAwaiter().GetResult();
+        }
+
+        public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));
+
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        {
+            ThrowIfExceptionalOrNotAuthenticated();
+
+            fixed (byte* ptr = &MemoryMarshal.GetReference(buffer))
+            {
+                PoolingPointerMemoryManager memoryManager = RentPointerMemoryManager(ref _writePointerMemoryManager, ptr, buffer.Length);
+
+                try
+                {
+                    ValueTask vt = WriteAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken));
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                    vt.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    ReturnPointerMemoryManager(ref _writePointerMemoryManager, memoryManager);
+                }
+            }
         }
 
         public void Write(byte[] buffer) => Write(buffer, 0, buffer.Length);
@@ -887,6 +959,41 @@ namespace System.Net.Security
         private static void ThrowNotAuthenticated()
         {
             throw new InvalidOperationException(SR.net_auth_noauth);
+        }
+
+        // (non-generic) copy of the PointerMemoryManager<T> which supports resetting the stored
+        // pointer to allow pooling its instances instead of allocating a new one per Read/Write call.
+        // The memory ponted to by the intenal poiner is assumed to be externally pinned (or naive memory).
+        internal sealed unsafe class PoolingPointerMemoryManager : MemoryManager<byte>
+        {
+            private byte* _pointer;
+            private int _length;
+
+            protected override void Dispose(bool disposing)
+            {
+            }
+
+            public void Reset(byte* pointer, int length)
+            {
+                _pointer = pointer;
+                _length = length;
+            }
+
+            public override Span<byte> GetSpan()
+            {
+                return new Span<byte>(_pointer, _length);
+            }
+
+            public override MemoryHandle Pin(int elementIndex = 0)
+            {
+                // memory assumed to be pinned already
+                return new MemoryHandle(_pointer + elementIndex, default, null);
+            }
+
+            public override void Unpin()
+            {
+                // nop
+            }
         }
     }
 }

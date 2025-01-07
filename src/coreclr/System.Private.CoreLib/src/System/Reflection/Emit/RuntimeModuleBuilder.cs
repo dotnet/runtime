@@ -252,11 +252,8 @@ namespace System.Reflection.Emit
             {
                 // some user derived ConstructorInfo
                 // go through the slower code path, i.e. retrieve parameters and form signature helper.
-                ParameterInfo[] parameters = constructor.GetParameters();
-                if (parameters == null)
-                {
+                ParameterInfo[] parameters = constructor.GetParameters() ??
                     throw new ArgumentException(SR.Argument_InvalidConstructorInfo);
-                }
 
                 Type[] parameterTypes = new Type[parameters.Length];
                 Type[][] requiredCustomModifiers = new Type[parameters.Length][];
@@ -458,7 +455,7 @@ namespace System.Reflection.Emit
             }
 
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-            ParameterInfo[] parameters = method.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 
             Type[] parameterTypes = new Type[parameters.Length];
             Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];
@@ -542,19 +539,19 @@ namespace System.Reflection.Emit
             return typeList;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className)
         {
             return GetType(className, false, false);
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool ignoreCase)
         {
             return GetType(className, false, ignoreCase);
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             lock (SyncRoot)
@@ -829,7 +826,7 @@ namespace System.Reflection.Emit
                 if (_hasGlobalBeenCreated)
                 {
                     // cannot create globals twice
-                    throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
+                    throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
                 }
                 _globalTypeBuilder.CreateType();
                 _hasGlobalBeenCreated = true;
@@ -995,13 +992,8 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Type? declaringType = method.DeclaringType;
-
-                // We need to get the TypeRef tokens
-                if (declaringType == null)
-                {
+                Type declaringType = method.DeclaringType ??
                     throw new InvalidOperationException(SR.InvalidOperation_CannotImportGlobalFromDifferentModule);
-                }
 
                 if (declaringType.IsArray)
                 {

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.SqlTypes;
-using System.Xml;
 using System.Diagnostics;
+using System.Xml;
 
 namespace System.Data.Common
 {

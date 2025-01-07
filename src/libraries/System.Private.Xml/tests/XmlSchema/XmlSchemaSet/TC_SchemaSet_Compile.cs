@@ -76,7 +76,7 @@ namespace System.Xml.XmlSchemaTests
                 // GLOBALIZATION
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -152,7 +152,6 @@ namespace System.Xml.XmlSchemaTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FractionDigitsMismatch_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -180,7 +179,6 @@ namespace System.Xml.XmlSchemaTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FractionDigitsFacetBaseFixed_Throws()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>
@@ -649,7 +647,6 @@ namespace System.Xml.XmlSchemaTests
         #region Complex Restricton tests
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void SequenceRestrictsChoiceValid()
         {
             string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' 
@@ -687,7 +684,6 @@ namespace System.Xml.XmlSchemaTests
 
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void SequenceRestrictsChoiceComplexButValid()
         {
             string schema = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:ns1='urn:gba:sqg'
@@ -1250,7 +1246,6 @@ namespace System.Xml.XmlSchemaTests
         #endregion
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void TotalDigitsParseValue_Succeeds()
         {
             string schema = @"<?xml version='1.0' encoding='utf-8' ?>

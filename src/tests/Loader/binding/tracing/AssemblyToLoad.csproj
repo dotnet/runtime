@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <CLRTestKind>BuildOnly</CLRTestKind>
     <AssemblyName Condition="'$(AssemblyNameSuffix)'!=''">$(AssemblyName)_$(AssemblyNameSuffix)</AssemblyName>
     <CleanFile>$(AssemblyName).FileListAbsolute.txt</CleanFile>
   </PropertyGroup>

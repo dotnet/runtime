@@ -16,7 +16,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// The Activity object needs to be created. It will have Name, Source, Id and Baggage.
-        /// Other properties are unnecessary and will be ignored by this listener.
+        /// Other properties such as Links, Tags, and Events are unnecessary and will be ignored by this listener.
         /// </summary>
         PropagationData,
 

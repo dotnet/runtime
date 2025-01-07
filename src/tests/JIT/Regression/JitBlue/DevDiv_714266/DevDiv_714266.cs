@@ -53,10 +53,9 @@ public class DevDiv_714266
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         MethodWithManyLiveVectors();
-        return 100;
     }
 
 }

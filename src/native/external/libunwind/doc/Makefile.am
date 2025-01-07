@@ -1,6 +1,9 @@
 # man pages that go into section 3:
 man3_MANS = libunwind.man libunwind-dynamic.man libunwind-ia64.man	\
-	libunwind-ptrace.man libunwind-setjmp.man			\
+	libunwind-coredump.man \
+	libunwind-ptrace.man \
+	libunwind-setjmp.man			\
+	libunwind-nto.man \
 	unw_apply_reg_state.man						\
 	unw_backtrace.man						\
 	unw_flush_cache.man						\
@@ -9,6 +12,7 @@ man3_MANS = libunwind.man libunwind-dynamic.man libunwind-ia64.man	\
 	unw_get_proc_info_by_ip.man					\
 	unw_get_proc_info_in_range.man					\
 	unw_get_proc_name.man						\
+	unw_get_proc_name_by_ip.man					\
 	unw_get_fpreg.man						\
 	unw_get_reg.man							\
 	unw_getcontext.man						\
@@ -21,17 +25,23 @@ man3_MANS = libunwind.man libunwind-dynamic.man libunwind-ia64.man	\
 	unw_regname.man unw_resume.man					\
 	unw_reg_states_iterate.man					\
 	unw_set_caching_policy.man					\
+	unw_set_iterate_phdr_function.man				\
 	unw_set_cache_size.man						\
 	unw_set_fpreg.man						\
 	unw_set_reg.man							\
 	unw_step.man							\
 	unw_strerror.man						\
 	_U_dyn_register.man						\
-	_U_dyn_cancel.man
+	_U_dyn_cancel.man         \
+	unw_get_elf_filename.man			\
+	unw_get_elf_filename_by_ip.man
 
 EXTRA_DIST = NOTES libunwind.trans					\
 	libunwind.tex libunwind-dynamic.tex libunwind-ia64.tex		\
-	libunwind-ptrace.tex libunwind-setjmp.tex			\
+	libunwind-coredump.tex \
+	libunwind-ptrace.tex \
+	libunwind-setjmp.tex			\
+	libunwind-nto.tex \
 	unw_apply_reg_state.tex						\
 	unw_backtrace.tex						\
 	unw_flush_cache.tex						\
@@ -40,6 +50,7 @@ EXTRA_DIST = NOTES libunwind.trans					\
 	unw_get_proc_info_by_ip.tex					\
 	unw_get_proc_info_in_range.tex					\
 	unw_get_proc_name.tex						\
+	unw_get_proc_name_by_ip.tex					\
 	unw_get_fpreg.tex						\
 	unw_get_reg.tex							\
 	unw_getcontext.tex						\
@@ -48,6 +59,7 @@ EXTRA_DIST = NOTES libunwind.trans					\
 	unw_is_signal_frame.tex						\
 	unw_create_addr_space.tex unw_destroy_addr_space.tex		\
 	unw_regname.tex unw_resume.tex unw_set_caching_policy.tex	\
+	unw_set_iterate_phdr_function.tex				\
 	unw_reg_states_iterate.tex					\
 	unw_set_cache_size.tex						\
 	unw_set_fpreg.tex						\
@@ -56,6 +68,8 @@ EXTRA_DIST = NOTES libunwind.trans					\
 	unw_strerror.tex						\
 	_U_dyn_register.tex						\
 	_U_dyn_cancel.tex						\
+	unw_get_elf_filename.tex		\
+	unw_get_elf_filename_by_ip.tex	\
 	$(man3_MANS)
 
 L2M	= latex2man
@@ -64,16 +78,16 @@ L2M_CMD	= $(L2M) -t $(srcdir)/libunwind.trans
 L2H_CMD	= $(L2M) -H -t $(srcdir)/libunwind.trans
 
 .tex.man:
-	$(L2M_CMD) $< $@
+	$(AM_V_GEN)$(L2M_CMD) $< $@
 	-cp $@ $(srcdir)/$@
 
-html:
+html-local:
 	for n in $(man3_MANS); do					\
 		page=`basename $$n .man`;				\
 		$(L2H_CMD) $(srcdir)/$$page.tex "$$page(3).raw";	\
 	done
 
-pdf:
+pdf-local:
 	for n in $(man3_MANS); do					\
 		page=`basename $$n .man`;				\
 		$(L2P) $(srcdir)/$$page.tex "$$page(3).pdf";		\

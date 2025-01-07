@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text;
 
 namespace System.Runtime.CompilerServices
 {
@@ -100,6 +100,12 @@ namespace System.Runtime.CompilerServices
                 sb.Append("    ").Append(fi.Name).Append(": ").Append(fi.GetValue(stateMachine)).AppendLine();
             }
             return sb.ToString();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void LogTraceOperationBegin(Task t, Type stateMachineType)
+        {
+            TplEventSource.Log.TraceOperationBegin(t.Id, "Async: " + stateMachineType.Name, 0);
         }
 
         internal static Action CreateContinuationWrapper(Action continuation, Action<Action, Task> invokeAction, Task innerTask) =>

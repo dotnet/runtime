@@ -14,7 +14,7 @@ namespace System.Collections.Immutable.Tests
         protected static readonly Func<IList, object, object> ContainsFunc = (l, v) => l.Contains(v);
         protected static readonly Func<IList, object, object> RemoveFunc = (l, v) => { l.Remove(v); return l.Count; };
 
-        internal abstract IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list);
+        internal abstract ImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list);
 
         [Fact]
         public void CopyToEmptyTest()
@@ -29,7 +29,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CopyToTest()
         {
-            IImmutableListQueries<int> listQuery = this.GetListQuery(ImmutableList.Create(1, 2));
+            ImmutableListQueries<int> listQuery = this.GetListQuery(ImmutableList.Create(1, 2));
             var list = (IEnumerable<int>)listQuery;
 
             var array = new int[2];
@@ -91,7 +91,7 @@ namespace System.Collections.Immutable.Tests
         public void FindAllTest()
         {
             Assert.True(this.GetListQuery(ImmutableList<int>.Empty).FindAll(n => true).IsEmpty);
-            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             ImmutableList<int> actual = this.GetListQuery(list).FindAll(n => n % 2 == 1);
             List<int> expected = list.ToList().FindAll(n => n % 2 == 1);
             Assert.Equal<int>(expected, actual.ToList());
@@ -101,7 +101,7 @@ namespace System.Collections.Immutable.Tests
         public void FindTest()
         {
             Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).Find(n => true));
-            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(3, this.GetListQuery(list).Find(n => (n % 2) == 1));
         }
 
@@ -109,7 +109,7 @@ namespace System.Collections.Immutable.Tests
         public void FindLastTest()
         {
             Assert.Equal(0, this.GetListQuery(ImmutableList<int>.Empty).FindLast(n => { throw new ShouldNotBeInvokedException(); }));
-            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange(new[] { 2, 3, 4, 5, 6 });
+            ImmutableList<int> list = ImmutableList<int>.Empty.AddRange((IEnumerable<int>)new[] { 2, 3, 4, 5, 6 });
             Assert.Equal(5, this.GetListQuery(list).FindLast(n => (n % 2) == 1));
         }
 
@@ -397,7 +397,7 @@ namespace System.Collections.Immutable.Tests
         public void BinarySearch()
         {
             var basis = new List<int>(Enumerable.Range(1, 50).Select(n => n * 2));
-            IImmutableListQueries<int> query = this.GetListQuery(basis.ToImmutableList());
+            ImmutableListQueries<int> query = this.GetListQuery(basis.ToImmutableList());
             for (int value = basis.First() - 1; value <= basis.Last() + 1; value++)
             {
                 int expected = basis.BinarySearch(value);
@@ -436,7 +436,7 @@ namespace System.Collections.Immutable.Tests
             int max = inputData[sortedIndex + sortedLength - 1];
 
             var basis = new List<int>(inputData);
-            IImmutableListQueries<int> query = this.GetListQuery(inputData.ToImmutableList());
+            ImmutableListQueries<int> query = this.GetListQuery(inputData.ToImmutableList());
             for (int value = min - 1; value <= max + 1; value++)
             {
                 for (int index = sortedIndex; index < sortedIndex + sortedLength; index++) // make sure the index we pass in is always within the sorted range in the list.

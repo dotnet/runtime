@@ -2,9 +2,7 @@
   <PropertyGroup>
     <AssemblyName>TestLibrary</AssemblyName>
     <OutputType>Library</OutputType>
-    <CLRTestKind>BuildOnly</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GenerateRunScript>false</GenerateRunScript>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>

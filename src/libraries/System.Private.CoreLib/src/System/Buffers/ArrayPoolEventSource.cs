@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 
 namespace System.Buffers
 {
@@ -108,7 +108,7 @@ namespace System.Buffers
 
         /// <summary>
         /// Event raised when we attempt to free a buffer due to inactivity or memory pressure (by no longer
-        /// referencing it). It is possible (although not commmon) this buffer could be rented as we attempt
+        /// referencing it). It is possible (although not common) this buffer could be rented as we attempt
         /// to free it. A rent event before or after this event for the same ID, is a rare, but expected case.
         /// </summary>
         [Event(4, Level = EventLevel.Informational)]

@@ -320,7 +320,7 @@ namespace System.IO
 
             if (_charPos == _charLen)
             {
-                if (_isBlocked || ReadBuffer() == 0)
+                if (ReadBuffer() == 0)
                 {
                     return -1;
                 }

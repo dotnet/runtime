@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for AutoreleasePoolSupport -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsOSX)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">true</CLRTestTargetUnsupported>
     <AutoreleasePoolSupport>true</AutoreleasePoolSupport>
@@ -10,6 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="./CMakeLists.txt" />
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

@@ -15,9 +15,9 @@ namespace Microsoft.Interop
     public sealed class MarshalUsingAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
 
-        public MarshalUsingAttributeParser(Compilation compilation, IGeneratorDiagnostics diagnostics)
+        public MarshalUsingAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;

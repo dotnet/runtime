@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Basic

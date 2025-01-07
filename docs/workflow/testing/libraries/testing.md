@@ -79,6 +79,8 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
+**NOTE**: if your environment doesn't have the required SDK installed (e.g. inside [a Docker container](/docs/workflow/using-docker.md)), use `./dotnet.sh`/`.\dotnet.cmd` instead of `dotnet`.
+
 ### Running only certain tests
 
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g., to filter to tests in just one fixture (class):
@@ -155,6 +157,24 @@ It is important to highlight that these tests do not use the standard XUnit test
 - `-nonamespace`
 - `-parallel`
 
+### Speeding up inner loop
+
+A couple of flags that are sometimes helpful when iterating on a test project in the shell:
+
+- `/p:testnobuild=true`  -- modifies `/t:test` so that it doesn't do a build before running the tests. Useful if you didn't change any code and you don't want to even check timestamps.
+- `--no-restore` -- modifies `dotnet build` so that it doesn't attempt to restore packages. Useful if you're already up to date with NuGet packages.
+
+Together these can cut a couple seconds off when you're iterating.
+
+Putting these together, here's an example of running a single test method in a particular test project, with those flags applied:
+
+```cmd
+# assuming we're in src\libraries\System.Text.RegularExpressions
+dotnet build --no-restore /t:test /p:testnobuild=true /p:xunitoptions=" -method System.Text.RegularExpressions.Tests.RegexMatchTests.Match" tests\FunctionalTests
+```
+
+If you change code, you'd need to remove `/p:testnobuild=true` from the command above.
+
 ### Viewing XUnit logs
 
-It's usually sufficient to see the test failure output in the console. There is also a test log file, which you can find in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net8.0\testResults.xml`. It can be helpful, for example, to grep through a series of failures, or to see how long a slow test actually took.
+It's usually sufficient to see the test failure output in the console. There is also a test log file, which you can find in a location like `...\runtime\artifacts\bin\System.Text.RegularExpressions.Tests\Debug\net10.0\testResults.xml`. It can be helpful, for example, to grep through a series of failures, or to see how long a slow test actually took.

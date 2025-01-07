@@ -3,21 +3,6 @@
 
 namespace Internal.Runtime
 {
-    internal static class IndirectionConstants
-    {
-        /// <summary>
-        /// Flag set on pointers to indirection cells to distinguish them
-        /// from pointers to the object directly
-        /// </summary>
-        public const int IndirectionCellPointer = 0x1;
-
-        /// <summary>
-        /// Flag set on RVAs to indirection cells to distinguish them
-        /// from RVAs to the object directly
-        /// </summary>
-        public const uint RVAPointsToIndirection = 0x80000000u;
-    }
-
     internal static class GCStaticRegionConstants
     {
         /// <summary>
@@ -58,6 +43,11 @@ namespace Internal.Runtime
         public const ushort Reabstraction = 0xFFFF;
     }
 
+    internal static class DispatchMapCodePointerFlags
+    {
+        public const int RequiresInstantiatingThunkFlag = 2;
+    }
+
     internal static class SpecialGVMInterfaceEntry
     {
         public const uint Diamond = 0xFFFFFFFF;
@@ -88,5 +78,8 @@ namespace Internal.Runtime
         public const int IsObjectiveCMessageSendMask = 0x8;
         public const int ObjectiveCMessageSendFunctionMask = 0x70;
         public const int ObjectiveCMessageSendFunctionShift = 4;
+        // Uses the same bit as IsObjectiveCMessageSendMask since we never have
+        // TARGET_X86 and FEATURE_OBJCMARSHAL used at the same time.
+        public const int IsStdcall = 0x8;
     }
 }

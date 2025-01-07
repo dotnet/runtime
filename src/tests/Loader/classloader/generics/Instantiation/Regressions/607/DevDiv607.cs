@@ -9,10 +9,12 @@
 	has a contracting interface set for some instantiations.
 */
 using System;
+using Xunit;
 
 public class Test_DevDiv607
 {	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		try
 		{

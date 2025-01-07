@@ -44,7 +44,7 @@
 
 } // end of class T1
 
-.class private auto ansi sealed Module1
+.class public auto ansi sealed Module1
        extends [mscorlib]System.Object
 {
   .method public static int32  Main() cil managed

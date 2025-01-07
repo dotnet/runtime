@@ -7,38 +7,61 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteValidator: CallSiteVisitor<CallSiteValidator.CallSiteValidatorState, Type?>
+    internal sealed class CallSiteValidator : CallSiteVisitor<CallSiteValidator.CallSiteValidatorState, Type?>
     {
         // Keys are services being resolved via GetService, values - first scoped service in their call site tree
-        private readonly ConcurrentDictionary<Type, Type> _scopedServices = new ConcurrentDictionary<Type, Type>();
+        private readonly ConcurrentDictionary<ServiceCacheKey, Type?> _scopedServices = new ConcurrentDictionary<ServiceCacheKey, Type?>();
 
-        public void ValidateCallSite(ServiceCallSite callSite)
-        {
-            Type? scoped = VisitCallSite(callSite, default);
-            if (scoped != null)
-            {
-                _scopedServices[callSite.ServiceType] = scoped;
-            }
-        }
+        public void ValidateCallSite(ServiceCallSite callSite) => VisitCallSite(callSite, default);
 
-        public void ValidateResolution(Type serviceType, IServiceScope scope, IServiceScope rootScope)
+        public void ValidateResolution(ServiceCallSite callSite, IServiceScope scope, IServiceScope rootScope)
         {
             if (ReferenceEquals(scope, rootScope)
-                && _scopedServices.TryGetValue(serviceType, out Type? scopedService))
+                && _scopedServices.TryGetValue(callSite.Cache.Key, out Type? scopedService)
+                && scopedService != null)
             {
+                Type serviceType = callSite.ServiceType;
                 if (serviceType == scopedService)
                 {
                     throw new InvalidOperationException(
-                        SR.Format(SR.DirectScopedResolvedFromRootException, serviceType,
+                        SR.Format(SR.DirectScopedResolvedFromRootException, callSite.ServiceType,
                             nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
                 }
 
                 throw new InvalidOperationException(
                     SR.Format(SR.ScopedResolvedFromRootException,
-                        serviceType,
+                        callSite.ServiceType,
                         scopedService,
                         nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
             }
+        }
+
+        protected override Type? VisitCallSite(ServiceCallSite callSite, CallSiteValidatorState argument)
+        {
+            // First, check if we have encountered this call site before to prevent visiting call site trees that have already been visited
+            // If firstScopedServiceInCallSiteTree is null there are no scoped dependencies in this service's call site tree
+            // If firstScopedServiceInCallSiteTree has a value, it contains the first scoped service in this service's call site tree
+            if (!_scopedServices.TryGetValue(callSite.Cache.Key, out Type? firstScopedServiceInCallSiteTree))
+            {
+                // This call site wasn't cached yet, walk the tree
+                firstScopedServiceInCallSiteTree = base.VisitCallSite(callSite, argument);
+
+                // Cache the result
+                _scopedServices[callSite.Cache.Key] = firstScopedServiceInCallSiteTree;
+            }
+
+            // If there is a scoped service in the call site tree, make sure we are not resolving it from a singleton
+            if (firstScopedServiceInCallSiteTree != null && argument.Singleton != null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.ScopedInSingletonException,
+                    callSite.ServiceType,
+                    argument.Singleton.ServiceType,
+                    nameof(ServiceLifetime.Scoped).ToLowerInvariant(),
+                    nameof(ServiceLifetime.Singleton).ToLowerInvariant()
+                    ));
+            }
+
+            return firstScopedServiceInCallSiteTree;
         }
 
         protected override Type? VisitConstructor(ConstructorCallSite constructorCallSite, CallSiteValidatorState state)
@@ -46,7 +69,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Type? result = null;
             foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
-                Type? scoped =  VisitCallSite(parameterCallSite, state);
+                Type? scoped = VisitCallSite(parameterCallSite, state);
                 result ??= scoped;
             }
             return result;
@@ -76,15 +99,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (scopedCallSite.ServiceType == typeof(IServiceScopeFactory))
             {
                 return null;
-            }
-            if (state.Singleton != null)
-            {
-                throw new InvalidOperationException(SR.Format(SR.ScopedInSingletonException,
-                    scopedCallSite.ServiceType,
-                    state.Singleton.ServiceType,
-                    nameof(ServiceLifetime.Scoped).ToLowerInvariant(),
-                    nameof(ServiceLifetime.Singleton).ToLowerInvariant()
-                    ));
             }
 
             VisitCallSiteMain(scopedCallSite, state);

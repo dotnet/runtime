@@ -5,12 +5,11 @@ using Xunit;
 public class foo
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         long lo = 0x01;
         lo = lo << 63;
         System.Console.WriteLine(lo >> 32);
         System.Console.WriteLine(lo >> 33);
-        return 100;
     }
 }

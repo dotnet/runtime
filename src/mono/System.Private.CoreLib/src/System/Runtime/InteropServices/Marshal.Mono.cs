@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
             if (obj == null || obj is string)
                 return true;
             var type = (obj.GetType() as RuntimeType)!;
-            return !RuntimeTypeHandle.HasReferences (type);
+            return !RuntimeTypeHandle.HasReferences(type);
         }
 
         private static void PrelinkCore(MethodInfo m)
@@ -63,14 +63,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void PtrToStructureInternal(IntPtr ptr, object structure, bool allowValueClasses);
-
-        private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
-        {
-            ArgumentNullException.ThrowIfNull(structure);
-            ArgumentNullException.ThrowIfNull(ptr);
-            PtrToStructureInternal(ptr, structure, allowValueClasses);
-        }
+        private static extern void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetDelegateForFunctionPointerInternal(QCallTypeHandle t, IntPtr ptr, ObjectHandleOnStack res);
@@ -78,11 +71,10 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
 
-        private static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        private static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
         {
-            RuntimeType rttype = (RuntimeType)t;
             Delegate? res = null;
-            GetDelegateForFunctionPointerInternal(new QCallTypeHandle(ref rttype), ptr, ObjectHandleOnStack.Create(ref res));
+            GetDelegateForFunctionPointerInternal(new QCallTypeHandle(ref t), ptr, ObjectHandleOnStack.Create(ref res));
             return res!;
         }
 
@@ -92,9 +84,8 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int SizeOfHelper(QCallTypeHandle t, bool throwIfNotMarshalable);
 
-        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        private static int SizeOfHelper(RuntimeType rttype, bool throwIfNotMarshalable)
         {
-            RuntimeType rttype = (RuntimeType)t;
             return SizeOfHelper(new QCallTypeHandle(ref rttype), throwIfNotMarshalable);
         }
 
@@ -118,7 +109,6 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
-#pragma warning disable 8500
 #pragma warning disable 9080
         private static unsafe void SetInvokeArgs(ref string cookie, IntPtr *params_byref)
         {
@@ -126,7 +116,6 @@ namespace System.Runtime.InteropServices
             *(ByReference*)params_byref = objRef;
         }
 #pragma warning restore 9080
-#pragma warning restore 8500
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]

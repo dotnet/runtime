@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Text
 {
@@ -168,7 +168,7 @@ namespace System.Text
         {
             ArgumentOutOfRangeException.ThrowIfNegative(byteCount);
 
-            long charCount = byteCount * 4; // Max possible value for all encodings
+            long charCount = (long)byteCount * 4; // Max possible value for all encodings
 
             if (charCount > 0x7fffffff)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_GetCharCountOverflow);

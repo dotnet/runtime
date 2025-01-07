@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Warnings.Dependencies;
@@ -9,7 +8,7 @@ using Mono.Linker.Tests.Cases.Warnings.Dependencies;
 namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
 	[SetupLinkerTrimMode ("skip")]
-#if !NETCOREAPP
+#if !NET
 	[Reference ("System.Core.dll")]
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
 #else

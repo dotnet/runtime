@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ds-rt.h targeting NativeAOT runtime.
-#ifndef __DIAGNOSTICS_RT_AOT_H__
-#define __DIAGNOSTICS_RT_AOT_H__
+#ifndef DIAGNOSTICS_RT_AOT_H
+#define DIAGNOSTICS_RT_AOT_H
 
 #include <eventpipe/ds-rt-config.h>
+#include <generatedumpflags.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-aot.h"
@@ -156,7 +157,7 @@ uint32_t
 ds_rt_config_value_get_default_port_suspend (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    
+
     uint64_t value;
     if (RhConfig::Environment::TryGetIntegerValue("DefaultDiagnosticPortSuspend", &value))
     {
@@ -182,12 +183,23 @@ ds_rt_generate_core_dump (
     STATIC_CONTRACT_NOTHROW;
 
     ds_ipc_result_t result = DS_IPC_E_FAIL;
+#ifdef TARGET_UNIX
     uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Generate an exception dump
-    // PalDebugBreak();
-
-    return 0;
+    if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+    {
+        // For the old commmand, this payload field is a bool of whether to enable logging
+        flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+    }
+    const ep_char16_t *dumpName = ds_generate_core_dump_command_payload_get_dump_name (payload);
+    int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
+    ep_char8_t *dumpNameUtf8 = ep_rt_utf16le_to_utf8_string (dumpName);
+    extern bool PalGenerateCoreDump(const char* dumpName, int dumpType, uint32_t flags, char* errorMessageBuffer, int cbErrorMessageBuffer);
+    if (PalGenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+    {
+        result = DS_IPC_S_OK;
+    }
+#endif
+    return result;
 }
 
 /*
@@ -266,9 +278,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-     // return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-     // PalDebugBreak();
-    return 0xffff;
+    extern uint32_t ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+    return ds_rt_aot_set_environment_variable(name, value);
 }
 
 static
@@ -314,4 +325,4 @@ ds_rt_server_log_pause_message (void)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __DIAGNOSTICS_RT_AOT_H__ */
+#endif /* DIAGNOSTICS_RT_AOT_H */

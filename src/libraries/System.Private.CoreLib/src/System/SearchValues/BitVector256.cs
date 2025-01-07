@@ -11,6 +11,18 @@ namespace System.Buffers
     {
         private fixed uint _values[8];
 
+        public readonly BitVector256 CreateInverse()
+        {
+            BitVector256 inverse = default;
+
+            for (int i = 0; i < 8; i++)
+            {
+                inverse._values[i] = ~_values[i];
+            }
+
+            return inverse;
+        }
+
         public void Set(int c)
         {
             Debug.Assert(c < 256);
@@ -18,10 +30,6 @@ namespace System.Buffers
             uint significantBit = 1u << c;
             _values[offset] |= significantBit;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool Contains128(char c) =>
-            c < 128 && ContainsUnchecked(c);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Contains256(char c) =>

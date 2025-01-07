@@ -8,12 +8,11 @@ using Xunit;
 public class Foo
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Foo o = new Foo();
         Object a = 2.718281828458999;
         System.Console.WriteLine(o.Convert(o.Compare(a, 2.718281828458999) ? 1 : 0));
-        return 100;
     }
 
     public Boolean Compare(Object a, Object b)

@@ -1366,7 +1366,7 @@ namespace System.Collections.Generic
         /// An earlier implementation used delegates to perform these checks rather than returning
         /// an ElementCount struct; however this was changed due to the perf overhead of delegates.
         /// </summary>
-        private unsafe ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
+        private ElementCount CheckUniqueAndUnfoundElements(IEnumerable<T> other, bool returnIfUnfound)
         {
             ElementCount result;
 
@@ -2011,7 +2011,7 @@ namespace System.Collections.Generic
         }
 
         // Used for set checking operations (using enumerables) that rely on counting
-        private static int Log2(int value) => BitOperations.Log2((uint) value);
+        private static int Log2(int value) => BitOperations.Log2((uint)value);
 
         #endregion
     }

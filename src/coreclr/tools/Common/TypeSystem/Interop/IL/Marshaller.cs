@@ -908,13 +908,13 @@ namespace Internal.TypeSystem.Interop
             {
                 ILCodeStream marshallingCodeStream = _ilCodeStreams.MarshallingCodeStream;
                 ILEmitter emitter = _ilCodeStreams.Emitter;
-                ILLocalVariable native = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
+                ILLocalVariable native = emitter.NewLocal(Context.GetPointerType(ManagedParameterType));
 
                 ILLocalVariable vPinnedByRef = emitter.NewLocal(ManagedParameterType, true);
                 marshallingCodeStream.EmitLdArg(Index - 1);
                 marshallingCodeStream.EmitStLoc(vPinnedByRef);
                 marshallingCodeStream.EmitLdLoc(vPinnedByRef);
-                marshallingCodeStream.Emit(ILOpcode.conv_i);
+                marshallingCodeStream.Emit(ILOpcode.conv_u);
                 marshallingCodeStream.EmitStLoc(native);
                 _ilCodeStreams.CallsiteSetupCodeStream.EmitLdLoc(native);
             }
@@ -1078,6 +1078,8 @@ namespace Internal.TypeSystem.Interop
 
                     if (sizeConst.HasValue)
                         codeStream.Emit(ILOpcode.add);
+
+                    codeStream.Emit(ILOpcode.conv_ovf_i4);
                 }
 
                 if (!sizeConst.HasValue && !sizeParamIndex.HasValue)
@@ -1376,15 +1378,10 @@ namespace Internal.TypeSystem.Interop
                 ILLocalVariable vPinnedFirstElement = emitter.NewLocal(ManagedElementType.MakeByRefType(), true);
 
                 LoadManagedValue(codeStream);
-                codeStream.Emit(ILOpcode.ldlen);
-                codeStream.Emit(ILOpcode.conv_i4);
-                codeStream.Emit(ILOpcode.brfalse, lNullArray);
-
-                LoadManagedValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(getArrayDataReferenceMethod));
                 codeStream.EmitStLoc(vPinnedFirstElement);
 
-                // Fall through. If array didn't have elements, vPinnedFirstElement is zeroinit.
+                // Fall through. If array is null, vPinnedFirstElement is zeroinit.
                 codeStream.EmitLabel(lNullArray);
                 codeStream.EmitLdLoc(vPinnedFirstElement);
                 codeStream.Emit(ILOpcode.conv_i);

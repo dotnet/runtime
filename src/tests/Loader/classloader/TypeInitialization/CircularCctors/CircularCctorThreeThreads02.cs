@@ -20,6 +20,7 @@ In C.cctor: thread T2: D.i 8
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class A 
 {
 	public static int i;
@@ -139,7 +140,8 @@ public class Test_CircularCctorThreeThreads02
 	}
 
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		Thread t1 = new Thread(RunGetA);

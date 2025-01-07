@@ -207,7 +207,7 @@ namespace System.Reflection.Metadata.Tests
                     assertMessage = message + "\r\n" + assertMessage;
                 }
 
-                Assert.True(false, assertMessage);
+                Assert.Fail(assertMessage);
             }
         }
 
@@ -312,12 +312,12 @@ namespace System.Reflection.Metadata.Tests
 
         public static void Fail(string message)
         {
-            Assert.False(true, message);
+            Assert.Fail(message);
         }
 
         public static void Fail(string format, params object[] args)
         {
-            Assert.False(true, string.Format(format, args));
+            Assert.Fail(string.Format(format, args));
         }
 
         public static void NotNull<T>(T @object, string message = null)
@@ -338,7 +338,7 @@ namespace System.Reflection.Metadata.Tests
 
             if (normalizedExpected != normalizedActual)
             {
-                Assert.True(false, GetAssertMessage(expected, actual, escapeQuotes, expectedValueSourcePath, expectedValueSourceLine));
+                Assert.Fail(GetAssertMessage(expected, actual, escapeQuotes, expectedValueSourcePath, expectedValueSourceLine));
             }
         }
 
@@ -347,7 +347,7 @@ namespace System.Reflection.Metadata.Tests
         {
             if (result1 != result2)
             {
-                Assert.True(false, GetAssertMessage(result1, result2));
+                Assert.Fail(GetAssertMessage(result1, result2));
             }
         }
 
@@ -455,7 +455,7 @@ namespace System.Reflection.Metadata.Tests
             try
             {
                 testCode();
-                Assert.False(true, $"Exception of type '{typeof(T)}' was expected but none was thrown.");
+                Assert.Fail($"Exception of type '{typeof(T)}' was expected but none was thrown.");
             }
             catch (Exception e)
             {

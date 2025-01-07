@@ -4,15 +4,43 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
+        private bool HasPartialCodePoint => PartialCodePointLength != 0;
+
+        private void ClearPartialCodePoint() => PartialCodePointLength = 0;
+
+        private void ValidateEncodingDidNotChange(SegmentEncoding currentSegmentEncoding)
+        {
+            if (PreviousSegmentEncoding != currentSegmentEncoding)
+            {
+                ThrowHelper.ThrowInvalidOperationException_CannotMixEncodings(PreviousSegmentEncoding, currentSegmentEncoding);
+            }
+        }
+
+        private void ValidateNotWithinUnfinalizedString()
+        {
+            if (_tokenType == StringSegmentSentinel)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
+            }
+
+            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
+            Debug.Assert(!HasPartialCodePoint);
+        }
+
         private void ValidateWritingValue()
         {
             Debug.Assert(!_options.SkipValidation);
+
+            // Make sure a new value is not attempted within an unfinalized string.
+            ValidateNotWithinUnfinalizedString();
 
             if (_inObject)
             {
@@ -35,29 +63,13 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Base64EncodeAndWrite(ReadOnlySpan<byte> bytes, Span<byte> output, int encodingLength)
+        private void Base64EncodeAndWrite(ReadOnlySpan<byte> bytes, Span<byte> output)
         {
-            byte[]? outputText = null;
-
-            Span<byte> encodedBytes = encodingLength <= JsonConstants.StackallocByteThreshold ?
-                stackalloc byte[JsonConstants.StackallocByteThreshold] :
-                (outputText = ArrayPool<byte>.Shared.Rent(encodingLength));
-
-            OperationStatus status = Base64.EncodeToUtf8(bytes, encodedBytes, out int consumed, out int written);
+            Span<byte> destination = output.Slice(BytesPending);
+            OperationStatus status = Base64.EncodeToUtf8(bytes, destination, out int consumed, out int written);
             Debug.Assert(status == OperationStatus.Done);
             Debug.Assert(consumed == bytes.Length);
-
-            encodedBytes = encodedBytes.Slice(0, written);
-            Span<byte> destination = output.Slice(BytesPending);
-
-            Debug.Assert(destination.Length >= written);
-            encodedBytes.Slice(0, written).CopyTo(destination);
             BytesPending += written;
-
-            if (outputText != null)
-            {
-                ArrayPool<byte>.Shared.Return(outputText);
-            }
         }
     }
 }

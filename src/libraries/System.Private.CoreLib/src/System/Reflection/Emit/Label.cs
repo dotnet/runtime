@@ -1,35 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-**
-** Purpose: Represents a Label to the ILGenerator class.
-**
-**
-===========================================================*/
-
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
-    // The Label class is an opaque representation of a label used by the
-    // ILGenerator class.  The token is used to mark where labels occur in the IL
-    // stream and then the necessary offsets are put back in the code when the ILGenerator
-    // is passed to the MethodWriter.
-    // Labels are created by using ILGenerator.CreateLabel and their position is set
-    // by using ILGenerator.MarkLabel.
+    /// <summary>
+    /// Represents a label in the instruction stream. Used in conjunction with the <see cref="ILGenerator"/> class.
+    /// </summary>
+    /// <remarks>
+    /// The Label class is an opaque representation of a label used by the
+    /// <see cref="ILGenerator"/> class.  The token is used to mark where labels occur in the IL
+    /// stream. Labels are created by using <see cref="ILGenerator.DefineLabel"/> and their position is set
+    /// by using <see cref="ILGenerator.MarkLabel"/>.
+    /// </remarks>
     public readonly struct Label : IEquatable<Label>
     {
         internal readonly int m_label;
 
         internal Label(int label) => m_label = label;
 
-        internal int GetLabelValue() => m_label;
+        /// <summary>
+        /// Gets the label unique id assigned by the ILGenerator.
+        /// </summary>
+        public int Id => m_label;
 
         public override int GetHashCode() => m_label;
 

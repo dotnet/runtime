@@ -2,35 +2,53 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    internal static partial class CancelablePromise
+    public static partial class CancelablePromise
     {
-        [JSImport("INTERNAL.mono_wasm_cancel_promise")]
-        private static partial void _CancelPromise(IntPtr promiseGCHandle);
-
-        public static void CancelPromise(Task promise)
+        public static unsafe void CancelPromise(Task promise)
         {
             // this check makes sure that promiseGCHandle is still valid handle
             if (promise.IsCompleted)
             {
                 return;
             }
-            GCHandle? promiseGCHandle = promise.AsyncState as GCHandle?;
-            if (promiseGCHandle == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
+            JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
+            if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-#if FEATURE_WASM_THREADS
-            // TODO JSObject.AssertThreadAffinity(promise);
-            // in order to remember the thread ID of the promise, we would have to allocate holder object for any Task,
-            // which would hold thread ID and the GCHandle
-            // that would be pretty expensive, so we don't do it for now
-            // the consequences are that calling CancelPromise on wrong thread would do nothing
-            // because there would not be any object on JS registered under the same GCHandle
-            // perhaps that's the point when we could throw an exception on JS side.
+#if !FEATURE_WASM_MANAGED_THREADS
+            if (holder.IsDisposed)
+            {
+                return;
+            }
+            Interop.Runtime.CancelPromise(holder.GCHandle);
+#else
+
+            lock (holder.ProxyContext)
+            {
+                if (promise.IsCompleted || holder.IsDisposed || holder.ProxyContext._isDisposed)
+                {
+                    return;
+                }
+
+                if (Interlocked.CompareExchange(ref (*holder.State).IsResolving, 1, 0) != 0)
+                {
+                    return;
+                }
+
+                if (holder.ProxyContext.IsCurrentThread())
+                {
+                    Interop.Runtime.CancelPromise(holder.GCHandle);
+                }
+                else
+                {
+                    Interop.Runtime.CancelPromisePost(holder.ProxyContext.JSNativeTID, holder.GCHandle);
+                }
+            }
 #endif
-            _CancelPromise((IntPtr)promiseGCHandle.Value);
         }
     }
 }

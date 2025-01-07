@@ -346,6 +346,24 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
+        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        {
+            var metadataReader = this.MetadataReader;
+            var stringComparer = metadataReader.StringComparer;
+
+            foreach (var handle in _typeDefinition.GetMethods())
+            {
+                if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
+                {
+                    var method = _module.GetMethod(handle, this);
+                    if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
+                        return method;
+                }
+            }
+
+            return null;
+        }
+
         public override MethodDesc GetStaticConstructor()
         {
             var metadataReader = this.MetadataReader;
@@ -446,9 +464,9 @@ namespace Internal.TypeSystem.Ecma
 
                 foreach (var handle in _typeDefinition.GetFields())
                 {
-                    var field = _module.GetField(handle, this);
-                    if (!field.IsStatic)
-                        return field.FieldType;
+                    var fieldInfo = _module.GetField(handle, this);
+                    if (!fieldInfo.IsStatic)
+                        return fieldInfo.FieldType;
                 }
 
                 return base.UnderlyingType; // Use the base implementation to get consistent error behavior

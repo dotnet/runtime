@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using DAM = System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute;
@@ -64,6 +65,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetUnderlyingTypeOnNonNullableKnownType.Test ();
 			MakeGenericTypeWithUnknownValue (new object[2] { 1, 2 });
 			MakeGenericTypeWithKnowAndUnknownArray ();
+			RequiresOnNullableMakeGenericType.Test();
+
+			// Prevents optimizing away 'as Type' conversion.
+			PreserveSystemType ();
 		}
 
 		[Kept]
@@ -94,6 +99,68 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void RequireAllFromMadeGenericNullableOfTypeWithMethodWithRuc ()
 		{
 			typeof (Nullable<>).MakeGenericType (typeof (TestStructWithRucMethod)).RequiresAll ();
+		}
+
+		public class RequiresOnNullableMakeGenericType
+		{
+			[Kept]
+			static Type UnannotatedField;
+			[Kept]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type FieldWithMethods;
+			[Kept]
+			[UnexpectedWarning("IL2080", nameof(UnannotatedField), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			static void Field()
+			{
+				typeof (Nullable<>).MakeGenericType (UnannotatedField).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (FieldWithMethods).GetMethods ();
+			}
+
+			[Kept]
+			[UnexpectedWarning("IL2090", nameof(unannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			static void Parameter(
+				Type unannotated,
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
+			{
+				typeof (Nullable<>).MakeGenericType (unannotated).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (annotated).GetMethods ();
+			}
+
+			[Kept]
+			[ExpectedWarning("IL2090", "TUnannotated")]
+			static void TypeParameter<
+				TUnannotated,
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TAnnotated>()
+			{
+				typeof (Nullable<>).MakeGenericType (typeof(TUnannotated)).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (typeof(TAnnotated)).GetMethods ();
+			}
+
+			[Kept]
+			[UnexpectedWarning("IL2075", nameof(GetUnannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			static void ReturnValue()
+			{
+				typeof (Nullable<>).MakeGenericType (GetUnannotated()).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (GetAnnotated()).GetMethods ();
+			}
+			[Kept]
+			static Type GetUnannotated() => null;
+			[Kept]
+			[return: KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type GetAnnotated() => null;
+
+			[Kept]
+			public static void Test()
+			{
+				Field();
+				Parameter(null, null);
+				TypeParameter<object, object>();
+				ReturnValue();
+			}
 		}
 
 		[Kept]
@@ -131,14 +198,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		static void NullableOfAnnotatedGenericParameterRequiresPublicProperties<[KeptAttributeAttribute (typeof (DAM))][DAM (DAMT.PublicProperties)] T> () where T : struct
+		static void NullableOfAnnotatedGenericParameterRequiresPublicProperties<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			[KeptAttributeAttribute (typeof (DAM))]
+			[DAM (DAMT.PublicProperties)]
+			T
+		> () where T : struct
 		{
 			Nullable.GetUnderlyingType (typeof (Nullable<T>)).RequiresPublicProperties ();
 		}
 
 		[Kept]
 		[ExpectedWarning ("IL2087")]
-		static void NullableOfUnannotatedGenericParameterRequiresPublicProperties<T> () where T : struct
+		static void NullableOfUnannotatedGenericParameterRequiresPublicProperties<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : struct
 		{
 			Nullable.GetUnderlyingType (typeof (Nullable<T>)).RequiresPublicProperties ();
 		}
@@ -240,7 +315,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		static void UnderlyingTypeOfCreatedNullableOfAnnotatedTRequiresPublicProperties<[KeptAttributeAttribute (typeof (DAM))][DAM (DAMT.PublicProperties)] T> () where T : struct
+		static void UnderlyingTypeOfCreatedNullableOfAnnotatedTRequiresPublicProperties<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			[KeptAttributeAttribute (typeof (DAM))]
+			[DAM (DAMT.PublicProperties)]
+			T
+		> () where T : struct
 		{
 			Type t = typeof (Nullable<T>);
 			t = Nullable.GetUnderlyingType (t);
@@ -262,13 +342,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[Kept]
 		[ExpectedWarning ("IL2091")]
-		static void NullableOfUnannotatedGenericParamPassedAsGenericParamRequiresPublicFields<T> () where T : struct
+		static void NullableOfUnannotatedGenericParamPassedAsGenericParamRequiresPublicFields<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : struct
 		{
 			RequirePublicFieldsOnGenericParam<Nullable<T>> ();
 		}
 
 		[Kept]
-		static void NullableOfAnnotatedGenericParamPassedAsGenericParamRequiresPublicFields<[KeptAttributeAttribute (typeof (DAM))][DAM (DAMT.PublicFields)] T> () where T : struct
+		static void NullableOfAnnotatedGenericParamPassedAsGenericParamRequiresPublicFields<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			[KeptAttributeAttribute (typeof (DAM))]
+			[DAM (DAMT.PublicFields)] T
+		> () where T : struct
 		{
 			RequirePublicFieldsOnGenericParam<Nullable<T>> ();
 		}
@@ -298,8 +385,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// https://github.com/dotnet/linker/issues/2755
-		[ExpectedWarning ("IL2075", "GetFields", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+		[ExpectedWarning ("IL2075", "GetFields")]
 		static void MakeGenericTypeWithKnowAndUnknownArray (Type[] unknownTypes = null, int p = 0)
 		{
 			Type[] types = p switch {
@@ -310,6 +396,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type nullable = typeof (Nullable<>).MakeGenericType (types);
 			nullable.GetProperties ();   // This works - we still know it's Nullable<>, so we can get its properties
 			Nullable.GetUnderlyingType (nullable).GetFields (); // This must warn - since we have no idea what the underlying type is for the unknownTypes case
+		}
+
+		[Kept]
+		static void PreserveSystemType ()
+		{
+			typeof (Type).RequiresNonPublicConstructors ();
 		}
 	}
 }

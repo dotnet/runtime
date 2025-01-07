@@ -107,13 +107,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("ReadyToRunInstructionSets_");
+            sb.Append("ReadyToRunInstructionSets_"u8);
             sb.Append(_instructionSetsSupport);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _instructionSetsSupport.CompareTo(((ReadyToRunInstructionSetSupportSignature)other)._instructionSetsSupport);
+            return string.CompareOrdinal(_instructionSetsSupport, ((ReadyToRunInstructionSetSupportSignature)other)._instructionSetsSupport);
         }
     }
 }

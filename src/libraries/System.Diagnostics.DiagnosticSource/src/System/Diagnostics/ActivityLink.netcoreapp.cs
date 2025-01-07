@@ -11,7 +11,7 @@ namespace System.Diagnostics
     /// Links can be used to represent batched operations where a Activity was initiated by multiple initiating Activities,
     /// each representing a single incoming item being processed in the batch.
     /// </summary>
-    public readonly partial struct ActivityLink  : IEquatable<ActivityLink>
+    public readonly partial struct ActivityLink : IEquatable<ActivityLink>
     {
         public override int GetHashCode()
         {

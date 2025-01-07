@@ -116,7 +116,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 w.Dispose();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -172,13 +172,13 @@ namespace System.Xml.XmlWriterApiTests
             catch (ArgumentException e)
             {
                 CError.WriteLineIgnore("Exception: " + e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             finally
             {
                 w.Dispose();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -235,7 +235,7 @@ namespace System.Xml.XmlWriterApiTests
                     break;
                 default:
                     CError.Compare(false, "Invalid param value");
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
         }
@@ -309,7 +309,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 w.Dispose();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         /*=============================================================================
@@ -351,7 +351,7 @@ namespace System.Xml.XmlWriterApiTests
                     w.Dispose();
             }
 
-            Assert.True(false, "Did not throw exception");
+            Assert.Fail("Did not throw exception");
         }
 
         [Theory]
@@ -386,7 +386,7 @@ namespace System.Xml.XmlWriterApiTests
             }
 
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -418,7 +418,7 @@ namespace System.Xml.XmlWriterApiTests
             }
 
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

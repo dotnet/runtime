@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Collections;
-using System.ComponentModel;
-using System.Xml.Serialization;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Threading;
+using System.Xml.Serialization;
 
 namespace System.Xml.Schema
 {
@@ -93,12 +93,14 @@ namespace System.Xml.Schema
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Write(Stream stream, XmlNamespaceManager? namespaceManager)
         {
             ArgumentNullException.ThrowIfNull(stream);
@@ -108,6 +110,7 @@ namespace System.Xml.Schema
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Write(TextWriter writer)
         {
             ArgumentNullException.ThrowIfNull(writer);
@@ -115,6 +118,7 @@ namespace System.Xml.Schema
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Write(TextWriter writer, XmlNamespaceManager? namespaceManager)
         {
             ArgumentNullException.ThrowIfNull(writer);
@@ -124,6 +128,7 @@ namespace System.Xml.Schema
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Write(XmlWriter writer)
         {
             ArgumentNullException.ThrowIfNull(writer);
@@ -135,6 +140,7 @@ namespace System.Xml.Schema
         // all of XmlSchema public members is enough in order to be safe in all cases, so we have opted to keep the RequiresUnreferencedCode
         // attribute for now. This can be removed in the future if it is determined that the above is enough for all scenarios to be trim-safe.
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Write(XmlWriter writer, XmlNamespaceManager? namespaceManager)
         {
             ArgumentNullException.ThrowIfNull(writer);

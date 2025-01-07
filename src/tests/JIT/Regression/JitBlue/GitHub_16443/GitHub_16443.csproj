@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DebugType />
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>

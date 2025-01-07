@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
     /// </list>
     /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
-    public struct UnsafeGCHandle
+    internal struct UnsafeGCHandle
     {
         // IMPORTANT: This must be kept in sync with the GCHandleType enum.
         private const GCHandleType MaxHandleType = GCHandleType.Pinned;
@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
             _handle = RuntimeImports.RhHandleAlloc(value, type);
         }
 
-        public static UnsafeGCHandle Alloc(object value, GCHandleType type)
+        public static UnsafeGCHandle Alloc(object value, GCHandleType type = GCHandleType.Normal)
         {
             return new UnsafeGCHandle(value, type);
         }

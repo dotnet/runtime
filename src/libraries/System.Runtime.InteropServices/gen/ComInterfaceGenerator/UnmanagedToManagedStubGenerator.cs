@@ -4,8 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -14,31 +14,28 @@ namespace Microsoft.Interop
     internal sealed class UnmanagedToManagedStubGenerator
     {
         private const string ReturnIdentifier = "__retVal";
-        private const string InvokeSucceededIdentifier = "__invokeSucceeded";
 
         private readonly BoundGenerators _marshallers;
 
-        private readonly NativeToManagedStubCodeContext _context;
+        private readonly StubIdentifierContext _context;
 
         public UnmanagedToManagedStubGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
-            Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
-            IMarshallingGeneratorFactory generatorFactory)
+            GeneratorDiagnosticsBag diagnosticsBag,
+            IMarshallingGeneratorResolver generatorResolver)
         {
-            _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultNativeToManagedStub, new Forwarder(), out var bindingDiagnostics);
 
-            foreach (var failure in bindingFailures)
-            {
-                marshallingNotSupportedCallback(failure.Info, failure.Exception);
-            }
+            diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
-            if (_marshallers.NativeReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.NativeReturnMarshaller.TypeInfo, _context))
+            if (_marshallers.NativeReturnMarshaller.UsesNativeIdentifier)
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new NativeToManagedStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new DefaultIdentifierContext(ReturnIdentifier, $"{ReturnIdentifier}{StubIdentifierContext.GeneratedNativeIdentifierSuffix}", MarshalDirection.UnmanagedToManaged);
+            }
+            else
+            {
+                _context = new DefaultIdentifierContext(ReturnIdentifier, ReturnIdentifier, MarshalDirection.UnmanagedToManaged);
             }
         }
 
@@ -52,53 +49,41 @@ namespace Microsoft.Interop
         /// </remarks>
         public BlockSyntax GenerateStubBody(ExpressionSyntax methodToInvoke)
         {
-            List<StatementSyntax> setupStatements = new();
             GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
-                _context,
-                methodToInvoke);
+                StubCodeContext.DefaultNativeToManagedStub,
+                _context, methodToInvoke);
+            Debug.Assert(statements.CleanupCalleeAllocated.IsEmpty);
+
             bool shouldInitializeVariables =
                 !statements.GuaranteedUnmarshal.IsEmpty
-                || !statements.Cleanup.IsEmpty
+                || !statements.CleanupCallerAllocated.IsEmpty
                 || !statements.ManagedExceptionCatchClauses.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForUnmanagedToManaged(_marshallers, _context, shouldInitializeVariables);
 
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
-            }
+            List<StatementSyntax> setupStatements =
+            [
+                .. declarations.Initializations,
+                .. declarations.Variables,
+                .. statements.Setup,
+            ];
 
-            setupStatements.AddRange(declarations.Initializations);
-            setupStatements.AddRange(declarations.Variables);
-            setupStatements.AddRange(statements.Setup);
-
-            List<StatementSyntax> tryStatements = new();
-            tryStatements.AddRange(statements.Unmarshal);
-
-            tryStatements.Add(statements.InvokeStatement);
-
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                tryStatements.Add(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(InvokeSucceededIdentifier),
-                    LiteralExpression(SyntaxKind.TrueLiteralExpression))));
-            }
-
-            tryStatements.AddRange(statements.NotifyForSuccessfulInvoke);
-            tryStatements.AddRange(statements.PinnedMarshal);
-            tryStatements.AddRange(statements.Marshal);
+            List<StatementSyntax> tryStatements =
+            [
+                .. statements.GuaranteedUnmarshal,
+                .. statements.Unmarshal,
+                statements.InvokeStatement,
+                .. statements.NotifyForSuccessfulInvoke,
+                .. statements.Marshal,
+                .. statements.PinnedMarshal,
+            ];
 
             List<StatementSyntax> allStatements = setupStatements;
-            List<StatementSyntax> finallyStatements = new();
-            if (!statements.GuaranteedUnmarshal.IsEmpty)
-            {
-                finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(statements.GuaranteedUnmarshal)));
-            }
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.Cleanup);
-            if (finallyStatements.Count > 0)
+            ImmutableArray<StatementSyntax> finallyStatements = statements.CleanupCallerAllocated;
+            if (finallyStatements.Length > 0)
             {
                 allStatements.Add(
                     TryStatement(Block(tryStatements), catchClauses, FinallyClause(Block(finallyStatements))));

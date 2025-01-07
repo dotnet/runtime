@@ -17,6 +17,7 @@ class ILLinkDescriptor
         ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(PropertyKeptViaDescriptor));
         ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(EventKeptViaDescriptor));
         ThrowIfTypeNotPresent(typeof(ILLinkDescriptor), nameof(NestedTypeKeptViaDescriptor));
+        ThrowIfTypeNotPresent("LibraryClass, ShimLibrary");
         ThrowIfTypePresent(typeof(ILLinkDescriptor), nameof(NestedTypeNonKept));
         return 100;
     }
@@ -51,6 +52,10 @@ class ILLinkDescriptor
         Justification = "That's the point")]
     private static bool IsTypePresent(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public) != null;
 
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
+    private static bool IsTypePresent(string typeName) => Type.GetType(typeName) != null;
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static bool IsMemberPresent(Type testType, string memberName) {
@@ -65,6 +70,14 @@ class ILLinkDescriptor
     private static void ThrowIfTypeNotPresent(Type testType, string typeName)
     {
         if (!IsTypePresent(testType, typeName))
+        {
+            throw new Exception(typeName);
+        }
+    }
+
+    private static void ThrowIfTypeNotPresent(string typeName)
+    {
+        if (!IsTypePresent(typeName))
         {
             throw new Exception(typeName);
         }

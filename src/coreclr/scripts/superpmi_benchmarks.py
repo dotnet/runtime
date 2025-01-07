@@ -21,7 +21,7 @@ import time
 
 from shutil import copyfile
 from coreclr_arguments import *
-from jitutil import run_command, ChangeDir, TempDir
+from jitutil import run_command, ChangeDir, TempDir, copy_directory
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -178,13 +178,17 @@ def build_and_run(coreclr_args, output_mch_name):
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
-    env_copy = os.environ.copy()
+    tfm = "net9.0"
+    os.environ["PERFLAB_TARGET_FRAMEWORKS"] = tfm
+
+    env_for_restore = os.environ.copy()
+
     if is_windows:
         # Try to work around problem with random NuGet failures in "dotnet restore":
         #   error NU3037: Package 'System.Runtime 4.1.0' from source 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json':
         #     The repository primary signature validity period has expired. [C:\h\w\A3B008C0\w\B581097F\u\performance\src\benchmarks\micro\MicroBenchmarks.csproj]
         # Using environment variable specified in https://github.com/NuGet/NuGet.Client/pull/4259.
-        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
+        env_for_restore["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
 
     # If `dotnet restore` fails, retry.
     num_tries = 3
@@ -193,7 +197,7 @@ def build_and_run(coreclr_args, output_mch_name):
         exit_on_fail = try_num + 1 == num_tries
         (_, _, return_code) = run_command(
             [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory],
-            _exit_on_fail=exit_on_fail, _env=env_copy)
+            _exit_on_fail=exit_on_fail, _env=env_for_restore)
         if return_code == 0:
             # It succeeded!
             break
@@ -203,8 +207,58 @@ def build_and_run(coreclr_args, output_mch_name):
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
-         "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+         "--framework", tfm, "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
+
+    # This is specifically for PowerShell.Benchmarks.
+    # Because we are using '--corerun' when running the benchmarks, it is not able to resolve the PowerShell dependent assemblies.
+    # To make this work, we create a directory called 'core_root' in the directory where the benchmarks_dll lives.
+    # Then we copy the relevant PowerShell dependencies to 'core_root'.
+    # Then we copy the contents of the original 'core_root' to the benchmarks' 'core_root', potentially overwriting any older core dlls.
+    # Then we just use the 'corerun.exe' from the benchmarks' 'core_root'.
+    # We make a copy of 'core_root' as to avoid any potential file-system issues.
+    if benchmarks_dll.endswith("PowerShell.Benchmarks.dll"):
+        benchmarks_dll_dir = os.path.dirname(benchmarks_dll)
+
+        # Create benchmarks' 'core_root'.
+        benchmarks_dll_core_root = os.path.join(benchmarks_dll_dir, "core_root")
+        if not os.path.exists(benchmarks_dll_core_root):
+            os.makedirs(benchmarks_dll_core_root)
+
+        # Begin copy PowerShell dependencies.
+        if is_windows:
+            RID = "win-" + arch
+        elif platform.system() == "Darwin":
+            RID = "osx-" + arch
+        else:
+            RID = "linux-" + arch
+
+        if is_windows:
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/win/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
+        else:
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/unix/lib/net7.0/"), benchmarks_dll_core_root, verbose_copy=True)
+
+        if is_windows:
+            dir_to_microsoft_management_infrastructure_dll = os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/lib/netstandard1.6/")
+            if os.path.exists(dir_to_microsoft_management_infrastructure_dll):
+                copy_directory(dir_to_microsoft_management_infrastructure_dll, benchmarks_dll_core_root, verbose_copy=True)
+        else:
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/unix/lib/netstandard1.6/"), benchmarks_dll_core_root, verbose_copy=True)
+
+        dir_to_native = os.path.join(benchmarks_dll_dir, f"runtimes/{RID}/native/")
+        if os.path.exists(dir_to_native):
+            copy_directory(dir_to_native, benchmarks_dll_core_root, verbose_copy=True)
+
+        if platform.system() == "Darwin":
+            copy_directory(os.path.join(benchmarks_dll_dir, "runtimes/osx/native/"), benchmarks_dll_core_root, verbose_copy=True)
+        # End copy PowerShell dependencies.
+
+        # Copy the original 'core_root' to the benchmarks' 'core_root'.
+        copy_directory(core_root, benchmarks_dll_core_root, verbose_copy=True)
+
+        # Use benchmarks' 'core_root'.
+        print(f"Using new 'core_root': {benchmarks_dll_core_root}")
+        core_root = benchmarks_dll_core_root
 
     # common BDN prefix
     collection_command = f"{dotnet_exe} {benchmarks_dll} --corerun {os.path.join(core_root, corerun_exe)} "
@@ -224,7 +278,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
     # common BDN environment var settings
     # Disable ReadyToRun so we always JIT R2R methods and collect them
-    collection_command += f"--envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0 "
+    collection_command += f"--envVars DOTNET_JitName:{shim_name} DOTNET_ReadyToRun:0 "
 
     # custom BDN environment var settings
     if coreclr_args.tiered_pgo:

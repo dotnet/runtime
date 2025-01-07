@@ -27,7 +27,7 @@ using namespace clr;
 // is relied on by the EH code and the JIT code (for handling patched
 // managed code, and GC stress exception) after GC stress is dynamically
 // turned off.
-Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
+int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 #endif // STRESS_HEAP
 
 /**************************************************************/
@@ -96,7 +96,6 @@ HRESULT EEConfig::Init()
     fGCBreakOnOOM = false;
     iGCconcurrent = 0;
     iGCHoardVM = 0;
-    iGCLOHThreshold = 0;
 
     dwSpinInitialDuration = 0x32;
     dwSpinBackoffFactor = 0x3;
@@ -111,18 +110,19 @@ HRESULT EEConfig::Init()
     iJitOptimizeType = OPT_DEFAULT;
     fJitFramed = false;
     fJitMinOpts = false;
+    fJitEnableOptionalRelocs = false;
+    fDisableOptimizedThreadStaticAccess = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
-    fNgenBindOptimizeNonGac = false;
     fStressLog = false;
     fForceEnc = false;
-    fProbeForStackOverflow = true;
 
     INDEBUG(fStressLog = true;)
 
+    fDebuggable = false;
+
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
-    fDebuggable = false;
     pPrestubHalt = 0;
     pPrestubGC = 0;
     pszBreakOnClassLoad = 0;
@@ -178,24 +178,9 @@ HRESULT EEConfig::Init()
     DoubleArrayToLargeObjectHeapThreshold = 1000;
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    dwDisableStackwalkCache = 0;
-#else // TARGET_X86
-    dwDisableStackwalkCache = 1;
-#endif // TARGET_X86
-
-    szZapBBInstr     = NULL;
-    szZapBBInstrDir  = NULL;
-
 #ifdef _DEBUG
     // interop logging
     m_TraceWrapper = 0;
-#endif
-
-#ifdef _DEBUG
-    dwNgenForceFailureMask  = 0;
-    dwNgenForceFailureCount = 0;
-    dwNgenForceFailureKind  = 0;
 #endif
 
 #ifdef _DEBUG
@@ -205,10 +190,6 @@ HRESULT EEConfig::Init()
 
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = FALSE;
-#endif
 
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = false;
@@ -239,6 +220,7 @@ HRESULT EEConfig::Init()
 #if defined(FEATURE_PGO)
     fTieredPGO = false;
     tieredPGO_InstrumentOnlyHotCode = false;
+    tieredPGO_ScalableCountThreshold = 13;
 #endif
 
 #if defined(FEATURE_READYTORUN)
@@ -272,8 +254,6 @@ HRESULT EEConfig::Cleanup()
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
-
-    delete[] szZapBBInstr;
 
     if (pReadyToRunExcludeList)
         delete pReadyToRunExcludeList;
@@ -437,15 +417,11 @@ HRESULT EEConfig::sync()
     else
         iGCHoardVM = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCRetainVM);
 
-    if (!iGCLOHThreshold)
-    {
-        iGCLOHThreshold = Configuration::GetKnobDWORDValue(W("System.GC.LOHThreshold"), CLRConfig::EXTERNAL_GCLOHThreshold);
-        iGCLOHThreshold = max (iGCLOHThreshold, LARGE_OBJECT_SIZE);
-    }
-
 #ifdef FEATURE_CONSERVATIVE_GC
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
+
+    fCheckDoubleReporting = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_CheckDoubleReporting, iGCStress ? 1 : 0) != 0);
 
 #ifdef HOST_64BIT
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);
@@ -497,27 +473,6 @@ HRESULT EEConfig::sync()
     DoubleArrayToLargeObjectHeapThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
 
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapBBInstr, (LPWSTR*)&szZapBBInstr));
-    if (szZapBBInstr)
-    {
-        szZapBBInstr = NarrowWideChar((LPWSTR)szZapBBInstr);
-
-        // If szZapBBInstr only contains white space, then there's nothing to instrument (this
-        // is the case with some test cases, and it's easier to fix all of them here).
-        LPWSTR pStr = (LPWSTR) szZapBBInstr;
-        while (*pStr == W(' ')) pStr++;
-        if (*pStr == 0)
-            szZapBBInstr = NULL;
-    }
-
-    if (szZapBBInstr != NULL)
-    {
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapBBInstrDir, &szZapBBInstrDir));
-    }
-
-    dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
-
-
 #ifdef _DEBUG
     IfFailRet (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnClassLoad, (LPWSTR*) &pszBreakOnClassLoad));
     pszBreakOnClassLoad = NarrowWideChar((LPWSTR)pszBreakOnClassLoad);
@@ -543,17 +498,20 @@ HRESULT EEConfig::sync()
 
     fJitFramed = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitFramed) != 0);
     fJitMinOpts = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JITMinOpts) == 1);
+    fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
+
+    fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
 #endif
 
 
-#ifdef _DEBUG
-    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitDebuggable) != 0);
+    fDebuggable         = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitDebuggable) != 0);
 
+#ifdef _DEBUG
     LPWSTR wszPreStubStuff = NULL;
 
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PrestubHalt, &wszPreStubStuff));
@@ -673,19 +631,6 @@ HRESULT EEConfig::sync()
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn) != 0);
-#endif
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseMethodDataCache) != 0) {
-        MethodTable::AllowMethodDataCaching();
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_UseParentMethodData) != 0) {
-        MethodTable::AllowParentMethodDataCopy();
-    }
-
-
 #if defined(_DEBUG) && defined(TARGET_AMD64)
     m_cGenerateLongJumpDispatchStubRatio = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,
                                                           static_cast<DWORD>(m_cGenerateLongJumpDispatchStubRatio));
@@ -719,7 +664,8 @@ HRESULT EEConfig::sync()
         fTieredCompilation_CallCounting = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCounting) != 0;
 
         DWORD tieredCompilation_ConfiguredCallCountThreshold =
-            CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountThreshold);
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountThreshold"), CLRConfig::EXTERNAL_TC_CallCountThreshold);
+
         if (tieredCompilation_ConfiguredCallCountThreshold == 0)
         {
             tieredCompilation_CallCountThreshold = 1;
@@ -733,7 +679,8 @@ HRESULT EEConfig::sync()
             tieredCompilation_CallCountThreshold = (UINT16)tieredCompilation_ConfiguredCallCountThreshold;
         }
 
-        tieredCompilation_CallCountingDelayMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TC_CallCountingDelayMs);
+        tieredCompilation_CallCountingDelayMs =
+            Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
 
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
@@ -777,6 +724,13 @@ HRESULT EEConfig::sync()
         // Also, consider DynamicPGO enabled if WritePGOData is set
         fTieredPGO |= CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) != 0;
         tieredPGO_InstrumentOnlyHotCode = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_InstrumentOnlyHotCode) == 1;
+
+        DWORD scalableCountThreshold = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TieredPGO_ScalableCountThreshold);
+
+        if ((scalableCountThreshold > 0) && (scalableCountThreshold < 20))
+        {
+            tieredPGO_ScalableCountThreshold = scalableCountThreshold;
+        }
 
         // We need quick jit for TieredPGO
         if (!fTieredCompilation_QuickJit)
@@ -893,25 +847,24 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
     } CONTRACTL_END;
 
     if (list == 0)
-        return(false);
-    else
-    {
-        DefineFullyQualifiedNameForClass();
+        return false;
 
-        LPCUTF8 name = pMD->GetName();
-        if (name == NULL)
-        {
-            return false;
-        }
-        LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-        if (className == NULL)
-        {
-            return false;
-        }
-        PCCOR_SIGNATURE sig = pMD->GetSig();
+    DefineFullyQualifiedNameForClass();
 
-        return list->IsInList(name, className, sig);
-    }
+    LPCUTF8 name = pMD->GetName();
+    if (name == NULL)
+        return false;
+
+    LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
+    if (className == NULL)
+        return false;
+
+    SigPointer sig = pMD->GetSigPointer();
+    uint32_t argCount = 0;
+    if (FAILED(sig.SkipMethodHeaderSignature(&argCount)))
+        return false;
+
+    return list->IsInList(name, className, (int32_t)argCount);
 }
 
 // Ownership of the string buffer passes to ParseTypeList

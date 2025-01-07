@@ -4,17 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-using System.Threading;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.Caching
 {
-#if NETCOREAPP
+#if NET
     [UnsupportedOSPlatform("browser")]
 #endif
     internal sealed class Counters : EventSource
     {
-#if NETCOREAPP
+#if NET
         private const string EVENT_SOURCE_NAME_ROOT = "System.Runtime.Caching.";
         private const int NUM_COUNTERS = 7;
 
@@ -49,7 +49,7 @@ namespace System.Runtime.Caching
                 // to be one polling counter here, rather than the two-part perf counter. Still keeping array
                 // indexes and raw counter values consistent between NetFx and Core code though.
                 _counters[(int)CounterName.HitRatio] = new PollingCounter("hit-ratio", this,
-                    () =>((double)_counterValues[(int)CounterName.HitRatio]/(double)_counterValues[(int)CounterName.HitRatioBase]) * 100d)
+                    () => ((double)_counterValues[(int)CounterName.HitRatio] / (double)_counterValues[(int)CounterName.HitRatioBase]) * 100d)
                 {
                     DisplayName = "Cache Hit Ratio",
                 };

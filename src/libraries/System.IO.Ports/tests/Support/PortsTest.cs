@@ -34,7 +34,7 @@ namespace System.IO.PortsTests
 
         public static void Fail(string format, params object[] args)
         {
-            Assert.True(false, string.Format(format, args));
+            Assert.Fail(string.Format(format, args));
         }
 
 #pragma warning disable SYSLIB0001 // Encoding.UTF7 property is obsolete

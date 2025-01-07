@@ -32,7 +32,9 @@
 #define UNDEF_ASSERTE
 #endif
 
+#ifndef FEATURE_NATIVEAOT
 #define USE_BITVECTOR 1
+#endif
 #if USE_BITVECTOR
 
 /* The bitvector class is meant to be a drop in replacement for an integer
@@ -399,7 +401,7 @@ typedef BitVector ptrArgTP;
 
 #else // !USE_BITVECTOR
 
-typedef unsigned __int64 ptrArgTP;
+typedef uint64_t ptrArgTP;
 
     // Maximum number of bits in our bitvector
 #define MAX_PTRARG_OFS (sizeof(ptrArgTP) * 8)

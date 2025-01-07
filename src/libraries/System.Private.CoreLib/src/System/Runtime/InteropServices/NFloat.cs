@@ -700,12 +700,22 @@ namespace System.Runtime.InteropServices
 
         /// <summary>Tries to convert a character span containing the string representation of a number to its floating-point number equivalent.</summary>
         /// <param name="s">A read-only character span that contains the number to convert.</param>
-        /// <param name="result">When this method returns, contains a floating-point number equivalent of the numeric value or symbol contained in <paramref name="s" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="s" /> is <see cref="string.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <param name="result">When this method returns, contains a floating-point number equivalent of the numeric value or symbol contained in <paramref name="s" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="s" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
         /// <returns><c>true</c> if <paramref name="s" /> was converted successfully; otherwise, false.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, out NFloat result)
         {
             Unsafe.SkipInit(out result);
             return NativeType.TryParse(s, out Unsafe.As<NFloat, NativeType>(ref result));
+        }
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its floating-point number equivalent.</summary>
+        /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
+        /// <param name="result">When this method returns, contains a floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out NFloat result)
+        {
+            Unsafe.SkipInit(out result);
+            return NativeType.TryParse(utf8Text, out Unsafe.As<NFloat, NativeType>(ref result));
         }
 
         /// <summary>Tries to convert the string representation of a number in a specified style and culture-specific format to its floating-point number equivalent.</summary>
@@ -770,19 +780,7 @@ namespace System.Runtime.InteropServices
         {
             if (obj is NFloat other)
             {
-                if (_value < other._value) return -1;
-                if (_value > other._value) return 1;
-                if (_value == other._value) return 0;
-
-                // At least one of the values is NaN.
-                if (NativeType.IsNaN(_value))
-                {
-                    return NativeType.IsNaN(other._value) ? 0 : -1;
-                }
-                else
-                {
-                    return 1;
-                }
+                return CompareTo(other);
             }
             else if (obj is null)
             {
@@ -844,7 +842,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified culture-specific format information.</summary>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <returns>The string representation of the value of this instance as specified by <paramref name="provider" />.</returns>
-        public string ToString(IFormatProvider? provider)=> _value.ToString(provider);
+        public string ToString(IFormatProvider? provider) => _value.ToString(provider);
 
         /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified format and culture-specific format information.</summary>
         /// <param name="format">A numeric format string.</param>
@@ -981,6 +979,14 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
         public static NFloat Ceiling(NFloat x) => new NFloat(NativeType.Ceiling(x._value));
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(NFloat value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(NFloat value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         public static NFloat Floor(NFloat x) => new NFloat(NativeType.Floor(x._value));
@@ -1370,6 +1376,9 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        public static NFloat MultiplyAddEstimate(NFloat left, NFloat right, NFloat addend) => new NFloat(NativeType.MultiplyAddEstimate(left._value, right._value, addend._value));
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1841,6 +1850,24 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static NFloat DegreesToRadians(NFloat degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return new NFloat(NativeType.DegreesToRadians(degrees._value));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static NFloat RadiansToDegrees(NFloat radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return new NFloat(NativeType.RadiansToDegrees(radians._value));
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static NFloat Sin(NFloat x) => new NFloat(NativeType.Sin(x._value));
 
@@ -1866,5 +1893,29 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
         public static NFloat TanPi(NFloat x) => new NFloat(NativeType.TanPi(x._value));
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static NFloat Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            var result = NativeType.Parse(utf8Text, style, provider);
+            return new NFloat(result);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out NFloat result)
+        {
+            Unsafe.SkipInit(out result);
+            return NativeType.TryParse(utf8Text, style, provider, out Unsafe.As<NFloat, NativeType>(ref result));
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static NFloat Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out NFloat result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
     }
 }

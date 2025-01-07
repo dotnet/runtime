@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.Win32;
 
 namespace System.IO.Ports
 {
@@ -64,12 +64,14 @@ namespace System.IO.Ports
         private char[] _singleCharBuffer;
 
         public event SerialErrorReceivedEventHandler ErrorReceived;
-        public event SerialPinChangedEventHandler PinChanged;
 
-        // handler for the underlying stream
+        // handlers for the underlying stream
         private readonly SerialDataReceivedEventHandler _dataReceivedHandler;
+        private readonly SerialPinChangedEventHandler _pinChangedHandler;
 
         private SerialDataReceivedEventHandler _dataReceived;
+        private SerialPinChangedEventHandler _pinChanged;
+
         public event SerialDataReceivedEventHandler DataReceived
         {
             add
@@ -94,6 +96,35 @@ namespace System.IO.Ports
                     if (_internalSerialStream != null)
                     {
                         _internalSerialStream.DataReceived -= _dataReceivedHandler;
+                    }
+                }
+            }
+        }
+
+        public event SerialPinChangedEventHandler PinChanged
+        {
+            add
+            {
+                bool wasNull = _pinChanged == null;
+                _pinChanged += value;
+
+                if (wasNull)
+                {
+                    if (_internalSerialStream != null)
+                    {
+                        _internalSerialStream.PinChanged += _pinChangedHandler;
+                    }
+                }
+            }
+            remove
+            {
+                _pinChanged -= value;
+
+                if (_pinChanged == null)
+                {
+                    if (_internalSerialStream != null)
+                    {
+                        _internalSerialStream.PinChanged -= _pinChangedHandler;
                     }
                 }
             }
@@ -511,6 +542,7 @@ namespace System.IO.Ports
         public SerialPort()
         {
             _dataReceivedHandler = new SerialDataReceivedEventHandler(CatchReceivedEvents);
+            _pinChangedHandler = CatchPinChangedEvents;
         }
 
         public SerialPort(IContainer container) : this()
@@ -563,6 +595,7 @@ namespace System.IO.Ports
                 if (IsOpen)
                 {
                     _internalSerialStream.DataReceived -= _dataReceivedHandler;
+                    _internalSerialStream.PinChanged -= _pinChangedHandler;
                     _internalSerialStream.Flush();
                     _internalSerialStream.Close();
                     _internalSerialStream = null;
@@ -601,7 +634,11 @@ namespace System.IO.Ports
             _internalSerialStream.SetBufferSizes(_readBufferSize, _writeBufferSize);
 
             _internalSerialStream.ErrorReceived += new SerialErrorReceivedEventHandler(CatchErrorEvents);
-            _internalSerialStream.PinChanged += new SerialPinChangedEventHandler(CatchPinChangedEvents);
+
+            if (_pinChanged != null)
+            {
+                _internalSerialStream.PinChanged += _pinChangedHandler;
+            }
 
             if (_dataReceived != null)
             {
@@ -963,7 +1000,21 @@ namespace System.IO.Ports
                 Buffer.BlockCopy(_inBuffer, _readPos, bytesReceived, 0, CachedBytesToRead);
             }
 
-            _internalSerialStream.Read(bytesReceived, CachedBytesToRead, bytesReceived.Length - (CachedBytesToRead));    // get everything
+#if NET
+            _internalSerialStream.ReadExactly(bytesReceived, CachedBytesToRead, bytesReceived.Length - CachedBytesToRead);    // get everything
+#else
+            int readCount = bytesReceived.Length - CachedBytesToRead;
+            int totalRead = 0;
+            while (totalRead < readCount)
+            {
+                int bytesRead = _internalSerialStream.Read(bytesReceived, CachedBytesToRead + totalRead, readCount - totalRead);
+                if (bytesRead <= 0)
+                {
+                    throw new EndOfStreamException();
+                }
+                totalRead += bytesRead;
+            }
+#endif
 
             // Read full characters and leave partial input in the buffer. Encoding.GetCharCount doesn't work because
             // it returns fallback characters on partial input, meaning that it overcounts. Instead, we use
@@ -1199,7 +1250,7 @@ namespace System.IO.Ports
 
         private void CatchPinChangedEvents(object src, SerialPinChangedEventArgs e)
         {
-            SerialPinChangedEventHandler eventHandler = PinChanged;
+            SerialPinChangedEventHandler eventHandler = _pinChanged;
             SerialStream stream = _internalSerialStream;
 
             if ((eventHandler != null) && (stream != null))

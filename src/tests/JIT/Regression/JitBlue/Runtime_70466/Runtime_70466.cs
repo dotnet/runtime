@@ -7,10 +7,9 @@ using Xunit;
 public class Runtime_70466
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Problem(1, 0);
-        return 100;
     }
 
     // This method is carefully crafted such that we end up with an unused ARR_ADDR node by rationalization

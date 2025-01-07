@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CryptAcquireContext(
             out IntPtr psafeProvHandle,

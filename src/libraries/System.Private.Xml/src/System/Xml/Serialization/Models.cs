@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Collections;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace System.Xml.Serialization
 {
@@ -431,8 +431,8 @@ namespace System.Xml.Serialization
                     FieldInfo[] fields = Type.GetFields();
                     for (int i = 0; i < fields.Length; i++)
                     {
-                        FieldInfo field = fields[i];
-                        ConstantModel? constant = GetConstantModel(field);
+                        FieldInfo fieldInfo = fields[i];
+                        ConstantModel? constant = GetConstantModel(fieldInfo);
                         if (constant != null) list.Add(constant);
                     }
                     _constants = list.ToArray();

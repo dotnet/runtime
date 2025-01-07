@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         internal X509Certificate2 CloneIssuerCert()
         {
-            return new X509Certificate2(_cert.RawData);
+            return X509CertificateLoader.LoadCertificate(_cert.RawData);
         }
 
         internal void Revoke(X509Certificate2 certificate, DateTimeOffset revocationTime)
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 subject,
                 publicKey,
                 TimeSpan.FromSeconds(1),
-                new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_ocspResponderEku},
+                new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_ocspResponderEku },
                 ocspResponder: true);
         }
 
@@ -950,12 +950,10 @@ SingleResponse ::= SEQUENCE {
             PkiOptions pkiOptions,
             bool includePkiOptions)
         {
-            if (includePkiOptions)
-            {
-                return $"CN=\"{cn}\", O=\"{testName}\", OU=\"{pkiOptions}\"";
-            }
+            string testNamePart = !string.IsNullOrWhiteSpace(testName) ? $", O=\"{testName}\"" : "";
+            string pkiOptionsPart = includePkiOptions ? $", OU=\"{pkiOptions}\"" : "";
 
-            return $"CN=\"{cn}\", O=\"{testName}\"";
+            return $"CN=\"{cn}\"" + testNamePart + pkiOptionsPart;
         }
     }
 }

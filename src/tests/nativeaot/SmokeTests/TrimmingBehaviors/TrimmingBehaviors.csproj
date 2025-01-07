@@ -1,14 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
 
     <!-- We don't run the scanner in optimized builds -->
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="ShimLibrary.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Dataflow.cs" />
     <Compile Include="DeadCodeElimination.cs" />
@@ -33,6 +39,26 @@
 
   <ItemGroup>
     <TrimmerRootDescriptor Include="NonEmbedded.ILLink.Descriptor.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions1.xml" />
+    <IlcArg Include="--substitution:$(MSBuildThisFileDirectory)NonEmbedded.ILLink.Substitutions2.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Dataflow.cs">
+      <LogicalName>RemovedResource1</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DeadCodeElimination.cs">
+      <LogicalName>RemovedResource2</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FeatureSwitches.cs">
+      <LogicalName>RemovedResource3</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Main.cs">
+      <LogicalName>KeptResource</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

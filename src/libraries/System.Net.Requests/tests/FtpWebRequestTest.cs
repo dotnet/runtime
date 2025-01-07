@@ -203,6 +203,27 @@ namespace System.Net.Tests
             Assert.False(DirExists(mode, dir));
         }
 
+        [Fact]
+        public void Ftp_Ignore_NewLine_Constructor_Throws_FormatException()
+        {
+            string uri = absoluteUri + Guid.NewGuid().ToString();
+
+            Assert.Throws<FormatException>(() => WebRequest.Create($"{uri}\r\n{WebRequestMethods.Ftp.AppendFile} {Guid.NewGuid().ToString()}"));
+        }
+
+        [ConditionalFact(nameof(LocalServerAvailable))]
+        public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException()
+        {
+            FtpWebRequest ftpWebRequest = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());
+            ftpWebRequest.Method = "APPE";
+            ftpWebRequest.Credentials = new NetworkCredential("test\r\ntest2", "test\r\ntest2");
+            var requestException = Assert.Throws<WebException>(() => ftpWebRequest.GetRequestStream());
+            Assert.True(requestException.InnerException is FormatException);
+
+            var responseException = Assert.Throws<WebException>(() => ftpWebRequest.GetResponse());
+            Assert.True(responseException.InnerException is FormatException);
+        }
+
         private static async Task<MemoryStream> DoAsync(FtpWebRequest request, MemoryStream requestBody)
         {
             if (requestBody != null)

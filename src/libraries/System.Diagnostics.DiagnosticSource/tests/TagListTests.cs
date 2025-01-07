@@ -3,7 +3,6 @@
 
 using Xunit;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace System.Diagnostics.Tests
 {
@@ -21,7 +20,7 @@ namespace System.Diagnostics.Tests
                 KeyValuePair<string, object?>[] array = new KeyValuePair<string, object?>[tagList.Count];
                 tagList.CopyTo(array);
                 TagList list = new TagList(array.AsSpan());
-                ValidateTags(in tagList, i);
+                ValidateTags(in list, i);
             }
         }
 
@@ -303,7 +302,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(2));
         }
 
-        private void ValidateTags(in TagList tagList, KeyValuePair<string, object?>[] array)
+        internal static void ValidateTags(in TagList tagList, KeyValuePair<string, object?>[] array)
         {
             Assert.True(tagList.Count <= array.Length);
             for (int i = 0; i < tagList.Count; i++)
@@ -313,7 +312,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private void ValidateTags(in TagList tagList, int tagsCount)
+        internal static void ValidateTags(in TagList tagList, int tagsCount)
         {
             Assert.Equal(tagsCount, tagList.Count);
             for (int i = 0; i < tagList.Count; i++)
@@ -323,7 +322,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        private void CreateTagList(int tagsCount, out TagList tagList)
+        internal static void CreateTagList(int tagsCount, out TagList tagList)
         {
             tagList = new TagList();
             for (int i = 0; i < tagsCount; i++)

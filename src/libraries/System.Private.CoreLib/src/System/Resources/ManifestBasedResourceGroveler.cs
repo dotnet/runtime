@@ -1,18 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Searches for resources in Assembly manifest, used
-** for assembly-based resource lookup.
-**
-**
-===========================================================*/
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -22,15 +10,16 @@ using System.Reflection;
 
 namespace System.Resources
 {
-    //
+    /// <summary>
+    /// Searches for resources in  the assembly manifest, used for assembly-based resource lookup.
+    /// </summary>
     // Note: this type is integral to the construction of exception objects,
-    // and sometimes this has to be done in low memory situtations (OOM) or
+    // and sometimes this has to be done in low memory situations (OOM) or
     // to create TypeInitializationExceptions due to failure of a static class
     // constructor. This type needs to be extremely careful and assume that
     // any type it references may have previously failed to construct, so statics
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
-    //
     internal sealed partial class ManifestBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
@@ -257,9 +246,7 @@ namespace System.Resources
             }
             else
             {
-                object[] args = new object[2];
-                args[0] = store;
-                args[1] = assembly;
+                object[] args = [store, assembly];
                 try
                 {
                     // Add in a check for a constructor taking in an assembly first.
@@ -280,6 +267,11 @@ namespace System.Resources
             }
         }
 
+        private static Assembly? InternalGetSatelliteAssembly(Assembly mainAssembly, CultureInfo culture, Version? version)
+        {
+            return RuntimeAssembly.InternalGetSatelliteAssembly(mainAssembly, culture, version, throwOnFileNotFound: false);
+        }
+
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private static ResourceSet InternalGetResourceSetFromSerializedData(Stream store, string readerTypeName, string? resSetTypeName, ResourceManager.ResourceManagerMediator mediator)
@@ -297,14 +289,11 @@ namespace System.Resources
             else
             {
                 Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
-                object[] args = new object[1];
-                args[0] = store;
+                object[] args = [store];
                 reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
             }
 
-            object[] resourceSetArgs = new object[1];
-            resourceSetArgs[0] = reader;
-
+            object[] resourceSetArgs = [reader];
             Type? resSetType = mediator.UserResourceSet;
             if (resSetType == null)
             {

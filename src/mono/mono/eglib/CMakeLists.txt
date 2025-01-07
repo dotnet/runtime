@@ -1,12 +1,18 @@
 project(eglib C)
 
 set(eglib_win32_sources
-    gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c
-    gmodule-win32.c gtimer-win32.c)
+    gdate-win32.c
+    gfile-win32.c
+    gmisc-win32.c
+    gmodule-win32.c
+    gtimer-win32.c)
 
 set(eglib_unix_sources
-    gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c
-    gmodule-unix.c gtimer-unix.c)
+    gdate-unix.c
+    gfile-unix.c
+    gmisc-unix.c
+    gmodule-unix.c
+    gtimer-unix.c)
 
 if(HOST_WIN32)
 set(eglib_platform_sources ${eglib_win32_sources})
@@ -30,7 +36,6 @@ set(eglib_common_sources
     glist.c
     gqueue.c
     gpath.c
-    gspawn.c
     gfile.c
     gfile-posix.c
     gutf8.c)
@@ -41,7 +46,7 @@ set(eglib_headers
   gmodule.h)
 
 if(HAVE_CLOCK_NANOSLEEP)
-list(APPEND eglib_common_sources gclock-nanosleep.c)
+  list(APPEND eglib_common_sources gclock-nanosleep.c)
 endif()
 
 set(eglib_sources "${eglib_platform_sources};${eglib_common_sources}")
@@ -57,3 +62,4 @@ target_include_directories(eglib_objects PRIVATE
   ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR})
 target_link_libraries (eglib_objects PUBLIC eglib_api)
+target_link_libraries(eglib_objects PUBLIC minipal)

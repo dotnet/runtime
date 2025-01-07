@@ -18,6 +18,7 @@ IPos<int> is not castable to IPos<MyEnum>
 
 */
 using System;
+using Xunit;
 
 public class C<T> : IPos<T>, INeg<T>
 {
@@ -34,7 +35,7 @@ public class C<T> : IPos<T>, INeg<T>
 enum intEnum : int {}
 enum uintEnum : uint {}
 
-class Test_vsw543506
+public class Test_vsw543506
 {
 
 	public static bool pass;
@@ -101,7 +102,8 @@ class Test_vsw543506
 
    	
 
-  	public static int Main() 
+  	[Fact]
+  	public static int TestEntryPoint() 
 	{
 		pass = true;
 		

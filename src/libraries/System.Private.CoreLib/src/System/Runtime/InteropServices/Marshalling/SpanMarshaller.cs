@@ -108,8 +108,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         public ref struct ManagedToUnmanagedIn
         {
-            // We'll keep the buffer size at a maximum of 200 bytes to avoid overflowing the stack.
-            public static int BufferSize { get; } = 0x200 / sizeof(TUnmanagedElement);
+            // We'll keep the buffer size at a maximum of 512 bytes to avoid overflowing the stack.
+            public static int BufferSize => 0x200 / sizeof(TUnmanagedElement);
 
             private Span<T> _managedArray;
             private TUnmanagedElement* _allocatedMemory;
@@ -170,7 +170,11 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Returns the unmanaged value representing the array.
             /// </summary>
-            public TUnmanagedElement* ToUnmanaged() => (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            public TUnmanagedElement* ToUnmanaged()
+            {
+                // Unsafe.AsPointer is safe since buffer must be pinned
+                return (TUnmanagedElement*)Unsafe.AsPointer(ref GetPinnableReference());
+            }
 
             /// <summary>
             /// Frees resources.

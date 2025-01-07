@@ -7,9 +7,10 @@ using Xunit;
 
 namespace AssemblyDependencyResolverTests
 {
-    class InvalidHostingTest
+    public class InvalidHostingTest
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

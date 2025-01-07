@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Collections;
-using System.Collections.Specialized;
-using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
@@ -152,6 +152,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("creates SchemaGraph")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void GenerateSchemaGraph(XmlSchemas schemas)
         {
             SchemaGraph graph = new SchemaGraph(Graph, schemas);
@@ -198,6 +199,7 @@ namespace System.Xml.Serialization
         private readonly int _items;
 
         [RequiresUnreferencedCode("Calls Compile")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal SchemaGraph(Hashtable scope, XmlSchemas schemas)
         {
             _scope = scope;

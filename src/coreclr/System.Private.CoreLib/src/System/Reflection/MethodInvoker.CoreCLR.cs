@@ -1,36 +1,39 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
+using System.Reflection.Emit;
 
 namespace System.Reflection
 {
-    internal partial class MethodInvoker
+    public partial class MethodInvoker
     {
-        private readonly Signature _signature;
-        internal InvocationFlags _invocationFlags;
+        private readonly Signature? _signature;
 
-        public MethodInvoker(MethodBase method, Signature signature)
+        private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
-            _method = method;
-            _signature = signature;
-
-            if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
-            {
-                // Always use the native invoke; useful for testing.
-                _strategyDetermined = true;
-            }
-            else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
-            {
-                // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
-                _invoked = true;
-            }
+            _signature = method.Signature;
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe object? InterpretedInvoke(object? obj, IntPtr* arguments)
+        private unsafe MethodInvoker(DynamicMethod method) : this(method, method.Signature.Arguments)
         {
-            return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, _signature, isConstructor: false);
+            _signature = method.Signature;
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            // No _invocationFlags for DynamicMethod.
         }
+
+        private unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
+        {
+            _signature = constructor.Signature;
+            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
+            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
+        }
+
+        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr* args) =>
+            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: false);
+
+        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args) =>
+            RuntimeMethodHandle.InvokeMethod(obj, (void**)args, _signature!, isConstructor: obj is null);
     }
 }

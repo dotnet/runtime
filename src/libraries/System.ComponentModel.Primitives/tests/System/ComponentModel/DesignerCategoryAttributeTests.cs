@@ -21,7 +21,6 @@ namespace System.ComponentModel.Tests
         [InlineData(null, false, "System.ComponentModel.DesignerCategoryAttribute")]
         [InlineData("", true, "System.ComponentModel.DesignerCategoryAttribute")]
         [InlineData("category", false, "System.ComponentModel.DesignerCategoryAttributecategory")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws a NullReferenceException")]
         public void Ctor_String(string category, bool expectedIsDefaultAttribute, string expectedTypeId)
         {
             var attribute = new DesignerCategoryAttribute(category);
@@ -37,20 +36,10 @@ namespace System.ComponentModel.Tests
             yield return new object[] { attribute, new DesignerCategoryAttribute("category"), true };
             yield return new object[] { attribute, new DesignerCategoryAttribute("category2"), false };
             yield return new object[] { attribute, new DesignerCategoryAttribute(string.Empty), false };
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { attribute, new DesignerCategoryAttribute(null), false };
-            }
-
-            // .NET Framework throws a NullReferenceException.
-            if (!PlatformDetection.IsNetFramework)
-            {
-                yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(null), true };
-                yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute("category"), false };
-                yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(string.Empty), false };
-            }
-
+            yield return new object[] { attribute, new DesignerCategoryAttribute(null), false };
+            yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(null), true };
+            yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute("category"), false };
+            yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(string.Empty), false };
             yield return new object[] { new DesignerCategoryAttribute("category"), new object(), false };
             yield return new object[] { new DesignerCategoryAttribute("category"), null, false };
             yield return new object[] { new DesignerCategoryAttribute(null), new object(), false };

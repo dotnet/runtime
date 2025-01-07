@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 #if DEBUG
         static ExcepInfo()
         {
-            Debug.Assert(Marshal.SizeOf(typeof(ExcepInfo)) == Marshal.SizeOf(typeof(ComTypes.EXCEPINFO)));
+            Debug.Assert(Marshal.SizeOf<ExcepInfo>() == Marshal.SizeOf<ComTypes.EXCEPINFO>());
         }
 #endif
 

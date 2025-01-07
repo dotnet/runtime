@@ -301,8 +301,6 @@ namespace System.ComponentModel
             return newItem;
         }
 
-        private bool AddingNewHandled => _onAddingNew != null && _onAddingNew.GetInvocationList().Length > 0;
-
         /// <summary>
         /// Creates a new item and adds it to the list.
         ///
@@ -314,7 +312,7 @@ namespace System.ComponentModel
         {
             // Allow event handler to supply the new item for us
             // If event handler did not supply new item, create one ourselves
-            object? newItem = FireAddingNew() ?? Activator.CreateInstance(typeof(T));
+            object? newItem = FireAddingNew() ?? Activator.CreateInstance<T>();
 
             // Add item to end of list. Note: If event handler returned an item not of type T,
             // the cast below will trigger an InvalidCastException. This is by design.
@@ -336,7 +334,7 @@ namespace System.ComponentModel
                 }
                 // Even if the item doesn't have a default constructor, the user can hook AddingNew to provide an item.
                 // If there's a handler for this, we should allow new.
-                return AddingNewHandled;
+                return _onAddingNew != null;
             }
             set
             {

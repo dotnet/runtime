@@ -45,7 +45,7 @@ namespace System
             value = value == null ? null : TrimStringOnFirstZero(value);
             lock (s_environment!)
             {
-                if (string.IsNullOrEmpty(value))
+                if (value == null)
                 {
                     s_environment.Remove(variable);
                 }

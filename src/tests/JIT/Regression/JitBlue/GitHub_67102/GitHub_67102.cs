@@ -15,10 +15,9 @@ using Xunit;
 public class Program_67102
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new Func<double, double, Size>(new OrientationBasedMeasures().MinorMajorSize)(1, 2);
-        return 100;
     }
 }
 

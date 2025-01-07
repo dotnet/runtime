@@ -7,7 +7,6 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>

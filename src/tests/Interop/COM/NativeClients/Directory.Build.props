@@ -9,6 +9,8 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestIsHosted>false</CLRTestIsHosted>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- The true entrypoint for these tests is a native executable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 
   <ItemGroup>

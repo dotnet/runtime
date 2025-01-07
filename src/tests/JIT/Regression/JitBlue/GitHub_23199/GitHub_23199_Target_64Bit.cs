@@ -183,7 +183,7 @@ namespace GitHub_23199_64Bit
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             TestCrossgenedReturnWith2PointersStruct();
             TestTwoPointers();
@@ -193,7 +193,6 @@ namespace GitHub_23199_64Bit
             TestNoPointer1();
             TestNoPointer2();
             TestThirdPointer();
-            return 100;
         }
     }
 }

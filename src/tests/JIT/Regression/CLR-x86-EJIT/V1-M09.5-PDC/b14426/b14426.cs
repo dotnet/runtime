@@ -55,7 +55,7 @@ namespace SetIPTest
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Console.WriteLine("Entering Main of SetIP");
 
@@ -69,7 +69,6 @@ namespace SetIPTest
                 Debugger.Break();
 
             Console.WriteLine("Leaving Main of SetIP");
-            return 100;
         }
 
         private static void _Initialize()

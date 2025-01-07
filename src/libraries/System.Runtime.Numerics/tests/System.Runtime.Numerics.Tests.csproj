@@ -10,7 +10,6 @@
     <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
     <Compile Include="BigInteger\BigInteger.AddTests.cs" />
     <Compile Include="BigInteger\BigInteger.SubtractTests.cs" />
-    <Compile Include="BigInteger\BigNumberTools.cs" />
     <Compile Include="BigInteger\BigIntTools.cs" />
     <Compile Include="BigInteger\cast_from.cs" />
     <Compile Include="BigInteger\cast_to.cs" />
@@ -49,13 +48,16 @@
     <Compile Include="BigInteger\pow.cs" />
     <Compile Include="BigInteger\properties.cs" />
     <Compile Include="BigInteger\remainder.cs" />
+    <Compile Include="BigInteger\SampleGeneration.cs" />
     <Compile Include="BigInteger\sign.cs" />
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="BigInteger\TryWriteBytes.cs" />
+    <Compile Include="BigInteger\UInt32Samples.cs" />
     <Compile Include="ComplexTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="BigIntegerTests.GenericMath.cs" />

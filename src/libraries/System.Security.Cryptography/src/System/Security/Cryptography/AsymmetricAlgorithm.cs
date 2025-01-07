@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Diagnostics.CodeAnalysis;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -795,7 +795,7 @@ namespace System.Security.Cryptography
                     {
                         if (exporter(password, pbeParameters, buf, out bytesWritten))
                         {
-                            Span<byte> writtenSpan = new Span<byte>(buf, 0, bytesWritten);
+                            ReadOnlySpan<byte> writtenSpan = new ReadOnlySpan<byte>(buf, 0, bytesWritten);
                             return writtenSpan.ToArray();
                         }
                     }
@@ -825,7 +825,7 @@ namespace System.Security.Cryptography
                     {
                         if (exporter(buf, out bytesWritten))
                         {
-                            Span<byte> writtenSpan = new Span<byte>(buf, 0, bytesWritten);
+                            ReadOnlySpan<byte> writtenSpan = new ReadOnlySpan<byte>(buf, 0, bytesWritten);
                             return writtenSpan.ToArray();
                         }
                     }

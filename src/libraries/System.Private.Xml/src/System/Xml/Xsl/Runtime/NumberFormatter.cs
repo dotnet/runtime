@@ -106,8 +106,8 @@ namespace System.Xml.Xsl.Runtime
             int number = (int)val;
             string digits = upperCase ? RomanDigitsUC : RomanDigitsLC;
 
-            //                         RomanDigit       = { I IV  V IX   X  XL   L  XC    C   CD    D   CM     M }
-            ReadOnlySpan<int> RomanDigitValue = new int[] { 1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000 };
+            //                RomanDigit      ={ I IV  V IX   X  XL   L  XC    C   CD    D   CM     M }
+            ReadOnlySpan<int> RomanDigitValue = [1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000];
 
             for (int idx = RomanDigitValue.Length; idx-- != 0;)
             {

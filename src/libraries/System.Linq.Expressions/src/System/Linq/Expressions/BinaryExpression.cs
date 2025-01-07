@@ -437,6 +437,8 @@ namespace System.Linq.Expressions
         [DynamicDependency("GetValueOrDefault", typeof(Nullable<>))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The method will be preserved by the DynamicDependency.")]
+        [UnconditionalSuppressMessage("DynamicCode", "IL3050",
+            Justification = "GetValueOrDefault is not generic and therefore MakeGenericMethod will not be called")]
         private static MethodCallExpression CallGetValueOrDefault(ParameterExpression nullable)
         {
             return Call(nullable, "GetValueOrDefault", null);
@@ -615,7 +617,7 @@ namespace System.Linq.Expressions
                 {
                     if (method.ReturnType != typeof(bool) || liftToNull)
                     {
-                        return new MethodBinaryExpression(binaryType, left, right, method.ReturnType.GetNullableType(), method);
+                        return new MethodBinaryExpression(binaryType, left, right, method.ReturnType.LiftPrimitiveOrThrow(), method);
                     }
                     else
                     {
@@ -647,7 +649,7 @@ namespace System.Linq.Expressions
             {
                 if (method.ReturnType != typeof(bool) || liftToNull)
                 {
-                    return new MethodBinaryExpression(binaryType, left, right, method.ReturnType.GetNullableType(), method);
+                    return new MethodBinaryExpression(binaryType, left, right, method.ReturnType.LiftPrimitiveOrThrow(), method);
                 }
                 else
                 {
@@ -2236,7 +2238,7 @@ namespace System.Linq.Expressions
             if (!left.IsNullableType() && right.IsNullableType())
             {
                 // lift the result type to Nullable<T>
-                return typeof(Nullable<>).MakeGenericType(left);
+                return left.LiftPrimitiveOrThrow();
             }
             return left;
         }

@@ -15,7 +15,7 @@ namespace System.Collections.Frozen
         private protected readonly TKey[] _keys;
         private protected readonly TValue[] _values;
 
-        protected KeysAndValuesFrozenDictionary(Dictionary<TKey, TValue> source, bool optimizeForReading = true) : base(source.Comparer)
+        protected KeysAndValuesFrozenDictionary(Dictionary<TKey, TValue> source, bool keysAreHashCodes = false) : base(source.Comparer)
         {
             Debug.Assert(source.Count != 0);
 
@@ -32,14 +32,15 @@ namespace System.Collections.Frozen
                 hashCodes[i] = Comparer.GetHashCode(entries[i].Key);
             }
 
-            _hashTable = FrozenHashTable.Create(
-                hashCodes,
-                (destIndex, srcIndex) =>
-                {
-                    _keys[destIndex] = entries[srcIndex].Key;
-                    _values[destIndex] = entries[srcIndex].Value;
-                },
-                optimizeForReading);
+            _hashTable = FrozenHashTable.Create(hashCodes, keysAreHashCodes);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _keys[destIndex] = entries[srcIndex].Key;
+                _values[destIndex] = entries[srcIndex].Value;
+            }
 
             ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }

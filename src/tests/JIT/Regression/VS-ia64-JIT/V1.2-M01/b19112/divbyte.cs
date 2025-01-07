@@ -11,15 +11,12 @@ public class foo
 #pragma warning restore 0414
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
-
         a = 19;
         b = 3;
 
         div();
-
-        return 100;
     }
 
     internal static void div()

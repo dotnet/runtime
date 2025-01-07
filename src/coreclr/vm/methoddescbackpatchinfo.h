@@ -80,7 +80,7 @@ public:
     static void StaticInitialize()
     {
         WRAPPER_NO_CONTRACT;
-        s_lock.Init(CrstMethodDescBackpatchInfoTracker);
+        s_lock.Init(CrstMethodDescBackpatchInfoTracker, CrstFlags(CRST_DEBUGGER_THREAD));
     }
 #endif
 

@@ -8,12 +8,12 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    public record DiagnosticInfo
+    public sealed record DiagnosticInfo
     {
         public required DiagnosticDescriptor Descriptor { get; init; }
         public required SequenceEqualImmutableArray<string> MessageArgs { get; init; }
         public required Location? Location { get; init; }
-        public required IEnumerable<Location>? AdditionalLocations { get; init; }
+        public required SequenceEqualImmutableArray<Location>? AdditionalLocations { get; init; }
         public required ValueEqualityImmutableDictionary<string, string>? Properties { get; init; }
 
         public Diagnostic ToDiagnostic() => Diagnostic.Create(
@@ -53,7 +53,7 @@ namespace Microsoft.Interop
             {
                 Descriptor = descriptor,
                 Location = location,
-                AdditionalLocations = additionalLocations,
+                AdditionalLocations = (additionalLocations ?? ImmutableArray<Location>.Empty).ToSequenceEqualImmutableArray(),
                 Properties = properties.ToValueEquals(),
                 MessageArgs = messageArgs.Select(o => o.ToString()).ToSequenceEqualImmutableArray()
             };

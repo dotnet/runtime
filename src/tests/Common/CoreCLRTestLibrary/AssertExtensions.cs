@@ -131,10 +131,10 @@ namespace Xunit
             T outerException = Assert.Throws<T>(action);
 
             if (outerException.InnerException == null)
-                Assert.True(false, string.Format("Expected '{0}.InnerException' to be '{1}', however it is null.", typeof(T), typeof(TInner)));
+                Assert.Fail(string.Format("Expected '{0}.InnerException' to be '{1}', however it is null.", typeof(T), typeof(TInner)));
 
             if (outerException.InnerException is not TInner)
-                Assert.True(false, string.Format("Expected '{0}.InnerException', to be '{1}', however, '{2}' is.", typeof(T), typeof(TInner), outerException.InnerException.GetType()));
+                Assert.Fail(string.Format("Expected '{0}.InnerException', to be '{1}', however, '{2}' is.", typeof(T), typeof(TInner), outerException.InnerException.GetType()));
 
             return (TInner)outerException.InnerException;
         }

@@ -22,6 +22,9 @@ namespace System.Security.Cryptography
         public const string CSHAKE128 = "CSHAKE128";
         public const string CSHAKE256 = "CSHAKE256";
 
+        public const string KMAC128 = "KMAC128";
+        public const string KMAC256 = "KMAC256";
+
         /// <summary>
         /// Map HashAlgorithm type to string; .NET Framework uses CryptoConfig functionality.
         /// </summary>

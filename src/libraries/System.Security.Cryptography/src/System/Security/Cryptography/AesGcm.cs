@@ -10,6 +10,8 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("ios13.0")]
+    [SupportedOSPlatform("tvos13.0")]
     public sealed partial class AesGcm : IDisposable
     {
         private const int NonceSize = 12;

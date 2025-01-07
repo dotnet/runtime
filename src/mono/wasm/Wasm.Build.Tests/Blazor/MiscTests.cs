@@ -1,15 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 #nullable enable
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class MiscTests : BuildTestBase
+public class MiscTests : BlazorWasmTestBase
 {
     public MiscTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -18,74 +22,85 @@ public class MiscTests : BuildTestBase
     }
 
     [Theory]
-    [InlineData("Debug", true)]
-    [InlineData("Debug", false)]
-    [InlineData("Release", true)]
-    [InlineData("Release", false)]
-    public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
+    [InlineData(Configuration.Debug, true)]
+    [InlineData(Configuration.Debug, false)]
+    [InlineData(Configuration.Release, true)]
+    [InlineData(Configuration.Release, false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103566")]
+    public void NativeBuild_WithDeployOnBuild_UsedByVS(Configuration config, bool nativeRelink)
     {
-        string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{Path.GetRandomFileName()}";
-        string projectFile = CreateProjectWithNativeReference(id);
-        string extraProperties = config == "Debug"
+        string extraProperties = config == Configuration.Debug
                                     ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
                                     : string.Empty;
         if (!nativeRelink)
             extraProperties += "<RunAOTCompilation>true</RunAOTCompilation>";
-        AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_deploy_on_build", extraProperties: extraProperties);
 
         // build with -p:DeployOnBuild=true, and that will trigger a publish
-        (CommandResult res, _) = BlazorBuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
+        (string _, string buildOutput) = BlazorBuild(info,
+            config,
+            new BuildOptions(ExtraMSBuildArgs: "-p:DeployBuild=true -p:CompressionEnabled=false"),
+            isNativeBuild: true);
 
-        var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
-
-        AssertDotNetNativeFiles(expectedFileType, config, forPublish: true, targetFramework: DefaultTargetFrameworkForBlazor);
-        AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: false);
-
-        if (expectedFileType == NativeFilesType.AOT)
-        {
-            // check for this too, so we know the format is correct for the negative
-            // test for jsinterop.webassembly.dll
-            Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Output);
-
-            // make sure this assembly gets skipped
-            Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Output);
-        }
-
-        // Check that we linked only for publish
-        string objBuildDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm", "for-build");
-        Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets creating when relinking during Build");
-
-        // double check!
-        int index = res.Output.IndexOf("pinvoke.c -> pinvoke.o");
-        Assert.NotEqual(-1, index);
+        // double check relinking!
+        string substring = "pinvoke.c -> pinvoke.o";
+        Assert.Contains(substring, buildOutput);
 
         // there should be only one instance of this string!
-        index = res.Output.IndexOf("pinvoke.c -> pinvoke.o", index + 1);
-        Assert.Equal(-1, index);
+        int occurrences = buildOutput.Split(new[] { substring }, StringSplitOptions.None).Length - 1;
+        Assert.Equal(2, occurrences);
     }
 
     [Theory]
-    [InlineData("Debug")]
-    [InlineData("Release")]
-    public void DefaultTemplate_AOT_InProjectFile(string config)
+    [InlineData(Configuration.Release)]
+    public void DefaultTemplate_AOT_InProjectFile(Configuration config)
     {
-        string id = $"blz_aot_prj_file_{config}_{Path.GetRandomFileName()}";
-        string projectFile = CreateBlazorWasmTemplateProject(id);
-
-        string extraProperties = config == "Debug"
-                                    ? ("<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
+        string extraProperties = config == Configuration.Debug
+                                    ? ("<RunAOTCompilation>true</RunAOTCompilation>" +
+                                        "<EmccLinkOptimizationFlag>-O1</EmccLinkOptimizationFlag>" +
                                         "<EmccCompileOptimizationFlag>-O1</EmccCompileOptimizationFlag>")
-                                    : string.Empty;
-        AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>" + extraProperties);
+                                    : "<RunAOTCompilation>true</RunAOTCompilation>";
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_aot_prj_file", extraProperties: extraProperties);
 
         // No relinking, no AOT
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        BlazorBuild(info, config);
 
         // will aot
-        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, ExpectRelinkDirWhenPublishing: true));
+        BlazorPublish(info, config, new PublishOptions(UseCache: false, AOT: true));
 
         // build again
-        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        BlazorBuild(info, config, new BuildOptions(UseCache: false));
+    }
+
+    [Fact]
+    public void BugRegression_60479_WithRazorClassLib()
+    {
+        Configuration config = Configuration.Release;
+        string razorClassLibraryName = "RazorClassLibrary";
+        string extraItems = @$"
+            <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryName}{ProjectProviderBase.WasmAssemblyExtension}"" />";
+        ProjectInfo info = CopyTestAsset(config, aot: true, TestAsset.BlazorBasicTestApp, "blz_razor_lib_top", extraItems: extraItems);
+
+        // No relinking, no AOT
+        BlazorBuild(info, config);
+
+        // will relink
+        BlazorPublish(info, config, new PublishOptions(UseCache: false));
+
+        // publish/wwwroot/_framework/blazor.boot.json
+        string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
+        string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
+
+        Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");
+        var jdoc = JsonDocument.Parse(File.ReadAllText(bootJson));
+        if (!jdoc.RootElement.TryGetProperty("resources", out JsonElement resValue) ||
+            !resValue.TryGetProperty("lazyAssembly", out JsonElement lazyVal))
+        {
+            throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
+        }
+
+        Assert.True(lazyVal.EnumerateObject().Select(jp => jp.Name).FirstOrDefault(f => f.StartsWith(razorClassLibraryName)) != null);
     }
 }

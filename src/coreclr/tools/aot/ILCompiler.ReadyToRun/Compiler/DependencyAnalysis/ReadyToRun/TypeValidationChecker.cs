@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // The runtime has a number of checks in the type loader which it will skip running if the SkipValidation flag is set
             // This function attempts to document all of them, and implement *some* of them.
 
-            // This function performs a portion of the validation skipping that has been found to have some importance, or to serve as 
+            // This function performs a portion of the validation skipping that has been found to have some importance, or to serve as
             // In addition, there are comments about all validation skipping activities that the runtime will perform.
             try
             {
@@ -305,7 +305,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Override rules
                 // Validate that each override results does not violate accessibility rules -- UNIMPLEMENTED
 
-                HashSet<MethodDesc> overridenDeclMethods = new HashSet<MethodDesc>();
+                HashSet<MethodDesc> overriddenDeclMethods = new HashSet<MethodDesc>();
 
                 foreach (var methodImplHandle in typeDef.GetMethodImplementations())
                 {
@@ -314,7 +314,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     var methodDecl = type.EcmaModule.GetMethod(methodImpl.MethodDeclaration);
 
                     // Validate that all MethodImpls actually match signatures closely enough
-                    if (!methodBody.Signature.ApplySubstitution(type.Instantiation).EqualsWithCovariantReturnType(methodDecl.Signature.ApplySubstitution(type.Instantiation)))
+                    if (!methodBody.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(methodDecl.Signature.ApplySubstitution(type.Instantiation)))
                     {
                         AddTypeValidationError(type, $"MethodImpl with Body '{methodBody}' and Decl '{methodDecl}' do not have matching signatures");
                         return false;
@@ -352,7 +352,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                     // Validate that multiple MethodImpls don't override the same method
-                    if (!overridenDeclMethods.Add(methodDecl))
+                    if (!overriddenDeclMethods.Add(methodDecl))
                     {
                         AddTypeValidationError(type, $"Multiple MethodImpl records override '{methodDecl}'");
                         return false;
@@ -388,7 +388,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             // Validate that for every override involving generic methods that the generic method constraints are matching
                             if (!CompareMethodConstraints(interfaceMethod, resolvedMethod))
                             {
-                                AddTypeValidationError(type, $"Interface method '{interfaceMethod}' overriden by method '{resolvedMethod}' which does not have matching generic constraints");
+                                AddTypeValidationError(type, $"Interface method '{interfaceMethod}' overridden by method '{resolvedMethod}' which does not have matching generic constraints");
                                 return false;
                             }
                         }
@@ -410,7 +410,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     // Validate that for every override involving generic methods that the generic method constraints are matching
                                     if (!CompareMethodConstraints(interfaceMethod, impl))
                                     {
-                                        AddTypeValidationError(type, $"Interface method '{interfaceMethod}' overriden by method '{impl}' which does not have matching generic constraints");
+                                        AddTypeValidationError(type, $"Interface method '{interfaceMethod}' overridden by method '{impl}' which does not have matching generic constraints");
                                         return false;
                                     }
                                 }
@@ -428,7 +428,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // Validate that for every override involving generic methods that the generic method constraints are matching
                         if (!CompareMethodConstraints(virtualMethod, implementationMethod))
                         {
-                            AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overriden by method '{implementationMethod}' which does not have matching generic constraints");
+                            AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overridden by method '{implementationMethod}' which does not have matching generic constraints");
                             return false;
                         }
 
@@ -437,9 +437,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if ((virtualMethod.OwningType != type.BaseType) && (virtualMethod.OwningType != type) && (baseTypeVirtualMethodAlgorithm != null))
                         {
                             var implementationOnBaseType = baseTypeVirtualMethodAlgorithm.FindVirtualFunctionTargetMethodOnObjectType(virtualMethod, type.BaseType);
-                            if (!implementationMethod.Signature.ApplySubstitution(type.Instantiation).EqualsWithCovariantReturnType(implementationOnBaseType.Signature.ApplySubstitution(type.Instantiation)))
+                            if (!implementationMethod.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(implementationOnBaseType.Signature.ApplySubstitution(type.Instantiation)))
                             {
-                                AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overriden by method '{implementationMethod}' does not satisfy the covariant return type introduced with '{implementationOnBaseType}'");
+                                AddTypeValidationError(type, $"Virtual method '{virtualMethod}' overridden by method '{implementationMethod}' does not satisfy the covariant return type introduced with '{implementationOnBaseType}'");
                                 return false;
                             }
                         }
@@ -454,6 +454,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             AddTypeValidationError(type, $"Interface method '{virtualMethod}' does not have implementation");
                             return false;
                         }
+                    }
+                }
+
+                if (type.TypeIdentifierData != null)
+                {
+                    if (!type.TypeHasCharacteristicsRequiredToBeLoadableTypeEquivalentType)
+                    {
+                        return false;
                     }
                 }
 
@@ -480,8 +488,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!parameterOfDecl.HasReferenceTypeConstraint)
                         return false;
 
-                if (parameterOfDecl.HasAcceptByRefLikeConstraint)
-                    if (!parameterOfImpl.HasAcceptByRefLikeConstraint)
+                // Constraints that 'allow' must check the impl first
+                if (parameterOfImpl.HasAllowByRefLikeConstraint)
+                    if (!parameterOfDecl.HasAllowByRefLikeConstraint)
                         return false;
 
                 HashSet<TypeDesc> constraintsOnDecl = new HashSet<TypeDesc>();

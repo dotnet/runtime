@@ -55,33 +55,27 @@ namespace System.Text.Json.Serialization
 
             JsonSerializerOptions? generatedSerializerOptions = GeneratedSerializerOptions;
 
-            if (ReferenceEquals(options, generatedSerializerOptions))
-            {
-                // Fast path for the 99% case
-                return true;
-            }
-
             return
                 generatedSerializerOptions is not null &&
                 // Guard against unsupported features
                 options.Converters.Count == 0 &&
-                options.Encoder == null &&
+                options.Encoder is null &&
                 // Disallow custom number handling we'd need to honor when writing.
                 // AllowReadingFromString and Strict are fine since there's no action to take when writing.
                 !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(options.NumberHandling) &&
-                options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.None &&
+                options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Unspecified &&
 #pragma warning disable SYSLIB0020
                 !options.IgnoreNullValues && // This property is obsolete.
 #pragma warning restore SYSLIB0020
 
                 // Ensure options values are consistent with expected defaults.
                 options.DefaultIgnoreCondition == generatedSerializerOptions.DefaultIgnoreCondition &&
+                options.RespectNullableAnnotations == generatedSerializerOptions.RespectNullableAnnotations &&
                 options.IgnoreReadOnlyFields == generatedSerializerOptions.IgnoreReadOnlyFields &&
                 options.IgnoreReadOnlyProperties == generatedSerializerOptions.IgnoreReadOnlyProperties &&
                 options.IncludeFields == generatedSerializerOptions.IncludeFields &&
                 options.PropertyNamingPolicy == generatedSerializerOptions.PropertyNamingPolicy &&
-                options.DictionaryKeyPolicy == generatedSerializerOptions.DictionaryKeyPolicy &&
-                options.WriteIndented == generatedSerializerOptions.WriteIndented;
+                options.DictionaryKeyPolicy is null;
         }
 
         /// <summary>

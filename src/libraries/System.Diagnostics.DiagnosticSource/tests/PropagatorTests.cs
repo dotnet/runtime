@@ -160,7 +160,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             });
 
             TestDefaultExtraction(propagator, a);
@@ -173,7 +173,7 @@ namespace System.Diagnostics.Tests
 
             propagator.Inject(a, null, (object carrier, string fieldName, string value) =>
             {
-                Assert.False(true, $"Not expected to have the setter callback be called in the NoOutput propgator.");
+                Assert.Fail($"Not expected to have the setter callback be called in the NoOutput propgator.");
             });
 
             TestDefaultExtraction(propagator, a);
@@ -187,7 +187,7 @@ namespace System.Diagnostics.Tests
 
             propagator.Inject(a, null, (object carrier, string fieldName, string value) =>
             {
-                Assert.False(true, $"Not expected to have the setter callback be called in the NoOutput propgator.");
+                Assert.Fail($"Not expected to have the setter callback be called in the NoOutput propgator.");
             });
 
             TestDefaultExtraction(propagator, a);
@@ -205,7 +205,7 @@ namespace System.Diagnostics.Tests
             {
                 if (fieldName == TraceParent)
                 {
-                    Assert.False(true, $"Unexpected to inject a TraceParent with Hierarchical Activity.");
+                    Assert.Fail($"Unexpected to inject a TraceParent with Hierarchical Activity.");
                     return;
                 }
 
@@ -227,7 +227,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             });
 
             TestDefaultExtraction(propagator, a);
@@ -249,7 +249,7 @@ namespace System.Diagnostics.Tests
             {
                 if (fieldName == TraceParent)
                 {
-                    Assert.False(true, $"Unexpected to inject a TraceParent with Hierarchical Activity.");
+                    Assert.Fail($"Unexpected to inject a TraceParent with Hierarchical Activity.");
                     return;
                 }
 
@@ -271,7 +271,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             });
 
             TestDefaultExtraction(propagator, a);
@@ -307,7 +307,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             });
 
             TestDefaultExtraction(propagator, a);
@@ -320,7 +320,7 @@ namespace System.Diagnostics.Tests
 
             propagator.Inject(null, null, (object carrier, string fieldName, string value) =>
             {
-                Assert.False(true, $"PassThroughPropagator shouldn't inject anything if the Activity.Current is null");
+                Assert.Fail($"PassThroughPropagator shouldn't inject anything if the Activity.Current is null");
             });
 
             using Activity a = CreateW3CActivity("PassThroughNotNull", "", null);
@@ -333,7 +333,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             });
         }
 
@@ -364,7 +364,7 @@ namespace System.Diagnostics.Tests
                 {
                     if (a.IdFormat == ActivityIdFormat.W3C)
                     {
-                        Assert.True(false, $"Not expected to get RequestId as we expect the request handled using TraceParenet.");
+                        Assert.Fail($"Not expected to get RequestId as we expect the request handled using TraceParenet.");
                     }
                     else
                     {
@@ -381,7 +381,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             }, out string? traceId, out string? traceState);
 
             Assert.Equal(a.Id, traceId);
@@ -419,7 +419,7 @@ namespace System.Diagnostics.Tests
                     return;
                 }
 
-                Assert.False(true, $"Encountered wrong header name '{fieldName}'");
+                Assert.Fail($"Encountered wrong header name '{fieldName}'");
             });
 
             Assert.Equal(GetFormattedBaggage(a.Baggage, false, true), GetFormattedBaggage(b, true));
@@ -567,7 +567,7 @@ namespace System.Diagnostics.Tests
                         return;
                     }
 
-                    Assert.False(true, $"Encountered wrong header name '{fieldName}' in the Custom Propagator");
+                    Assert.Fail($"Encountered wrong header name '{fieldName}' in the Custom Propagator");
                 });
 
                 DistributedContextPropagator.Current.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
@@ -587,7 +587,7 @@ namespace System.Diagnostics.Tests
                         return;
                     }
 
-                    Assert.False(true, $"Encountered wrong header name '{fieldName}' in the Custom propagator");
+                    Assert.Fail($"Encountered wrong header name '{fieldName}' in the Custom propagator");
                 }, out string? traceId, out string? state);
 
                 Assert.Equal(traceParent, traceId);
@@ -605,7 +605,7 @@ namespace System.Diagnostics.Tests
                         return;
                     }
 
-                    Assert.False(true, $"Encountered wrong header name '{fieldName}' in custom propagator");
+                    Assert.Fail($"Encountered wrong header name '{fieldName}' in custom propagator");
                 });
 
                 Assert.Equal(2, b.Count());

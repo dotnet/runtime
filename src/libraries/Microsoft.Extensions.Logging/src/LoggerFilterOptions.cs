@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
     /// The options for a LoggerFilter.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class LoggerFilterOptions
     {
         /// <summary>
@@ -16,8 +18,11 @@ namespace Microsoft.Extensions.Logging
         public LoggerFilterOptions() { }
 
         /// <summary>
-        /// Gets or sets value indicating whether logging scopes are being captured. Defaults to <c>true</c>
+        /// Gets or sets a value indicating whether logging scopes are being captured.
         /// </summary>
+        /// <value>
+        /// The default value is <see langword="true" />
+        /// </value>
         public bool CaptureScopes { get; set; } = true;
 
         /// <summary>
@@ -32,5 +37,30 @@ namespace Microsoft.Extensions.Logging
 
         // Concrete representation of the rule list
         internal List<LoggerFilterRule> RulesInternal { get; } = new List<LoggerFilterRule>();
+
+        internal string DebuggerToString()
+        {
+            string debugText;
+            if (MinLevel != LogLevel.None)
+            {
+                debugText = $"MinLevel = {MinLevel}";
+            }
+            else
+            {
+                // Display "Enabled = false". This makes it clear that the entire ILogger
+                // is disabled and nothing is written.
+                //
+                // If "MinLevel = None" was displayed then someone could think that the
+                // min level is disabled and everything is written.
+                debugText = $"Enabled = false";
+            }
+
+            if (Rules.Count > 0)
+            {
+                debugText += $", Rules = {Rules.Count}";
+            }
+
+            return debugText;
+        }
     }
 }

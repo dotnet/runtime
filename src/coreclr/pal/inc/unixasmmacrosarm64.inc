@@ -17,7 +17,12 @@
 .endm
 
 .macro PATCH_LABEL Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
         .global C_FUNC(\Name)
+#endif
 C_FUNC(\Name):
 .endm
 
@@ -121,7 +126,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro EMIT_BREAKPOINT
-        brk #0
+        brk #0xf000
 .endm
 
 //-----------------------------------------------------------------------------
@@ -206,7 +211,7 @@ C_FUNC(\Name\()_End):
 // base address to be passed in $reg
 //
 
-// Reserve 64 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
+// Reserve 72 bytes of memory before calling  SAVE_ARGUMENT_REGISTERS
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
         str                    x8, [\reg, #(\ofs)]
@@ -358,4 +363,21 @@ $__RedirectionStubEndFuncName
         EMIT_BREAKPOINT
 #endif
 
+.endm
+
+//-----------------------------------------------------------------------------
+// Macro used to check (in debug builds only) whether the stack is 16-bytes aligned (a requirement before calling
+// out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
+// before a call (if you have a frame pointer and a dynamic stack). A breakpoint will be invoked if the stack
+// is misaligned.
+//
+.macro  CHECK_STACK_ALIGNMENT
+
+#ifdef _DEBUG
+        add     x9, sp, xzr
+        tst     x9, #15
+        beq     0f
+        EMIT_BREAKPOINT
+0:
+#endif
 .endm

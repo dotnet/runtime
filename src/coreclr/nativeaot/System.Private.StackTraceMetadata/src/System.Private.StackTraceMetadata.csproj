@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj" />
@@ -18,8 +14,14 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\StackTraceMetadata\StackTraceMetadata.cs" />
     <Compile Include="Internal\StackTraceMetadata\MethodNameFormatter.cs" />
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
       <Link>Internal\Runtime\MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\StackTraceData.cs">
+      <Link>Internal\Runtime\StackTraceData.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

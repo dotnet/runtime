@@ -62,18 +62,12 @@ public class Program
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Add_SmallType_Correctness();
         Sub_SmallType_Correctness();
         Mul_SmallType_Correctness();
 
-        try
-        {
-            Div_SmallType_Correctness(2, 256);
-        }
-        catch(DivideByZeroException) {}
-
-        return 100;
+        Assert.Throws<DivideByZeroException>(() => Div_SmallType_Correctness(2, 256));
     }
 }

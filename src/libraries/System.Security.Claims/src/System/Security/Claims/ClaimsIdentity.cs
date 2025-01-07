@@ -14,7 +14,6 @@ namespace System.Security.Claims
     /// An Identity that is represented by a set of claims.
     /// </summary>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
-    [DebuggerTypeProxy(typeof(ClaimsIdentityDebugProxy))]
     public class ClaimsIdentity : IIdentity
     {
         private enum SerializationMask
@@ -961,27 +960,6 @@ namespace System.Security.Claims
             }
 
             return debugText;
-        }
-
-        private sealed class ClaimsIdentityDebugProxy
-        {
-            private readonly ClaimsIdentity _identity;
-
-            public ClaimsIdentityDebugProxy(ClaimsIdentity identity)
-            {
-                _identity = identity;
-            }
-
-            public ClaimsIdentity? Actor => _identity.Actor;
-            public string? AuthenticationType => _identity.AuthenticationType;
-            public object? BootstrapContext => _identity.BootstrapContext;
-            // List type has a friendly debugger view
-            public List<Claim> Claims => new List<Claim>(_identity.Claims);
-            public bool IsAuthenticated => _identity.IsAuthenticated;
-            public string? Label => _identity.Label;
-            public string? Name => _identity.Name;
-            public string NameClaimType => _identity.NameClaimType;
-            public string RoleClaimType => _identity.RoleClaimType;
         }
     }
 }

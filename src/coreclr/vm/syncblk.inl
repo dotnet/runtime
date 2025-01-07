@@ -270,10 +270,11 @@ FORCEINLINE bool AwareLock::LockState::InterlockedTryLock_Or_RegisterWaiter(Awar
                 return true;
             }
 
-            if (!state.HasAnyWaiters())
+            _ASSERTE(state.HasAnyWaiters() || waiterStarvationStartTimeWasReset);
+            if (!state.HasAnyWaiters() || waiterStarvationStartTimeWasReset)
             {
-                // This was the first waiter, record the waiter starvation start time
-                _ASSERTE(waiterStarvationStartTimeWasReset);
+                // This was the first waiter or the waiter starvation start time was reset. Record the waiter starvation start
+                // time.
                 awareLock->RecordWaiterStarvationStartTime();
             }
             return false;
@@ -478,6 +479,7 @@ FORCEINLINE bool AwareLock::TryEnterHelper(Thread* pCurThread)
     if (m_lockState.InterlockedTryLock())
     {
         m_HoldingThread = pCurThread;
+        m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return true;
@@ -524,6 +526,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterBeforeSpinLoopHelper
 
         // Lock was acquired and the spinner was not registered
         m_HoldingThread = pCurThread;
+        m_HoldingThreadId = pCurThread->GetThreadId();
         m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
         m_Recursion = 1;
         return EnterHelperResult_Entered;
@@ -556,6 +559,7 @@ FORCEINLINE AwareLock::EnterHelperResult AwareLock::TryEnterInsideSpinLoopHelper
 
     // Lock was acquired and spinner was unregistered
     m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return EnterHelperResult_Entered;
@@ -579,6 +583,7 @@ FORCEINLINE bool AwareLock::TryEnterAfterSpinLoopHelper(Thread *pCurThread)
 
     // Spinner was unregistered and the lock was acquired
     m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
     return true;
@@ -698,6 +703,7 @@ FORCEINLINE AwareLock::LeaveHelperAction AwareLock::LeaveHelper(Thread* pCurThre
     if (--m_Recursion == 0)
     {
         m_HoldingThread = NULL;
+        m_HoldingThreadId = 0;
         m_HoldingOSThreadId = 0;
 
         // Clear lock bit and determine whether we must signal a waiter to wake

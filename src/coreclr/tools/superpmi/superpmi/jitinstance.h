@@ -9,6 +9,21 @@
 #include "methodcontext.h"
 #include "cycletimer.h"
 
+enum class ReplayResult
+{
+    Success,
+    Error,
+    Miss,
+};
+
+struct ReplayResults
+{
+    ReplayResult Result = ReplayResult::Success;
+    bool IsMinOpts = false;
+    uint64_t NumExecutedInstructions = 0;
+    CompileResult* CompileResults = nullptr;
+};
+
 class JitInstance
 {
 private:
@@ -34,12 +49,6 @@ public:
     bool forceClearAltJitFlag;
     bool forceSetAltJitFlag;
 
-    enum Result
-    {
-        RESULT_ERROR,
-        RESULT_SUCCESS,
-        RESULT_MISSING
-    };
     CycleTimer       lt;
     MethodContext*   mc;
     ULONGLONG        times[2];
@@ -60,11 +69,11 @@ public:
 
     bool resetConfig(MethodContext* firstContext);
 
-    Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, struct MetricsSummary* metrics, bool* isMinOpts);
+    ReplayResults CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
-    const WCHAR* getForceOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key);
-    const WCHAR* getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options);
+    const char* getForceOption(const char* key);
+    const char* getOption(const char* key);
+    const char* getOption(const char* key, LightWeightMap<DWORD, DWORD>* options);
 
     const MethodContext::Environment& getEnvironment();
 
@@ -72,6 +81,8 @@ public:
     void* allocateLongLivedArray(size_t size);
     void freeArray(void* array);
     void freeLongLivedArray(void* array);
+
+    void updateForceOptions(LightWeightMap<DWORD, DWORD>* newForceOptions);
 };
 
 #endif

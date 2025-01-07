@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public struct ValX0 {}
 public struct ValY0 {}
@@ -62,7 +63,8 @@ public class Test_NestedClass01
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Eval((new Outer.GenInner<int>(new int())).InstVerify(typeof(int))); 	
 		Eval((new Outer.GenInner<double>(new double())).InstVerify(typeof(double))); 

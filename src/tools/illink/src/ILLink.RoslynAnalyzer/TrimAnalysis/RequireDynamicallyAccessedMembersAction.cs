@@ -24,6 +24,7 @@ namespace ILLink.Shared.TrimAnalysis
 		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type)
 		{
 			// TODO: Implement type name resolution to type symbol
+			// https://github.com/dotnet/runtime/issues/95118
 
 			// Important corner cases:
 			//   IL2105 (see it's occurences in the tests) - non-assembly qualified type name which doesn't resolve warns
@@ -34,6 +35,6 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes) =>
-			_reflectionAccessAnalyzer.GetReflectionAccessDiagnostics (_diagnosticContext, type.Type, dynamicallyAccessedMemberTypes);
+			_reflectionAccessAnalyzer.GetReflectionAccessDiagnostics (_diagnosticContext.Location, type.Type, dynamicallyAccessedMemberTypes);
 	}
 }

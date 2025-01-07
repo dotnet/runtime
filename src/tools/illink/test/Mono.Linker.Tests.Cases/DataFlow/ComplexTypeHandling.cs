@@ -2,11 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
@@ -146,7 +142,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// doesn't work on arrays, but the current implementation will preserve it anyway due to how it processes
 		// string -> Type resolution. This will only impact code which would have failed at runtime, so very unlikely to
 		// actually occur in real apps (and even if it does happen, it just increases size, doesn't break behavior).
-		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve array element types just due to the usage of the array type
+		[Kept (By = Tool.Trimmer | Tool.NativeAot)]
 		class ArrayCreateInstanceByNameElement
 		{
 			public ArrayCreateInstanceByNameElement ()
@@ -155,7 +151,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		[ExpectedWarning ("IL2032", ProducedBy = Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/82447
 		static void TestArrayCreateInstanceByName ()
 		{
 			Activator.CreateInstance ("test", "Mono.Linker.Tests.Cases.DataFlow.ComplexTypeHandling+ArrayCreateInstanceByNameElement[]");

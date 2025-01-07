@@ -16,10 +16,14 @@ namespace System.Collections.Immutable.Tests
         public void ItemRef()
         {
             var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
-            var builder = new ImmutableSortedSet<int>.Builder(array);
+            var builder = ImmutableSortedSet.CreateBuilder<int>();
+            foreach (int item in array)
+            {
+                builder.Add(item);
+            }
 
             ref readonly int safeRef = ref builder.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, builder.ItemRef(1));
 
@@ -32,7 +36,11 @@ namespace System.Collections.Immutable.Tests
         public void ItemRef_OutOfBounds()
         {
             var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
-            var builder = new ImmutableSortedSet<int>.Builder(array);
+            var builder = ImmutableSortedSet.CreateBuilder<int>();
+            foreach (int item in array)
+            {
+                builder.Add(item);
+            }
 
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.ItemRef(5));
         }

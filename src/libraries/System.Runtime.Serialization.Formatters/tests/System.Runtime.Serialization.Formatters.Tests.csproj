@@ -1,23 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- hardcode version to avoid breaking tests which embed the string length and are broken by bumping to 10.0.0.0 -->
+    <AssemblyVersion>9.0.0.0</AssemblyVersion>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!--
-      We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
-      The specific combination below accomplishes this. Normal apps should *NOT* set this combination of switches and
-      should instead set the switches documented at:
-      https://learn.microsoft.com/dotnet/core/compatibility/core-libraries/7.0/binaryformatter-apis-produce-errors#recommended-action
-    -->
-    <_ProjectTypeRequiresBinaryFormatter>true</_ProjectTypeRequiresBinaryFormatter>
-    <EnableUnsafeBinaryFormatterSerialization><!-- intentionally left blank --></EnableUnsafeBinaryFormatterSerialization>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
     <Compile Include="BinaryFormatterTests.cs" />
-    <Compile Include="DisableBitTests.cs" />
     <Compile Include="EqualityExtensions.cs" />
     <Compile Include="OptionalFieldAttributeTests.cs" />
     <Compile Include="FormatterConverterTests.cs" />
@@ -30,6 +21,7 @@
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
     <Compile Include="TargetFrameworkMoniker.cs" />
+    <Compile Include="TestConfiguration.cs" />
     <Compile Include="TypeSerializableValue.cs" />
     <Compile Include="$(CommonTestPath)System\Drawing\Helpers.cs"
              Link="Common\System\Drawing\Helpers.cs" />
@@ -45,6 +37,8 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="BinaryFormatterEventSourceTests.cs" />
     <Compile Include="SerializationGuardTests.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
+         Link="Common\System\Runtime\Serialization\SerializationGuard.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
@@ -58,6 +52,10 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Packaging\src\System.IO.Packaging.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
@@ -72,4 +70,5 @@
     <Reference Include="System.Transactions" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
+
 </Project>

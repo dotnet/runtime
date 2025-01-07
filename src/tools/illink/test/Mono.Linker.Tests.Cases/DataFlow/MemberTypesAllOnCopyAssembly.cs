@@ -1,11 +1,6 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.DataFlow.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
@@ -65,8 +60,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[KeptTypeInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType")]
 	[KeptMemberInAssembly ("base.dll", "Mono.Linker.Tests.Cases.DataFlow.Dependencies.MemberTypesAllBaseType/PrivateNestedType", new string[] { "PrivateMethod()" })]
 
-	// https://github.com/dotnet/runtime/issues/78752
-	[KeptMember (".ctor()", By = Tool.Trimmer)]
+	[KeptMember (".ctor()")]
 	public class MemberTypesAllOnCopyAssembly
 	{
 		public static void Main ()

@@ -90,6 +90,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             }
         }
 
+        // ldar regDst, [regAddr]
+        public void EmitLDAR(Register regDst, Register regAddr)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            Debug.Assert((uint)regAddr <= 0x1f);
+            uint instruction = 0xc8dffc00 | ((uint)regAddr << 5) | (uint)regDst;
+            Builder.EmitUInt(instruction);
+        }
+
         public void EmitCMP(Register reg, sbyte immediate)
         {
             if (immediate >= 0)
@@ -176,7 +185,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
 
         public void EmitRETIfEqual()
         {
+            // b.ne #8
             Builder.EmitUInt(0b01010100_0000000000000000010_0_0001u);
+            EmitRET();
+        }
+
+        public void EmitRETIfNotEqual()
+        {
+            // b.eq #8
+            Builder.EmitUInt(0b01010100_0000000000000000010_0_0000u);
             EmitRET();
         }
 
@@ -185,6 +202,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
 
             Builder.EmitUInt(0b01010100_0000000000000000000_0_0001u | offset << 5);
+
+            EmitJMP(symbol);
+        }
+
+        public void EmitJNE(ISymbolNode symbol)
+        {
+            uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
+
+            Builder.EmitUInt(0b01010100_0000000000000000000_0_0000u | offset << 5);
 
             EmitJMP(symbol);
         }

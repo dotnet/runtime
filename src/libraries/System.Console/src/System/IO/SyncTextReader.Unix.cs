@@ -20,11 +20,11 @@ namespace System.IO
             }
         }
 
-        public ConsoleKeyInfo ReadKey(out bool previouslyProcessed)
+        public ConsoleKeyInfo ReadKey(bool intercept)
         {
             lock (this)
             {
-                return Inner.ReadKey(out previouslyProcessed);
+                return Inner.ReadKey(intercept);
             }
         }
 

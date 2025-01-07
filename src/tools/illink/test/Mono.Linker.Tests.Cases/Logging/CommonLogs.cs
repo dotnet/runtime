@@ -3,6 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Logging
 {
+	[ExpectNonZeroExitCode (1)]
 	[SetupCompileBefore ("LogStep.dll", new[] { "Dependencies/LogStep.cs" }, new[] { "illink.dll", "Mono.Cecil.dll" })]
 	[SetupLinkerArgument ("--custom-step", "Log.LogStep,LogStep.dll")]
 	[SetupLinkerArgument ("--verbose")]

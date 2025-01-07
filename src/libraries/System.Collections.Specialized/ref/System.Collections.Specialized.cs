@@ -213,10 +213,10 @@ namespace System.Collections.Specialized
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public int Add(string? value) { throw null; }
-        public void AddRange(string[] value) { }
+        public void AddRange(string?[] value) { }
         public void Clear() { }
         public bool Contains(string? value) { throw null; }
-        public void CopyTo(string[] array, int index) { }
+        public void CopyTo(string?[] array, int index) { }
         public System.Collections.Specialized.StringEnumerator GetEnumerator() { throw null; }
         public int IndexOf(string? value) { throw null; }
         public void Insert(int index, string? value) { }

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class Constants
@@ -49,6 +51,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string RuntimeConfigPropertyName = "additionalProbingPaths";
         }
 
+        public static class Breadcrumbs
+        {
+            public const string EnvironmentVariable = "CORE_BREADCRUMBS";
+        }
+
+        public static class BundleExtractBase
+        {
+            public const string EnvironmentVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+        }
+
+        public static class CoreServicing
+        {
+            public const string EnvironmentVariable = "CORE_SERVICING";
+        }
+
         public static class DepsFile
         {
             public const string CommandLineArgument = "--depsfile";
@@ -67,8 +84,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class TestOnlyEnvironmentVariables
         {
             public const string DefaultInstallPath = "_DOTNET_TEST_DEFAULT_INSTALL_PATH";
-            public const string RegistryPath = "_DOTNET_TEST_REGISTRY_PATH";
             public const string GloballyRegisteredPath = "_DOTNET_TEST_GLOBALLY_REGISTERED_PATH";
+
+            public static string RegisteredConfigLocation = OperatingSystem.IsWindows() ? RegistryPath : InstallLocationPath;
+            public const string RegistryPath = "_DOTNET_TEST_REGISTRY_PATH";
             public const string InstallLocationPath = "_DOTNET_TEST_INSTALL_LOCATION_PATH";
         }
 
@@ -98,13 +117,18 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static class ErrorCode
         {
+            public const int Success = 0;
             public const int InvalidArgFailure = unchecked((int)0x80008081);
             public const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
+            public const int EntryPointFailure = unchecked((int)0x80008084);
             public const int ResolverInitFailure = unchecked((int)0x8000808b);
             public const int ResolverResolveFailure = unchecked((int)0x8000808c);
             public const int LibHostInvalidArgs = unchecked((int)0x80008092);
+            public const int InvalidConfigFile = unchecked((int)0x80008093);
             public const int AppArgNotRunnable = unchecked((int)0x80008094);
+            public const int AppHostExeNotBoundFailure = unchecked((int)0x80008095);
             public const int FrameworkMissingFailure = unchecked((int)0x80008096);
+            public const int FrameworkCompatFailure = unchecked((int)0x8000809c);
             public const int BundleExtractionFailure = unchecked((int)0x8000809f);
 
             public const int COMPlusException = unchecked((int)0xe0434352);

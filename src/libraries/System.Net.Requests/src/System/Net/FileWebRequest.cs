@@ -3,12 +3,14 @@
 
 using System.ComponentModel;
 using System.IO;
-using System.Threading;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
 {
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
     public class FileWebRequest : WebRequest, ISerializable
     {
         private readonly WebHeaderCollection _headers = new WebHeaderCollection();

@@ -11,6 +11,7 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
+        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
@@ -41,6 +42,7 @@ namespace System.Net.Security
 
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslClientAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
             CheckCertName = !(sslClientAuthenticationOptions.CertificateChainPolicy?.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName) == true);
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
@@ -48,11 +50,7 @@ namespace System.Net.Security
             IsServer = false;
             RemoteCertRequired = true;
             CertificateContext = sslClientAuthenticationOptions.ClientCertificateContext;
-
-            // RFC 6066 forbids IP literals
-            TargetHost = TargetHostNameHelper.IsValidAddress(sslClientAuthenticationOptions.TargetHost)
-                ? string.Empty
-                : sslClientAuthenticationOptions.TargetHost ?? string.Empty;
+            TargetHost = sslClientAuthenticationOptions.TargetHost ?? string.Empty;
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
@@ -105,6 +103,7 @@ namespace System.Net.Security
 
             IsServer = true;
             AllowRenegotiation = sslServerAuthenticationOptions.AllowRenegotiation;
+            AllowTlsResume = sslServerAuthenticationOptions.AllowTlsResume;
             ApplicationProtocols = sslServerAuthenticationOptions.ApplicationProtocols;
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslServerAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslServerAuthenticationOptions.EncryptionPolicy;
@@ -121,8 +120,10 @@ namespace System.Net.Security
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
+                    bool ocspFetch = false;
+                    _ = AppContext.TryGetSwitch(EnableOcspStaplingContextSwitchName, out ocspFetch);
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: !ocspFetch);
                 }
                 else
                 {
@@ -151,7 +152,7 @@ namespace System.Net.Security
 
         private static SslProtocols FilterOutIncompatibleSslProtocols(SslProtocols protocols)
         {
-            if (protocols.HasFlag(SslProtocols.Tls12) || protocols.HasFlag(SslProtocols.Tls13))
+            if ((protocols & (SslProtocols.Tls12 | SslProtocols.Tls13)) != SslProtocols.None)
             {
 #pragma warning disable 0618
                 // SSL2 is mutually exclusive with >= TLS1.2
@@ -183,6 +184,7 @@ namespace System.Net.Security
         internal object? UserState { get; set; }
         internal ServerOptionsSelectionCallback? ServerOptionDelegate { get; set; }
         internal X509ChainPolicy? CertificateChainPolicy { get; set; }
+        internal bool AllowTlsResume { get; set; }
 
 #if TARGET_ANDROID
         internal SslStream.JavaProxy? SslStreamProxy { get; set; }

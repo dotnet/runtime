@@ -1594,7 +1594,7 @@ namespace System.Data.Tests.Common
                 _builder.Add(SERVER, SERVER_VALUE);
                 _builder.Add(SERVER + "1", SERVER_VALUE + "1");
                 ((ICollection)_builder).CopyTo(dict, 0);
-                Assert.False(true);
+                Assert.Fail();
             });
         }
 
@@ -2207,7 +2207,7 @@ namespace System.Data.Tests.Common
                     try
                     {
                         cb.ConnectionString = tests[i];
-                        Assert.False(true);
+                        Assert.Fail();
                     }
                     catch (ArgumentException ex)
                     {
@@ -2244,7 +2244,7 @@ namespace System.Data.Tests.Common
                         if (test2[3] != test1[3])
                             continue;
 
-                        Assert.False(true);
+                        Assert.Fail();
                     }
                 }
                 if (found)

@@ -366,7 +366,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF16 (little-endian) encoded string at the current position.
+        /// Writes UTF-16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF16(char[] value)
@@ -380,7 +380,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF16 (little-endian) encoded string at the current position.
+        /// Writes UTF-16 (little-endian) encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF16(string value)
@@ -412,7 +412,7 @@ namespace System.Reflection.Metadata
         /// Writes string in SerString format (see ECMA-335-II 23.3 Custom attributes).
         /// </summary>
         /// <remarks>
-        /// The string is UTF8 encoded and prefixed by the its size in bytes.
+        /// The string is UTF-8 encoded and prefixed by the its size in bytes.
         /// Null string is represented as a single byte 0xFF.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
@@ -431,9 +431,9 @@ namespace System.Reflection.Metadata
         /// Writes string in User String (#US) heap format (see ECMA-335-II 24.2.4 #US and #Blob heaps):
         /// </summary>
         /// <remarks>
-        /// The string is UTF16 encoded and prefixed by the its size in bytes.
+        /// The string is UTF-16 encoded and prefixed by the its size in bytes.
         ///
-        /// This final byte holds the value 1 if and only if any UTF16 character within the string has any bit set in its top byte,
+        /// This final byte holds the value 1 if and only if any UTF-16 character within the string has any bit set in its top byte,
         /// or its low byte is any of the following: 0x01-0x08, 0x0E-0x1F, 0x27, 0x2D, 0x7F. Otherwise, it holds 0.
         /// The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
         /// </remarks>
@@ -451,7 +451,7 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
-        /// Writes UTF8 encoded string at the current position.
+        /// Writes UTF-8 encoded string at the current position.
         /// </summary>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public void WriteUTF8(string value, bool allowUnpairedSurrogates)

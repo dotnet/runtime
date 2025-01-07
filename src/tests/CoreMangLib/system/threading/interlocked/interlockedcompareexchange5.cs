@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 // Tests that CompareExchange(Int64, Int64, Int64)
 // actually switches values when location = comparand and
@@ -10,7 +11,8 @@ public class InterlockedCompareExchange5
 {
     private const int c_NUM_LOOPS = 100;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedCompareExchange5 test = new InterlockedCompareExchange5();
 

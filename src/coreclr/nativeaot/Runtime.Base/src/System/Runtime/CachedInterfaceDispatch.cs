@@ -15,9 +15,7 @@ namespace System.Runtime
         private static unsafe IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-#pragma warning disable 8500 // address of managed types
             object pObject = *(object*)locationOfThisPointer;
-#pragma warning restore 8500
             IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
             return dispatchResolveTarget;
         }
@@ -73,7 +71,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhResolveDispatch")]
-        private static IntPtr RhResolveDispatch(object pObject, EETypePtr interfaceType, ushort slot)
+        private static IntPtr RhResolveDispatch(object pObject, MethodTable* interfaceType, ushort slot)
         {
             DispatchCellInfo cellInfo = default;
             cellInfo.CellType = DispatchCellType.InterfaceAndSlot;
@@ -84,18 +82,44 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhResolveDispatchOnType")]
-        private static IntPtr RhResolveDispatchOnType(EETypePtr instanceType, EETypePtr interfaceType, ushort slot, EETypePtr* pGenericContext)
+        private static IntPtr RhResolveDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot)
         {
-            // Type of object we're dispatching on.
-            MethodTable* pInstanceType = instanceType.ToPointer();
-
-            // Type of interface
-            MethodTable* pInterfaceType = interfaceType.ToPointer();
-
             return DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
                                                                           pInterfaceType,
                                                                           slot,
-                                                                          (MethodTable**)pGenericContext);
+                                                                          flags: default,
+                                                                          ppGenericContext: null);
+        }
+
+        [RuntimeExport("RhResolveStaticDispatchOnType")]
+        private static IntPtr RhResolveStaticDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot, MethodTable** ppGenericContext)
+        {
+            return DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
+                                                                          pInterfaceType,
+                                                                          slot,
+                                                                          DispatchResolve.ResolveFlags.Static,
+                                                                          ppGenericContext);
+        }
+
+        [RuntimeExport("RhResolveDynamicInterfaceCastableDispatchOnType")]
+        private static IntPtr RhResolveDynamicInterfaceCastableDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot, MethodTable** ppGenericContext)
+        {
+            IntPtr result =  DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
+                                                                                    pInterfaceType,
+                                                                                    slot,
+                                                                                    DispatchResolve.ResolveFlags.IDynamicInterfaceCastable,
+                                                                                    ppGenericContext);
+
+            if ((result & (nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag) != 0)
+            {
+                result &= ~(nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+            }
+            else
+            {
+                *ppGenericContext = null;
+            }
+
+            return result;
         }
 
         private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
@@ -105,13 +129,10 @@ namespace System.Runtime
 
             if (cellInfo.CellType == DispatchCellType.InterfaceAndSlot)
             {
-                // Type whose DispatchMap is used. Usually the same as the above but for types which implement IDynamicInterfaceCastable
-                // we may repeat this process with an alternate type.
-                MethodTable* pResolvingInstanceType = pInstanceType;
-
-                IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
-                                                                              cellInfo.InterfaceType.ToPointer(),
+                IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
+                                                                              cellInfo.InterfaceType,
                                                                               cellInfo.InterfaceSlot,
+                                                                              flags: default,
                                                                               ppGenericContext: null);
                 if (pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
                 {
@@ -119,7 +140,7 @@ namespace System.Runtime
                     // This will either give us the appropriate result, or throw.
                     var pfnGetInterfaceImplementation = (delegate*<object, MethodTable*, ushort, IntPtr>)
                         pInstanceType->GetClasslibFunction(ClassLibFunctionId.IDynamicCastableGetInterfaceImplementation);
-                    pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType.ToPointer(), cellInfo.InterfaceSlot);
+                    pTargetCode = pfnGetInterfaceImplementation(pObject, cellInfo.InterfaceType, cellInfo.InterfaceSlot);
                     Diagnostics.Debug.Assert(pTargetCode != IntPtr.Zero);
                 }
                 return pTargetCode;

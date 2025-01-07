@@ -3,8 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.ComponentModel;
+using System.Diagnostics;
 
 namespace System.Xml.Xsl.Runtime
 {

@@ -203,13 +203,17 @@ namespace ILCompiler
 
 #if !READYTORUN
         /// <summary>
-        /// Gets a value indicating whether it might be possible to obtain a constructed type data structure for the given type.
+        /// Gets a value indicating whether it might be possible to obtain a constructed type data structure for the given type
+        /// in this compilation (i.e. is it possible to reference a constructed MethodTable symbol for this).
         /// </summary>
-        /// <remarks>
-        /// This is a bit of a hack, but devirtualization manager has a global view of all allocated types
-        /// so it can answer this question.
-        /// </remarks>
-        public virtual bool CanConstructType(TypeDesc type) => true;
+        public virtual bool CanReferenceConstructedMethodTable(TypeDesc type) => true;
+
+        /// <summary>
+        /// Gets a value indicating whether a (potentially canonically-equlivalent) constructed MethodTable could
+        /// exist. This is similar to <see cref="CanReferenceConstructedMethodTable"/>, but will return true
+        /// for List&lt;__Canon&gt; if a constructed MethodTable for List&lt;object&gt; exists.
+        /// </summary>
+        public virtual bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type) => true;
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 #endif

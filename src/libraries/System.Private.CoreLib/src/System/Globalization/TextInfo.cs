@@ -184,10 +184,27 @@ namespace System.Globalization
         private unsafe char ChangeCase(char c, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-
             char dst = default;
             ChangeCaseCore(&c, 1, &dst, 1, toUpper);
             return dst;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToUpperOrdinal(char c)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                return char.IsAscii(c)
+                    ? ToUpperAsciiInvariant(c)
+                    : Invariant.ChangeCase(c, toUpper: true);
+            }
+
+            return OrdinalCasing.ToUpper(c);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -436,7 +453,7 @@ namespace System.Globalization
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static char ToUpperAsciiInvariant(char c)
+        internal static char ToUpperAsciiInvariant(char c)
         {
             if (char.IsAsciiLetterLower(c))
             {
@@ -498,7 +515,7 @@ namespace System.Globalization
         /// influence which letter or letters of a "word" are uppercased when titlecasing strings.  For example
         /// "l'arbre" is considered two words in French, whereas "can't" is considered one word in English.
         /// </summary>
-        public unsafe string ToTitleCase(string str)
+        public string ToTitleCase(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -686,10 +703,10 @@ namespace System.Globalization
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
-#if TARGET_BROWSER
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
             {
-                JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                ChangeCaseNative(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
 #endif

@@ -16,7 +16,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Certificate2 : X509Certificate
     {
-        private volatile byte[]? _lazyRawData;
         private volatile Oid? _lazySignatureAlgorithm;
         private volatile int _lazyVersion;
         private volatile X500DistinguishedName? _lazySubjectName;
@@ -30,7 +29,6 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override void Reset()
         {
-            _lazyRawData = null;
             _lazySignatureAlgorithm = null;
             _lazyVersion = 0;
             _lazySubjectName = null;
@@ -50,12 +48,14 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(byte[] rawData)
             : base(rawData)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(byte[] rawData, string? password)
             : base(rawData, password)
         {
@@ -63,12 +63,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(byte[] rawData, SecureString? password)
             : base(rawData, password)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
@@ -76,6 +78,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
             : base(rawData, password, keyStorageFlags)
         {
@@ -89,6 +92,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(ReadOnlySpan<byte> rawData)
             : base(rawData)
         {
@@ -109,6 +113,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         /// <exception cref="CryptographicException">An error with the certificate occurs.</exception>
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(rawData, password, keyStorageFlags)
         {
@@ -126,12 +131,14 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(string fileName)
             : base(fileName)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(string fileName, string? password)
             : base(fileName, password)
         {
@@ -139,12 +146,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(string fileName, SecureString? password)
             : base(fileName, password)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
@@ -152,12 +161,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
             : base(fileName, password, keyStorageFlags)
         {
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public X509Certificate2(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
             : base(fileName, password, keyStorageFlags)
         {
@@ -310,7 +321,8 @@ namespace System.Security.Cryptography.X509Certificates
                     byte[] parameters = Pal.KeyAlgorithmParameters;
                     byte[] keyValue = Pal.PublicKeyValue;
                     Oid oid = new Oid(keyAlgorithmOid);
-                    publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue));
+                    // PublicKey can use skipCopy because AsnEncodedData creates a defensive copy of the values.
+                    publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue), skipCopy: true);
                 }
 
                 return publicKey;
@@ -326,15 +338,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// Unlike <see cref="RawData" />, this does not create a fresh copy of the data
         /// every time.
         /// </remarks>
-        public ReadOnlyMemory<byte> RawDataMemory
-        {
-            get
-            {
-                ThrowIfInvalid();
-
-                return _lazyRawData ??= Pal.RawData;
-            }
-        }
+        public ReadOnlyMemory<byte> RawDataMemory => PalRawDataMemory;
 
         public string SerialNumber => GetSerialNumberString();
 
@@ -1076,7 +1080,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public static X509Certificate2 CreateFromPem(ReadOnlySpan<char> certPem)
         {
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(certPem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(certPem))
             {
                 ReadOnlySpan<char> label = contents[fields.Label];
 
@@ -1105,7 +1109,7 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                     }
 
-                    X509Certificate2 ret = new X509Certificate2(certData.Span);
+                    X509Certificate2 ret = X509CertificateLoader.LoadCertificate(certData.Span);
                     // Certs are public data, no need to clear.
                     CryptoPool.Return(certBytes, clearSize: 0);
                     return ret;
@@ -1428,7 +1432,7 @@ namespace System.Security.Cryptography.X509Certificates
             Func<TAlg> factory,
             Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
         {
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
             {
                 ReadOnlySpan<char> label = contents[fields.Label];
 
@@ -1462,7 +1466,7 @@ namespace System.Security.Cryptography.X509Certificates
             Func<TAlg> factory,
             Func<TAlg, X509Certificate2> import) where TAlg : AsymmetricAlgorithm
         {
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(keyPem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(keyPem))
             {
                 ReadOnlySpan<char> label = contents[fields.Label];
 
@@ -1492,7 +1496,7 @@ namespace System.Security.Cryptography.X509Certificates
         internal static X509Extension? CreateCustomExtensionIfAny(string? oidValue) =>
             oidValue switch
             {
-                Oids.BasicConstraints => X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ? new X509BasicConstraintsExtension() : null,
+                Oids.BasicConstraints => LegacyBasicConstraintsDecoder.IsSupported ? new X509BasicConstraintsExtension() : null,
                 Oids.BasicConstraints2 => new X509BasicConstraintsExtension(),
                 Oids.KeyUsage => new X509KeyUsageExtension(),
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),

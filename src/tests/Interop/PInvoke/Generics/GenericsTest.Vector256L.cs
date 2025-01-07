@@ -36,26 +36,28 @@ unsafe partial class GenericsNative
     public static extern Vector256<long> AddVector256Ls(in Vector256<long> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector256L()
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsXArch))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector256L()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256L(1L, 2L, 3L, 4L));
 
         Vector256<long> value2;
         GenericsNative.GetVector256LOut(1L, 2L, 3L, 4L, &value2);
-        Assert.Equal(value2.GetElement(0), 1L);
-        Assert.Equal(value2.GetElement(1), 2L);
-        Assert.Equal(value2.GetElement(2), 3L);
-        Assert.Equal(value2.GetElement(3), 4L);
+        Assert.Equal(1L, value2.GetElement(0));
+        Assert.Equal(2L, value2.GetElement(1));
+        Assert.Equal(3L, value2.GetElement(2));
+        Assert.Equal(4L, value2.GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256LOut(1L, 2L, 3L, 4L, out Vector256<long> value3));
 
         Vector256<long>* value4 = GenericsNative.GetVector256LPtr(1L, 2L, 3L, 4L);
-        Assert.Equal(value4->GetElement(0), 1L);
-        Assert.Equal(value4->GetElement(1), 2L);
-        Assert.Equal(value4->GetElement(2), 3L);
-        Assert.Equal(value4->GetElement(3), 4L);
+        Assert.Equal(1L, value4->GetElement(0));
+        Assert.Equal(2L, value4->GetElement(1));
+        Assert.Equal(3L, value4->GetElement(2));
+        Assert.Equal(4L, value4->GetElement(3));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector256LRef(1L, 2L, 3L, 4L));
 

@@ -1,0 +1,119 @@
+<Project>
+  <!--
+    Workaround for https://github.com/dotnet/roslyn/issues/73075
+    Some tooling (CodeQL) explicitly sets EmitCompilerGeneratedFiles=true via command line arguments, such that
+    CompilerGeneratedFilesOutputPath is expected to be created and files output to it.
+    For the NativeAOT runtime components, we run the LinkNative target, which depends on Compile, but not Build.
+    As a result, the CreateCompilerGeneratedFilesOutputPath does not run (BuildingProject != true), the generated
+    output path is not created, and the compiler fails when trying to emit files to it.
+  -->
+  <Target Name="AlwaysCreateCompilerGeneratedFilesOutputPath"
+          BeforeTargets="CoreCompile"
+          Condition="'$(EmitCompilerGeneratedFiles)' == 'true' and '$(CompilerGeneratedFilesOutputPath)' != ''">
+    <MakeDir Directories="$(CompilerGeneratedFilesOutputPath)"  />
+  </Target>
+
+  <!-- strip the library the same way as the cmake build for coreclr does it:
+        - on mac, leave a .dylib.dwarf file next to the library.
+        - on linux leave a .so.dbg file next to to the library
+  -->
+  <Target Name="StripLibraryLikeCoreCLRSetupPaths"
+          DependsOnTargets="CopyNativeBinary"
+          Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'">
+    <PropertyGroup>
+      <StrippedOutputPath>$(OutputPath)stripped\</StrippedOutputPath>
+      <StripSourceFile>$(StrippedOutputPath)$(TargetName)$(NativeBinaryExt)</StripSourceFile>
+      <StrippedExt Condition="'$(StrippedExt)' == '' and ('$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true')">.dylib.dwarf</StrippedExt>
+      <StrippedExt Condition="'$(TargetsUnix)' == 'true' and '$(StrippedExt)' == ''">.so.dbg</StrippedExt>
+      <StripDestinationFile>$(StrippedOutputPath)$(TargetName)$(StrippedExt)</StripDestinationFile>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Hack: temporarily turn on StripSymbols whlie SetupOSSpecificProps runs, then turn it off
+    again before LinkNative runs.  The problem is that SetupOSSpecificProps only probes for
+    $(ObjCopyName) and $(ObjCopyNameAlternative) if symbol stripping is turned on.  But we don't
+    want LinkNative to actually do any stripping since we have our own way that we'd like it to
+    work.
+  -->
+  <Target Name="TempStripSymbolsOn"
+          BeforeTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <StripSymbols>true</StripSymbols>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="TempStripSymbolsOff"
+          AfterTargets="SetupOSSpecificProps"
+          BeforeTargets="LinkNative">
+    <PropertyGroup>
+      <StripSymbols>false</StripSymbols>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="StripLibraryLikeCoreCLRBuild"
+          DependsOnTargets="SetupOSSpecificProps;LinkNative;StripLibraryLikeCoreCLRSetupPaths"
+          Condition="'$(IsRuntimeComponent)' == 'true' and '$(TargetsWindows)' != 'true'"
+          Inputs="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)"
+          Outputs="$(StripSourceFile);$(StripDestinationFile)">
+    <Error Text="Do not set StripSymbols to true - runtime components stripping is controlled by native-library.targets" Condition="'$(StripSymbols)' == 'true'" />
+
+    <Message Importance="Normal" Text="Stripping $(NativeOutputPath)$(TargetName)$(NativeBinaryExt) into $(StripSourceFile) and $(StripDestinationFile)" />
+
+    <!-- copy from the native/ subfolder to the stripped/ subfolder -->
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)"
+          DestinationFolder="$(StrippedOutputPath)"
+          SkipUnchangedFiles="true" />
+
+    <PropertyGroup>
+      <_StripLike Condition="'$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true'">apple</_StripLike>
+      <_StripLike Condition="'$(_StripLike)' == ''">gnu</_StripLike>
+    </PropertyGroup>
+
+    <Exec Command="dsymutil --flat $(LikeCoreCLRDSymUtilMinimizeOpt) $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/> <!-- produces the .dylib.dwarf file -->
+    <Exec Command="strip -no_code_signature_warning -S $(StripSourceFile)" Condition="'$(_StripLike)' == 'apple'"/>
+    <!-- runtime build runs "codesign -f -s - libWhatever.dylib" in release configurations -->
+    <Exec Command="codesign -f -s - $(StripSourceFile)" Condition="'$(RuntimeConfiguration)' == 'Release' and '$(_StripLike)' == 'apple'" />
+
+    <Exec Command="$(ObjCopyName) --only-keep-debug $(StripSourceFile) $(StripDestinationFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+    <Exec Command="$(ObjCopyName) --strip-debug --strip-unneeded $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+    <Exec Command="$(ObjCopyName) --add-gnu-debuglink=$(StripDestinationFile) $(StripSourceFile)" Condition="'$(_StripLike)' == 'gnu'"/>
+  </Target>
+
+  <Target Name="InstallRuntimeComponentToFinalDestination"
+          AfterTargets="LinkNative"
+          DependsOnTargets="LinkNative;StripLibraryLikeCoreCLRBuild" Condition="'$(IsRuntimeComponent)' == 'true'">
+    <Error Text="Set at least one @InstallRuntimeComponentDestination item" Condition="@(InstallRuntimeComponentDestination->Count()) == 0" />
+
+    <PropertyGroup>
+        <!-- FIXME: this is the same as CoreCLRToolPath - but that doesn't seem like a good name -->
+      <FinalRuntimeComponentDestinationBase>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(RuntimeFlavor.ToLower())', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</FinalRuntimeComponentDestinationBase>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_NormalizedInstallRuntimeComponentDest Include="$([MSBuild]::NormalizeDirectory('$(FinalRuntimeComponentDestinationBase)', '%(InstallRuntimeComponentDestination.Identity)'))" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+      <CopyFinalFiles Include="$(StripSourceFile)" />
+      <CopyFinalFiles Include="$(StripDestinationFile)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+      <CopyFinalFiles Include="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" />
+      <CopyFinalFilesPDB Include="$(NativeOutputPath)$(TargetName).pdb" />
+    </ItemGroup>
+
+    <Message Importance="Normal" Text="Installing @(CopyFinalFiles) into %(_NormalizedInstallRuntimeComponentDest.Identity)"/>
+    <Message Importance="Normal" Text="Installing @(CopyFinalFilesPDB) into %(_NormalizedInstallRuntimeComponentDest.Identity)PDB\" Condition="'$(TargetsWindows)' == 'true'"/>
+
+    <Copy SourceFiles="@(CopyFinalFiles)"
+          DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)"
+          SkipUnchangedFiles="true"/>
+    <Copy SourceFiles="@(CopyFinalFilesPDB)"
+          DestinationFolder="%(_NormalizedInstallRuntimeComponentDest.Identity)PDB\"
+          SkipUnchangedFiles="true"
+          Condition="'$(TargetsWindows)' == 'true'"/>
+  </Target>
+
+</Project>

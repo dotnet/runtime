@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="..\Directory.Merged.props" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>

@@ -170,6 +170,28 @@ namespace Microsoft.Extensions.Primitives
             // Assert
             Assert.Equal(1, count);
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task NoDeadlock_WhenMultipleConcurrentChangeEventsOccur()
+        {
+            // Arrange
+            var firstCancellationTokenSource = new CancellationTokenSource();
+            var secondCancellationTokenSource = new CancellationTokenSource();
+            var firstCancellationChangeToken = new CancellationChangeToken(firstCancellationTokenSource.Token);
+            var secondCancellationChangeToken = new CancellationChangeToken(secondCancellationTokenSource.Token);
+            var compositeChangeToken = new CompositeChangeToken(new[] { firstCancellationChangeToken, secondCancellationChangeToken });
+
+            var manualResetEvent = new ManualResetEvent(false);
+            compositeChangeToken.RegisterChangeCallback(_ => manualResetEvent.WaitOne(5000), null);
+
+            // Act & Assert
+            var firstChange = Task.Run(firstCancellationTokenSource.Cancel);
+            var secondChange = Task.Run(secondCancellationTokenSource.Cancel);
+            await Task.Delay(50);
+            manualResetEvent.Set();
+
+            await Task.WhenAll(firstChange, secondChange).WaitAsync(5000);
+        }
     }
 
     internal class ProxyCancellationChangeToken : IChangeToken

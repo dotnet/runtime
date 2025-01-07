@@ -30,7 +30,7 @@ namespace System.Collections.Immutable.Tests
             UpdateArrayHelper<int>(func =>
             {
                 ImmutableArray<int> array = default;
-                Assert.True(func(ref array, l => { Assert.Equal(default, l); return ImmutableArray.Create(1); }));
+                Assert.True(func(ref array, l => { Assert.True(l.IsDefault); return ImmutableArray.Create(1); }));
                 Assert.Equal(1, array.Length);
                 Assert.Equal(1, array[0]);
             });

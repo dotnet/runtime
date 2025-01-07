@@ -195,7 +195,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
                 CreateInstance<ClassWithThrowingEmptyCtor>(createFunc, provider: serviceProvider));
 
             var ex2 = Assert.Throws<Exception>(() =>
-                CreateInstance<ClassWithThrowingCtor>(createFunc, provider: serviceProvider, args: new[] { new FakeService() }));
+                CreateInstance<ClassWithThrowingCtor>(createFunc, provider: serviceProvider, args: new object[] { new FakeService() }));
 
             // Assert
             Assert.Equal(nameof(ClassWithThrowingEmptyCtor), ex1.Message);

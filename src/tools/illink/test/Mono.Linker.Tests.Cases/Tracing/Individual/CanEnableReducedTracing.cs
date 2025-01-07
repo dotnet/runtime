@@ -1,10 +1,8 @@
-﻿using System;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
+﻿using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Tracing.Individual
 {
-
-	[SetupLinkerArgument ("--dump-dependencies")]
+	[DumpDependencies]
 	[SetupLinkerArgument ("--reduced-tracing", "true")]
 	// Avoid excessive output from core assemblies
 	[SetupLinkerTrimMode ("skip")]

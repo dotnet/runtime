@@ -16,6 +16,8 @@
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\apple\build\AppleBuild.targets" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\LibraryBuilder.props" TargetPath="Sdk" />
     <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\LibraryBuilder.targets" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\CommonMobileBuild.props" TargetPath="Sdk" />
+    <PackageFile Include="$(RepoRoot)\src\mono\msbuild\common\RuntimeComponentManifest.targets" TargetPath="Sdk" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
@@ -24,13 +26,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ReplacementValue Include="TargetFrameworkForNETCoreTasks" Value="$(TargetFrameworkForNETCoreTasks)" />
-      <_ReplacementValue Include="TargetFrameworkForNETFrameworkTasks" Value="$(TargetFrameworkForNETFrameworkTasks)" />
+      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
+      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/Sdk.targets.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(SdkTargetsPath)" />
 
     <ItemGroup>

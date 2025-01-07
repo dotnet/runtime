@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void LambdaBodyChange()
         {
             ApplyUpdateUtil.TestCase(static () =>
@@ -70,7 +70,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void LambdaCapturesThis()
         {
             // Tests that changes to the body of a lambda that captures 'this' is supported.
@@ -98,7 +98,7 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         void FirstCallAfterUpdate()
         {
             /* Tests that updating a method that has not been called before works correctly and that
@@ -198,18 +198,33 @@ namespace System.Reflection.Metadata
             {
                 var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete).Assembly;
 
+                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute);
+
+                Type preUpdateTy = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
+                Assert.NotNull(preUpdateTy);
+
+                // before the update the type has a MyDeleteAttribute on it
+                Attribute[] cattrs = Attribute.GetCustomAttributes(preUpdateTy, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(1, cattrs.Length);
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
                 ApplyUpdateUtil.ClearAllReflectionCaches();
 
-                // Just check the updated value on one method
 
-                Type attrType = typeof(System.Reflection.Metadata.ApplyUpdate.Test.MyDeleteAttribute);
                 Type ty = assm.GetType("System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete");
                 Assert.NotNull(ty);
 
+                // After the update, the type has no MyDeleteAttribute on it anymore
+                cattrs = Attribute.GetCustomAttributes(ty, attrType);
+                Assert.NotNull(cattrs);
+                Assert.Equal(0, cattrs.Length);
+
+                // Just check the updated value on one method
+
                 MethodInfo mi1 = ty.GetMethod(nameof(System.Reflection.Metadata.ApplyUpdate.Test.ClassWithCustomAttributeDelete.Method1), BindingFlags.Public | BindingFlags.Static);
                 Assert.NotNull(mi1);
-                Attribute[] cattrs = Attribute.GetCustomAttributes(mi1, attrType);
+                cattrs = Attribute.GetCustomAttributes(mi1, attrType);
                 Assert.NotNull(cattrs);
                 Assert.Equal(0, cattrs.Length);
 
@@ -302,10 +317,12 @@ namespace System.Reflection.Metadata
 
                 string result = x.GetField;
                 Assert.Equal("4567", result);
+
+                int aa = System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField2.Test();
+                Assert.Equal(22, aa);
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76702", TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddInstanceField()
         {
@@ -337,7 +354,7 @@ namespace System.Reflection.Metadata
 
                 Assert.Equal (6, x2.GetIntArrayLength());
                 Assert.Equal (7, x2.GetIntArrayElt (3));
-                
+
                 // now check that reflection can get/set the new fields
                 var fi = x2.GetType().GetField("NewStructField");
 
@@ -407,7 +424,7 @@ namespace System.Reflection.Metadata
                 // token is in that range.  If more code is added, revise this test.
 
                 Assert.True ((addedEventToken & 0x00ffffff) < 4);
-                
+
                 fi = x2.GetType().GetField("AddedDateTime");
                 Assert.NotNull(fi);
                 var dt = DateTime.Now;
@@ -797,7 +814,7 @@ namespace System.Reflection.Metadata
                     Assert.NotNull(parm.ParameterType);
                     Assert.Equal(parmPos, parm.Position);
                     Assert.NotNull(parm.Name);
-                    
+
                     var cas = parm.GetCustomAttributes(false);
                     foreach (var ca in cas) {
                         Assert.NotNull (ca);
@@ -834,7 +851,6 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/87574", TestRuntimes.CoreCLR)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestGenericAddStaticField()
         {
@@ -851,7 +867,7 @@ namespace System.Reflection.Metadata
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<double>();
 
                 Assert.Equal (0.0, y.GetField());
-                
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 // there are two updates - the first adds the fields, the second one updates the
@@ -882,7 +898,7 @@ namespace System.Reflection.Metadata
                 var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(45.0);
 
                 Assert.Equal (0.0, y.GetIt());
-                
+
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
                 var fi = x.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -919,6 +935,51 @@ namespace System.Reflection.Metadata
                 var dt = DateTime.Now;
                 var z = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<DateTime>(dt);
                 Assert.Equal(dt, z.GetIt());
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestNewMethodThrows()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows();
+
+                Assert.Equal("abcd", x.ExistingMethod("abcd"));
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                InvalidOperationException exn = Assert.Throws<InvalidOperationException>(() => x.ExistingMethod("spqr"));
+
+                Assert.Equal("spqr", exn.Message);
+
+                var stackTrace = new System.Diagnostics.StackTrace(exn, fNeedFileInfo: true);
+
+                var frames = stackTrace.GetFrames();
+
+                // the throwing method and its caller and a few frames of XUnit machinery for Assert.Throws, above
+                Assert.True(frames.Length >= 2);
+
+                var throwingMethod = frames[0].GetMethod();
+
+                var newMethod = typeof (System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).GetMethod("NewMethod");
+
+                Assert.Equal(newMethod, throwingMethod);
+
+                // We don't have the filename on all runtimes and platforms
+                var frame0Name = frames[0].GetFileName();
+                Assert.True(frame0Name == null || frame0Name.Contains("NewMethodThrows.cs"));
+
+                var existingMethod = typeof (System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows).GetMethod("ExistingMethod");
+
+                var throwingMethodCaller = frames[1].GetMethod();
+
+                Assert.Equal(existingMethod, throwingMethodCaller);
+
+                var frame1Name = frames[0].GetFileName();
+                Assert.True(frame1Name == null || frame1Name.Contains("NewMethodThrows.cs"));
             });
         }
     }

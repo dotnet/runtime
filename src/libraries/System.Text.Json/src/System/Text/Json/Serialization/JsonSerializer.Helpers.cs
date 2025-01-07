@@ -21,6 +21,7 @@ namespace System.Text.Json
         /// The value of the property is backed by the "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"
         /// <see cref="AppContext"/> setting and defaults to <see langword="true"/> if unset.
         /// </remarks>
+        [FeatureSwitchDefinition("System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault")]
         public static bool IsReflectionEnabledByDefault { get; } =
             AppContext.TryGetSwitch(
                 switchName: "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault",
@@ -34,11 +35,7 @@ namespace System.Text.Json
             Debug.Assert(inputType != null);
 
             options ??= JsonSerializerOptions.Default;
-
-            if (!options.IsConfiguredForJsonSerializer)
-            {
-                options.ConfigureForJsonSerializer();
-            }
+            options.MakeReadOnly(populateMissingResolver: true);
 
             // In order to improve performance of polymorphic root-level object serialization,
             // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.

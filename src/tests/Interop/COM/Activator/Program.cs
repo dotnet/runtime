@@ -50,7 +50,7 @@ sealed class ClassFactoryWrapper
 
 namespace Activator
 {
-    unsafe class Program
+    public unsafe class Program
     {
         private static delegate*<ComActivationContext, object> GetClassFactoryForTypeMethod = (delegate*<ComActivationContext, object>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("GetClassFactoryForType", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
         private static delegate*<ComActivationContext, bool, void> ClassRegistrationScenarioForType = (delegate*<ComActivationContext, bool, void>)typeof(object).Assembly.GetType("Internal.Runtime.InteropServices.ComActivator", throwOnError: true).GetMethod("ClassRegistrationScenarioForType", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
@@ -328,7 +328,8 @@ namespace Activator
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

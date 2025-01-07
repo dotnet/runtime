@@ -151,11 +151,11 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // When RegexOptions.IgnoreCase is supplied the current thread culture is used to lowercase the input string.
                 // Except if RegexOptions.CultureInvariant is additionally added locale dependent effects on the generated code or state machine may happen.
-                return new Regex[]
-                {
+                return
+                [
                     new Regex(input, additional),
                     new Regex(input, RegexOptions.Compiled | additional)
-                };
+                ];
             }
         }
 
@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions.Tests
             string input = "I\u0131\u0130i";
 
             // Use the input as the regex also
-            // Ignore the Compiled option here because it is a noop in combination with NonBacktracking 
+            // Ignore the Compiled option here because it is a noop in combination with NonBacktracking
             Regex cultInvariantRegex = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, input, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, CultureInfo.InvariantCulture);
             Regex turkishRegex = await RegexHelpers.GetRegexAsync(RegexEngine.NonBacktracking, input, RegexOptions.IgnoreCase, turkish);
 

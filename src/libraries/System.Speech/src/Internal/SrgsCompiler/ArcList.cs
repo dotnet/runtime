@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.Speech.Internal.SrgsCompiler
 {
 #if DEBUG
-    [DebuggerDisplay("Count #{Count}")]
+    [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ArcListDebugDisplay))]
 #endif
     internal class ArcList : RBList

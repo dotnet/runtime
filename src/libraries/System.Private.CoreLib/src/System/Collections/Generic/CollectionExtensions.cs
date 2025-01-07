@@ -66,6 +66,17 @@ namespace System.Collections.Generic
             new ReadOnlyCollection<T>(list);
 
         /// <summary>
+        /// Returns a read-only <see cref="ReadOnlySet{T}"/> wrapper
+        /// for the specified set.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the set.</typeparam>
+        /// <param name="set">The set to wrap.</param>
+        /// <returns>An object that acts as a read-only wrapper around the current <see cref="ISet{T}"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="set"/> is null.</exception>
+        public static ReadOnlySet<T> AsReadOnly<T>(this ISet<T> set) =>
+            new ReadOnlySet<T>(set);
+
+        /// <summary>
         /// Returns a read-only <see cref="ReadOnlyDictionary{TKey, TValue}"/> wrapper
         /// for the current dictionary.
         /// </summary>
@@ -82,7 +93,7 @@ namespace System.Collections.Generic
         /// <param name="list">The list to which the elements should be added.</param>
         /// <param name="source">The span whose elements should be added to the end of the <see cref="List{T}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="list"/> is null.</exception>
-        public static void AddRange<T>(this List<T> list, ReadOnlySpan<T> source)
+        public static void AddRange<T>(this List<T> list, params ReadOnlySpan<T> source)
         {
             if (list is null)
             {
@@ -109,7 +120,7 @@ namespace System.Collections.Generic
         /// <param name="source">The span whose elements should be added to the <see cref="List{T}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="list"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than <paramref name="list"/>'s <see cref="List{T}.Count"/>.</exception>
-        public static void InsertRange<T>(this List<T> list, int index, ReadOnlySpan<T> source)
+        public static void InsertRange<T>(this List<T> list, int index, params ReadOnlySpan<T> source)
         {
             if (list is null)
             {

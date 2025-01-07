@@ -10,6 +10,8 @@ if [%3] NEQ [] (
     set SCENARIO=%3
 )
 
+set PATH=%PREPEND_PATH%;%PATH%
+
 if [%HELIX_WORKITEM_UPLOAD_ROOT%] == [] (
     set "XHARNESS_OUT=%EXECUTION_DIR%xharness-output"
 ) else (
@@ -25,37 +27,48 @@ if [%XHARNESS_CLI_PATH%] NEQ [] (
 )
 
 if [%XHARNESS_COMMAND%] == [] (
-    if /I [%SCENARIO%]==[WasmTestOnBrowser] (
+    if /I [%SCENARIO%]==[WasmTestOnChrome] (
         set XHARNESS_COMMAND=test-browser
     ) else (
-        set XHARNESS_COMMAND=test
+        if /I [%SCENARIO%]==[WasmTestOnFirefox] (
+            set XHARNESS_COMMAND=test-browser
+        ) else (
+            set XHARNESS_COMMAND=test
+        )
     )
 )
 
 if /I [%XHARNESS_COMMAND%] == [test] (
     if [%JS_ENGINE%] == [] (
-        if /I [%SCENARIO%] == [WasmTestOnNodeJS] (
-            set "JS_ENGINE=--engine^=NodeJS"
-        ) else (
-            set "JS_ENGINE=--engine^=V8"
-        )
+        set "JS_ENGINE=--engine^=V8"
     )
     if [%MAIN_JS%] == [] (
         set "MAIN_JS=--js-file^=test-main.js"
     )
 
     if [%JS_ENGINE_ARGS%] == [] (
-        set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000"
-        if /I NOT [%SCENARIO%] == [WasmTestOnNodeJS] (
-            set "JS_ENGINE_ARGS=%JS_ENGINE_ARGS% --engine-arg^=--module"
-        )
-        if /I [%SCENARIO%] == [WasmTestOnNodeJS] (
-            set "JS_ENGINE_ARGS=%JS_ENGINE_ARGS% --engine-arg^=--experimental-wasm-eh"
-        )
+        set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000 --engine-arg^=--module"
     )
 ) else (
-    if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
-        set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
+    if /I [%SCENARIO%] == [WasmTestOnChrome] (
+        if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
+            set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
+        )
+        if [%JS_ENGINE_ARGS%] == [] (
+            set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000 --browser-arg^=--disable-gpu --pageLoadStrategy=none"
+        )
+    ) else (
+        if /I [%SCENARIO%] == [WasmTestOnFirefox] (
+            if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
+                set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\firefox\firefox.exe"
+            )
+            if [%JS_ENGINE%] == [] (
+                set "JS_ENGINE=--browser^=Firefox"
+            )
+            if [%JS_ENGINE_ARGS%] == [] (
+                set "JS_ENGINE_ARGS=--browser-arg^=-private-window"
+            )
+        )
     )
 )
 

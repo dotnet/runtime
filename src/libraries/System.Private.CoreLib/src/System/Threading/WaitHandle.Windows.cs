@@ -10,15 +10,15 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {
-                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout);
+                return WaitForMultipleObjectsIgnoringSyncContext(pHandles, handles.Length, waitAll, millisecondsTimeout, useTrivialWaits: false);
             }
         }
 
-        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitForMultipleObjectsIgnoringSyncContext(IntPtr* pHandles, int numHandles, bool waitAll, int millisecondsTimeout, bool useTrivialWaits)
         {
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -26,8 +26,9 @@ namespace System.Threading
             if (numHandles == 1)
                 waitAll = false;
 
-#if NATIVEAOT // TODO: reentrant wait support https://github.com/dotnet/runtime/issues/49518
-            bool reentrantWait = Thread.ReentrantWaitsEnabled;
+#if NATIVEAOT // TODO: reentrant wait support in Mono https://github.com/dotnet/runtime/issues/49518
+            // Trivial waits don't allow reentrance
+            bool reentrantWait = !useTrivialWaits && Thread.ReentrantWaitsEnabled;
 
             if (reentrantWait)
             {
@@ -92,9 +93,9 @@ namespace System.Threading
             return result;
         }
 
-        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout)
+        internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout, bool useTrivialWaits)
         {
-            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout);
+            return WaitForMultipleObjectsIgnoringSyncContext(&handle, 1, false, millisecondsTimeout, useTrivialWaits);
         }
 
         private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout)

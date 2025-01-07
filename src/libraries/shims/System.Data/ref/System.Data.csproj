@@ -2,10 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Common\ref\System.Data.Common.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Odbc\ref\System.Data.Odbc.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.OleDb\ref\System.Data.OleDb.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Data.Odbc.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Data.OleDb.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Data.SqlClient.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

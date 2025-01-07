@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System;
-using System.Globalization;
 using System.ComponentModel;
-using System.Xml.Serialization;
-using System.Xml.Schema;
 using System.Diagnostics;
-using System.Threading;
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
+using System.Security;
+using System.Threading;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace System.Xml.Serialization
 {
@@ -319,6 +319,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Merge")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void Merge(XmlSchema schema)
         {
             if (MergedSchemas[schema] != null)
@@ -359,6 +360,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Calls MergeFailedMessage")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void Merge(IList originals, XmlSchema schema)
         {
             foreach (XmlSchema s in originals)
@@ -568,6 +570,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Creates XmlSerializer")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private static string Dump(XmlSchemaObject o)
         {
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -583,6 +586,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Dump")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string? ns)
         {
             string err = SR.Format(SR.XmlSerializableMergeItem, ns, GetSchemaItem(src, ns, null));
@@ -617,6 +621,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Compile(ValidationEventHandler? handler, bool fullCompile)
         {
             if (_isCompiled)
@@ -739,6 +744,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateSchemaGraph")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void SetCache(SchemaObjectCache cache, bool shareTypes)
         {
             _shareTypes = shareTypes;

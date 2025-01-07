@@ -8,6 +8,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
+    /// <summary>
+    /// Specifies options for <see cref="MemoryCache"/>.
+    /// </summary>
     public class MemoryCacheOptions : IOptions<MemoryCacheOptions>
     {
         private long _sizeLimit = NotSet;
@@ -15,6 +18,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private const int NotSet = -1;
 
+        /// <summary>
+        /// Gets or sets the clock used by the cache for expiration.
+        /// </summary>
         public ISystemClock? Clock { get; set; }
 
         /// <summary>
@@ -29,6 +35,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets or sets the maximum size of the cache.
         /// </summary>
+        /// <remarks>
+        /// The units are arbitrary. Users specify the size of every entry they add to the cache.
+        /// If no size is specified, the entry has no size and the size limit is ignored for that entry.
+        /// For more information, see
+        /// <see href="https://learn.microsoft.com/aspnet/core/performance/caching/memory#use-setsize-size-and-sizelimit-to-limit-cache-size">Use SetSize, Size, and SizeLimit to limit cache size</see>.
+        /// </remarks>
         public long? SizeLimit
         {
             get => _sizeLimit < 0 ? null : _sizeLimit;
@@ -43,12 +55,15 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value that indicates whether the cache is compacted when the maximum size is exceeded.
+        /// </summary>
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         [Obsolete("This property is retained only for compatibility.  Remove use and instead call MemoryCache.Compact as needed.", error: true)]
         public bool CompactOnMemoryPressure { get; set; }
 
         /// <summary>
-        /// Gets or sets the amount to compact the cache by when the maximum size is exceeded.
+        /// Gets or sets the amount the cache is compacted by when the maximum size is exceeded.
         /// </summary>
         public double CompactionPercentage
         {
@@ -65,14 +80,22 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Gets or sets whether to track linked entries. Disabled by default.
+        /// Gets or sets a value that indicates whether linked entries are tracked.
         /// </summary>
-        /// <remarks>Prior to .NET 7 this feature was always enabled.</remarks>
+        /// <value>
+        /// <see langword="true"/> if linked entries are tracked; otherwise, <see langword="false" />.
+        /// The default is <see langword="false" />.
+        /// </value>
+        /// <remarks>Prior to .NET 7, this feature was always enabled.</remarks>
         public bool TrackLinkedCacheEntries { get; set; }
 
         /// <summary>
-        /// Gets or sets whether to track memory cache statistics. Disabled by default.
+        /// Gets or sets a value that indicates whether memory cache statistics are tracked.
         /// </summary>
+        /// <value>
+        /// <see langword="true"/> if memory cache statistics are tracked; otherwise, <see langword="false" />.
+        /// The default is <see langword="false" />.
+        /// </value>
         public bool TrackStatistics { get; set; }
 
         MemoryCacheOptions IOptions<MemoryCacheOptions>.Value

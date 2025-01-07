@@ -3,9 +3,9 @@
 
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
+using System.Data.SqlTypes;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Data.SqlTypes;
 using System.Reflection;
 
 namespace System.Data

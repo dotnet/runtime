@@ -16,7 +16,7 @@
 #include "rtlfunctions.h"
 
 
-#ifdef TARGET_AMD64
+#ifdef HOST_AMD64
 
 RtlVirtualUnwindFn*                 RtlVirtualUnwind_Unsafe         = NULL;
 
@@ -45,7 +45,7 @@ HRESULT EnsureRtlFunctions()
     return S_OK;
 }
 
-#else // TARGET_AMD64
+#else // HOST_AMD64
 
 HRESULT EnsureRtlFunctions()
 {
@@ -53,17 +53,18 @@ HRESULT EnsureRtlFunctions()
     return S_OK;
 }
 
-#endif // TARGET_AMD64
+#endif // HOST_AMD64
 
-#if defined(FEATURE_EH_FUNCLETS)
+#ifndef HOST_X86
+
+#define DYNAMIC_FUNCTION_TABLE_MAX_RANGE INT32_MAX
 
 VOID InstallEEFunctionTable (
         PVOID pvTableID,
         PVOID pvStartRange,
         ULONG cbRange,
         PGET_RUNTIME_FUNCTION_CALLBACK pfnGetRuntimeFunctionCallback,
-        PVOID pvContext,
-        EEDynamicFunctionTableType TableType)
+        PVOID pvContext)
 {
     CONTRACTL
     {
@@ -103,7 +104,7 @@ VOID InstallEEFunctionTable (
         }
         else
         {
-            NewArrayHolder<WCHAR> wzTempName(DuplicateStringThrowing(ssTempName.GetUnicode()));
+            NewArrayHolder<WCHAR> wzTempName(ssTempName.GetCopyOfUnicodeString());
 
             // publish result
             if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)
@@ -120,12 +121,11 @@ VOID InstallEEFunctionTable (
             (ULONG_PTR)pvStartRange,
             cbRange,
             pfnGetRuntimeFunctionCallback,
-            EncodeDynamicFunctionTableContext(pvContext, TableType),
+            pvContext,
             wszModuleName))
     {
         COMPlusThrowOM();
     }
 }
 
-#endif // FEATURE_EH_FUNCLETS
-
+#endif // HOST_X86

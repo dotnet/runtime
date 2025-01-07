@@ -17,12 +17,12 @@ class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
 struct TransitionBlock;
 struct VASigCookie;
-class ComPlusCallMethodDesc;
+class CLRToCOMCallMethodDesc;
 
 #include <cgencpu.h>
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
 #endif
 
@@ -33,8 +33,8 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 #endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
-extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMethodDesc * pMD);
-extern "C" void GenericComPlusCallStub(void);
+extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD);
+extern "C" void GenericCLRToCOMCallStub(void);
 
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
@@ -58,14 +58,9 @@ extern "C" void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransit
 extern "C" void STDCALL GenericPInvokeCalliHelper(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
-extern "C" void STDCALL ExternalMethodFixupPatchLabel(void);
 
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);
-
-extern "C" void STDCALL TransparentProxyStub(void);
-extern "C" void STDCALL TransparentProxyStub_CrossContext();
-extern "C" void STDCALL TransparentProxyStubPatchLabel(void);
 
 #ifdef FEATURE_READYTORUN
 extern "C" void STDCALL DelayLoad_MethodCall();
@@ -75,11 +70,6 @@ extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
-extern "C" DWORD xmmYmmStateSupport();
-extern "C" DWORD avx512StateSupport();
-#endif
-
 #ifdef DACCESS_COMPILE
 
 // Used by dac/strike to make sense of non-jit/non-jit-helper call targets
@@ -87,8 +77,6 @@ extern "C" DWORD avx512StateSupport();
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc);
 
 #endif // DACCESS_COMPILE
-
-
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to

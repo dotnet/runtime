@@ -65,19 +65,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [InlineData(null, null)]
         [InlineData(typeof(string), "")]
         [InlineData(typeof(int), " \t\r\n")]
+        [InlineData(typeof(CustomValidator), nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError))]
         public static void Ctor_Type_String(Type validatorType, string method)
         {
             CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
             Assert.Equal(validatorType, attribute.ValidatorType);
             Assert.Equal(method, attribute.Method);
-        }
-
-        [Theory]
-        [InlineData(typeof(CustomValidator), nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
-        public static void Ctor_Type_String_IgnoreNetFramework(Type validatorType, string method)
-        {
-            Ctor_Type_String(validatorType, method);
         }
 
         [Fact]
@@ -108,17 +101,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void RequiresValidationContext_Get_ReturnsExpected(string method, bool expected)
         {
             CustomValidationAttribute attribute = GetAttribute(method);
-
-            // The .NET Framework has a bug where CustomValidationAttribute doesn't
-            // validate the context. See https://github.com/dotnet/runtime/issues/21100.
-            if (PlatformDetection.IsNetFramework)
-            {
-                Assert.False(attribute.RequiresValidationContext);
-            }
-            else
-            {
-                Assert.Equal(expected, attribute.RequiresValidationContext);
-            }
+            Assert.Equal(expected, attribute.RequiresValidationContext);
         }
 
         public static IEnumerable<object[]> BadlyFormed_TestData()
@@ -138,21 +121,11 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/runtime/issues/21100")]
         [MemberData(nameof(BadlyFormed_TestData))]
-        public static void RequiresValidationContext_BadlyFormed_NetCore_ThrowsInvalidOperationException(Type validatorType, string method)
+        public static void RequiresValidationContext_BadlyFormed_ThrowsInvalidOperationException(Type validatorType, string method)
         {
             CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
             Assert.Throws<InvalidOperationException>(() => attribute.RequiresValidationContext);
-        }
-
-        [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The .NET Framework has a bug where CustomValidationAttribute doesn't validate the context. See https://github.com/dotnet/runtime/issues/21100")]
-        [MemberData(nameof(BadlyFormed_TestData))]
-        public static void RequiresValidationContext_BadlyFormed_NetFx_DoesNotThrow(Type validatorType, string method)
-        {
-            CustomValidationAttribute attribute = new CustomValidationAttribute(validatorType, method);
-            Assert.False(attribute.RequiresValidationContext);
         }
 
         [Theory]
@@ -186,7 +159,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework had a restriction, that prevented to use custom ValidationResult. .NET Core allows to return class derived from ValidatioResult")]
         public static void GetValidationResult_MethodReturnDerivedValidationResult_ReturnsExpected()
         {
             CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.ValidationMethodDerivedReturnTypeReturnsSomeError));

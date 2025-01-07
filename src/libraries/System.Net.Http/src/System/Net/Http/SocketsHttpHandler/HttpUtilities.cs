@@ -22,7 +22,7 @@ namespace System.Net.Http
             string.Equals(scheme, "wss", StringComparison.OrdinalIgnoreCase);
 
         internal static bool IsSupportedProxyScheme(string scheme) =>
-            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || IsSocksScheme(scheme);
+            string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) || string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase) || IsSocksScheme(scheme);
 
         internal static bool IsSocksScheme(string scheme) =>
             string.Equals(scheme, "socks5", StringComparison.OrdinalIgnoreCase) ||

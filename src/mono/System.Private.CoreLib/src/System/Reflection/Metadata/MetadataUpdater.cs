@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Metadata
@@ -35,11 +36,11 @@ namespace System.Reflection.Metadata
 
             // System.Private.CoreLib is not editable
             if (runtimeAssembly == typeof(AssemblyExtensions).Assembly)
-                throw new InvalidOperationException (SR.InvalidOperation_AssemblyNotEditable);
+                throw new InvalidOperationException(SR.InvalidOperation_AssemblyNotEditable);
 
             unsafe
             {
-                IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle ();
+                IntPtr monoAssembly = runtimeAssembly.GetUnderlyingNativeHandle();
                 fixed (byte* metadataDeltaPtr = metadataDelta, ilDeltaPtr = ilDelta, pdbDeltaPtr = pdbDelta)
                 {
                     ApplyUpdate_internal(monoAssembly, metadataDeltaPtr, metadataDelta.Length, ilDeltaPtr, ilDelta.Length, pdbDeltaPtr, pdbDelta.Length);
@@ -49,6 +50,7 @@ namespace System.Reflection.Metadata
 
         internal static string GetCapabilities() => s_ApplyUpdateCapabilities.Value;
 
+        [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
         public static bool IsSupported { get; } = ApplyUpdateEnabled(justComponentCheck: 0) != 0;
 
         private static readonly Lazy<string> s_ApplyUpdateCapabilities = new Lazy<string>(InitializeApplyUpdateCapabilities);
@@ -59,13 +61,13 @@ namespace System.Reflection.Metadata
             return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty;
         }
 
-        [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern int ApplyUpdateEnabled (int justComponentCheck);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int ApplyUpdateEnabled(int justComponentCheck);
 
-        [MethodImpl (MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string GetApplyUpdateCapabilities();
 
-        [MethodImpl (MethodImplOptions.InternalCall)]
-        private static extern unsafe void ApplyUpdate_internal (IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length, byte *dpdb_bytes, int dpdb_length);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe void ApplyUpdate_internal(IntPtr base_assm, byte* dmeta_bytes, int dmeta_length, byte* dil_bytes, int dil_length, byte* dpdb_bytes, int dpdb_length);
     }
 }

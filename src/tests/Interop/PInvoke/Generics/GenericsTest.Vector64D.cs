@@ -36,20 +36,22 @@ unsafe partial class GenericsNative
     public static extern Vector64<double> AddVector64Ds(in Vector64<double> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestVector64D()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestVector64D()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64D(1.0));
 
         Vector64<double> value2;
         GenericsNative.GetVector64DOut(1.0, &value2);
-        Assert.Equal(value2.GetElement(0), 1.0);
+        Assert.Equal(1.0, value2.GetElement(0));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64DOut(1.0, out Vector64<double> value3));
 
         Vector64<double>* value4 = GenericsNative.GetVector64DPtr(1.0);
-        Assert.Equal(value4->GetElement(0), 1.0);
+        Assert.Equal(1.0, value4->GetElement(0));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector64DRef(1.0));
 

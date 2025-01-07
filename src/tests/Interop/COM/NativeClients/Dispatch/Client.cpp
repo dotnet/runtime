@@ -11,6 +11,7 @@ void Validate_Float_In_ReturnAndUpdateByRef();
 void Validate_Double_In_ReturnAndUpdateByRef();
 void Validate_LCID_Marshaled();
 void Validate_Enumerator();
+void Validate_ParamCoerce();
 
 template<COINIT TM>
 struct ComInit
@@ -48,6 +49,7 @@ int __cdecl main()
         Validate_Double_In_ReturnAndUpdateByRef();
         Validate_LCID_Marshaled();
         Validate_Enumerator();
+        Validate_ParamCoerce();
     }
     catch (HRESULT hr)
     {
@@ -79,20 +81,20 @@ void Validate_Numeric_In_ReturnByRef()
         lcid,
         &methodId));
 
-    BYTE b1 = 24;
-    BYTE b2;
-    SHORT s1 = 53;
-    SHORT s2;
-    USHORT us1 = 74;
-    USHORT us2;
+    uint8_t b1 = 24;
+    uint8_t b2;
+    int16_t s1 = 53;
+    int16_t s2;
+    uint16_t us1 = 74;
+    uint16_t us2;
     LONG i1 = 34;
     LONG i2;
     ULONG ui1 = 854;
     ULONG ui2;
-    LONGLONG l1 = 894;
-    LONGLONG l2;
-    ULONGLONG ul1 = 4168;
-    ULONGLONG ul2;
+    int64_t l1 = 894;
+    int64_t l2;
+    uint64_t ul1 = 4168;
+    uint64_t ul2;
 
     {
         DISPPARAMS params;
@@ -159,7 +161,7 @@ void Validate_Numeric_In_ReturnByRef()
         l2 = 0;
         ul2 = 0;
 
-        THROW_IF_FAILED(dispatchTesting->DoubleNumeric_ReturnByRef(b1, &b2, s1, &s2, us1, &us2, i1, (INT*)&i2, ui1, (UINT*)&ui2, l1, &l2, ul1, &ul2));
+        THROW_IF_FAILED(dispatchTesting->DoubleNumeric_ReturnByRef(b1, &b2, s1, &s2, us1, &us2, i1, (int32_t*)&i2, ui1, (uint32_t*)&ui2, l1, &l2, ul1, &ul2));
 
         THROW_FAIL_IF_FALSE(b2 == b1 * 2);
         THROW_FAIL_IF_FALSE(s2 == s1 * 2);
@@ -458,4 +460,147 @@ void Validate_Enumerator()
 
     ::printf(" -- Validate returned IEnumVARIANT\n");
     ValidateReturnedEnumerator(&result);
+}
+
+void Validate_ParamCoerce_Success(ComSmartPtr<IDispatchCoerceTesting>& dispatchCoerceTesting, int lcid, DISPID methodId, VARIANT arg, int expected)
+{
+    HRESULT hr;
+
+    DISPPARAMS params;
+    VARIANTARG args;
+    params.cArgs = 1;
+    params.rgvarg = &args;
+    params.cNamedArgs = 0;
+    params.rgdispidNamedArgs = nullptr;
+
+    args = arg;
+    VARIANT result;
+
+    THROW_IF_FAILED(dispatchCoerceTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    ));
+
+    THROW_FAIL_IF_FALSE(V_I4(&result) == expected);
+}
+
+void Validate_ParamCoerce_Exception(ComSmartPtr<IDispatchCoerceTesting>& dispatchCoerceTesting, int lcid, DISPID methodId, VARIANT arg, HRESULT expected)
+{
+    HRESULT hr;
+
+    DISPPARAMS params;
+    VARIANTARG args;
+    params.cArgs = 1;
+    params.rgvarg = &args;
+    params.cNamedArgs = 0;
+    params.rgdispidNamedArgs = nullptr;
+
+    args = arg;
+    VARIANT result;
+
+    hr = dispatchCoerceTesting->Invoke(
+        methodId,
+        IID_NULL,
+        lcid,
+        DISPATCH_METHOD,
+        &params,
+        &result,
+        nullptr,
+        nullptr
+    );
+
+    THROW_FAIL_IF_FALSE(hr == expected);
+}
+
+void Validate_ParamCoerce()
+{
+    HRESULT hr;
+
+    CoreShimComActivation csact{ W("NETServer"), W("DispatchCoerceTesting") };
+
+    ComSmartPtr<IDispatchCoerceTesting> dispatchCoerceTesting;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DispatchCoerceTesting, nullptr, CLSCTX_INPROC, IID_IDispatchCoerceTesting, (void**)&dispatchCoerceTesting));
+
+    LPOLESTR numericMethodName = (LPOLESTR)W("ManagedArgument");
+    LCID lcid = MAKELCID(LANG_USER_DEFAULT, SORT_DEFAULT);
+    DISPID methodId;
+
+    ::wprintf(W("Invoke %s\n"), numericMethodName);
+    THROW_IF_FAILED(dispatchCoerceTesting->GetIDsOfNames(
+        IID_NULL,
+        &numericMethodName,
+        1,
+        lcid,
+        &methodId));
+    
+    VARIANT arg;
+
+    ::wprintf(W("Validating VT_UI4\n"));
+    V_VT(&arg) = VT_UI4;
+    V_UI4(&arg) = 0x1234ABCD;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 0x1234ABCD);
+    
+    ::wprintf(W("Validating VT_I2\n"));
+    V_VT(&arg) = VT_I2;
+    V_I2(&arg) = 123;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 123);
+    
+    ::wprintf(W("Validating VT_I8\n"));
+    V_VT(&arg) = VT_I8;
+    V_I8(&arg) = int64_t(1) << 32;
+    Validate_ParamCoerce_Exception(dispatchCoerceTesting, lcid, methodId, arg, DISP_E_OVERFLOW);
+
+    ::wprintf(W("Validating VT_R8\n"));
+    V_VT(&arg) = VT_R8;
+    V_R8(&arg) = 123.45;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 123);
+
+    ::wprintf(W("Validating VT_CY\n"));
+    V_VT(&arg) = VT_CY;
+    V_I8(&arg) = 123456;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 12);
+
+    ::wprintf(W("Validating VT_BSTR\n"));
+    V_VT(&arg) = VT_BSTR;
+    V_BSTR(&arg) = ::SysAllocString(L"123");
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 123);
+
+    ::wprintf(W("Validating VT_BOOL\n"));
+    V_VT(&arg) = VT_BOOL;
+    V_BOOL(&arg) = VARIANT_TRUE;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, -1);
+    V_VT(&arg) = VT_BOOL;
+    V_I4(&arg) = 123;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, -1);
+    V_VT(&arg) = VT_BOOL;
+    V_BOOL(&arg) = VARIANT_FALSE;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 0);
+
+    ::wprintf(W("Validating VT_DATE\n"));
+    V_VT(&arg) = VT_DATE;
+    V_R8(&arg) = -657434.0;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, -657434);
+    V_VT(&arg) = VT_DATE;
+    V_R8(&arg) = -657435.0;
+    Validate_ParamCoerce_Exception(dispatchCoerceTesting, lcid, methodId, arg, E_INVALIDARG);
+    V_VT(&arg) = VT_DATE;
+    V_R8(&arg) = 2958465.0;
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 2958465);
+    V_VT(&arg) = VT_DATE;
+    V_R8(&arg) = 2958466.0;
+    Validate_ParamCoerce_Exception(dispatchCoerceTesting, lcid, methodId, arg, E_INVALIDARG);
+
+    ::wprintf(W("Validating VT_DECIMAL\n"));
+    V_VT(&arg) = VT_DECIMAL;
+    VarDecFromI4(123, &V_DECIMAL(&arg));
+    Validate_ParamCoerce_Success(dispatchCoerceTesting, lcid, methodId, arg, 123);
+    V_VT(&arg) = VT_DECIMAL;
+    VarDecFromI8(int64_t(1) << 32, &V_DECIMAL(&arg));
+    Validate_ParamCoerce_Exception(dispatchCoerceTesting, lcid, methodId, arg, DISP_E_OVERFLOW);
 }

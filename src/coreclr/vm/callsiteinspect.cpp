@@ -433,7 +433,8 @@ void CallsiteInspect::PropagateOutParametersBackToCallsite(
                 *(ARG_SLOT *)(frame->GetReturnValuePtr()) = retVal;
             }
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
-            else if (argit.HasNonStandardByvalReturn())
+            else if (argit.HasNonStandardByvalReturn()
+                    && !(flags & CallsiteDetails::HResultReturn))
             {
                 // In these cases, put the pointer to the return buffer into
                 // the frame's return value slot.

@@ -19,10 +19,9 @@ public class Repro
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new Repro().Bug();
         // will fail with an assert under GCSTRESS=4
-        return 100;
     }
 }

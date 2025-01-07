@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public ValueTypedMember MyValueTypedField;
 
-        public RefTypedMember MyRefTypedProperty { get; set; }
+        public RefTypedMember? MyRefTypedProperty { get; set; }
 
         public RefTypedMember MyRefTypedField;
 
@@ -38,9 +38,9 @@ namespace System.Text.Json.Serialization.Tests
 
         public ValueTypedMember? MyValueTypedField;
 
-        public RefTypedMember MyRefTypedProperty { get; set; }
+        public RefTypedMember? MyRefTypedProperty { get; set; }
 
-        public RefTypedMember MyRefTypedField;
+        public RefTypedMember? MyRefTypedField;
 
         public void Initialize()
         {

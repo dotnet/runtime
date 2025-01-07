@@ -13,7 +13,7 @@
 #ifndef _MSC_VER
 __forceinline void Interlocked::InterlockedOperationBarrier()
 {
-#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     // See PAL_InterlockedOperationBarrier() in the PAL
     __sync_synchronize();
 #endif

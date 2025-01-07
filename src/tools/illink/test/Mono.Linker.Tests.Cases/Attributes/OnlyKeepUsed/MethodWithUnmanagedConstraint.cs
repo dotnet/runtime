@@ -1,10 +1,10 @@
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupCSharpCompilerToUse ("csc")]
-	[SetupCompileArgument ("/langversion:7.3")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	public class MethodWithUnmanagedConstraint
 	{
@@ -20,7 +20,10 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		[Kept]
-		static void Method<T> () where T : unmanaged
+		static void Method<
+			[KeptGenericParamAttributes (GenericParameterAttributes.NotNullableValueTypeConstraint | GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> () where T : unmanaged
 		{
 		}
 	}

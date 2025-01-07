@@ -69,7 +69,7 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Copies the elements of a string array to the end of the <see cref='System.Collections.Specialized.StringCollection'/>.</para>
         /// </devdoc>
-        public void AddRange(string[] value)
+        public void AddRange(string?[] value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -99,7 +99,7 @@ namespace System.Collections.Specialized
         /// <para>Copies the <see cref='System.Collections.Specialized.StringCollection'/> values to a one-dimensional <see cref='System.Array'/> instance at the
         ///    specified index.</para>
         /// </devdoc>
-        public void CopyTo(string[] array, int index)
+        public void CopyTo(string?[] array, int index)
         {
             data.CopyTo(array, index);
         }

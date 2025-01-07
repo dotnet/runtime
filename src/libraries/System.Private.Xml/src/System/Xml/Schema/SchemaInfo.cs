@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml;
 
 namespace System.Xml.Schema
 {
@@ -299,10 +299,7 @@ namespace System.Xml.Schema
 
             foreach (string tns in sinfo.TargetNamespaces.Keys)
             {
-                if (!_targetNamespaces.ContainsKey(tns))
-                {
-                    _targetNamespaces.Add(tns, true);
-                }
+                _targetNamespaces.TryAdd(tns, true);
             }
 
             foreach (KeyValuePair<XmlQualifiedName, SchemaElementDecl> entry in sinfo._elementDecls)
@@ -321,17 +318,11 @@ namespace System.Xml.Schema
             }
             foreach (SchemaAttDef attdef in sinfo.AttributeDecls.Values)
             {
-                if (!_attributeDecls.ContainsKey(attdef.Name))
-                {
-                    _attributeDecls.Add(attdef.Name, attdef);
-                }
+                _attributeDecls.TryAdd(attdef.Name, attdef);
             }
             foreach (SchemaNotation notation in sinfo.Notations.Values)
             {
-                if (!Notations.ContainsKey(notation.Name.Name))
-                {
-                    Notations.Add(notation.Name.Name, notation);
-                }
+                Notations.TryAdd(notation.Name.Name, notation);
             }
         }
 

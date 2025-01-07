@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Diagnostics.Runtime;
 using SharedTypes;
 using Xunit;
 using static ComInterfaceGenerator.Tests.UnmanagedToManagedCustomMarshallingTests;
@@ -159,11 +157,11 @@ namespace ComInterfaceGenerator.Tests
             try
             {
                 var values = new int[] { 1, 32, 63, 124, 255 };
-
                 int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
-
-                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, values, values.Length, out int _);
-
+                int oldValue = startingValue + 100;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, values, values.Length, out oldValue);
+                Assert.Equal(values.Sum(), impl.GetData().i);
+                Assert.Equal(startingValue, oldValue);
                 Assert.Equal(freeCalls, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
             finally
@@ -184,11 +182,11 @@ namespace ComInterfaceGenerator.Tests
             try
             {
                 var values = new int[] { 1, 32, 63, 124, 255 };
-
                 int freeCalls = IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree;
-
-                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, ref values, values.Length, out int _);
-
+                int oldValue = startingValue + 100;
+                NativeExportsNE.UnmanagedToManagedCustomMarshalling.SumAndSetNativeObjectData(wrapper, ref values, values.Length, out oldValue);
+                Assert.Equal(values.Sum(), impl.GetData().i);
+                Assert.Equal(startingValue, oldValue);
                 Assert.Equal(freeCalls + values.Length, IntWrapperMarshallerToIntWithFreeCounts.NumCallsToFree);
             }
             finally
@@ -417,6 +415,7 @@ namespace ComInterfaceGenerator.Tests
                 private TUnmanaged* _originalUnmanaged;
                 private TUnmanaged* _unmanaged;
                 private TManaged[] _managed;
+                private TUnmanaged* Unmanaged => _unmanaged == null ? _unmanaged = (TUnmanaged*)Marshal.AllocCoTaskMem(sizeof(TUnmanaged) * _managed.Length) : _unmanaged;
 
                 public void FromUnmanaged(TUnmanaged* unmanaged)
                 {
@@ -451,7 +450,7 @@ namespace ComInterfaceGenerator.Tests
 
                 public TUnmanaged* ToUnmanaged()
                 {
-                    return _unmanaged = (TUnmanaged*)Marshal.AllocCoTaskMem(sizeof(TUnmanaged) * _managed.Length); 
+                    return Unmanaged;
                 }
 
                 public ReadOnlySpan<TManaged> GetManagedValuesSource()
@@ -461,7 +460,7 @@ namespace ComInterfaceGenerator.Tests
 
                 public Span<TUnmanaged> GetUnmanagedValuesDestination()
                 {
-                    return new(_unmanaged, _managed.Length);
+                    return new(Unmanaged, _managed.Length);
                 }
             }
         }

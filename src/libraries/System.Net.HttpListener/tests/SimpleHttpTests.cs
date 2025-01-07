@@ -148,7 +148,7 @@ namespace System.Net.Tests
                 if (clientTask == await Task.WhenAny(server, clientTask))
                 {
                     (await clientTask).EnsureSuccessStatusCode();
-                    Assert.True(false, "Client should not have completed prior to server sending response");
+                    Assert.Fail("Client should not have completed prior to server sending response");
                 }
 
                 HttpListenerContext context = await server;

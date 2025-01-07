@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Security.Cryptography;
 using System.Runtime.Serialization;
+using System.Security.Cryptography;
 
 namespace System.Security.Policy
 {

@@ -217,32 +217,6 @@ FAIL:
     ret
 }
 
-// Non-zero initialization of a GC reference is not exactly a valid scenario.
-// Still, the JIT shouldn't end up generating invalid IR (non-zero GC typed
-// constant nodes).
-
-.class sequential sealed Pair extends [System.Runtime]System.ValueType
-{
-    .field public int64 Key
-    .field public class [System.Runtime]System.Object Value
-}
-
-.method static bool ObjRefInitBlk() cil managed noinlining
-{
-    .locals init (valuetype Pair a)
-
-    ldloca a
-    ldc.i4 1
-    sizeof Pair
-    initblk
-
-    ldloca a
-    ldind.i8
-    ldc.i8 0x0101010101010101
-    ceq
-    ret
-}
-
 // Non-zero SIMD constants are not supported so field by field initialization
 // should not be attempted.
 
@@ -308,9 +282,6 @@ FAIL:
     brfalse FAIL
 
     call bool Float32NaNInitBlk()
-    brfalse FAIL
-
-    call bool ObjRefInitBlk()
     brfalse FAIL
 
     call bool SimdInitBlk()

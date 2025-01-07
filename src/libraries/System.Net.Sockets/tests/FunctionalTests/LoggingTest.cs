@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
@@ -19,6 +20,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Socket).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -32,9 +34,9 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EventSource_EventsRaisedAsExpected()
+        public async Task EventSource_EventsRaisedAsExpected()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Sockets", EventLevel.Verbose))
                 {
@@ -61,7 +63,7 @@ namespace System.Net.Sockets.Tests
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
     }
 }

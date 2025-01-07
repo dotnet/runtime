@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Buffers.Binary;
 using System.Diagnostics;
-
+using Internal.Cryptography;
 using static Interop.BCrypt;
 using static Interop.NCrypt;
 using KeyBlobMagicNumber = Interop.BCrypt.KeyBlobMagicNumber;
@@ -311,6 +310,20 @@ namespace System.Security.Cryptography
 
         public override DSAParameters ExportParameters(bool includePrivateParameters)
         {
+            bool encryptedOnlyExport = CngPkcs8.AllowsOnlyEncryptedExport(Key);
+
+            if (includePrivateParameters && encryptedOnlyExport)
+            {
+                const string TemporaryExportPassword = "DotnetExportPhrase";
+                byte[] exported = ExportEncryptedPkcs8(TemporaryExportPassword, 1);
+                DSAKeyFormatHelper.ReadEncryptedPkcs8(
+                    exported,
+                    TemporaryExportPassword,
+                    out _,
+                    out DSAParameters dsaParameters);
+                return dsaParameters;
+            }
+
             byte[] dsaBlob = ExportKeyBlob(includePrivateParameters);
 
             KeyBlobMagicNumber magic = (KeyBlobMagicNumber)BitConverter.ToInt32(dsaBlob, 0);
@@ -424,6 +437,5 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
             }
         }
-
     }
 }

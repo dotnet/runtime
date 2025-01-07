@@ -150,6 +150,56 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("PATCH", HttpMethod.Patch.Method);
         }
 
+        public static IEnumerable<object[]> Parse_UsesKnownInstances_MemberData()
+        {
+            yield return new object[] { HttpMethod.Connect, nameof(HttpMethod.Connect) };
+            yield return new object[] { HttpMethod.Delete, nameof(HttpMethod.Delete) };
+            yield return new object[] { HttpMethod.Get, nameof(HttpMethod.Get) };
+            yield return new object[] { HttpMethod.Head, nameof(HttpMethod.Head) };
+            yield return new object[] { HttpMethod.Options, nameof(HttpMethod.Options) };
+            yield return new object[] { HttpMethod.Patch, nameof(HttpMethod.Patch) };
+            yield return new object[] { HttpMethod.Post, nameof(HttpMethod.Post) };
+            yield return new object[] { HttpMethod.Put, nameof(HttpMethod.Put) };
+            yield return new object[] { HttpMethod.Trace, nameof(HttpMethod.Trace) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_UsesKnownInstances_MemberData))]
+        public void Parse_KnownMethod_UsesKnownInstances(HttpMethod method, string methodName)
+        {
+            Assert.Same(method, HttpMethod.Parse(methodName));
+            Assert.Same(method, HttpMethod.Parse(methodName.ToUpperInvariant()));
+            Assert.Same(method, HttpMethod.Parse(methodName.ToLowerInvariant()));
+        }
+
+        [Theory]
+        [InlineData("Unknown")]
+        [InlineData("custom")]
+        public void Parse_UnknownMethod_UsesNewInstances(string method)
+        {
+            var h = HttpMethod.Parse(method);
+            Assert.NotNull(h);
+            Assert.NotSame(h, HttpMethod.Parse(method));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("    ")]
+        public void Parse_Whitespace_ThrowsArgumentException(string method)
+        {
+            AssertExtensions.Throws<ArgumentException>("method", () => HttpMethod.Parse(method));
+        }
+
+        [Theory]
+        [InlineData("  GET  ")]
+        [InlineData(" Post")]
+        [InlineData("Put ")]
+        [InlineData("multiple things")]
+        public void Parse_InvalidToken_Throws(string method)
+        {
+            Assert.Throws<FormatException>(() => HttpMethod.Parse(method));
+        }
+
         private static void AddStaticHttpMethods(List<object[]> staticHttpMethods)
         {
             staticHttpMethods.Add(new object[] { HttpMethod.Patch });

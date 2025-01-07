@@ -285,7 +285,7 @@ private:
     // Writes bits knowing that they will all fit in the current memory slot
     inline void WriteInCurrentSlot( size_t data, UINT32 count )
     {
-        data &= SAFE_SHIFT_LEFT(1, count) - 1;
+        data &= ((size_t)-1 >> (BITS_PER_SIZE_T - count));
         data <<= (BITS_PER_SIZE_T - m_FreeBitsInCurrentSlot);
         *m_pCurrentSlot |= data;
     }
@@ -409,13 +409,6 @@ public:
                                     GcSlotState slotState
                                     );
 
-
-    //------------------------------------------------------------------------
-    // ReturnKind
-    //------------------------------------------------------------------------
-
-    void SetReturnKind(ReturnKind returnKind);
-
     //------------------------------------------------------------------------
     // Miscellaneous method information
     //------------------------------------------------------------------------
@@ -468,6 +461,12 @@ public:
     //
     BYTE* Emit();
 
+    //
+    // Return the size in bytes of the constructed GC info. This is the size passed
+    // to the VM via `allocGCInfo`. It is only valid after `Emit` is called.
+    //
+    size_t GetEncodedGCInfoSize() const;
+
 private:
 
     friend struct CompareLifetimeTransitionsByOffsetThenSlot;
@@ -503,7 +502,6 @@ private:
     INT32  m_PSPSymStackSlot;
     INT32  m_GenericsInstContextStackSlot;
     GENERIC_CONTEXTPARAM_TYPE m_contextParamType;
-    ReturnKind m_ReturnKind;
     UINT32 m_CodeLength;
     UINT32 m_StackBaseRegister;
     UINT32 m_SizeOfEditAndContinuePreservedArea;
@@ -534,6 +532,8 @@ private:
     UINT32 m_NumCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
+    size_t m_BlockSize; // The byte size passed to the `allocGCInfo` call
+
     void GrowSlotTable();
 
     void WriteSlotStateVector(BitStreamWriter &writer, const BitArray& vector);
@@ -542,7 +542,9 @@ private:
     void SizeofSlotStateVarLengthVector(const BitArray& vector, UINT32 baseSkip, UINT32 baseRun, UINT32 * pSizeofSimple, UINT32 * pSizeofRLE, UINT32 * pSizeofRLENeg);
     UINT32 WriteSlotStateVarLengthVector(BitStreamWriter &writer, const BitArray& vector, UINT32 baseSkip, UINT32 baseRun);
 
-    bool IsAlwaysScratch(GcSlotDesc &slot);
+#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+    bool DoNotTrackInPartiallyInterruptible(GcSlotDesc &slot);
+#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
     // Assumes that "*ppTransitions" is has size "numTransitions", is sorted by CodeOffset then by SlotId,
     // and that "*ppEndTransitions" points one beyond the end of the array.  If "*ppTransitions" contains

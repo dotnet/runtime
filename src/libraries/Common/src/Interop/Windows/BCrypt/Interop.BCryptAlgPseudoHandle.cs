@@ -31,6 +31,8 @@ internal static partial class Interop
             BCRYPT_HMAC_SHA3_512_ALG_HANDLE = 0x00000401,
             BCRYPT_CSHAKE128_ALG_HANDLE = 0x00000411,
             BCRYPT_CSHAKE256_ALG_HANDLE = 0x00000421,
+            BCRYPT_KMAC128_ALG_HANDLE = 0x00000431,
+            BCRYPT_KMAC256_ALG_HANDLE = 0x00000441,
         }
 
         internal static bool PseudoHandlesSupported { get; } =

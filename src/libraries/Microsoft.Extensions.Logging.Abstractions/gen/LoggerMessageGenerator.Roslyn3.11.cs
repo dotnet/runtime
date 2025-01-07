@@ -7,6 +7,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
+#pragma warning disable RS1035 // IIncrementalGenerator isn't available for the target configuration
+
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
 namespace Microsoft.Extensions.Logging.Generators

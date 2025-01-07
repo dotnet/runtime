@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging
     [DebuggerDisplay("{DebuggerToString(),nq}")]
     public class Logger<T> : ILogger<T>
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         private readonly ILogger _logger;
 
         /// <summary>

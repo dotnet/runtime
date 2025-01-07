@@ -33,7 +33,7 @@ uint32_t Array::GetArrayLength()
 void* Array::GetArrayData()
 {
     uint8_t* pData = (uint8_t*)this;
-    pData += (get_EEType()->get_BaseSize() - sizeof(ObjHeader));
+    pData += (GetMethodTable()->GetBaseSize() - sizeof(ObjHeader));
     return pData;
 }
 
@@ -55,12 +55,12 @@ void ObjHeader::ClrBit(uint32_t uBit)
 
 size_t Object::GetSize()
 {
-    MethodTable * pEEType = get_EEType();
+    MethodTable * pEEType = GetMethodTable();
 
     // strings have component size2, all other non-arrays should have 0
     ASSERT(( pEEType->GetComponentSize() <= 2) || pEEType->IsArray());
 
-    size_t s = pEEType->get_BaseSize();
+    size_t s = pEEType->GetBaseSize();
     if (pEEType->HasComponentSize())
         s += (size_t)((Array*)this)->GetArrayLength() * pEEType->RawGetComponentSize();
 

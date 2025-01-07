@@ -79,12 +79,12 @@ namespace <xsl:value-of select="@namespace" />
         }
 #endif
 </xsl:if>
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 <xsl:apply-templates mode="Encode" />
@@ -179,7 +179,7 @@ namespace <xsl:value-of select="@namespace" />
         }
 #endif
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             bool wroteValue = false;
 <xsl:apply-templates mode="EncodeChoice" />
@@ -253,7 +253,7 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
-        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; new byte[] { <xsl:value-of select="@defaultDerInit"/> };
+        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; [<xsl:value-of select="@defaultDerInit"/>];
 </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">

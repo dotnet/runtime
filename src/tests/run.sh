@@ -14,6 +14,7 @@ function print_usage {
     echo '  <arch>                           : One of x64, x86, arm, arm64, loongarch64, riscv64, wasm. Defaults to current architecture.'
     echo '  <build configuration>            : One of debug, checked, release. Defaults to debug.'
     echo '  android                          : Set build OS to Android.'
+    echo '  wasi                             : Set build OS to WASI.'
     echo '  --test-env=<path>                : Script to set environment variables for tests'
     echo '  --testRootDir=<path>             : Root directory of the test build (e.g. runtime/artifacts/tests/windows.x64.Debug).'
     echo '  --coreRootDir=<path>             : Directory to the CORE_ROOT location.'
@@ -36,6 +37,7 @@ function print_usage {
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '  --link=<ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
+    echo '  --logsDir=<path>                 : Specify the logs directory (default: artifacts/log)'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
@@ -49,7 +51,7 @@ readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or m
 
 scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
 repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
-source "$repoRootDir/eng/native/init-os-and-arch.sh"
+source "$repoRootDir/eng/common/native/init-os-and-arch.sh"
 
 # Argument variables
 buildArch="$arch"
@@ -57,6 +59,7 @@ buildOS=
 buildConfiguration="Debug"
 testRootDir=
 coreRootDir=
+logsDir=
 testEnv=
 gcsimulator=
 longgc=
@@ -103,6 +106,9 @@ do
         android)
             buildOS="android"
             ;;
+        wasi)
+            buildOS="wasi"
+            ;;
         debug|Debug)
             buildConfiguration="Debug"
             ;;
@@ -139,6 +145,9 @@ do
             ;;
         --coreRootDir=*)
             coreRootDir=${i#*=}
+            ;;
+        --logsDir=*)
+            logsDir=${i#*=}
             ;;
         --enableEventLogging)
             export DOTNET_EnableEventLog=1
@@ -199,8 +208,12 @@ runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}"
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"
 
-if [ "$buildArch" = "wasm" ]; then
-    runtestPyArguments+=("-os" "browser")
+if [ "$buildArch" = "wasm" -a -z "$buildOS" ]; then
+    buildOS="browser"
+fi
+
+if [ -n "$buildOS" ]; then
+    runtestPyArguments+=("-os" "$buildOS")
 fi
 
 if [ "$buildOS" = "android" ]; then
@@ -215,6 +228,11 @@ fi
 if [[ -n "$coreRootDir" ]]; then
     runtestPyArguments+=("-core_root" "$coreRootDir")
     echo "CORE_ROOT                     : ${coreRootDir}"
+fi
+
+if [[ -n "$logsDir" ]]; then
+    runtestPyArguments+=("-logs_dir" "$logsDir")
+    echo "Logs directory                : ${logsDir}"
 fi
 
 if [[ -n "${testEnv}" ]]; then

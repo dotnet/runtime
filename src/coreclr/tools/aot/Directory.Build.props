@@ -1,6 +1,0 @@
-<Project>
-  <Import Project="../Directory.Build.props" />
-  <PropertyGroup>
-    <IsTrimmable>true</IsTrimmable>
-  </PropertyGroup>
-</Project>

@@ -7,63 +7,46 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Text.RegularExpressions
 {
     /// <summary>Contains the code, written by <see cref="RegexWriter"/>, for <see cref="RegexInterpreter"/> to evaluate a regular expression.</summary>
-    internal sealed class RegexInterpreterCode
+    internal sealed class RegexInterpreterCode(RegexFindOptimizations findOptimizations, RegexOptions options, int[] codes, string[] strings, int trackcount)
     {
         /// <summary>Find logic to use to find the next possible location for a match.</summary>
-        public readonly RegexFindOptimizations FindOptimizations;
+        public readonly RegexFindOptimizations FindOptimizations = findOptimizations;
         /// <summary>The options associated with the regex.</summary>
-        public readonly RegexOptions Options;
+        public readonly RegexOptions Options = options;
         /// <summary>RegexOpcodes and arguments written by <see cref="RegexWriter"/>.</summary>
-        public readonly int[] Codes;
+        public readonly int[] Codes = codes;
         /// <summary>The string / set table. <see cref="Codes"/> includes offsets into this table, for string and set arguments.</summary>
-        public readonly string[] Strings;
+        public readonly string[] Strings = strings;
         /// <summary>ASCII lookup table optimization for sets in <see cref="Strings"/>.</summary>
-        public readonly uint[]?[] StringsAsciiLookup;
+        public readonly uint[]?[] StringsAsciiLookup = new uint[strings.Length][];
         /// <summary>How many instructions in <see cref="Codes"/> use backtracking.</summary>
-        public readonly int TrackCount;
-
-        public RegexInterpreterCode(RegexFindOptimizations findOptimizations, RegexOptions options, int[] codes, string[] strings, int trackcount)
-        {
-            FindOptimizations = findOptimizations;
-            Options = options;
-            Codes = codes;
-            Strings = strings;
-            StringsAsciiLookup = new uint[strings.Length][];
-            TrackCount = trackcount;
-        }
+        public readonly int TrackCount = trackcount;
 
         /// <summary>Gets whether the specified opcode may incur backtracking.</summary>
         public static bool OpcodeBacktracks(RegexOpcode opcode)
         {
             opcode &= RegexOpcode.OperatorMask;
-
-            switch (opcode)
-            {
-                case RegexOpcode.Oneloop:
-                case RegexOpcode.Onelazy:
-                case RegexOpcode.Notoneloop:
-                case RegexOpcode.Notonelazy:
-                case RegexOpcode.Setloop:
-                case RegexOpcode.Setlazy:
-                case RegexOpcode.Lazybranch:
-                case RegexOpcode.Branchmark:
-                case RegexOpcode.Lazybranchmark:
-                case RegexOpcode.Nullcount:
-                case RegexOpcode.Setcount:
-                case RegexOpcode.Branchcount:
-                case RegexOpcode.Lazybranchcount:
-                case RegexOpcode.Setmark:
-                case RegexOpcode.Capturemark:
-                case RegexOpcode.Getmark:
-                case RegexOpcode.Setjump:
-                case RegexOpcode.Backjump:
-                case RegexOpcode.Forejump:
-                case RegexOpcode.Goto:
-                    return true;
-
-                default:
-                    return false;
-            }
+            return opcode is
+                RegexOpcode.Oneloop or
+                RegexOpcode.Onelazy or
+                RegexOpcode.Notoneloop or
+                RegexOpcode.Notonelazy or
+                RegexOpcode.Setloop or
+                RegexOpcode.Setlazy or
+                RegexOpcode.Lazybranch or
+                RegexOpcode.Branchmark or
+                RegexOpcode.Lazybranchmark or
+                RegexOpcode.Nullcount or
+                RegexOpcode.Setcount or
+                RegexOpcode.Branchcount or
+                RegexOpcode.Lazybranchcount or
+                RegexOpcode.Setmark or
+                RegexOpcode.Capturemark or
+                RegexOpcode.Getmark or
+                RegexOpcode.Setjump or
+                RegexOpcode.Backjump or
+                RegexOpcode.Forejump or
+                RegexOpcode.Goto;
         }
 
 #if DEBUG

@@ -13,11 +13,6 @@
 
 #ifndef DACCESS_COMPILE
 //
-// Allow use of native images?
-//
-bool g_fAllowNativeImages = true;
-
-//
 // Default install library
 //
 const WCHAR g_pwBaseLibrary[]     = CoreLibName_IL_W;
@@ -26,7 +21,7 @@ const char g_psBaseLibrary[]      = CoreLibName_IL_A;
 const char g_psBaseLibraryName[]  = CoreLibName_A;
 const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
-Volatile<int32_t>       g_TrapReturningThreads;
+volatile int32_t g_TrapReturningThreads;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -42,8 +37,6 @@ void *               g_LastAccessViolationEIP;  // The EIP of the place we last 
 
 #endif // #ifndef DACCESS_COMPILE
 GPTR_IMPL(IdDispenser,       g_pThinLockThreadIdDispenser);
-
-GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 
 // For [<I1, etc. up to and including [Object
 GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
@@ -79,11 +72,6 @@ GPTR_IMPL(MethodTable,      g_pBaseCOMObject);
 #endif
 
 GPTR_IMPL(MethodTable,      g_pIDynamicInterfaceCastableInterface);
-
-#ifdef FEATURE_ICASTABLE
-GPTR_IMPL(MethodTable,      g_pICastableInterface);
-#endif // FEATURE_ICASTABLE
-
 GPTR_IMPL(MethodDesc,       g_pObjectFinalizerMD);
 
 GPTR_IMPL(Thread,g_pFinalizerThread);
@@ -105,6 +93,16 @@ GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
 GVAL_IMPL_INIT(DWORD, g_TlsIndex, TLS_OUT_OF_INDEXES);
+
+MethodTable* g_pCastHelpers;
+#ifdef FEATURE_EH_FUNCLETS
+GPTR_IMPL(MethodTable,      g_pEHClass);
+GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
+GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
+GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
+#endif
+
+GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 
@@ -145,6 +143,12 @@ GVAL_IMPL_INIT(DWORD,         g_CORDebuggerControlFlags, DBCF_NORMAL_OPERATION);
 
 #ifdef DEBUGGING_SUPPORTED
 GPTR_IMPL(EEDbgInterfaceImpl, g_pEEDbgInterfaceImpl);
+
+#ifndef DACCESS_COMPILE
+GVAL_IMPL_INIT(DWORD, g_multicastDelegateTraceActiveCount, 0);
+GVAL_IMPL_INIT(DWORD, g_externalMethodFixupTraceActiveCount, 0);
+#endif // DACCESS_COMPILE
+
 #endif // DEBUGGING_SUPPORTED
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPPORTED)
@@ -176,7 +180,7 @@ bool g_fEEInit = false;
 // code:IsAtProcessExit to read this.
 GVAL_IMPL(bool, g_fProcessDetach);
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 GVAL_IMPL_INIT(bool, g_metadataUpdatesApplied, false);
 #endif
 
@@ -189,11 +193,7 @@ GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
 
 #ifndef DACCESS_COMPILE
 
-Volatile<LONG> g_fForbidEnterEE = false;
 bool g_fManagedAttach = false;
-bool g_fNoExceptions = false;
-
-DWORD g_FinalizerWaiterStatus = 0;
 
 //
 // Do we own the lifetime of the process, ie. is it an EXE?

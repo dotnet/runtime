@@ -1,0 +1,7 @@
+<linker>
+    <assembly fullname="library">
+        <type fullname="Mono.Linker.Tests.Cases.Libraries.Dependencies.RootAllLibrary">
+            <method signature="System.Boolean get_SubstitutedProperty()" body="stub" value="false" />
+        </type>
+    </assembly>
+</linker>

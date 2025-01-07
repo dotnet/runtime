@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "type", Target = "T:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInType")]
 [module: UnconditionalSuppressMessage ("Test", "IL2072", Scope = "member", Target = "M:Mono.Linker.Tests.Cases.Warnings.WarningSuppression.WarningsInMembers.Method")]
@@ -15,15 +12,16 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-#if !NETCOREAPP
-	[Reference ("System.Core.dll")]
+#if !NET
+	[Mono.Linker.Tests.Cases.Expectations.Metadata.Reference ("System.Core.dll")]
 #endif
 	[SkipKeptItemsValidation]
 	[LogDoesNotContain ("TriggerUnrecognizedPattern()")]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class SuppressWarningsInMembersAndTypesUsingTarget
 	{
 		/// <summary>
-		/// This test case checks module level UnconditionalSuppressMessage, primarily using 
+		/// This test case checks module level UnconditionalSuppressMessage, primarily using
 		/// System.Linq.Expressions.Expression.(Type type, string methodName, Type[]? typeArguments, params System.Linq.Expressions.Expression[]? arguments)
 		/// which has a RUC attribute but is treated as an intrinsic by the trimmer. The test case also has some member level suppressions and its
 		/// own RUC method (the IL2026 suppression in the code is due to this)
@@ -86,6 +84,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 	}
 
 	[ExpectedNoWarnings]
+	[UnconditionalSuppressMessage ("AOT", "IL3050", Justification = "These tests are not targeted at AOT scenarios")]
 	public class WarningsInMembers
 	{
 		public void Method ()

@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
 	[SkipRemainingErrorsValidation]
 	[SetupLinkerTrimMode ("skip")]
-#if !NETCOREAPP
+#if !NET
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
 #else
 	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) })]

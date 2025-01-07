@@ -11,7 +11,7 @@
 // Then it uses the ThrowExceptionHelper to throw the passed in exception from that context.
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
         // Need to call __asan_handle_no_return explicitly here because we re-initialize SP before
         // throwing exception in ThrowExceptionHelper
         stp x0, x1, [sp, -16]!

@@ -119,6 +119,17 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => ilGenerator.DeclareLocal(typeof(int)));
         }
 
+        [Fact]
+        public void DeclareLocal_Pinned()
+        {
+            TypeBuilder type = Helpers.DynamicType(TypeAttributes.NotPublic);
+            MethodBuilder method = type.DefineMethod("TestMethod_Pinning", MethodAttributes.Public | MethodAttributes.Static);
+            ILGenerator generator = method.GetILGenerator();
+            Assert.True(generator.DeclareLocal(typeof(int).MakeByRefType(), true).IsPinned);
+            Assert.True(generator.DeclareLocal(typeof(object), true).IsPinned);
+            Assert.True(generator.DeclareLocal(typeof(byte), true).IsPinned);
+        }
+
         private void VerifyDeclareLocal(ILGenerator generator)
         {
             for (int i = 0; i < TestData.Length; i++)

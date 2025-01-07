@@ -27,6 +27,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
             endif()
         elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL i686)
             set(CLR_CMAKE_HOST_UNIX_X86 1)
+        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL aarch64)
+            set(CLR_CMAKE_HOST_UNIX_ARM64 1)
         else()
             clr_unknown_arch()
         endif()
@@ -45,7 +47,11 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv6 OR CMAKE_SYSTEM_PROCESSOR STREQUAL armv6l)
             set(CLR_CMAKE_HOST_UNIX_ARMV6 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL arm64)
-            set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+            if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+                set(CLR_CMAKE_HOST_UNIX_ARM64 1)
+            else()
+                set(CLR_CMAKE_HOST_UNIX_ARM 1)
+            endif()
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL loongarch64)
             set(CLR_CMAKE_HOST_UNIX_LOONGARCH64 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL riscv64)
@@ -75,11 +81,6 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
             COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
             OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
             OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-        execute_process(
-            COMMAND bash -c "if strings \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
-            OUTPUT_VARIABLE CLR_CMAKE_LINUX_MUSL
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
 
     if(DEFINED CLR_CMAKE_LINUX_ID)
@@ -87,12 +88,8 @@ if(CLR_CMAKE_HOST_OS STREQUAL linux)
             set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
-            set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
-            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
-        endif()
-
-        if(CLR_CMAKE_LINUX_MUSL STREQUAL musl)
             set(CLR_CMAKE_HOST_LINUX_MUSL 1)
+            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
 endif(CLR_CMAKE_HOST_OS STREQUAL linux)
@@ -359,21 +356,17 @@ if(CLR_CMAKE_TARGET_OS STREQUAL linux)
     set(CLR_CMAKE_TARGET_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL linux)
 
-if(CLR_CMAKE_HOST_LINUX_MUSL)
-    set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
-endif(CLR_CMAKE_HOST_LINUX_MUSL)
-
 if(CLR_CMAKE_TARGET_OS STREQUAL tizen)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL tizen)
 
-if(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+if(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
-    set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
-endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+    set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
+endif(CLR_CMAKE_HOST_LINUX_MUSL OR CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL android)
     set(CLR_CMAKE_TARGET_UNIX 1)
@@ -436,7 +429,6 @@ endif(CLR_CMAKE_TARGET_OS STREQUAL haiku)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL emscripten)
     set(CLR_CMAKE_TARGET_UNIX 1)
-    set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_BROWSER 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL emscripten)
 
@@ -483,7 +475,7 @@ if (NOT (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS) AND NOT CLR_CMAKE_TARGE
     if(NOT (CLR_CMAKE_HOST_OS STREQUAL windows))
         message(FATAL_ERROR "Invalid host and target os/arch combination. Host OS: ${CLR_CMAKE_HOST_OS}")
     endif()
-    if(NOT (CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_ALPINE_LINUX))
+    if(NOT (CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_LINUX_MUSL))
         message(FATAL_ERROR "Invalid host and target os/arch combination. Target OS: ${CLR_CMAKE_TARGET_OS}")
     endif()
     if(NOT ((CLR_CMAKE_HOST_ARCH_AMD64 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)) OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM)))
@@ -502,9 +494,23 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
+if (CLR_CMAKE_TARGET_ANDROID)
+    # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+    # This applies only to 64-bit binaries
+    if(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+        add_link_options(LINKER:-z,max-page-size=16384)
+    endif()
+endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
 if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     # Clear _FORTIFY_SOURCE=2, if set
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+endif()
+
+if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_HOST_ARCH_ARMV6)
+    # Some platforms are opted-out from using the in-tree zlib-ng by default:
+    # - Android and iOS-like platforms: concerns about extra binary size
+    # - Armv6: zlib-ng has build breaks
+    set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()

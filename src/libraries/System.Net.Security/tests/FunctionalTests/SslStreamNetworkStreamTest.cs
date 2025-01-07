@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
         public CertificateSetup()
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
-            (serverCert, serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+            (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
         }
 
         public void Dispose()
@@ -695,10 +695,9 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(false, false)]
         [InlineData(true, true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
-            string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            string targetName = useEmptyName ? string.Empty : $"{Guid.NewGuid().ToString("N")}.dot.net";
             int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
@@ -751,12 +750,16 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
+            if (usePartialChain && OperatingSystem.IsAndroid())
+            {
+                throw new SkipTestException("Android does not support partial chain validation.");
+            }
+
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
             var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
@@ -854,8 +857,8 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.Android, "It is not possible to add the intermediate certificates to the trust store on Android at runtime.")]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
             // macOS ignores CertificateAuthority
@@ -863,7 +866,7 @@ namespace System.Net.Security.Tests
             StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
             List<SslStream> streams = new List<SslStream>();
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
 
             using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
             {
@@ -914,19 +917,28 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
-        public async Task SslStream_ClientCertificateContext_SendsChain()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SslStream_ClientCertificateContext_SendsChain(bool useTrust)
         {
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+
+            SslCertificateTrust? trust = null;
+            if (useTrust)
+            {
+                // This is simplification. We make all the intermediates trusted,
+                // normally just the root would go here.
+                trust = SslCertificateTrust.CreateForX509Collection(clientChain, false);
+            }
 
             var clientOptions = new SslClientAuthenticationOptions()
             {
                 TargetHost = "localhost",
             };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline:true, trust);
 
             await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
 
@@ -942,7 +954,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_EphemeralKey_Throws()
         {
-            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = TestHelper.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
             TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
 
             var clientOptions = new SslClientAuthenticationOptions()

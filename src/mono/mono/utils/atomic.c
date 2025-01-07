@@ -511,13 +511,13 @@ mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp)
 	return gcc_sync_val_compare_and_swap (dest, comp, exch);
 }
 
-#elif defined (__arm__) && defined (HAVE_ARMV7) && (defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_ANDROID))
+#elif defined (__arm__) && defined (HAVE_ARMV7) && (defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WATCHOS) || defined(TARGET_ANDROID))
 
 #ifdef MONO_ATOMIC_USES_LOCK
 #error MONO_ATOMIC_USES_LOCK defined
 #endif
 
-#if defined (TARGET_IOS) || defined (TARGET_WATCHOS)
+#if defined (TARGET_IOS) || defined (TARGET_TVOS) || defined (TARGET_WATCHOS)
 
 #ifndef __clang__
 #error "Not supported."

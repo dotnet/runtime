@@ -22,10 +22,12 @@ namespace System.Text.Json.Serialization.Converters
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
+                if (arg == null && !jsonParameterInfo.IsNullable && jsonParameterInfo.Options.RespectNullableAnnotations)
+                {
+                    ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(jsonParameterInfo.Name, state.Current.JsonTypeInfo.Type);
+                }
 
-                // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true
-                state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
             }
 
             return success;
@@ -51,15 +53,10 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            Debug.Assert(typeInfo.ParameterCache != null);
-
-            List<KeyValuePair<string, JsonParameterInfo>> cache = typeInfo.ParameterCache.List;
-            object?[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
-
-            for (int i = 0; i < typeInfo.ParameterCount; i++)
+            object?[] arguments = ArrayPool<object>.Shared.Rent(typeInfo.ParameterCache.Length);
+            foreach (JsonParameterInfo parameterInfo in typeInfo.ParameterCache)
             {
-                JsonParameterInfo parameterInfo = cache[i].Value;
-                arguments[parameterInfo.Position] = parameterInfo.DefaultValue;
+                arguments[parameterInfo.Position] = parameterInfo.EffectiveDefaultValue;
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;

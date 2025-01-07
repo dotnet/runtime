@@ -1373,7 +1373,7 @@ class TestHFAandHVA
         try
         {
             var a = ReturnVectorT2<Vector4>(new Vector4(1));
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
         }
         catch (System.NotSupportedException)
         {
@@ -1381,7 +1381,7 @@ class TestHFAandHVA
         try
         {
             var a = ReturnVectorT2<VectorTWrapperWrapper<int>>(new VectorTWrapperWrapper<int>());
-            Debug.Assert(false, "unreachable");
+            Debug.Fail("unreachable");
         }
         catch (System.NotSupportedException)
         {
@@ -1813,13 +1813,12 @@ class TestNon2PowerStructs
 public class TestStructs
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         TestStructReturns.Test();
         TestUnsafeCasts.Test();
         TestMergeReturnBlocks.Test();
         TestHFAandHVA.Test();
         TestNon2PowerStructs.Test();
-        return 100;
     }
 }

@@ -3,11 +3,8 @@
 
 using System.IO;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.InteropServices.JavaScript;
-
-#pragma warning disable CS0612 // using obsolete members until we finish https://github.com/dotnet/runtime/pull/66304/
-#pragma warning disable IDE0060
 
 namespace System
 {
@@ -75,8 +72,8 @@ namespace System
 
     internal static partial class ConsolePal
     {
-        [JSImport("globalThis.console.clear")]
-        public static partial void Clear();
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void Clear();
 
         private static Encoding? s_outputEncoding;
 

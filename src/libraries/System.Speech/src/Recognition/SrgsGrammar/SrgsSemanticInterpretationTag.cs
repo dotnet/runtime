@@ -10,7 +10,7 @@ using System.Xml;
 namespace System.Speech.Recognition.SrgsGrammar
 {
     [Serializable]
-    [DebuggerDisplay("{DebuggerDisplayString ()}")]
+    [DebuggerDisplay("{DebuggerDisplayString()}")]
     public class SrgsSemanticInterpretationTag : SrgsElement, ISemanticTag
     {
         #region Constructors
@@ -47,8 +47,8 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         // Validate the SRGS element.
         /// <summary>
-        /// Validate each element and recurse through all the children srgs
-        /// elements if any.
+        /// Validates each element and recurses through all the children SRGS
+        /// elements, if any.
         /// </summary>
         internal override void Validate(SrgsGrammar grammar)
         {
@@ -80,7 +80,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override string DebuggerDisplayString()
         {
-            StringBuilder sb = new("SrgsSemanticInterpretationTag '");
+            StringBuilder sb = new("SrgsSemanticInterpretationTag = '");
             sb.Append(_script);
             sb.Append('\'');
             return sb.ToString();

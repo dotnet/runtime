@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading;
 using System.Diagnostics;
+using System.Threading;
 
 namespace System
 {
@@ -44,7 +44,7 @@ namespace System
         /// the <see cref="Progress{T}"/> at construction, it's possible that this handler instance
         /// could be invoked concurrently with itself.
         /// </param>
-        /// <exception cref="ArgumentNullException">The <paramref name="handler"/> is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="handler"/> is null (<see langword="Nothing" /> in Visual Basic).</exception>
         public Progress(Action<T> handler) : this()
         {
             ArgumentNullException.ThrowIfNull(handler);

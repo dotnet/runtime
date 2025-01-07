@@ -1,24 +1,16 @@
-cmake_minimum_required(VERSION 3.6.2)
+cmake_minimum_required(VERSION 3.20)
+
 include(CheckCCompilerFlag)
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    # CMake 3.18.1 properly generates MacCatalyst C compiler
-    cmake_minimum_required(VERSION 3.18.1)
-endif ()
+project(LibsNative C)
 
-if (WIN32)
-    cmake_policy(SET CMP0091 NEW)
-else ()
-    cmake_policy(SET CMP0042 NEW)
-endif ()
+if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    # This is our root CMakeList.txt, so we need to set up some global settings and include the minipal here.
+    include(../../../eng/native/configurepaths.cmake)
+    include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
-project(CoreFX C)
-
-include(../../../eng/native/configurepaths.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+endif()
 
 include_directories(${CLR_SRC_NATIVE_DIR})
 
@@ -45,6 +37,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wno-declaration-after-statement")
 
+    if (CLR_CMAKE_TARGET_BROWSER)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pre-c11-compat")
+    endif()
+
     add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
     add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 
@@ -55,8 +51,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_WASI)
         set(HOST_WASI 1)
-        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/include/)
-        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/libs-include/)
         add_compile_options(-Wno-unused-variable)
         add_compile_options(-Wno-unused-parameter)
         add_compile_options(-Wno-gnu-statement-expression)
@@ -64,7 +58,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
         add_compile_options(-D_WASI_EMULATED_SIGNAL)
         add_compile_options(-D_WASI_EMULATED_MMAN)
-        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman)
+        add_compile_options(-D_WASI_EMULATED_PTHREAD)
+        # keep in sync with src\mono\wasi\build\WasiApp.targets
+        # keep in sync with src\mono\wasi\wasi.proj
+        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread)
     endif ()
 
     if (CLR_CMAKE_TARGET_ANDROID)
@@ -83,26 +80,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         endif ()
 
         add_definitions(-DDEBUG)
-
-        # obtain settings from running coreclr\enablesanitizers.sh
-        string(FIND "$ENV{DEBUG_SANITIZERS}" "asan" __ASAN_POS)
-        string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
-        if (${__ASAN_POS} GREATER -1 OR ${__UBSAN_POS} GREATER -1)
-            set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
-            if (${__ASAN_POS} GREATER -1)
-                set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
-                message("Address Sanitizer (asan) enabled")
-            endif ()
-            if (${__UBSAN_POS} GREATER -1)
-                set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}undefined")
-                message("Undefined Behavior Sanitizer (ubsan) enabled")
-            endif ()
-
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS}")
-
-            # -Wl and --gc-sections: drop unused sections\functions (similar to Windows /Gy function-level-linking)
-            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${CLR_SANITIZE_LINK_FLAGS} -Wl,--gc-sections")
-        endif ()
     elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE)
         # Use O1 option when the clang version is smaller than 3.9
         # Otherwise use O3 option in release build
@@ -125,16 +102,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_definitions(-D__APPLE_USE_RFC_3542)
     endif ()
 
-    if (CLR_CMAKE_TARGET_LINUX)
+    if (CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_HAIKU)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
     endif ()
 else ()
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
-
-    # we only need to build System.Globalization.Native when building static libs.
-    if (STATIC_LIBS_ONLY)
-        add_subdirectory(System.Globalization.Native)
-    endif ()
+    add_subdirectory(System.Globalization.Native)
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)
@@ -142,11 +115,11 @@ add_subdirectory(System.IO.Compression.Native)
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)
 
-    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+    if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
         add_subdirectory(System.IO.Ports.Native)
     endif ()
 
-    if (CMAKE_C_COMPILER_ID STREQUAL Clang)
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Weverything)
         add_compile_options(-Wno-format-nonliteral)
         add_compile_options(-Wno-disabled-macro-expansion)
@@ -154,9 +127,15 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-empty-translation-unit)
         add_compile_options(-Wno-cast-align)
         add_compile_options(-Wno-typedef-redefinition)
-        add_compile_options(-Wno-c11-extensions)
         add_compile_options(-Wno-thread-safety-analysis)
-        if (CLR_CMAKE_TARGET_BROWSER)
+        add_compile_options(-Wno-c11-extensions)
+
+        check_c_compiler_flag(-Wpre-c11-compat COMPILER_SUPPORTS_W_PRE_C11_COMPAT)
+        if (COMPILER_SUPPORTS_W_PRE_C11_COMPAT)
+            add_compile_options(-Wno-pre-c11-compat)
+        endif()
+
+        if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)
             add_compile_options(-Wno-cast-function-type-strict)
         endif ()

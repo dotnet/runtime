@@ -148,7 +148,7 @@ namespace System.IO.Ports.Tests
                 try
                 {
                     stream.Read(new byte[DEFAULT_READ_BYTE_ARRAY_SIZE], 0, DEFAULT_READ_BYTE_ARRAY_SIZE);
-                    Assert.True(false, "Err_1707ahbap!!!: Read did not throw TimeouException when it timed out");
+                    Assert.Fail("Err_1707ahbap!!!: Read did not throw TimeouException when it timed out");
                 }
                 catch (TimeoutException)
                 {

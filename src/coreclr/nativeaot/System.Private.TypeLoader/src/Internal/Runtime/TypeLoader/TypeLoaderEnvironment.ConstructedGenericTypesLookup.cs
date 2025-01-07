@@ -3,16 +3,15 @@
 
 
 using System;
-using System.Runtime;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -217,7 +216,7 @@ namespace Internal.Runtime.TypeLoader
 
         public bool TryLookupConstructedLazyDictionaryForContext(IntPtr context, IntPtr signature, out IntPtr dictionary)
         {
-            Debug.Assert(_typeLoaderLock.IsAcquired);
+            Debug.Assert(_typeLoaderLock.IsHeldByCurrentThread);
             return _lazyGenericDictionaries.TryGetValue(new LazyDictionaryContext { _context = context, _signature = signature }, out dictionary);
         }
 
@@ -226,7 +225,7 @@ namespace Internal.Runtime.TypeLoader
         {
             runtimeTypeHandle = default(RuntimeTypeHandle);
 
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 GenericTypeEntry entry;
                 if (!_dynamicGenericTypes.TryGetValue(lookupData, out entry))

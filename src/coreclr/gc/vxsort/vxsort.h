@@ -13,9 +13,10 @@
 #endif
 #endif
 
-
 #include <assert.h>
 #include <immintrin.h>
+
+#include <minipal/utils.h>
 
 #include "defs.h"
 #include "alignment.h"
@@ -374,7 +375,7 @@ private:
         auto pivot = *right;
         // We do this here just in case we need to pre-align to the right
         // We end up
-        *right = std::numeric_limits<T>::Max();
+        *right = std::numeric_limits<T>::max();
 
         // Broadcast the selected pivot
         const TV P = MT::broadcast(pivot);
@@ -421,16 +422,16 @@ private:
 
         // From now on, we are fully aligned
         // and all reading is done in full vector units
-        auto readLeftV = (TV*) readLeft;
-        auto readRightV = (TV*) readRight;
+        TV* readLeftV = (TV*) readLeft;
+        TV* readRightV = (TV*) readRight;
         #ifndef NDEBUG
         readLeft = nullptr;
         readRight = nullptr;
         #endif
 
         for (auto u = 0; u < InnerUnroll; u++) {
-            auto dl = MT::load_vec(readLeftV + u);
-            auto dr = MT::load_vec(readRightV - (u + 1));
+            TV dl = MT::load_vec(readLeftV + u);
+            TV dr = MT::load_vec(readRightV - (u + 1));
             partition_block(dl, P, tmpLeft, tmpRight);
             partition_block(dr, P, tmpLeft, tmpRight);
         }
@@ -458,31 +459,53 @@ private:
 
             switch (InnerUnroll) {
                 case 12: d12 = MT::load_vec(nextPtr + InnerUnroll - 12);
+                FALLTHROUGH;
                 case 11: d11 = MT::load_vec(nextPtr + InnerUnroll - 11);
+                FALLTHROUGH;
                 case 10: d10 = MT::load_vec(nextPtr + InnerUnroll - 10);
+                FALLTHROUGH;
                 case  9: d09 = MT::load_vec(nextPtr + InnerUnroll -  9);
+                FALLTHROUGH;
                 case  8: d08 = MT::load_vec(nextPtr + InnerUnroll -  8);
+                FALLTHROUGH;
                 case  7: d07 = MT::load_vec(nextPtr + InnerUnroll -  7);
+                FALLTHROUGH;
                 case  6: d06 = MT::load_vec(nextPtr + InnerUnroll -  6);
+                FALLTHROUGH;
                 case  5: d05 = MT::load_vec(nextPtr + InnerUnroll -  5);
+                FALLTHROUGH;
                 case  4: d04 = MT::load_vec(nextPtr + InnerUnroll -  4);
+                FALLTHROUGH;
                 case  3: d03 = MT::load_vec(nextPtr + InnerUnroll -  3);
+                FALLTHROUGH;
                 case  2: d02 = MT::load_vec(nextPtr + InnerUnroll -  2);
+                FALLTHROUGH;
                 case  1: d01 = MT::load_vec(nextPtr + InnerUnroll -  1);
             }
 
             switch (InnerUnroll) {
                 case 12: partition_block(d12, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case 11: partition_block(d11, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case 10: partition_block(d10, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  9: partition_block(d09, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  8: partition_block(d08, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  7: partition_block(d07, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  6: partition_block(d06, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  5: partition_block(d05, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  4: partition_block(d04, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  3: partition_block(d03, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  2: partition_block(d02, P, writeLeft, writeRight);
+                FALLTHROUGH;
                 case  1: partition_block(d01, P, writeLeft, writeRight);
               }
           }
@@ -499,7 +522,7 @@ private:
                 readLeftV += 1;
             }
 
-            auto d = MT::load_vec(nextPtr);
+            TV d = MT::load_vec(nextPtr);
             partition_block(d, P, writeLeft, writeRight);
             //partition_block_without_compress(d, P, writeLeft, writeRight);
         }
@@ -534,8 +557,8 @@ private:
         const auto rightAlign = hint.right_align;
         const auto rai = ~((rightAlign - 1) >> 31);
         const auto lai = leftAlign >> 31;
-        const auto preAlignedLeft  = (TV*) (left + leftAlign);
-        const auto preAlignedRight = (TV*) (right + rightAlign - N);
+        TV* const  preAlignedLeft  = (TV*) (left + leftAlign);
+        TV* const  preAlignedRight = (TV*) (right + rightAlign - N);
 
 #ifdef VXSORT_STATS
         vxsort_stats<T>::bump_vec_loads(2);
@@ -554,8 +577,8 @@ private:
         //       were actually needed to be written to the right hand side
         //    e) We write the right portion of the left vector to the right side
         //       now that its write position has been updated
-        auto RT0 = MT::load_vec(preAlignedRight);
-        auto LT0 = MT::load_vec(preAlignedLeft);
+        TV RT0 = MT::load_vec(preAlignedRight);
+        TV LT0 = MT::load_vec(preAlignedLeft);
         auto rtMask = MT::get_cmpgt_mask(RT0, P);
         auto ltMask = MT::get_cmpgt_mask(LT0, P);
         const auto rtPopCountRightPart = max(_mm_popcnt_u32(rtMask), rightAlign);
@@ -617,8 +640,8 @@ private:
      *        larger-than than all values contained within the provided array.
      */
     NOINLINE void sort(T* left, T* right,
-                       T left_hint = std::numeric_limits<T>::Min(),
-                       T right_hint = std::numeric_limits<T>::Max())
+                       T left_hint = std::numeric_limits<T>::min(),
+                       T right_hint = std::numeric_limits<T>::max())
     {
 //        init_isa_detection();
 

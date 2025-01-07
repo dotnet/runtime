@@ -16,7 +16,7 @@ namespace Test
             return ((object)(m_axField4[2].m_dField3));
         }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -26,7 +26,6 @@ namespace Test
             {
                 Console.WriteLine("Exception handled.");
             }
-            return 100;
         }
     }
 }

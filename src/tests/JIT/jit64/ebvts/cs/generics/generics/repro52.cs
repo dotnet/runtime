@@ -33,11 +33,10 @@ internal class MPair<R, S> : MCell<R>
 public class M
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         MCell<int> c = new MCell<int>(1);
         MPair<int, string> p = c.GetMPair<string>("2");
         c.Gather<float, long>((float)0.5, (long)0);
-        return 100;
     }
 }

@@ -247,6 +247,16 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its signed integer equivalent.</summary>
+        /// <param name="utf8Text">A span containing the UTF-8 characters representing the number to convert.</param>
+        /// <param name="result">When this method returns, contains the signed integer value equivalent to the number contained in <paramref name="utf8Text" /> if the conversion succeeded, or zero if the conversion failed. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out nint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, out Unsafe.As<nint, nint_t>(ref result));
+        }
+
         /// <summary>Tries to parse a string into a value.</summary>
         /// <param name="s">A read-only span of characters containing a number to convert.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
@@ -496,47 +506,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(nint_t))
+            if (BinaryPrimitives.TryWriteIntPtrBigEndian(destination, _value))
             {
-                nint_t value = (nint_t)_value;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    value = BinaryPrimitives.ReverseEndianness(value);
-                }
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
                 bytesWritten = sizeof(nint_t);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(nint_t))
+            if (BinaryPrimitives.TryWriteIntPtrLittleEndian(destination, _value))
             {
-                nint_t value = (nint_t)_value;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    value = BinaryPrimitives.ReverseEndianness(value);
-                }
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
-
                 bytesWritten = sizeof(nint_t);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -908,6 +898,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static nint INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static nint INumberBase<nint>.MultiplyAddEstimate(nint left, nint right, nint addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1387,5 +1380,29 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) => +value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static nint Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (nint)nint_t.Parse(utf8Text, style, provider);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out nint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, style, provider, out Unsafe.As<nint, nint_t>(ref result));
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static nint Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => (nint)nint_t.Parse(utf8Text, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out nint result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(utf8Text, provider, out Unsafe.As<nint, nint_t>(ref result));
+        }
     }
 }
