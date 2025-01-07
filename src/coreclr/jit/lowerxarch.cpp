@@ -9253,7 +9253,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_SSE41_X64_Insert:
                 {
                     // insertps op2 is xmm/m32. If xmm, the upper 2 bits of op3 (imm8) are used to select the element
-                    // position from the source vector; if r32, the source element selection bits in the imm8 are
+                    // position from the source vector; if m32, the source element selection bits in the imm8 are
                     // ignored.
                     //
                     // We will allow containment only if the immediate is constant and the element selection bits are
@@ -9516,7 +9516,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX512F_LoadAlignedVector512:
         {
             // In minOpts, we need to ensure that an unaligned address will fault when an explicit LoadAligned is used.
-            // non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
+            // Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
             // loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
             //
             // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
