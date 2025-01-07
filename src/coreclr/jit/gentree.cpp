@@ -27305,58 +27305,6 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 }
 
 //------------------------------------------------------------------------
-// OperIsYmmEmbRoundingEnabled: Is this HWIntrinsic a node with ymm embedded rounding feature.
-//
-// Return Value:
-//    Whether "this" is a node with ymm embedded rounding feature.
-//
-bool GenTreeHWIntrinsic::OperIsYmmEmbRoundingEnabled() const
-{
-#if defined(TARGET_XARCH)
-    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
-
-    if (HWIntrinsicInfo::lookupIsa(intrinsicId) != InstructionSet_AVX10v2)
-    {
-        return false;
-    }
-
-#ifdef DEBUG
-    assert(OperIsEmbRoundingEnabled());
-#endif
-    // The below logic assumes that OperIsEmbRoundingEnabled() is true.
-    size_t numArgs = GetOperandCount();
-    switch (intrinsicId)
-    {
-        case NI_AVX10v2_Add:
-        case NI_AVX10v2_ConvertToVector128Int32:
-        case NI_AVX10v2_ConvertToVector128Single:
-        case NI_AVX10v2_ConvertToVector128UInt32:
-        case NI_AVX10v2_ConvertToVector256Double:
-        case NI_AVX10v2_ConvertToVector256Int32:
-        case NI_AVX10v2_ConvertToVector256Int64:
-        case NI_AVX10v2_ConvertToVector256Single:
-        case NI_AVX10v2_ConvertToVector256UInt32:
-        case NI_AVX10v2_ConvertToVector256UInt64:
-        case NI_AVX10v2_Divide:
-        case NI_AVX10v2_Multiply:
-        case NI_AVX10v2_Scale:
-        case NI_AVX10v2_Sqrt:
-        case NI_AVX10v2_Subtract:
-        case NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32:
-        case NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32:
-        {
-            return true;
-        }
-
-        default:
-            unreached();
-    }
-#else  // !TARGET_XARCH
-    return false;
-#endif // TARGET_XARCH
-}
-
-//------------------------------------------------------------------------
 // OperIsEmbRoundingEnabled: Is this HWIntrinsic a node with embedded rounding feature.
 //
 // Return Value:

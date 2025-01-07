@@ -794,11 +794,6 @@ protected:
         // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
         // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
         unsigned _idEvexbContext : 2;
-
-        // EVEX.u can indicate ymm/zmm embedded rounding support
-        //            _idEvexuContext = 0, zmm embedded rounding support
-        //            _idEvexuContext = 1, zmm/ymm embedded rounding support
-        unsigned _idEvexuContext : 1; // EVEX.u context
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -831,8 +826,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         49 bits
-        // amd64:       49 bits
+        // x86:         48 bits
+        // amd64:       48 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -850,7 +845,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#define ID_EXTRA_BITFIELD_BITS (16)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -884,8 +879,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         55/51 bits
-        // amd64:       56/51 bits
+        // x86:         54/50 bits
+        // amd64:       55/50 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
@@ -900,8 +895,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
-        // x86:         9/13 bits
-        // amd64:       8/13 bits
+        // x86:         10/14 bits
+        // amd64:       9/14 bits
         // arm:         10/14 bits
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
@@ -1660,20 +1655,6 @@ protected:
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEvexuContextSet() const
-        {
-            return _idEvexuContext != 0;
-        }
-
-        void idSetEvexuContext(insOpts instOptions)
-        {
-            if (instOptions & INS_OPTS_EVEX_u_MASK)
-            {
-                assert(idIsEvexbContextSet());
-                _idEvexuContext = 1;
-            }
-        }
-
         bool idIsEvexbContextSet() const
         {
             return _idEvexbContext != 0;
