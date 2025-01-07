@@ -70,7 +70,7 @@
     <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(BuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
+  <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">
     <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
     <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
@@ -571,11 +571,11 @@
         <Otherwise>
           <PropertyGroup>
             <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(CoreCLRSupported)' == 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildCoreCLRRuntimePack>
-            <_BuildCoreCLRRuntimePack Condition="'$(BuildAllRuntimePacks)' == 'true' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
+            <_BuildCoreCLRRuntimePack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildMonoRuntimePack>
-            <_BuildMonoRuntimePack Condition="'$(BuildAllRuntimePacks)' == 'true' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildNativeAOTRuntimePack Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</_BuildNativeAOTRuntimePack>
-            <_BuildNativeAOTRuntimePack Condition="'$(BuildAllRuntimePacks)' == 'true' and '$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
+            <_BuildNativeAOTRuntimePack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
           </PropertyGroup>
 
           <ItemGroup>

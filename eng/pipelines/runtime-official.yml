@@ -85,7 +85,7 @@ extends:
             # Now that we've signed the diagnostic files, do the rest of the build.
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
                 displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
             - template: /eng/pipelines/common/templates/global-build-step.yml
 
@@ -137,7 +137,7 @@ extends:
               # Now that we've entitled and signed createdump, we can build the rest.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
+                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
                   displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
 
               # Upload the results.
@@ -162,7 +162,7 @@ extends:
           - linux_musl_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -273,7 +273,7 @@ extends:
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
