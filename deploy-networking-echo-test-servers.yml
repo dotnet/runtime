@@ -38,8 +38,8 @@ extends:
             packageType: "sdk"
             version: "8.x"
 
-        - script: echo "{}" > ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/global.json
-          displayName: Bypass global.json
+        - script: rm ./global.json
+          displayName: Bypass repository global.json
 
         - script: dotnet publish -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=$(FrameworkVersion)
           workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
