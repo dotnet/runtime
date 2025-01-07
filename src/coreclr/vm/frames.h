@@ -1308,7 +1308,7 @@ class HelperMethodFrame : public Frame
 public:
 #ifndef DACCESS_COMPILE
     // Lazy initialization of HelperMethodFrame.  Need to
-    // call InsureInit to complete initialization
+    // call EnsureInit to complete initialization
     // If this is an FCall, the first param is the entry point for the FCALL.
     // The MethodDesc will be looked up form this (lazily), and this method
     // will be used in stack reporting, if this is not an FCall pass a 0
@@ -1336,7 +1336,7 @@ public:
         {
 #if defined(DACCESS_COMPILE)
             MachState unwoundState;
-            InsureInit(&unwoundState);
+            EnsureInit(&unwoundState);
             return unwoundState.GetRetAddr();
 #else  // !DACCESS_COMPILE
             _ASSERTE(!"HMF's should always be initialized in the non-DAC world.");
@@ -1419,7 +1419,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    BOOL InsureInit(struct MachState* unwindState);
+    BOOL EnsureInit(struct MachState* unwindState);
 
     LazyMachState * MachineState() {
         LIMITED_METHOD_CONTRACT;
@@ -3266,8 +3266,8 @@ public:
     FrameType* operator&() { LIMITED_METHOD_CONTRACT; return &m_frame; }
     LazyMachState * MachineState() { WRAPPER_NO_CONTRACT; return m_frame.MachineState(); }
     Thread * GetThread() { WRAPPER_NO_CONTRACT; return m_frame.GetThread(); }
-    BOOL InsureInit(struct MachState* unwindState)
-        { WRAPPER_NO_CONTRACT; return m_frame.InsureInit(unwindState); }
+    BOOL EnsureInit(struct MachState* unwindState)
+        { WRAPPER_NO_CONTRACT; return m_frame.EnsureInit(unwindState); }
     void Poll() { WRAPPER_NO_CONTRACT; m_frame.Poll(); }
     void SetStackPointerPtr(TADDR sp) { WRAPPER_NO_CONTRACT; m_frame.SetStackPointerPtr(sp); }
     void InitAndLink(T_CONTEXT *pContext) { WRAPPER_NO_CONTRACT; m_frame.InitAndLink(pContext); }

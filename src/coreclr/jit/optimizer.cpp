@@ -2254,7 +2254,6 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 #endif // DEBUG
 
     Metrics.LoopsInverted++;
-
     return true;
 }
 
@@ -5641,7 +5640,7 @@ void Compiler::optRemoveRedundantZeroInits()
                  predEdge           = predEdge->getNextPredEdge())
             {
                 BasicBlock* const predBlock = predEdge->getSourceBlock();
-                if (m_dfsTree->IsAncestor(block, predBlock))
+                if (m_dfsTree->Contains(predBlock) && m_dfsTree->IsAncestor(block, predBlock))
                 {
                     JITDUMP(FMT_BB " is part of a cycle, stopping the block scan\n", block->bbNum);
                     stop = true;

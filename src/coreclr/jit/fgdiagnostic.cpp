@@ -993,9 +993,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     {
         fprintf(fgxFile, "\n    </blocks>");
 
-        fprintf(fgxFile, "\n    <edges");
-        fprintf(fgxFile, "\n        edgeCount=\"%d\"", fgEdgeCount);
-        fprintf(fgxFile, ">");
+        fprintf(fgxFile, "\n    <edges>");
     }
 
     if (fgPredsComputed)
