@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>false</BuildNativeAOTRuntimePack>
+    <OutDirName>coreclr-pack</OutDirName>
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RuntimeFlavor>Mono</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>false</BuildNativeAOTRuntimePack>
+    <OutDirName>mono-pack</OutDirName>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
