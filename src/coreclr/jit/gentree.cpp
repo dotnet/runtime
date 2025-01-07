@@ -21091,8 +21091,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
         case GT_RSH:
         case GT_RSZ:
         {
-            // This emulates byte shift shift instructions, which don't exist in x86 SIMD,
-            // plus arithmetic shift of qwords, which did not exist pre-AVX-512.
+            // This emulates byte shift instructions, which don't exist in x86 SIMD,
+            // plus arithmetic shift of qwords, which did not exist before AVX-512.
 
             assert(varTypeIsByte(simdBaseType) || (varTypeIsLong(simdBaseType) && (op == GT_RSH)));
 

@@ -12358,10 +12358,18 @@ void emitter::emitDispIns(
                 reg2          = reg3;
                 reg3          = tmp;
             }
+
+            // Shift instructions take xmm for the 3rd operand regardless of instruction size.
+            emitAttr attr3 = attr;
+            if (hasTupleTypeInfo(ins) && ((insTupleTypeInfo(id->idIns()) & INS_TT_MEM128) != 0))
+            {
+                attr3 = EA_16BYTE;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, ", emitRegName(reg2, attr));
-            printf("%s", emitRegName(reg3, attr));
+            printf("%s", emitRegName(reg3, attr3));
             emitDispEmbRounding(id);
             break;
         }
