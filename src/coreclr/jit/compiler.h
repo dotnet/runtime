@@ -7131,8 +7131,9 @@ public:
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
-    bool optCreatePreheader(FlowGraphNaturalLoop* loop, bool* splitHeader);
+    bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
+    bool optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop);
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
