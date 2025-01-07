@@ -255,7 +255,16 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
-        public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values) =>
-            values.IsEmpty ? ReadOnlySet<T>.Empty : new ReadOnlySet<T>((HashSet<T>)[.. values]);
+        public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values)
+        {
+            if (values.IsEmpty)
+                return ReadOnlySet<T>.Empty;
+
+            HashSet<T> hashSet = [];
+            foreach (T value in values)
+                hashSet.Add(value);
+
+            return new ReadOnlySet<T>(hashSet);
+        }
     }
 }
