@@ -108,7 +108,7 @@
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' != 'true'">$(DefaultMonoSubsets)host.native+</DefaultMonoSubsets>
 
     <!-- If the Mono runtime isn't supported but the AOT compiler is, just build the AOT cross compiler -->
-    <DefaultMonoSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(MonoSupported)' == 'false' and '$(MonoAOTCrossCompilerSupported)' == 'true')">mono.aotcross</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(MonoSupported)' != 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">mono.aotcross</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
