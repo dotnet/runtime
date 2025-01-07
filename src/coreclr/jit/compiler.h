@@ -6549,7 +6549,6 @@ public:
 
 
     void WalkSpanningTree(SpanningTreeVisitor* visitor);
-    void fgSetProfileWeight(BasicBlock* block, weight_t weight);
     void fgApplyProfileScale();
     bool fgHaveSufficientProfileWeights();
     bool fgHaveTrustedProfileWeights();
