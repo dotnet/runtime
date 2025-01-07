@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using System.Linq;
 
 using System.Runtime.Loader;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 delegate void TestPreLoaderDelegate(ReliabilityTest test, string[] paths);
 delegate void AssemblyLoadContextUnloadDelegate();
@@ -119,6 +120,8 @@ public class ReliabilityFramework
     private int _reportedFailCnt = 0;
     private RFLogging _logger = new RFLogging();
     private DateTime _lastLogTime = DateTime.Now;
+    private Dictionary<string, uint> _testRanCounter = new();
+    private object _testRanCounterLock = new();
 
     // static members
     private static int s_seed = (int)System.DateTime.Now.Ticks;
@@ -161,6 +164,11 @@ public class ReliabilityFramework
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
+
+        Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs args) => {
+            rf.RecordTestRanCount();
+        };
+
         var configVars = GC.GetConfigurationVariables();
         foreach (var kvp in configVars)
         {
@@ -305,7 +313,7 @@ public class ReliabilityFramework
         }
 
         NoExitPoll();
-
+        rf.RecordTestRanCount();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Shutdown w/ ret val of  {0}", retVal));
 
 
@@ -314,6 +322,16 @@ public class ReliabilityFramework
         return (retVal);
     }
 
+    public void RecordTestRanCount()
+    {
+        StringBuilder sb = new();
+        foreach(var item in _testRanCounter)
+        {
+            sb.AppendLine($"{item.Key}: {item.Value}");
+        }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests ran count:\n{sb}");
+    }
+    
     public void HandleOom(Exception e, string message)
     {
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
@@ -1195,6 +1213,16 @@ public class ReliabilityFramework
                         SignalTestFinished(daTest);
                     }
                     break;
+            }
+
+            lock (_testRanCounterLock)
+            {
+                string testRefOrID = daTest.RefOrID;
+                if (!_testRanCounter.Keys.Contains(testRefOrID))
+                {
+                    _testRanCounter[testRefOrID] = 0;
+                }
+                _testRanCounter[testRefOrID] ++;
             }
         }
         catch (Exception e)
