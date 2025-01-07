@@ -377,7 +377,13 @@ for inputAssemblyName in glob.glob("*.dll"):
       # Test determinism
       if test_det:
 
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output=diff.{inputAssemblyName} {ilasmSwitches} {disassemblyName}'
+        try:
+            os.rename(inputAssemblyName, f'{inputAssemblyName}.base')
+        except:
+            print("Could not find f'{inputAssemblyName}'")
+            sys.exit(1)
+
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -387,13 +393,21 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
-        if not filecmp.cmp(inputAssemblyName, f'diff.{inputAssemblyName}', shallow=False):
+        try:
+            os.rename(inputAssemblyName, f'{inputAssemblyName}.diff')
+        except:
+            print("Could not find f'{inputAssemblyName}'")
+            sys.exit(1)
+
+        if not filecmp.cmp(f'{inputAssemblyName}.base', f'{inputAssemblyName}.diff', shallow=False):
           print("ILASM determinism failed")
           sys.exit(1)
         else:
           print("ILASM determinism succeeded")
 
         # Test PDB determinism
+
+        os.rename(f'{inputAssemblyName}.base', inputAssemblyName)
 
         if not is_managed_debug_assembly(inputAssemblyName):
           ilasmSwitches = ilasmSwitches + " -DEBUG"
@@ -410,7 +424,13 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
-        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output=diff.{pdbName} {ilasmSwitches} {disassemblyName}'
+        try:
+            os.rename(pdbName, f'{pdbName}.base')
+        except:
+            print("Could not find f'{pdbName}'")
+            sys.exit(1)
+
+        ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
         print(ilasm_args)
         proc = subprocess.Popen(ilasm_args, shell=True)
 
@@ -420,7 +440,13 @@ for inputAssemblyName in glob.glob("*.dll"):
             proc.kill()
             sys.exit(1)
 
-        if not filecmp.cmp(pdbName, f'diff.{pdbName}', shallow=False):
+        try:
+            os.rename(pdbName, f'{pdbName}.diff')
+        except:
+            print("Could not find f{pdbName}")
+            sys.exit(1)
+
+        if not filecmp.cmp(f'{pdbName}.base', f'{pdbName}.diff', shallow=False):
           print("ILASM PDB determinism failed")
           sys.exit(1)
         else:
