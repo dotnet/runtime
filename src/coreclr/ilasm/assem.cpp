@@ -250,8 +250,8 @@ BOOL Assembler::Init(BOOL generatePdb)
 #if !defined(_WIN32) && !defined(__APPLE__)
         if (!IsOpenSslAvailable())
         {
-            fprintf(stderr, "\nWarning: OpenSSL not available. Disabling build determinism.\n");
-            m_fDeterministic = FALSE;
+            fprintf(stderr, "OpenSSL is not available, but required for build determinism\n");
+            return FALSE;
         }
         else
 #endif
