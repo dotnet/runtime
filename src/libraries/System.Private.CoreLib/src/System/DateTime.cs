@@ -1452,8 +1452,7 @@ namespace System
         //
         public int Hour => (int)((uint)(UTicks / TimeSpan.TicksPerHour) % 24);
 
-        internal bool IsAmbiguousDaylightSavingTime() =>
-            _dateData >> KindShift == KindLocalAmbiguousDst >> KindShift;
+        internal bool IsAmbiguousDaylightSavingTime() => _dateData >= KindLocalAmbiguousDst;
 
         public DateTimeKind Kind
         {
@@ -1461,6 +1460,7 @@ namespace System
             get
             {
                 uint kind = (uint)(_dateData >> KindShift);
+                // values 0-2 map directly to DateTimeKind, 3 (LocalAmbiguousDst) needs to be mapped to 2 (Local) using bit0 NAND bit1
                 return (DateTimeKind)(kind & ~(kind >> 1));
             }
         }

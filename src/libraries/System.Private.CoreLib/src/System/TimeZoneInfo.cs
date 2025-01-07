@@ -836,6 +836,7 @@ namespace System
         /// </summary>
         internal static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
         {
+            Debug.Assert(dateTime.Kind != DateTimeKind.Utc);
             CachedData cachedData = s_cachedData;
             return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags, cachedData);
         }
