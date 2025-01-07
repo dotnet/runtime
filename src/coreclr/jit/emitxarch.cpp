@@ -776,7 +776,7 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
     return false;
 #else
     return JitConfig.EnableApxNDD() && IsApxNDDEncodableInstruction(ins);
-#endif 
+#endif
 }
 
 #ifdef TARGET_64BIT
@@ -1401,78 +1401,78 @@ void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
     regNumber reg1 = id->idReg1(); // dst and src1
     regNumber reg2 = id->idReg2(); // src2
     switch (id->idInsFmt())
+    {
+        case IF_RRD_RRD:
+            break;
+
+        case IF_RWR_RRD:
         {
-            case IF_RRD_RRD:
-                break;
-
-            case IF_RWR_RRD:
+            if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == (int)REG_ARG_0)
             {
-                if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == (int)REG_ARG_0)
+                // We're relocating "this" in the prolog
+                assert(emitComp->lvaIsOriginalThisArg(0));
+                assert(emitComp->lvaTable[0].lvRegister);
+                assert(emitComp->lvaTable[0].GetRegNum() == reg1);
+
+                if (emitFullGCinfo)
                 {
-                    // We're relocating "this" in the prolog
-                    assert(emitComp->lvaIsOriginalThisArg(0));
-                    assert(emitComp->lvaTable[0].lvRegister);
-                    assert(emitComp->lvaTable[0].GetRegNum() == reg1);
-
-                    if (emitFullGCinfo)
-                    {
-                        emitGCregLiveSet(id->idGCref(), genRegMask(reg1), dst, true);
-                        break;
-                    }
-                    else
-                    {
-                        /* If emitFullGCinfo==false, the we don't use any
-                           regPtrDsc's and so explicitly note the location
-                           of "this" in GCEncode.cpp
-                         */
-                    }
+                    emitGCregLiveSet(id->idGCref(), genRegMask(reg1), dst, true);
+                    break;
                 }
-
-                emitGCregLiveUpd(id->idGCref(), reg1, dst);
-                break;
+                else
+                {
+                    /* If emitFullGCinfo==false, the we don't use any
+                       regPtrDsc's and so explicitly note the location
+                       of "this" in GCEncode.cpp
+                     */
+                }
             }
 
-            case IF_RRW_RRD:
-            case IF_RWR_RRD_RRD:
+            emitGCregLiveUpd(id->idGCref(), reg1, dst);
+            break;
+        }
+
+        case IF_RRW_RRD:
+        case IF_RWR_RRD_RRD:
+        {
+            regNumber targetReg = reg1; // dst
+
+            // if the instructions is encoded in NDD form,
+            // src registers will be the 2nd and 3rd register on id.
+            if (id->idInsFmt() == IF_RWR_RRD_RRD)
             {
-                regNumber targetReg = reg1; // dst
+                reg1 = id->idReg2(); // src1
+                reg2 = id->idReg3(); // src2
+            }
 
-                // if the instructions is encoded in NDD form,
-                // src registers will be the 2nd and 3rd register on id.
-                if (id->idInsFmt() == IF_RWR_RRD_RRD)
-                {
-                    reg1 = id->idReg2(); // src1
-                    reg2 = id->idReg3(); // src2
-                }
-                
-                switch (id->idIns())
-                {
-                    /*
-                        This must be one of the following cases:
+            switch (id->idIns())
+            {
+                /*
+                    This must be one of the following cases:
 
-                        xor reg, reg        to assign NULL
+                    xor reg, reg        to assign NULL
 
-                        and r1 , r2         if (ptr1 && ptr2) ...
-                        or  r1 , r2         if (ptr1 || ptr2) ...
+                    and r1 , r2         if (ptr1 && ptr2) ...
+                    or  r1 , r2         if (ptr1 || ptr2) ...
 
-                        add r1 , r2         to compute a normal byref
-                        sub r1 , r2         to compute a strange byref (VC only)
+                    add r1 , r2         to compute a normal byref
+                    sub r1 , r2         to compute a strange byref (VC only)
 
-                    */
-                    case INS_xor:
-                        assert(reg1 == reg2);
-                        emitGCregLiveUpd(id->idGCref(), targetReg, dst);
-                        break;
+                */
+                case INS_xor:
+                    assert(reg1 == reg2);
+                    emitGCregLiveUpd(id->idGCref(), targetReg, dst);
+                    break;
 
-                    case INS_or:
-                    case INS_and:
-                        emitGCregDeadUpd(targetReg, dst);
-                        break;
+                case INS_or:
+                case INS_and:
+                    emitGCregDeadUpd(targetReg, dst);
+                    break;
 
-                    case INS_add:
-                    case INS_sub:
-                    case INS_sub_hide:
-                        assert(id->idGCref() == GCT_BYREF);
+                case INS_add:
+                case INS_sub:
+                case INS_sub_hide:
+                    assert(id->idGCref() == GCT_BYREF);
 
 #if 0
 #ifdef DEBUG
@@ -1498,68 +1498,68 @@ void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
 #endif // DEBUG
 #endif // 0
 
-                        // Mark r1 as holding a byref
-                        emitGCregLiveUpd(GCT_BYREF, targetReg, dst);
-                        break;
+                    // Mark r1 as holding a byref
+                    emitGCregLiveUpd(GCT_BYREF, targetReg, dst);
+                    break;
 
-                    default:
+                default:
 #ifdef DEBUG
-                        emitDispIns(id, false, false, false);
+                    emitDispIns(id, false, false, false);
 #endif
-                        assert(!"unexpected GC reg update instruction");
-                }
-
-                break;
+                    assert(!"unexpected GC reg update instruction");
             }
 
-            case IF_RRW_RRW:
-            {
-                // This must be "xchg reg1, reg2"
-                assert(id->idIns() == INS_xchg);
-
-                // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
-                // register pointer mask.
-
-                GCtype gc1, gc2;
-
-                gc1 = emitRegGCtype(reg1);
-                gc2 = emitRegGCtype(reg2);
-
-                if (gc1 != gc2)
-                {
-                    // Kill the GC-info about the GC registers
-
-                    if (needsGC(gc1))
-                    {
-                        emitGCregDeadUpd(reg1, dst);
-                    }
-
-                    if (needsGC(gc2))
-                    {
-                        emitGCregDeadUpd(reg2, dst);
-                    }
-
-                    // Now, swap the info
-
-                    if (needsGC(gc1))
-                    {
-                        emitGCregLiveUpd(gc1, reg2, dst);
-                    }
-
-                    if (needsGC(gc2))
-                    {
-                        emitGCregLiveUpd(gc2, reg1, dst);
-                    }
-                }
-                break;
-            }
-
-            default:
-#ifdef DEBUG
-                emitDispIns(id, false, false, false);
-#endif
-                assert(!"unexpected GC ref instruction format");
+            break;
         }
+
+        case IF_RRW_RRW:
+        {
+            // This must be "xchg reg1, reg2"
+            assert(id->idIns() == INS_xchg);
+
+            // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
+            // register pointer mask.
+
+            GCtype gc1, gc2;
+
+            gc1 = emitRegGCtype(reg1);
+            gc2 = emitRegGCtype(reg2);
+
+            if (gc1 != gc2)
+            {
+                // Kill the GC-info about the GC registers
+
+                if (needsGC(gc1))
+                {
+                    emitGCregDeadUpd(reg1, dst);
+                }
+
+                if (needsGC(gc2))
+                {
+                    emitGCregDeadUpd(reg2, dst);
+                }
+
+                // Now, swap the info
+
+                if (needsGC(gc1))
+                {
+                    emitGCregLiveUpd(gc1, reg2, dst);
+                }
+
+                if (needsGC(gc2))
+                {
+                    emitGCregLiveUpd(gc2, reg1, dst);
+                }
+            }
+            break;
+        }
+
+        default:
+#ifdef DEBUG
+            emitDispIns(id, false, false, false);
+#endif
+            assert(!"unexpected GC ref instruction format");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1813,10 +1813,10 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
 
-#define MAP4_IN_BYTE_EVEX_PREFIX  0x4000000000000ULL
+#define MAP4_IN_BYTE_EVEX_PREFIX   0x4000000000000ULL
 #define ND_BIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
 #define NF_BIT_IN_BYTE_EVEX_PREFIX 0x400000000ULL
-#define EXTENDED_EVEX_PP_BITS     0x10000000000ULL
+#define EXTENDED_EVEX_PP_BITS      0x10000000000ULL
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
 //

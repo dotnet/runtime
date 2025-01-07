@@ -1371,8 +1371,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         }
         assert(regOp->isUsedFromReg());
 
-        if (emit->DoJitUseApxNDD(ins) &&
-            regOp->GetRegNum() != mulTargetReg)
+        if (emit->DoJitUseApxNDD(ins) && regOp->GetRegNum() != mulTargetReg)
         {
             // use NDD form to optimize this form:
             // mov  targetReg, regOp
@@ -4938,8 +4937,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 return;
             }
 
-            if (GetEmitter()->DoJitUseApxNDD(ins) &&
-                (tree->GetRegNum() != operandReg))
+            if (GetEmitter()->DoJitUseApxNDD(ins) && (tree->GetRegNum() != operandReg))
             {
                 ins = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
                 // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
@@ -5002,8 +5000,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         // The operand to be shifted must not be in ECX
         noway_assert(operandReg != REG_RCX);
 
-        if (GetEmitter()->DoJitUseApxNDD(ins) &&
-            (tree->GetRegNum() != operandReg))
+        if (GetEmitter()->DoJitUseApxNDD(ins) && (tree->GetRegNum() != operandReg))
         {
             // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
             // this case might be rarely hit.
