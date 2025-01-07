@@ -1536,12 +1536,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private void ReportDebuggerExceptionToTelemetry(string callingFunction, SessionId msg_id, CancellationToken token)
         {
-            JObject reportBlazorDebugError = JObject.FromObject(new
+            JObject reportBlazorDebugException = JObject.FromObject(new
             {
                 exceptionType = "uncaughtException",
-                error = $"BlazorDebugger exception at {callingFunction}",
+                exception = $"BlazorDebugger exception at {callingFunction}",
             });
-            SendEvent(msg_id, "DotnetDebugger.reportBlazorDebugError", reportBlazorDebugError, token);
+            SendEvent(msg_id, "DotnetDebugger.reportBlazorDebugException", reportBlazorDebugException, token);
         }
 
         internal async Task<GetMembersResult> GetScopeProperties(SessionId msg_id, int scopeId, CancellationToken token)
