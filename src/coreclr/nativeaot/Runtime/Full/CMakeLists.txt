@@ -64,10 +64,10 @@ if (CLR_CMAKE_TARGET_WIN32)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
   target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE aotminipal)
 
-  if (CLR_CMAKE_TARGET_ARCH_AMD64)
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
     set_target_properties(Runtime.VxsortEnabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
   set_target_properties(aotminipal PROPERTIES
     COMPILE_PDB_NAME "aotminipal"
