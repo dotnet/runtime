@@ -1483,9 +1483,10 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         if (!id->idHasMem())
         {
-            // embedded rounding case.
-            if (id->idIsEvexuContextSet())
+            // ymm embedded rounding case.
+            if (attr == EA_32BYTE)
             {
+                assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
                 code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
             }
             
