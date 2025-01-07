@@ -137,7 +137,7 @@ extends:
               # Now that we've entitled and signed createdump, we can build the rest.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig)  /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
+                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
                   displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
 
               # Upload the results.
