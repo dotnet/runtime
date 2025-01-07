@@ -244,6 +244,10 @@ BOOL Assembler::Init(BOOL generatePdb)
     }
 
     if (FAILED(CreateICeeFileGen(&m_pCeeFileGen))) return FALSE;
+    if (FAILED(m_pCeeFileGen->CreateCeeFileEx(&m_pCeeFile,(ULONG)m_dwCeeFileFlags))) return FALSE;
+    if (FAILED(m_pCeeFileGen->GetSectionCreate(m_pCeeFile, ".il", sdReadOnly, &m_pILSection))) return FALSE;
+    if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".sdata", sdReadWrite, &m_pGlobalDataSection))) return FALSE;
+    if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
 
     if (m_fDeterministic)
     {
@@ -255,16 +259,10 @@ BOOL Assembler::Init(BOOL generatePdb)
         }
         else
 #endif
-        {
-            m_dwCeeFileFlags |= ICEE_CREATE_FILE_DET;
-        }
+        // Initialize file header timestamp to something consistent.
+        // If we're going to generate a PDB, we will update this timestamp with a value computed from the PDB's hash.
+        if (FAILED(m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, VAL32(0xFFFFFFFF)))) return FALSE;
     }
-
-    if (FAILED(m_pCeeFileGen->CreateCeeFileEx(&m_pCeeFile,(ULONG)m_dwCeeFileFlags))) return FALSE;
-
-    if (FAILED(m_pCeeFileGen->GetSectionCreate(m_pCeeFile, ".il", sdReadOnly, &m_pILSection))) return FALSE;
-    if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".sdata", sdReadWrite, &m_pGlobalDataSection))) return FALSE;
-    if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
 
     m_fGeneratePDB = generatePdb;
 

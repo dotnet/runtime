@@ -1478,6 +1478,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             ULONG timestamp;
             memcpy_s(&timestamp, sizeof(ULONG), pdbChecksum + sizeof(GUID), sizeof(ULONG));
             m_pPortablePdbWriter->SetTimestamp(timestamp);
+            if (FAILED(hr = m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, timestamp))) goto exit;
         }
 
         if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;

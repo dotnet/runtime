@@ -614,12 +614,6 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags)
         m_ntHeaders->FileHeader.Characteristics |= VAL16(IMAGE_FILE_RELOCS_STRIPPED);
     }
 
-    if (createFlags & ICEE_CREATE_FILE_DET)
-    {
-        // We don't need a meaningful date/time stamp -- just a consistent one
-        m_ntHeaders->FileHeader.TimeDateStamp = VAL32(0xFFFFFFFF);
-    }
-
     // Linker version should be consistent with current VC level
     m_ntHeaders->OptionalHeader.MajorLinkerVersion  = 11;
     m_ntHeaders->OptionalHeader.MinorLinkerVersion  = 0;
@@ -1641,6 +1635,11 @@ HRESULT PEWriter::getFileTimeStamp(DWORD *pTimeStamp)
         *pTimeStamp = m_peFileTimeStamp;
 
     return S_OK;
+}
+
+void PEWriter::setFileHeaderTimeStamp(DWORD timeStamp)
+{
+    m_ntHeaders->FileHeader.TimeDateStamp = timeStamp;
 }
 
 DWORD PEWriter::getImageBase32()

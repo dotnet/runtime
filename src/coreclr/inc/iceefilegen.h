@@ -66,8 +66,6 @@ typedef HRESULT (__stdcall * PFN_DestroyICeeFileGen)(ICeeFileGen ** ceeFileGen);
 #define ICEE_CREATE_MACHINE_ARM        0x00000400  // Create a IMAGE_FILE_MACHINE_ARMNT
 #define ICEE_CREATE_MACHINE_ARM64      0x00000800  // Create a IMAGE_FILE_MACHINE_ARM64
 
-#define ICEE_CREATE_FILE_DET           0x00100000  // Creates a deterministic PE
-
     // Pass this to CreateCeeFileEx to create a pure IL Exe or DLL
 #define ICEE_CREATE_FILE_PURE_IL  ICEE_CREATE_FILE_PE32         | \
                                   ICEE_CREATE_FILE_CORMAIN_STUB | \
@@ -157,6 +155,7 @@ class ICeeFileGen {
                                     BYTE* buffer, unsigned buffLen);
 
     virtual HRESULT GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp);
+    virtual HRESULT SetFileHeaderTimeStamp(HCEEFILE ceeFile, DWORD timeStamp);
 
     virtual HRESULT SetFileAlignment(HCEEFILE ceeFile, ULONG fileAlignment);
 
