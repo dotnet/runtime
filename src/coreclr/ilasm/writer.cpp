@@ -59,12 +59,6 @@ HRESULT Assembler::InitMetaData()
         // was created above, and the ChangeMvid service that makes this possible is only available
         // on the IMDInternalEmit interface.
         //
-        // When the CLSID_CorMetaDataDispenser instance above has activated against a current
-        // clr.dll (which is the only supported configuration for the determinism feature), it is
-        // guaranteed that "m_pEmitter" is implemented by the RegMeta object that was created
-        // during the DefineScope call above, and it is guaranteed that this same RegMeta object
-        // also implements the required IMDInternalEmit interface.
-        //
         // Any failure is unexpected and catastrophic, so print a noisy message and return an
         // error (which generally fails the entire ilasm operation) if any failure occurs.
         //
