@@ -11,6 +11,8 @@ resources:
 
 variables:
  - template: /eng/common/templates-official/variables/pool-providers.yml
+ - name: FrameworkVersion
+   value: net8.0
 
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
@@ -31,16 +33,27 @@ extends:
         steps:
         - checkout: self
 
+        - task: UseDotNet@2
+          inputs:
+            packageType: "sdk"
+            version: "8.x"
+
+        - task: PowerShell@2
+          displayName: Bypass global.json
+          inputs:
+            targetType: 'inline'
+            script: 'echo "{}" > ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/global.json'
+
         - task: PowerShell@2
           displayName: Run dotnet publish
           inputs:
             targetType: 'inline'
-            script: './dotnet.cmd publish ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=net10.0'
+            script: 'dotnet publish ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=$(FrameworkVersion)'
         - task: zip@0
           displayName: Zip artifacts
           inputs:
-            pathToZipFolder: 'artifacts\bin\NetCoreServer\Release\net10.0\publish\'
-            pathToZipFile: 'artifacts\bin\NetCoreServer\Release\net10.0\publish.zip'
+            pathToZipFolder: 'artifacts\bin\NetCoreServer\Release\$(FrameworkVersion)\publish\'
+            pathToZipFile: 'artifacts\bin\NetCoreServer\Release\$(FrameworkVersion)\publish.zip'
 
         - task: AzureRmWebAppDeployment@4
           displayName: Deploy to staging slot
@@ -52,4 +65,4 @@ extends:
             deployToSlotOrASE: true
             ResourceGroupName: 'Production-WestUS'
             SlotName: 'staging'
-            package: 'artifacts\bin\NetCoreServer\Release\net10.0\publish.zip'
+            package: 'artifacts\bin\NetCoreServer\Release\$(FrameworkVersion)\publish.zip'
