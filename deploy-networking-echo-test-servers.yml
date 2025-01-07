@@ -38,17 +38,12 @@ extends:
             packageType: "sdk"
             version: "8.x"
 
-        - task: PowerShell@2
+        - script: echo "{}" > ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/global.json
           displayName: Bypass global.json
-          inputs:
-            targetType: 'inline'
-            script: 'echo "{}" > ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/global.json'
 
-        - task: PowerShell@2
+        - script: dotnet publish ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=$(FrameworkVersion)
           displayName: Run dotnet publish
-          inputs:
-            targetType: 'inline'
-            script: 'dotnet publish ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=$(FrameworkVersion)'
+
         - task: zip@0
           displayName: Zip artifacts
           inputs:
