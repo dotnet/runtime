@@ -98,6 +98,23 @@ namespace System
             public override void NextBytes(byte[] buffer) => _prng.NextBytes(buffer);
 
             public override void NextBytes(Span<byte> buffer) => _prng.NextBytes(buffer);
+
+            public override void Shuffle<T>(Span<T> values)
+            {
+                int n = values.Length;
+
+                for (int i = 0; i < n - 1; i++)
+                {
+                    int j = Next(i, n);
+
+                    if (j != i)
+                    {
+                        T temp = values[i];
+                        values[i] = values[j];
+                        values[j] = temp;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -229,6 +246,25 @@ namespace System
                 for (int i = 0; i < buffer.Length; i++)
                 {
                     buffer[i] = (byte)_parent.Next();
+                }
+            }
+
+            public override void Shuffle<T>(Span<T> values)
+            {
+                _prng.EnsureInitialized(_seed);
+
+                int n = values.Length;
+
+                for (int i = 0; i < n - 1; i++)
+                {
+                    int j = Next(i, n);
+
+                    if (j != i)
+                    {
+                        T temp = values[i];
+                        values[i] = values[j];
+                        values[j] = temp;
+                    }
                 }
             }
         }

@@ -33,6 +33,8 @@ namespace System
 
             public abstract void NextBytes(Span<byte> buffer);
 
+            public abstract void Shuffle<T>(Span<T> values);
+
             // NextUInt32/64 algorithms based on https://arxiv.org/pdf/1805.10941.pdf and https://github.com/lemire/fastrange.
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
