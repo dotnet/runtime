@@ -82,6 +82,7 @@ jobs:
         iOSLlvmBuild: False
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        additionalJobIdentifier: iOSStripSymbols
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -98,6 +99,7 @@ jobs:
         iOSLlvmBuild: True
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        additionalJobIdentifier: iosLlvmBuild
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -114,6 +116,7 @@ jobs:
         iOSLlvmBuild: True
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        additionalJobIdentifier: iosLlvmBuild iOSStripSymbols
 
   # run NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -145,3 +148,4 @@ jobs:
         logicalMachine: 'perfiphone12mini'
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        additionalJobIdentifier: iOSStripSymbols

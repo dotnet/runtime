@@ -29,6 +29,13 @@ trigger:
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
+resources:
+  repositories:
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+      ref: ${{ parameters.perfBranch }}
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
@@ -41,11 +48,8 @@ schedules:
   always: true
 
 extends:
-  template:  /eng/pipelines/coreclr/templates/perf-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    perfBranch: ${{ parameters.perfBranch }}
-    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      useInternalPerfRepo: true
     stages:
     - stage: Build
       jobs:
@@ -199,6 +203,7 @@ extends:
               logicalMachine: 'perfampere'
               timeoutInMinutes: 780
               pgoRunType: nodynamicpgo
+              additionalJobIdentifier: nodynamicpgo
 
       #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -214,6 +219,7 @@ extends:
               logicalMachine: 'perfampere'
               timeoutInMinutes: 780
               r2rRunType: nor2r
+              additionalJobIdentifier: nor2r
 
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -256,6 +262,7 @@ extends:
               logicalMachine: 'perfampere'
               pgoRunType: nodynamicpgo
               timeoutInMinutes: 780
+              additionalJobIdentifier: nodynamicpgo
 
       # run coreclr Windows arm64 ampere no R2R microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -271,6 +278,7 @@ extends:
               logicalMachine: 'perfampere'
               r2rRunType: nor2r
               timeoutInMinutes: 780
+              additionalJobIdentifier: nor2r
 
         # run coreclr cloudvm microbenchmarks perf job
         # this run is added temporarily for measuring AVX-512 performance

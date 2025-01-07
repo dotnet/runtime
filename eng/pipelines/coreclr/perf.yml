@@ -26,10 +26,10 @@ trigger:
 
 resources:
   repositories:
-  - repository: performance
-    type: git
-    name: internal/dotnet-performance
-    ref: ${{ parameters.perfBranch }}
+    - repository: performance
+      type: git
+      name: internal/dotnet-performance
+      ref: ${{ parameters.perfBranch }}
 
 variables:
 - template: /eng/pipelines/common/variables.yml

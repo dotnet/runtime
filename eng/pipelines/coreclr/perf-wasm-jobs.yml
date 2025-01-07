@@ -42,6 +42,7 @@ jobs:
         runKind: micro
         logicalMachine: 'perftiger'
         javascriptEngine: 'javascriptcore'
+        additionalJobIdentifier: javascriptcore
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         #downloadSpecificBuild:
           #buildId: '1693181'
@@ -63,6 +64,7 @@ jobs:
         runkind: micro
         logicalMachine: 'perftiger'
         javascriptengine: 'javascriptcore'
+        additionalJobIdentifier: javascriptcore
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
 
 - ${{ if eq(parameters.runProfile, 'v8') }}:
@@ -103,6 +105,7 @@ jobs:
         #additionalSetupParameters: '--dotnet-versions 8.0.0'
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
+        additionalJobIdentifier: v8
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
 
   #run mono wasm aot microbenchmarks perf job
@@ -126,6 +129,7 @@ jobs:
           #additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
           compare: ${{ parameters.compare }}
           onlySanityCheck: ${{ parameters.onlySanityCheck }}
+          additionalJobIdentifier: v8
           downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
 
   # run mono wasm blazor perf job

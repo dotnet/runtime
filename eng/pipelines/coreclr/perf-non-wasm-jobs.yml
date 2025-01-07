@@ -192,6 +192,7 @@ jobs:
         runKind: micro
         logicalMachine: 'perftiger'
         pgoRunType: nodynamicpgo
+        additionalJobIdentifier: nodynamicpgo
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -205,6 +206,7 @@ jobs:
         runKind: micro
         logicalMachine: 'perftiger'
         pgoRunType: nodynamicpgo
+        additionalJobIdentifier: nodynamicpgo
 
   # run coreclr perftiger microbenchmarks no R2R perf jobs
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -219,6 +221,7 @@ jobs:
         runKind: micro
         logicalMachine: 'perftiger'
         r2rRunType: nor2r
+        additionalJobIdentifier: nor2r
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -232,6 +235,7 @@ jobs:
         runKind: micro
         logicalMachine: 'perftiger'
         r2rRunType: nor2r
+        additionalJobIdentifier: nor2r
 
   # run coreclr perfowl microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -275,6 +279,7 @@ jobs:
         runKind: micro
         logicalMachine: 'perfviper'
         experimentName: 'jitoptrepeat'
+        additionalJobIdentifier: jitoptrepeat
 
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml

@@ -23,15 +23,19 @@ pr:
     - eng/testing/performance/*
     - eng/testing/BrowserVersions.props
 
+resources:
+  repositories:
+    - repository: performance
+      type: github
+      name: dotnet/performance
+      endpoint: public
+      ref: ${{ parameters.perfBranch }}
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/coreclr/templates/perf-pipeline-with-resources.yml
-  parameters:
-    perfBranch: ${{ parameters.perfBranch }}
-    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      useInternalPerfRepo: true
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
     stages:
     - stage: Build
       jobs:
