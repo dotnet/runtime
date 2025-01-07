@@ -88,13 +88,11 @@ namespace System.Linq
             }
             else
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                if (e.MoveNext())
                 {
-                    if (e.MoveNext())
-                    {
-                        found = true;
-                        return e.Current;
-                    }
+                    found = true;
+                    return e.Current;
                 }
             }
 

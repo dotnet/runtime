@@ -151,7 +151,6 @@
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
-#include "comthreadpool.h"
 #include "posterror.h"
 #include "virtualcallstub.h"
 #include "strongnameinternal.h"

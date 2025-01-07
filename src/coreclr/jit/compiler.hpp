@@ -1354,6 +1354,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
+    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -5125,60 +5126,6 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 {
     return VisitLoopBlocksReversePostOrder(func);
-}
-
-//------------------------------------------------------------------------------
-// FlowGraphNaturalLoop::VisitLoopBlocksLexical: Visit the loop's blocks in
-// lexical order.
-//
-// Type parameters:
-//   TFunc - Callback functor type
-//
-// Arguments:
-//   func - Callback functor that takes a BasicBlock* and returns a
-//   BasicBlockVisit.
-//
-// Returns:
-//    BasicBlockVisit that indicated whether the visit was aborted by the
-//    callback or whether all blocks were visited.
-//
-template <typename TFunc>
-BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
-{
-    BasicBlock* top           = m_header;
-    unsigned    numLoopBlocks = 0;
-    VisitLoopBlocks([&](BasicBlock* block) {
-        if (block->bbNum < top->bbNum)
-        {
-            top = block;
-        }
-
-        numLoopBlocks++;
-        return BasicBlockVisit::Continue;
-    });
-
-    INDEBUG(BasicBlock* prev = nullptr);
-    BasicBlock* cur = top;
-    while (numLoopBlocks > 0)
-    {
-        // If we run out of blocks the blocks aren't sequential.
-        assert(cur != nullptr);
-
-        if (ContainsBlock(cur))
-        {
-            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
-
-            if (func(cur) == BasicBlockVisit::Abort)
-                return BasicBlockVisit::Abort;
-
-            INDEBUG(prev = cur);
-            numLoopBlocks--;
-        }
-
-        cur = cur->Next();
-    }
-
-    return BasicBlockVisit::Continue;
 }
 
 //------------------------------------------------------------------------------
