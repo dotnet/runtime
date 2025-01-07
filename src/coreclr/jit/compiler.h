@@ -2240,6 +2240,8 @@ public:
 
     bool IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator);
 
+    void SetEntryEdge(FlowEdge* newEdge);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG

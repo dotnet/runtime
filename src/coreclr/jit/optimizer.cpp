@@ -2945,6 +2945,8 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         fgReplaceJumpTarget(enterBlock, header, preheader);
     }
 
+    loop->SetEntryEdge(newEdge);
+
     optSetWeightForPreheaderOrExit(loop, preheader);
 
     return true;
@@ -2960,6 +2962,9 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 // Returns:
 //   True if the header was split
 //
+// Notes:
+//   Ensures that no loop header is also a try entry.
+//
 bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
 {
     BasicBlock* header    = loop->GetHeader();
@@ -2967,11 +2972,12 @@ bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
 
     if (BasicBlock::sameTryRegion(header, preheader))
     {
+        assert(!bbIsTryBeg(header));
         return false;
     }
 
     // If the preheader and header are in different try regions,
-    // // the header should be a try entry.
+    // the header should be a try entry.
     //
     assert(bbIsTryBeg(header));
 
@@ -3048,6 +3054,7 @@ bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
         header->setTryIndex(enclosingTryIndex);
     }
 
+    assert(!bbIsTryBeg(header));
     return true;
 }
 
