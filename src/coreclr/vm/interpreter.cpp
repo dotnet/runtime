@@ -6542,7 +6542,7 @@ void Interpreter::LdToken()
     else if (tok.hField != NULL)
     {
         FieldDesc * pField = (FieldDesc *)tok.hField;
-        Object* objPtr = OBJECTREFToObject((OBJECTREF)pField->GetStubFieldInfo());
+        Object* objPtr = OBJECTREFToObject((OBJECTREF)pField->AllocateStubFieldInfo());
         OpStackSet<Object*>(m_curStackHt, objPtr);
     }
     else

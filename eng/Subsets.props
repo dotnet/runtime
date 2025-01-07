@@ -243,7 +243,6 @@
   <ItemDefinitionGroup>
     <ProjectToBuild>
       <Test>false</Test>
-      <Pack>false</Pack>
       <Publish>false</Publish>
       <BuildInParallel>false</BuildInParallel>
     </ProjectToBuild>
