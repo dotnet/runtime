@@ -31,21 +31,19 @@ extends:
         steps:
         - checkout: self
 
-        - task: UseDotNet@2
+        - task: PowerShell@2
+          displayName: Run dotnet publish
           inputs:
-            packageType: 'sdk'
-            version: '8.x'
-            includePreviewVersions: true
-            performMultiLevelLookup: true
-
-        - task: DotNetCoreCLI@2
+            targetType: 'inline'
+            script: './dotnet.cmd publish ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj -c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=net10.0'
+        - task: zip@0
+          displayName: Zip artifacts
           inputs:
-            command: 'publish'
-            publishWebProjects: false
-            projects: '/src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj'
-            arguments: '-c Release /p:GenevaTelemetry=false /p:AspNetCoreAppCurrent=net8.0'
+            pathToZipFolder: 'artifacts\bin\NetCoreServer\Release\net10.0\publish\'
+            pathToZipFile: 'artifacts\bin\NetCoreServer\Release\net10.0\publish.zip'
 
         - task: AzureRmWebAppDeployment@4
+          displayName: Deploy to staging slot
           inputs:
             ConnectionType: 'AzureRM'
             azureSubscription: .NET Libraries Network Testing
@@ -54,4 +52,4 @@ extends:
             deployToSlotOrASE: true
             ResourceGroupName: 'Production-WestUS'
             SlotName: 'staging'
-            package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+            package: 'artifacts\bin\NetCoreServer\Release\net10.0\publish.zip'
