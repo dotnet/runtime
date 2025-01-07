@@ -86,7 +86,8 @@ HRESULT Assembler::InitMetaData()
 
         if (m_fDeterministic)
         {
-            // Default values for determinism.
+            // When build determinism is enabled, the PE file will be hashed with these fields set to zero.
+            // Then, the deterministic GUID and timestamp will be derived from the hash.
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
         }
@@ -377,7 +378,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
     hr =
         addEntry(
             /* characteristics */ VAL32(0),
-            /* timeDateStamp */   VAL32(0),
+            /* timeDateStamp */   VAL32(m_pPortablePdbWriter->GetTimestamp()),
             /* majorVersion */    VAL16(1),
             /* minorVersion */    VAL16(0),
             /* type */            VAL32(/* PDB Checksum Debug Directory Entry */ 19),
@@ -1469,8 +1470,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
         if (m_fDeterministic)
         {
+            // Get deterministic GUID and timestamp from the computed hash
+            _ASSERTE(sizeof(GUID) + sizeof(ULONG) <= sizeof(pdbChecksum));
             GUID pdbGuid = *((GUID*)&pdbChecksum);
             if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(pdbGuid))) goto exit;
+
+            ULONG timestamp;
+            memcpy_s(&timestamp, sizeof(ULONG), pdbChecksum + sizeof(GUID), sizeof(ULONG));
+            m_pPortablePdbWriter->SetTimestamp(timestamp);
         }
 
         if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
