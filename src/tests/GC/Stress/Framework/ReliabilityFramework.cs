@@ -331,7 +331,7 @@ public class ReliabilityFramework
         }
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests ran count:\n{sb}");
     }
-    
+
     public void HandleOom(Exception e, string message)
     {
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
@@ -639,6 +639,11 @@ public class ReliabilityFramework
         DateTime lastStart = DateTime.Now;	// keeps track of when we last started a test
         TimeSpan minTimeToStartTest = new TimeSpan(0, 5, 0);	// after 5 minutes if we haven't started a test we're having problems...
         int cpuAdjust = 0, memAdjust = 0;	// if we discover that we're not starting new tests quick enough we adjust the CPU/Mem percentages
+        
+        foreach (var test in _curTestSet.Tests)
+        {
+            _testRanCounter[test.RefOrID] = 0;
+        }
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
