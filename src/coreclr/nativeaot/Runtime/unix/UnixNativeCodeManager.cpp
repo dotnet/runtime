@@ -1230,14 +1230,13 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-#ifndef TARGET_LOONGARCH64
-    PTR_uintptr_t pLR = pRegisterSet->pLR;
+    PTR_uintptr_t pLR = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }
 
-    if (pRegisterSet->pLR == pLR)
+    if (pRegisterSet->GetReturnAddressRegisterLocation() == pLR)
     {
         // This is the case when we are either:
         //
@@ -1247,26 +1246,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
-#else
-    PTR_uintptr_t pRA = pRegisterSet->pRA;
-    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
-    {
-        return false;
-    }
-
-    if (pRegisterSet->pRA == pRA)
-    {
-        // This is the case when we are either:
-        //
-        // 1) In a leaf method that does not push RA on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed RA on stack
-        //    or has RA already popped off.
-        return false;
-    }
-
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pRA;
-#endif     // TARGET_LOONGARCH64
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
 
     return true;
 #else
