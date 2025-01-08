@@ -22,7 +22,6 @@ using System.Threading.Tasks;
 using System.Linq;
 
 using System.Runtime.Loader;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 delegate void TestPreLoaderDelegate(ReliabilityTest test, string[] paths);
 delegate void AssemblyLoadContextUnloadDelegate();
@@ -325,9 +324,12 @@ public class ReliabilityFramework
     public void RecordTestRanCount()
     {
         StringBuilder sb = new();
-        foreach(var item in _testRanCounter)
+        lock (_testRanCounterLock)
         {
-            sb.AppendLine($"{item.Key}: {item.Value}");
+            foreach(var item in _testRanCounter)
+            {
+                sb.AppendLine($"{item.Key}: {item.Value}");
+            }  
         }
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests ran count:\n{sb}");
     }
@@ -1223,11 +1225,7 @@ public class ReliabilityFramework
             lock (_testRanCounterLock)
             {
                 string testRefOrID = daTest.RefOrID;
-                if (!_testRanCounter.Keys.Contains(testRefOrID))
-                {
-                    _testRanCounter[testRefOrID] = 0;
-                }
-                _testRanCounter[testRefOrID] ++;
+                _testRanCounter[testRefOrId] = _testRanCounter.GetValueOrDefault(testRefOrId, 0) + 1;
             }
         }
         catch (Exception e)
