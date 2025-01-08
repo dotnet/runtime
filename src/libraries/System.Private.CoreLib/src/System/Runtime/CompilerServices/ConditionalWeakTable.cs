@@ -190,9 +190,13 @@ namespace System.Runtime.CompilerServices
 
         public TValue GetOrAdd(TKey key, TValue value)
         {
-            return TryGetValue(key, out TValue? existingValue) ?
-                existingValue :
-                GetOrAddLocked(key, value);
+            // key is validated by TryGetValue
+            if (TryGetValue(key, out TValue? existingValue))
+            {
+                return existingValue;
+            }
+
+            return GetOrAddLocked(key, value);
         }
 
         public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
@@ -200,9 +204,32 @@ namespace System.Runtime.CompilerServices
             ArgumentNullException.ThrowIfNull(valueFactory);
 
             // key is validated by TryGetValue
-            return TryGetValue(key, out TValue? existingValue) ?
-                existingValue :
-                GetOrAddLocked(key, valueFactory);
+            if (TryGetValue(key, out TValue? existingValue))
+            {
+                return existingValue;
+            }
+
+            // create the value outside of the lock
+            TValue value = valueFactory(key);
+
+            return GetOrAddLocked(key, value);
+        }
+
+        public TValue GetOrAdd<TArg>(TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
+            where TArg : allows ref struct
+        {
+            ArgumentNullException.ThrowIfNull(valueFactory);
+
+            // key is validated by TryGetValue
+            if (TryGetValue(key, out TValue? existingValue))
+            {
+                return existingValue;
+            }
+
+            // create the value outside of the lock
+            TValue value = valueFactory(key, factoryArgument);
+
+            return GetOrAddLocked(key, value);
         }
 
         /// <summary>
@@ -226,9 +253,15 @@ namespace System.Runtime.CompilerServices
             ArgumentNullException.ThrowIfNull(createValueCallback);
 
             // key is validated by TryGetValue
-            return TryGetValue(key, out TValue? existingValue) ?
-                existingValue :
-                GetValueLocked(key, createValueCallback);
+            if (TryGetValue(key, out TValue? existingValue))
+            {
+                return existingValue;
+            }
+
+            // create the value outside of the lock
+            TValue value = createValueCallback(key);
+
+            return GetOrAddLocked(key, value);
         }
 
         private TValue GetOrAddLocked(TKey key, TValue value)
@@ -245,48 +278,6 @@ namespace System.Runtime.CompilerServices
                     // Verified in-lock that we won the race to add the key. Add it now.
                     CreateEntry(key, value);
                     return value;
-                }
-            }
-        }
-
-        private TValue GetOrAddLocked(TKey key, Func<TKey, TValue> valueFactory)
-        {
-            // If we got here, the key was not in the table. Invoke the callback (outside the lock)
-            // to generate the new value for the key.
-            TValue newValue = valueFactory(key);
-
-            // Same exact logic as 'GetOrAddValueLocked' above, except the value is produced by the factory.
-            lock (_lock)
-            {
-                if (_container.TryGetValueWorker(key, out TValue? existingValue))
-                {
-                    return existingValue;
-                }
-                else
-                {
-                    CreateEntry(key, newValue);
-                    return newValue;
-                }
-            }
-        }
-
-        private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
-        {
-            // Same exact logic as the 'GetOrAddLocked' overload taking a value factory.
-            // We can't reuse the same method as the delegate type is different, and we
-            // don't want to add overhead by eg. using a wrapping delegate on the callback.
-            TValue newValue = createValueCallback(key);
-
-            lock (_lock)
-            {
-                if (_container.TryGetValueWorker(key, out TValue? existingValue))
-                {
-                    return existingValue;
-                }
-                else
-                {
-                    CreateEntry(key, newValue);
-                    return newValue;
                 }
             }
         }
