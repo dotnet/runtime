@@ -1494,7 +1494,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
                 assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
                 code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
             }
-            
+
             unsigned roundingMode = id->idGetEvexbContext();
             if (roundingMode == 1)
             {
