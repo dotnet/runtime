@@ -249,20 +249,13 @@ BOOL Assembler::Init(BOOL generatePdb)
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".sdata", sdReadWrite, &m_pGlobalDataSection))) return FALSE;
     if (FAILED(m_pCeeFileGen->GetSectionCreate (m_pCeeFile, ".tls", sdReadWrite, &m_pTLSSection))) return FALSE;
 
-    if (m_fDeterministic)
-    {
 #if !defined(_WIN32) && !defined(__APPLE__)
-        if (!IsOpenSslAvailable())
-        {
-            fprintf(stderr, "OpenSSL is not available, but required for build determinism\n");
-            return FALSE;
-        }
-        else
-#endif
-        // Initialize file header timestamp to something consistent.
-        // If we're going to generate a PDB, we will update this timestamp with a value computed from the PDB's hash.
-        if (FAILED(m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, VAL32(0xFFFFFFFF)))) return FALSE;
+    if (m_fDeterministic && !IsOpenSslAvailable())
+    {
+        fprintf(stderr, "OpenSSL is not available, but required for build determinism\n");
+        return FALSE;
     }
+#endif
 
     m_fGeneratePDB = generatePdb;
 

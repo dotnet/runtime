@@ -80,8 +80,8 @@ HRESULT Assembler::InitMetaData()
 
         if (m_fDeterministic)
         {
-            // When build determinism is enabled, the PE file will be hashed with these fields set to zero.
-            // Then, the deterministic GUID and timestamp will be derived from the hash.
+            // When build determinism is enabled, the PDB checksum is computed with these fields set to zero.
+            // The GUID and timestamp will be updated after.
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
         }
@@ -1452,6 +1452,37 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (FAILED(hr=CreateTLSDirectory())) goto exit;
 
+    // Reserve a buffer for the meta-data
+    DWORD metaDataSize;
+    if (FAILED(hr=m_pEmitter->GetSaveSize(cssAccurate, &metaDataSize))) goto exit;
+    BYTE* metaData;
+    if (FAILED(hr=m_pCeeFileGen->GetSectionBlock(m_pILSection, metaDataSize, sizeof(DWORD), (void**) &metaData))) goto exit;
+    ULONG metaDataOffset;
+    if (FAILED(hr=m_pCeeFileGen->GetSectionDataLen(m_pILSection, &metaDataOffset))) goto exit;
+    metaDataOffset -= metaDataSize;
+
+    GUID deterministicGuid = GUID();
+    ULONG deterministicTimestamp = 0;
+
+    if (m_fDeterministic)
+    {
+        // Get deterministic GUID and timestamp from the computed hash
+        BYTE hash[32];
+        _ASSERTE(sizeof(GUID) + sizeof(ULONG) <= sizeof(hash));
+        if (FAILED(hr = Sha256Hash(metaData, metaDataSize, hash, sizeof(hash)))) goto exit;
+
+        memcpy_s(&deterministicGuid, sizeof(GUID), hash, sizeof(GUID));
+        memcpy_s(&deterministicTimestamp, sizeof(ULONG), hash + sizeof(GUID), sizeof(ULONG));
+
+        // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
+        // created in Assembler::InitMetaData, and it is guaranteed that the IMDInternalEmit for
+        // that scope was already acquired immediately after that scope was created.
+        _ASSERTE(m_pInternalEmitForDeterministicMvid != NULL);
+        m_pInternalEmitForDeterministicMvid->ChangeMvid(deterministicGuid);
+
+        if (FAILED(hr = m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, deterministicTimestamp))) goto exit;
+    }
+
     if (m_fGeneratePDB)
     {
         mdMethodDef entryPoint;
@@ -1464,15 +1495,12 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
         if (m_fDeterministic)
         {
-            // Get deterministic GUID and timestamp from the computed hash
-            _ASSERTE(sizeof(GUID) + sizeof(ULONG) <= sizeof(pdbChecksum));
-            GUID pdbGuid = *((GUID*)&pdbChecksum);
-            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(pdbGuid))) goto exit;
+            // Now that the PDB checksum has been computed, update the GUID and timestamp
+            _ASSERTE(*(m_pPortablePdbWriter->GetGuid()) == GUID());
+            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(deterministicGuid))) goto exit;
 
-            ULONG timestamp;
-            memcpy_s(&timestamp, sizeof(ULONG), pdbChecksum + sizeof(GUID), sizeof(ULONG));
-            m_pPortablePdbWriter->SetTimestamp(timestamp);
-            if (FAILED(hr = m_pCeeFileGen->SetFileHeaderTimeStamp(m_pCeeFile, timestamp))) goto exit;
+            _ASSERTE(m_pPortablePdbWriter->GetTimestamp() == 0);
+            m_pPortablePdbWriter->SetTimestamp(deterministicTimestamp);
         }
 
         if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
@@ -1480,14 +1508,6 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
 
-        // Reserve a buffer for the meta-data
-    DWORD metaDataSize;
-    if (FAILED(hr=m_pEmitter->GetSaveSize(cssAccurate, &metaDataSize))) goto exit;
-    BYTE* metaData;
-    if (FAILED(hr=m_pCeeFileGen->GetSectionBlock(m_pILSection, metaDataSize, sizeof(DWORD), (void**) &metaData))) goto exit;
-    ULONG metaDataOffset;
-    if (FAILED(hr=m_pCeeFileGen->GetSectionDataLen(m_pILSection, &metaDataOffset))) goto exit;
-    metaDataOffset -= metaDataSize;
     // set managed resource entry, if any
     if(m_pManifest && m_pManifest->m_dwMResSizeTotal)
     {
@@ -1699,21 +1719,6 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             }
         }
         if (FAILED(hr)) goto exit;
-    }
-
-    if (m_fDeterministic)
-    {
-        // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
-        // created in Assembler::InitMetaData, and it is guaranteed that the IMDInternalEmit for
-        // that scope was already acquired immediately after that scope was created.
-        _ASSERTE(m_pInternalEmitForDeterministicMvid != NULL);
-        _ASSERTE(sizeof(GUID) <= 32);
-        BYTE hash[32];
-        if (FAILED(hr = Sha256Hash(metaData, metaDataSize, hash, sizeof(hash)))) goto exit;
-
-        GUID mvid;
-        memcpy(&mvid, hash, sizeof(GUID));
-        m_pInternalEmitForDeterministicMvid->ChangeMvid(mvid);
     }
 
     if(bClock) bClock->cFilegenBegin = GetTickCount();
