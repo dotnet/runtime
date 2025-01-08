@@ -1180,6 +1180,8 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     DWORD               mresourceSize = 0;
     BYTE*               mresourceData = NULL;
     WCHAR*              wzScopeName = NULL;
+    GUID                deterministicGuid = GUID();
+    ULONG               deterministicTimestamp = 0;
 
     if(bClock) bClock->cMDEmitBegin = GetTickCount();
     if(m_fReportProgress) printf("Creating PE file\n");
@@ -1460,9 +1462,6 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     ULONG metaDataOffset;
     if (FAILED(hr=m_pCeeFileGen->GetSectionDataLen(m_pILSection, &metaDataOffset))) goto exit;
     metaDataOffset -= metaDataSize;
-
-    GUID deterministicGuid = GUID();
-    ULONG deterministicTimestamp = 0;
 
     if (m_fDeterministic)
     {
