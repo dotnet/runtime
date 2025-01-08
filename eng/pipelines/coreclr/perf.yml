@@ -23,6 +23,7 @@ resources:
     - repository: performance
       type: git
       name: internal/dotnet-performance
+      ref: caaavik/move-runtime-yaml-to-performance # TODO: remove before merge
 
 variables:
 - template: /eng/pipelines/common/variables.yml
