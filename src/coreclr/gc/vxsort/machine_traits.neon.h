@@ -121,9 +121,9 @@ class vxsort_machine_traits<uint64_t, NEON> {
     static INLINE TV partition_vector(TV v, TMASK mask) {
         assert(mask >= 0);
         assert(mask <= 3);
-        uint8x16_t indexes = reinterpret_cast<uint8x16_t>(vld1q_u64((T*)(perm_table_64 + (mask * T64_LINE_SIZE))));
-        uint8x16_t partitioned = vqtbl1q_u8(reinterpret_cast<uint8x16_t>(v), indexes);
-        return reinterpret_cast<TV>(partitioned);
+        uint8x16_t indexes = vld1q_u8((uint8_t*)(perm_table_64 + (mask * T64_LINE_SIZE)));
+        uint8x16_t partitioned = vqtbl1q_u8((uint8x16_t)v, indexes);
+        return (TV)partitioned;
     }
 
     static INLINE TV broadcast(T pivot) { return vdupq_n_u64(pivot); }
