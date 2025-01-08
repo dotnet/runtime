@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -99,6 +100,17 @@ internal readonly struct Thread_1 : IThread
     {
         ThreadData threadData = ((IThread)this).GetThreadData(threadPointer);
         int hr;
+
+        FrameIterator.EnumerateFrames(_target, threadData.Frame);
+
+        TargetPointer framePointer = threadData.Frame;
+        while (framePointer != new TargetPointer(ulong.MaxValue))
+        {
+            Data.Frame frame = _target.ProcessedData.GetOrAdd<Data.Frame>(framePointer);
+            Console.WriteLine(frame.Type);
+            framePointer = frame.Next;
+        }
+
         unsafe
         {
             byte[] bytes = new byte[0x700];

@@ -82,4 +82,16 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+
+    Frame,
+    InlinedCallFrame,
+    HelperMethodFrame,
+    HelperMethodFrame_1OBJ,
+    HelperMethodFrame_2OBJ,
+    HelperMethodFrame_3OBJ,
+    HelperMethodFrame_PROTECTOBJ,
+    DebuggerU2MCatchHandlerFrame,
+    DynamicHelperFrame,
+
+    LazyMachState,
 }
