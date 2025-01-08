@@ -1355,7 +1355,7 @@ namespace System.Numerics
             {
                 return IndexOf(vector.As<T, int>(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return IndexOf(vector.As<T, long>(), -1);
             }
@@ -1601,7 +1601,7 @@ namespace System.Numerics
             {
                 return LastIndexOf(vector.As<T, int>(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return LastIndexOf(vector.As<T, long>(), -1);
             }
@@ -2493,7 +2493,7 @@ namespace System.Numerics
             {
                 return None(vector.As<T, int>(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return None(vector.As<T, long>(), -1);
             }

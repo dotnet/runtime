@@ -1957,7 +1957,7 @@ namespace System.Runtime.Intrinsics
         public static int IndexOf<T>(Vector512<T> vector, T value)
         {
             int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
+            return (result != 64) ? result : -1;
         }
 
         /// <inheritdoc cref="Vector256.IndexOfWhereAllBitsSet{T}(Vector256{T})" />
@@ -1969,7 +1969,7 @@ namespace System.Runtime.Intrinsics
             {
                 return IndexOf(vector.AsInt32(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return IndexOf(vector.AsInt64(), -1);
             }
@@ -2189,7 +2189,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector256.LastIndexOf{T}(Vector256{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(Vector512<T> vector, T value) => 31 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int LastIndexOf<T>(Vector512<T> vector, T value) => 63 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector256.LastIndexOfWhereAllBitsSet{T}(Vector256{T})" />
         [Intrinsic]
@@ -2200,7 +2200,7 @@ namespace System.Runtime.Intrinsics
             {
                 return LastIndexOf(vector.AsInt32(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return LastIndexOf(vector.AsInt64(), -1);
             }

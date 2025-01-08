@@ -1775,7 +1775,7 @@ namespace System.Runtime.Intrinsics
             {
                 return IndexOf(vector.AsInt32(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return IndexOf(vector.AsInt64(), -1);
             }
@@ -2015,7 +2015,7 @@ namespace System.Runtime.Intrinsics
             {
                 return LastIndexOf(vector.AsInt32(), -1);
             }
-            else if (typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(double))
             {
                 return LastIndexOf(vector.AsInt64(), -1);
             }
