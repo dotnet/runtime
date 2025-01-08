@@ -1172,7 +1172,7 @@ namespace System.Runtime.InteropServices
             FreeBSTR(s);
         }
 
-        public static unsafe void ZeroFreeCoTaskMemAnsi(IntPtr s)
+        public static void ZeroFreeCoTaskMemAnsi(IntPtr s)
         {
             ZeroFreeCoTaskMemUTF8(s);
         }

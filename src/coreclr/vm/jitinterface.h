@@ -230,10 +230,7 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-
-// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 
@@ -508,16 +505,6 @@ public:
     void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
 private:
-    // Shrinking these buffers drastically reduces the amount of stack space
-    // required for each instance of the interpreter, and thereby reduces SOs.
-#ifdef FEATURE_INTERPRETER
-#define CLS_STRING_SIZE 8  // force heap allocation
-#define CLS_BUFFER_SIZE SBUFFER_PADDED_SIZE(8)
-#else
-#define CLS_STRING_SIZE MAX_CLASSNAME_LENGTH
-#define CLS_BUFFER_SIZE MAX_CLASSNAME_LENGTH
-#endif
-
 #ifdef _DEBUG
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
@@ -1048,7 +1035,6 @@ FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
-BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
 #ifdef HOST_64BIT
 class InlinedCallFrame;

@@ -71,9 +71,6 @@ namespace Mono.Linker.Tests.TestCases
 		{
 			switch (t)
 			{
-			case "ObjectGetType":
-				// Skip for now
-				break;
 			case "ObjectGetTypeLibraryMode":
 			case "TypeHierarchyLibraryModeSuppressions":
 				// No Library mode
