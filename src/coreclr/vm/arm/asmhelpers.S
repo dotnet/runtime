@@ -923,7 +923,6 @@ ProbeLoop:
 #else
         ldr     r2, =g_TrapReturningThreads
 #endif
-        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, r0
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
         ret
