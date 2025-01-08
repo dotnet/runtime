@@ -321,9 +321,9 @@ private:
         dataVec = MT::partition_vector(dataVec, mask);
         MT::store_vec(reinterpret_cast<TV*>(left), dataVec);
         MT::store_vec(reinterpret_cast<TV*>(right), dataVec);
-        auto popCount = -MT::mask_popcount(mask);
-        right += popCount;
-        left += popCount + N;
+        auto popCount = MT::mask_popcount(mask);
+        right -= popCount;
+        left += N - popCount;
     }
 
     static INLINE void partition_block_with_compress(TV& dataVec,
@@ -331,11 +331,11 @@ private:
                                                      T*& left,
                                                      T*& right) {
         auto mask = MT::get_cmpgt_mask(dataVec, P);
-        auto popCount = -MT::mask_popcount(mask);
+        auto popCount = MT::mask_popcount(mask);
         MT::store_compress_vec(reinterpret_cast<TV*>(left), dataVec, ~mask);
-        MT::store_compress_vec(reinterpret_cast<TV*>(right + N + popCount), dataVec, mask);
-        right += popCount;
-        left += popCount + N;
+        MT::store_compress_vec(reinterpret_cast<TV*>(right + N - popCount), dataVec, mask);
+        right -= popCount;
+        left += N - popCount;
     }
 
     template<int InnerUnroll>
