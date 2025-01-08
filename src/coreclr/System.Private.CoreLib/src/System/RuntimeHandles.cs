@@ -46,16 +46,13 @@ namespace System
             return typeObject!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType? GetRuntimeTypeFromHandleIfExists(IntPtr handle);
-
         // implementation of CORINFO_HELP_GETSYNCFROMCLASSHANDLE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
         internal static unsafe RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
             TypeHandle h = new((void*)handle);
             if (h.IsTypeDesc)
             {
-                return GetRuntimeTypeFromHandleIfExists(handle) ?? GetRuntimeTypeFromHandleSlow(handle);
+                return h.AsTypeDesc()->ExposedClassObject ?? GetRuntimeTypeFromHandleSlow(handle);
             }
 
             // The MethodTable fast path is in managed, so handle that here.
