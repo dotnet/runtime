@@ -1516,6 +1516,31 @@ void CodeGen::genExitCode(BasicBlock* block)
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
+
+#ifdef DEBUG
+    // For returnining epilogs do some validation that the GC info looks right.
+    if (!jmpEpilog)
+    {
+        if (compiler->compMethodReturnsRetBufAddr())
+        {
+            assert((gcInfo.gcRegByrefSetCur & RBM_INTRET) != RBM_NONE);
+        }
+        else
+        {
+            const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+            const unsigned        regCount    = retTypeDesc.GetReturnRegCount();
+
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                var_types type = retTypeDesc.GetReturnRegType(i);
+                regNumber reg  = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+                assert((type == TYP_BYREF) == ((gcInfo.gcRegByrefSetCur & genRegMask(reg)) != RBM_NONE));
+                assert((type == TYP_REF) == ((gcInfo.gcRegGCrefSetCur & genRegMask(reg)) != RBM_NONE));
+            }
+        }
+    }
+#endif
+
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
