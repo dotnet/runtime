@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.Caching.Memory
             entry.Priority = options.Priority;
             entry.Size = options.Size;
 
-            if (options._expirationTokens is { } expirationTokens)
+            if (options.ExpirationTokensDirect is { } expirationTokens)
             {
                 foreach (IChangeToken expirationToken in expirationTokens)
                 {
@@ -173,7 +173,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
             }
 
-            if (options._postEvictionCallbacks is { } postEvictionCallbacks)
+            if (options.PostEvictionCallbacksDirect is { } postEvictionCallbacks)
             {
                 for (int i = 0; i < postEvictionCallbacks.Count; i++)
                 {

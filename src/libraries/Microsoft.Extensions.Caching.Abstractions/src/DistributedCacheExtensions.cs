@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Caching.Distributed
     /// </summary>
     public static class DistributedCacheExtensions
     {
-        private static readonly DistributedCacheEntryOptions DefaultOptions = new();
+        private static readonly DistributedCacheEntryOptions DefaultOptions = new DistributedCacheEntryOptions().Freeze();
 
         /// <summary>
         /// Sets a sequence of bytes in the specified cache with the specified key.

@@ -676,7 +676,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
-#if NET8_0_OR_GREATER
+#if NET
                 if (_entries.TryRemove(KeyValuePair.Create(entry.Key, entry)))
 #else
                 if (((ICollection<KeyValuePair<object, CacheEntry>>)_entries).Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
