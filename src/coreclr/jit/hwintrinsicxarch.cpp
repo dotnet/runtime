@@ -3446,9 +3446,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_X86)
             if ((simdBaseType == TYP_LONG) || (simdBaseType == TYP_DOUBLE))
             {
-                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX))
+                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX) && !impStackTop(0).val->IsCnsIntOrI())
                 {
-                    // we need vpsraq to handle signed long, use software fallback
+                    // we need vpsraq to handle signed long with non-const shift amount, use software fallback
                     break;
                 }
             }

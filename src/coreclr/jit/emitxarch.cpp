@@ -12359,10 +12359,10 @@ void emitter::emitDispIns(
                 reg3          = tmp;
             }
 
-            // Shift instructions take xmm for the 3rd operand regardless of instruction size.
             emitAttr attr3 = attr;
-            if (hasTupleTypeInfo(ins) && ((insTupleTypeInfo(id->idIns()) & INS_TT_MEM128) != 0))
+            if (hasTupleTypeInfo(ins) && ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0))
             {
+                // Shift instructions take xmm for the 3rd operand regardless of instruction size.
                 attr3 = EA_16BYTE;
             }
 
