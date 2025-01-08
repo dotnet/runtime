@@ -5,13 +5,13 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct CodeBlockHandle
+public struct CodeBlockHandle
 {
     public readonly TargetPointer Address;
-    internal CodeBlockHandle(TargetPointer address) => Address = address;
+    public CodeBlockHandle(TargetPointer address) => Address = address;
 }
 
-internal interface IExecutionManager : IContract
+public interface IExecutionManager : IContract
 {
     static string IContract.Name { get; } = nameof(ExecutionManager);
     CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => throw new NotImplementedException();
@@ -19,7 +19,7 @@ internal interface IExecutionManager : IContract
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
 }
 
-internal readonly struct ExecutionManager : IExecutionManager
+public readonly struct ExecutionManager : IExecutionManager
 {
 
 }

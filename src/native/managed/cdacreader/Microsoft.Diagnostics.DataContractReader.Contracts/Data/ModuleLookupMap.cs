@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ModuleLookupMap : IData<ModuleLookupMap>
+public sealed class ModuleLookupMap : IData<ModuleLookupMap>
 {
     static ModuleLookupMap IData<ModuleLookupMap>.Create(Target target, TargetPointer address) => new ModuleLookupMap(target, address);
 

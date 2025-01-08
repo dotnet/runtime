@@ -3,7 +3,7 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Array : IData<Array>
+public sealed class Array : IData<Array>
 {
     static Array IData<Array>.Create(Target target, TargetPointer address)
         => new Array(target, address);
@@ -17,8 +17,8 @@ internal sealed class Array : IData<Array>
 
     public uint NumComponents { get; init; }
 
-    internal static class FieldNames
+    public static class FieldNames
     {
-        internal const string NumComponents = $"m_{nameof(NumComponents)}";
+        public const string NumComponents = $"m_{nameof(NumComponents)}";
     }
 }
