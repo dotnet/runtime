@@ -1,6 +1,5 @@
 <Project>
-  <!-- iOS/tvOS device + arm64 simulators need to AOT -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or (('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator') And '$(TargetArchitecture)' == 'arm64')">
+  <PropertyGroup>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
   </PropertyGroup>
 
