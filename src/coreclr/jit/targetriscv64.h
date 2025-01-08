@@ -44,10 +44,10 @@
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
-  #define REG_FP_FIRST             REG_F0
-  #define REG_FP_LAST              REG_F31
-  #define FIRST_FP_ARGREG          REG_F10
-  #define LAST_FP_ARGREG           REG_F17
+  #define REG_FP_FIRST             REG_FT0
+  #define REG_FP_LAST              REG_FT11
+  #define FIRST_FP_ARGREG          REG_FA0
+  #define LAST_FP_ARGREG           REG_FA7
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
@@ -63,10 +63,10 @@
   #define LAST_INT_CALLEE_SAVED   REG_S11
   #define RBM_INT_CALLEE_SAVED    (RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8|RBM_S9|RBM_S10|RBM_S11)
   #define RBM_INT_CALLEE_TRASH    (RBM_A0|RBM_A1|RBM_A2|RBM_A3|RBM_A4|RBM_A5|RBM_A6|RBM_A7|RBM_T0|RBM_T1|RBM_T2|RBM_T3|RBM_T4|RBM_T5|RBM_T6)
-  #define FIRST_FLT_CALLEE_SAVED  REG_F8
-  #define LAST_FLT_CALLEE_SAVED   REG_F27
-  #define RBM_FLT_CALLEE_SAVED    (RBM_F8|RBM_F9|RBM_F18|RBM_F19|RBM_F20|RBM_F21|RBM_F22|RBM_F23|RBM_F24|RBM_F25|RBM_F26|RBM_F27)
-  #define RBM_FLT_CALLEE_TRASH    (RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15|RBM_F16|RBM_F17)
+  #define FIRST_FLT_CALLEE_SAVED  REG_FS0
+  #define LAST_FLT_CALLEE_SAVED   REG_FS11
+  #define RBM_FLT_CALLEE_SAVED    (RBM_FS0|RBM_FS1|RBM_FS2|RBM_FS3|RBM_FS4|RBM_FS5|RBM_FS6|RBM_FS7|RBM_FS8|RBM_FS9|RBM_FS10|RBM_FS11)
+  #define RBM_FLT_CALLEE_TRASH    (RBM_FA0|RBM_FA1|RBM_FA2|RBM_FA3|RBM_FA4|RBM_FA5|RBM_FA6|RBM_FA7|RBM_FT0|RBM_FT1|RBM_FT2|RBM_FT3|RBM_FT4|RBM_FT5|RBM_FT6|RBM_FT7|RBM_FT8|RBM_FT9|RBM_FT10|RBM_FT11)
 
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
@@ -83,11 +83,11 @@
                                    REG_T0,REG_T1,REG_T2,REG_T3,REG_T4,REG_T5,REG_T6, \
                                    REG_S1,REG_S2,REG_S3,REG_S4,REG_S5,REG_S6,REG_S7,REG_S8,REG_S9,REG_S10,REG_S11
 
-  #define REG_VAR_ORDER_FLT        REG_F4, REG_F5, REG_F6, REG_F7, REG_F28, REG_F29, REG_F30, REG_F31, \
-                                   REG_F12, REG_F13, REG_F14, REG_F15, REG_F16, REG_F17, \
-                                   REG_F0, REG_F1, REG_F2, REG_F3, \
-                                   REG_F22, REG_F23, REG_F24, REG_F25, REG_F26, REG_F27, REG_F18, REG_F19, REG_F20, REG_F21, REG_F8, REG_F9, \
-                                   REG_F11, REG_F10
+  #define REG_VAR_ORDER_FLT        REG_FT4, REG_FT5, REG_FT6, REG_FT7, REG_FT8, REG_FT9, REG_FT10, REG_FT11, \
+                                   REG_FA2, REG_FA3, REG_FA4, REG_FA5, REG_FA6, REG_FA7, \
+                                   REG_FT0, REG_FT1, REG_FT2, REG_FT3, \
+                                   REG_FS6, REG_FS7, REG_FS8, REG_FS9, REG_FS10, REG_FS11, REG_FS2, REG_FS3, REG_FS4, REG_FS5, REG_FS0, REG_FS1, \
+                                   REG_FA1, REG_FA0
 
   #define RBM_CALL_GC_REGS_ORDER   RBM_S1,RBM_S2,RBM_S3,RBM_S4,RBM_S5,RBM_S6,RBM_S7,RBM_S8,RBM_S9,RBM_S10,RBM_S11,RBM_INTRET,RBM_INTRET_1
   #define RBM_CALL_GC_REGS         (RBM_S1|RBM_S2|RBM_S3|RBM_S4|RBM_S5|RBM_S6|RBM_S7|RBM_S8|RBM_S9|RBM_S10|RBM_S11|RBM_INTRET|RBM_INTRET_1)
@@ -115,9 +115,6 @@
 
   // This is a general scratch register that does not conflict with the argument registers
   #define REG_SCRATCH              REG_T0
-
-  // This is a float scratch register that does not conflict with the argument registers
-  #define REG_SCRATCH_FLT          REG_F28
 
   // This is a general register that can be optionally reserved for other purposes during codegen
   #define REG_OPT_RSVD             REG_T6
@@ -208,12 +205,12 @@
   #define REG_INTRET_1             REG_A1
   #define RBM_INTRET_1             RBM_A1
 
-  #define REG_FLOATRET             REG_F10
-  #define RBM_FLOATRET             RBM_F10
-  #define RBM_DOUBLERET            RBM_F10
-  #define REG_FLOATRET_1           REG_F11
-  #define RBM_FLOATRET_1           RBM_F11
-  #define RBM_DOUBLERET_1          RBM_F11
+  #define REG_FLOATRET             REG_FA0
+  #define RBM_FLOATRET             RBM_FA0
+  #define RBM_DOUBLERET            RBM_FA0
+  #define REG_FLOATRET_1           REG_FA1
+  #define RBM_FLOATRET_1           RBM_FA1
+  #define RBM_DOUBLERET_1          RBM_FA1
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
@@ -239,8 +236,8 @@
 
   #define REG_ARG_FIRST            REG_A0
   #define REG_ARG_LAST             REG_A7
-  #define REG_ARG_FP_FIRST         REG_F10
-  #define REG_ARG_FP_LAST          REG_F17
+  #define REG_ARG_FP_FIRST         REG_FA0
+  #define REG_ARG_FP_LAST          REG_FA7
   #define INIT_ARG_STACK_SLOT      0                  // No outgoing reserved stack slots
 
   #define REG_ARG_0                REG_A0
@@ -264,26 +261,8 @@
   #define RBM_ARG_6                RBM_A6
   #define RBM_ARG_7                RBM_A7
 
-  #define REG_FLTARG_0             REG_F10
-  #define REG_FLTARG_1             REG_F11
-  #define REG_FLTARG_2             REG_F12
-  #define REG_FLTARG_3             REG_F13
-  #define REG_FLTARG_4             REG_F14
-  #define REG_FLTARG_5             REG_F15
-  #define REG_FLTARG_6             REG_F16
-  #define REG_FLTARG_7             REG_F17
-
-  #define RBM_FLTARG_0             RBM_F10
-  #define RBM_FLTARG_1             RBM_F11
-  #define RBM_FLTARG_2             RBM_F12
-  #define RBM_FLTARG_3             RBM_F13
-  #define RBM_FLTARG_4             RBM_F14
-  #define RBM_FLTARG_5             RBM_F15
-  #define RBM_FLTARG_6             RBM_F16
-  #define RBM_FLTARG_7             RBM_F17
-
-  #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4|RBM_ARG_5|RBM_ARG_6|RBM_ARG_7)
-  #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
+  #define RBM_ARG_REGS            (RBM_A0|RBM_A1|RBM_A2|RBM_A3|RBM_A4|RBM_A5|RBM_A6|RBM_A7)
+  #define RBM_FLTARG_REGS         (RBM_FA0|RBM_FA1|RBM_FA2|RBM_FA3|RBM_FA4|RBM_FA5|RBM_FA6|RBM_FA7)
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];

@@ -384,7 +384,7 @@ namespace System.Numerics
                     // The bytes parameter is in little-endian byte order.
                     // We can just copy the bytes directly into the uint array.
 
-                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val));
+                    value.Slice(0, wholeUInt32Count * 4).CopyTo(MemoryMarshal.AsBytes<uint>(val.AsSpan()));
                 }
 
                 // In both of the above cases on big-endian architecture, we need to perform
@@ -511,15 +511,22 @@ namespace System.Numerics
             {
                 this = default;
             }
-            else if (value.Length == 1 && value[0] < kuMaskHighBit)
+            else if (value.Length == 1)
             {
-                // Values like (Int32.MaxValue+1) are stored as "0x80000000" and as such cannot be packed into _sign
-                _sign = negative ? -(int)value[0] : (int)value[0];
-                _bits = null;
-                if (_sign == int.MinValue)
+                if (value[0] < kuMaskHighBit)
+                {
+                    _sign = negative ? -(int)value[0] : (int)value[0];
+                    _bits = null;
+                }
+                else if (negative && value[0] == kuMaskHighBit)
                 {
                     // Although Int32.MinValue fits in _sign, we represent this case differently for negate
                     this = s_bnMinInt;
+                }
+                else
+                {
+                    _sign = negative ? -1 : +1;
+                    _bits = [value[0]];
                 }
             }
             else

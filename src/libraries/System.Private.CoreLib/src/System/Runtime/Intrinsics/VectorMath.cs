@@ -3,14 +3,13 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
-    internal static unsafe class VectorMath
+    internal static class VectorMath
     {
         public static TVectorDouble CosDouble<TVectorDouble, TVectorInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>

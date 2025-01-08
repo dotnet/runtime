@@ -35,6 +35,7 @@ JITMETADATAMETRIC(GCInfoBytes,                           int,              JIT_M
 JITMETADATAMETRIC(EHClauseCount,                         int,              0)
 JITMETADATAMETRIC(PhysicallyPromotedFields,              int,              0)
 JITMETADATAMETRIC(LoopsFoundDuringOpts,                  int,              0)
+JITMETADATAMETRIC(LoopsInverted,                         int,              0)
 JITMETADATAMETRIC(LoopsCloned,                           int,              0)
 JITMETADATAMETRIC(LoopsUnrolled,                         int,              0)
 JITMETADATAMETRIC(LoopAlignmentCandidates,               int,              0)
@@ -83,6 +84,10 @@ JITMETADATAMETRIC(NewRefClassHelperCalls,                int,              0)
 JITMETADATAMETRIC(StackAllocatedRefClasses,              int,              0)
 JITMETADATAMETRIC(NewBoxedValueClassHelperCalls,         int,              0)
 JITMETADATAMETRIC(StackAllocatedBoxedValueClasses,       int,              0)
+JITMETADATAMETRIC(LocalAssertionCount,                   int,              0)
+JITMETADATAMETRIC(LocalAssertionOverflow,                int,              0)
+JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
+JITMETADATAMETRIC(MorphLocals,                           int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

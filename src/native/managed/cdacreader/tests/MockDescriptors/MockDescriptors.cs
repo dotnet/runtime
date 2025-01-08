@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal partial class MockDescriptors
 {
@@ -195,6 +195,17 @@ internal partial class MockDescriptors
             new(nameof(Data.ThreadStore.BackgroundCount), DataType.uint32),
             new(nameof(Data.ThreadStore.PendingCount), DataType.uint32),
             new(nameof(Data.ThreadStore.DeadCount), DataType.uint32),
+        ]
+    };
+
+    private static readonly TypeFields GCCoverageInfoFields = new TypeFields()
+    {
+        DataType = DataType.GCCoverageInfo,
+        Fields =
+        [
+            // Add DummyField to ensure the offset of SavedCode is not added to the TargetPointer.Null
+            new("DummyField", DataType.pointer),
+            new("SavedCode", DataType.pointer),
         ]
     };
 

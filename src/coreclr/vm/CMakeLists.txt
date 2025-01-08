@@ -302,7 +302,6 @@ set(VM_SOURCES_WKS
     comdynamic.cpp
     commodule.cpp
     comsynchronizable.cpp
-    comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
@@ -334,7 +333,6 @@ set(VM_SOURCES_WKS
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
-    interpreter.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -402,7 +400,6 @@ set(VM_HEADERS_WKS
     comdynamic.h
     commodule.h
     comsynchronizable.h
-    comthreadpool.h
     comutilnative.h
     comwaithandle.h
     customattribute.h
@@ -433,8 +430,6 @@ set(VM_HEADERS_WKS
     interopconverter.h
     interoputil.h
     interoputil.inl
-    interpreter.h
-    interpreter.hpp
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h

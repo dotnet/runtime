@@ -530,6 +530,15 @@ namespace ILLink.Shared.TrimAnalysis
 						break;
 					}
 
+					const DynamicallyAccessedMemberTypes ImplicitNestedTypeAccessLevel =
+						DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited | DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited |
+						DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited |
+						DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited |
+						DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited |
+						DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited |
+						DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited | DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited |
+						DynamicallyAccessedMemberTypes.Interfaces;
+
 					BindingFlags? bindingFlags;
 					if (calledMethod.HasParameterOfType ((ParameterIndex) 2, "System.Reflection.BindingFlags"))
 						bindingFlags = GetBindingFlagsFromValue (argumentValues[1]);
@@ -554,8 +563,8 @@ namespace ILLink.Shared.TrimAnalysis
 									_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 
 									// We only applied the annotation based on binding flags, so we will keep the necessary types
-									// but we will not keep anything on them. So the return value has no known annotations on it
-									AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.None));
+									// and we keep the set of implicitly available members on them.
+									AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, ImplicitNestedTypeAccessLevel));
 								}
 							}
 						} else if (value is NullValue) {
@@ -567,11 +576,11 @@ namespace ILLink.Shared.TrimAnalysis
 
 							// If the input is an annotated value which has All - we can propagate that to the return value
 							// since All applies recursively to all nested type (see MarkStep.MarkEntireType).
-							// Otherwise we only mark the nested type itself, nothing on it, so the return value has no annotation on it.
+							// Otherwise we mark the nested type with implicitly available members on it.
 							if (value is ValueWithDynamicallyAccessedMembers { DynamicallyAccessedMemberTypes: DynamicallyAccessedMemberTypes.All })
 								AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.All));
 							else
-								AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.None));
+								AddReturnValue (_annotations.GetMethodReturnValue (calledMethod, _isNewObj, ImplicitNestedTypeAccessLevel));
 						}
 					}
 				}

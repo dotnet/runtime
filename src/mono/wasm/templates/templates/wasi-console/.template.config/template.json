@@ -4,7 +4,7 @@
   "classifications": [ "Wasi", "WasiConsole" ],
   "groupIdentity": "Wasi.Console",
   "precedence": 9000,
-  "identity": "Wasi.Console.9.0",
+  "identity": "Wasi.Console.10.0",
   "name": "Wasi Console App",
   "description": "A project template for creating a .NET app that runs on a WASI runtime",
   "shortName": "wasiconsole",
@@ -21,12 +21,12 @@
       "datatype": "choice",
       "choices": [
         {
-          "choice": "net9.0",
-          "description": "Target net9.0",
-          "displayName": ".NET 9.0"
+          "choice": "net10.0",
+          "description": "Target net10.0",
+          "displayName": ".NET 10.0"
         }
       ],
-      "defaultValue": "net9.0",
+      "defaultValue": "net10.0",
       "replaces": "netX.0",
       "displayName": "framework"
     }
