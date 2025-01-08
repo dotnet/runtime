@@ -195,6 +195,16 @@ namespace System.Runtime.CompilerServices
                 GetOrAddLocked(key, value);
         }
 
+        public TValue GetOrAdd(TKey key, Func<TKey, TValue> valueFactory)
+        {
+            ArgumentNullException.ThrowIfNull(valueFactory);
+
+            // key is validated by TryGetValue
+            return TryGetValue(key, out TValue? existingValue) ?
+                existingValue :
+                GetOrAddLocked(key, valueFactory);
+        }
+
         /// <summary>
         /// Atomically searches for a specified key in the table and returns the corresponding value.
         /// If the key does not exist in the table, the method invokes a callback method to create a
@@ -239,13 +249,34 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
+        private TValue GetOrAddLocked(TKey key, Func<TKey, TValue> valueFactory)
         {
             // If we got here, the key was not in the table. Invoke the callback (outside the lock)
             // to generate the new value for the key.
+            TValue newValue = valueFactory(key);
+
+            // Same exact logic as 'GetOrAddValueLocked' above, except the value is produced by the factory.
+            lock (_lock)
+            {
+                if (_container.TryGetValueWorker(key, out TValue? existingValue))
+                {
+                    return existingValue;
+                }
+                else
+                {
+                    CreateEntry(key, newValue);
+                    return newValue;
+                }
+            }
+        }
+
+        private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
+        {
+            // Same exact logic as the 'GetOrAddLocked' overload taking a value factory.
+            // We can't reuse the same method as the delegate type is different, and we
+            // don't want to add overhead by eg. using a wrapping delegate on the callback.
             TValue newValue = createValueCallback(key);
 
-            // Same exact logic as 'GetOrAddValueLocked' above, except the value is produced by the callback.
             lock (_lock)
             {
                 if (_container.TryGetValueWorker(key, out TValue? existingValue))
