@@ -15,11 +15,11 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
         - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml@self
       - checkout: self
-        path: runtime
+        path: s/runtime
         clean: true
         fetchDepth: $(checkoutFetchDepth)
       - checkout: performance
-        path: performance
+        path: s/performance
         clean: true
         fetchDepth: $(checkoutFetchDepth)
       # Copy dotnet-runtime directory to Build.SourcesDirectory as many templates in this repository are dependent on it being there
