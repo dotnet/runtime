@@ -23,11 +23,6 @@ namespace System.Reflection.Runtime.Dispensers
             return _conditionalWeakTable.GetOrAdd(key, _factory);
         }
 
-        private V CreateValue(K key)
-        {
-            return _factory(key);
-        }
-
         private readonly Func<K, V> _factory;
         private readonly ConditionalWeakTable<K, V> _conditionalWeakTable;
     }
