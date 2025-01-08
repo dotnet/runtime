@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj" Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsLinuxBionic)' != 'true'" />
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj" Condition="'$(RuntimeFlavor)' == 'Mono' or '$(TargetsLinuxBionic)' == 'true'" />
     <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" Condition="'$(TestReadyToRun)' != 'true'" />
     <BundleComponentReference Include="../installers/dotnet-host.proj" Condition="'$(TestReadyToRun)' != 'true'" />
   </ItemGroup>
