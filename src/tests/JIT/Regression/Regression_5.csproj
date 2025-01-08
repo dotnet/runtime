@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+
+    <!-- Regression_1 and Regression_6 -->
+    <MergedWrapperProjectReference Remove="CLR-x86-*/**/*.??proj" />
+
+    <!-- Regression_2 and Regression_3 -->
+    <MergedWrapperProjectReference Remove="JitBlue/**/*.??proj" />
+
+    <!-- Regression_4 -->
+    <MergedWrapperProjectReference Remove="VS-ia64-JIT/**/*.??proj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>
