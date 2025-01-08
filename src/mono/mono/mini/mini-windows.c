@@ -252,6 +252,12 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	return TRUE;
 }
 
+void
+mono_chain_signal_to_default_sigsegv_handler (void)
+{
+	g_error ("mono_chain_signal_to_default_sigsegv_handler not supported on Windows");
+}
+
 #if !HAVE_EXTERN_DEFINED_NATIVE_CRASH_HANDLER
 #ifndef MONO_CROSS_COMPILE
 void
