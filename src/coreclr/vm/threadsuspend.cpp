@@ -5759,7 +5759,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool callPulseGC)
 {
     struct AutoClearPendingThreadActivation
     {
@@ -5809,7 +5809,10 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         frame.Push(pThread);
 
-        pThread->PulseGCMode();
+        if (callPulseGC)
+        {
+            pThread->PulseGCMode();
+        }
 
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -5898,7 +5901,7 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
         case ActivationReason::SuspendForGC:
         case ActivationReason::SuspendForDebugger:
         case ActivationReason::ThreadAbort:
-            HandleSuspensionForInterruptedThread(pContext);
+            HandleSuspensionForInterruptedThread(pContext, reason != ActivationReason::SuspendForDebugger);
             break;
 
         default:

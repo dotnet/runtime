@@ -845,7 +845,7 @@ __attribute__((noinline))
 static void InvokeActivationHandler(CONTEXT *pWinContext)
 {
     g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
-    g_activationFunction(pWinContext);
+    g_activationFunction(pWinContext, true);
 }
 
 /*++

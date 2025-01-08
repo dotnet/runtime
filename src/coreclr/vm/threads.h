@@ -481,7 +481,7 @@ class Thread
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
-    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool callPulseGC);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
 
