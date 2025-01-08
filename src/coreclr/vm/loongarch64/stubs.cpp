@@ -892,11 +892,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 #endif // FEATURE_COMINTEROP
 
 
-void JIT_TailCall()
-{
-    _ASSERTE(!"LOONGARCH64:NYI");
-}
-
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
