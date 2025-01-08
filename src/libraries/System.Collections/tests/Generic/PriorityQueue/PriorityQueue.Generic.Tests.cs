@@ -44,7 +44,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        public void PriorityQueue_EnsureCapacityThenTrimExcess_CapacityUpdates(int capacity)
+        public void PriorityQueue_EnsureCapacityThenTrimExcess_CapacityUpdates()
         {
             var queue = new PriorityQueue<TElement, TPriority>(2);
             Assert.Equal(2, queue.Capacity);
