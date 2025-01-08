@@ -158,7 +158,7 @@ class vxsort_machine_traits<uint64_t, NEON> {
         return add;
     }
 
-    static INLINE T mask_popcount(TMASK mask) { return __builtin_popcount(mask); }
+    static INLINE T mask_popcount(TMASK mask) { return vaddv_u8(vcnt_u8((uint8x8_t)mask)); }
 };
 
 }
