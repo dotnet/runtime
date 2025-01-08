@@ -780,13 +780,12 @@ namespace System.Runtime.Intrinsics
             TVectorUInt32 firstIntegralBit = ShiftLeftUInt32(TVectorUInt32.One, fractionalBits);
             TVectorUInt32 fractionalBitMask = firstIntegralBit - TVectorUInt32.One;
 
-            // We must be an integer in the range [2, +Infinity)
+            // We must be an integer in the range [1, 2^24) with the least significant integral bit clear
+            // or in the range [2^24, +Infinity) in which case we are known to be an even integer
             TVectorUInt32 result = TVectorUInt32.GreaterThan(bits, TVectorUInt32.Create(0x3FFF_FFFF))
                                  & TVectorUInt32.LessThan(bits, TVectorUInt32.Create(float.PositiveInfinityBits))
-                                 & TVectorUInt32.IsZero(bits & fractionalBitMask);
-
-            // We must then be in the range [2^24, +Infinity) or the least significant integral bit must be clear
-            result &= TVectorUInt32.GreaterThan(bits, TVectorUInt32.Create(0x4B7F_FFFF)) | TVectorUInt32.IsZero(bits & firstIntegralBit);
+                                 & ((TVectorUInt32.IsZero(bits & fractionalBitMask) & TVectorUInt32.IsZero(bits & firstIntegralBit))
+                                  | TVectorUInt32.GreaterThan(bits, TVectorUInt32.Create(0x4B7F_FFFF)));
 
             // We are also an even integer if we are zero
             result |= TVectorUInt32.IsZero(bits);
@@ -806,13 +805,12 @@ namespace System.Runtime.Intrinsics
             TVectorUInt64 firstIntegralBit = ShiftLeftUInt64(TVectorUInt64.One, fractionalBits);
             TVectorUInt64 fractionalBitMask = firstIntegralBit - TVectorUInt64.One;
 
-            // We must be an integer in the range [2, +Infinity)
+            // We must be an integer in the range [1, 2^53) with the least significant integral bit clear
+            // or in the range [2^53, +Infinity) in which case we are known to be an even integer
             TVectorUInt64 result = TVectorUInt64.GreaterThan(bits, TVectorUInt64.Create(0x3FFF_FFFF_FFFF_FFFF))
                                  & TVectorUInt64.LessThan(bits, TVectorUInt64.Create(double.PositiveInfinityBits))
-                                 & TVectorUInt64.IsZero(bits & fractionalBitMask);
-
-            // We must then be in the range [2^53, +Infinity) or the least significant integral bit must be clear
-            result &= TVectorUInt64.GreaterThan(bits, TVectorUInt64.Create(0x433F_FFFF_FFFF_FFFF)) | TVectorUInt64.IsZero(bits & firstIntegralBit);
+                                 & ((TVectorUInt64.IsZero(bits & fractionalBitMask) & TVectorUInt64.IsZero(bits & firstIntegralBit))
+                                  | TVectorUInt64.GreaterThan(bits, TVectorUInt64.Create(0x433F_FFFF_FFFF_FFFF)));
 
             // We are also an even integer if we are zero
             result |= TVectorUInt64.IsZero(bits);
