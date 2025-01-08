@@ -129,7 +129,10 @@ class vxsort_machine_traits<uint64_t, NEON> {
     static INLINE TV broadcast(T pivot) { return vdupq_n_u64(pivot); }
 
     // Compare. Use mask to get one bit per lane. Add across into a single 64bit int.
-    static INLINE TMASK get_cmpgt_mask(TV a, TV b) { static TV compare_mask = {0b01, 0b10}; return vaddvq_u64(vandq_u64(vcgtq_u64(a, b), compare_mask)); }
+    static INLINE TMASK get_cmpgt_mask(TV a, TV b) {
+        static TV compare_mask = {0b01, 0b10};
+        return vaddvq_u64(vandq_u64(vcgtq_u64(a, b), compare_mask));
+    }
 
     static TV shift_right(TV v, int i) { return vshlq_u64(v, vdupq_n_s64(-i)); }
     static TV shift_left(TV v, int i) { return (TV)vshlq_s64((int64x2_t)v, vdupq_n_s64(i)); }
@@ -158,7 +161,10 @@ class vxsort_machine_traits<uint64_t, NEON> {
         return add;
     }
 
-    static INLINE T mask_popcount(TMASK mask) { return vaddv_u8(vcnt_u8((uint8x8_t)mask)); }
+    static INLINE T mask_popcount(TMASK mask) {
+        uint64x1_t maskv = { mask };
+        return vaddv_u8(vcnt_u8(vreinterpret_u8_u64(maskv)));
+    }
 };
 
 }
