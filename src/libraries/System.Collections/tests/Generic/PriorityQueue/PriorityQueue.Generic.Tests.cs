@@ -43,6 +43,19 @@ namespace System.Collections.Tests
             Assert.Equal(capacity, queue.Capacity);
         }
 
+        [Theory]
+        public void PriorityQueue_EnsureCapacityThenTrimExcess_CapacityUpdates(int capacity)
+        {
+            var queue = new PriorityQueue<TElement, TPriority>(2);
+            Assert.Equal(2, queue.Capacity);
+
+            queue.EnsureCapacity(12);
+            Assert.True(queue.Capacity >= 12, "capacity should be at least 12 after ensuring capacity");
+
+            queue.TrimExcess();
+            Assert.Equal(0, queue.Capacity);
+        }
+
         #endregion
 
         #region Constructors
