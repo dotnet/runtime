@@ -700,7 +700,7 @@ namespace System.Text.Json
             PooledByteBufferWriter? extraPooledByteBufferWriter = null)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
-            var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
+            var database = MetadataDb.CreateRented(utf8JsonSpan.Length, convertToAlloc: false);
             var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
