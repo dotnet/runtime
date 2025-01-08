@@ -1230,19 +1230,19 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    PTR_uintptr_t pLR = pRegisterSet->GetReturnAddressRegisterLocation();
+    PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }
 
-    if (pRegisterSet->GetReturnAddressRegisterLocation() == pLR)
+    if (pRegisterSet->GetReturnAddressRegisterLocation() == oldLocation)
     {
         // This is the case when we are either:
         //
-        // 1) In a leaf method that does not push LR on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
-        //    or has LR already popped off.
+        // 1) In a leaf method that does not push ReturnAddressRegisterLocation on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed ReturnAddressRegisterLocation on stack
+        //    or has ReturnAddressRegisterLocation already popped off.
         return false;
     }
 
