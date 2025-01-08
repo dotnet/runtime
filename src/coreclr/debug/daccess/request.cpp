@@ -1049,6 +1049,11 @@ HRESULT ClrDataAccess::GetMethodDescData(
             {
                 ILCodeVersion activeILCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
                 activeNativeCodeVersion = activeILCodeVersion.GetActiveNativeCodeVersion(pMD);
+                if (activeNativeCodeVersion.IsNull())
+                {
+                    // This is caught below and S_OK is returned
+                    DacError(E_ACCESSDENIED);
+                }
             }
             CopyNativeCodeVersionToReJitData(
                 activeNativeCodeVersion,
@@ -1571,12 +1576,18 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
                 count = needed;
 
             TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
-            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
+            ULONG32 bytesRead;
+            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &bytesRead);
+            needed = bytesRead / sizeof(WCHAR);
 
             if (SUCCEEDED(hr))
-                stringData[count - 1] = W('\0');
+            {
+                stringData[needed - 1] = W('\0');
+            }
             else
+            {
                 stringData[0] = W('\0');
+            }
         }
         else
         {

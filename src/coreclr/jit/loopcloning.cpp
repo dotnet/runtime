@@ -1798,67 +1798,33 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
 //
 bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
-    // Compute loop size
+    // See if loop size exceeds the limit.
     //
-    unsigned loopSize = 0;
+    const int      sizeConfig = JitConfig.JitCloneLoopsSizeLimit();
+    unsigned const sizeLimit  = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
+    unsigned       size       = 0;
 
-    // For now we use a very simplistic model where each tree node
-    // has the same code size.
-    //
-    // CostSz is not available until later.
-    //
-    struct TreeCostWalker : GenTreeVisitor<TreeCostWalker>
-    {
-        enum
+    BasicBlockVisit result = loop->VisitLoopBlocks([&](BasicBlock* block) {
+        assert(sizeLimit >= size);
+        unsigned const slack     = sizeLimit - size;
+        unsigned       blockSize = 0;
+        if (block->ComplexityExceeds(this, slack, &blockSize))
         {
-            DoPreOrder = true,
-        };
-
-        unsigned m_nodeCount;
-
-        TreeCostWalker(Compiler* comp)
-            : GenTreeVisitor(comp)
-            , m_nodeCount(0)
-        {
+            return BasicBlockVisit::Abort;
         }
 
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            m_nodeCount++;
-            return WALK_CONTINUE;
-        }
-
-        void Reset()
-        {
-            m_nodeCount = 0;
-        }
-        unsigned Cost()
-        {
-            return m_nodeCount;
-        }
-    };
-
-    TreeCostWalker costWalker(this);
-
-    loop->VisitLoopBlocks([&](BasicBlock* block) {
-        weight_t normalizedWeight = block->getBBWeight(this);
-        for (Statement* const stmt : block->Statements())
-        {
-            costWalker.Reset();
-            costWalker.WalkTree(stmt->GetRootNodePointer(), nullptr);
-            loopSize += costWalker.Cost();
-        }
+        size += blockSize;
         return BasicBlockVisit::Continue;
     });
 
-    int const sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
-
-    if ((sizeLimit >= 0) && (loopSize >= (unsigned)sizeLimit))
+    if (result == BasicBlockVisit::Abort)
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP " of size %u, size limit %d\n", loop->GetIndex(), loopSize,
-                sizeLimit);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
         return false;
     }
+
+    JITDUMP("Loop cloning: loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size,
+            sizeLimit);
 
     return true;
 }

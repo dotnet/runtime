@@ -959,6 +959,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
+            if (block->HasFlag(BBF_HAS_NEWARR))
+            {
+                fprintf(fgxFile, "\n            callsNewArr=\"true\"");
+            }
             if (block->HasFlag(BBF_LOOP_HEAD))
             {
                 fprintf(fgxFile, "\n            loopHead=\"true\"");
@@ -989,9 +993,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     {
         fprintf(fgxFile, "\n    </blocks>");
 
-        fprintf(fgxFile, "\n    <edges");
-        fprintf(fgxFile, "\n        edgeCount=\"%d\"", fgEdgeCount);
-        fprintf(fgxFile, ">");
+        fprintf(fgxFile, "\n    <edges>");
     }
 
     if (fgPredsComputed)
@@ -2905,7 +2907,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     fgDebugCheckBlockLinks();
-    fgFirstBBisScratch();
 
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {
@@ -3215,6 +3216,17 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckInitBB: Check that the first BB is a valid init BB.
+//
+void Compiler::fgDebugCheckInitBB()
+{
+    assert(fgFirstBB != nullptr);
+    assert(!fgFirstBB->hasTryIndex());
+    assert(fgFirstBB->bbPreds == nullptr);
+    assert(!opts.compDbgCode || fgFirstBB->HasFlag(BBF_INTERNAL));
 }
 
 //------------------------------------------------------------------------
@@ -4712,7 +4724,9 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
 {
     if (m_dfsTree == nullptr)
     {
-        assert((m_loops == nullptr) && (m_domTree == nullptr) && (m_reachabilitySets == nullptr));
+        assert(m_loops == nullptr);
+        assert((m_domTree == nullptr) && (m_domFrontiers == nullptr));
+        assert(m_reachabilitySets == nullptr);
         return;
     }
 

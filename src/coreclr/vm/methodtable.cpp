@@ -60,10 +60,6 @@
 #include "dynamicinterfacecastable.h"
 #include "frozenobjectheap.h"
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifndef DACCESS_COMPILE
 
 // Typedef for string comparison functions.
@@ -361,9 +357,25 @@ BOOL MethodTable::ValidateWithPossibleAV()
     // for that. We need to do more sanity checking to
     // make sure that our pointer here is in fact a valid object.
     PTR_EEClass pEEClass = this->GetClassWithPossibleAV();
-    return ((pEEClass && (this == pEEClass->GetMethodTableWithPossibleAV())) ||
-        ((HasInstantiation() || IsArray()) &&
-        (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
+    if (pEEClass == NULL)
+    {
+        return FALSE;
+    }
+
+    PTR_MethodTable pEEClassFromMethodTable = pEEClass->GetMethodTableWithPossibleAV();
+    if (pEEClassFromMethodTable == NULL)
+    {
+        return FALSE;
+    }
+
+    // non-generic check
+    if (this == pEEClassFromMethodTable)
+    {
+        return TRUE;
+    }
+
+    // generic instantiation check
+    return (HasInstantiation() || IsArray()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -6184,19 +6196,6 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
     {
         goto lExit;
     }
-
-#ifdef FEATURE_INTERPRETER
-    // I don't really know why this helps.  Figure it out.
-#ifndef DACCESS_COMPILE
-    // If we didn't find it above, try as an Interpretation stub...
-    pMethodDesc = Interpreter::InterpretationStubToMethodInfo(addr);
-
-    if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-#endif
-#endif // FEATURE_INTERPRETER
 
     // Is it an FCALL?
     pMethodDesc = ECall::MapTargetBackToMethod(addr);

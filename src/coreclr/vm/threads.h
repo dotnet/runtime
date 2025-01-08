@@ -2672,7 +2672,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ReturnKind returnKind, ExecutionState *esb);
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -3843,15 +3843,14 @@ public:
 #endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_HIJACK
-private:
 
+#ifdef TARGET_X86
+private:
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
-
     ReturnKind m_HijackReturnKind;
 
 public:
-
     ReturnKind GetHijackReturnKind()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3865,6 +3864,7 @@ public:
 
         m_HijackReturnKind = returnKind;
     }
+#endif
 #endif // FEATURE_HIJACK
 
 public:

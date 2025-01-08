@@ -294,7 +294,7 @@ namespace System.Globalization
             return CompareStringIgnoreCase(ref Unsafe.AddByteOffset(ref charA, byteOffset), length, ref Unsafe.AddByteOffset(ref charB, byteOffset), length) == 0;
         }
 
-        internal static unsafe int IndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int IndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             if (source == null)
             {
@@ -593,7 +593,7 @@ namespace System.Globalization
             return result;
         }
 
-        internal static unsafe int LastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int LastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             if (source == null)
             {

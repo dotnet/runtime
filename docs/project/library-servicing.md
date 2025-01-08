@@ -14,7 +14,7 @@ Keep in mind that we still need package authoring in .NET 8 and older versions.
 
 Develop and test your change as normal.  For packages, you may want to test them outside the repo infrastructure. To do so, execute the following steps:
 
-1. From a clean copy of your branch, run `build.cmd/sh libs -allconfigurations`
+1. From a clean copy of your branch, run `build.cmd/sh libs -pack`
 
 2. Check in `artifacts\bin\packages\Debug` for the existence of your package, with the appropriate package version.
 

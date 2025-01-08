@@ -462,78 +462,6 @@ HCIMPLEND
 
 #include <optdefault.h>
 
-
-//========================================================================
-//
-//      INSTANCE FIELD HELPERS
-//
-//========================================================================
-
-/*********************************************************************/
-// Returns the address of the instance field in the object (This is an interior
-// pointer and the caller has to use it appropriately) or a static field.
-// obj can be either a reference or a byref
-HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-    } CONTRACTL_END;
-
-    void * fldAddr = NULL;
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
-
-    if (!pFD->IsStatic() && objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    fldAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-
-    HELPER_METHOD_FRAME_END();
-
-    return fldAddr;
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-    } CONTRACTL_END;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetFieldAddr_Framed, obj, pFD);
-    }
-
-    return pFD->GetAddressGuaranteedInHeap(obj);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-#include <optsmallperfcritical.h>
-HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFD));
-    } CONTRACTL_END;
-
-    // [TODO] Only handling EnC for now
-    _ASSERTE(pFD->IsEnCNew());
-
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetFieldAddr_Framed, NULL, pFD);
-    }
-}
-HCIMPLEND
-#include <optdefault.h>
-
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT)
 {
@@ -701,7 +629,7 @@ HCIMPLEND_RAW
 //
 //========================================================================
 
-BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
+static BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException)
 {
     CONTRACTL {
         THROWS;
@@ -1232,25 +1160,6 @@ HCIMPL2(Object*, JIT_NewArr1MaybeFrozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR s
 }
 HCIMPLEND
 
-/*************************************************************/
-HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF    ret = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(ret);    // Set up a frame
-
-    TypeHandle typeHnd(classHnd);
-    _ASSERTE(typeHnd.IsFullyLoaded());
-    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
-
-    ret = AllocateArrayEx(typeHnd, pArgList, dwNumArgs);
-
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(ret);
-}
-HCIMPLEND
-
 #include <optdefault.h>
 
 //========================================================================
@@ -1598,41 +1507,6 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
     memset(pDest, value, length);
 }
 HCIMPLEND
-
-HCIMPL1(Object*, JIT_GetRuntimeFieldStub, CORINFO_FIELD_HANDLE field)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF stubRuntimeField = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    FieldDesc *pField = (FieldDesc *)field;
-    stubRuntimeField = (OBJECTREF)pField->GetStubFieldInfo();
-
-    HELPER_METHOD_FRAME_END();
-
-    return (OBJECTREFToObject(stubRuntimeField));
-}
-HCIMPLEND
-
-HCIMPL1(Object*, JIT_GetRuntimeMethodStub, CORINFO_METHOD_HANDLE method)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF stubRuntimeMethod = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
-
-    MethodDesc *pMethod = (MethodDesc *)method;
-    stubRuntimeMethod = (OBJECTREF)pMethod->GetStubMethodInfo();
-
-    HELPER_METHOD_FRAME_END();
-
-    return (OBJECTREFToObject(stubRuntimeMethod));
-}
-HCIMPLEND
-
 
 NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
 {
@@ -2060,7 +1934,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.InsureInit(NULL);
+    __helperframe.EnsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
@@ -2219,63 +2093,6 @@ HCIMPL0(void, JIT_FailFast)
     DoJITFailFast ();
 }
 HCIMPLEND
-
-HCIMPL2(void, JIT_ThrowMethodAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_METHOD_HANDLE callee)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowMethodAccessException(&accessContext, GetMethod(callee));
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-HCIMPL2(void, JIT_ThrowFieldAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_FIELD_HANDLE callee)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(callee));
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND;
-
-HCIMPL2(void, JIT_ThrowClassAccessException, CORINFO_METHOD_HANDLE caller, CORINFO_CLASS_HANDLE callee)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
-
-    MethodDesc* pCallerMD = GetMethod(caller);
-
-    _ASSERTE(pCallerMD != NULL);
-    AccessCheckContext accessContext(pCallerMD);
-
-    ThrowTypeAccessException(&accessContext, TypeHandle(callee).GetMethodTable());
-
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND;
 
 //========================================================================
 //
@@ -2522,7 +2339,6 @@ FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
     return pThread->GetThreadId();
 }
 FCIMPLEND
-
 
 /*********************************************************************/
 /* we don't use HCIMPL macros because we don't want the overhead even in debug mode */
@@ -3978,7 +3794,7 @@ bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
     {
         return false;
     }
-    
+
     return true;
 }
 

@@ -2206,7 +2206,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe bool HasMatch<TVectorByte>(TVectorByte vector)
+        private static bool HasMatch<TVectorByte>(TVectorByte vector)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
         {
             return !(vector & TVectorByte.Create((byte)0x80)).Equals(TVectorByte.Zero);
@@ -2214,7 +2214,7 @@ namespace System.Text
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe (TVectorUInt16 Lower, TVectorUInt16 Upper) Widen<TVectorByte, TVectorUInt16>(TVectorByte vector)
+        private static (TVectorUInt16 Lower, TVectorUInt16 Upper) Widen<TVectorByte, TVectorUInt16>(TVectorByte vector)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
             where TVectorUInt16 : unmanaged, ISimdVector<TVectorUInt16, ushort>
         {
