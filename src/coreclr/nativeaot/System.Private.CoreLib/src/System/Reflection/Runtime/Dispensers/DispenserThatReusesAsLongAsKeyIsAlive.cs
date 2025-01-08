@@ -14,14 +14,13 @@ namespace System.Reflection.Runtime.Dispensers
     {
         public DispenserThatReusesAsLongAsKeyIsAlive(Func<K, V> factory)
         {
-            _createValueCallback = CreateValue;
             _conditionalWeakTable = new ConditionalWeakTable<K, V>();
             _factory = factory;
         }
 
         public sealed override V GetOrAdd(K key)
         {
-            return _conditionalWeakTable.GetValue(key, _createValueCallback);
+            return _conditionalWeakTable.GetOrAdd(key, _factory);
         }
 
         private V CreateValue(K key)
@@ -31,6 +30,5 @@ namespace System.Reflection.Runtime.Dispensers
 
         private readonly Func<K, V> _factory;
         private readonly ConditionalWeakTable<K, V> _conditionalWeakTable;
-        private readonly ConditionalWeakTable<K, V>.CreateValueCallback _createValueCallback;
     }
 }
