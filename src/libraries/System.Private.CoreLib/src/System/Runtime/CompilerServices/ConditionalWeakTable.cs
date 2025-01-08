@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -202,6 +203,7 @@ namespace System.Runtime.CompilerServices
         /// This rule permits the table to invoke createValueCallback outside the internal table lock
         /// to prevent deadlocks.
         /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public TValue GetValue(TKey key, CreateValueCallback createValueCallback)
         {
             ArgumentNullException.ThrowIfNull(createValueCallback);
@@ -239,8 +241,10 @@ namespace System.Runtime.CompilerServices
         /// to create new instances as needed.  If TValue does not have a default constructor, this will throw.
         /// </summary>
         /// <param name="key">key of the value to find. Cannot be null.</param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public TValue GetOrCreateValue(TKey key) => GetValue(key, _ => Activator.CreateInstance<TValue>());
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public delegate TValue CreateValueCallback(TKey key);
 
         /// <summary>Gets an enumerator for the table.</summary>
