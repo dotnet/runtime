@@ -62,6 +62,7 @@ jobs:
         runtimeType: iOSMono
         projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
+        isScenario: true
         logicalMachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: False
@@ -78,6 +79,7 @@ jobs:
         runtimeType: iOSMono
         projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
+        isScenario: true
         logicalMachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: True
@@ -95,11 +97,12 @@ jobs:
         runtimeType: iOSMono
         projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
+        isScenario: true
         logicalMachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
-        additionalJobIdentifier: iosLlvmBuild
+        additionalJobIdentifier: iOSLlvmBuild
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -112,11 +115,12 @@ jobs:
         runtimeType: iOSMono
         projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
+        isScenario: true
         logicalMachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
-        additionalJobIdentifier: iosLlvmBuild iOSStripSymbols
+        additionalJobIdentifier: iOSLlvmBuild iOSStripSymbols
 
   # run NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -130,6 +134,7 @@ jobs:
         runtimeType: iOSNativeAOT
         projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
+        isScenario: true
         logicalMachine: 'perfiphone12mini'
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
@@ -145,6 +150,7 @@ jobs:
         runtimeType: iOSNativeAOT
         projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
+        isScenario: true
         logicalMachine: 'perfiphone12mini'
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
