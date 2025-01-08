@@ -282,7 +282,9 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         DWORD  curOffset    = cur->offset;
         UINT64 targetOffset = 0;
         int    slotNum      = 0;
+#ifdef LOGGING
         INT64  oldStarPos;
+#endif
 
         // If cur->section is NULL then this is a pointer outside the module.
         bool externalAddress = (cur->section == NULL);
