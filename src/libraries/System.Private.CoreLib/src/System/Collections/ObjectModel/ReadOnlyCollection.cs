@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.ObjectModel
 {
     [Serializable]
-    [CollectionBuilder(typeof(ReadOnlyCollection), "CreateCollection")]
+    [CollectionBuilder(typeof(ReadOnlyCollection), "Create")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -233,7 +232,7 @@ namespace System.Collections.ObjectModel
     }
 
     /// <summary>
-    /// Provides static methods to create read-only collections and sets.
+    /// Provides static methods for read-only collections.
     /// </summary>
     public static class ReadOnlyCollection
     {
@@ -245,33 +244,7 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlyCollection{T}"/> containing the specified values.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ReadOnlyCollection<T> CreateCollection<T>(params ReadOnlySpan<T> values) =>
+        public static ReadOnlyCollection<T> Create<T>(params ReadOnlySpan<T> values) =>
             values.IsEmpty ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(values.ToArray());
-
-        /// <summary>
-        /// Creates a new <see cref="ReadOnlySet{T}"/> from the specified span of values.
-        /// This method (simplifies collection initialization)[/dotnet/csharp/language-reference/operators/collection-expressions]
-        /// to create a new <see cref="ReadOnlySet{T}"/> with the specified values.
-        /// </summary>
-        /// <typeparam name="T">The type of elements in the collection.</typeparam>
-        /// <param name="values">The span of values to include in the collection.</param>
-        /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values)
-        {
-            if (values.IsEmpty)
-            {
-                return ReadOnlySet<T>.Empty;
-            }
-
-            HashSet<T> hashSet = [];
-            foreach (T value in values)
-            {
-                hashSet.Add(value);
-            }
-
-            return new ReadOnlySet<T>(hashSet);
-        }
     }
 }
