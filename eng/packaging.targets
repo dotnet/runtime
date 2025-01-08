@@ -27,15 +27,10 @@
     <PackageReadmeFilePath Condition="'$(PackageReadmeFilePath)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFilePath>
     <BeforePack>$(BeforePack);ValidatePackageReadmeExists</BeforePack>
 
-    <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
-    <!-- A package isn't generated if in servicing or in runtimelab. Intended to be overridden at project level. -->
+    <!-- Generate packages for rid specific projects when not in runtimelab (to avoid binclashes when using the same feed). -->
     <IsRIDSpecificProject Condition="$(MSBuildProjectName.StartsWith('runtime.')) and
                                      !$(MSBuildProjectName.StartsWith('runtime.native'))">true</IsRIDSpecificProject>
-    <GeneratePackageOnBuild Condition="(
-                                        '$(BuildAllConfigurations)' == 'true' or
-                                        '$(IsRIDSpecificProject)' == 'true'
-                                       ) and
-                                       '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(IsRIDSpecificProject)' == 'true' and '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
 
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>

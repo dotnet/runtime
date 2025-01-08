@@ -65,17 +65,15 @@
           DestinationFolder="$(SymbolsOutputPath)" />
   </Target>
 
-  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
-    <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
-      <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
-    </ItemGroup>
-    <ItemGroup>
-      <DebSymlink Include="/usr/bin/dotnet" LinkTarget="../share/dotnet/dotnet" />
-      <DebControlProperty Include="Conflicts" Value="dotnet, dotnet-nightly" />
-      <RpmConflicts Include="dotnet;dotnet-nightly" />
-      <RpmOwnedDirectory Include="/usr/share/dotnet" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
+    <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LinuxPackageSymlink Include="/usr/bin/dotnet" LinkTarget="../share/dotnet/dotnet" />
+    <LinuxPackageConflicts Include="dotnet;dotnet-nightly" />
+    <RpmOwnedDirectory Include="/usr/share/dotnet" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_MacOSIntermediatesPath>$(IntermediateOutputPath)macos/</_MacOSIntermediatesPath>

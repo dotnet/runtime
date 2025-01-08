@@ -3211,20 +3211,30 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
                 return layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
             }
 
-#ifdef TARGET_ARM64
+            // For the Swift calling convention the enregistered segments do
+            // not match the memory layout, so we need to use exact store sizes
+            // for the same reason as RISCV64/LA64 below.
+            if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+            {
+                return seg.GetRegisterType();
+            }
+
+#if defined(TARGET_ARM64)
             // We round struct sizes up to TYP_I_IMPL on the stack frame so we
             // can always use the full register size here. This allows us to
             // use stp more often.
             return TYP_I_IMPL;
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            // On RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
+#elif defined(TARGET_XARCH)
+            // Round up to use smallest possible encoding
+            return genActualType(seg.GetRegisterType());
+#else
+            // On other platforms, a safer default is to use the exact size always. For example, for
+            // RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
             // field per register regardless of the field layout in memory, so the small int load/store instructions
             // must not be upsized to 4 bytes, otherwise for example:
             // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
             // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
             return seg.GetRegisterType();
-#else
-            return genActualType(seg.GetRegisterType());
 #endif
         }
         default:
@@ -3239,83 +3249,70 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
 // to stack immediately, or by adding it to the register graph.
 //
 // Parameters:
-//    lclNum - Parameter local (or field of it)
-//    graph  - The register graph to add to
+//   lclNum      - Target local
+//   offset      - Offset into the target local
+//   paramLclNum - Local that is the actual parameter that has the incoming register
+//   segment     - Register segment to either spill or put in the register graph
+//   graph       - The register graph to add to
 //
-void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
+void CodeGen::genSpillOrAddRegisterParam(
+    unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& segment, RegGraph* graph)
 {
-    regMaskTP  paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
-    LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
+    regMaskTP paramRegs = intRegState.rsCalleeRegArgMaskLiveIn | floatRegState.rsCalleeRegArgMaskLiveIn;
 
-    unsigned baseOffset = varDsc->lvIsStructField ? varDsc->lvFldOffset : 0;
-    unsigned size       = varDsc->lvExactSize();
-
-    unsigned                     paramLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
-    LclVarDsc*                   paramVarDsc = compiler->lvaGetDesc(paramLclNum);
-    const ABIPassingInformation& abiInfo     = compiler->lvaGetParameterABIInfo(paramLclNum);
-    for (const ABIPassingSegment& seg : abiInfo.Segments())
+    if (!segment.IsPassedInRegister() || ((paramRegs & genRegMask(segment.GetRegister())) == 0))
     {
-        if (!seg.IsPassedInRegister() || ((paramRegs & genRegMask(seg.GetRegister())) == 0))
+        return;
+    }
+
+    LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+    if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
+    {
+        LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
+
+        var_types storeType = genParamStackType(paramVarDsc, segment);
+        if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
         {
-            continue;
+            // Can happen for struct fields due to padding.
+            storeType = genActualType(varDsc);
         }
 
-        if (seg.Offset + seg.Size <= baseOffset)
-        {
-            continue;
-        }
+        GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), segment.GetRegister(), lclNum,
+                                  offset);
+    }
 
-        if (baseOffset + size <= seg.Offset)
-        {
-            continue;
-        }
+    if (!varDsc->lvIsInReg())
+    {
+        return;
+    }
 
-        if (varDsc->lvOnFrame && (!varDsc->lvIsInReg() || varDsc->lvLiveInOutOfHndlr))
-        {
-            var_types storeType = genParamStackType(paramVarDsc, seg);
-            if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
-            {
-                // Can happen for struct fields due to padding.
-                storeType = genActualType(varDsc);
-            }
+    var_types edgeType = genActualType(varDsc->GetRegisterType());
+    // Some parameters can be passed in multiple registers but enregistered
+    // in a single one (e.g. SIMD types on arm64). In this case the edges
+    // we add here represent insertions of each element.
+    if (segment.Size < genTypeSize(edgeType))
+    {
+        edgeType = segment.GetRegisterType();
+    }
 
-            GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
-                                      seg.Offset - baseOffset);
-        }
+    RegNode* sourceReg = graph->GetOrAdd(segment.GetRegister());
+    RegNode* destReg   = graph->GetOrAdd(varDsc->GetRegNum());
 
-        if (!varDsc->lvIsInReg())
-        {
-            continue;
-        }
-
-        var_types edgeType = genActualType(varDsc->GetRegisterType());
-        // Some parameters can be passed in multiple registers but enregistered
-        // in a single one (e.g. SIMD types on arm64). In this case the edges
-        // we add here represent insertions of each element.
-        if (seg.Size < genTypeSize(edgeType))
-        {
-            edgeType = seg.GetRegisterType();
-        }
-
-        RegNode* sourceReg = graph->GetOrAdd(seg.GetRegister());
-        RegNode* destReg   = graph->GetOrAdd(varDsc->GetRegNum());
-
-        if ((sourceReg != destReg) || (baseOffset != seg.Offset))
-        {
+    if ((sourceReg != destReg) || (offset != 0))
+    {
 #ifdef TARGET_ARM
-            if (edgeType == TYP_DOUBLE)
-            {
-                assert(seg.Offset == baseOffset);
-                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
+        if (edgeType == TYP_DOUBLE)
+        {
+            assert(offset == 0);
+            graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
 
-                sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
-                destReg   = graph->GetOrAdd(REG_NEXT(destReg->reg));
-                graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
-                continue;
-            }
-#endif
-            graph->AddEdge(sourceReg, destReg, edgeType, seg.Offset - baseOffset);
+            sourceReg = graph->GetOrAdd(REG_NEXT(sourceReg->reg));
+            destReg   = graph->GetOrAdd(REG_NEXT(destReg->reg));
+            graph->AddEdge(sourceReg, destReg, TYP_FLOAT, 0);
+            return;
         }
+#endif
+        graph->AddEdge(sourceReg, destReg, edgeType, offset);
     }
 }
 
@@ -3386,7 +3383,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             }
         }
 
-        if (compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
+        if (compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE) &&
+            compiler->lvaGetDesc(compiler->lvaStubArgumentVar)->lvOnFrame)
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
                                       compiler->lvaStubArgumentVar, 0);
@@ -3408,19 +3406,27 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
+        LclVarDsc*                   lclDsc  = compiler->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
 
-        if (compiler->lvaGetPromotionType(lclNum) == Compiler::PROMOTION_TYPE_INDEPENDENT)
+        for (const ABIPassingSegment& segment : abiInfo.Segments())
         {
-            for (unsigned fld = 0; fld < lclDsc->lvFieldCnt; fld++)
+            if (!segment.IsPassedInRegister())
             {
-                unsigned fieldLclNum = lclDsc->lvFieldLclStart + fld;
-                genSpillOrAddRegisterParam(fieldLclNum, &graph);
+                continue;
             }
-        }
-        else
-        {
-            genSpillOrAddRegisterParam(lclNum, &graph);
+
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(segment.GetRegister());
+
+            if (mapping != nullptr)
+            {
+                genSpillOrAddRegisterParam(mapping->LclNum, mapping->Offset, lclNum, segment, &graph);
+            }
+            else
+            {
+                genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
+            }
         }
     }
 
@@ -4334,7 +4340,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
 #if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 //-----------------------------------------------------------------------------
-// genHomeSwiftStructParameters: Move the incoming segment to the local stack frame.
+// genHomeSwiftStructParameters: Move the incoming stack segment to the local stack frame.
 //
 // Arguments:
 //    lclNum - Number of local variable to home
@@ -4397,14 +4403,11 @@ void CodeGen::genHomeStackSegment(unsigned                 lclNum,
 #ifdef SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------
-// genHomeSwiftStructParameters:
-//    Reassemble Swift struct parameters if necessary.
+// genHomeSwiftStructStackParameters:
+//    Reassemble Swift struct parameters from the segments that were passed on
+//    stack.
 //
-// Arguments:
-//    handleStack - If true, reassemble the segments that were passed on the stack.
-//                  If false, reassemble the segments that were passed in registers.
-//
-void CodeGen::genHomeSwiftStructParameters(bool handleStack)
+void CodeGen::genHomeSwiftStructStackParameters()
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -4419,33 +4422,13 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
             continue;
         }
 
-        JITDUMP("Homing Swift parameter V%02u: ", lclNum);
+        JITDUMP("Homing Swift parameter stack segments for V%02u: ", lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         DBEXEC(VERBOSE, abiInfo.Dump());
 
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
-            if (seg.IsPassedOnStack() != handleStack)
-            {
-                continue;
-            }
-
-            if (seg.IsPassedInRegister())
-            {
-                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
-                regMaskTP regs     = seg.GetRegisterMask();
-
-                if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
-                {
-                    var_types storeType = seg.GetRegisterType();
-                    assert(storeType != TYP_UNDEF);
-                    GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
-                                              seg.Offset);
-
-                    regState->rsCalleeRegArgMaskLiveIn &= ~regs;
-                }
-            }
-            else
+            if (seg.IsPassedOnStack())
             {
                 // We can use REG_SCRATCH as a temporary register here as we ensured that during LSRA build.
                 genHomeStackSegment(lclNum, seg, REG_SCRATCH, nullptr);
@@ -5710,28 +5693,12 @@ void CodeGen::genFnProlog()
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
     {
-        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) &&
-            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0))
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-        }
-
-        if ((compiler->lvaSwiftIndirectResultArg != BAD_VAR_NUM) &&
-            ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0))
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-                                      theFixedRetBuffReg(CorInfoCallConvExtension::Swift),
-                                      compiler->lvaSwiftIndirectResultArg, 0);
-            intRegState.rsCalleeRegArgMaskLiveIn &= ~theFixedRetBuffMask(CorInfoCallConvExtension::Swift);
-        }
-
+        // The error arg is not actually a parameter in the ABI, so no reason to
+        // consider it to be live
         if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
         {
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
-
-        genHomeSwiftStructParameters(/* handleStack */ false);
     }
 #endif
 

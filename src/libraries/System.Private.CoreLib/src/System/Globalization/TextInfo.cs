@@ -515,7 +515,7 @@ namespace System.Globalization
         /// influence which letter or letters of a "word" are uppercased when titlecasing strings.  For example
         /// "l'arbre" is considered two words in French, whereas "can't" is considered one word in English.
         /// </summary>
-        public unsafe string ToTitleCase(string str)
+        public string ToTitleCase(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
