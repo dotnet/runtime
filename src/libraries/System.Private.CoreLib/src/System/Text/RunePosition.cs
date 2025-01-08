@@ -3,6 +3,8 @@
 
 using System.ComponentModel;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace System.Text;
 
@@ -26,7 +28,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// Invalid Unicode symbols will be represented by <see cref="System.Text.Rune.ReplacementChar"/>
     /// value.
     /// </remarks>
-    public static Utf16Enumerator EnumerateUtf16(ReadOnlySpan<char> span) => new Utf16Enumerator(span);
+    public static Utf16Enumerator EnumerateUtf16(ReadOnlySpan<char> span) => new(span);
 
     /// <summary>
     /// Returns an enumeration of <see cref="RunePosition"/> from the provided span that allows deeper data inspection.
@@ -39,7 +41,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// <remarks>
     /// Invalid Unicode symbols will be represented by <see cref="Rune.ReplacementChar"/> value.
     /// </remarks>
-    public static Utf8Enumerator EnumerateUtf8(ReadOnlySpan<byte> span) => new Utf8Enumerator(span);
+    public static Utf8Enumerator EnumerateUtf8(ReadOnlySpan<byte> span) => new(span);
 
     /// <summary>
     /// Unicode scalar value <see cref="System.Text.Rune"/> of the current symbol in Unicode data.
@@ -164,7 +166,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// <remarks>
     /// Methods are pattern-matched by compiler to allow using foreach pattern.
     /// </remarks>
-    public ref struct Utf16Enumerator
+    public ref struct Utf16Enumerator: IEnumerator<RunePosition>
     {
         private ReadOnlySpan<char> _remaining;
 
@@ -222,6 +224,10 @@ public readonly struct RunePosition : IEquatable<RunePosition>
             }
             return true;
         }
+
+        object IEnumerator.Current => Current;
+        void IEnumerator.Reset() => throw new NotSupportedException();
+        void IDisposable.Dispose() { }
     }
 
     /// <summary>
@@ -230,7 +236,7 @@ public readonly struct RunePosition : IEquatable<RunePosition>
     /// <remarks>
     /// Methods are pattern-matched by compiler to allow using foreach pattern.
     /// </remarks>
-    public ref struct Utf8Enumerator
+    public ref struct Utf8Enumerator : IEnumerator<RunePosition>
     {
         private ReadOnlySpan<byte> _remaining;
 
@@ -277,5 +283,9 @@ public readonly struct RunePosition : IEquatable<RunePosition>
             _remaining = _remaining.Slice(charsConsumed);
             return true;
         }
+
+        object IEnumerator.Current => Current;
+        void IEnumerator.Reset() => throw new NotSupportedException();
+        void IDisposable.Dispose() { }
     }
 }

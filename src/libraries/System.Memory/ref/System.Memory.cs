@@ -792,19 +792,25 @@ namespace System.Text
         public void Deconstruct(out System.Text.Rune rune, out int startIndex, out int length) { throw null; }
         public static bool operator ==(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
         public static bool operator !=(System.Text.RunePosition left, System.Text.RunePosition right) { throw null; }
-        public ref partial struct Utf16Enumerator
+        public ref partial struct Utf16Enumerator : System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
         {
             private readonly int _dummyPrimitive;
             public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf16Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { }
+            void System.IDisposable.Dispose() { }
         }
-        public ref partial struct Utf8Enumerator
+        public ref partial struct Utf8Enumerator: System.Collections.Generic.IEnumerator<System.Text.RunePosition>, System.Collections.IEnumerator, System.IDisposable
         {
             private readonly int _dummyPrimitive;
             public System.Text.RunePosition Current { get { throw null; } }
             public System.Text.RunePosition.Utf8Enumerator GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { }
+            void System.IDisposable.Dispose() { }
         }
     }
 
