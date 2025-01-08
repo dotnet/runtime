@@ -188,6 +188,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        public TValue GetOrAdd(TKey key, TValue value)
+        {
+            return TryGetValue(key, out TValue? existingValue) ?
+                existingValue :
+                GetOrAddLocked(key, value);
+        }
+
         /// <summary>
         /// Atomically searches for a specified key in the table and returns the corresponding value.
         /// If the key does not exist in the table, the method invokes a callback method to create a
@@ -214,12 +221,8 @@ namespace System.Runtime.CompilerServices
                 GetValueLocked(key, createValueCallback);
         }
 
-        private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
+        private TValue GetOrAddLocked(TKey key, TValue value)
         {
-            // If we got here, the key was not in the table. Invoke the callback (outside the lock)
-            // to generate the new value for the key.
-            TValue newValue = createValueCallback(key);
-
             lock (_lock)
             {
                 // Now that we've taken the lock, must recheck in case we lost a race to add the key.
@@ -230,6 +233,27 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     // Verified in-lock that we won the race to add the key. Add it now.
+                    CreateEntry(key, value);
+                    return value;
+                }
+            }
+        }
+
+        private TValue GetValueLocked(TKey key, CreateValueCallback createValueCallback)
+        {
+            // If we got here, the key was not in the table. Invoke the callback (outside the lock)
+            // to generate the new value for the key.
+            TValue newValue = createValueCallback(key);
+
+            // Same exact logic as 'GetOrAddValueLocked' above, except the value is produced by the callback.
+            lock (_lock)
+            {
+                if (_container.TryGetValueWorker(key, out TValue? existingValue))
+                {
+                    return existingValue;
+                }
+                else
+                {
                     CreateEntry(key, newValue);
                     return newValue;
                 }
