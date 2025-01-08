@@ -936,14 +936,14 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TypeDesc
     {
-        private uint m_typeAndFlags;
-        private nint ExposedClassObjectRaw;
+        private uint _typeAndFlags;
+        private nint _exposedClassObject;
 
         public RuntimeType? ExposedClassObject
         {
             get
             {
-                return *(RuntimeType*)Unsafe.AsPointer(ref ExposedClassObjectRaw);
+                return *(RuntimeType*)Unsafe.AsPointer(ref _exposedClassObject);
             }
         }
     }

@@ -50,13 +50,9 @@ namespace System
         internal static unsafe RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
             TypeHandle h = new((void*)handle);
-            if (h.IsTypeDesc)
-            {
-                return h.AsTypeDesc()->ExposedClassObject ?? GetRuntimeTypeFromHandleSlow(handle);
-            }
-
-            // The MethodTable fast path is in managed, so handle that here.
-            return GetRuntimeType(h.AsMethodTable());
+            return (h.IsTypeDesc
+                ? h.AsTypeDesc()->ExposedClassObject
+                : h.AsMethodTable()->AuxiliaryData->ExposedClassObject) ?? GetRuntimeTypeFromHandleSlow(handle);
         }
 
         // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
