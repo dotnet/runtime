@@ -4,62 +4,64 @@ trigger: none
 
 resources:
   repositories:
-  - repository: 1ESPipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
+    - repository: 1ESPipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
 
 variables:
- - template: /eng/common/templates-official/variables/pool-providers.yml
- - name: FrameworkVersion
-   value: net8.0
+  - template: /eng/common/templates-official/variables/pool-providers.yml
+  - name: FrameworkVersion
+    value: 8.0
+  - name: TargetFramework
+    value: net$(FrameworkVersion)
 
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     customBuildTags:
-    - 1ES.PT.ViaStartRight
+      - 1ES.PT.ViaStartRight
     pool:
       name: $(DncEngInternalBuildPool)
       image: 1es-windows-2022
       os: windows
-      
+
     stages:
-    - stage: stage
-      displayName: Building in a VM
-      jobs:
-      - job: job
-        displayName: Build
-        steps:
-        - checkout: self
+      - stage: stage
+        displayName: Building in a VM
+        jobs:
+          - job: job
+            displayName: Build
+            steps:
+              - checkout: self
 
-        - task: UseDotNet@2
-          inputs:
-            packageType: "sdk"
-            version: "8.x"
+              - task: UseDotNet@2
+                inputs:
+                  packageType: "sdk"
+                  version: $(FrameworkVersion)
 
-        - script: echo {} > ./global.json
-          displayName: Bypass repository global.json
-          workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
+              - script: echo {} > ./global.json
+                displayName: Bypass repository global.json
+                workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
 
-        - script: dotnet publish -c Release /p:GenevaTelemetry=false /p:_TargetFrameworkForXHarness=$(FrameworkVersion)
-          workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
-          displayName: Run dotnet publish
+              - script: dotnet publish -c Release /p:GenevaTelemetry=true /p:_TargetFrameworkForXHarness=$(TargetFramework)
+                workingDirectory: ./src/libraries/Common/tests/System/Net/Prerequisites/NetCoreServer
+                displayName: Run dotnet publish
 
-        - task: zip@0
-          displayName: Zip artifacts
-          inputs:
-            pathToZipFolder: 'artifacts\bin\NetCoreServer\Release\$(FrameworkVersion)\publish\'
-            pathToZipFile: 'artifacts\bin\NetCoreServer\Release\$(FrameworkVersion)\publish.zip'
+              - task: zip@0
+                displayName: Zip artifacts
+                inputs:
+                  pathToZipFolder: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish\'
+                  pathToZipFile: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
 
-        - task: AzureRmWebAppDeployment@4
-          displayName: Deploy to staging slot
-          inputs:
-            ConnectionType: 'AzureRM'
-            azureSubscription: .NET Libraries Network Testing
-            appType: 'webApp'
-            WebAppName: 'corefx-net-http11'
-            deployToSlotOrASE: true
-            ResourceGroupName: 'Production-WestUS'
-            SlotName: 'staging'
-            package: 'artifacts\bin\NetCoreServer\Release\$(FrameworkVersion)\publish.zip'
+              - task: AzureRmWebAppDeployment@4
+                displayName: Deploy to staging slot
+                inputs:
+                  ConnectionType: "AzureRM"
+                  azureSubscription: .NET Libraries Network Testing
+                  appType: "webApp"
+                  WebAppName: "corefx-net-http11"
+                  deployToSlotOrASE: true
+                  ResourceGroupName: "Production-WestUS"
+                  SlotName: "staging"
+                  package: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
