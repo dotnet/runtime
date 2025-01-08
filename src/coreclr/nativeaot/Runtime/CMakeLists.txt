@@ -1,9 +1,10 @@
 set(GC_DIR ../../gc)
+set(SHARED_RUNTIME_DIR ../../shared_runtime)
 
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     rhassert.cpp
-    CachedInterfaceDispatch.cpp
+    ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -76,6 +77,7 @@ include_directories(.)
 include_directories(${GC_DIR})
 include_directories(${GC_DIR}/env)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/eventpipe/inc)
+include_directories(${SHARED_RUNTIME_DIR})
 
 if (WIN32)
   set(GC_HEADERS
@@ -208,7 +210,7 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
+  ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
