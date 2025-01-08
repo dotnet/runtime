@@ -3,11 +3,6 @@
 
 #include "common.h"
 
-EXTERN_C VOID JIT_TailCallReturnFromVSD()
-{
-  PORTABILITY_ASSERT("JIT_TailCallReturnFromVSD");
-}
-
 EXTERN_C VOID JIT_TailCallVSDLeave()
 {
   PORTABILITY_ASSERT("JIT_TailCallVSDLeave");
