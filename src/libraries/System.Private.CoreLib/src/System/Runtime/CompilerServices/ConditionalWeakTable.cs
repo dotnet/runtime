@@ -189,8 +189,8 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Atomically searches for a specified key in the table and returns the corresponding value. If the
-        /// key does not exist in the table, the method adds the given value and binds it to the specified key.
+        /// Searches for a specified key in the table and returns the corresponding value. If the key does
+        /// not exist in the table, the method adds the given value and binds it to the specified key.
         /// </summary>
         /// <param name="key">The key of the value to find. It cannot be <see langword="null"/>.</param>
         /// <param name="value">The value to add and bind to <typeparamref name="TKey"/>, if one does not exist already.</param>
@@ -208,9 +208,8 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Atomically searches for a specified key in the table and returns the corresponding value.
-        /// If the key does not exist in the table, the method invokes the supplied factory to create
-        /// a value that is bound to the specified key.
+        /// Searches for a specified key in the table and returns the corresponding value. If the key does not exist
+        /// in the table, the method invokes the supplied factory to create a value that is bound to the specified key.
         /// </summary>
         /// <param name="key">The key of the value to find. It cannot be <see langword="null"/>.</param>
         /// <param name="valueFactory">The callback that creates a value for key, if one does not exist already. It cannot be <see langword="null"/>.</param>
@@ -239,9 +238,8 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Atomically searches for a specified key in the table and returns the corresponding value.
-        /// If the key does not exist in the table, the method invokes the supplied factory to create
-        /// a value that is bound to the specified key.
+        /// Searches for a specified key in the table and returns the corresponding value. If the key does not exist
+        /// in the table, the method invokes the supplied factory to create a value that is bound to the specified key.
         /// </summary>
         /// <typeparam name="TArg">The type of the additional argument to use with the value factory.</typeparam>
         /// <param name="key">The key of the value to find. It cannot be <see langword="null"/>.</param>
@@ -273,9 +271,8 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>
-        /// Atomically searches for a specified key in the table and returns the corresponding value.
-        /// If the key does not exist in the table, the method invokes a callback method to create a
-        /// value that is bound to the specified key.
+        /// Searches for a specified key in the table and returns the corresponding value. If the key does not exist
+        /// in the table, the method invokes a callback method to create a value that is bound to the specified key.
         /// </summary>
         /// <param name="key">key of the value to find. Cannot be null.</param>
         /// <param name="createValueCallback">callback that creates value for key. Cannot be null.</param>
