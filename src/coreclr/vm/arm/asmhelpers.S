@@ -925,7 +925,7 @@ ProbeLoop:
 #endif
         ldr     r2, [r2]
         cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
-        ret
+        bx lr
 LOCAL_LABEL(JIT_PollGCRarePath):
 #if defined(__clang__)
         ldr     r2, =g_pPollGC-(1f+4)
