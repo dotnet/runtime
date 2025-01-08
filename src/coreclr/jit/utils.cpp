@@ -1817,7 +1817,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_GETFIELDADDR:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
                 noThrow = true;

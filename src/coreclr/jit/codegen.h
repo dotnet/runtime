@@ -271,7 +271,7 @@ protected:
 #endif
 
     void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
-    void genHomeSwiftStructParameters(bool handleStack);
+    void genHomeSwiftStructStackParameters();
     void genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed);
 
     void genCheckUseBlockInit();
