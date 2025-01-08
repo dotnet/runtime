@@ -185,10 +185,6 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -798,10 +794,6 @@ void EEStartupHelper()
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
-#ifdef FEATURE_INTERPRETER
-        Interpreter::Initialize();
-#endif // FEATURE_INTERPRETER
-
         StubManager::InitializeStubManagers();
 
         // Set up the cor handle map. This map is used to load assemblies in
@@ -1270,10 +1262,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 
-#ifdef FEATURE_INTERPRETER
-        // This will check a flag and do nothing if not enabled.
-        Interpreter::PrintPostMortemData();
-#endif // FEATURE_INTERPRETER
         VirtualCallStubManager::LogFinalStats();
 
 #ifdef PROFILING_SUPPORTED
