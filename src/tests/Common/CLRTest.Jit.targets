@@ -378,9 +378,9 @@ for inputAssemblyName in glob.glob("*.dll"):
       if test_det:
 
         try:
-            os.rename(inputAssemblyName, f'{inputAssemblyName}.base')
+            os.replace(inputAssemblyName, f'{inputAssemblyName}.base')
         except:
-            print("Could not find f'{inputAssemblyName}'")
+            print(f'Could not find or move {inputAssemblyName}')
             sys.exit(1)
 
         ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
@@ -394,9 +394,9 @@ for inputAssemblyName in glob.glob("*.dll"):
             sys.exit(1)
 
         try:
-            os.rename(inputAssemblyName, f'{inputAssemblyName}.diff')
+            os.replace(inputAssemblyName, f'{inputAssemblyName}.diff')
         except:
-            print("Could not find f'{inputAssemblyName}'")
+            print(f'Could not find or move {inputAssemblyName}')
             sys.exit(1)
 
         if not filecmp.cmp(f'{inputAssemblyName}.base', f'{inputAssemblyName}.diff', shallow=False):
@@ -425,9 +425,9 @@ for inputAssemblyName in glob.glob("*.dll"):
             sys.exit(1)
 
         try:
-            os.rename(pdbName, f'{pdbName}.base')
+            os.replace(pdbName, f'{pdbName}.base')
         except:
-            print("Could not find f'{pdbName}'")
+            print(f'Could not find {pdbName}')
             sys.exit(1)
 
         ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
@@ -441,9 +441,9 @@ for inputAssemblyName in glob.glob("*.dll"):
             sys.exit(1)
 
         try:
-            os.rename(pdbName, f'{pdbName}.diff')
+            os.replace(pdbName, f'{pdbName}.diff')
         except:
-            print("Could not find f{pdbName}")
+            print(f'Could not find {pdbName}')
             sys.exit(1)
 
         if not filecmp.cmp(f'{pdbName}.base', f'{pdbName}.diff', shallow=False):
