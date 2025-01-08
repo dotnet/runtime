@@ -2226,13 +2226,6 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 //========================================================================
 
 /*************************************************************/
-// Slow helper to tailcall from the fast one
-extern "C" void QCALLTYPE PollGC_Native()
-{
-    // Empty function to p/invoke into in order to allow the GC to suspend on transition
-}
-
-/*************************************************************/
 // This helper is similar to JIT_RareDisableHelper, but has more operations
 // tailored to the post-pinvoke operations.
 extern "C" VOID JIT_PInvokeEndRarePath();
@@ -2285,7 +2278,7 @@ void JIT_RareDisableHelperWorker()
 void JIT_RareDisableHelper()
 #endif
 {
-    // We do this here (before we set up a frame), because the following scenario
+    // We do this here (before we enter the BEGIN_QCALL macro), because the following scenario
     // We are in the process of doing an inlined pinvoke.  Since we are in preemtive
     // mode, the thread is allowed to continue.  The thread continues and gets a context
     // switch just after it has cleared the preemptive mode bit but before it gets
@@ -2313,7 +2306,7 @@ void JIT_RareDisableHelper()
 
     if (thread->IsAbortRequested())
     {
-        // This function is acalled after a pinvoke finishes, in the rare case that either a GC
+        // This function is called after a pinvoke finishes, in the rare case that either a GC
         // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
         // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
         // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC

@@ -451,9 +451,9 @@ endif ; FEATURE_TIERED_COMPILATION
 
 LEAF_ENTRY JIT_PollGC, _TEXT
     cmp [g_TrapReturningThreads], 0
-    jnz             RarePath
+    jnz             JIT_PollGCRarePath
     ret
-RarePath:
+JIT_PollGCRarePath:
     mov rax, g_pPollGC
     TAILJMP_RAX
 LEAF_END JIT_PollGC, _TEXT

@@ -1158,9 +1158,9 @@ _JIT_StackProbe_End@0 ENDP
 
 @JIT_PollGC@0 PROC public
     cmp [g_TrapReturningThreads], 0
-    jnz             RarePath
+    jnz JIT_PollGCRarePath
     ret
-RarePath:
+JIT_PollGCRarePath:
     mov eax, g_pPollGC
     jmp eax
 @JIT_PollGC@0 ENDP

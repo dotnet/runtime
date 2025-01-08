@@ -1185,9 +1185,9 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     LEAF_ENTRY  JIT_PollGC
         ldr     x9, =g_TrapReturningThreads
         ldr     w9, [x9]
-        cbnz    w9, RarePath
+        cbnz    w9, JIT_PollGCRarePath
         ret
-RarePath
+JIT_PollGCRarePath
         ldr     x9, =g_pPollGC
         ldr     x9, [x9]
         br x9

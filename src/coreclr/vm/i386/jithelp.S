@@ -692,3 +692,13 @@ LEAF_END JIT_PatchedWriteBarrierGroup_End, _TEXT
 LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
+
+LEAD_ENTRY JIT_PollGC, _TEXT
+    PREPARE_EXTERNAL_VAR g_TrapReturningThreads, eax
+    cmp [g_TrapReturningThreads], 0
+    jnz JIT_LOCAL_LABLE(PollGCRarePath)
+    ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+    PREPARE_EXTERNAL_VAR g_pPollGC, eax
+    jmp [eax]
+LEAF_END JIT_PollGC, _TEXT
