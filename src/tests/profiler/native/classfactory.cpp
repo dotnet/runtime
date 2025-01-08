@@ -3,6 +3,7 @@
 
 #include "classfactory.h"
 #include "eltprofiler/slowpatheltprofiler.h"
+#include "enumthreadsprofiler/enumthreadsprofiler.h"
 #include "eventpipeprofiler/eventpipereadingprofiler.h"
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
@@ -143,6 +144,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == GCHeapEnumerationProfiler::GetClsid())
     {
         profiler = new GCHeapEnumerationProfiler();
+    }
+    else if (clsid == EnumThreadsProfiler::GetClsid())
+    {
+        profiler = new EnumThreadsProfiler();
     }
     else
     {

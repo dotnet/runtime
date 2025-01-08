@@ -110,6 +110,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]
         [JsonSerializable(typeof(ClassWithJsonPointerEscapablePropertyNames))]
         [JsonSerializable(typeof(ClassWithOptionalObjectParameter))]
+        [JsonSerializable(typeof(ClassWithPropertiesUsingCustomConverters))]
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]

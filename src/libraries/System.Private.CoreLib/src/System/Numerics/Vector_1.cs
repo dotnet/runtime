@@ -37,15 +37,10 @@ namespace System.Numerics
         /// <summary>Creates a new <see cref="Vector{T}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector{T}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T value)
         {
-            Unsafe.SkipInit(out this);
-
-            for (int index = 0; index < Count; index++)
-            {
-                this.SetElementUnsafe(index, value);
-            }
+            this = Vector.Create(value);
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>

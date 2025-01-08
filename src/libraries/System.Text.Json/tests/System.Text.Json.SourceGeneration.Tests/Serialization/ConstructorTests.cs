@@ -154,6 +154,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWithEnumParameters))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
         [JsonSerializable(typeof(ClassWithCustomConverterOnCtorParameter))]
+        [JsonSerializable(typeof(ClassWithConflictingCaseInsensitiveProperties))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -303,6 +304,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWithEnumParameters))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
         [JsonSerializable(typeof(ClassWithCustomConverterOnCtorParameter))]
+        [JsonSerializable(typeof(ClassWithConflictingCaseInsensitiveProperties))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }
