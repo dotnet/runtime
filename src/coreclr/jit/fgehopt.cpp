@@ -2433,7 +2433,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
         if (canonicalBlock->hasProfileWeight())
         {
-            canonicalBlock->setBBProfileWeight(canonicalBlock->bbWeight + removedWeight);
+            canonicalBlock->increaseBBProfileWeight(removedWeight);
             modifiedProfile = true;
 
             // Don't bother updating flow into nonCanonicalBlock, since it is now unreachable
