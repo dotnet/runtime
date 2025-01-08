@@ -2305,8 +2305,8 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean inflate_gene
 	}
 
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
-	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), TRUE)) {
-		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", 
+	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), MONO_TYPE_EQ_FLAGS_SIG_ONLY | MONO_TYPE_EQ_FLAG_IGNORE_CMODS)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException",
 			g_strdup_printf("No '%s' in '%s'. Or the type of '%s' doesn't match", member_name, m_class_get_name (target_class), member_name));
 		return;
 	}
@@ -2403,7 +2403,7 @@ inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_metho
 	if ((context.class_inst != NULL) || (context.method_inst != NULL))
 		result = mono_class_inflate_generic_method_checked (method, &context, error);
 	mono_error_assert_ok (error);
-	
+
 	return result;
 }
 
@@ -2425,13 +2425,13 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean inflate_gener
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
-	
+
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
 	ERROR_DECL(find_method_error);
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
-	
+
 	MonoClass *in_class = target_class;
 
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
@@ -2506,7 +2506,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean inflate_gen
 		emit_missing_method_error (mb, find_method_error, member_name);
 		return;
 	}
-	
+
 	g_assert (target_method->klass == target_class);
 
 	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
@@ -2733,7 +2733,7 @@ emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig
     }
 }
 
-/* Swift struct lowering handling causes csig to have additional arguments. 
+/* Swift struct lowering handling causes csig to have additional arguments.
  * This function returns the index of the argument in the csig that corresponds to the argument in the original signature.
  */
 static int
