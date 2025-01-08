@@ -3001,7 +3001,7 @@ bool Compiler::optSplitHeaderIfNecessary(FlowGraphNaturalLoop* loop)
         Statement* const stopStmt      = hasTerminator ? lastStmt : nullptr;
         Statement*       splitBefore   = firstStmt;
 
-        while ((splitBefore != stopStmt) && (splitBefore->GetRootNode()->gtFlags & GTF_EXCEPT) == 0)
+        while ((splitBefore != stopStmt) && (splitBefore->GetRootNode()->gtFlags & (GTF_EXCEPT | GTF_CALL)) == 0)
         {
             splitBefore = splitBefore->GetNextStmt();
         }
