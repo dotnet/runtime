@@ -1508,61 +1508,6 @@ HCIMPL3(void, Jit_NativeMemSet, void* pDest, int value, size_t length)
 }
 HCIMPLEND
 
-NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHandle(type);
-
-    // Array/other type handle case.
-    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
-    if (refType == NULL)
-    {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-        refType = typeHandle.GetManagedClassObject();
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return OBJECTREFToObject(refType);
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL1(Object*, JIT_GetRuntimeType, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-
-    if (!typeHnd.IsTypeDesc())
-    {
-        // Most common... and fastest case
-        OBJECTREF typePtr = typeHnd.AsMethodTable()->GetManagedClassObjectIfExists();
-        if (typePtr != NULL)
-        {
-            return OBJECTREFToObject(typePtr);
-        }
-    }
-
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetRuntimeType_Framed, type);
-}
-HCIMPLEND
-
-HCIMPL1(Object*, JIT_GetRuntimeType_MaybeNull, CORINFO_CLASS_HANDLE type)
-{
-    FCALL_CONTRACT;
-
-    if (type == NULL)
-        return NULL;;
-
-    ENDFORBIDGC();
-    return HCCALL1(JIT_GetRuntimeType, type);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-
 // Helper for synchronized static methods in shared generics code
 #include <optsmallperfcritical.h>
 HCIMPL1(CORINFO_CLASS_HANDLE, JIT_GetClassFromMethodParam, CORINFO_METHOD_HANDLE methHnd_)
@@ -2099,31 +2044,6 @@ HCIMPLEND
 //      DEBUGGER/PROFILER HELPERS
 //
 //========================================================================
-
-/*********************************************************************/
-// Called by the JIT whenever a cee_break instruction should be executed.
-//
-HCIMPL0(void, JIT_UserBreakpoint)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-
-#ifdef DEBUGGING_SUPPORTED
-    FrameWithCookie<DebuggerExitFrame> __def;
-
-    MethodDescCallSite debuggerBreak(METHOD__DEBUGGER__BREAK);
-
-    debuggerBreak.Call((ARG_SLOT*)NULL);
-
-    __def.Pop();
-#else // !DEBUGGING_SUPPORTED
-    _ASSERTE(!"JIT_UserBreakpoint called, but debugging support is not available in this build.");
-#endif // !DEBUGGING_SUPPORTED
-
-    HELPER_METHOD_FRAME_END_POLL();
-}
-HCIMPLEND
 
 #if defined(_MSC_VER)
 // VC++ Compiler intrinsic.

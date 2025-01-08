@@ -95,5 +95,11 @@ namespace System.Diagnostics
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
         private static partial void CustomNotification(ObjectHandleOnStack data);
+
+        // implementation of CORINFO_HELP_USER_BREAKPOINT
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static void UserBreakpoint() => Break();
     }
 }
