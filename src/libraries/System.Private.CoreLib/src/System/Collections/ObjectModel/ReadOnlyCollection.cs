@@ -261,11 +261,15 @@ namespace System.Collections.ObjectModel
         public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values)
         {
             if (values.IsEmpty)
+            {
                 return ReadOnlySet<T>.Empty;
+            }
 
             HashSet<T> hashSet = [];
             foreach (T value in values)
+            {
                 hashSet.Add(value);
+            }
 
             return new ReadOnlySet<T>(hashSet);
         }
