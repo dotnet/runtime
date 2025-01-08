@@ -1,9 +1,3 @@
-parameters:
-- name: perfBranch
-  displayName: Performance Repo Branch
-  type: string
-  default: 'caaavik/move-runtime-yaml-to-performance' #TODO: Revert to "main"
-
 trigger:
   batch: true
   branches:
@@ -29,7 +23,6 @@ resources:
     - repository: performance
       type: git
       name: internal/dotnet-performance
-      ref: ${{ parameters.perfBranch }}
 
 variables:
 - template: /eng/pipelines/common/variables.yml
@@ -64,5 +57,5 @@ extends:
             runProfile: 'v8'
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
-        parameters:
-          perfBranch: ${{ parameters.perfBranch }}
+        # parameters:
+          # perfBranch: 'main' # this is used only when building the BDN app and it must be a branch of the public github repository
