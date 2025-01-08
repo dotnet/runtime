@@ -184,7 +184,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethodSpec(QCall::ModuleHandle pMod
 
     // Define the Method
     IfFailThrow( pRCW->GetEmitter()->DefineMethodSpec(tkParent,         //ParentTypeDef
-                                                      (PCCOR_SIGNATURE)pSignature, //Blob value of a COM+ signature
+                                                      (PCCOR_SIGNATURE)pSignature, //Blob value of a signature
                                                       sigLength,            //Size of the signature blob
                                                       &memberE) );              //[OUT]methodToken
 
@@ -208,7 +208,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineMethod(QCall::ModuleHandle pModule,
     IfFailThrow( pRCW->GetEmitter()->DefineMethod(tkParent,        //ParentTypeDef
                                                   wszName,         //Name of Member
                                                   attributes,               //Member Attributes (public, etc);
-                                                  (PCCOR_SIGNATURE)pSignature,  //Blob value of a COM+ signature
+                                                  (PCCOR_SIGNATURE)pSignature,  //Blob value of a signature
                                                   sigLength,            //Size of the signature blob
                                                   0,                        //Code RVA
                                                   miIL | miManaged,         //Implementation Flags is default to managed IL
@@ -560,7 +560,7 @@ extern "C" INT32 QCALLTYPE TypeBuilder_DefineProperty(QCall::ModuleHandle pModul
             tkParent,                       // ParentTypeDef
             wszName,                        // Name of Member
             attr,                     // property Attributes (prDefaultProperty, etc);
-            (PCCOR_SIGNATURE)pSignature,    // Blob value of a COM+ signature
+            (PCCOR_SIGNATURE)pSignature,    // Blob value of a signature
             sigLength,                // Size of the signature blob
             ELEMENT_TYPE_VOID,              // don't specify the default value
             0,                              // no default value

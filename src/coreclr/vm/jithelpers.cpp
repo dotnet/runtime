@@ -936,7 +936,7 @@ HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
-    // Retrieve the handle to the COM+ string object.
+    // Retrieve the handle to the CLR string object.
     hndStr = ConstructStringLiteral(scopeHnd, RidToToken(rid, mdtString));
     HELPER_METHOD_FRAME_END();
 

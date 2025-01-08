@@ -5821,7 +5821,7 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 // is to ensure that the target DLL is fully loaded and ready to run.
 //
 // FUN FACTS: Though this function is actually entered in unmanaged mode,
-// it can reenter managed mode and throw a COM+ exception if the DLL linking
+// it can reenter managed mode and throw a CLR exception if the DLL linking
 // fails.
 //==========================================================================
 EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
