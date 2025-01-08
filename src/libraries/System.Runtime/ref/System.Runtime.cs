@@ -8480,7 +8480,7 @@ namespace System.Collections.ObjectModel
     {
         public static System.Collections.ObjectModel.ReadOnlySet<T> Create<T>(params System.ReadOnlySpan<T> values) { throw null; }
     }
-    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "Create")]
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlySet), "Create")]
     public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
