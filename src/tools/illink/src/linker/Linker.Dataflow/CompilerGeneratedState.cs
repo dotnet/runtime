@@ -131,6 +131,9 @@ namespace Mono.Linker.Dataflow
 
 			List<(MessageOrigin, DiagnosticId, string[])>? _warnings = null;
 
+			// We delay actually logging the warnings until the compiler-generated type info is
+			// populated for this type, because the type info is needed to determine whether a warning
+			// is suppressed.
 			void AddWarning (MessageOrigin origin, DiagnosticId id, params string[] messageArgs)
 			{
 				_warnings ??= new List<(MessageOrigin, DiagnosticId, string[])> ();
