@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -244,6 +245,7 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlyCollection{T}"/> containing the specified values.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ReadOnlyCollection<T> CreateCollection<T>(params ReadOnlySpan<T> values) =>
             values.IsEmpty ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(values.ToArray());
 
@@ -255,6 +257,7 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values)
         {
             if (values.IsEmpty)
