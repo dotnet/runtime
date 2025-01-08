@@ -2189,14 +2189,6 @@ VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
 
     ThreadExceptionState* pExState = pCurThread->GetExceptionState();
 
-#ifdef FEATURE_INTERPRETER
-    // Abort if we don't have any state from the original exception.
-    if (!pExState->IsExceptionInProgress())
-    {
-        return;
-    }
-#endif // FEATURE_INTERPRETER
-
     // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the COM+ exception.
     if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
     {
@@ -2366,9 +2358,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
         if (!pParam->isRethrown ||
-#ifdef FEATURE_INTERPRETER
-            !pParam->pExState->IsExceptionInProgress() ||
-#endif // FEATURE_INTERPRETER
              pParam->pExState->IsComPlusException() ||
             (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
         {

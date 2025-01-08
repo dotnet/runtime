@@ -5119,7 +5119,8 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
         // If profile weights are consistent, expect at worst a slight underflow.
         //
-        if (fgPgoConsistent && (alternateNewWeight < 0.0))
+        const bool checkProfileConsistency = hasFlag(activePhaseChecks, PhaseChecks::CHECK_PROFILE);
+        if (checkProfileConsistency && fgPgoConsistent && (alternateNewWeight < 0.0))
         {
             assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
         }
