@@ -2,4 +2,5 @@
   <Target Name="Build">
     <Msbuild Targets="Pack" Projects="dotnet-pgo.csproj" />
   </Target>
+  <Target Name="Pack" DependsOnTargets="Build" />
 </Project>
