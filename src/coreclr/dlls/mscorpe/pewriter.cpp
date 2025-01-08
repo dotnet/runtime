@@ -13,8 +13,8 @@
 #include "log.h"
 
 static const char* const RelocName[] = {
-    "Absolute", "Unk1",    "Unk2",    "HighLow", "Unk4", "MapToken",
-    "Relative", "FilePos", "CodeRel", "Dir64", "AbsTag" };
+    "Absolute", "Unk1",    "Unk2",    "HighLow", "Unk4",  "MapToken",
+    "Relative", "FilePos", "CodeRel", "Unk3",    "Dir64", "AbsTag" };
 static const char RelocSpaces[] = "        ";
 
 #endif

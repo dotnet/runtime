@@ -388,7 +388,7 @@ void CodeGen::genCodeForBBlist()
         // codegen related to doing this, so it cannot be done in the prolog.
         if (block->IsFirst() && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
-            genHomeSwiftStructParameters(/* handleStack */ true);
+            genHomeSwiftStructStackParameters();
         }
 #endif
 

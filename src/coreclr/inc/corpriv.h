@@ -314,7 +314,7 @@ typedef enum {
 
     // generate a .reloc for a pointer sized location,
     // This is transformed into BASED_HIGHLOW or BASED_DIR64 based on the platform
-    srRelocHighLow = 3,
+    srRelocHighLow = IMAGE_REL_BASED_HIGHLOW,
 
     // generate a .reloc for the top 16-bits of a 32 bit number, where the
     // bottom 16 bits are included in the next word in the .reloc table
@@ -335,7 +335,7 @@ typedef enum {
     srRelocCodeRelative,
 
     // generate a .reloc for a 64 bit address
-    srRelocDir64,
+    srRelocDir64 = IMAGE_REL_BASED_DIR64,
 
     // generate a 30-bit section-relative reloc, used for tagged pointer values
     srRelocAbsoluteTagged,
