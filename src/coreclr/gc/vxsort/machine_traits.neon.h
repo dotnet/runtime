@@ -17,10 +17,8 @@ namespace vxsort {
 
 const int T64_LINE_SIZE = 16;
 const int T64_SIZE = (T64_LINE_SIZE * 4);
-// const int T32_SIZE = 2048 + 8;
 
 extern const uint8_t perm_table_64[T64_SIZE];
-// extern const uint8_t perm_table_32[T32_SIZE];
 
 static void not_supported()
 {
@@ -32,67 +30,6 @@ static void not_supported()
 // containing a statement, so #define away constexpr for _DEBUG
 #define constexpr
 #endif  //_DEBUG
-
-template <>
-class vxsort_machine_traits<uint32_t, NEON> {
-   public:
-    typedef uint32_t T;
-    typedef uint32x4_t TV;
-    typedef uint32x4_t TMASK;
-    typedef uint32_t TPACK;
-    typedef typename std::make_unsigned<T>::type TU;
-
-    static constexpr bool supports_compress_writes() { return false; }
-
-    static constexpr bool supports_packing() { return false; }
-
-    template <int Shift>
-    static constexpr bool can_pack(T span) { return false; }
-
-    static INLINE TV load_vec(TV* p) { not_supported(); return *p; }
-
-    static INLINE void store_vec(TV* ptr, TV v) { not_supported(); }
-
-    static void store_compress_vec(TV* ptr, TV v, TMASK mask) { not_supported(); }
-
-    static INLINE TV partition_vector(TV v, TMASK mask) {
-        not_supported();
-        return v;
-    }
-
-    static INLINE TV broadcast(int32_t pivot) { not_supported(); return vdupq_n_u32(pivot); }
-
-    static INLINE TMASK get_cmpgt_mask(TV a, TV b) { not_supported(); return vcgtq_u32(a, b); }
-
-    static TV shift_right(TV v, int i) { not_supported(); return v; }
-    static TV shift_left(TV v, int i) { not_supported(); return v; }
-
-    static INLINE TV add(TV a, TV b) { not_supported(); return a; }
-    static INLINE TV sub(TV a, TV b) { not_supported(); return a; }
-
-    static INLINE TV pack_ordered(TV a, TV b) { not_supported(); return a; }
-    static INLINE TV pack_unordered(TV a, TV b) { not_supported(); return a; }
-    static INLINE void unpack_ordered(TV p, TV& u1, TV& u2) { not_supported(); }
-
-    template <int Shift>
-    static T shift_n_sub(T v, T sub) {
-        if (Shift > 0)
-            v >>= Shift;
-        v -= sub;
-        return v;
-    }
-
-    template <int Shift>
-    static T unshift_and_add(TPACK from, T add) {
-        add += from;
-        if (Shift > 0)
-            add = (T) (((TU) add) << Shift);
-        return add;
-    }
-
-    static INLINE T mask_popcount(TMASK mask) { not_supported(); return 0; }
-};
-
 
 template <>
 class vxsort_machine_traits<uint64_t, NEON> {
