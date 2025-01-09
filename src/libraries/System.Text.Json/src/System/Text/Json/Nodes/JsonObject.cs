@@ -115,6 +115,9 @@ namespace System.Text.Json.Nodes
         /// </summary>
         /// <param name="propertyName">The name of the property to return.</param>
         /// <param name="jsonNode">The JSON value of the property with the specified name.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
