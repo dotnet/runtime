@@ -125,7 +125,7 @@ namespace System.IO.Tests
             try
             {
                 using (File.OpenHandle(path, mode: FileMode.Create, access: FileAccess.ReadWrite, preallocationSize: VeryLargeFileSize)) { }
-                Assert.Fail("The test should fail due to failure to preallocate a very large file.");
+                Assert.Fail("File.OpenHandle should throw due to failure to preallocate a very large file.");
             }
             catch (IOException ex)
             {
