@@ -39,7 +39,7 @@ class vxsort_machine_traits<uint32_t, NEON> {
     typedef uint32_t T;
     typedef uint32x4_t TV;
     typedef uint32x4_t TMASK;
-    typedef uint32_t TPACK;  // TODO: ??
+    typedef uint32_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
 
     static constexpr bool supports_compress_writes() { return false; }
@@ -100,11 +100,12 @@ class vxsort_machine_traits<uint64_t, NEON> {
     typedef uint64_t T;
     typedef uint64x2_t TV;
     typedef uint64_t TMASK;
-    typedef uint64_t TPACK;  // TODO: ??
+    typedef uint64_t TPACK;
     typedef typename std::make_unsigned<T>::type TU;
 
     static constexpr bool supports_compress_writes() { return false; }
 
+    // TODO: Enabling this may give additional performance.
     static constexpr bool supports_packing() { return false; }
 
     template <int Shift>

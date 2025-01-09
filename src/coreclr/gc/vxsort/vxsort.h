@@ -592,7 +592,7 @@ private:
         TV LT0 = MT::load_vec(preAlignedLeft);
         auto rtMask = MT::get_cmpgt_mask(RT0, P);
         auto ltMask = MT::get_cmpgt_mask(LT0, P);
-        const auto rtPopCountRightPart = max(MT::mask_popcount(rtMask), (T)rightAlign); //TODO: Is this u32?
+        const auto rtPopCountRightPart = max(MT::mask_popcount(rtMask), (T)rightAlign);
         const auto ltPopCountRightPart = MT::mask_popcount(ltMask);
         const auto rtPopCountLeftPart  = N - rtPopCountRightPart;
         const auto ltPopCountLeftPart  = N - ltPopCountRightPart;
