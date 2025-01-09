@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     public class CallSiteFactoryTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void GetService_FactoryCallSite_Transient_DoesNotFail()
         {
             var collection = new ServiceCollection();
