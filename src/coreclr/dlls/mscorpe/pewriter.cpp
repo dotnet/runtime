@@ -12,7 +12,7 @@
 #ifdef LOGGING
 #include "log.h"
 
-static const char* const RelocName[] = { "Absolute", "Unk1", "Unk2", "HighLow", "MapToken", "FilePos", "Unk6", "Unk7", "Unk8", "Unk9", "Dir64" };
+static const char* const RelocName[] = { "Absolute", "HighLow", "MapToken", "FilePos" };
 static const char RelocSpaces[] = "        ";
 
 #endif
@@ -286,13 +286,6 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         INT64  oldStarPos;
 #endif
 
-        // If cur->section is NULL then this is a pointer outside the module.
-        bool externalAddress = (cur->section == NULL);
-
-        /* If we see any srRelocHighLow's in a PE64 file we convert them into DIR64 relocs */
-        if (!isPE32 && (curType == srRelocHighLow))
-            curType = srRelocDir64;
-
         DWORD curRVA = m_baseRVA;    // RVA in the PE image of the reloc site
         IfFailRet(AddOvf_RVA(curRVA, curOffset));
         DWORD UNALIGNED * pos = (DWORD *) m_blobFetcher.ComputePointer(curOffset);
@@ -313,12 +306,10 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         // Record base relocs as necessary.
         //
 
-        bool  fBaseReloc = false;
-        bool  fNeedBrl   = false;
+        int baseReloc = 0;
         INT64 newStarPos = 0; // oldStarPos gets updated to newStarPos
 
         if (curType == srRelocAbsolute) {
-            _ASSERTE(!externalAddress);
 
             newStarPos = GET_UNALIGNED_INT32(pos);
 
@@ -342,80 +333,61 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         }
         else if (curType == srRelocFilePos)
         {
-            _ASSERTE(!externalAddress);
             newStarPos = GET_UNALIGNED_VAL32(pos);
             IfFailRet(AddOvf_S_U32(newStarPos, cur->section->m_filePos));
             SET_UNALIGNED_VAL32(pos, newStarPos);
         }
         else if (curType == srRelocHighLow)
         {
-            _ASSERTE(isPE32);
-
-            // we have a 32-bit value at pos
-            UINT64 value = GET_UNALIGNED_VAL32(pos);
-
-            if (!externalAddress)
+            if (isPE32)
             {
+                // we have a 32-bit value at pos
+                UINT64 value = GET_UNALIGNED_VAL32(pos);
+
                 IfFailRet(AddOvf_U_U32(value, cur->section->m_baseRVA));
                 IfFailRet(AddOvf_U_U(value, imageBase));
+
+                IfFailRet(UnsignedFitsIn32Bits(value));  // Check for overflow
+                SET_UNALIGNED_VAL32(pos, value);
+
+                newStarPos = value;
+
+                baseReloc = IMAGE_REL_BASED_HIGHLOW;
             }
-
-            IfFailRet(UnsignedFitsIn32Bits(value));  // Check for overflow
-            SET_UNALIGNED_VAL32(pos, value);
-
-            newStarPos = value;
-
-            fBaseReloc = true;
-        }
-        else if (curType == srRelocDir64)
-        {
-            _ASSERTE(!isPE32);
-
-            // we have a 64-bit value at pos
-            UINT64 UNALIGNED * p_value = (UINT64 *) pos;
-            targetOffset = *p_value;
-
-            if (!externalAddress)
+            else
             {
+                // we have a 64-bit value at pos
+                UINT64 UNALIGNED * p_value = (UINT64 *) pos;
+                targetOffset = *p_value;
+
                 // The upper bits of targetOffset must be zero
                 IfFailRet(UnsignedFitsIn32Bits(targetOffset));
 
                 IfFailRet(AddOvf_U_U32(targetOffset, cur->section->m_baseRVA));
                 IfFailRet(AddOvf_U_U(targetOffset, imageBase));
-            }
 
-            *p_value   = targetOffset;
-            newStarPos = targetOffset;
-            fBaseReloc = true;
+                *p_value   = targetOffset;
+                newStarPos = targetOffset;
+
+                baseReloc =  IMAGE_REL_BASED_DIR64;
+            }
         }
         else
         {
             _ASSERTE(!"Unknown Relocation type");
         }
 
-        if (fBaseReloc)
+        if (baseReloc != 0)
         {
-            pBaseRelocSection->AddBaseReloc(curRVA, curType);
+            pBaseRelocSection->AddBaseReloc(curRVA, baseReloc);
         }
 
 #ifdef LOGGING
-        const char* sectionName;
-
-        if (externalAddress)
-        {
-            sectionName = "external";
-        }
-        else
-        {
-            sectionName = cur->section->m_name;
-        }
-
         LOG((LF_ZAP, LL_INFO1000000,
-             "to %-7s+%04x, old =" FMT_ADDR "new =" FMT_ADDR "%s%s\n",
-             sectionName, targetOffset,
+             "to %-7s+%04x, old =" FMT_ADDR "new =" FMT_ADDR "%s\n",
+             cur->section->m_name, targetOffset,
              DBG_ADDR(oldStarPos), DBG_ADDR(newStarPos),
-             fBaseReloc ? "(BASE RELOC)" : "",
-             fNeedBrl   ? "(BRL)"        : ""  ));
+             baseReloc ? "(BASE RELOC)" : ""));
 #endif
 
     }

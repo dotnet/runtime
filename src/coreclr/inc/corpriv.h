@@ -314,7 +314,7 @@ typedef enum {
 
     // generate a .reloc for a pointer sized location,
     // This is transformed into BASED_HIGHLOW or BASED_DIR64 based on the platform
-    srRelocHighLow = IMAGE_REL_BASED_HIGHLOW,
+    srRelocHighLow,
 
     // generate a token map relocation, nothing into .reloc section
     srRelocMapToken,
@@ -323,9 +323,6 @@ typedef enum {
     // section.  This reloc is relative to the file position of the
     // section, not the section's virtual address.
     srRelocFilePos,
-
-    // generate a .reloc for a 64 bit address
-    srRelocDir64 = IMAGE_REL_BASED_DIR64,
 
     // A sentinel value to help ensure any additions to this enum are reflected
     // in PEWriter.cpp's RelocName array.
