@@ -2,10 +2,3 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-
-extern "C"
-{
-    void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
-    {
-    }
-};
