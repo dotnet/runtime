@@ -2820,11 +2820,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             fieldVarDsc->SetIsNeverNegative(true);
         }
 
-        if (varDsc->lvStackAllocatedArray == 1 && fieldVarDsc->lvFldOffset == OFFSETOF__CORINFO_Array__length)
-        {
-            fieldVarDsc->SetIsNeverNegative(true);
-        }
-
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
         {

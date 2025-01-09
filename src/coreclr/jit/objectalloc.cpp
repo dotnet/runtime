@@ -457,6 +457,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
             if (allocType != OAT_NONE)
             {
                 bool         canStack     = false;
+                bool         bashCall     = false;
                 const char*  onHeapReason = nullptr;
                 unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
@@ -537,7 +538,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                                 MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd,
                                                               (unsigned int)len->AsIntCon()->IconValue(), blockSize,
                                                               block, stmt);
-                            m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+
+                            // Note we do not want to rewrite uses of the array temp, so we
+                            // do not update m_HeapLocalToStackLocalMap.
+                            //
                             comp->Metrics.StackAllocatedArrays++;
                         }
                     }
@@ -594,6 +598,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             {
                                 comp->Metrics.StackAllocatedRefClasses++;
                             }
+
+                            bashCall = true;
                         }
                     }
                 }
@@ -605,7 +611,12 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // sets.
                     MarkLclVarAsDefinitelyStackPointing(lclNum);
                     MarkLclVarAsPossiblyStackPointing(lclNum);
-                    stmt->GetRootNode()->gtBashToNOP();
+
+                    if (bashCall)
+                    {
+                        stmt->GetRootNode()->gtBashToNOP();
+                    }
+
                     comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
                     didStackAllocate = true;
                 }
@@ -687,8 +698,7 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 }
 
 //------------------------------------------------------------------------
-// MorphNewArrNodeIntoStackAlloc: Morph a GT_CALL CORINFO_HELP_NEWARR_1_VC
-//                                node into stack allocation.
+// MorphNewArrNodeIntoStackAlloc: Morph a newarray helper call node into stack allocation.
 //
 // Arguments:
 //    newArr       - GT_CALL that will be replaced by helper call.
@@ -756,35 +766,19 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     lclDsc->lvStructDoubleAlign = alignTo8;
 #endif
 
-    // Initialize the vtable slot.
+    // Mark the newarr call as being "on stack", and associate the local
     //
-    //------------------------------------------------------------------------
-    // STMTx (IL 0x... ???)
-    //   * STORE_LCL_FLD    long
-    //   \--*  CNS_INT(h) long
-    //------------------------------------------------------------------------
+    newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
+    newArr->gtNewArrStackLcl = lclNum;
 
-    // Initialize the method table pointer.
-    GenTree*   init     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, newArr->gtArgs.GetArgByIndex(0)->GetNode());
-    Statement* initStmt = comp->gtNewStmt(init);
-
-    comp->fgInsertStmtBefore(block, stmt, initStmt);
-
-    // Initialize the array length.
+    // Retype the call result as an unmanaged pointer
     //
-    //------------------------------------------------------------------------
-    // STMTx (IL 0x... ???)
-    //   * STORE_LCL_FLD    int
-    //   \--*  CNS_INT    int
-    //------------------------------------------------------------------------
+    newArr->ChangeType(TYP_I_IMPL);
+    newArr->gtReturnType = TYP_I_IMPL;
 
-    // Pass the total length of the array.
-    GenTree*   len     = comp->gtNewStoreLclFldNode(lclNum, TYP_INT, OFFSETOF__CORINFO_Array__length,
-                                                    comp->gtNewIconNode(length, TYP_INT));
-    Statement* lenStmt = comp->gtNewStmt(len);
-    comp->fgInsertStmtBefore(block, stmt, lenStmt);
-
-    comp->lvaGetDesc(lclNum)->lvStackAllocatedArray = 1;
+    // Note that we have stack allocated arrays in this method
+    //
+    comp->setMethodHasStackAllocatedArray();
 
     return lclNum;
 }

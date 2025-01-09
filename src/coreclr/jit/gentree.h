@@ -3586,7 +3586,7 @@ private:
     }
 };
 
-// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_VAR_ADDR, LCL_FLD_ADDR.
+// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_ADDR, FIELD_ADDR.
 // This inherits from UnOp because lclvar stores are unary.
 //
 struct GenTreeLclVarCommon : public GenTreeUnOp
@@ -4227,6 +4227,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
+    GTF_CALL_M_STACK_ARRAY             = 0x10000000, // this call is a new array helper for a stack allocated array.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5742,6 +5743,7 @@ struct GenTreeCall final : public GenTree
         void*                gtStubCallStubAddr;   // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
         IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
+        unsigned             gtNewArrStackLcl; // GTF_CALL_M_STACK_ARRAY - local used for stack allocated array storage
     };
 
     union
