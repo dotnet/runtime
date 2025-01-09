@@ -13411,6 +13411,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     //
     fgGlobalMorph = true;
 
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentBeforeMorph = 1;
+    }
+
     if (opts.OptimizationEnabled())
     {
         // Local assertion prop is enabled if we are optimizing.
@@ -13546,6 +13551,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     // We may have converted a tailcall into a loop, in which case the first BB
     // may no longer be canonical.
     fgCanonicalizeFirstBB();
+
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentAfterMorph = 1;
+    }
 
     INDEBUG(fgPostGlobalMorphChecks();)
 
