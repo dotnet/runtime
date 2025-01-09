@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.ObjectModel
 {
     [Serializable]
-    [CollectionBuilder(typeof(ReadOnlyCollection), "Create")]
+    [CollectionBuilder(typeof(ReadOnlyCollection), "CreateCollection")]
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -244,7 +244,31 @@ namespace System.Collections.ObjectModel
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="values">The span of values to include in the collection.</param>
         /// <returns>A new <see cref="ReadOnlyCollection{T}"/> containing the specified values.</returns>
-        public static ReadOnlyCollection<T> Create<T>(params ReadOnlySpan<T> values) =>
+        public static ReadOnlyCollection<T> CreateCollection<T>(params ReadOnlySpan<T> values) =>
             values.IsEmpty ? ReadOnlyCollection<T>.Empty : new ReadOnlyCollection<T>(values.ToArray());
+
+        /// <summary>
+        /// Creates a new <see cref="ReadOnlySet{T}"/> from the specified span of values.
+        /// This method (simplifies collection initialization)[/dotnet/csharp/language-reference/operators/collection-expressions]
+        /// to create a new <see cref="ReadOnlySet{T}"/> with the specified values.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the collection.</typeparam>
+        /// <param name="values">The span of values to include in the collection.</param>
+        /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
+        public static ReadOnlySet<T> CreateSet<T>(params ReadOnlySpan<T> values)
+        {
+            if (values.IsEmpty)
+            {
+                return ReadOnlySet<T>.Empty;
+            }
+
+            HashSet<T> hashSet = [];
+            foreach (T value in values)
+            {
+                hashSet.Add(value);
+            }
+
+            return new ReadOnlySet<T>(hashSet);
+        }
     }
 }

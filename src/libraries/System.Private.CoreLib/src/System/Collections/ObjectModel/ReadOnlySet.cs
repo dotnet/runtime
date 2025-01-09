@@ -9,7 +9,7 @@ namespace System.Collections.ObjectModel
 {
     /// <summary>Represents a read-only, generic set of values.</summary>
     /// <typeparam name="T">The type of values in the set.</typeparam>
-    [CollectionBuilder(typeof(ReadOnlySet), "Create")]
+    [CollectionBuilder(typeof(ReadOnlyCollection), "CreateSet")]
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlySet<T> : IReadOnlySet<T>, ISet<T>, ICollection
     {
@@ -100,35 +100,5 @@ namespace System.Collections.ObjectModel
 
         /// <inheritdoc/>
         bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
-    }
-
-    /// <summary>
-    /// Provides static methods for read-only sets.
-    /// </summary>
-    public static class ReadOnlySet
-    {
-        /// <summary>
-        /// Creates a new <see cref="ReadOnlySet{T}"/> from the specified span of values.
-        /// This method (simplifies collection initialization)[/dotnet/csharp/language-reference/operators/collection-expressions]
-        /// to create a new <see cref="ReadOnlySet{T}"/> with the specified values.
-        /// </summary>
-        /// <typeparam name="T">The type of elements in the collection.</typeparam>
-        /// <param name="values">The span of values to include in the collection.</param>
-        /// <returns>A new <see cref="ReadOnlySet{T}"/> containing the specified values.</returns>
-        public static ReadOnlySet<T> Create<T>(params ReadOnlySpan<T> values)
-        {
-            if (values.IsEmpty)
-            {
-                return ReadOnlySet<T>.Empty;
-            }
-
-            HashSet<T> hashSet = [];
-            foreach (T value in values)
-            {
-                hashSet.Add(value);
-            }
-
-            return new ReadOnlySet<T>(hashSet);
-        }
     }
 }
