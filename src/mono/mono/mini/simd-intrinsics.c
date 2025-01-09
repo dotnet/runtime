@@ -2651,13 +2651,58 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 	}
 	case SN_IsEvenInteger:
-	case SN_IsFinite:
-	case SN_IsInfinity:
-	case SN_IsInteger:
-	case SN_IsNormal:
-	case SN_IsOddInteger:
-	case SN_IsSubnormal: {
-		// TODO: Implement handling for these
+	case SN_IsOddInteger: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (type_enum_is_float(arg0_type))
+			return NULL;
+
+		// TODO: This requires a centralized way for get_One()
+		//
+		// IsEvenInteger:
+		//   x = And(x, get_One())
+		//   return IntEqCmp(x, zero)
+		//
+		// IsOddInteger
+		//   x = And(x, get_One())
+		//   return IntNeCmp(x, zero)
+
+		return NULL;
+	}
+	case SN_IsFinite: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xones (cfg, klass);
+
+		// TODO: This requires a centralized way for AndNot(x, y)
+		//
+		// x = AndNot(PositiveInfinityBits, x)
+		// return IntNeCmp(x, zero)
+
+		return NULL;
+	}
+	case SN_IsInfinity: {
+		// TODO: This requires a centralized way for Abs(x) and IsPositiveInfinity(x)
+		//
+		// x = Abs(x)
+		// return IsPositiveInfinity(x)
+
+		return NULL;
+	}
+	case SN_IsInteger: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xones (cfg, klass);
+
+		// TODO: This requires a centralized way for IsFinite(x) and Trunc(c)
+		//
+		// tmp1 = IsFinite(x)
+		// tmp2 = Trunc(x)
+		// tmp2 = FltEqCmp(x, tmp2)
+		// return And(tmp1, tmp2)
+
 		return NULL;
 	}
 	case SN_IsNaN: {
@@ -2720,7 +2765,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (arg0_type == MONO_TYPE_R4) {
 			guint32 value[4];
 
-			if (id == SN_IsNegative)
+			if (id == SN_IsNegativeInfinity)
 			{
 				value [0] = 0xFF800000;
 				value [1] = 0xFF800000;
@@ -2740,7 +2785,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else if (arg0_type == MONO_TYPE_R8) {
 			guint64 value[2];
 
-			if (id == SN_IsNegative)
+			if (id == SN_IsNegativeInfinity)
 			{
 				value [0] = 0xFFF0000000000000;
 				value [1] = 0xFFF0000000000000;
@@ -2755,6 +2800,36 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		}
 		return emit_xzero (cfg, klass);
+	}
+	case SN_IsNormal: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_not_xequal (cfg, klass, arg0_type, args [0], emit_xzero (cfg, klass));
+
+		// TODO: This requires a centralized way for Abs(x)
+		// and retyping from float to the same sized unsigned integer
+		//
+		// x = FltAbs(x)
+		// x = UIntSub(x, SmallestNormalBits)
+		// return UIntLtCmp(x, PositiveInfinityBits - SmallestNormalBits)
+
+		return NULL;
+	}
+	case SN_IsSubnormal: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xzero (cfg, klass);
+
+		// TODO: This requires a centralized way for Abs(x)
+		// and retyping from float to the same sized unsigned integer
+		//
+		// x = FltAbs(x)
+		// x = UIntSub(x, 1)
+		// return UIntLtCmp(x, MaxTrailingSignificand)
+
+		return NULL;
 	}
 	case SN_IsZero: {
 		if (!is_element_type_primitive (fsig->params [0]))
