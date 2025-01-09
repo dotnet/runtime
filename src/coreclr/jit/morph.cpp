@@ -5366,7 +5366,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     //
     if (compCurBB->KindIs(BBJ_ALWAYS))
     {
-        BasicBlock* const curBlock = compCurBB;
+        BasicBlock* const curBlock    = compCurBB;
         BasicBlock* const targetBlock = curBlock->GetTarget();
 
         // Flow no longer reaches the target from here.
@@ -5384,7 +5384,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
             if (targetBlock->NumSucc() > 0)
             {
-                JITDUMP("Flow removal out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", curBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+                JITDUMP("Flow removal out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                        curBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
                 fgPgoConsistent = false;
             }
         }
@@ -6750,7 +6751,8 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     if (block->hasProfileWeight() && entryBB->hasProfileWeight())
     {
         entryBB->increaseBBProfileWeight(block->bbWeight);
-        JITDUMP("Flow into entry BB " FMT_BB " increased. Data %s inconsistent.\n", entryBB->bbNum, fgPgoConsistent ? "is now" : "was already");
+        JITDUMP("Flow into entry BB " FMT_BB " increased. Data %s inconsistent.\n", entryBB->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
     }
 
@@ -12721,10 +12723,10 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t     switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-            bool       foundVal  = false;
+            size_t     switchVal           = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned   jumpCnt             = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** jumpTab             = block->GetSwitchTargets()->bbsDstTab;
+            bool       foundVal            = false;
             bool       profileInconsistent = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
@@ -12763,7 +12765,8 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
             if (profileInconsistent)
             {
-                JITDUMP("Flow change out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum, fgPgoConsistent ? "is now" : "was already");
+                JITDUMP("Flow change out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                        fgPgoConsistent ? "is now" : "was already");
                 fgPgoConsistent = false;
             }
 
@@ -14268,7 +14271,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
     elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
 
-    // Propagate flow from block into condBlock
+    // Propagate flow from block into condBlock.
+    // Leave flow out of remainderBlock intact, as it will post-dominate block.
     condBlock->inheritWeight(block);
 
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
@@ -14298,6 +14302,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +--->--------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14314,9 +14319,9 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         thenBlock->SetTargetEdge(fgAddRefPred(remainderBlock, thenBlock));
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
-        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
-        condBlock->SetCond(thenEdge, elseEdge);
+        FlowEdge* const thenEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(elseEdge, thenEdge);
         thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
         elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
         thenEdge->setLikelihood(thenLikelihood / 100.0);

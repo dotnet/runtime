@@ -171,7 +171,8 @@ void Compiler::fgConvertBBToThrowBB(BasicBlock* block)
 
     if (profileInconsistent)
     {
-        JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum, fgPgoConsistent ? "is now" : "was already");
+        JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
     }
 
