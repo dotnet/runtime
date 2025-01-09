@@ -5,7 +5,7 @@
 //
 
 //
-// COM+ IL assembler
+// CLR IL assembler
 //
 #include "ilasmpch.h"
 
