@@ -6533,24 +6533,18 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
             // When the CET is enabled, the interruption happens on the ret instruction in the calee.
             // We need to "pop" rsp to the caller, as if the ret has consumed it.
             interruptedContext->Rsp += 8;
+            DWORD64 ssp = GetSSP(interruptedContext);
+            SetSSP(interruptedContext, ssp + 8);
         }
 
         // Change the IP to be at the original return site, as if we have returned to the caller.
         // That IP is an interruptible safe point, so we can suspend right there.
-        uintptr_t origIp = interruptedContext->Rip;
         interruptedContext->Rip = (uintptr_t)pThread->GetHijackedReturnAddress();
 
         FrameWithCookie<ResumableFrame> frame(pExceptionInfo->ContextRecord);
         frame.Push(pThread);
         CommonTripThread();
         frame.Pop(pThread);
-
-        if (areShadowStacksEnabled)
-        {
-            // Undo the "pop", so that the ret could now succeed.
-            interruptedContext->Rsp = interruptedContext->Rsp - 8;
-            interruptedContext->Rip = origIp;
-        }
 
         return VEH_CONTINUE_EXECUTION;
     }
