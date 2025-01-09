@@ -12,6 +12,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
+#if FEATURE_SINGLE_THREAD
+using WorkQueue = System.Collections.Generic.Queue<object>;
+#else
+using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
+#endif
+
+
 namespace System.Threading
 {
     /// <summary>
@@ -402,26 +409,20 @@ namespace System.Threading
         private bool _dispatchNormalPriorityWorkFirst;
         private bool _mayHaveHighPriorityWorkItems;
 
-#if !FEATURE_SINGLE_THREAD
         // SOS's ThreadPool command depends on the following names
-        internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>();
-        internal readonly ConcurrentQueue<object> highPriorityWorkItems = new ConcurrentQueue<object>();
+        internal readonly WorkQueue workItems = new WorkQueue();
+        internal readonly WorkQueue highPriorityWorkItems = new WorkQueue();
 
 #if CORECLR
-        internal readonly ConcurrentQueue<object> lowPriorityWorkItems =
-            s_prioritizationExperiment ? new ConcurrentQueue<object>() : null!;
+        internal readonly WorkQueue lowPriorityWorkItems =
+            s_prioritizationExperiment ? new WorkQueue() : null!;
 #endif
 
         // SOS's ThreadPool command depends on the following name. The global queue doesn't scale well beyond a point of
         // concurrency. Some additional queues may be added and assigned to a limited number of worker threads if necessary to
         // help with limiting the concurrency level.
-        internal readonly ConcurrentQueue<object>[] _assignableWorkItemQueues =
-            new ConcurrentQueue<object>[s_assignableWorkItemQueueCount];
-#else // FEATURE_SINGLE_THREAD
-        internal readonly Queue<object> workItems = new Queue<object>();
-        internal readonly Queue<object> highPriorityWorkItems = new Queue<object>();
-        internal readonly Queue<object>[] _assignableWorkItemQueues = new Queue<object>[s_assignableWorkItemQueueCount];
-#endif // FEATURE_SINGLE_THREAD
+        internal readonly WorkQueue[] _assignableWorkItemQueues =
+            new WorkQueue[s_assignableWorkItemQueueCount];
 
         private readonly LowLevelLock _queueAssignmentLock = new();
         private readonly int[] _assignedWorkItemQueueThreadCounts =
@@ -461,11 +462,7 @@ namespace System.Threading
         {
             for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
             {
-#if !FEATURE_SINGLE_THREAD
-                _assignableWorkItemQueues[i] = new ConcurrentQueue<object>();
-#else
-                _assignableWorkItemQueues[i] = new Queue<object>();
-#endif
+                _assignableWorkItemQueues[i] = new WorkQueue();
             }
 
             RefreshLoggingEnabled();
@@ -570,7 +567,7 @@ namespace System.Threading
             // This queue is not assigned to any other worker threads. Move its work items to the global queue to prevent them
             // from being starved for a long duration.
             bool movedWorkItem = false;
-            var queue = tl.assignedGlobalWorkItemQueue;
+            WorkQueue queue = tl.assignedGlobalWorkItemQueue;
             while (_assignedWorkItemQueueThreadCounts[queueIndex] <= 0 && queue.TryDequeue(out object? workItem))
             {
                 workItems.Enqueue(workItem);
@@ -650,7 +647,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    var queue =
+                    WorkQueue queue =
                         s_assignableWorkItemQueueCount > 0 && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null
                             ? tl.assignedGlobalWorkItemQueue
                             : workItems;
@@ -672,7 +669,7 @@ namespace System.Threading
                 return;
             }
 
-            ConcurrentQueue<object> queue;
+            WorkQueue queue;
 
             // This is a rough and experimental attempt at identifying work items that should be lower priority than other
             // global work items (even ones that haven't been queued yet), and to queue them to a low-priority global queue that
@@ -902,7 +899,7 @@ namespace System.Threading
             if (dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
             {
                 workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
-                var queue =
+                WorkQueue queue =
                     s_assignableWorkItemQueueCount > 0 ? tl.assignedGlobalWorkItemQueue : workQueue.workItems;
                 if (!queue.TryDequeue(out workItem) && s_assignableWorkItemQueueCount > 0)
                 {
@@ -1246,11 +1243,7 @@ namespace System.Threading
 
         public bool isProcessingHighPriorityWorkItems;
         public int queueIndex;
-#if !FEATURE_SINGLE_THREAD
-        public ConcurrentQueue<object> assignedGlobalWorkItemQueue;
-#else
-        public Queue<object> assignedGlobalWorkItemQueue;
-#endif
+        public WorkQueue assignedGlobalWorkItemQueue;
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
@@ -1315,7 +1308,11 @@ namespace System.Threading
         }
 
         private QueueProcessingStage _queueProcessingStage;
+#if FEATURE_SINGLE_THREAD
+        private readonly Queue<T> _workItems = new Queue<T>();
+#else
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
+#endif
 
         public int Count => _workItems.Count;
 
@@ -1400,7 +1397,11 @@ namespace System.Threading
                 }
             }
 
+#if FEATURE_SINGLE_THREAD
+            UpdateQueueProcessingStage(_workItems.Count == 0);
+#else
             UpdateQueueProcessingStage(_workItems.IsEmpty);
+#endif
 
             ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
             Debug.Assert(tl != null);
@@ -1932,7 +1933,7 @@ namespace System.Threading
             }
 
             // Enumerate assignable global queues
-            foreach (var queue in s_workQueue._assignableWorkItemQueues)
+            foreach (WorkQueue queue in s_workQueue._assignableWorkItemQueues)
             {
                 foreach (object workItem in queue)
                 {
