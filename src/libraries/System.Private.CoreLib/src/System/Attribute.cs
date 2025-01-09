@@ -124,10 +124,14 @@ namespace System
             }
             else
             {
-                // An object of type Attribute will cause a stack overflow.
-                // However, this should never happen because custom attributes cannot contain values other than
+                // An object of type Attribute will cause a stack overflow, so we should fail early.
+                // When this code was written, there was assumption that custom attributes cannot contain values other than
                 // constants, single-dimensional arrays and typeof expressions.
-                Debug.Assert(thisValue is not Attribute);
+                // It's not the case: Attributes could contain everything, they just can't receive "values other than..." from constructor parameters.
+                if (thisValue is Attribute)
+                {
+                    throw new InvalidOperationException("Storing Attribute inside Attribute is not properly supported");
+                }
                 if (!thisValue.Equals(thatValue))
                     return false;
             }
