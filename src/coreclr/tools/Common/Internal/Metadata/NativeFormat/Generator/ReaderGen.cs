@@ -128,7 +128,7 @@ internal sealed class ReaderGen : CsWriter
         CloseScope();
 
         OpenScope($"internal {handleName}(int value)");
-        WriteLine("HandleType hType = (HandleType)(value >> 25);");
+        WriteLine("HandleType hType = (HandleType)((uint)value >> 25);");
         WriteLine($"Debug.Assert(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null);");
         WriteLine($"_value = (value & 0x01FFFFFF) | (((int)HandleType.{record.Name}) << 25);");
         WriteLine("_Validate();");
@@ -168,7 +168,7 @@ internal sealed class ReaderGen : CsWriter
  
         WriteScopeAttribute("[System.Diagnostics.Conditional(\"DEBUG\")]");
         OpenScope("internal void _Validate()");
-        WriteLine($"if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.{record.Name})");
+        WriteLine($"if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.{record.Name})");
         WriteLine("    throw new ArgumentException();");
         CloseScope("_Validate");
 

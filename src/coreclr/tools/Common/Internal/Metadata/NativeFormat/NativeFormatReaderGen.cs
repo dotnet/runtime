@@ -70,7 +70,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ArraySignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ArraySignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ArraySignature) << 25);
             _Validate();
@@ -105,7 +105,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ArraySignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ArraySignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -149,7 +149,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ByReferenceSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ByReferenceSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ByReferenceSignature) << 25);
             _Validate();
@@ -184,7 +184,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ByReferenceSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ByReferenceSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -227,7 +227,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantBooleanArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantBooleanArray) << 25);
             _Validate();
@@ -262,7 +262,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantBooleanArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantBooleanArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -305,7 +305,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantBooleanValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantBooleanValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantBooleanValue) << 25);
             _Validate();
@@ -340,7 +340,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantBooleanValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantBooleanValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -383,7 +383,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantByteArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantByteArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantByteArray) << 25);
             _Validate();
@@ -418,7 +418,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantByteArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantByteArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -461,7 +461,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantByteValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantByteValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantByteValue) << 25);
             _Validate();
@@ -496,7 +496,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantByteValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantByteValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -539,7 +539,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantCharArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantCharArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantCharArray) << 25);
             _Validate();
@@ -574,7 +574,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantCharArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantCharArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -617,7 +617,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantCharValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantCharValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantCharValue) << 25);
             _Validate();
@@ -652,7 +652,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantCharValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantCharValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -695,7 +695,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantDoubleArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantDoubleArray) << 25);
             _Validate();
@@ -730,7 +730,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantDoubleArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantDoubleArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -773,7 +773,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantDoubleValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantDoubleValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantDoubleValue) << 25);
             _Validate();
@@ -808,7 +808,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantDoubleValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantDoubleValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -855,7 +855,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantEnumArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantEnumArray) << 25);
             _Validate();
@@ -890,7 +890,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantEnumArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantEnumArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -937,7 +937,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantEnumValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantEnumValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantEnumValue) << 25);
             _Validate();
@@ -972,7 +972,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantEnumValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantEnumValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1015,7 +1015,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantHandleArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantHandleArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantHandleArray) << 25);
             _Validate();
@@ -1050,7 +1050,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantHandleArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantHandleArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1093,7 +1093,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt16ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Array || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt16Array) << 25);
             _Validate();
@@ -1128,7 +1128,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantInt16Array)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantInt16Array)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1171,7 +1171,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt16ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantInt16Value || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt16Value) << 25);
             _Validate();
@@ -1206,7 +1206,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantInt16Value)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantInt16Value)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1249,7 +1249,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt32ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Array || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt32Array) << 25);
             _Validate();
@@ -1284,7 +1284,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantInt32Array)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantInt32Array)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1327,7 +1327,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt32ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantInt32Value || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt32Value) << 25);
             _Validate();
@@ -1362,7 +1362,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantInt32Value)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantInt32Value)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1405,7 +1405,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt64ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Array || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt64Array) << 25);
             _Validate();
@@ -1440,7 +1440,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantInt64Array)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantInt64Array)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1483,7 +1483,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantInt64ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantInt64Value || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantInt64Value) << 25);
             _Validate();
@@ -1518,7 +1518,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantInt64Value)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantInt64Value)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1557,7 +1557,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantReferenceValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantReferenceValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantReferenceValue) << 25);
             _Validate();
@@ -1592,7 +1592,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantReferenceValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantReferenceValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1635,7 +1635,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSByteArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSByteArray) << 25);
             _Validate();
@@ -1670,7 +1670,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantSByteArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantSByteArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1713,7 +1713,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSByteValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantSByteValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSByteValue) << 25);
             _Validate();
@@ -1748,7 +1748,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantSByteValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantSByteValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1791,7 +1791,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSingleArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSingleArray) << 25);
             _Validate();
@@ -1826,7 +1826,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantSingleArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantSingleArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1869,7 +1869,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantSingleValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantSingleValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantSingleValue) << 25);
             _Validate();
@@ -1904,7 +1904,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantSingleValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantSingleValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -1948,7 +1948,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantStringArray || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantStringArray) << 25);
             _Validate();
@@ -1983,7 +1983,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantStringArray)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantStringArray)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2028,7 +2028,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantStringValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantStringValue || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantStringValue) << 25);
             _Validate();
@@ -2063,7 +2063,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantStringValue)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantStringValue)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2106,7 +2106,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt16ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Array || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt16Array) << 25);
             _Validate();
@@ -2141,7 +2141,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantUInt16Array)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantUInt16Array)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2184,7 +2184,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt16ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt16Value || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt16Value) << 25);
             _Validate();
@@ -2219,7 +2219,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantUInt16Value)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantUInt16Value)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2262,7 +2262,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt32ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Array || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt32Array) << 25);
             _Validate();
@@ -2297,7 +2297,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantUInt32Array)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantUInt32Array)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2340,7 +2340,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt32ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt32Value || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt32Value) << 25);
             _Validate();
@@ -2375,7 +2375,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantUInt32Value)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantUInt32Value)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2418,7 +2418,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt64ArrayHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Array || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt64Array) << 25);
             _Validate();
@@ -2453,7 +2453,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantUInt64Array)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantUInt64Array)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2496,7 +2496,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ConstantUInt64ValueHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ConstantUInt64Value || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ConstantUInt64Value) << 25);
             _Validate();
@@ -2531,7 +2531,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ConstantUInt64Value)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ConstantUInt64Value)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2584,7 +2584,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal CustomAttributeHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.CustomAttribute || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.CustomAttribute) << 25);
             _Validate();
@@ -2619,7 +2619,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.CustomAttribute)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.CustomAttribute)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2679,7 +2679,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal EventHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.Event || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.Event) << 25);
             _Validate();
@@ -2714,7 +2714,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.Event)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.Event)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2778,7 +2778,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal FieldHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.Field || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.Field) << 25);
             _Validate();
@@ -2813,7 +2813,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.Field)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.Field)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2857,7 +2857,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal FieldSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.FieldSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.FieldSignature) << 25);
             _Validate();
@@ -2892,7 +2892,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.FieldSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.FieldSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -2935,7 +2935,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal FunctionPointerSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.FunctionPointerSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.FunctionPointerSignature) << 25);
             _Validate();
@@ -2970,7 +2970,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.FunctionPointerSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.FunctionPointerSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3034,7 +3034,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal GenericParameterHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.GenericParameter || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.GenericParameter) << 25);
             _Validate();
@@ -3069,7 +3069,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.GenericParameter)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.GenericParameter)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3122,7 +3122,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal MemberReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.MemberReference || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.MemberReference) << 25);
             _Validate();
@@ -3157,7 +3157,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.MemberReference)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.MemberReference)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3224,7 +3224,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.Method || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.Method) << 25);
             _Validate();
@@ -3259,7 +3259,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.Method)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.Method)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3308,7 +3308,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodInstantiationHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.MethodInstantiation || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodInstantiation) << 25);
             _Validate();
@@ -3343,7 +3343,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.MethodInstantiation)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.MethodInstantiation)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3390,7 +3390,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodSemanticsHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.MethodSemantics || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodSemantics) << 25);
             _Validate();
@@ -3425,7 +3425,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.MethodSemantics)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.MethodSemantics)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3487,7 +3487,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.MethodSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodSignature) << 25);
             _Validate();
@@ -3522,7 +3522,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.MethodSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.MethodSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3565,7 +3565,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal MethodTypeVariableSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.MethodTypeVariableSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.MethodTypeVariableSignature) << 25);
             _Validate();
@@ -3600,7 +3600,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.MethodTypeVariableSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.MethodTypeVariableSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3653,7 +3653,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ModifiedTypeHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ModifiedType || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ModifiedType) << 25);
             _Validate();
@@ -3688,7 +3688,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ModifiedType)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ModifiedType)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3745,7 +3745,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamedArgumentHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.NamedArgument || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.NamedArgument) << 25);
             _Validate();
@@ -3780,7 +3780,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.NamedArgument)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.NamedArgument)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3840,7 +3840,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceDefinitionHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.NamespaceDefinition || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.NamespaceDefinition) << 25);
             _Validate();
@@ -3875,7 +3875,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.NamespaceDefinition)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.NamespaceDefinition)
                 throw new ArgumentException();
         } // _Validate
 
@@ -3923,7 +3923,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal NamespaceReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.NamespaceReference || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.NamespaceReference) << 25);
             _Validate();
@@ -3958,7 +3958,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.NamespaceReference)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.NamespaceReference)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4018,7 +4018,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ParameterHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.Parameter || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.Parameter) << 25);
             _Validate();
@@ -4053,7 +4053,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.Parameter)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.Parameter)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4097,7 +4097,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal PointerSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.PointerSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.PointerSignature) << 25);
             _Validate();
@@ -4132,7 +4132,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.PointerSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.PointerSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4196,7 +4196,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal PropertyHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.Property || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.Property) << 25);
             _Validate();
@@ -4231,7 +4231,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.Property)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.Property)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4284,7 +4284,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal PropertySignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.PropertySignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.PropertySignature) << 25);
             _Validate();
@@ -4319,7 +4319,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.PropertySignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.PropertySignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4366,7 +4366,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal QualifiedFieldHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.QualifiedField || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.QualifiedField) << 25);
             _Validate();
@@ -4401,7 +4401,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.QualifiedField)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.QualifiedField)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4448,7 +4448,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal QualifiedMethodHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.QualifiedMethod || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.QualifiedMethod) << 25);
             _Validate();
@@ -4483,7 +4483,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.QualifiedMethod)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.QualifiedMethod)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4527,7 +4527,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal SZArraySignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.SZArraySignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.SZArraySignature) << 25);
             _Validate();
@@ -4562,7 +4562,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.SZArraySignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.SZArraySignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4665,7 +4665,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ScopeDefinitionHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ScopeDefinition || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ScopeDefinition) << 25);
             _Validate();
@@ -4700,7 +4700,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ScopeDefinition)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ScopeDefinition)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4771,7 +4771,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal ScopeReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.ScopeReference || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.ScopeReference) << 25);
             _Validate();
@@ -4806,7 +4806,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.ScopeReference)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.ScopeReference)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4907,7 +4907,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeDefinitionHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.TypeDefinition || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeDefinition) << 25);
             _Validate();
@@ -4942,7 +4942,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.TypeDefinition)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.TypeDefinition)
                 throw new ArgumentException();
         } // _Validate
 
@@ -4993,7 +4993,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeForwarderHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.TypeForwarder || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeForwarder) << 25);
             _Validate();
@@ -5028,7 +5028,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.TypeForwarder)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.TypeForwarder)
                 throw new ArgumentException();
         } // _Validate
 
@@ -5077,7 +5077,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeInstantiationSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.TypeInstantiationSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeInstantiationSignature) << 25);
             _Validate();
@@ -5112,7 +5112,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.TypeInstantiationSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.TypeInstantiationSignature)
                 throw new ArgumentException();
         } // _Validate
 
@@ -5160,7 +5160,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeReferenceHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.TypeReference || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeReference) << 25);
             _Validate();
@@ -5195,7 +5195,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.TypeReference)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.TypeReference)
                 throw new ArgumentException();
         } // _Validate
 
@@ -5239,7 +5239,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeSpecificationHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.TypeSpecification || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeSpecification) << 25);
             _Validate();
@@ -5274,7 +5274,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.TypeSpecification)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.TypeSpecification)
                 throw new ArgumentException();
         } // _Validate
 
@@ -5317,7 +5317,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal TypeVariableSignatureHandle(int value)
         {
-            HandleType hType = (HandleType)(value >> 25);
+            HandleType hType = (HandleType)((uint)value >> 25);
             Debug.Assert(hType == 0 || hType == HandleType.TypeVariableSignature || hType == HandleType.Null);
             _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeVariableSignature) << 25);
             _Validate();
@@ -5352,7 +5352,7 @@ namespace Internal.Metadata.NativeFormat
         [System.Diagnostics.Conditional("DEBUG")]
         internal void _Validate()
         {
-            if ((HandleType)((_value & 0xFF000000) >> 25) != HandleType.TypeVariableSignature)
+            if ((HandleType)((uint)(_value & 0xFF000000) >> 25) != HandleType.TypeVariableSignature)
                 throw new ArgumentException();
         } // _Validate
 

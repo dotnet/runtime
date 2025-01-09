@@ -89,7 +89,7 @@ namespace Internal.Metadata.NativeFormat
 
         internal void Validate(params HandleType[] permittedTypes)
         {
-            var myHandleType = (HandleType)(_value >> 25);
+            var myHandleType = (HandleType)((uint)_value >> 25);
             foreach (var hType in permittedTypes)
             {
                 if (myHandleType == hType)
@@ -109,7 +109,7 @@ namespace Internal.Metadata.NativeFormat
             _value = (int)type << 25 | (int)offset;
         }
 
-        public HandleType HandleType => (HandleType)(_value >> 25);
+        public HandleType HandleType => (HandleType)((uint)_value >> 25);
 
         internal int Offset => _value & 0x01FFFFFF;
 
