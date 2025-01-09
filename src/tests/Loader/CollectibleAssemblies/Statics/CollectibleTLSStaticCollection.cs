@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
-namespace CollectilbleThreadStaticShutdownRace
+namespace CollectibleThreadStaticShutdownRace
 {
     public class CollectilbleThreadStaticShutdownRace
     {
