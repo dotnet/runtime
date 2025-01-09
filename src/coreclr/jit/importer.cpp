@@ -13190,14 +13190,15 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             return;
         }
 
-        if ((arg.GetWellKnownArg() == WellKnownArg::ThisPointer) && ((methInfo->options & CORINFO_OPT_COPY_STRUCT_INSTANCE) != 0))
+        if ((arg.GetWellKnownArg() == WellKnownArg::ThisPointer) &&
+            ((methInfo->options & CORINFO_OPT_COPY_STRUCT_INSTANCE) != 0))
         {
             // Method call to a struct instance method that operates on a copy.
             // We will load the instance as part of copying, so set up flags to
             // indicate that there is a side effect.
             inlArgInfo[ilArgCnt].argIsByRefToCopy = true;
-            inlArgInfo[ilArgCnt].argHasGlobRef = true;
-            inlArgInfo[ilArgCnt].argHasSideEff = true;
+            inlArgInfo[ilArgCnt].argHasGlobRef    = true;
+            inlArgInfo[ilArgCnt].argHasSideEff    = true;
         }
 
         ilArgCnt++;

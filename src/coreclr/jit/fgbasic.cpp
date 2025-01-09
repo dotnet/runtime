@@ -2553,7 +2553,6 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     }
 }
 
-
 //------------------------------------------------------------------------
 // fgInitializeThisCopyVar:
 //   Initialize the local used to copy the "this" instance to for struct
@@ -2565,7 +2564,7 @@ void Compiler::fgInitializeThisCopyVar()
     lvaThisCopyVar = lvaGrabTemp(false DEBUGARG("Copy of 'this'"));
     lvaSetStruct(lvaThisCopyVar, info.compClassHnd, false);
 
-    LclVarDsc* lclDsc = lvaGetDesc(lvaThisCopyVar);
+    LclVarDsc* lclDsc     = lvaGetDesc(lvaThisCopyVar);
     lclDsc->lvHasLdAddrOp = 1;
 }
 

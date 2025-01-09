@@ -1505,7 +1505,7 @@ void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
     varDsc->lvType          = TYP_REF;
     varDsc->lvIsParam       = true;
 
-     // The final home for this incoming register might be our local stack frame
+    // The final home for this incoming register might be our local stack frame
     varDsc->lvOnFrame = true;
 
 #ifdef DEBUG
@@ -1517,7 +1517,8 @@ void Compiler::lvaInitAsyncContinuation(InitVarDscInfo* varDscInfo)
         // Passed in register
 
         varDsc->lvIsRegArg = 1;
-        varDsc->SetArgReg(genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
+        varDsc->SetArgReg(
+            genMapRegArgNumToRegNum(varDscInfo->regArgNum(TYP_INT), varDsc->TypeGet(), info.compCallConv));
 #if FEATURE_MULTIREG_ARGS
         varDsc->SetOtherArgReg(REG_NA);
 #endif

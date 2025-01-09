@@ -43,7 +43,7 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               bool hasAsyncRet);
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
@@ -51,7 +51,7 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               bool hasAsyncRet);
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */

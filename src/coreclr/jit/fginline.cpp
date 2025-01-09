@@ -1760,9 +1760,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 //    newStmt   - updated with the new statement
 //    callDI    - debug info for the call
 //
-void Compiler::fgInsertInlineeArgument(
-    InlineInfo* inlineInfo,
-    const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI)
+void Compiler::fgInsertInlineeArgument(InlineInfo*       inlineInfo,
+                                       const InlArgInfo& argInfo,
+                                       BasicBlock*       block,
+                                       Statement**       afterStmt,
+                                       Statement**       newStmt,
+                                       const DebugInfo&  callDI)
 {
     const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
     CallArg*   arg            = argInfo.arg;
@@ -1798,16 +1801,17 @@ void Compiler::fgInsertInlineeArgument(
         }
         else if (argInfo.argIsByRefToCopy)
         {
-            ClassLayout* layout = typGetObjLayout(inlineInfo->inlineCandidateInfo->clsHandle);
-            unsigned copyOfThisLcl = lvaGrabTemp(false DEBUGARG("Copy of inlinee struct instance"));
+            ClassLayout* layout        = typGetObjLayout(inlineInfo->inlineCandidateInfo->clsHandle);
+            unsigned     copyOfThisLcl = lvaGrabTemp(false DEBUGARG("Copy of inlinee struct instance"));
             lvaSetStruct(copyOfThisLcl, layout, false);
             GenTree* copyBlock = gtNewStoreLclVarNode(copyOfThisLcl, gtNewBlkIndir(layout, argNode));
-            *newStmt = gtNewStmt(copyBlock, callDI);
+            *newStmt           = gtNewStmt(copyBlock, callDI);
             fgInsertStmtAfter(block, *afterStmt, *newStmt);
             DISPSTMT(*newStmt);
             *afterStmt = *newStmt;
 
-            GenTree* storeTmp = gtNewTempStore(argInfo.argTmpNum, gtNewLclVarAddrNode(copyOfThisLcl, argNode->TypeGet()));
+            GenTree* storeTmp =
+                gtNewTempStore(argInfo.argTmpNum, gtNewLclVarAddrNode(copyOfThisLcl, argNode->TypeGet()));
             *newStmt = gtNewStmt(storeTmp, callDI);
             fgInsertStmtAfter(block, *afterStmt, *newStmt);
             DISPSTMT(*newStmt);

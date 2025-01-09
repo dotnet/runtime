@@ -11,7 +11,8 @@ class Async2Transformation
         unsigned GCDataIndex;
         unsigned GCDataCount;
 
-        explicit LiveLocalInfo(unsigned lclNum) : LclNum(lclNum)
+        explicit LiveLocalInfo(unsigned lclNum)
+            : LclNum(lclNum)
         {
         }
     };
@@ -32,7 +33,7 @@ class Async2Transformation
     unsigned                      m_exceptionVar            = BAD_VAR_NUM;
     BasicBlock*                   m_lastSuspensionBB        = nullptr;
     BasicBlock*                   m_lastResumptionBB        = nullptr;
-    BasicBlock* m_sharedReturnBB                            = nullptr;
+    BasicBlock*                   m_sharedReturnBB          = nullptr;
 
     void LiftLIREdges(BasicBlock*                    block,
                       GenTree*                       beyond,
@@ -45,16 +46,15 @@ class Async2Transformation
                    class AsyncLiveness&      life,
                    BasicBlock**              remainder);
 
-    GenTreeCall* CreateAllocContinuationCall(
-        AsyncLiveness& life,
-        GenTree* prevContinuation,
-        unsigned gcRefsCount,
-        unsigned int dataSize);
+    GenTreeCall* CreateAllocContinuationCall(AsyncLiveness& life,
+                                             GenTree*       prevContinuation,
+                                             unsigned       gcRefsCount,
+                                             unsigned int   dataSize);
 
-    GenTreeIndir* LoadFromOffset(GenTree*     base,
-                                 unsigned     offset,
-                                 var_types    type,
-                                 GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
+    GenTreeIndir*    LoadFromOffset(GenTree*     base,
+                                    unsigned     offset,
+                                    var_types    type,
+                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
     GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value);
 
     unsigned GetDataArrayVar();
@@ -69,7 +69,9 @@ class Async2Transformation
 
 public:
     Async2Transformation(Compiler* comp)
-        : m_comp(comp), m_liveLocals(comp->getAllocator(CMK_Async2)), m_resumptionBBs(comp->getAllocator(CMK_Async2))
+        : m_comp(comp)
+        , m_liveLocals(comp->getAllocator(CMK_Async2))
+        , m_resumptionBBs(comp->getAllocator(CMK_Async2))
     {
     }
 

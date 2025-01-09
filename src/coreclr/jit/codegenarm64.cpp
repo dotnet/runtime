@@ -5197,10 +5197,10 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     GetEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
                                retSize, EA_UNKNOWN,
                                false, // hasAsyncRet
-                               gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur, DebugInfo(), callTarget, /* ireg */
-                               REG_NA, 0, 0,                                     /* xreg, xmul, disp */
-                               false                                             /* isJump */
+                               gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(),
+                               callTarget,   /* ireg */
+                               REG_NA, 0, 0, /* xreg, xmul, disp */
+                               false         /* isJump */
     );
 
     regMaskTP killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);

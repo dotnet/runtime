@@ -1655,9 +1655,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN, compiler->eeFindHelper(helper),
                                    INDEBUG_LDISASM_COMMA(nullptr) addr, argSize, retSize,
                                    false, // hasAsyncRet
-                                   gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(), REG_NA, REG_NA, 0,
-                                   0,    /* ilOffset, ireg, xreg, xmul, disp */
-                                   false /* isJump */
+                                   gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur, DebugInfo(),
+                                   REG_NA, REG_NA, 0, 0, /* ilOffset, ireg, xreg, xmul, disp */
+                                   false                 /* isJump */
         );
     }
 

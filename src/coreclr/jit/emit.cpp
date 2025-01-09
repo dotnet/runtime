@@ -3561,8 +3561,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  VARSET_VALARG_TP GCvars,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
-                                                 emitAttr         retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 emitAttr retSizeIn
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                                                  bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
@@ -3648,8 +3648,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  VARSET_VALARG_TP GCvars,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
-                                                 emitAttr         retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 emitAttr retSizeIn
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                                                  bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
