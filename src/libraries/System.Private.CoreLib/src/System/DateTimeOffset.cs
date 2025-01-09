@@ -587,8 +587,7 @@ namespace System
         {
             if (seconds < UnixMinSeconds || seconds > UnixMaxSeconds)
             {
-                throw new ArgumentOutOfRangeException(nameof(seconds),
-                    SR.Format(SR.ArgumentOutOfRange_Range, UnixMinSeconds, UnixMaxSeconds));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(seconds), seconds, UnixMinSeconds, UnixMaxSeconds);
             }
 
             long ticks = seconds * TimeSpan.TicksPerSecond + DateTime.UnixEpochTicks;
@@ -602,8 +601,7 @@ namespace System
 
             if (milliseconds < MinMilliseconds || milliseconds > MaxMilliseconds)
             {
-                throw new ArgumentOutOfRangeException(nameof(milliseconds),
-                    SR.Format(SR.ArgumentOutOfRange_Range, MinMilliseconds, MaxMilliseconds));
+                ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(milliseconds), milliseconds, MinMilliseconds, MaxMilliseconds);
             }
 
             long ticks = milliseconds * TimeSpan.TicksPerMillisecond + DateTime.UnixEpochTicks;
