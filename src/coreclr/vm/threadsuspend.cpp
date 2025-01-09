@@ -3675,7 +3675,7 @@ int RedirectedThrowControlExceptionFilter(
 
     STRESS_LOG0(LF_SYNC, LL_INFO100, "In RedirectedThrowControlExceptionFilter\n");
 
-    // If we get here via COM+ exception, gc-mode is unknown.  We need it to
+    // If we get here via CLR exception, gc-mode is unknown.  We need it to
     // be cooperative for this function.
     _ASSERTE (pThread->PreemptiveGCDisabled());
 

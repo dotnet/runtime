@@ -33,10 +33,6 @@
 #include "comtoclrcall.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #include "argdestination.h"
 
 #define CHECK_APP_DOMAIN    0
@@ -311,13 +307,9 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
 #ifndef DACCESS_COMPILE
     TADDR vptr = pFrame->GetVTablePtr();
     //
-    // Helper MethodFrame,GCFrame,DebuggerSecurityCodeMarkFrame are the most
-    // common frame types, explicitly check for them.
+    // Explicitly check for the most common frames.
     //
     if (vptr == HelperMethodFrame::GetMethodFrameVPtr())
-        return true;
-
-    if (vptr == DebuggerSecurityCodeMarkFrame::GetMethodFrameVPtr())
         return true;
 
     //
@@ -1115,27 +1107,6 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_INTERPRETER
-// Methods of InterpreterFrame.
-InterpreterFrame::InterpreterFrame(Interpreter* interp)
-  : Frame(), m_interp(interp)
-{
-    Push();
-}
-
-
-MethodDesc* InterpreterFrame::GetFunction()
-{
-    return m_interp->GetMethodDesc();
-}
-
-void InterpreterFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
-{
-    return m_interp->GCScanRoots(fn, sc);
-}
-
-#endif // FEATURE_INTERPRETER
 
 #if defined(_DEBUG) && !defined (DACCESS_COMPILE)
 

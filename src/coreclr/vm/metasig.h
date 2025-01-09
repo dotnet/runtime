@@ -519,6 +519,7 @@ DEFINE_METASIG(IM(ArrChar_Int_Int_RetVoid, a(u) i i, v))
 DEFINE_METASIG_T(IM(ArrType_ArrException_Str_RetVoid, a(C(TYPE)) a(C(EXCEPTION)) s, v))
 DEFINE_METASIG(IM(RefInt_RefInt_RefInt_RetArrByte, r(i) r(i) r(i), a(b)))
 DEFINE_METASIG_T(IM(RefInt_RetRuntimeType, r(i) , C(CLASS)))
+DEFINE_METASIG_T(SM(IntPtr_RetRuntimeType, I , C(CLASS)))
 DEFINE_METASIG_T(IM(RuntimeType_RetVoid, C(CLASS) , v))
 
 DEFINE_METASIG_T(IM(RuntimeArgumentHandle_PtrVoid_RetVoid, g(ARGUMENT_HANDLE) P(v), v))

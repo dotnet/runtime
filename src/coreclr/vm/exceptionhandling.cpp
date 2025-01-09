@@ -1547,10 +1547,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     pcfThisFrame->hasFaulted = false;
     pcfThisFrame->isIPadjusted = false;
 
-#ifdef FEATURE_INTERPRETER
-    pcfThisFrame->pFrame = NULL;
-#endif // FEATURE_INTERPRETER
-
     // Initialize the RegDisplay from DC->ContextRecord. DC->ControlPC always contains the IP
     // in the frame for which the personality routine was invoked.
     //
