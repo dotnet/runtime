@@ -221,9 +221,9 @@ namespace System.ComponentModel
         {
             ArgumentNullException.ThrowIfNull(component);
 
-            lock (_syncObj)
+            if (name != null)
             {
-                if (name != null)
+                lock (_syncObj)
                 {
                     for (int i = 0; i < Math.Min(_siteCount, _sites!.Length); i++)
                     {
