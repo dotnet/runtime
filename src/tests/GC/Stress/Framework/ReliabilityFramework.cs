@@ -119,8 +119,8 @@ public class ReliabilityFramework
     private int _reportedFailCnt = 0;
     private RFLogging _logger = new RFLogging();
     private DateTime _lastLogTime = DateTime.Now;
-    private Dictionary<string, uint> _testRanCounter = new();
-    private object _testRanCounterLock = new();
+    private Dictionary<string, uint> _testRunCounter = new();
+    private object _testRunCounterLock = new();
 
     // static members
     private static int s_seed = (int)System.DateTime.Now.Ticks;
@@ -164,8 +164,8 @@ public class ReliabilityFramework
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
 
-        Console.CancelKeyPress += (object sender, ConsoleCancelEventArgs args) => {
-            rf.RecordTestRanCount();
+        Console.CancelKeyPress += (object _, ConsoleCancelEventArgs _) => {
+            rf.RecordTestRunCount();
         };
 
         var configVars = GC.GetConfigurationVariables();
@@ -312,7 +312,7 @@ public class ReliabilityFramework
         }
 
         NoExitPoll();
-        rf.RecordTestRanCount();
+        rf.RecordTestRunCount();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Shutdown w/ ret val of  {0}", retVal));
 
 
@@ -321,17 +321,17 @@ public class ReliabilityFramework
         return (retVal);
     }
 
-    public void RecordTestRanCount()
+    public void RecordTestRunCount()
     {
         StringBuilder sb = new();
-        lock (_testRanCounterLock)
+        lock (_testRunCounterLock)
         {
-            foreach(var item in _testRanCounter)
+            foreach(var item in _testRunCounter)
             {
                 sb.AppendLine($"{item.Key}: {item.Value}");
             }  
         }
-        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests ran count:\n{sb}");
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests run count:\n{sb}");
     }
 
     public void HandleOom(Exception e, string message)
@@ -644,7 +644,7 @@ public class ReliabilityFramework
         
         foreach (var test in _curTestSet.Tests)
         {
-            _testRanCounter[test.RefOrID] = 0;
+            _testRunCounter[test.RefOrID] = 0;
         }
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
@@ -1222,10 +1222,10 @@ public class ReliabilityFramework
                     break;
             }
 
-            lock (_testRanCounterLock)
+            lock (_testRunCounterLock)
             {
                 string testRefOrID = daTest.RefOrID;
-                _testRanCounter[testRefOrId] = _testRanCounter.GetValueOrDefault(testRefOrId, 0) + 1;
+                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
             }
         }
         catch (Exception e)
