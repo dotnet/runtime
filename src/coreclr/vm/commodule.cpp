@@ -710,13 +710,13 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
 
     DWORD dwNumTypeDefs = pInternalImport->EnumGetCount(&hEnum);
 
-    // Allocate the COM+ array
+    // Allocate the CLR array
     gc.refArrClasses = (PTRARRAYREF) AllocateObjectArray(dwNumTypeDefs, CoreLibBinder::GetClass(CLASS__CLASS));
 
     DWORD curPos = 0;
     mdTypeDef tdCur = mdTypeDefNil;
 
-    // Now create each COM+ Method object and insert it into the array.
+    // Now create each CLR Method object and insert it into the array.
     while (pInternalImport->EnumNext(&hEnum, &tdCur))
     {
         // Get the VM class for the current class token
@@ -745,7 +745,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
         MethodTable* pMT = curClass.GetMethodTable();
         PREFIX_ASSUME(pMT != NULL);
 
-        // Get the COM+ Class object
+        // Get the CLR Class object
         OBJECTREF refCurClass = pMT->GetManagedClassObject();
         _ASSERTE("GetManagedClassObject failed." && refCurClass != NULL);
 
@@ -767,7 +767,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QC
     // We should have filled the array exactly.
     _ASSERTE(curPos == dwNumTypeDefs);
 
-    // Assign the return value to the COM+ array
+    // Assign the return value to the CLR array
     retTypes.Set(gc.refArrClasses);
 
     GCPROTECT_END();

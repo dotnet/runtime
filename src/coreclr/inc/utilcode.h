@@ -485,7 +485,7 @@ public:
 void AddThreadPreferredUILanguages(StringArrayList* pArray);
 #endif
 //*****************************************************************************
-// CCompRC manages string Resource access for COM+. This includes loading
+// CCompRC manages string Resource access for CLR. This includes loading
 // the MsCorRC.dll for resources as well allowing each thread to use a
 // a different localized version.
 //*****************************************************************************
