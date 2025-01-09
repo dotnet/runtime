@@ -24,7 +24,6 @@ namespace System.IO.Compression
         private bool _readEntries;
         private readonly bool _leaveOpen;
         private long _centralDirectoryStart; // only valid after ReadCentralDirectory
-        private long _expectedCentralDirectorySize; // only valid after ReadCentralDirectory
         private bool _isDisposed;
         private uint _numberOfThisDisk; // only valid after ReadCentralDirectory
         private long _expectedNumberOfEntries;
@@ -484,7 +483,7 @@ namespace System.IO.Compression
 
             try
             {
-                // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart and _expectedCentralDirectorySize
+                // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart
 
                 _archiveStream.Seek(_centralDirectoryStart, SeekOrigin.Begin);
 
@@ -546,7 +545,7 @@ namespace System.IO.Compression
                     currPosition = 0;
                 }
 
-                if (numberOfEntries < _expectedNumberOfEntries)
+                if (numberOfEntries != _expectedNumberOfEntries)
                 {
                     throw new InvalidDataException(SR.NumEntriesWrong);
                 }
@@ -594,7 +593,6 @@ namespace System.IO.Compression
 
                 _numberOfThisDisk = eocd.NumberOfThisDisk;
                 _centralDirectoryStart = eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
-                _expectedCentralDirectorySize = eocd.SizeOfCentralDirectory;
 
                 if (eocd.NumberOfEntriesInTheCentralDirectory != eocd.NumberOfEntriesInTheCentralDirectoryOnThisDisk)
                     throw new InvalidDataException(SR.SplitSpanned);
@@ -673,7 +671,6 @@ namespace System.IO.Compression
 
                     _expectedNumberOfEntries = (long)record.NumberOfEntriesTotal;
                     _centralDirectoryStart = (long)record.OffsetOfCentralDirectory;
-                    _expectedCentralDirectorySize = (long)record.SizeOfCentralDirectory;
                 }
             }
         }
