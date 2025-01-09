@@ -43,6 +43,11 @@ namespace Internal.Runtime
         public const ushort Reabstraction = 0xFFFF;
     }
 
+    internal static class DispatchMapCodePointerFlags
+    {
+        public const int RequiresInstantiatingThunkFlag = 2;
+    }
+
     internal static class SpecialGVMInterfaceEntry
     {
         public const uint Diamond = 0xFFFFFFFF;
