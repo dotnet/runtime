@@ -4779,11 +4779,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
     lvaStressLclFld();
@@ -4813,6 +4808,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
+
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
 
     // GS security checks for unsafe buffers
