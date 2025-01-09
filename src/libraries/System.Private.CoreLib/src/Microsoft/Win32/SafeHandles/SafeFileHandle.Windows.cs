@@ -136,8 +136,9 @@ namespace Microsoft.Win32.SafeHandles
                 int errorCode = Marshal.GetLastPInvokeError();
 
                 // Only throw for errors that indicate there is not enough space.
-                if (errorCode == Interop.Errors.ERROR_DISK_FULL ||
-                    errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
+                if (errorCode is Interop.Errors.ERROR_DISK_FULL or
+                    Interop.Errors.ERROR_FILE_TOO_LARGE or
+                    Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
                     fileHandle.Dispose();
 
