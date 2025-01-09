@@ -1638,10 +1638,18 @@ static guint16 sri_vector_methods [] = {
 	SN_GreaterThanOrEqual,
 	SN_GreaterThanOrEqualAll,
 	SN_GreaterThanOrEqualAny,
+	SN_IsEvenInteger,
+	SN_IsFinite,
+	SN_IsInfinity,
+	SN_IsInteger,
 	SN_IsNaN,
 	SN_IsNegative,
+	SN_IsNegativeInfinity,
+	SN_IsNormal,
+	SN_IsOddInteger,
 	SN_IsPositive,
 	SN_IsPositiveInfinity,
+	SN_IsSubnormal,
 	SN_IsZero,
 	SN_LessThan,
 	SN_LessThanAll,
@@ -2642,6 +2650,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return ret;
 		}
 	}
+	case SN_IsEvenInteger:
+	case SN_IsFinite:
+	case SN_IsInfinity:
+	case SN_IsInteger:
+	case SN_IsNormal:
+	case SN_IsOddInteger:
+	case SN_IsSubnormal: {
+		// TODO: Implement handling for these
+		return NULL;
+	}
 	case SN_IsNaN: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
@@ -2695,24 +2713,43 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		}
 		return ins;
 	}
+	case SN_IsNegativeInfinity:
 	case SN_IsPositiveInfinity: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		if (arg0_type == MONO_TYPE_R4) {
 			guint32 value[4];
 
-			value [0] = 0x7F800000;
-			value [1] = 0x7F800000;
-			value [2] = 0x7F800000;
-			value [3] = 0x7F800000;
+			if (id == SN_IsNegative)
+			{
+				value [0] = 0xFF800000;
+				value [1] = 0xFF800000;
+				value [2] = 0xFF800000;
+				value [3] = 0xFF800000;
+			}
+			else
+			{
+				value [0] = 0x7F800000;
+				value [1] = 0x7F800000;
+				value [2] = 0x7F800000;
+				value [3] = 0x7F800000;
+			}
 
 			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		} else if (arg0_type == MONO_TYPE_R8) {
 			guint64 value[2];
 
-			value [0] = 0x7FF0000000000000;
-			value [1] = 0x7FF0000000000000;
+			if (id == SN_IsNegative)
+			{
+				value [0] = 0xFFF0000000000000;
+				value [1] = 0xFFF0000000000000;
+			}
+			else
+			{
+				value [0] = 0x7FF0000000000000;
+				value [1] = 0x7FF0000000000000;
+			}
 
 			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
@@ -6525,6 +6562,10 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	if (!has_intrinsic_cattr (cmethod)) {
+		// We shouldn't be processing any methods which aren't marked [Intrinsic]
+		return NULL;
+	}
 	return emit_intrinsics (cfg, cmethod, fsig, args, emit_simd_intrinsics);
 }
 
