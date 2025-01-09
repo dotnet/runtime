@@ -149,6 +149,9 @@ namespace Microsoft.Win32.SafeHandles
                                                         ? SR.IO_DiskFull_Path_AllocationSize
                                                         : SR.IO_FileTooLarge_Path_AllocationSize,
                                             fullPath, preallocationSize), Win32Marshal.MakeHRFromErrorCode(errorCode));
+
+                    // SetFileInformationByHandle fails with ERROR_DISK_FULL in certain cases where the size is disallowed by filesystem
+                    // such as >4GB on FAT32 volume. We cannot distinguish them currently.
                 }
             }
         }
