@@ -169,8 +169,8 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Drawing is not supported on non windows platforms in .NET 7.0+.
-        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
+        // Drawing is not supported on non windows platforms in .NET 7.0+ and on Mono.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore && IsNotMonoRuntime;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
