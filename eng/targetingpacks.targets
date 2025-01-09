@@ -163,10 +163,10 @@
           Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>
-      <RuntimeFramework Version="$(ProductVersion)"
-                        Condition="'$(StageTwoBuild)' != 'true' and '%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-      <RuntimeFramework Version="$(BundledNETCoreAppPackageVersion)"
-                        Condition="'$(StageTwoBuild)' == 'true' and '%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+      <RuntimeFramework Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'">
+        <Version Condition="'$(StageTwoBuild)' != 'true'">$(ProductVersion)</Version>
+        <Version Condition="'$(StageTwoBuild)' == 'true'">$(BundledNETCoreAppPackageVersion)</Version>
+      </RuntimeFramework>
     </ItemGroup>
   </Target>
 </Project>
