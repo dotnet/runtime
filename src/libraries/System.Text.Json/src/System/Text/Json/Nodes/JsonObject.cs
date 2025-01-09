@@ -131,6 +131,31 @@ namespace System.Text.Json.Nodes
             return Dictionary.TryGetValue(propertyName, out jsonNode);
         }
 
+        /// <summary>
+        ///   Gets the value associated with the specified property name.
+        /// </summary>
+        /// <param name="propertyName">The property name of the value to get.</param>
+        /// <param name="jsonNode">
+        ///   When this method returns, it contains the value associated with the specified property name, if the property name is found;
+        ///   otherwise <see langword="null"/>.
+        /// </param>
+        /// <param name="index">The index of <paramref name="propertyName"/> if found; otherwise, -1.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="propertyName"/> is <see langword="null"/>.
+        /// </exception>
+        /// <returns>
+        ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the specified property name; otherwise, <see langword="false"/>.
+        /// </returns>
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode, out int index)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
+        }
+
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
