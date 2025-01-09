@@ -29,7 +29,7 @@ internal class ChromeProvider : WasmHostProvider
     private static readonly Lazy<string> s_browserPath = new(() =>
     {
         string artifactsBinDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..", ".."));
-        return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
+        return BrowserLocator.FindChrome(artifactsBinDir, "CHROME_PATH_FOR_TESTS");
     });
     private static readonly string[] s_messagesToFilterOut = new[]
     {

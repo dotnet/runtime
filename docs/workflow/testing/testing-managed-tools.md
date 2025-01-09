@@ -41,5 +41,5 @@ The `dotnet-test` xunit filter mechanisms work to run a single test or a subset 
 ```
 
 The above command runs all tests whose fully-qualified name contains the substring `MyTest`.  See
-[dotnet test - Run selective unit tests](https://learn.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=mstest#syntax)
+[dotnet test - Run selective unit tests](https://learn.microsoft.com/dotnet/core/testing/selective-unit-tests?pivots=mstest#syntax)
 for the full syntax.

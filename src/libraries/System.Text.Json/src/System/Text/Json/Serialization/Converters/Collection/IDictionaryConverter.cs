@@ -45,6 +45,7 @@ namespace System.Text.Json.Serialization.Converters
             if (state.Current.CollectionEnumerator == null)
             {
                 enumerator = value.GetEnumerator();
+                state.Current.CollectionEnumerator = enumerator;
                 if (!enumerator.MoveNext())
                 {
                     return true;
@@ -60,9 +61,8 @@ namespace System.Text.Json.Serialization.Converters
 
             do
             {
-                if (ShouldFlush(writer, ref state))
+                if (ShouldFlush(ref state, writer))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 
@@ -87,7 +87,6 @@ namespace System.Text.Json.Serialization.Converters
                 object? element = enumerator.Value;
                 if (!_valueConverter.TryWrite(writer, element, options, ref state))
                 {
-                    state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
 

@@ -10,14 +10,6 @@
 
   <!-- FIXME: use proper dependency -->
   <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">
-    <PropertyGroup>
-      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
-    </PropertyGroup>
-    <ItemGroup>
-        <HostConfig Include="v8" Host="v8" js-path="$(_WasmMainJSFileName)" />
-        <HostConfig Include="node" Host="nodejs" js-path="$(_WasmMainJSFileName)" />
-        <HostConfig Include="browser" Host="browser" html-path="index.html" />
-    </ItemGroup>
   </Target>
 
   <!-- Use local runtime pack -->

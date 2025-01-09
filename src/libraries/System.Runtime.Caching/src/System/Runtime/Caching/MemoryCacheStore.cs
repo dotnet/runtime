@@ -26,9 +26,10 @@ namespace System.Runtime.Caching
         private volatile bool _useInsertBlock;
         private readonly MemoryCache _cache;
         private readonly Counters _perfCounters;
-#if NETCOREAPP
+#if NET
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
-        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+        private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
         private static bool _countersSupported => true;
 #endif

@@ -95,7 +95,7 @@
   <ItemGroup>
     <Reference Include="System.Collections" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Security.AccessControl" />

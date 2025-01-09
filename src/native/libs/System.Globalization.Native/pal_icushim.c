@@ -62,8 +62,19 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
     // First try just the unversioned symbol
     if (dlsym(libicuuc, "u_strlen") == NULL)
     {
+        // suppress Wformat-truncation false-positive warning for gcc 7 and 8
+#if defined(__GNUC__) && __GNUC__ > 6 &&__GNUC__ < 9
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+
         // Now try just the _majorVer added
         snprintf(symbolVersion, symbolVersionLen, "_%d%s", majorVer, suffix);
+
+#if defined(__GNUC__) && __GNUC__ > 6 &&__GNUC__ < 9
+#pragma GCC diagnostic pop
+#endif
+
         snprintf(symbolName, SYMBOL_NAME_SIZE, "u_strlen%s", symbolVersion);
         if (dlsym(libicuuc, symbolName) == NULL)
         {
@@ -291,13 +302,13 @@ static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* 
     return libicuuc != NULL;
 }
 
-// Select libraries using the version override specified by the CLR_ICU_VERSION_OVERRIDE
+// Select libraries using the version override specified by the DOTNET_ICU_VERSION_OVERRIDE
 // environment variable.
 // The format of the string in this variable is majorVer[.minorVer[.subVer]] (the brackets
 // indicate optional parts).
 static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-    char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
+    char* versionOverride = getenv("DOTNET_ICU_VERSION_OVERRIDE");
     if (versionOverride != NULL)
     {
         if (strcmp(versionOverride, "build") == 0)

@@ -43,16 +43,7 @@ AppleCryptoNative_X509GetPublicKey(SecCertificateRef cert, SecKeyRef* pPublicKey
     if (cert == NULL || pPublicKeyOut == NULL)
         return kErrorUnknownState;
 
-    if (__builtin_available(macOS 10.14, iOS 12, tvOS 12, *))
-    {
-        *pPublicKeyOut = SecCertificateCopyKey(cert);
-    }
-#if defined(TARGET_IOS) || defined(TARGET_TVOS)
-    else
-    {
-        *pPublicKeyOut = SecCertificateCopyPublicKey(cert);
-    }
-#endif
+    *pPublicKeyOut = SecCertificateCopyKey(cert);
 
     return 1;
 }
@@ -160,7 +151,7 @@ int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDa
     }
 
     *ppDataOut = SecCertificateCopyData(cert);
-    *pOSStatus = *ppDataOut == NULL ? errSecParam : noErr;
+    *pOSStatus = *ppDataOut == NULL ? errSecParam : (OSStatus)noErr;
     return (*pOSStatus == noErr);
 }
 

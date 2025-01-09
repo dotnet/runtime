@@ -35,6 +35,13 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+ee_alloc_context::PerThreadRandom::PerThreadRandom()
+{
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
+}
+
+thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
+
 PInvokeTransitionFrame* Thread::GetTransitionFrame()
 {
     if (ThreadStore::GetSuspendingThread() == this)
@@ -328,14 +335,6 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-bool Thread::CatchAtSafePoint()
-{
-    // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-    // a foreground GC proceed at that point. So it's always safe to return true.
-    ASSERT(IsGCSpecial());
-    return true;
-}
-
 uint64_t Thread::GetPalThreadIdForLogging()
 {
     return m_threadId;
@@ -452,24 +451,16 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
     GCRefKind        returnValueKind      = GCRK_Unknown;
 
+#ifdef TARGET_X86
     if (frameIterator.GetHijackedReturnValueLocation(&pHijackedReturnValue, &returnValueKind))
     {
-        GCRefKind reg0Kind = ExtractReg0ReturnKind(returnValueKind);
-        if (reg0Kind != GCRK_Scalar)
+        GCRefKind returnKind = ExtractReturnKind(returnValueKind);
+        if (returnKind != GCRK_Scalar)
         {
-            EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
+            EnumGcRef(pHijackedReturnValue, returnKind, pfnEnumCallback, pvCallbackData);
         }
-
-#if defined(TARGET_ARM64) || defined(TARGET_UNIX)
-        GCRefKind reg1Kind = ExtractReg1ReturnKind(returnValueKind);
-        if (reg1Kind != GCRK_Scalar)
-        {
-            // X0/X1 or RAX/RDX are saved in hijack frame next to each other in this order
-            EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
-        }
-#endif  // TARGET_ARM64 || TARGET_UNIX
-
     }
+#endif
 
 #ifndef DACCESS_COMPILE
     if (GetRuntimeInstance()->IsConservativeStackReportingEnabled())
@@ -578,14 +569,15 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
 
 #ifndef DACCESS_COMPILE
 
-EXTERN_C void FASTCALL RhpSuspendRedirected();
-EXTERN_C void FASTCALL RhpGcProbeHijack();
-EXTERN_C void FASTCALL RhpGcStressHijack();
+#ifdef FEATURE_HIJACK
+
+EXTERN_C void RhpGcProbeHijack();
+EXTERN_C void RhpGcStressHijack();
 
 // static
 bool Thread::IsHijackTarget(void* address)
 {
-    if (&RhpGcProbeHijack == address)
+    if (PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack) == address)
         return true;
 #ifdef FEATURE_GC_STRESS
     if (&RhpGcStressHijack == address)
@@ -682,10 +674,16 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     if (runtime->IsConservativeStackReportingEnabled() ||
         codeManager->IsSafePoint(pvAddress))
     {
+        // IsUnwindable is precise on arm64, but can give false negatives on other architectures.
+        // (when IP is on the first instruction of an epilog, we still can unwind,
+        // but we can tell if the instruction is the first only if we can navigate instructions backwards and check)
+        // The preciseness of IsUnwindable is tracked in https://github.com/dotnet/runtime/issues/101932
+#if defined(TARGET_ARM64)
         // we may not be able to unwind in some locations, such as epilogs.
         // such locations should not contain safe points.
         // when scanning conservatively we do not need to unwind
         ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
+#endif
 
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
@@ -704,7 +702,9 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
 #endif //FEATURE_SUSPEND_REDIRECTION
     }
 
-    pThread->HijackReturnAddress(pThreadContext, &RhpGcProbeHijack);
+    pThread->HijackReturnAddress(
+        pThreadContext,
+        PalGetHijackTarget(/*defaultHijackTarget*/&RhpGcProbeHijack));
 }
 
 #ifdef FEATURE_GC_STRESS
@@ -785,13 +785,11 @@ void Thread::HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHij
 void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction)
 {
     void** ppvRetAddrLocation;
-    GCRefKind retValueKind;
 
     frameIterator->CalculateCurrentMethodState();
     if (frameIterator->GetCodeManager()->GetReturnAddressHijackInfo(frameIterator->GetMethodInfo(),
         frameIterator->GetRegisterSet(),
-        &ppvRetAddrLocation,
-        &retValueKind))
+        &ppvRetAddrLocation))
     {
         ASSERT(ppvRetAddrLocation != NULL);
 
@@ -808,13 +806,19 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
 
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
-        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retValueKind);
+#if defined(TARGET_X86)
+        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(
+            frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(),
+                                                                frameIterator->GetRegisterSet()));
+#endif
+
         *ppvRetAddrLocation = (void*)pfnHijackFunction;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
     }
 }
+#endif // FEATURE_HIJACK
 
 NATIVE_CONTEXT* Thread::GetInterruptedContext()
 {
@@ -832,6 +836,16 @@ NATIVE_CONTEXT* Thread::EnsureRedirectionContext()
     }
 
     return m_interruptedContext;
+}
+
+EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
+
+    // restore execution at interrupted location
+    PalRestoreContext(pThread->GetInterruptedContext());
+    UNREACHABLE();
 }
 
 bool Thread::Redirect()
@@ -861,6 +875,7 @@ bool Thread::Redirect()
 }
 #endif //FEATURE_SUSPEND_REDIRECTION
 
+#ifdef FEATURE_HIJACK
 bool Thread::InlineSuspend(NATIVE_CONTEXT* interruptedContext)
 {
     ASSERT(!IsDoNotTriggerGcSet());
@@ -930,7 +945,9 @@ void Thread::UnhijackWorker()
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
     m_pvHijackedReturnAddress           = NULL;
+#ifdef TARGET_X86
     m_uHijackedReturnValueFlags         = 0;
+#endif
 }
 
 bool Thread::IsHijacked()
@@ -948,6 +965,7 @@ void* Thread::GetHijackedReturnAddress()
     ASSERT(ThreadStore::GetCurrentThread() == this);
     return m_pvHijackedReturnAddress;
 }
+#endif // FEATURE_HIJACK
 
 void Thread::SetState(ThreadStateFlags flags)
 {
@@ -1020,20 +1038,6 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 
     RhpWaitForGC2(pFrame);
 }
-
-#ifdef FEATURE_SUSPEND_REDIRECTION
-
-EXTERN_C NOINLINE void FASTCALL RhpSuspendRedirected()
-{
-    Thread* pThread = ThreadStore::GetCurrentThread();
-    pThread->WaitForGC(INTERRUPTED_THREAD_MARKER);
-
-    // restore execution at interrupted location
-    PalRestoreContext(pThread->GetInterruptedContext());
-    UNREACHABLE();
-}
-
-#endif //FEATURE_SUSPEND_REDIRECTION
 
 void Thread::PushExInfo(ExInfo * pExInfo)
 {
@@ -1346,3 +1350,13 @@ FCIMPLEND
 #endif //USE_PORTABLE_HELPERS
 
 #endif // !DACCESS_COMPILE
+
+
+EXTERN_C void QCALLTYPE RhSetCurrentThreadName(const TCHAR* name)
+{
+#ifdef TARGET_WINDOWS
+    PalSetCurrentThreadNameW(name);
+#else
+    PalSetCurrentThreadName(name);
+#endif
+}

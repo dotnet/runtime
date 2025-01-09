@@ -45,7 +45,15 @@ GPTR_IMPL(StressLog, g_pStressLog /*, &StressLog::theLog*/);
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-inline __declspec(naked) unsigned __int64 getTimeStamp() {
+
+inline
+#ifdef TARGET_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
+uint64_t getTimeStamp()
+{
 
    __asm {
         RDTSC   // read time stamp counter
@@ -54,7 +62,7 @@ inline __declspec(naked) unsigned __int64 getTimeStamp() {
 }
 
 #else // HOST_X86
-unsigned __int64 getTimeStamp()
+uint64_t getTimeStamp()
 {
     return PalQueryPerformanceCounter();
 }
@@ -65,7 +73,7 @@ unsigned __int64 getTimeStamp()
 /* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
-unsigned __int64 getTickFrequency()
+uint64_t getTickFrequency()
 {
     return PalQueryPerformanceFrequency();
 }
@@ -73,7 +81,7 @@ unsigned __int64 getTickFrequency()
 #endif // DACCESS_COMPILE
 
 StressLog StressLog::theLog = { 0, 0, 0, 0, 0, 0 };
-const static unsigned __int64 RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
+const static uint64_t RECYCLE_AGE = 0x40000000L;        // after a billion cycles, we can discard old threads
 
 /*********************************************************************************/
 
@@ -153,7 +161,7 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper(Thread * pThread) {
     // See if we can recycle a dead thread
     if (VolatileLoad(&theLog.deadCount) > 0)
     {
-        unsigned __int64 recycleStamp = getTimeStamp() - RECYCLE_AGE;
+        uint64_t recycleStamp = getTimeStamp() - RECYCLE_AGE;
         msgs = VolatileLoad(&theLog.logs);
         //find out oldest dead ThreadStressLog in case we can't find one within
         //recycle age but can't create a new chunk
@@ -396,7 +404,7 @@ bool StressLog::Initialize()
     ThreadStressLog* logs = 0;
 
     ThreadStressLog* curThreadStressLog = this->logs;
-    unsigned __int64 lastTimeStamp = 0; // timestamp of last log entry
+    uint64_t lastTimeStamp = 0; // timestamp of last log entry
     while(curThreadStressLog != 0)
     {
         if (!curThreadStressLog->IsReadyForRead())

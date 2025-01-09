@@ -34,6 +34,8 @@ parameters:
   extraVariablesTemplates: []
   preBuildSteps: []
   templatePath: 'templates'
+  templateContext: ''
+  disableComponentGovernance: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -50,6 +52,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
 
     artifacts:
       publish:
@@ -95,10 +100,26 @@ jobs:
         - name: crossArg
           value: '-cross'
 
-      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
-        # This is only required for cross builds.
-        - name: ROOTFS_DIR
-          value: ${{ parameters.jobParameters.crossrootfsDir }}
+      - name: CxxStandardLibraryArg
+        value: ''
+      - ${{ if ne(parameters.cxxStandardLibrary, '') }}:
+        - name: CxxStandardLibraryArg
+          value: /p:TargetCxxStandardLibrary=${{ parameters.cxxStandardLibrary }}
+
+      - name: CxxStandardLibraryStaticArg
+        value: ''
+      - ${{ if ne(parameters.cxxStandardLibraryStatic, '') }}:
+        - name: CxxStandardLibraryStaticArg
+          value: /p:TargetCxxStandardLibraryStatic=${{ parameters.cxxStandardLibraryStatic }}
+
+      - name: CxxAbiLibraryArg
+        value: ''
+      - ${{ if ne(parameters.cxxAbiLibrary, '') }}:
+        - name: CxxAbiLibraryArg
+          value: /p:TargetCxxAbiLibrary=${{ parameters.cxxAbiLibrary }}
+      
+      - name: TargetCxxLibraryConfigurationArgs
+        value: $(CxxStandardLibraryArg) $(CxxStandardLibraryStaticArg) $(CxxAbiLibraryArg)
 
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -167,16 +188,13 @@ jobs:
             arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
           env:
             Token: $(dn-bot-dnceng-artifact-feeds-rw)
-
-    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
-      - task: DownloadPipelineArtifact@2
-        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
-        inputs:
-          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
-          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
+        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
+        # This ensures that creds are set appropriately for all feeds in the config, and that the
+        # credential provider is installed.
+        - task: NuGetAuthenticate@1
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
       - script: |

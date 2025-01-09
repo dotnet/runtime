@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The flags value.</param>
         public NullableAttribute(byte value)
         {
-            NullableFlags = new[] { value };
+            NullableFlags = [value];
         }
 
         /// <summary>Initializes the attribute.</summary>

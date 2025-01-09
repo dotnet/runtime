@@ -1,11 +1,12 @@
 <Project>
   <PropertyGroup>
-    <WasiSdkRoot Condition="'$(WasiSdkRoot)' == ''">$(WASI_SDK_PATH)</WasiSdkRoot>
-    <WasiSysRoot>$([MSBuild]::NormalizeDirectory($(WasiSdkRoot), 'share', 'wasi-sysroot'))</WasiSysRoot>
-    <WasiClang>$(WasiSdkRoot)\bin\clang</WasiClang>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <WasiSysRoot>$([MSBuild]::NormalizeDirectory($(WASI_SDK_PATH), 'share', 'wasi-sysroot'))</WasiSysRoot>
+    <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
 
-    <WasiSdkBinPath>$([MSBuild]::NormalizeDirectory($(WasiSdkRoot), 'bin'))</WasiSdkBinPath>
+    <WasiSdkBinPath>$([MSBuild]::NormalizeDirectory($(WASI_SDK_PATH), 'bin'))</WasiSdkBinPath>
   </PropertyGroup>
   <ItemGroup>
     <WasmToolchainEnvVars Include="PATH=$(WasiSdkBinPath)$(_PathSeparator)$([MSBuild]::Escape($(PATH)))" />

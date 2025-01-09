@@ -214,31 +214,22 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        // Y2K38 will happen one second after "2038/19/01 03:14:07 +00:00". This timestamp represents the seconds since the Unix epoch with a
-        // value of int.MaxValue: 2,147,483,647.
-        // The fixed size fields for mtime, atime and ctime can fit 12 ASCII characters, but the last character is reserved for an ASCII space.
-        // All our entry types should survive the Epochalypse because we internally use long to represent the seconds since Unix epoch, not int.
-        // So if the max allowed value is 77,777,777,777 in octal, then the max allowed seconds since the Unix epoch are 8,589,934,591, which
-        // is way past int MaxValue, but still within the long limits. That number represents the date "2242/16/03 12:56:32 +00:00".
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void WriteTimestampsBeyondEpochalypse(TarEntryFormat format)
+        [MemberData(nameof(WriteTimeStampsWithFormats_TheoryData))]
+        public void WriteTimeStamps(TarEntryFormat format, DateTimeOffset timestamp)
         {
-            DateTimeOffset epochalypse = new DateTimeOffset(2038, 1, 19, 3, 14, 8, TimeSpan.Zero); // One second past Y2K38
             TarEntry entry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
 
-            entry.ModificationTime = epochalypse;
-            Assert.Equal(epochalypse, entry.ModificationTime);
+            entry.ModificationTime = timestamp;
+            Assert.Equal(timestamp, entry.ModificationTime);
 
             if (entry is GnuTarEntry gnuEntry)
             {
-                gnuEntry.AccessTime = epochalypse;
-                Assert.Equal(epochalypse, gnuEntry.AccessTime);
+                gnuEntry.AccessTime = timestamp;
+                Assert.Equal(timestamp, gnuEntry.AccessTime);
 
-                gnuEntry.ChangeTime = epochalypse;
-                Assert.Equal(epochalypse, gnuEntry.ChangeTime);
+                gnuEntry.ChangeTime = timestamp;
+                Assert.Equal(timestamp, gnuEntry.ChangeTime);
             }
 
             using MemoryStream archiveStream = new MemoryStream();
@@ -253,43 +244,24 @@ namespace System.Formats.Tar.Tests
                 TarEntry readEntry = reader.GetNextEntry();
                 Assert.NotNull(readEntry);
 
-                Assert.Equal(epochalypse, readEntry.ModificationTime);
+                Assert.Equal(timestamp, readEntry.ModificationTime);
 
                 if (readEntry is GnuTarEntry gnuReadEntry)
                 {
-                    Assert.Equal(epochalypse, gnuReadEntry.AccessTime);
-                    Assert.Equal(epochalypse, gnuReadEntry.ChangeTime);
+                    Assert.Equal(timestamp, gnuReadEntry.AccessTime);
+                    Assert.Equal(timestamp, gnuReadEntry.ChangeTime);
                 }
             }
         }
 
-        // The fixed size fields for mtime, atime and ctime can fit 12 ASCII characters, but the last character is reserved for an ASCII space.
-        // We internally use long to represent the seconds since Unix epoch, not int.
-        // If the max allowed value is 77,777,777,777 in octal, then the max allowed seconds since the Unix epoch are 8,589,934,591,
-        // which represents the date "2242/03/16 12:56:32 +00:00".
-        // V7, Ustar and GNU would not survive after this date because they only have the fixed size fields to store timestamps.
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void WriteTimestampsBeyondOctalLimit(TarEntryFormat format)
+        [MemberData(nameof(WriteIntField_TheoryData))]
+        public void WriteUid(TarEntryFormat format, int value)
         {
-            DateTimeOffset overLimitTimestamp = new DateTimeOffset(2242, 3, 16, 12, 56, 33, TimeSpan.Zero); // One second past the octal limit
-
             TarEntry entry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
 
-            // Before writing the entry, the timestamps should have no issue
-            entry.ModificationTime = overLimitTimestamp;
-            Assert.Equal(overLimitTimestamp, entry.ModificationTime);
-
-            if (entry is GnuTarEntry gnuEntry)
-            {
-                gnuEntry.AccessTime = overLimitTimestamp;
-                Assert.Equal(overLimitTimestamp, gnuEntry.AccessTime);
-
-                gnuEntry.ChangeTime = overLimitTimestamp;
-                Assert.Equal(overLimitTimestamp, gnuEntry.ChangeTime);
-            }
+            entry.Uid = value;
+            Assert.Equal(value, entry.Uid);
 
             using MemoryStream archiveStream = new MemoryStream();
             using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
@@ -303,14 +275,94 @@ namespace System.Formats.Tar.Tests
                 TarEntry readEntry = reader.GetNextEntry();
                 Assert.NotNull(readEntry);
 
-                // The timestamps get stored as '{1970-01-01 12:00:00 AM +00:00}' due to the +1 overflow
-                Assert.NotEqual(overLimitTimestamp, readEntry.ModificationTime);
+                Assert.Equal(value, readEntry.Uid);
+            }
+        }
 
-                if (readEntry is GnuTarEntry gnuReadEntry)
-                {
-                    Assert.NotEqual(overLimitTimestamp, gnuReadEntry.AccessTime);
-                    Assert.NotEqual(overLimitTimestamp, gnuReadEntry.ChangeTime);
-                }
+        [Theory]
+        [MemberData(nameof(WriteIntField_TheoryData))]
+        public void WriteGid(TarEntryFormat format, int value)
+        {
+            TarEntry entry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
+
+            entry.Gid = value;
+            Assert.Equal(value, entry.Gid);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                TarEntry readEntry = reader.GetNextEntry();
+                Assert.NotNull(readEntry);
+
+                Assert.Equal(value, readEntry.Gid);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteIntField_TheoryData))]
+        public void WriteDeviceMajor(TarEntryFormat format, int value)
+        {
+            if (format == TarEntryFormat.V7)
+            {
+                return; // No DeviceMajor
+            }
+
+            PosixTarEntry? entry = InvokeTarEntryCreationConstructor(format, TarEntryType.BlockDevice, "dir") as PosixTarEntry;
+            Assert.NotNull(entry);
+
+            entry.DeviceMajor = value;
+            Assert.Equal(value, entry.DeviceMajor);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PosixTarEntry? readEntry = reader.GetNextEntry() as PosixTarEntry;
+                Assert.NotNull(readEntry);
+
+                Assert.Equal(value, readEntry.DeviceMajor);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteIntField_TheoryData))]
+        public void WriteDeviceMinor(TarEntryFormat format, int value)
+        {
+            if (format == TarEntryFormat.V7)
+            {
+                return; // No DeviceMinor
+            }
+
+            PosixTarEntry? entry = InvokeTarEntryCreationConstructor(format, TarEntryType.BlockDevice, "dir") as PosixTarEntry;
+            Assert.NotNull(entry);
+
+            entry.DeviceMinor = value;
+            Assert.Equal(value, entry.DeviceMinor);
+
+            using MemoryStream archiveStream = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archiveStream, leaveOpen: true))
+            {
+                writer.WriteEntry(entry);
+            }
+
+            archiveStream.Position = 0;
+            using (TarReader reader = new TarReader(archiveStream))
+            {
+                PosixTarEntry? readEntry = reader.GetNextEntry() as PosixTarEntry;
+                Assert.NotNull(readEntry);
+
+                Assert.Equal(value, readEntry.DeviceMinor);
             }
         }
 
@@ -503,29 +555,6 @@ namespace System.Formats.Tar.Tests
             }
 
             AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
-        }
-
-        [Theory]
-        [InlineData(TarEntryFormat.V7, false)]
-        [InlineData(TarEntryFormat.Ustar, false)]
-        [InlineData(TarEntryFormat.Gnu, false)]
-        [InlineData(TarEntryFormat.V7, true)]
-        [InlineData(TarEntryFormat.Ustar, true)]
-        [InlineData(TarEntryFormat.Gnu, true)]
-        public void WriteEntry_FileSizeOverLegacyLimit_Throws(TarEntryFormat entryFormat, bool unseekableStream)
-        {
-            const long FileSizeOverLimit = LegacyMaxFileSize + 1;
-
-            using MemoryStream ms = new();
-            using Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
-
-            using TarWriter writer = new(s);
-            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
-            writeEntry.DataStream = new SimulatedDataStream(FileSizeOverLimit);
-
-            Assert.Equal(FileSizeOverLimit, writeEntry.Length);
-
-            Assert.Throws<ArgumentException>(() => writer.WriteEntry(writeEntry));
         }
 
         [Theory]

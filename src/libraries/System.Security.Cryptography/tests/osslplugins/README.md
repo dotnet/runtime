@@ -3,6 +3,7 @@
 Once everything is setup tests related to TPM and our engine can be run using:
 
 ```bash
+export DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_ENABLE=true
 ./test.sh
 ```
 
@@ -12,7 +13,7 @@ If TPM environmental variable similar to following is defined:
 
 ```bash
 # 0x81000007 is just an example, read further how to get it
-export DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_TPM_ECDSA_KEY_HANDLE=0x81000007
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDSA_KEY_HANDLE=0x81000007
 ```
 
 then tests using TPM will be run as well and they will use `0x81000007` handle.
@@ -114,7 +115,33 @@ export TSS2_LOG=all+TRACE
 
 Most of the time this should not be needed but it might be useful if you're seeing issues when interacting with the ENGINE.
 
-### Getting TPM handle
+# Testing instructions for OpenSSL Provider
+
+## Installation
+
+To install TPM2 provider refer to https://github.com/tpm2-software/tpm2-openssl - on Ubuntu following step can be used:
+
+```bash
+sudo apt install tpm2-openssl tpm2-tools tpm2-abrmd libtss2-tcti-tabrmd0
+```
+
+## Running provider tests
+
+In order to run provider tests you need to have TPM handles and set one or more of the following environmental variables:
+
+```csharp
+# Handle values are just an example - refer to 'Getting TPM handle' section for instructions on how to create or get them
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDSA_KEY_HANDLE=0x81000007
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_ECDH_KEY_HANDLE=0x8100000d
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_DECRYPT_KEY_HANDLE=0x8100000c
+
+# RSA-PSS tests will always fail due to following issues but they can be run still
+# https://github.com/dotnet/runtime/issues/104080
+# https://github.com/tpm2-software/tpm2-openssl/issues/115
+export DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_SIGN_KEY_HANDLE=0x8100000a
+```
+
+# Getting TPM handle
 
 First, we will need `tpm2-tools`` installed:
 
@@ -122,7 +149,7 @@ First, we will need `tpm2-tools`` installed:
 sudo apt install tpm2-tools
 ```
 
-#### Getting TPM handles
+## Getting TPM handles
 
 If you already have a handle but you forgot what it is you can list all available handles using following command:
 
@@ -145,11 +172,11 @@ You can also extract public key like this if needed:
 tpm2_readpublic -c 0x81000007 -o /tmp/key.pub
 ```
 
-#### Testing handle with OpenSSL CLI
+### Testing handle with OpenSSL CLI
 
 In case you find issues with your handle you can test it using OpenSSL CLI, for example `0x81000004` can be tested like following:
 
-##### RSA key
+#### RSA key
 
 ```bash
 # create testdata file with some content
@@ -168,9 +195,9 @@ openssl pkey -engine tpm2tss -inform engine -in '0x81000007' -pubout -out testke
 openssl pkeyutl -verify -in testdata.dgst -sigfile testdata.sig -inkey testkey.pub -pubin -pkeyopt digest:sha256
 ```
 
-#### Creating keys and handles
+## Creating keys and handles
 
-##### ECDSA key
+### ECDSA key
 
 ```bash
 tpm2_createprimary -C o -g sha256 -G ecc256:ecdsa-sha256:null -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign'
@@ -179,13 +206,34 @@ tpm2_createprimary -C o -g sha256 -G ecc256:ecdsa-sha256:null -c primary.ctx -a 
 tpm2_evictcontrol -C o -c primary.ctx
 ```
 
-##### RSA key (RSAPSS + SHA256)
+### ECDH key
+
+```bash
+tpm2_createprimary -C o -g sha256 -G ecc256 -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|decrypt'
+
+# To create permenent handle and print it:
+tpm2_evictcontrol -C o -c primary.ctx
+```
+
+### RSA key (RSAPSS + SHA256)
 
 This is not used by tests but if needed for further testing:
 
 ```bash
 # To create key
 tpm2_createprimary -C o -g sha256 -G rsa2048:rsapss:null -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|sign'
+
+# To create permenent handle and print it:
+tpm2_evictcontrol -C o -c primary.ctx
+```
+
+### RSA key (decryption)
+
+This is not used by tests but if needed for further testing:
+
+```bash
+# To create key
+tpm2_createprimary -C o -g sha256 -G rsa2048 -c primary.ctx -a 'fixedtpm|fixedparent|sensitivedataorigin|userwithauth|noda|decrypt'
 
 # To create permenent handle and print it:
 tpm2_evictcontrol -C o -c primary.ctx

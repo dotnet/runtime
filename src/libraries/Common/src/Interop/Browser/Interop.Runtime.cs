@@ -69,6 +69,6 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void BindAssemblyExports(IntPtr assemblyNamePtr);
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetAssemblyExport(IntPtr assemblyNamePtr, IntPtr namespacePtr, IntPtr classnamePtr, IntPtr methodNamePtr, IntPtr* monoMethodPtrPtr);
+        public static extern void GetAssemblyExport(IntPtr assemblyNamePtr, IntPtr namespacePtr, IntPtr classnamePtr, IntPtr methodNamePtr, int signatureHash, IntPtr* monoMethodPtrPtr);
     }
 }

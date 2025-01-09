@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -33,29 +34,29 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Register_Unregister_ModuleCountUnchanged()
+        public async Task Register_Unregister_ModuleCountUnchanged()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 int initialCount = GetModuleCount();
                 IAuthenticationModule module = new CustomModule();
                 AuthenticationManager.Register(module);
                 AuthenticationManager.Unregister(module);
                 Assert.Equal(initialCount, GetModuleCount());
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void Register_UnregisterByScheme_ModuleCountUnchanged()
+        public async Task Register_UnregisterByScheme_ModuleCountUnchanged()
         {
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 int initialCount = GetModuleCount();
                 IAuthenticationModule module = new CustomModule();
                 AuthenticationManager.Register(module);
                 AuthenticationManager.Unregister("custom");
                 Assert.Equal(initialCount, GetModuleCount());
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]
@@ -68,11 +69,11 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void CredentialPolicy_Roundtrip()
+        public async Task CredentialPolicy_Roundtrip()
         {
             Assert.Null(AuthenticationManager.CredentialPolicy);
 
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 ICredentialPolicy cp = new DummyCredentialPolicy();
                 AuthenticationManager.CredentialPolicy = cp;
@@ -80,17 +81,17 @@ namespace System.Net.Tests
 
                 AuthenticationManager.CredentialPolicy = null;
                 Assert.Null(AuthenticationManager.CredentialPolicy);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void CustomTargetNameDictionary_ValidCollection()
+        public async Task CustomTargetNameDictionary_ValidCollection()
         {
             Assert.NotNull(AuthenticationManager.CustomTargetNameDictionary);
             Assert.Empty(AuthenticationManager.CustomTargetNameDictionary);
             Assert.Same(AuthenticationManager.CustomTargetNameDictionary, AuthenticationManager.CustomTargetNameDictionary);
 
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 string theKey = "http://www.contoso.com";
                 string theValue = "HTTP/www.contoso.com";
@@ -99,7 +100,7 @@ namespace System.Net.Tests
 
                 AuthenticationManager.CustomTargetNameDictionary.Clear();
                 Assert.Equal(0, AuthenticationManager.CustomTargetNameDictionary.Count);
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         private static int GetModuleCount()

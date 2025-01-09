@@ -21,9 +21,6 @@ VPTR_CLASS(EditAndContinueModule)
 VPTR_CLASS(Module)
 VPTR_CLASS(ReflectionModule)
 
-VPTR_CLASS(AppDomain)
-VPTR_CLASS(SystemDomain)
-
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
@@ -46,18 +43,17 @@ VPTR_CLASS(FlatImageLayout)
 
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)
-VPTR_CLASS(ComPlusMethodFrame)
+VPTR_CLASS(CLRToCOMMethodFrame)
 VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INTERPRETER
-VPTR_CLASS(InterpreterFrame)
-#endif // FEATURE_INTERPRETER
 VPTR_CLASS(DebuggerClassInitMarkFrame)
-VPTR_CLASS(DebuggerSecurityCodeMarkFrame)
 VPTR_CLASS(DebuggerExitFrame)
 VPTR_CLASS(DebuggerU2MCatchHandlerFrame)
 VPTR_CLASS(FaultingExceptionFrame)
+#ifdef FEATURE_EH_FUNCLETS
+VPTR_CLASS(SoftwareExceptionFrame)
+#endif // FEATURE_EH_FUNCLETS
 VPTR_CLASS(FuncEvalFrame)
 VPTR_CLASS(HelperMethodFrame)
 VPTR_CLASS(HelperMethodFrame_1OBJ)
@@ -68,7 +64,6 @@ VPTR_CLASS(HelperMethodFrame_PROTECTOBJ)
 VPTR_CLASS(HijackFrame)
 #endif
 VPTR_CLASS(InlinedCallFrame)
-VPTR_CLASS(MulticastFrame)
 VPTR_CLASS(PInvokeCalliFrame)
 VPTR_CLASS(PrestubMethodFrame)
 VPTR_CLASS(ProtectByRefsFrame)

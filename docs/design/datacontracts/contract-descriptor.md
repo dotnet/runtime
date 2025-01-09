@@ -24,9 +24,9 @@ struct DotNetRuntimeContractDescriptor
     uint32_t flags;
     uint32_t descriptor_size;
     const char *descriptor;
-    uint32_t aux_data_count;
+    uint32_t pointer_data_count;
     uint32_t pad0;
-    uintptr_t *aux_data;
+    uintptr_t *pointer_data;
 };
 ```
 
@@ -45,7 +45,7 @@ reserved bits should be written as zero.  Diagnostic tooling may ignore non-zero
 
 The `descriptor` is a pointer to a UTF-8 JSON string described in [data descriptor physical layout](./data_descriptor.md#Physical_JSON_descriptor).  The total number of bytes is given by `descriptor_size`.
 
-The auxiliary data for the JSON descriptor is stored at the location `aux_data` in `aux_data_count` pointer-sized slots.
+The auxiliary data for the JSON descriptor is stored at the location `pointer_data` in `pointer_data_count` pointer-sized slots.
 
 ### Architecture properties
 
@@ -83,7 +83,7 @@ a JSON integer constant.
   "globals":
   {
     "FEATURE_COMINTEROP": 0,
-    "s_pThreadStore": [ 0 ] // indirect from aux data offset 0
+    "s_pThreadStore": [ 0 ] // indirect from pointer data offset 0
   },
   "contracts": {"Thread": 1, "GCHandle": 1, "ThreadStore": 1}
 }

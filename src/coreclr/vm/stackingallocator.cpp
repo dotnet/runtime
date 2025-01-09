@@ -399,7 +399,7 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
     return retval;
 }
 
-void * __cdecl operator new(size_t n, StackingAllocator * alloc, const NoThrow&) throw()
+void * __cdecl operator new(size_t n, StackingAllocator * alloc, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;
@@ -412,7 +412,7 @@ void * __cdecl operator new(size_t n, StackingAllocator * alloc, const NoThrow&)
     return alloc->UnsafeAllocNoThrow((unsigned)n);
 }
 
-void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const NoThrow&) throw()
+void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FAULT;

@@ -144,7 +144,7 @@ namespace System
         private static readonly string[] s_invariantAbbreviatedMonthNames = InvariantFormatInfo.AbbreviatedMonthNames;
         private static readonly string[] s_invariantAbbreviatedDayNames = InvariantFormatInfo.AbbreviatedDayNames;
 
-        internal static string[] fixedNumberFormats = new string[] {
+        internal static readonly string[] fixedNumberFormats = [
             "0",
             "00",
             "000",
@@ -152,7 +152,7 @@ namespace System
             "00000",
             "000000",
             "0000000",
-        };
+        ];
 
         /// <summary>Format the positive integer value to a string and prefix with assigned length of leading zero.</summary>
         /// <typeparam name="TChar">The type of the character.</typeparam>
@@ -206,7 +206,7 @@ namespace System
 
         private static string FormatDayOfWeek(int dayOfWeek, int repeat, DateTimeFormatInfo dtfi)
         {
-            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6, "dayOfWeek >= 0 && dayOfWeek <= 6");
+            Debug.Assert(dayOfWeek >= 0 && dayOfWeek <= 6);
             if (repeat == 3)
             {
                 return dtfi.GetAbbreviatedDayName((DayOfWeek)dayOfWeek);
@@ -484,11 +484,11 @@ namespace System
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
-                            long fraction = (dateTime.Ticks % Calendar.TicksPerSecond);
-                            fraction /= (long)Math.Pow(10, 7 - tokenLen);
+                            int fraction = (int)(dateTime.Ticks % TimeSpan.TicksPerSecond);
+                            fraction /= TimeSpanParse.Pow10UpToMaxFractionDigits(MaxSecondsFractionDigits - tokenLen);
                             if (ch == 'f')
                             {
-                                FormatFraction(ref result, (int)fraction, fixedNumberFormats[tokenLen - 1]);
+                                FormatFraction(ref result, fraction, fixedNumberFormats[tokenLen - 1]);
                             }
                             else
                             {
@@ -507,7 +507,7 @@ namespace System
                                 }
                                 if (effectiveDigits > 0)
                                 {
-                                    FormatFraction(ref result, (int)fraction, fixedNumberFormats[effectiveDigits - 1]);
+                                    FormatFraction(ref result, fraction, fixedNumberFormats[effectiveDigits - 1]);
                                 }
                                 else
                                 {
@@ -763,12 +763,12 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                result.Append(MemoryMarshal.Cast<char, TChar>(s));
+                result.Append(Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(s));
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
-                Encoding.UTF8.GetBytes(s, MemoryMarshal.Cast<TChar, byte>(result.AppendSpan(Encoding.UTF8.GetByteCount(s))));
+                Encoding.UTF8.GetBytes(s, Unsafe.BitCast<Span<TChar>, Span<byte>>(result.AppendSpan(Encoding.UTF8.GetByteCount(s))));
             }
         }
 
@@ -777,8 +777,8 @@ namespace System
             Span<TChar> chars = stackalloc TChar[11];
             int charCount;
             bool formatted = typeof(TChar) == typeof(char) ?
-                fraction.TryFormat(MemoryMarshal.Cast<TChar, char>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
-                fraction.TryFormat(MemoryMarshal.Cast<TChar, byte>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
+                fraction.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
+                fraction.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
             Debug.Assert(charCount != 0);
             result.Append(chars.Slice(0, charCount));
         }
@@ -792,7 +792,7 @@ namespace System
             {
                 // No offset. The instance is a DateTime and the output should be the local time zone
 
-                if (timeOnly && dateTime.Ticks < Calendar.TicksPerDay)
+                if (timeOnly && dateTime.Ticks < TimeSpan.TicksPerDay)
                 {
                     // For time only format and a time only input, the time offset on 0001/01/01 is less
                     // accurate than the system's current offset because of daylight saving time.
@@ -1144,7 +1144,7 @@ namespace System
             // Gregorian year 0001, an exception will be thrown when we try to get the Japanese year for
             // Gregorian year 0001. Therefore, the workaround allows them to call ToString() for time of
             // day from a DateTime by formatting as ISO 8601 format.
-            dateTime.Ticks < Calendar.TicksPerDay &&
+            dateTime.Ticks < TimeSpan.TicksPerDay &&
             dtfi.Calendar.ID is
                 CalendarId.JAPAN or
                 CalendarId.TAIWAN or
@@ -1759,7 +1759,7 @@ namespace System
                 case 'O':
                 case 's':
                 case 'u':
-                    results = new string[] { Format(dateTime, char.ToString(format), dtfi) };
+                    results = [Format(dateTime, char.ToString(format), dtfi)];
                     break;
                 default:
                     throw new FormatException(SR.Format_InvalidString);

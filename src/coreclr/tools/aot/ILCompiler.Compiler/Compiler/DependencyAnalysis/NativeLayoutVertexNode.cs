@@ -232,7 +232,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override string GetName(NodeFactory factory) => "NativeLayoutMethodLdTokenVertexNode_" + factory.NameMangler.GetMangledMethodName(_method);
 
         public NativeLayoutMethodLdTokenVertexNode(NodeFactory factory, MethodDesc method)
-            : base(factory, method, 0)
+            : base(factory, method, method.IsRuntimeDeterminedExactMethod || method.IsGenericMethodDefinition ? 0 : MethodEntryFlags.CreateInstantiatedSignature)
         {
         }
 
@@ -752,7 +752,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(NeedsEntrypoint(_method));
             unboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
-            IMethodNode methodEntryPointNode = factory.MethodEntrypoint(_method, unboxingStub);
+            // TODO-SIZE: this is only address taken if it's a target of a delegate
+            IMethodNode methodEntryPointNode = factory.AddressTakenMethodEntrypoint(_method, unboxingStub);
             // Note: We don't set the IsUnboxingStub flag on template methods (all template lookups performed at runtime are performed with this flag not set,
             // since it can't always be conveniently computed for a concrete method before looking up its template)
             unboxingStub = false;
@@ -992,7 +993,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType));
+            bool requiresAlign8 = closestCanonDefType.GCStaticFieldAlignment.AsInt > context.Target.PointerSize;
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType), requiresAlign8);
             staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
@@ -1001,7 +1003,8 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType));
+            bool requiresAlign8 = closestCanonDefType.ThreadGcStaticFieldAlignment.AsInt > context.Target.PointerSize;
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType), requiresAlign8);
             staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;

@@ -292,7 +292,7 @@ namespace System.Threading.Tasks.Dataflow
                     break;
 
                 default:
-                    Debug.Assert(false, "The task should have been in a final state.");
+                    Debug.Fail("The task should have been in a final state.");
                     break;
             }
 

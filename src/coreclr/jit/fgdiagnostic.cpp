@@ -139,7 +139,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlocks(block, block->Next()))
+        if (fgCanCompactBlock(block))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
@@ -365,24 +365,6 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
 }
 
-#ifdef DEBUG
-namespace
-{
-const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
-{
-    int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8Len == 0)
-        return nullptr;
-
-    char* alloc = (char*)allocator.allocate<char>(utf8Len);
-    if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
-        return nullptr;
-
-    return alloc;
-}
-} // namespace
-#endif
-
 //------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
 //
@@ -429,10 +411,10 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
 
     CompAllocator allocator = getAllocatorDebugOnly();
-    filename                = ConvertToUtf8(JitConfig.JitDumpFgFile(), allocator);
-    pathname                = ConvertToUtf8(JitConfig.JitDumpFgDir(), allocator);
-    prePhasePattern         = ConvertToUtf8(JitConfig.JitDumpFgPrePhase(), allocator);
-    postPhasePattern        = ConvertToUtf8(JitConfig.JitDumpFgPhase(), allocator);
+    filename                = JitConfig.JitDumpFgFile();
+    pathname                = JitConfig.JitDumpFgDir();
+    prePhasePattern         = JitConfig.JitDumpFgPrePhase();
+    postPhasePattern        = JitConfig.JitDumpFgPhase();
 #endif // DEBUG
 
     if (!dumpFunction)
@@ -582,7 +564,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
             sprintf_s((char*)filename, charCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
                       tierName, type);
         }
-        fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
+        fgxFile = fopen_utf8(filename, "wx"); // Open the file for writing only only if it doesn't already exist
         if (fgxFile == nullptr)
         {
             // This filename already exists, so create a different one by appending ~2, ~3, etc...
@@ -598,7 +580,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
                     sprintf_s((char*)filename, charCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
                               phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
+                fgxFile = fopen_utf8(filename, "wx"); // Open the file for writing only only if it doesn't already exist
                 if (fgxFile != nullptr)
                 {
                     break;
@@ -639,7 +621,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         {
             sprintf_s((char*)filename, charCount, "%s.%s", origFilename, type);
         }
-        fgxFile      = fopen(filename, "a+");
+        fgxFile      = fopen_utf8(filename, "a+");
         *wbDontClose = false;
     }
 
@@ -977,6 +959,10 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
+            if (block->HasFlag(BBF_HAS_NEWARR))
+            {
+                fprintf(fgxFile, "\n            callsNewArr=\"true\"");
+            }
             if (block->HasFlag(BBF_LOOP_HEAD))
             {
                 fprintf(fgxFile, "\n            loopHead=\"true\"");
@@ -1007,9 +993,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     {
         fprintf(fgxFile, "\n    </blocks>");
 
-        fprintf(fgxFile, "\n    <edges");
-        fprintf(fgxFile, "\n        edgeCount=\"%d\"", fgEdgeCount);
-        fprintf(fgxFile, ">");
+        fprintf(fgxFile, "\n    <edges>");
     }
 
     if (fgPredsComputed)
@@ -1782,13 +1766,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                                      int               blockTargetFieldWidth /* = 21 */,
                                      int               ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags            = block->GetFlagsRaw();
-    unsigned               bbNumMax         = fgBBNumMax;
-    int                    maxBlockNumWidth = CountDigits(bbNumMax);
-    maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
-    int blockNumWidth                       = CountDigits(block->bbNum);
-    blockNumWidth                           = max(blockNumWidth, 2);
-    int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
+    const uint64_t flags            = block->GetFlagsRaw();
+    unsigned       bbNumMax         = fgBBNumMax;
+    int            maxBlockNumWidth = CountDigits(bbNumMax);
+    maxBlockNumWidth                = max(maxBlockNumWidth, 2);
+    int blockNumWidth               = CountDigits(block->bbNum);
+    blockNumWidth                   = max(blockNumWidth, 2);
+    int blockNumPadding             = maxBlockNumWidth - blockNumWidth;
 
     // Instead of displaying a block number, should we instead display "*" when the specified block is
     // the next block?
@@ -2923,7 +2907,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     fgDebugCheckBlockLinks();
-    fgFirstBBisScratch();
 
     if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
     {
@@ -3182,11 +3165,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     }
 
     // Ensure that all throw helper blocks are currently in the block list.
-    for (Compiler::AddCodeDsc* add = fgAddCodeList; add != nullptr; add = add->acdNext)
+    if (fgHasAddCodeDscMap())
     {
-        if (add->acdUsed)
+        for (Compiler::AddCodeDsc* const add : Compiler::AddCodeDscMap::ValueIteration(fgAddCodeDscMap))
         {
-            assert(add->acdDstBlk->bbTraversalStamp == curTraversalStamp);
+            if (add->acdUsed)
+            {
+                assert(add->acdDstBlk->bbTraversalStamp == curTraversalStamp);
+            }
         }
     }
 
@@ -3230,6 +3216,17 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
                 (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckInitBB: Check that the first BB is a valid init BB.
+//
+void Compiler::fgDebugCheckInitBB()
+{
+    assert(fgFirstBB != nullptr);
+    assert(!fgFirstBB->hasTryIndex());
+    assert(fgFirstBB->bbPreds == nullptr);
+    assert(!opts.compDbgCode || fgFirstBB->HasFlag(BBF_INTERNAL));
 }
 
 //------------------------------------------------------------------------
@@ -3360,37 +3357,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_IND:
-            // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsIconHandle())
-            {
-                if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
-                {
-                    actualFlags |= GTF_IND_INVARIANT;
-                }
-                if ((tree->gtFlags & GTF_IND_NONFAULTING) != 0)
-                {
-                    actualFlags |= GTF_IND_NONFAULTING;
-                }
-
-                GenTreeFlags handleKind = op1->GetIconHandleFlag();
-
-                // Some of these aren't handles to invariant data...
-                if (GenTree::HandleKindDataIsInvariant(handleKind) && (handleKind != GTF_ICON_FTN_ADDR))
-                {
-                    expectedFlags |= GTF_IND_INVARIANT;
-                }
-                else
-                {
-                    // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
-                    // fail to set it in a number of situations, and so this check is disabled.
-                    // TODO: enable checking of GTF_GLOB_REF.
-                    // expectedFlags |= GTF_GLOB_REF;
-                }
-
-                // Currently we expect all indirections with constant addresses to be nonfaulting.
-                expectedFlags |= GTF_IND_NONFAULTING;
-            }
-
             assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 
@@ -3459,6 +3425,23 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                    case NI_Sve_GatherPrefetch8Bit:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_GetFfrByte:
+                    case NI_Sve_GetFfrInt16:
+                    case NI_Sve_GetFfrInt32:
+                    case NI_Sve_GetFfrInt64:
+                    case NI_Sve_GetFfrSByte:
+                    case NI_Sve_GetFfrUInt16:
+                    case NI_Sve_GetFfrUInt32:
+                    case NI_Sve_GetFfrUInt64:
+                    case NI_Sve_SetFfr:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
@@ -4721,6 +4704,7 @@ void Compiler::fgDebugCheckLoops()
         {
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+            assert(!bbIsTryBeg(loop->GetHeader()));
 
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())
@@ -4741,7 +4725,9 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
 {
     if (m_dfsTree == nullptr)
     {
-        assert((m_loops == nullptr) && (m_domTree == nullptr) && (m_reachabilitySets == nullptr));
+        assert(m_loops == nullptr);
+        assert((m_domTree == nullptr) && (m_domFrontiers == nullptr));
+        assert(m_reachabilitySets == nullptr);
         return;
     }
 
@@ -4759,6 +4745,7 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
 
     assert((m_loops == nullptr) || (m_loops->GetDfsTree() == m_dfsTree));
     assert((m_domTree == nullptr) || (m_domTree->GetDfsTree() == m_dfsTree));
+    assert((m_domFrontiers == nullptr) || (m_domFrontiers->GetDomTree() == m_domTree));
     assert((m_reachabilitySets == nullptr) || (m_reachabilitySets->GetDfsTree() == m_dfsTree));
 }
 

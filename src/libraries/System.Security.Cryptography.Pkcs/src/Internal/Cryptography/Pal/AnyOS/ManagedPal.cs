@@ -80,7 +80,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 return (T?)(object?)certificate.GetRSAPrivateKey();
             if (typeof(T) == typeof(ECDsa))
                 return (T?)(object?)certificate.GetECDsaPrivateKey();
-#if NETCOREAPP || NETSTANDARD2_1
+#if NET || NETSTANDARD2_1
             if (typeof(T) == typeof(DSA) && Internal.Cryptography.Helpers.IsDSASupported)
                 return (T?)(object?)certificate.GetDSAPrivateKey();
 #endif

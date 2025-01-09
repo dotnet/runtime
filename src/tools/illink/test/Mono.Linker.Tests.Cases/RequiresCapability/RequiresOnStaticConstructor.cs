@@ -30,8 +30,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class StaticCtor
 		{
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2116", "StaticCtor..cctor()")]
 			[RequiresUnreferencedCode ("Message for --TestStaticCtor--")]
 			static StaticCtor ()
@@ -48,8 +48,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[RequiresUnreferencedCode ("Message for --StaticCtorOnTypeWithRequires--")]
 		class StaticCtorOnTypeWithRequires
 		{
-			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", Tool.Analyzer | Tool.NativeAot, "")]
 			static StaticCtorOnTypeWithRequires () => MethodWithRequires ();
 		}
 
@@ -70,8 +70,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class StaticCtorForRunClassConstructorWithRequires
 		{
 			[ExpectedWarning ("IL2116")]
-			[ExpectedWarning ("IL3004", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3056", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3004", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3056", Tool.Analyzer | Tool.NativeAot, "")]
 			[RequiresUnreferencedCode ("Message for --StaticCtorOnTypeWithRequires--")]
 			[RequiresAssemblyFiles ("Message for --StaticCtorOnTypeWithRequires--")]
 			[RequiresDynamicCode ("Message for --StaticCtorOnTypeWithRequires--")]
@@ -118,8 +118,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class StaticCtorTriggeredByMethodCall
 		{
 			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByMethodCall..cctor()")]
-			[ExpectedWarning ("IL3004", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3056", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3004", "StaticCtorTriggeredByMethodCall..cctor()", Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3056", "StaticCtorTriggeredByMethodCall..cctor()", Tool.Analyzer | Tool.NativeAot, "")]
 			[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			[RequiresAssemblyFiles ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			[RequiresDynamicCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
@@ -137,8 +137,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 
 		[ExpectedWarning ("IL2026", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--")]
-		[ExpectedWarning ("IL3002", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", Tool.Analyzer | Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3050", "--StaticCtorTriggeredByMethodCall.TriggerStaticCtorMarking--", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestStaticCtorTriggeredByMethodCall ()
 		{
 			new StaticCtorTriggeredByMethodCall ().TriggerStaticCtorMarking ();
@@ -146,9 +146,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class TypeIsBeforeFieldInit
 		{
-			[ExpectedWarning ("IL2026", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3002", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3002", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "")]
+			[ExpectedWarning ("IL3050", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", Tool.Analyzer, "")]
 			public static int field = AnnotatedMethod ();
 
 			[RequiresUnreferencedCode ("Message from --TypeIsBeforeFieldInit.AnnotatedMethod--")]

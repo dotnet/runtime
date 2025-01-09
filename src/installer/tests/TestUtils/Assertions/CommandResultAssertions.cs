@@ -21,6 +21,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> ExitWith(int expectedExitCode)
         {
+            // Some Unix systems will have 8 bit exit codes
+            if (!OperatingSystem.IsWindows())
+                expectedExitCode = expectedExitCode & 0xFF;
+
             Execute.Assertion.ForCondition(Result.ExitCode == expectedExitCode)
                 .FailWith($"Expected command to exit with {expectedExitCode} but it did not.{GetDiagnosticsInfo()}");
             return new AndConstraint<CommandResultAssertions>(this);

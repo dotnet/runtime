@@ -60,11 +60,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--")]
-			[ExpectedWarning ("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "TypeWhichOverridesMethod.VirtualMethodRequires()", "--TypeWhichOverridesMethod.VirtualMethodRequires--", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL2026", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--")]
-			[ExpectedWarning ("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "BaseType.VirtualMethodRequires()", "--BaseType.VirtualMethodRequires--", Tool.NativeAot, "")]
 			static void TestOverriddenVirtualMethod ()
 			{
 				MethodWithAnnotatedParameter (typeof (TypeWhichOverridesMethod));
@@ -93,8 +93,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
 			static void TestAccessOnGenericType ()
 			{
 				new TypeWithPublicMethods<TypeWithRequiresMethod> ();
@@ -103,8 +103,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void MethodWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
 
 			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
 			static void TestAccessOnGenericMethod ()
 			{
 				MethodWithPublicMethods<TypeWithRequiresMethod> ();
@@ -113,8 +113,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void MethodWithPublicMethodsInference<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> (T instance) { }
 
 			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", Tool.NativeAot, "")]
 			static void TestAccessOnGenericMethodWithInferenceOnMethod ()
 			{
 				MethodWithPublicMethodsInference (new TypeWithRequiresMethod ());
@@ -137,10 +137,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			// https://github.com/dotnet/runtime/issues/83080 - Analyzer doesn't recognize DynamicDependency in any way
-			[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = Tool.NativeAot)]
+			// Analyzer doesn't recognize DynamicDependency in any way
+			[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/83080")]
+			[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/83080")]
+			[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/83080")]
 			[DynamicDependency ("RequiresInDynamicDependency")]
 			public static void Test ()
 			{

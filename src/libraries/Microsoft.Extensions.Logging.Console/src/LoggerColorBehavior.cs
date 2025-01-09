@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// Determines when to use color when logging messages.
+    /// Describes when to use color when logging messages.
     /// </summary>
     public enum LoggerColorBehavior
     {
@@ -16,11 +16,11 @@ namespace Microsoft.Extensions.Logging.Console
         /// </remarks>
         Default,
         /// <summary>
-        /// Enable color for logging
+        /// Enable color for logging.
         /// </summary>
         Enabled,
         /// <summary>
-        /// Disable color for logging
+        /// Disable color for logging.
         /// </summary>
         Disabled,
     }

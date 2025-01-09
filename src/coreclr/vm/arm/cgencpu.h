@@ -47,7 +47,6 @@ class FramedMethodFrame;
 class Module;
 struct DeclActionInfo;
 class ComCallMethodDesc;
-class BaseDomain;
 class ZapNode;
 struct ArgLocDesc;
 
@@ -70,8 +69,6 @@ EXTERN_C void checkStack(void);
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
-
-#define HAS_COMPACT_ENTRYPOINTS                 1
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
@@ -363,7 +360,6 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
 
 //----------------------------------------------------------------------
 #include "stublink.h"
-struct ArrayOpScript;
 
 inline BOOL IsThumbCode(PCODE pCode)
 {
@@ -911,36 +907,12 @@ public:
         Emit16((WORD) (0x0b00 | ((dest & 0xf) << 12) | (abs(offset)>>2)));
     }
 
-#ifdef FEATURE_INTERPRETER
-    void ThumbEmitStoreMultipleVFPDoubleReg(ThumbVFPDoubleReg source, ThumbReg dest, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + source) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec80 | 0x80 | dest));
-        Emit16((WORD) (((source & 0xf) << 12) | 0xb00 | numRegs));
-    }
-
-    void ThumbEmitLoadMultipleVFPDoubleReg(ThumbVFPDoubleReg dest, ThumbReg source, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + dest) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec90 | 0x80 | source));
-        Emit16((WORD) (((dest & 0xf) << 12) | 0xb00 | numRegs));
-    }
-#endif // FEATURE_INTERPRETER
-
     // Scratches r12.
     void ThumbEmitTailCallManagedMethod(MethodDesc *pMD);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 };
-
-extern "C" void SinglecastDelegateInvokeStub();
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -1023,11 +995,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
 
 //------------------------------------------------------------------------
 //

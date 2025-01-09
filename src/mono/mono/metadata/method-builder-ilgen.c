@@ -52,7 +52,7 @@ new_base_ilgen (MonoClass *klass, MonoWrapperType type, gboolean dynamic)
 	mb->init_locals = TRUE;
 	mb->dynamic = dynamic;
 
-	/* placeholder for the wrapper always at index 1 */
+	/* placeholder for the wrapper always at index 1, see mono_marshal_set_wrapper_info */
 	mono_mb_add_data (mb, NULL);
 
 	return mb;
@@ -61,9 +61,15 @@ new_base_ilgen (MonoClass *klass, MonoWrapperType type, gboolean dynamic)
 static void
 free_ilgen (MonoMethodBuilder *mb)
 {
-	GList *l;
+	if (mb->wrapper_data_inflate_info) {
+		for (GList *p = mb->wrapper_data_inflate_info; p && p->data; p = p->next) {
+			g_free (p->data);
+		}
+		g_list_free (mb->wrapper_data_inflate_info);
+		mb->wrapper_data_inflate_info = NULL;
+	}
 
-	for (l = mb->locals_list; l; l = l->next) {
+	for (GList *l = mb->locals_list; l; l = l->next) {
 		/* Allocated in mono_mb_add_local () */
 		g_free (l->data);
 	}
@@ -172,14 +178,44 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 
 	i = g_list_length ((GList *)mw->method_data);
 	if (i) {
+		MonoMethodBuilderInflateWrapperData *inflate_data = NULL;
+		if (mb->inflate_wrapper_data) {
+			int count = g_list_length (mb->wrapper_data_inflate_info);
+			inflate_data = (MonoMethodBuilderInflateWrapperData *) mb_alloc0 (mb, sizeof(MonoMethodBuilderInflateWrapperData) * (count + 1));
+			int j = 0;
+			for (GList *p = mb->wrapper_data_inflate_info; p && p->data; p = p->next) {
+				inflate_data[j++] = *(MonoMethodBuilderInflateWrapperData*)p->data;
+			}
+			// trailing idx 0 element to mark the end
+			inflate_data[j].idx = 0;
+			inflate_data[j].kind = MONO_MB_ILGEN_WRAPPER_DATA_NONE;
+			mw->inflate_wrapper_data = 1;
+		}
 		GList *tmp;
 		void **data;
 		l = g_list_reverse ((GList *)mw->method_data);
-		data = (void **)mb_alloc0 (mb, sizeof (gpointer) * (i + 1));
+		int data_count = i + (inflate_data ? 2 : 1);
+		data = (void **)mb_alloc0 (mb, sizeof (gpointer) * data_count);
 		/* store the size in the first element */
 		data [0] = GUINT_TO_POINTER (i);
 		i = 1;
-		for (tmp = l; tmp; tmp = tmp->next) {
+
+		// manually peel off the first 1 or 2 iterations of the loop since they're special
+		tmp = l;
+		g_assert (tmp);
+		// wrapper info is in slot 1
+		g_assert (tmp->data == NULL);
+		data [i++] = NULL;
+		tmp = tmp->next;
+		// inflate data is in slot 2
+		if (inflate_data) {
+			g_assert (tmp);
+			g_assert (MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX == i);
+			g_assert (tmp->data == NULL);
+			data[i++] = inflate_data;
+			tmp = tmp->next;
+		}
+		for (;tmp; tmp = tmp->next) {
 			data [i++] = tmp->data;
 		}
 		g_list_free (l);
@@ -212,6 +248,20 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 			image->wrapper_param_names = g_hash_table_new (NULL, NULL);
 		g_hash_table_insert (image->wrapper_param_names, method, param_names);
 		mono_image_unlock (image);
+	}
+
+	if (mb->method->is_generic) {
+		method->is_generic = TRUE;
+		MonoGenericContainer *container = mono_method_get_generic_container (mb->method);
+		mono_method_set_generic_container (method, container);
+		g_assert (!container->is_anonymous);
+		g_assert (container->is_method);
+		g_assert (container->owner.method == mb->method);
+		// NOTE: reassigning container owner from the method builder placeholder to the
+		// final created method.  The "proper" way to do this would be a deep copy or
+		// calling mono_metadata_load_generic_params again and inflating everything.  But
+		// method builder is already one-shot, so this is ok, too.
+		container->owner.method = method;
 	}
 
 	return method;
@@ -651,4 +701,78 @@ void
 mono_mb_set_param_names (MonoMethodBuilder *mb, const char **param_names)
 {
 	mb->param_names = param_names;
+}
+
+void
+mono_mb_set_wrapper_data_kind (MonoMethodBuilder *mb, uint16_t wrapper_data_kind)
+{
+	g_assert (mb->inflate_wrapper_data);
+	MonoMethodWrapper *mw = (MonoMethodWrapper*)mb->method;
+	// index of the data added by most recent mono_mb_add_data
+	int idx = g_list_length((GList *)mw->method_data);
+	g_assert (idx > 0 && idx <= UINT16_MAX);
+
+	MonoMethodBuilderInflateWrapperData *info = g_new (MonoMethodBuilderInflateWrapperData, 1);
+	info->idx = (uint16_t)idx;
+	info->kind = wrapper_data_kind;
+	mb->wrapper_data_inflate_info = g_list_prepend (mb->wrapper_data_inflate_info, info);
+}
+
+gboolean
+mono_mb_inflate_generic_wrapper_data (MonoGenericContext *context, gpointer *method_data, MonoError *error)
+{
+	MonoMethodBuilderInflateWrapperData* inflate_info = (MonoMethodBuilderInflateWrapperData*)method_data[MONO_MB_ILGEN_INFLATE_WRAPPER_INFO_IDX];
+	MonoMethodBuilderInflateWrapperData* p = inflate_info;
+
+	while (p && p->idx != 0) {
+		int idx = p->idx;
+		uint16_t kind = p->kind;
+		gpointer *pdata = &method_data[idx];
+		switch (kind) {
+		case MONO_MB_ILGEN_WRAPPER_DATA_NONE:
+			continue;
+		case MONO_MB_ILGEN_WRAPPER_DATA_FIELD: {
+			MonoClassField *field = (MonoClassField*)*pdata;
+			MonoType *inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (m_field_get_parent (field)), context, error);
+			if (!is_ok (error))
+				return FALSE;
+
+			MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
+			// TODO: EnC metadata-update.  But note:
+			//    error ENC0025: Adding an extern method requires restarting the application.
+			//
+			// So for UnsafeAccessor methods we don't need to handle this
+			// until https://github.com/dotnet/runtime/issues/102080
+			//
+			// But if we have other kinds of generic wrappers, we may need to do it sooner.
+			g_assert (!m_field_is_from_update (field));
+			int i = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
+			gpointer dummy = NULL;
+
+			mono_metadata_free_type (inflated_type);
+
+			// note: inflated class might not have been used for much yet.  Ensure
+			// fields are initialized.
+			mono_class_get_fields_internal (inflated_class, &dummy);
+			g_assert (m_class_get_fields (inflated_class));
+
+			MonoClassField *inflated_field = &m_class_get_fields (inflated_class) [i];
+
+			*pdata = inflated_field;
+			break;
+		}
+		case MONO_MB_ILGEN_WRAPPER_DATA_METHOD: {
+			MonoMethod *method = (MonoMethod*)*pdata;
+			MonoMethod *inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
+			if (!is_ok (error))
+				return FALSE;
+			*pdata = inflated_method;
+			break;
+		}
+		default:
+			g_assert_not_reached();
+		}
+		p++;
+	}
+	return TRUE;
 }

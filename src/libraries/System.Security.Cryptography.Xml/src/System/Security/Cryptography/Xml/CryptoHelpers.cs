@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Xml
         [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
         private static XmlDsigXsltTransform CreateXmlDsigXsltTransform()
         {
-#if NETCOREAPP
+#if NET
             if (!RuntimeFeature.IsDynamicCodeSupported)
             {
                 // XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Xml
             {
                 return (CryptoConfig.CreateFromName(name) ?? CreateFromKnownName(name)) as T;
             }
-#if NETCOREAPP
+#if NET
             catch (NotSupportedException)
             {
                 if (name == "http://www.w3.org/TR/1999/REC-xslt-19991116")

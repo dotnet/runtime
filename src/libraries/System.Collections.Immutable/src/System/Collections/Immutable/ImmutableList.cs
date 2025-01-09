@@ -52,7 +52,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="items">A span that contains the items to prepopulate the list with.</param>
         /// <returns>A new immutable list that contains the specified items.</returns>
-        public static ImmutableList<T> Create<T>(ReadOnlySpan<T> items) => ImmutableList<T>.Empty.AddRange(items);
+        public static ImmutableList<T> Create<T>(params ReadOnlySpan<T> items) => ImmutableList<T>.Empty.AddRange(items);
 
         /// <summary>
         /// Creates a new immutable list builder.

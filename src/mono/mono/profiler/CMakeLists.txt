@@ -6,15 +6,14 @@ include_directories(
   ${PROJECT_BINARY_DIR}/../../mono/eglib
   ${CMAKE_CURRENT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../
+  ${PROJECT_SOURCE_DIR}/../../../native/public
   ${PROJECT_SOURCE_DIR}/../eglib
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(NOT DISABLE_LIBS)
   if(HOST_ANDROID OR HOST_IOS OR HOST_TVOS OR HOST_S390X)
     # Build the logging profiler only for certain platforms
-    set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIB_COMPILE_DEFINITIONS}")
-    set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIB_COMPILE_OPTIONS}")
-    add_library(mono-profiler-log SHARED helper.c log.c log-args.c ${ZLIB_SOURCES})
+    add_library(mono-profiler-log SHARED helper.c log.c log-args.c)
     target_compile_definitions(mono-profiler-log PRIVATE -DMONO_DLL_EXPORT)
     target_link_libraries(mono-profiler-log PRIVATE monosgen-shared monoapi eglib_objects)
     if(HOST_ANDROID)
@@ -28,7 +27,11 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
-      target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
+      if (CLR_CMAKE_USE_SYSTEM_ZLIB)
+        target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
+      else()
+        target_link_libraries(mono-profiler-log PRIVATE zlib)
+      endif()
     endif()
   endif()
 
@@ -44,5 +47,19 @@ if(NOT DISABLE_LIBS)
     target_link_libraries(mono-profiler-browser-static PRIVATE monoapi)
     set_target_properties(mono-profiler-browser-static PROPERTIES OUTPUT_NAME mono-profiler-browser)
     install(TARGETS mono-profiler-browser-static LIBRARY)
+  endif()
+
+  if(HOST_BROWSER)
+    add_library(mono-profiler-log-static STATIC helper.c log.c log-args.c)
+    set_target_properties(mono-profiler-log-static PROPERTIES OUTPUT_NAME mono-profiler-log)
+    install(TARGETS mono-profiler-log-static LIBRARY)
+    
+    if(NOT DISABLE_LOG_PROFILER_GZ)
+      if (CLR_CMAKE_USE_SYSTEM_ZLIB)
+        target_link_libraries(mono-profiler-log-static PRIVATE ${Z_LIBS})
+      else()
+        target_link_libraries(mono-profiler-log-static PRIVATE zlib)
+      endif()
+    endif()
   endif()
 endif()

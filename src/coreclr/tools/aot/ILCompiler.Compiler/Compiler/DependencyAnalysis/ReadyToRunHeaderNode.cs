@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunHeader");
+            sb.Append("__ReadyToRunHeader"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;

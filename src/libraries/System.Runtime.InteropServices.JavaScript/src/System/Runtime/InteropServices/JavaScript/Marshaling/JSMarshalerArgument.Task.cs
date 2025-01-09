@@ -275,7 +275,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
                 else
                 {
-                    slot.ElementType = slot.Type;
+                    slot.ElementType = MarshalerType.Void;
                     slot.Type = MarshalerType.TaskResolved;
                     return;
                 }

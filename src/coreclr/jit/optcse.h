@@ -92,6 +92,10 @@ public:
         JITDUMP("%s\n", Name());
     }
 #endif
+
+private:
+    void ReplaceCSENode(Statement* stmt, GenTree* exp, GenTree* newNode);
+    void InsertUseIntoSsa(class IncrementalSsaBuilder& ssaBuilder, const struct UseDefLocation& useDefLoc);
 };
 
 #ifdef DEBUG
@@ -217,6 +221,49 @@ public:
 
 #ifdef DEBUG
 
+// General Reinforcement Learning CSE heuristic hook.
+//
+// Produces a wide set of data to train a RL model.
+// Consumes the decisions made by a model to perform CSEs.
+//
+class CSE_HeuristicRLHook : public CSE_HeuristicCommon
+{
+private:
+    static const char* const s_featureNameAndType[];
+
+    void GetFeatures(CSEdsc* cse, int* features);
+
+    enum
+    {
+        maxFeatures = 19,
+    };
+
+    enum
+    {
+        rlHookTypeOther  = 0,
+        rlHookTypeInt    = 1,
+        rlHookTypeLong   = 2,
+        rlHookTypeFloat  = 3,
+        rlHookTypeDouble = 4,
+        rlHookTypeStruct = 5,
+        rlHookTypeSimd   = 6,
+    };
+
+public:
+    CSE_HeuristicRLHook(Compiler*);
+    void ConsiderCandidates();
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+
+    const char* Name() const
+    {
+        return "RL Hook CSE Heuristic";
+    }
+
+#ifdef DEBUG
+    virtual void DumpMetrics();
+#endif
+};
+
 // Reinforcement Learning CSE heuristic
 //
 // Uses a "linear" feature model with
@@ -321,11 +368,6 @@ struct CSEdsc
 
     // The set of exceptions we currently can use for CSE uses.
     ValueNum defExcSetCurrent;
-
-    // if all def occurrences share the same conservative normal value
-    // number, this will reflect it; otherwise, NoVN.
-    // not used for shared const CSE's
-    ValueNum defConservNormVN;
 
     // Number of distinct locals referenced (in first def tree)
     // and total number of local nodes.

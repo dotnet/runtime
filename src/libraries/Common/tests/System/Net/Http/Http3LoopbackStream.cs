@@ -124,7 +124,7 @@ namespace System.Net.Test.Common
         {
             Memory<byte> payload = ConstructHeadersPayload(statusCode, headers);
 
-            await SendFrameHeaderAsync(HeadersFrame, payload.Length);
+            await SendFrameHeaderAsync(HeadersFrame, payload.Length).ConfigureAwait(false);
 
             // Slice off final byte so the payload is not complete
             payload = payload.Slice(0, payload.Length - 1);
@@ -144,7 +144,7 @@ namespace System.Net.Test.Common
             int bytesWritten = 0;
 
             bytesWritten += EncodeHttpInteger(firstInvalidStreamId, buffer);
-            await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten));
+            await SendFrameAsync(GoAwayFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
         private async Task SendFrameHeaderAsync(long frameType, int payloadLength)
@@ -367,11 +367,11 @@ namespace System.Net.Test.Common
                 {
                     if (ignoreIncomingData)
                     {
-                        await DrainResponseData();
+                        await DrainResponseData().ConfigureAwait(false);
                     }
                     else
                     {
-                        int bytesRead = await _stream.ReadAsync(new byte[1]);
+                        int bytesRead = await _stream.ReadAsync(new byte[1]).ConfigureAwait(false);
                         if (bytesRead != 0)
                         {
                             throw new Exception($"Unexpected data received while waiting for client cancllation.");
@@ -388,7 +388,7 @@ namespace System.Net.Test.Common
             {
                 try
                 {
-                    await _stream.WritesClosed;
+                    await _stream.WritesClosed.ConfigureAwait(false);
                 }
                 catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3LoopbackConnection.H3_REQUEST_CANCELLED)
                 {
@@ -396,7 +396,7 @@ namespace System.Net.Test.Common
                 }
             }
 
-            await Task.WhenAll(WaitForReadCancellation(), WaitForWriteCancellation());
+            await Task.WhenAll(WaitForReadCancellation(), WaitForWriteCancellation()).ConfigureAwait(false);
 
             if (!readCanceled && !writeCanceled)
             {

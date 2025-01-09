@@ -206,7 +206,6 @@ private:
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
-    void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -1283,7 +1282,6 @@ private:
         // Com Interop, ComWrapper classes extend from ComObject
         bool fIsComObjectType;                  // whether this class is an instance of ComObject class
 #ifdef FEATURE_COMINTEROP
-        bool fIsMngStandardItf;                 // Set to true if the interface is a manages standard interface.
         bool fComEventItfType;                  // Set to true if the class is a special COM event interface.
 #endif // FEATURE_COMINTEROP
 #ifdef FEATURE_TYPEEQUIVALENCE
@@ -2266,7 +2264,6 @@ private:
         inline BOOL             IsMethodImpl();
         inline MethodClassification MethodType();
         inline bmtMDMethod     *GetMDMethod() const;
-        inline MethodDesc      *GetIntroducingMethodDesc();
         inline bmtMDMethod *    operator->();
         inline bmtMDMethod *    operator*() { WRAPPER_NO_CONTRACT; return GetMDMethod(); }
     };  // class DeclaredMethodIterator
@@ -2952,6 +2949,7 @@ private:
                                 BOOL isIFace,
                                 BOOL fDynamicStatics,
                                 BOOL fHasGenericsStaticsInfo,
+                                bool fHasThreadStatics,
                                 BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap

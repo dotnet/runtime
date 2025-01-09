@@ -159,25 +159,14 @@ namespace System.Diagnostics.TraceSourceTests
         {
             RemoteExecutor.Invoke(() =>
             {
-                MakeAssemblyGetEntryAssemblyReturnNull();
+                Assembly.SetEntryAssembly(null);
+                Assert.Null(Assembly.GetEntryAssembly());
 
                 var listener = new TestDefaultTraceListener();
                 Trace.Listeners.Add(listener);
                 Trace.TraceError("hello world");
                 Assert.Equal("Error: 0 : hello world", listener.Output.Trim());
             }).Dispose();
-        }
-
-        /// <summary>
-        /// Makes Assembly.GetEntryAssembly() return null using private reflection.
-        /// </summary>
-        private static void MakeAssemblyGetEntryAssemblyReturnNull()
-        {
-            typeof(Assembly)
-                .GetField("s_forceNullEntryPoint", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, true);
-
-            Assert.Null(Assembly.GetEntryAssembly());
         }
     }
 }

@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__field_to_offset_map"u8);
         }
 
         public int Offset => 0;

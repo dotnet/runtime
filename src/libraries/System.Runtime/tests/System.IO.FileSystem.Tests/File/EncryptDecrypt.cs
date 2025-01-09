@@ -29,7 +29,7 @@ namespace System.IO.Tests
         // because EFS (Encrypted File System), its underlying technology, is not available on these operating systems.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsHomeEdition))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [OuterLoop] // Occasional failures: https://github.com/dotnet/runtime/issues/12339
+        [OuterLoop("Occasional failures", ~TestPlatforms.Browser)] // Occasional failures: https://github.com/dotnet/runtime/issues/12339
         public void EncryptDecrypt_Read()
         {
             string tmpFileName = Path.GetTempFileName();

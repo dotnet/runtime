@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -145,9 +146,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<sbyte> memory = BoundedMemory.Allocate<sbyte>(1);
             ref sbyte value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42, Interlocked.Exchange(ref value, 123));
             Assert.Equal(123, value);
+
+            value = 42;
+            Assert.Equal(42, Interlocked.Exchange<sbyte>(ref value, 123));
+            Assert.Equal(123, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<byte>(), 123));
         }
 
@@ -156,9 +163,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<byte> memory = BoundedMemory.Allocate<byte>(1);
             ref byte value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42u, Interlocked.Exchange(ref value, 123));
             Assert.Equal(123u, value);
+
+            value = 42;
+            Assert.Equal(42u, Interlocked.Exchange<byte>(ref value, 123));
+            Assert.Equal(123u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<sbyte>(), 123));
         }
 
@@ -167,9 +180,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<short> memory = BoundedMemory.Allocate<short>(1);
             ref short value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42, Interlocked.Exchange(ref value, 12345));
             Assert.Equal(12345, value);
+
+            value = 42;
+            Assert.Equal(42, Interlocked.Exchange<short>(ref value, 12345));
+            Assert.Equal(12345, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<short>(), 12345));
         }
 
@@ -178,9 +197,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<ushort> memory = BoundedMemory.Allocate<ushort>(1);
             ref ushort value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42u, Interlocked.Exchange(ref value, 12345));
             Assert.Equal(12345u, value);
+
+            value = 42;
+            Assert.Equal(42u, Interlocked.Exchange<ushort>(ref value, 12345));
+            Assert.Equal(12345u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<ushort>(), 12345));
         }
 
@@ -189,9 +214,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<int> memory = BoundedMemory.Allocate<int>(1);
             ref int value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42, Interlocked.Exchange(ref value, 12345));
             Assert.Equal(12345, value);
+
+            value = 42;
+            Assert.Equal(42, Interlocked.Exchange<int>(ref value, 12345));
+            Assert.Equal(12345, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<int>(), 12345));
         }
 
@@ -200,9 +231,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<uint> memory = BoundedMemory.Allocate<uint>(1);
             ref uint value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42u, Interlocked.Exchange(ref value, 12345u));
             Assert.Equal(12345u, value);
+
+            value = 42;
+            Assert.Equal(42u, Interlocked.Exchange<uint>(ref value, 12345u));
+            Assert.Equal(12345u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<uint>(), 12345));
         }
 
@@ -211,9 +248,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<long> memory = BoundedMemory.Allocate<long>(1);
             ref long value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42, Interlocked.Exchange(ref value, 12345));
             Assert.Equal(12345, value);
+
+            value = 42;
+            Assert.Equal(42, Interlocked.Exchange<long>(ref value, 12345));
+            Assert.Equal(12345, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<long>(), 12345));
         }
 
@@ -222,14 +265,22 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<nint> memory = BoundedMemory.Allocate<nint>(1);
             ref nint value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42, (nint)Interlocked.Exchange(ref value, (nint)12345));
+            Assert.Equal(12345, value);
+
+            value = 42;
+            Assert.Equal(42, (nint)Interlocked.Exchange<nint>(ref value, (nint)12345));
             Assert.Equal(12345, value);
 
             if (Environment.Is64BitProcess)
             {
                 Assert.Equal(12345, (nint)Interlocked.Exchange(ref value, unchecked((nint)1 + int.MaxValue)));
                 Assert.Equal(unchecked((nint)1 + int.MaxValue), value);
+
+                Assert.Equal(unchecked((nint)1 + int.MaxValue), (nint)Interlocked.Exchange(ref value, unchecked((nint)2 + int.MaxValue)));
+                Assert.Equal(unchecked((nint)2 + int.MaxValue), value);
             }
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<nint>(), 12345));
         }
@@ -239,9 +290,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<ulong> memory = BoundedMemory.Allocate<ulong>(1);
             ref ulong value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42u, Interlocked.Exchange(ref value, 12345u));
             Assert.Equal(12345u, value);
+
+            value = 42;
+            Assert.Equal(42u, Interlocked.Exchange<ulong>(ref value, 12345u));
+            Assert.Equal(12345u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<ulong>(), 12345));
         }
 
@@ -250,14 +307,22 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<nuint> memory = BoundedMemory.Allocate<nuint>(1);
             ref nuint value = ref memory.Span[0];
+
             value = 42;
             Assert.Equal(42u, (nuint)Interlocked.Exchange(ref value, (nuint)12345u));
+            Assert.Equal(12345u, value);
+
+            value = 42;
+            Assert.Equal(42u, (nuint)Interlocked.Exchange<nuint>(ref value, (nuint)12345u));
             Assert.Equal(12345u, value);
 
             if (Environment.Is64BitProcess)
             {
                 Assert.Equal(12345u, (nuint)Interlocked.Exchange(ref value, unchecked((nuint)1 + uint.MaxValue)));
                 Assert.Equal(unchecked((nuint)1 + uint.MaxValue), value);
+
+                Assert.Equal(unchecked((nuint)1 + uint.MaxValue), (nuint)Interlocked.Exchange(ref value, unchecked((nuint)2 + uint.MaxValue)));
+                Assert.Equal(unchecked((nuint)2 + uint.MaxValue), value);
             }
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<nuint>(), 12345));
         }
@@ -267,9 +332,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<float> memory = BoundedMemory.Allocate<float>(1);
             ref float value = ref memory.Span[0];
+
             value = 42.1f;
             Assert.Equal(42.1f, Interlocked.Exchange(ref value, 12345.1f));
             Assert.Equal(12345.1f, value);
+
+            value = 42.1f;
+            Assert.Equal(42.1f, Interlocked.Exchange<float>(ref value, 12345.1f));
+            Assert.Equal(12345.1f, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<float>(), 12345.1f));
         }
 
@@ -278,9 +349,15 @@ namespace System.Threading.Tests
         {
             using BoundedMemory<double> memory = BoundedMemory.Allocate<double>(1);
             ref double value = ref memory.Span[0];
+
             value = 42.1;
             Assert.Equal(42.1, Interlocked.Exchange(ref value, 12345.1));
             Assert.Equal(12345.1, value);
+
+            value = 42.1;
+            Assert.Equal(42.1, Interlocked.Exchange<double>(ref value, 12345.1));
+            Assert.Equal(12345.1, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<double>(), 12345.1));
         }
 
@@ -289,10 +366,15 @@ namespace System.Threading.Tests
         {
             var oldValue = new object();
             var newValue = new object();
-            object value = oldValue;
 
+            object value = oldValue;
             Assert.Same(oldValue, Interlocked.Exchange(ref value, newValue));
             Assert.Same(newValue, value);
+
+            value = oldValue;
+            Assert.Same(oldValue, Interlocked.Exchange<object>(ref value, newValue));
+            Assert.Same(newValue, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<object>(), null));
             Assert.Throws<NullReferenceException>(() => Interlocked.Exchange(ref Unsafe.NullRef<object>(), newValue));
         }
@@ -312,6 +394,20 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public void InterlockedExchange_Unsupported()
+        {
+            DateTime value1 = default;
+            TimeSpan value2 = default;
+            Rune value3 = default;
+            ValueTask value4 = default;
+
+            Assert.Throws<NotSupportedException>(() => Interlocked.Exchange(ref value1, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.Exchange(ref value2, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.Exchange(ref value3, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.Exchange(ref value4, default));
+        }
+
+        [Fact]
         public void InterlockedCompareExchange_Int8()
         {
             using BoundedMemory<sbyte> memory = BoundedMemory.Allocate<sbyte>(1);
@@ -324,7 +420,16 @@ namespace System.Threading.Tests
             Assert.Equal(42, Interlocked.CompareExchange(ref value, 123, 42));
             Assert.Equal(123, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<byte>(), 123, 41));
+            value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange<sbyte>(ref value, 123, 41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange<sbyte>(ref value, 123, 42));
+            Assert.Equal(123, value);
+
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<sbyte>(), 123, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<sbyte>(ref Unsafe.NullRef<sbyte>(), 123, 41));
         }
 
         [Fact]
@@ -340,7 +445,32 @@ namespace System.Threading.Tests
             Assert.Equal(42u, Interlocked.CompareExchange(ref value, 123, 42));
             Assert.Equal(123u, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<sbyte>(), 123, 41));
+            value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange<byte>(ref value, 123, 41));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange<byte>(ref value, 123, 42));
+            Assert.Equal(123u, value);
+
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<byte>(), 123, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<byte>(ref Unsafe.NullRef<byte>(), 123, 41));
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Bool()
+        {
+            using BoundedMemory<bool> memory = BoundedMemory.Allocate<bool>(1);
+            ref bool value = ref memory.Span[0];
+            value = false;
+
+            Assert.False(Interlocked.CompareExchange<bool>(ref value, true, false));
+            Assert.True(value);
+
+            Assert.True(Interlocked.CompareExchange<bool>(ref value, false, false));
+            Assert.True(value);
+
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<bool>(ref Unsafe.NullRef<bool>(), false, false));
         }
 
         [Fact]
@@ -356,7 +486,16 @@ namespace System.Threading.Tests
             Assert.Equal(42, Interlocked.CompareExchange(ref value, 12345, 42));
             Assert.Equal(12345, value);
 
+            value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange<short>(ref value, 12345, 41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange<short>(ref value, 12345, 42));
+            Assert.Equal(12345, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<short>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<short>(ref Unsafe.NullRef<short>(), 12345, 41));
         }
 
         [Fact]
@@ -372,7 +511,32 @@ namespace System.Threading.Tests
             Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345, 42));
             Assert.Equal(12345u, value);
 
+            value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange<ushort>(ref value, 12345, 41));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange<ushort>(ref value, 12345, 42));
+            Assert.Equal(12345u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<ushort>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<ushort>(ref Unsafe.NullRef<ushort>(), 12345, 41));
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Char()
+        {
+            using BoundedMemory<char> memory = BoundedMemory.Allocate<char>(1);
+            ref char value = ref memory.Span[0];
+            value = (char)42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange<char>(ref value, (char)12345, (char)41));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange<char>(ref value, (char)12345, (char)42));
+            Assert.Equal(12345u, value);
+
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<char>(ref Unsafe.NullRef<char>(), (char)12345, (char)41));
         }
 
         [Fact]
@@ -388,7 +552,16 @@ namespace System.Threading.Tests
             Assert.Equal(42, Interlocked.CompareExchange(ref value, 12345, 42));
             Assert.Equal(12345, value);
 
+            value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange<int>(ref value, 12345, 41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange<int>(ref value, 12345, 42));
+            Assert.Equal(12345, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<int>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<int>(ref Unsafe.NullRef<int>(), 12345, 41));
         }
 
         [Fact]
@@ -404,7 +577,32 @@ namespace System.Threading.Tests
             Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345u, 42u));
             Assert.Equal(12345u, value);
 
+            value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange<uint>(ref value, 12345u, 41u));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange<uint>(ref value, 12345u, 42u));
+            Assert.Equal(12345u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<uint>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<uint>(ref Unsafe.NullRef<uint>(), 12345, 41));
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Enum()
+        {
+            using BoundedMemory<DayOfWeek> memory = BoundedMemory.Allocate<DayOfWeek>(1);
+            ref DayOfWeek value = ref memory.Span[0];
+            value = DayOfWeek.Monday;
+
+            Assert.Equal(DayOfWeek.Monday, Interlocked.CompareExchange<DayOfWeek>(ref value, DayOfWeek.Tuesday, DayOfWeek.Monday));
+            Assert.Equal(DayOfWeek.Tuesday, value);
+
+            Assert.Equal(DayOfWeek.Tuesday, Interlocked.CompareExchange<DayOfWeek>(ref value, DayOfWeek.Wednesday, DayOfWeek.Monday));
+            Assert.Equal(DayOfWeek.Tuesday, value);
+
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday, DayOfWeek.Tuesday));
         }
 
         [Fact]
@@ -420,7 +618,16 @@ namespace System.Threading.Tests
             Assert.Equal(42, Interlocked.CompareExchange(ref value, 12345, 42));
             Assert.Equal(12345, value);
 
+            value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange<long>(ref value, 12345, 41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange<long>(ref value, 12345, 42));
+            Assert.Equal(12345, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<long>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<long>(ref Unsafe.NullRef<long>(), 12345, 41));
         }
 
         [Fact]
@@ -430,19 +637,31 @@ namespace System.Threading.Tests
             ref nint value = ref memory.Span[0];
             value = 42;
 
-            Assert.Equal(42, (nint)Interlocked.CompareExchange(ref value, (nint)12345, (nint)41));
+            Assert.Equal(42, Interlocked.CompareExchange(ref value, (nint)12345, (nint)41));
             Assert.Equal(42, value);
 
-            Assert.Equal(42, (nint)Interlocked.CompareExchange(ref value, (nint)12345, (nint)42));
+            Assert.Equal(42, Interlocked.CompareExchange(ref value, (nint)12345, (nint)42));
+            Assert.Equal(12345, value);
+
+            value = 42;
+
+            Assert.Equal(42, Interlocked.CompareExchange<nint>(ref value, (nint)12345, (nint)41));
+            Assert.Equal(42, value);
+
+            Assert.Equal(42, Interlocked.CompareExchange<nint>(ref value, (nint)12345, (nint)42));
             Assert.Equal(12345, value);
 
             if (Environment.Is64BitProcess)
             {
-                Assert.Equal(12345, (nint)Interlocked.CompareExchange(ref value, unchecked((nint)1 + int.MaxValue), (nint)12345u));
+                Assert.Equal(12345, Interlocked.CompareExchange(ref value, unchecked((nint)1 + int.MaxValue), (nint)12345));
                 Assert.Equal(unchecked((nint)1 + int.MaxValue), value);
+
+                Assert.Equal(unchecked((nint)1 + int.MaxValue), Interlocked.CompareExchange<nint>(ref value, unchecked((nint)2 + int.MaxValue), unchecked((nint)1 + int.MaxValue)));
+                Assert.Equal(unchecked((nint)2 + int.MaxValue), value);
             }
 
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<nint>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<nint>(ref Unsafe.NullRef<nint>(), 12345, 41));
         }
 
         [Fact]
@@ -458,7 +677,16 @@ namespace System.Threading.Tests
             Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345u, 42u));
             Assert.Equal(12345u, value);
 
+            value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange<ulong>(ref value, 12345u, 41u));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange<ulong>(ref value, 12345u, 42u));
+            Assert.Equal(12345u, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<ulong>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<ulong>(ref Unsafe.NullRef<ulong>(), 12345, 41));
         }
 
         [Fact]
@@ -468,19 +696,31 @@ namespace System.Threading.Tests
             ref nuint value = ref memory.Span[0];
             value = 42;
 
-            Assert.Equal(42u, (nuint)Interlocked.CompareExchange(ref value, (nuint)12345u, (nuint)41u));
+            Assert.Equal(42u, Interlocked.CompareExchange(ref value, (nuint)12345u, (nuint)41u));
             Assert.Equal(42u, value);
 
-            Assert.Equal(42u, (nuint)Interlocked.CompareExchange(ref value, (nuint)12345u, (nuint)42u));
+            Assert.Equal(42u, Interlocked.CompareExchange(ref value, (nuint)12345u, (nuint)42u));
+            Assert.Equal(12345u, value);
+
+            value = 42;
+
+            Assert.Equal(42u, Interlocked.CompareExchange<nuint>(ref value, (nuint)12345u, (nuint)41u));
+            Assert.Equal(42u, value);
+
+            Assert.Equal(42u, Interlocked.CompareExchange<nuint>(ref value, (nuint)12345u, (nuint)42u));
             Assert.Equal(12345u, value);
 
             if (Environment.Is64BitProcess)
             {
                 Assert.Equal(12345u, (nuint)Interlocked.CompareExchange(ref value, unchecked((nuint)1 + uint.MaxValue), (nuint)12345u));
                 Assert.Equal(unchecked((nuint)1 + uint.MaxValue), value);
+
+                Assert.Equal(unchecked((nuint)1 + uint.MaxValue), Interlocked.CompareExchange<nuint>(ref value, unchecked((nuint)2 + uint.MaxValue), unchecked((nuint)1 + uint.MaxValue)));
+                Assert.Equal(unchecked((nuint)2 + uint.MaxValue), value);
             }
 
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<nuint>(), 12345, 41));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<nuint>(ref Unsafe.NullRef<nuint>(), 12345, 41));
         }
 
         [Fact]
@@ -496,7 +736,16 @@ namespace System.Threading.Tests
             Assert.Equal(42.1f, Interlocked.CompareExchange(ref value, 12345.1f, 42.1f));
             Assert.Equal(12345.1f, value);
 
+            value = 42.1f;
+
+            Assert.Equal(42.1f, Interlocked.CompareExchange<float>(ref value, 12345.1f, 41.1f));
+            Assert.Equal(42.1f, value);
+
+            Assert.Equal(42.1f, Interlocked.CompareExchange<float>(ref value, 12345.1f, 42.1f));
+            Assert.Equal(12345.1f, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<float>(), 12345.1f, 41.1f));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<float>(ref Unsafe.NullRef<float>(), 12345.1f, 41.1f));
         }
 
         [Fact]
@@ -512,7 +761,16 @@ namespace System.Threading.Tests
             Assert.Equal(42.1, Interlocked.CompareExchange(ref value, 12345.1, 42.1));
             Assert.Equal(12345.1, value);
 
+            value = 42.1;
+
+            Assert.Equal(42.1, Interlocked.CompareExchange<double>(ref value, 12345.1, 41.1));
+            Assert.Equal(42.1, value);
+
+            Assert.Equal(42.1, Interlocked.CompareExchange<double>(ref value, 12345.1, 42.1));
+            Assert.Equal(12345.1, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<double>(), 12345.1, 41.1));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<double>(ref Unsafe.NullRef<double>(), 12345.1, 41.1));
         }
 
         [Fact]
@@ -528,8 +786,18 @@ namespace System.Threading.Tests
             Assert.Same(oldValue, Interlocked.CompareExchange(ref value, newValue, oldValue));
             Assert.Same(newValue, value);
 
+            value = oldValue;
+
+            Assert.Same(oldValue, Interlocked.CompareExchange<object>(ref value, newValue, new object()));
+            Assert.Same(oldValue, value);
+
+            Assert.Same(oldValue, Interlocked.CompareExchange<object>(ref value, newValue, oldValue));
+            Assert.Same(newValue, value);
+
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<object>(), null, null));
             Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange(ref Unsafe.NullRef<object>(), newValue, oldValue));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<object>(ref Unsafe.NullRef<object>(), null, null));
+            Assert.Throws<NullReferenceException>(() => Interlocked.CompareExchange<object>(ref Unsafe.NullRef<object>(), newValue, oldValue));
         }
 
         [Fact]
@@ -550,6 +818,20 @@ namespace System.Threading.Tests
             Assert.Equal(42, (int)valueBeforeUpdate);
             Assert.Same(newValue, value);
             Assert.Equal(12345, (int)value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Unsupported()
+        {
+            DateTime value1 = default;
+            TimeSpan value2 = default;
+            Rune value3 = default;
+            ValueTask value4 = default;
+
+            Assert.Throws<NotSupportedException>(() => Interlocked.CompareExchange(ref value1, default, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.CompareExchange(ref value2, default, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.CompareExchange(ref value3, default, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.CompareExchange(ref value4, default, default));
         }
 
         [Fact]
@@ -810,7 +1092,7 @@ namespace System.Threading.Tests
                     }
                 }));
             }
-            Task.WaitAll(threads.ToArray());
+            Task.WaitAll(threads);
             Assert.Equal(1000*1000, count);
         }
 

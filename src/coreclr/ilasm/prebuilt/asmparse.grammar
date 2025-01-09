@@ -76,11 +76,11 @@ dottedName              : id
                         | dottedName '.' dottedName 
                         ;
 
-int32                   : INT32 
+int32                   : INT32_V 
                         ;
 
-int64                   : INT64 
-                        | INT32 
+int64                   : INT64_V 
+                        | INT32_V 
                         ;
 
 float64                 : FLOAT64 

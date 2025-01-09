@@ -158,6 +158,10 @@ namespace System.Formats.Asn1
         public int Encode(System.Span<byte> destination) { throw null; }
         public bool EncodedValueEquals(System.Formats.Asn1.AsnWriter other) { throw null; }
         public bool EncodedValueEquals(System.ReadOnlySpan<byte> other) { throw null; }
+#if NET9_0_OR_GREATER
+        public TReturn Encode<TReturn>(System.Func<System.ReadOnlySpan<byte>, TReturn> encodeCallback) { throw null; }
+        public TReturn Encode<TState, TReturn>(TState state, System.Func<TState, System.ReadOnlySpan<byte>, TReturn> encodeCallback) where TState : allows ref struct { throw null; }
+#endif
         public int GetEncodedLength() { throw null; }
         public void PopOctetString(System.Formats.Asn1.Asn1Tag? tag = default(System.Formats.Asn1.Asn1Tag?)) { }
         public void PopSequence(System.Formats.Asn1.Asn1Tag? tag = default(System.Formats.Asn1.Asn1Tag?)) { }

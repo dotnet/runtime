@@ -138,6 +138,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
              type == ELEMENT_TYPE_STRING ||
              type == ELEMENT_TYPE_TYPEDBYREF ||
              type == ELEMENT_TYPE_SZARRAY ||
+             type == ELEMENT_TYPE_ARRAY ||
              type == ELEMENT_TYPE_VAR
              );
 
@@ -259,7 +260,7 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         Module* pModule = GetModule();
         PTR_VOID ret = pModule->GetRvaField(GetOffset());
 
-        _ASSERTE(!pModule->IsPEFile() || !pModule->IsRvaFieldTls(GetOffset()));
+        _ASSERTE(pModule->IsReflectionEmit() || !pModule->IsRvaFieldTls(GetOffset()));
 
         return(ret);
     }
@@ -455,6 +456,7 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
     {
         if(IsEnCNew()) {THROWS;} else {DISABLED(THROWS);};
         if(IsEnCNew()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);};
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -471,25 +473,6 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
 
     return (void *) (dac_cast<TADDR>(o->GetData()) + dwOffset);
 }
-
-// And here's the equivalent, when you are guaranteed that the enclosing instance of
-// the field is in the GC Heap.  So if the enclosing instance is a value type, it had
-// better be boxed.  We ASSERT this.
-void *FieldDesc::GetAddressGuaranteedInHeap(void *o)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!IsEnCNew());
-
-    return ((BYTE*)(o)) + sizeof(Object) + m_dwOffset;
-}
-
 
 DWORD   FieldDesc::GetValue32(OBJECTREF o)
 {
@@ -620,17 +603,17 @@ VOID    FieldDesc::SetValue8(OBJECTREF o, DWORD dwValue)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-__int64 FieldDesc::GetValue64(OBJECTREF o)
+int64_t FieldDesc::GetValue64(OBJECTREF o)
 {
     WRAPPER_NO_CONTRACT;
-    __int64 val;
+    int64_t val;
     GetInstanceField(o, (LPVOID)&val);
     return val;
 
 }
 
 #ifndef DACCESS_COMPILE
-VOID    FieldDesc::SetValue64(OBJECTREF o, __int64 value)
+VOID    FieldDesc::SetValue64(OBJECTREF o, int64_t value)
 {
     CONTRACTL
     {
@@ -783,7 +766,7 @@ TypeHandle FieldDesc::GetExactFieldType(TypeHandle owner)
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTFIELDREF FieldDesc::GetStubFieldInfo()
+REFLECTFIELDREF FieldDesc::AllocateStubFieldInfo()
 {
     CONTRACTL
     {

@@ -74,16 +74,7 @@ PTR_Module TypeDesc::GetLoaderModule()
     }
     else
     {
-        PTR_Module retVal = NULL;
-        BOOL fFail = FALSE;
-
-        _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-        PTR_FnPtrTypeDesc asFnPtr = dac_cast<PTR_FnPtrTypeDesc>(this);
-        if (!fFail)
-        {
-            retVal = ClassLoader::ComputeLoaderModuleForFunctionPointer(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1);
-        }
-        return retVal;
+        return dac_cast<PTR_FnPtrTypeDesc>(this)->GetLoaderModule();
     }
 }
 
@@ -509,7 +500,7 @@ TypeHandle TypeDesc::GetParent() {
 
 #ifndef DACCESS_COMPILE
 
-OBJECTREF ParamTypeDesc::GetManagedClassObject()
+OBJECTREF TypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
         THROWS;
@@ -517,41 +508,12 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         MODE_COOPERATIVE;
 
         INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_ARRAY ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_BYREF ||
-                     GetInternalCorElementType() == ELEMENT_TYPE_PTR);
     }
     CONTRACTL_END;
 
-    if (m_hExposedClassObject == 0)
+    if (_exposedClassObject == 0)
     {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
-    }
-    return GetManagedClassObjectIfExists();
-}
-
-#endif // #ifndef DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-
-OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-    }
-    CONTRACTL_END;
-
-    if (m_hExposedClassObject == 0)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
+        TypeHandle(this).AllocateManagedClassObject(&_exposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -565,9 +527,9 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    if (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
-        if (m_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
+        if (_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {
             return CLASS_DEPENDENCIES_LOADED;
         }
@@ -678,7 +640,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     switch (level)
     {
         case CLASS_DEPENDENCIES_LOADED:
-            InterlockedOr((LONG*)&m_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
+            InterlockedOr((LONG*)&_typeAndFlags, TypeDesc::enum_flag_DependenciesLoaded);
             break;
 
         case CLASS_LOADED:
@@ -1493,7 +1455,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
         if ((specialConstraints & gpDefaultConstructorConstraint) != 0)
         {
-            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
+            if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor() || thArg.IsAbstract()))
                 return FALSE;
         }
 
@@ -1614,26 +1576,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         }
     }
     return TRUE;
-}
-
-OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        INJECT_FAULT(COMPlusThrowOM());
-
-        PRECONDITION(IsGenericVariable());
-    }
-    CONTRACTL_END;
-
-    if (m_hExposedClassObject == 0)
-    {
-        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
-    }
-    return GetManagedClassObjectIfExists();
 }
 
 #endif //!DACCESS_COMPILE

@@ -3,19 +3,20 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Extension methods for adding configuration related options services to the DI container via <see cref="OptionsBuilder{TOptions}"/>.
+    /// Extension methods for adding configuration-related options services to the DI container via <see cref="OptionsBuilder{TOptions}"/>.
     /// </summary>
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
         Justification = "Workaround for https://github.com/mono/linker/issues/1416. Outer method has been annotated with DynamicallyAccessedMembers.")]
     public static class OptionsBuilderExtensions
     {
         /// <summary>
-        /// Enforces options validation check on start rather than in runtime.
+        /// Enforces options validation check on start rather than at run time.
         /// </summary>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
@@ -25,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(optionsBuilder);
 
-            optionsBuilder.Services.AddTransient<IStartupValidator, StartupValidator>();
+            optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
                 {

@@ -1,0 +1,230 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new CreateTrueMaskTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario_CreateTrueMask();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario_CreateTrueMask();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class CreateTrueMaskTest__{TestName}
+    {
+        private static int FloorPow2(int x)
+        {
+            if (x <= 0)
+            {
+                throw new Exception("Expected a positive argument value.");
+            }
+
+            int result = 1;
+
+            for (x = x / 2; x > 0; x /= 2)
+            {
+                result <<= 1;
+            }
+
+            return result;
+        }
+
+        // Decode a pattern specifier into a predicate constraint.
+
+        private static int DecodePredCount({Op1Type} bitpattern, int esize)
+        {
+            if (bitpattern > {Op1Type}.All)
+            {
+                throw new Exception("Bit patterns must be 5 bits long.");
+            }
+
+            switch (esize) {
+                case 8:
+                case 16:
+                case 32:
+                case 64:
+                    break;
+                default:
+                    throw new Exception("Incorrect esize");
+            }
+
+            int elements = (int)(Sve.Count8BitElements()) * 8 / esize;
+            switch (bitpattern)
+            {
+                case {Op1Type}.LargestPowerOf2:
+                    return FloorPow2(elements);
+                case {Op1Type}.VectorCount1:
+                    return elements >= 1 ? 1 : 0;
+                case {Op1Type}.VectorCount2:
+                    return elements >= 2 ? 2 : 0;
+                case {Op1Type}.VectorCount3:
+                    return elements >= 3 ? 3 : 0;
+                case {Op1Type}.VectorCount4:
+                    return elements >= 4 ? 4 : 0;
+                case {Op1Type}.VectorCount5:
+                    return elements >= 5 ? 5 : 0;
+                case {Op1Type}.VectorCount6:
+                    return elements >= 6 ? 6 : 0;
+                case {Op1Type}.VectorCount7:
+                    return elements >= 7 ? 7 : 0;
+                case {Op1Type}.VectorCount8:
+                    return elements >= 8 ? 8 : 0;
+                case {Op1Type}.VectorCount16:
+                    return elements >= 16 ? 16 : 0;
+                case {Op1Type}.VectorCount32:
+                    return elements >= 32 ? 32 : 0;
+                case {Op1Type}.VectorCount64:
+                    return elements >= 64 ? 64 : 0;
+                case {Op1Type}.VectorCount128:
+                    return elements >= 128 ? 128 : 0;
+                case {Op1Type}.VectorCount256:
+                    return elements >= 256 ? 256 : 0;
+                case {Op1Type}.LargestMultipleOf4:
+                    return elements - (elements % 4);
+                case {Op1Type}.LargestMultipleOf3:
+                    return elements - (elements % 3);
+                case {Op1Type}.All:
+                    return elements;
+                default:
+                    return 0;
+            }
+
+            throw new Exception("Should be unreachable.");
+            return 0;
+        }
+
+        // Calculate the expected result of a PTRUE instruction.
+
+        private static {RetVectorType}<{RetBaseType}> PtrueOp({Op1Type} bitpattern, int esize)
+        {
+            int VL = (int)(Sve.Count8BitElements()) * 8;
+            int PL = VL / 8;
+            int elements = VL / esize;
+            int count = DecodePredCount(bitpattern, esize);
+            // {RetVectorType}<{RetBaseType}> result = {RetVectorType}<{RetBaseType}>.Zero;
+            int psize = esize / 8;
+
+            {RetBaseType}[] elemArray = new {RetBaseType}[elements];
+            for (int e = 0; e < elements; e++)
+            {
+                if (typeof({RetBaseType}) == typeof(Single))
+                {
+                    elemArray[e] = Unsafe.BitCast<int, {RetBaseType}>(e < count ? 1 : 0);
+                }
+                else if (typeof({RetBaseType}) == typeof(Double))
+                {
+                    elemArray[e] = Unsafe.BitCast<long, {RetBaseType}>(e < count ? 1 : 0);
+                }
+                else
+                {
+                    elemArray[e] = ({RetBaseType})(e < count ? 1 : 0);
+                }
+            }
+
+            return new {RetVectorType}<{RetBaseType}>(elemArray);
+        }
+
+        public CreateTrueMaskTest__{TestName}()
+        {
+            Succeeded = true;
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_CreateTrueMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_CreateTrueMask));
+
+            for ({Op1Type} pattern = {Op1Type}.LargestPowerOf2; pattern <= {Op1Type}.All ; pattern++)
+            {
+                var result = {Isa}.{Method}(pattern);
+
+                ValidateResult(pattern, result);
+            }
+        }
+
+        public void RunReflectionScenario_CreateTrueMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_CreateTrueMask));
+
+            for ({Op1Type} pattern = {Op1Type}.LargestPowerOf2; pattern <= {Op1Type}.All ; pattern++)
+            {
+                var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1Type}) })
+                                         .Invoke(null, new object[] {
+                                             pattern
+                                         });
+
+                ValidateResult(pattern, ({RetVectorType}<{RetBaseType}>)(result));
+            }
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_CreateTrueMask();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult({Op1Type} pattern, {RetVectorType}<{RetBaseType}> result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            {RetVectorType}<{RetBaseType}> expected = PtrueOp(pattern, sizeof({RetBaseType}) * 8);
+            if (!Vector.EqualsAll(expected, result))
+            {
+                succeeded = false;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({pattern}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"   expected: ({string.Join(", ", expected)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

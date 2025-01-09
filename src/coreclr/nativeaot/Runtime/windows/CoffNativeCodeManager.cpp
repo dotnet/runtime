@@ -152,7 +152,7 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntim
     PTR_uint32_t xdata = dac_cast<PTR_uint32_t>(pRuntimeFunction->UnwindData + moduleBase);
     int size = 4;
 
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 
@@ -415,7 +415,13 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsSafePoint())
+        return true;
+
+    return false;
 #else
     // Extract the necessary information from the info block header
     hdrInfo info;
@@ -434,9 +440,8 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, safePointAddress, &gcInfo);
 
-    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
-
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    bool executionAborted = ((CoffNativeMethodInfo *)pMethodInfo)->executionAborted;
     if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
@@ -447,17 +452,12 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::ActiveStackFrame);
 
 #ifdef USE_GC_INFO_DECODER
-    if (!isActiveStackFrame && !executionAborted)
-    {
-        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
-        codeOffset--;
-    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
         codeOffset
-        );
+    );
 
     if (!decoder.EnumerateLiveSlots(
         pRegisterSet,
@@ -766,6 +766,10 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     if (!(flags & USFF_GcUnwind))
     {
         memcpy(pRegisterSet->Xmm, &context.Xmm6, sizeof(pRegisterSet->Xmm));
+        if (pRegisterSet->SSP)
+        {
+            pRegisterSet->SSP += 8;
+        }
     }
 #elif defined(TARGET_ARM64)
     if (!(flags & USFF_GcUnwind))
@@ -832,8 +836,7 @@ GCRefKind GetGcRefKind(ReturnKind returnKind)
 
 bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                 REGDISPLAY *    pRegisterSet,       // in
-                                                PTR_PTR_VOID *  ppvRetAddrLocation, // out
-                                                GCRefKind *     pRetValueKind)      // out
+                                                PTR_PTR_VOID *  ppvRetAddrLocation) // out
 {
     CoffNativeMethodInfo * pNativeMethodInfo = (CoffNativeMethodInfo *)pMethodInfo;
 
@@ -844,9 +847,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     uint8_t unwindBlockFlags = *p++;
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
-
     // Check whether this is a funclet
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
         return false;
@@ -856,19 +856,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
         return false;
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
-        p += sizeof(int32_t);
-
 #ifdef USE_GC_INFO_DECODER
-    // Decode the GC info for the current method to determine its return type
-    GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
-#if defined(TARGET_ARM64)
-    flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
-#endif // TARGET_ARM64
-    GcInfoDecoder decoder(GCInfoToken(p), flags);
-
-    *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
-
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
     SIZE_T  EstablisherFrame;
@@ -896,6 +884,15 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return true;
 #elif defined(TARGET_ARM64)
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    // Decode the GC info for the current method to determine if there are tailcalls
+    GcInfoDecoderFlags flags = DECODE_HAS_TAILCALLS;
+    GcInfoDecoder decoder(GCInfoToken(p), flags);
     if (decoder.HasTailCalls())
     {
         // Do not hijack functions that have tail calls, since there are two problems:
@@ -974,11 +971,21 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)registerSet.PCTAddr;
-    *pRetValueKind = GetGcRefKind(infoBuf.returnKind);
-
     return true;
 #endif 
 }
+
+#ifdef TARGET_X86
+GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, REGDISPLAY *   pRegisterSet)
+{
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+    hdrInfo infoBuf;
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
+
+    return GetGcRefKind(infoBuf.returnKind);
+}
+#endif
 
 PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
 {

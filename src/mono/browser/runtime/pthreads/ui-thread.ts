@@ -71,32 +71,32 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
         return;
     }
 
-    let port: MessagePort;
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
     worker.info = Object.assign({}, worker.info, message.info);
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
             // this one shot port from setupPreloadChannelToMainThread
-            port = message.port!;
-            port.postMessage({
+            message.port!.postMessage({
                 type: "pthread",
                 cmd: MainToWorkerMessageType.applyConfig,
                 config: JSON.stringify(runtimeHelpers.config),
                 monoThreadInfo: JSON.stringify(worker.info),
             });
-            port.close();
             break;
         case WorkerToMainMessageType.pthreadCreated:
-            port = message.port!;
-            thread = new ThreadImpl(pthreadId, worker, port);
+            thread = new ThreadImpl(pthreadId, worker, message.port!);
             worker.thread = thread;
             worker.info.isRunning = true;
             resolveThreadPromises(pthreadId, thread);
             worker.info = Object.assign(worker.info!, message.info, {});
             break;
         case WorkerToMainMessageType.deputyStarted:
-            runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
+            runtimeHelpers.deputyWorker = worker;
+            runtimeHelpers.afterMonoStarted.promise_control.resolve();
+            break;
+        case WorkerToMainMessageType.deputyReady:
+            runtimeHelpers.afterDeputyReady.promise_control.resolve(message.deputyProxyGCHandle);
             break;
         case WorkerToMainMessageType.ioStarted:
             runtimeHelpers.afterIOStarted.promise_control.resolve();
@@ -254,7 +254,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_debug(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         return worker;
@@ -273,7 +273,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_debug(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     return modulePThread.unusedWorkers.pop()!;
 }
 
@@ -287,6 +287,7 @@ function allocateUnusedWorker (): PThreadWorker {
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+        type: "module",
     }) as PThreadWorker;
     getUnusedWorkerPool().push(worker);
     worker.loaded = false;

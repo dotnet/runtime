@@ -5,7 +5,6 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

@@ -39,7 +39,7 @@ public:
 
 struct ResolvedToken final
 {
-    TypeHandle TypeHandle;
+    class TypeHandle TypeHandle;
     SigPointer TypeSignature;
     SigPointer MethodSignature;
     MethodDesc* Method;

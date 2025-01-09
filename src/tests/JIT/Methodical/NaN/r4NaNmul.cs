@@ -80,6 +80,7 @@ public class r4NaNmul
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

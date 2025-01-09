@@ -753,6 +753,8 @@ public:
   void      setIP(uint32_t value) { _registers.__srr0 = value; }
   uint64_t  getCR() const         { return _registers.__cr; }
   void      setCR(uint32_t value) { _registers.__cr = value; }
+  uint64_t  getLR() const         { return _registers.__lr; }
+  void      setLR(uint32_t value) { _registers.__lr = value; }
 
 private:
   struct ppc_thread_state_t {
@@ -1324,6 +1326,8 @@ public:
   void      setIP(uint64_t value) { _registers.__srr0 = value; }
   uint64_t  getCR() const         { return _registers.__cr; }
   void      setCR(uint64_t value) { _registers.__cr = value; }
+  uint64_t  getLR() const         { return _registers.__lr; }
+  void      setLR(uint64_t value) { _registers.__lr = value; }
 
 private:
   struct ppc64_thread_state_t {
@@ -3070,7 +3074,7 @@ inline bool Registers_mips_o32::validRegister(int regNum) const {
     return false;
   if (regNum <= UNW_MIPS_R31)
     return true;
-#if __mips_isa_rev != 6
+#if __mips_isa_rev < 6
   if (regNum == UNW_MIPS_HI)
     return true;
   if (regNum == UNW_MIPS_LO)
@@ -3104,10 +3108,12 @@ inline uint32_t Registers_mips_o32::getRegister(int regNum) const {
     return _registers.__pc;
   case UNW_REG_SP:
     return _registers.__r[29];
+#if __mips_isa_rev < 6
   case UNW_MIPS_HI:
     return _registers.__hi;
   case UNW_MIPS_LO:
     return _registers.__lo;
+#endif
   }
   _LIBUNWIND_ABORT("unsupported mips_o32 register");
 }
@@ -3137,11 +3143,13 @@ inline void Registers_mips_o32::setRegister(int regNum, uint32_t value) {
   case UNW_REG_SP:
     _registers.__r[29] = value;
     return;
+#if __mips_isa_rev < 6
   case UNW_MIPS_HI:
     _registers.__hi = value;
     return;
   case UNW_MIPS_LO:
     _registers.__lo = value;
+#endif
     return;
   }
   _LIBUNWIND_ABORT("unsupported mips_o32 register");
@@ -3321,10 +3329,12 @@ inline const char *Registers_mips_o32::getRegisterName(int regNum) {
     return "$f30";
   case UNW_MIPS_F31:
     return "$f31";
+#if __mips_isa_rev < 6
   case UNW_MIPS_HI:
     return "$hi";
   case UNW_MIPS_LO:
     return "$lo";
+#endif
   default:
     return "unknown register";
   }
@@ -3394,7 +3404,7 @@ inline bool Registers_mips_newabi::validRegister(int regNum) const {
     return false;
   if (regNum <= UNW_MIPS_R31)
     return true;
-#if __mips_isa_rev != 6
+#if __mips_isa_rev < 6
   if (regNum == UNW_MIPS_HI)
     return true;
   if (regNum == UNW_MIPS_LO)
@@ -3413,10 +3423,12 @@ inline uint64_t Registers_mips_newabi::getRegister(int regNum) const {
     return _registers.__pc;
   case UNW_REG_SP:
     return _registers.__r[29];
+#if __mips_isa_rev < 6
   case UNW_MIPS_HI:
     return _registers.__hi;
   case UNW_MIPS_LO:
     return _registers.__lo;
+#endif
   }
   _LIBUNWIND_ABORT("unsupported mips_newabi register");
 }
@@ -3434,12 +3446,14 @@ inline void Registers_mips_newabi::setRegister(int regNum, uint64_t value) {
   case UNW_REG_SP:
     _registers.__r[29] = value;
     return;
+#if __mips_isa_rev < 6
   case UNW_MIPS_HI:
     _registers.__hi = value;
     return;
   case UNW_MIPS_LO:
     _registers.__lo = value;
     return;
+#endif
   }
   _LIBUNWIND_ABORT("unsupported mips_newabi register");
 }
@@ -3618,10 +3632,12 @@ inline const char *Registers_mips_newabi::getRegisterName(int regNum) {
     return "$f30";
   case UNW_MIPS_F31:
     return "$f31";
+#if __mips_isa_rev < 6
   case UNW_MIPS_HI:
     return "$hi";
   case UNW_MIPS_LO:
     return "$lo";
+#endif
   default:
     return "unknown register";
   }
@@ -5252,13 +5268,14 @@ public:
 
   bool validRegister(int num) const;
   uint64_t getRegister(int num) const;
-  void setRegister(int num, uint64_t value);
+  void setRegister(int num, uint64_t value, uint64_t location);
   bool validFloatRegister(int num) const;
   double getFloatRegister(int num) const;
   void setFloatRegister(int num, double value);
   bool validVectorRegister(int num) const;
   v128 getVectorRegister(int num) const;
   void setVectorRegister(int num, v128 value);
+  uint64_t getRegisterLocation(int num) const;
   static const char *getRegisterName(int num);
   void jumpto();
   static constexpr int lastDwarfRegNum() {
@@ -5267,17 +5284,23 @@ public:
   static int getArch() { return REGISTERS_LOONGARCH; }
 
   uint64_t getSP() const { return _registers.__r[3]; }
-  void setSP(uint64_t value) { _registers.__r[3] = value; }
+  void setSP(uint64_t value, uint64_t location) { _registers.__r[3] = value; }
   uint64_t getIP() const { return _registers.__pc; }
-  void setIP(uint64_t value) { _registers.__pc = value; }
+  void setIP(uint64_t value, uint64_t location) { _registers.__pc = value; }
 
 private:
-  struct loongarch_thread_state_t {
+  struct GPRs {
     uint64_t __r[32];
     uint64_t __pc;
   };
 
-  loongarch_thread_state_t _registers;
+  struct GPRLocations {
+    uint64_t __r[32];
+    uint64_t __pc;
+  };
+
+  GPRs _registers;
+  GPRLocations _registerLocations;
 #if __loongarch_frlen == 64
   double _floats[32];
 #endif
@@ -5287,6 +5310,7 @@ inline Registers_loongarch::Registers_loongarch(const void *registers) {
   static_assert((check_fit<Registers_loongarch, unw_context_t>::does_fit),
                 "loongarch registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
+  memset(&_registerLocations, 0, sizeof(_registerLocations));
   static_assert(sizeof(_registers) == 0x108,
                 "expected float registers to be at offset 264");
 #if __loongarch_frlen == 64
@@ -5297,6 +5321,7 @@ inline Registers_loongarch::Registers_loongarch(const void *registers) {
 
 inline Registers_loongarch::Registers_loongarch() {
   memset(&_registers, 0, sizeof(_registers));
+  memset(&_registerLocations, 0, sizeof(_registerLocations));
 #if __loongarch_frlen == 64
   memset(&_floats, 0, sizeof(_floats));
 #endif
@@ -5321,15 +5346,31 @@ inline uint64_t Registers_loongarch::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported loongarch register");
 }
 
-inline void Registers_loongarch::setRegister(int regNum, uint64_t value) {
-  if (regNum >= UNW_LOONGARCH_R0 && regNum <= UNW_LOONGARCH_R31)
+inline void Registers_loongarch::setRegister(int regNum, uint64_t value, uint64_t location) {
+  if (regNum >= UNW_LOONGARCH_R0 && regNum <= UNW_LOONGARCH_R31) {
     _registers.__r[regNum - UNW_LOONGARCH_R0] = value;
-  else if (regNum == UNW_REG_IP)
+    _registerLocations.__r[regNum - UNW_LOONGARCH_R0] = location;
+  }
+  else if (regNum == UNW_REG_IP) {
     _registers.__pc = value;
-  else if (regNum == UNW_REG_SP)
+    _registerLocations.__pc = location;
+  }
+  else if (regNum == UNW_REG_SP) {
     _registers.__r[3] = value;
+    _registerLocations.__r[3] = location;
+  }
   else
     _LIBUNWIND_ABORT("unsupported loongarch register");
+}
+
+inline uint64_t Registers_loongarch::getRegisterLocation(int regNum) const {
+  if (regNum == UNW_REG_IP)
+    return _registerLocations.__pc;
+  if (regNum == UNW_REG_SP)
+    return _registerLocations.__r[3];
+  if ((regNum >= 0) && (regNum < 32))
+    return _registerLocations.__r[regNum];
+  _LIBUNWIND_ABORT("unsupported loongarch64 register");
 }
 
 inline const char *Registers_loongarch::getRegisterName(int regNum) {

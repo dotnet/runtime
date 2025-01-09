@@ -80,18 +80,19 @@ namespace System.Diagnostics
 #if !TARGET_WASM
         internal void ToString(TraceFormat traceFormat, StringBuilder builder)
         {
-            if (_stackFrames == null)
+            if (_stackFrames != null)
             {
-                return;
-            }
-
-            foreach (StackFrame frame in _stackFrames)
-            {
-                frame.AppendToStackTrace(builder);
+                foreach (StackFrame frame in _stackFrames)
+                {
+                    frame?.AppendToStackTrace(builder);
+                }
             }
 
             if (traceFormat == TraceFormat.Normal && builder.Length >= Environment.NewLine.Length)
                 builder.Length -= Environment.NewLine.Length;
+
+            if (traceFormat == TraceFormat.TrailingNewLine && builder.Length == 0)
+                builder.AppendLine();
         }
 #endif
     }

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -53,7 +54,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		public static bool IsHoistedLocal (FieldDefinition field)
+		public static bool IsHoistedLocal (FieldReference field)
 		{
 			if (CompilerGeneratedNames.IsLambdaDisplayClass (field.DeclaringType.Name))
 				return true;

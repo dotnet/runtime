@@ -8,9 +8,7 @@
  ****************************************************************************/
 #ifndef SOS_INCLUDE
 
-#ifdef _BLD_CLR
 #include "utilcode.h"
-#endif
 #include "corhlprpriv.h"
 #include <stdlib.h>
 
@@ -23,7 +21,6 @@
 template <SIZE_T SIZE, SIZE_T INCREMENT>
 HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
 {
-#ifdef _BLD_CLR
 #ifdef _DEBUG
 #ifndef DACCESS_COMPILE
     // Exercise heap for OOM-fault injection purposes
@@ -39,7 +36,6 @@ HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
     }
 #endif
 #endif
-#endif
     BYTE *pbBuffNew;
     if (iItems <= cbTotal)
     {
@@ -47,12 +43,10 @@ HRESULT CQuickMemoryBase<SIZE, INCREMENT>::ReSizeNoThrow(SIZE_T iItems)
         return NOERROR;
     }
 
-#ifdef _BLD_CLR
 #ifndef DACCESS_COMPILE
     // not allowed to do allocation if current thread suspends EE
     if (IsSuspendEEThread ())
         return E_OUTOFMEMORY;
-#endif
 #endif
     pbBuffNew = NEW_NOTHROW(iItems + INCREMENT);
     if (!pbBuffNew)
@@ -232,7 +226,7 @@ ErrExit:
 // copy fixed part of VarArg signature to a buffer
 //*****************************************************************************
 HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of COM+ method signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of method signature
     ULONG   cbSigBlob,                  // [IN] size of signature
     CQuickBytes *pqbSig,                // [OUT] output buffer for fixed part of VarArg Signature
     ULONG   *pcbSigBlob)                // [OUT] number of bytes written to the above output buffer

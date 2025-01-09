@@ -81,7 +81,7 @@ protected:
     template <BOOL bGrow, BOOL bThrow>
     void *_Alloc(SIZE_T iItems)
     {
-#if defined(_BLD_CLR) && defined(_DEBUG)
+#if defined(_DEBUG)
         {  // Exercise heap for OOM-fault injection purposes
             BYTE * pb = NSQuickBytesHelper::_AllocBytes<bThrow>::Invoke(iItems);
             _ASSERTE(!bThrow || pb != NULL); // _AllocBytes would have thrown if bThrow == TRUE
@@ -474,12 +474,12 @@ private:
 template <class T> class CQuickArray : public CQuickArrayBase<T>
 {
 public:
-    CQuickArray<T>()
+    CQuickArray()
     {
         this->Init();
     }
 
-    ~CQuickArray<T>()
+    ~CQuickArray()
     {
         this->Destroy();
     }
@@ -648,7 +648,7 @@ HRESULT _CountBytesOfOneArg(
     ULONG       *pcbTotal);
 
 HRESULT _GetFixedSigOfVarArg(           // S_OK or error.
-    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of CLR signature
+    PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob of signature
     ULONG   cbSigBlob,                  // [IN] size of signature
     CQuickBytes *pqbSig,                // [OUT] output buffer for fixed part of VarArg Signature
     ULONG   *pcbSigBlob);               // [OUT] number of bytes written to the above output buffer

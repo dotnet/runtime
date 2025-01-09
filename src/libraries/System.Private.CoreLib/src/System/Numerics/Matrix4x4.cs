@@ -380,7 +380,7 @@ namespace System.Numerics
         /// <returns>The right-handed perspective projection matrix.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="fieldOfView" /> is less than or equal to zero.
         /// -or-
-        /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="Math.PI" />.
+        /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="float.Pi" />.
         /// <paramref name="nearPlaneDistance" /> is less than or equal to zero.
         /// -or-
         /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
@@ -397,7 +397,7 @@ namespace System.Numerics
         /// <returns>The left-handed perspective projection matrix.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="fieldOfView" /> is less than or equal to zero.
         /// -or-
-        /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="Math.PI" />.
+        /// <paramref name="fieldOfView" /> is greater than or equal to <see cref="float.Pi" />.
         /// <paramref name="nearPlaneDistance" /> is less than or equal to zero.
         /// -or-
         /// <paramref name="farPlaneDistance" /> is less than or equal to zero.
@@ -598,7 +598,7 @@ namespace System.Numerics
         /// <param name="rotation">When this method returns, contains the rotation component of the transformation matrix if the operation succeeded.</param>
         /// <param name="translation">When the method returns, contains the translation component of the transformation matrix if the operation succeeded.</param>
         /// <returns><see langword="true" /> if <paramref name="matrix" /> was decomposed successfully; otherwise,  <see langword="false" />.</returns>
-        public static unsafe bool Decompose(Matrix4x4 matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
+        public static bool Decompose(Matrix4x4 matrix, out Vector3 scale, out Quaternion rotation, out Vector3 translation)
             => Impl.Decompose(in matrix.AsImpl(), out scale, out rotation, out translation);
 
         /// <summary>Tries to invert the specified matrix. The return value indicates whether the operation succeeded.</summary>

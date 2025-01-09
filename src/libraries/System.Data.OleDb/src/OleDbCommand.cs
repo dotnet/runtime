@@ -686,7 +686,7 @@ namespace System.Data.OleDb
                                 OleDbDataReader.GenerateSchemaTable(dataReader, _icommandText!, behavior);
                                 break;
                             default:
-                                Debug.Assert(false, "ExecuteReaderInternal: unknown result type");
+                                Debug.Fail("ExecuteReaderInternal: unknown result type");
                                 break;
                         }
                         executeResult = null;

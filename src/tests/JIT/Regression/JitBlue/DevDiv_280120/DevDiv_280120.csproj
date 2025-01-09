@@ -5,7 +5,6 @@
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

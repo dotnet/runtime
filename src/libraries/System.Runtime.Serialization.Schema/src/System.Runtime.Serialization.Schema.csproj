@@ -9,6 +9,8 @@
 Commonly Used Types:
 System.Runtime.Serialization.Schema.XsdDataContractExporter
 System.Runtime.Serialization.Schema.XsdDataContractImporter</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

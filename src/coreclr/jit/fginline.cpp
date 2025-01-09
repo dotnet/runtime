@@ -69,7 +69,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
 {
     // We disallow inlining the exact same instantiation.
     if ((ancestor->GetCallee() == inlineInfo->fncHandle) &&
-        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
+        (ancestor->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHandle))
     {
         JITDUMP("Call site is trivially recursive\n");
         return true;
@@ -80,7 +80,7 @@ bool Compiler::IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* 
     // involved this can quickly consume a large amount of resources, so try to
     // verify that we aren't inlining recursively with complex contexts.
     if (info.compCompHnd->haveSameMethodDefinition(inlineInfo->fncHandle, ancestor->GetCallee()) &&
-        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHnd, 64))
+        ContextComplexityExceeds(inlineInfo->inlineCandidateInfo->exactContextHandle, 64))
     {
         JITDUMP("Call site is recursive with a complex generic context\n");
         return true;
@@ -387,6 +387,19 @@ private:
 #endif // DEBUG
         }
 
+        // If the inline was rejected and returns a retbuffer, then mark that
+        // local as DNER now so that promotion knows to leave it up to physical
+        // promotion.
+        if ((*use)->IsCall())
+        {
+            CallArg* retBuffer = (*use)->AsCall()->gtArgs.GetRetBufferArg();
+            if ((retBuffer != nullptr) && retBuffer->GetNode()->OperIs(GT_LCL_ADDR))
+            {
+                m_compiler->lvaSetVarDoNotEnregister(retBuffer->GetNode()->AsLclVarCommon()->GetLclNum()
+                                                         DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
+        }
+
 #if FEATURE_MULTIREG_RET
         // If an inline was rejected and the call returns a struct, we may
         // have deferred some work when importing call for cases where the
@@ -624,24 +637,35 @@ private:
             {
                 JITDUMP(" ... found foldable jtrue at [%06u] in " FMT_BB "\n", m_compiler->dspTreeID(tree),
                         block->bbNum);
+                m_compiler->Metrics.InlinerBranchFold++;
 
                 // We have a constant operand, and should have the all clear to optimize.
                 // Update side effects on the tree, assert there aren't any, and bash to nop.
                 m_compiler->gtUpdateNodeSideEffects(tree);
                 assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
                 tree->gtBashToNOP();
-                m_madeChanges = true;
+                m_madeChanges          = true;
+                FlowEdge* removedEdge  = nullptr;
+                FlowEdge* retainedEdge = nullptr;
 
                 if (condTree->IsIntegralConst(0))
                 {
-                    m_compiler->fgRemoveRefPred(block->GetTrueEdge());
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                    removedEdge  = block->GetTrueEdge();
+                    retainedEdge = block->GetFalseEdge();
                 }
                 else
                 {
-                    m_compiler->fgRemoveRefPred(block->GetFalseEdge());
-                    block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetTrueEdge());
+                    removedEdge  = block->GetFalseEdge();
+                    retainedEdge = block->GetTrueEdge();
                 }
+
+                m_compiler->fgRemoveRefPred(removedEdge);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+                // Update profile, make it consistent if possible.
+                //
+                m_compiler->fgRepairProfileCondToUncond(block, retainedEdge, removedEdge,
+                                                        &m_compiler->Metrics.ProfileInconsistentInlinerBranchFold);
             }
         }
         else
@@ -691,6 +715,11 @@ PhaseStatus Compiler::fgInline()
     fgPrintInlinedMethods =
         JitConfig.JitPrintInlinedMethods().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
 #endif // DEBUG
+
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentBeforeInline++;
+    }
 
     noway_assert(fgFirstBB != nullptr);
 
@@ -814,13 +843,13 @@ PhaseStatus Compiler::fgInline()
 
 #endif // DEBUG
 
-    if (madeChanges)
+    if (fgPgoConsistent)
     {
-        // Optional quirk to keep this as zero diff. Some downstream phases are bbNum sensitive
-        // but rely on the ambient bbNums.
-        //
-        fgRenumberBlocks();
+        Metrics.ProfileConsistentAfterInline++;
     }
+
+    Metrics.InlineCount   = m_inlineStrategy->GetInlineCount();
+    Metrics.InlineAttempt = m_inlineStrategy->GetImportCount();
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -1212,7 +1241,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                     ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
                                               pParam->inlineInfo->iciCall);
             pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
-            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHnd;
+            pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
             JITLOG_THIS(pParam->pThis,
                                      (LL_INFO100000, "INLINER: inlineInfo.tokenLookupContextHandle for %s set to 0x%p:\n",
@@ -1415,7 +1444,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             // Inlinee contains just one BB. So just insert its statement list to topBlock.
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
+                JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
+            }
+            else
+            {
+                JITDUMP("\ninlinee was empty\n");
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
@@ -1451,6 +1485,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
             insertInlineeBlocks = false;
         }
+        else
+        {
+            JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
+        }
     }
 
     //
@@ -1458,8 +1496,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     //
     if (insertInlineeBlocks)
     {
+        JITDUMP("\nInserting inlinee blocks\n");
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
+
+        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", topBlock->bbNum,
+                bottomBlock->bbNum);
 
         // The newly split block is not special so doesn't need to be kept.
         //
@@ -1495,7 +1537,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (block->KindIs(BBJ_RETURN))
             {
                 noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
                         bottomBlock->bbNum);
 
                 FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
@@ -1539,6 +1581,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     compQmarkUsed |= InlineeCompiler->compQmarkUsed;
     compGSReorderStackLayout |= InlineeCompiler->compGSReorderStackLayout;
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
+    compMaskConvertUsed |= InlineeCompiler->compMaskConvertUsed;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
@@ -1590,6 +1633,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     // Update no-return call count
     optNoReturnCallCount += InlineeCompiler->optNoReturnCallCount;
 
+#ifdef DEBUG
+    // Update metrics
+    Metrics.mergeToRoot(InlineeCompiler);
+#endif
+
     // Update optMethodFlags
 
 #ifdef DEBUG
@@ -1605,6 +1653,75 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                 InlineeCompiler->optMethodFlags, optMethodFlags);
     }
 #endif
+
+    // Update profile consistency
+    //
+    // If inlinee is inconsistent, root method will be inconsistent too.
+    //
+    if (!InlineeCompiler->fgPgoConsistent)
+    {
+        if (fgPgoConsistent)
+        {
+            JITDUMP("INLINER: profile data in root now inconsistent -- inlinee had inconsistency\n");
+            Metrics.ProfileInconsistentInlinee++;
+            fgPgoConsistent = false;
+        }
+    }
+
+    // If we inline a no-return call at a site with profile weight,
+    // we will introduce inconsistency.
+    //
+    if (InlineeCompiler->fgReturnCount == 0)
+    {
+        JITDUMP("INLINER: no-return inlinee\n");
+
+        if (iciBlock->bbWeight > 0)
+        {
+            if (fgPgoConsistent)
+            {
+                JITDUMP("INLINER: profile data in root now inconsistent -- no-return inlinee at call site in " FMT_BB
+                        " with weight " FMT_WT "\n",
+                        iciBlock->bbNum, iciBlock->bbWeight);
+                Metrics.ProfileInconsistentNoReturnInlinee++;
+                fgPgoConsistent = false;
+            }
+        }
+        else
+        {
+            // Inlinee scaling should assure this is so.
+            //
+            assert(InlineeCompiler->fgFirstBB->bbWeight == 0);
+        }
+    }
+
+    // If the call site is not in a try and the callee has a throw,
+    // we may introduce inconsistency.
+    //
+    // Technically we should check if the callee has a throw not in a try, but since
+    // we can't inline methods with EH yet we don't see those.
+    //
+    if (InlineeCompiler->fgThrowCount > 0)
+    {
+        JITDUMP("INLINER: may-throw inlinee\n");
+
+        if (iciBlock->bbWeight > 0)
+        {
+            if (fgPgoConsistent)
+            {
+                JITDUMP("INLINER: profile data in root now inconsistent -- may-throw inlinee at call site in " FMT_BB
+                        " with weight " FMT_WT "\n",
+                        iciBlock->bbNum, iciBlock->bbWeight);
+                Metrics.ProfileInconsistentMayThrowInlinee++;
+                fgPgoConsistent = false;
+            }
+        }
+        else
+        {
+            // Inlinee scaling should assure this is so.
+            //
+            assert(InlineeCompiler->fgFirstBB->bbWeight == 0);
+        }
+    }
 
     // If an inlinee needs GS cookie we need to make sure that the cookie will not be allocated at zero stack offset.
     // Note that if the root method needs GS cookie then this has already been taken care of.
@@ -1813,7 +1930,7 @@ void Compiler::fgInsertInlineeArgument(
 //    * Passing of call arguments via temps
 //
 //    Newly added statements are placed just after the original call
-//    and are are given the same inline context as the call any calls
+//    and are given the same inline context as the call any calls
 //    added here will appear to have been part of the immediate caller.
 //
 Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
@@ -1880,7 +1997,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
     if (inlineInfo->inlineCandidateInfo->initClassResult & CORINFO_INITCLASS_USE_HELPER)
     {
-        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHnd);
+        CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHandle);
 
         tree    = fgGetSharedCCtor(exactClass);
         newStmt = gtNewStmt(tree, callDI);

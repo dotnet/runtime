@@ -10,12 +10,13 @@ namespace System.Security.Cryptography.Rsa.Tests
     {
         private bool? _supports384PrivateKey;
         private bool? _supportsSha1Signatures;
+        private bool? _supportsMd5Signatures;
 
         public RSA Create() => RSA.Create();
 
         public RSA Create(int keySize)
         {
-#if NETCOREAPP
+#if NET
             return RSA.Create(keySize);
 #else
             RSA rsa = Create();
@@ -41,6 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
+        public bool SupportsMd5Signatures => _supportsMd5Signatures ??= SignatureSupport.CanProduceMd5Signature(Create());
 
         public bool SupportsLargeExponent => true;
 

@@ -101,7 +101,7 @@ namespace System.Data.Odbc
                         break;
                     case IsolationLevel.Snapshot:
                         sql_iso = ODBC32.SQL_TRANSACTION.SNAPSHOT;
-                        // VSDD 414121: Snapshot isolation level must be set through SQL_COPT_SS_TXN_ISOLATION (https://docs.microsoft.com/en-us/sql/relational-databases/native-client-odbc-api/sqlsetconnectattr#sqlcoptsstxnisolation)
+                        // VSDD 414121: Snapshot isolation level must be set through SQL_COPT_SS_TXN_ISOLATION (https://learn.microsoft.com/sql/relational-databases/native-client-odbc-api/sqlsetconnectattr#sqlcoptsstxnisolation)
                         isolationAttribute = ODBC32.SQL_ATTR.SQL_COPT_SS_TXN_ISOLATION;
                         break;
                     case IsolationLevel.Chaos:

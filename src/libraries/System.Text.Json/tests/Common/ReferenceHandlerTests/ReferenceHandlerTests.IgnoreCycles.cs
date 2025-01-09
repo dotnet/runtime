@@ -497,12 +497,12 @@ namespace System.Text.Json.Serialization.Tests
 
         public class NodeWithObjectProperty
         {
-            public object Next { get; set; }
+            public object? Next { get; set; }
         }
 
         public class NodeWithNodeProperty
         {
-            public NodeWithNodeProperty Next { get; set; }
+            public NodeWithNodeProperty? Next { get; set; }
         }
 
         public class ClassWithGenericProperty<T>
@@ -518,22 +518,22 @@ namespace System.Text.Json.Serialization.Tests
 
         public interface IValueNodeWithObjectProperty
         {
-            public object Next { get; set; }
+            public object? Next { get; set; }
         }
 
         public struct ValueNodeWithObjectProperty : IValueNodeWithObjectProperty
         {
-            public object Next { get; set; }
+            public object? Next { get; set; }
         }
 
         public interface IValueNodeWithIValueNodeProperty
         {
-            public IValueNodeWithIValueNodeProperty Next { get; set; }
+            public IValueNodeWithIValueNodeProperty? Next { get; set; }
         }
 
         public struct ValueNodeWithIValueNodeProperty : IValueNodeWithIValueNodeProperty
         {
-            public IValueNodeWithIValueNodeProperty Next { get; set; }
+            public IValueNodeWithIValueNodeProperty? Next { get; set; }
         }
 
         public class EmptyClass { }
@@ -559,8 +559,8 @@ namespace System.Text.Json.Serialization.Tests
         public class Person
         {
             public string Name { get; set; }
-            public object DayOfBirth { get; set; }
-            public Person Parent { get; set; }
+            public object? DayOfBirth { get; set; }
+            public Person? Parent { get; set; }
         }
 
         class PersonConverter : JsonConverter<Person>

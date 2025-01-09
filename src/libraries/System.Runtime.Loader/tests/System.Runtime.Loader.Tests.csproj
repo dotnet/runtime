@@ -71,7 +71,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 

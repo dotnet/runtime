@@ -143,7 +143,7 @@ void MethodContextReader::ReleaseLock()
 
 bool MethodContextReader::atEof()
 {
-    __int64 pos = 0;
+    int64_t pos = 0;
     SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
                      FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
     return pos == this->fileSize;
@@ -163,7 +163,7 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)
     {
-        __int64 pos = totalLen + 2;
+        int64_t pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
         AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
                   "SetFilePointerEx failed (Error %X)", GetLastError());
@@ -424,7 +424,7 @@ double MethodContextReader::Progress()
     else
     {
         this->AcquireLock();
-        __int64 pos = 0;
+        int64_t pos = 0;
         SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
         this->ReleaseLock();
         return (double)pos;
@@ -465,7 +465,7 @@ double MethodContextReader::PercentComplete()
 // Returns -1 for not found, or -2 for not indexed
 // Interview question alert: hurray for CLR headers incompatibility with STL :-(
 // Note that TOC is 0 based and MC# are 1 based!
-__int64 MethodContextReader::GetOffset(unsigned int methodNumber)
+int64_t MethodContextReader::GetOffset(unsigned int methodNumber)
 {
     if (!this->hasTOC())
         return -2;
@@ -487,7 +487,7 @@ __int64 MethodContextReader::GetOffset(unsigned int methodNumber)
 
 MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int methodNumber)
 {
-    __int64 pos = this->GetOffset(methodNumber);
+    int64_t pos = this->GetOffset(methodNumber);
     if (pos < 0)
     {
         return MethodContextBuffer(-3);
@@ -538,7 +538,7 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     HANDLE excludeFileHandle = OpenFile(excludeFileName.c_str());
     if (excludeFileHandle != INVALID_HANDLE_VALUE)
     {
-        __int64 excludeFileSizeLong;
+        int64_t excludeFileSizeLong;
         GetFileSizeEx(excludeFileHandle, (PLARGE_INTEGER)&excludeFileSizeLong);
         unsigned excludeFileSize = (unsigned)excludeFileSizeLong;
 
@@ -622,9 +622,13 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 
 void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
 {
-    Indexes = newIndexes;
-    IndexCount = newIndexCount;
+    int64_t pos    = 0;
+    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
+    assert(result);
+    
+    Indexes     = newIndexes;
+    IndexCount  = newIndexCount;
     curIndexPos = 0;
-    curMCIndex = 0;
+    curMCIndex  = 0;
     curTOCIndex = 0;
 }

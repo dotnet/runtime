@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@long;
+
 public struct VT
 {
     public long[,] long2darr;
@@ -43,6 +45,7 @@ public class longMDArrTest
     static long[][, ,] ja2_c = new long[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

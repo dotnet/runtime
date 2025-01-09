@@ -127,6 +127,25 @@ namespace Server.Contract.Servers
     /// Managed definition of CoClass
     /// </summary>
     [ComImport]
+    [CoClass(typeof(DispatchCoerceTestingClass))]
+    [Guid("B630A508-4DA5-4C14-A7AB-618AD66B2EBF")]
+    internal interface DispatchCoerceTesting : Server.Contract.IDispatchCoerceTesting
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    [ComImport]
+    [Guid(Server.Contract.Guids.DispatchCoerceTesting)]
+    internal class DispatchCoerceTestingClass
+    {
+    }
+
+    /// <summary>
+    /// Managed definition of CoClass
+    /// </summary>
+    [ComImport]
     [CoClass(typeof(AggregationTestingClass))]
     [Guid("98cc27f0-d521-4f79-8b63-e980e3a92974")]
     internal interface AggregationTesting : Server.Contract.IAggregationTesting

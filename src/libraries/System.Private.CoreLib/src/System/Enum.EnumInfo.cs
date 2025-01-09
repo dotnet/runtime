@@ -5,13 +5,11 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System
 {
     public abstract partial class Enum
     {
-        internal sealed class EnumInfo<TStorage>
+        internal sealed partial class EnumInfo<TStorage>
             where TStorage : struct, INumber<TStorage>
         {
             public readonly bool HasFlagsAttribute;

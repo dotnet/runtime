@@ -3,12 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 
 using TypeHashingAlgorithms = Internal.NativeFormat.TypeHashingAlgorithms;
 using Interlocked = System.Threading.Interlocked;
-using AssemblyName = System.Reflection.AssemblyName;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
@@ -52,9 +52,9 @@ namespace ILCompiler
                 return _globalModuleType;
             }
 
-            public AssemblyName GetName()
+            public AssemblyNameInfo GetName()
             {
-                return new AssemblyName("System.Private.CompilerGenerated");
+                return new AssemblyNameInfo("System.Private.CompilerGenerated");
             }
 
             public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)

@@ -152,7 +152,7 @@ namespace System
 
         internal static bool IsPrimitive(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return (corElemType >= CorElementType.ELEMENT_TYPE_BOOLEAN && corElemType <= CorElementType.ELEMENT_TYPE_R8) ||
                 corElemType == CorElementType.ELEMENT_TYPE_I ||
                 corElemType == CorElementType.ELEMENT_TYPE_U;
@@ -160,31 +160,31 @@ namespace System
 
         internal static bool IsByRef(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
         }
 
         internal static bool IsPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_PTR;
         }
 
         internal static bool IsFunctionPointer(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool IsArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
         internal static bool IsSzArray(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
@@ -192,7 +192,7 @@ namespace System
 
         internal static bool HasElementType(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
 
             return ((corElemType == CorElementType.ELEMENT_TYPE_ARRAY || corElemType == CorElementType.ELEMENT_TYPE_SZARRAY) // IsArray
                    || (corElemType == CorElementType.ELEMENT_TYPE_PTR)                                          // IsPointer
@@ -231,22 +231,6 @@ namespace System
             return HasInstantiation(new QCallTypeHandle(ref type));
         }
 
-#pragma warning disable IDE0060
-        internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
-        {
-            // Mono runtime doesn't support built-in COM.
-            return false;
-        }
-#pragma warning restore IDE0060
-
-#pragma warning disable IDE0060
-        internal static bool IsEquivalentTo(RuntimeType rtType1, RuntimeType rtType2)
-        {
-            // reference check is done earlier and we don't recognize anything else
-            return false;
-        }
-#pragma warning restore IDE0060
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetArrayRank(QCallTypeHandle type);
 
@@ -260,7 +244,7 @@ namespace System
         internal static extern void GetModule(QCallTypeHandle type, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetBaseType(QCallTypeHandle type, ObjectHandleOnStack res);
+        private static extern IntPtr GetMonoClass(QCallTypeHandle type);
 
         internal static int GetArrayRank(RuntimeType type)
         {
@@ -281,18 +265,16 @@ namespace System
             return res!;
         }
 
-        internal static RuntimeType GetElementType(RuntimeType type)
+        internal static RuntimeType? GetElementType(RuntimeType type)
         {
             RuntimeType? res = null;
             GetElementType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
+            return res;
         }
 
-        internal static RuntimeType GetBaseType(RuntimeType type)
+        internal static IntPtr GetMonoClass(RuntimeType type)
         {
-            RuntimeType? res = null;
-            GetBaseType(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref res));
-            return res!;
+            return GetMonoClass(new QCallTypeHandle(ref type));
         }
 
         internal static bool CanCastTo(RuntimeType type, RuntimeType target)
@@ -302,7 +284,7 @@ namespace System
 
         internal static bool IsGenericVariable(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             return corElemType == CorElementType.ELEMENT_TYPE_VAR || corElemType == CorElementType.ELEMENT_TYPE_MVAR;
         }
 
@@ -344,7 +326,7 @@ namespace System
 
         internal static bool IsTypeDefinition(RuntimeType type)
         {
-            CorElementType corElemType = GetCorElementType(type);
+            CorElementType corElemType = type.GetCorElementType();
             if (!((corElemType >= CorElementType.ELEMENT_TYPE_VOID && corElemType < CorElementType.ELEMENT_TYPE_PTR) ||
                     corElemType == CorElementType.ELEMENT_TYPE_VALUETYPE ||
                     corElemType == CorElementType.ELEMENT_TYPE_CLASS ||

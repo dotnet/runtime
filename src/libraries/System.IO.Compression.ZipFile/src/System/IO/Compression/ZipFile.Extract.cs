@@ -35,7 +35,7 @@ namespace System.IO.Compression
         /// that is not supported.</exception>
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false);
 
@@ -67,7 +67,7 @@ namespace System.IO.Compression
         /// that is not supported.</exception>
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles) =>
             ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles);
@@ -101,24 +101,24 @@ namespace System.IO.Compression
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
+        ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows:</para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
+        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name and comment.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
+        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name and comment.</item>
         ///     </list>
         ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
+        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name and comment.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
+        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name and comment.</item>
         ///     </list>
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
@@ -154,26 +154,26 @@ namespace System.IO.Compression
         /// that is not supported.</exception>
         ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
-        /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
+        /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
         /// <param name="overwriteFiles">True to indicate overwrite.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
-        ///         UTF-8 encoding for entry names.<br />
+        ///         UTF-8 encoding for entry names or comments.<br />
         ///         This value is used as follows:</para>
         ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
+        ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name and comment.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
+        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name and comment.</item>
         ///     </list>
         ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
-        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
+        ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name and comment.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
-        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
+        ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name and comment.</item>
         ///     </list>
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
@@ -250,17 +250,17 @@ namespace System.IO.Compression
         /// </summary>
         /// <param name="source">The stream from which the zip archive is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names.</param>
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names or comments.</param>
         /// <remarks> This method creates the specified directory and all subdirectories. The destination directory cannot already exist.
         /// Exceptions related to validating the paths in the <paramref name="destinationDirectoryName"/> or the files in the zip archive contained in <paramref name="source"/> parameters are thrown before extraction. Otherwise, if an error occurs during extraction, the archive remains partially extracted.
         /// Each extracted file has the same relative path to the directory specified by <paramref name="destinationDirectoryName"/> as its source entry has to the root of the archive.
         /// If a file to be archived has an invalid last modified time, the first date and time representable in the Zip timestamp format (midnight on January 1, 1980) will be used.</remarks>
-        /// If <paramref name="entryNameEncoding"/> is set to a value other than <see langword="null"/>, entry names are decoded according to the following rules:
-        /// - For entry names where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, the entry names are decoded by using the specified encoding.
-        /// - For entries where the language encoding flag is set, the entry names are decoded by using UTF-8.
-        /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names are decoded according to the following rules:
-        /// - For entries where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, entry names are decoded by using the current system default code page.
-        /// - For entries where the language encoding flag is set, the entry names are decoded by using UTF-8.
+        /// If <paramref name="entryNameEncoding"/> is set to a value other than <see langword="null"/>, entry names and comments are decoded according to the following rules:
+        /// - For entry names and comments where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, the entry names and comments are decoded by using the specified encoding.
+        /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
+        /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names and comments are decoded according to the following rules:
+        /// - For entries where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, entry names and comments are decoded by using the current system default code page.
+        /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
         /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryNameEncoding"/> is set to a Unicode encoding other than UTF-8.</exception>
@@ -287,18 +287,18 @@ namespace System.IO.Compression
         /// </summary>
         /// <param name="source">The stream from which the zip archive is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory in which to place the extracted files, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
-        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names.</param>
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names and comments in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names or comments.</param>
         /// <param name="overwriteFiles"><see langword="true" /> to overwrite files; <see langword="false" /> otherwise.</param>
         /// <remarks> This method creates the specified directory and all subdirectories. The destination directory cannot already exist.
         /// Exceptions related to validating the paths in the <paramref name="destinationDirectoryName"/> or the files in the zip archive contained in <paramref name="source"/> parameters are thrown before extraction. Otherwise, if an error occurs during extraction, the archive remains partially extracted.
         /// Each extracted file has the same relative path to the directory specified by <paramref name="destinationDirectoryName"/> as its source entry has to the root of the archive.
         /// If a file to be archived has an invalid last modified time, the first date and time representable in the Zip timestamp format (midnight on January 1, 1980) will be used.</remarks>
-        /// If <paramref name="entryNameEncoding"/> is set to a value other than <see langword="null"/>, entry names are decoded according to the following rules:
-        /// - For entry names where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, the entry names are decoded by using the specified encoding.
-        /// - For entries where the language encoding flag is set, the entry names are decoded by using UTF-8.
-        /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names are decoded according to the following rules:
+        /// If <paramref name="entryNameEncoding"/> is set to a value other than <see langword="null"/>, entry names and comments are decoded according to the following rules:
+        /// - For entry names and comments where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, the entry names and comments are decoded by using the specified encoding.
+        /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
+        /// If <paramref name="entryNameEncoding"/> is set to <see langword="null"/>, entry names and comments are decoded according to the following rules:
         /// - For entries where the language encoding flag (in the general-purpose bit flag of the local file header) is not set, entry names are decoded by using the current system default code page.
-        /// - For entries where the language encoding flag is set, the entry names are decoded by using UTF-8.
+        /// - For entries where the language encoding flag is set, the entry names and comments are decoded by using UTF-8.
         /// <exception cref="ArgumentException"><paramref name="destinationDirectoryName" />> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
         /// -or-
         /// <paramref name="entryNameEncoding"/> is set to a Unicode encoding other than UTF-8.</exception>

@@ -65,9 +65,7 @@ const enum JSBindingHeaderOffsets {
 }
 
 export function alloc_stack_frame (size: number): JSMarshalerArguments {
-    if (WasmEnableThreads) {
-        forceThreadMemoryViewRefresh();
-    }
+    forceThreadMemoryViewRefresh();
     const bytes = JavaScriptMarshalerArgSize * size;
     const args = Module.stackAlloc(bytes) as any;
     _zero_region(args, bytes);
@@ -145,7 +143,7 @@ export function get_signature_arg2_type (sig: JSMarshalerType): MarshalerType {
 
 export function get_signature_arg3_type (sig: JSMarshalerType): MarshalerType {
     mono_assert(sig, "Null sig");
-    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg2MarshalerType);
+    return <any>getU8(<any>sig + JSBindingTypeOffsets.Arg3MarshalerType);
 }
 
 export function get_signature_argument_count (signature: JSFunctionSignature): number {
@@ -234,7 +232,7 @@ export function get_arg_i32 (arg: JSMarshalerArgument): number {
 
 export function get_arg_intptr (arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return getI32(<any>arg);
+    return getU32(<any>arg);
 }
 
 export function get_arg_i52 (arg: JSMarshalerArgument): number {
@@ -293,7 +291,7 @@ export function set_arg_i32 (arg: JSMarshalerArgument, value: number): void {
 
 export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr): void {
     mono_assert(arg, "Null arg");
-    setI32(<any>arg, <any>value);
+    setU32(<any>arg, <any>value);
 }
 
 export function set_arg_i52 (arg: JSMarshalerArgument, value: number): void {

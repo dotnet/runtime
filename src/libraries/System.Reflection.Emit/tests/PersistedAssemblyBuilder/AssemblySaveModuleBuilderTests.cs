@@ -127,6 +127,25 @@ namespace System.Reflection.Emit.Tests
                 Assert.True(field.IsStatic);
                 Assert.True((field.Attributes & FieldAttributes.HasFieldRVA) != 0);
                 Assert.Equal(attributes | FieldAttributes.Static | FieldAttributes.HasFieldRVA, field.Attributes);
+                Assert.Equal(typeof(ValueType), field.FieldType.BaseType);
+            }
+        }
+
+        [Fact]
+        public void DefineUninitializedDataFromMLC()
+        {
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), mlc.CoreAssembly);
+                ModuleBuilder module = ab.DefineDynamicModule("MyModule");
+                FieldBuilder field = module.DefineUninitializedData("UninitializedDataField", 100, FieldAttributes.Public);
+
+                Assert.Equal("UninitializedDataField", field.Name);
+                Assert.True(field.IsStatic);
+                Assert.True((field.Attributes & FieldAttributes.HasFieldRVA) != 0);
+                Assert.Equal(FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.HasFieldRVA, field.Attributes);
+                Assert.NotEqual(typeof(ValueType), field.FieldType.BaseType);
+                Assert.Equal(mlc.CoreAssembly.GetType("System.ValueType"), field.FieldType.BaseType);
             }
         }
 
@@ -353,6 +372,35 @@ namespace System.Reflection.Emit.Tests
             AssertExtensions.Throws<ArgumentException>("methodName", () => module.GetArrayMethod(typeof(string[]), "", CallingConventions.Standard, null, null));
             AssertExtensions.Throws<ArgumentNullException>("parameterTypes", () => module.GetArrayMethod(typeof(string[]), "TestMethod", CallingConventions.Standard, null, [null]));
             AssertExtensions.Throws<ArgumentException>(null, () => module.GetArrayMethod(typeof(Array), "TestMethod", CallingConventions.Standard, null, null));
+        }
+
+        [Fact]
+        public void GetArrayMethodNullReturnType()
+        {
+            ModuleBuilder module = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly")).DefineDynamicModule("MyModule");
+            MethodInfo method = module.GetArrayMethod(typeof(int[]), "MethodName", CallingConventions.Standard, null, null);
+
+            Assert.Equal(typeof(int[]), method.DeclaringType);
+            Assert.Equal("MethodName", method.Name);
+            Assert.Equal(CallingConventions.Standard, method.CallingConvention);
+            Assert.Equal(typeof(void), method.ReturnType);
+        }
+
+        [Fact]
+        public void GetArrayMethodNullReturnTypeFromMLC()
+        {
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                ModuleBuilder module = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly"), mlc.CoreAssembly).DefineDynamicModule("MyModule");
+                Type arrayType = mlc.CoreAssembly.GetType("System.Int32").MakeArrayType();
+                MethodInfo method = module.GetArrayMethod(arrayType, "MethodName", CallingConventions.Standard, null, null);
+
+                Assert.Equal(arrayType, method.DeclaringType);
+                Assert.Equal("MethodName", method.Name);
+                Assert.Equal(CallingConventions.Standard, method.CallingConvention);
+                Assert.NotEqual(typeof(void), method.ReturnType);
+                Assert.Equal(mlc.CoreAssembly.GetType("System.Void"), method.ReturnType);
+            }
         }
     }
 }

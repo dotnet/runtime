@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class MakeGenericType
 		{
 			class Gen<T> { }
+			class GenConstrained<T> where T : class { }
 
 			static Type GrabUnknownType () => null;
 
@@ -25,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestRecognizedIntrinsic ();
 				TestRecognizedGenericIntrinsic<object> ();
+				TestRecognizedConstraint ();
 				TestUnknownOwningType ();
 				TestUnknownArgument ();
 			}
@@ -33,17 +35,20 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void TestRecognizedGenericIntrinsic<T> () => typeof (Gen<>).MakeGenericType (typeof (T));
 
+			public static void TestRecognizedConstraint () => typeof (GenConstrained<>).MakeGenericType (GrabUnknownType ());
+
 			[ExpectedWarning ("IL2055", nameof (Type.MakeGenericType))]
-			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownOwningType () => GrabUnknownType ().MakeGenericType (typeof (object));
 
-			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownArgument () => typeof (Gen<>).MakeGenericType (GrabUnknownType ());
 		}
 
 		class MakeGenericMethod
 		{
 			public static void Gen<T> () { }
+			public static void GenConstrained<T> () where T : class { }
 
 			static MethodInfo GrabUnknownMethod () => null;
 
@@ -53,6 +58,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 				TestRecognizedIntrinsic ();
 				TestRecognizedGenericIntrinsic<object> ();
+				TestRecognizedConstraint ();
 				TestUnknownOwningMethod ();
 				TestUnknownArgument ();
 			}
@@ -61,11 +67,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void TestRecognizedGenericIntrinsic<T> () => typeof (MakeGenericMethod).GetMethod (nameof (Gen)).MakeGenericMethod (typeof (T));
 
+			public static void TestRecognizedConstraint () => typeof (MakeGenericMethod).GetMethod (nameof (GenConstrained)).MakeGenericMethod (GrabUnknownType ());
+
 			[ExpectedWarning ("IL2060", nameof (MethodInfo.MakeGenericMethod))]
-			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownOwningMethod () => GrabUnknownMethod ().MakeGenericMethod (typeof (object));
 
-			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", nameof (MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "")]
 			public static void TestUnknownArgument () => typeof (MakeGenericMethod).GetMethod (nameof (Gen)).MakeGenericMethod (GrabUnknownType());
 		}
 	}

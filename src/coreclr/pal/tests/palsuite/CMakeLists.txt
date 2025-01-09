@@ -57,10 +57,6 @@ add_executable_clr(paltests
   #composite/synchronization/nativecs_interlocked/mtx_critsect.cpp
   #composite/synchronization/nativecs_interlocked/pal_composite_native_cs.cpp
   #composite/synchronization/nativecs_interlocked/resultbuffer.cpp
-  #composite/threading/threadsuspension/mainWrapper.cpp
-  #composite/threading/threadsuspension/threadsuspension.cpp
-  #composite/threading/threadsuspension_switchthread/mainWrapper.cpp
-  #composite/threading/threadsuspension_switchthread/threadsuspension.cpp
   #composite/wfmo/main.cpp
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
@@ -132,9 +128,6 @@ add_executable_clr(paltests
   c_runtime/wcstoul/test5/test5.cpp
   c_runtime/wcstoul/test6/test6.cpp
   c_runtime/_alloca/test1/test1.cpp
-  #c_runtime/_gcvt/test1/_gcvt.cpp
-  #c_runtime/_gcvt/test2/test2.cpp
-  c_runtime/_itow/test1/test1.cpp
   c_runtime/_putenv/test1/test1.cpp
   c_runtime/_putenv/test2/test2.cpp
   c_runtime/_putenv/test3/test3.cpp
@@ -276,13 +269,6 @@ add_executable_clr(paltests
   file_io/errorpathnotfound/test1/test1.cpp
   file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
-  file_io/FindClose/test1/FindClose.cpp
-  file_io/FindFirstFileA/test1/FindFirstFileA.cpp
-  file_io/FindFirstFileW/test1/FindFirstFileW.cpp
-  file_io/FindNextFileA/test1/FindNextFileA.cpp
-  file_io/FindNextFileA/test2/findnextfilea.cpp
-  file_io/FindNextFileW/test1/FindNextFileW.cpp
-  file_io/FindNextFileW/test2/findnextfilew.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
   file_io/GetConsoleOutputCP/test1/GetConsoleOutputCP.cpp
   file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp
@@ -416,7 +402,6 @@ add_executable_clr(paltests
   miscellaneous/SetEnvironmentVariableW/test3/test3.cpp
   miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
-  miscellaneous/_i64tow/test1/test1.cpp
 # pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp

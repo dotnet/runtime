@@ -5,11 +5,11 @@ namespace System.Media
 {
     public static class SystemSounds
     {
-        private static volatile SystemSound? s_asterisk;
-        private static volatile SystemSound? s_beep;
-        private static volatile SystemSound? s_exclamation;
-        private static volatile SystemSound? s_hand;
-        private static volatile SystemSound? s_question;
+        private static SystemSound? s_asterisk;
+        private static SystemSound? s_beep;
+        private static SystemSound? s_exclamation;
+        private static SystemSound? s_hand;
+        private static SystemSound? s_question;
 
         public static SystemSound Asterisk
         {

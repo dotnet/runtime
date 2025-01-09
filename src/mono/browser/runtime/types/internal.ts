@@ -77,6 +77,7 @@ export type MonoConfigInternal = MonoConfig & {
     assets?: AssetEntryInternal[],
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
+    logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
@@ -111,6 +112,7 @@ export interface AssetEntryInternal extends AssetEntry {
     pendingDownloadInternal?: LoadingResource
     noCache?: boolean
     useCredentials?: boolean
+    isCore?: boolean
 }
 
 export type LoaderHelpers = {
@@ -140,6 +142,7 @@ export type LoaderHelpers = {
 
     afterConfigLoaded: PromiseAndController<MonoConfig>,
     allDownloadsQueued: PromiseAndController<void>,
+    allDownloadsFinished: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
     loadingWorkers: PromiseAndController<PThreadWorker[]>,
@@ -209,11 +212,13 @@ export type RuntimeHelpers = {
     proxyGCHandle: GCHandle | undefined,
     managedThreadTID: PThreadPtr,
     ioThreadTID: PThreadPtr,
+    deputyWorker: PThreadWorker,
     currentThreadTID: PThreadPtr,
     isManagedRunningOnCurrentThread: boolean,
     isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code from same thread
     cspPolicy: boolean,
 
+    coreAssetsInMemory: PromiseAndController<void>,
     allAssetsInMemory: PromiseAndController<void>,
     dotnetReady: PromiseAndController<any>,
     afterInstantiateWasm: PromiseAndController<void>,
@@ -221,7 +226,8 @@ export type RuntimeHelpers = {
     afterPreInit: PromiseAndController<void>,
     afterPreRun: PromiseAndController<void>,
     beforeOnRuntimeInitialized: PromiseAndController<void>,
-    afterMonoStarted: PromiseAndController<GCHandle | undefined>,
+    afterMonoStarted: PromiseAndController<void>,
+    afterDeputyReady: PromiseAndController<GCHandle | undefined>,
     afterIOStarted: PromiseAndController<void>,
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
@@ -233,11 +239,18 @@ export type RuntimeHelpers = {
     stringify_as_error_with_stack?: (error: any) => string,
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
-    instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (concise?: boolean) => void,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
+
+    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
+    stringToUTF16Ptr: (str: string) => VoidPtr,
+    utf16ToString: (startPtr: number, endPtr: number) => string,
+    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
+    localHeapViewU16: () => Uint16Array,
+    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
+    setI32: (offset: MemOffset, value: number) => void,
 }
 
 export type AOTProfilerOptions = {
@@ -246,6 +259,11 @@ export type AOTProfilerOptions = {
 }
 
 export type BrowserProfilerOptions = {
+}
+
+export type LogProfilerOptions = {
+    takeHeapshot?: string,
+    configuration?: string //  log profiler options string"
 }
 
 // how we extended emscripten Module
@@ -264,6 +282,7 @@ export type EmscriptenBuildOptions = {
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
     enableBrowserProfiler: boolean,
+    enableLogProfiler: boolean,
     runAOTCompilation: boolean,
     wasmEnableThreads: boolean,
     gitHash: string,
@@ -319,7 +338,7 @@ export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, element_type?
 export type BoundMarshalerToJs = (args: JSMarshalerArguments) => any;
 export type BoundMarshalerToCs = (args: JSMarshalerArguments, value: any) => void;
 // please keep in sync with src\libraries\System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs
-export enum MarshalerType {
+export const enum MarshalerType {
     None = 0,
     Void = 1,
     Discard,
@@ -422,7 +441,7 @@ export declare interface EmscriptenModuleInternal {
     FS: any;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: any;
+    wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
@@ -480,7 +499,7 @@ export type RuntimeModuleExportsInternal = {
 }
 
 export type NativeModuleExportsInternal = {
-    default: (unificator: Function) => EmscriptenModuleInternal
+    default: (unificator: Function) => Promise<EmscriptenModuleInternal>
 }
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
@@ -501,12 +520,14 @@ export const enum WorkerToMainMessageType {
     deputyCreated = "createdDeputy",
     deputyFailed = "deputyFailed",
     deputyStarted = "monoStarted",
+    deputyReady = "deputyReady",
     ioStarted = "ioStarted",
     preload = "preload",
 }
 
 export const enum MainToWorkerMessageType {
-    applyConfig = "apply_mono_config",
+    applyConfig = "applyConfig",
+    allAssetsLoaded = "allAssetsLoaded",
 }
 
 export interface PThreadWorker extends Worker {

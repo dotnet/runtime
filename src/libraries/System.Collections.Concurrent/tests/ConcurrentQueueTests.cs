@@ -130,7 +130,7 @@ namespace System.Collections.Concurrent.Tests
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
             }
 
-            Task.WaitAll(tasks.ToArray());
+            Task.WaitAll(tasks);
 
             Assert.Equal(producers * (itemsPerProducer * (itemsPerProducer + 1) / 2), sum);
         }

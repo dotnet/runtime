@@ -17,7 +17,7 @@ namespace System.IO.Hashing
     /// For methods that persist the computed numerical hash value as bytes,
     /// the value is written in the Big Endian byte order.
     /// </remarks>
-#if NET5_0_OR_GREATER
+#if NET
     [SkipLocalsInit]
 #endif
     public sealed unsafe class XxHash128 : NonCryptographicHashAlgorithm
@@ -51,7 +51,7 @@ namespace System.IO.Hashing
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is null.</exception>
         public static byte[] Hash(byte[] source, long seed)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(source);
 #else
             if (source is null)
@@ -110,7 +110,7 @@ namespace System.IO.Hashing
             return false;
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         /// <summary>Computes the XXH128 hash of the provided data.</summary>
         /// <param name="source">The data to hash.</param>
         /// <param name="seed">The seed value for this hash computation. The default is zero.</param>
@@ -197,7 +197,7 @@ namespace System.IO.Hashing
             return current;
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         /// <summary>Gets the current computed hash value without modifying accumulated state.</summary>
         /// <returns>The hash value for the data already provided.</returns>
         [CLSCompliant(false)]

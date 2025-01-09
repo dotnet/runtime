@@ -39,7 +39,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyIList()
         {
-            int[] source = { };
+            int[] source = [];
 
             Assert.Throws<InvalidOperationException>(() => source.Single());
         }
@@ -47,7 +47,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleElementIList()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
             Assert.Equal(expected, source.Single());
@@ -56,7 +56,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementIList()
         {
-            int[] source = { 4, 4, 4, 4, 4 };
+            int[] source = [4, 4, 4, 4, 4];
 
             Assert.Throws<InvalidOperationException>(() => source.Single());
         }
@@ -89,51 +89,69 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySourceWithPredicate()
         {
-            int[] source = { };
+            int[] source = [];
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void SingleElementPredicateTrue()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
-            Assert.Equal(expected, source.Single(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Single(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void SingleElementPredicateFalse()
         {
-            int[] source = { 3 };
+            int[] source = [3];
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateFalseForAll()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19 };
+            int[] source = [3, 1, 7, 9, 13, 19];
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateTrueForLast()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19, 20 };
+            int[] source = [3, 1, 7, 9, 13, 19, 20];
             int expected = 20;
 
-            Assert.Equal(expected, source.Single(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Single(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateTrueForFirstAndLast()
         {
-            int[] source = { 2, 3, 1, 7, 9, 13, 19, 10 };
+            int[] source = [2, 3, 1, 7, 9, 13, 19, 10];
 
-            Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Single(i => i % 2 == 0));
+            });
         }
 
         [Theory]
@@ -141,7 +159,10 @@ namespace System.Linq.Tests
         [InlineData(42, 100)]
         public void FindSingleMatch(int target, int range)
         {
-            Assert.Equal(target, Enumerable.Range(0, range).Single(i => i == target));
+            Assert.All(CreateSources(Enumerable.Range(0, range)), source =>
+            {
+                Assert.Equal(target, source.Single(i => i == target));
+            });
         }
 
         [Theory]
@@ -149,7 +170,10 @@ namespace System.Linq.Tests
         [InlineData(42, 100)]
         public void RunOnce(int target, int range)
         {
-            Assert.Equal(target, Enumerable.Range(0, range).RunOnce().Single(i => i == target));
+            Assert.All(CreateSources(Enumerable.Range(0, range)), source =>
+            {
+                Assert.Equal(target, source.RunOnce().Single(i => i == target));
+            });
         }
 
         [Fact]
@@ -163,7 +187,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowsOnNullPredicate()
         {
-            int[] source = { };
+            int[] source = [];
             Func<int, bool> nullPredicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.Single(nullPredicate));
         }

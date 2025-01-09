@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class ModuleBuilderDefinePInvokeMethodTests
     {
         public static IEnumerable<object[]> TheoryData1 => TypeBuilderDefinePInvokeMethodTests.TestData.Where(dpm => dpm.NoCMods).Select(dpm => new object[] { dpm });

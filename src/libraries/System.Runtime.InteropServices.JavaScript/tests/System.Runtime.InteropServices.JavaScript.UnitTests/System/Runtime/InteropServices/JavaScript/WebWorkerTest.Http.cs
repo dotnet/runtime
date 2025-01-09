@@ -72,6 +72,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             });
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98101")]
         [Theory, MemberData(nameof(GetTargetThreads2x))]
         public async Task HttpClient_CancelInDifferentThread(Executor executor1, Executor executor2)
         {

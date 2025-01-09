@@ -1225,6 +1225,11 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		mono_mb_emit_byte (mb, CEE_STIND_I);
 		break;
 	}
+	case MONO_MARSHAL_CONV_OBJECT_IUNKNOWN: {
+		char *msg = g_strdup_printf ("Marshaling not supported for COM type MONO_MARSHAL_CONV_OBJECT_IUNKNOWN.");
+		mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
+		break;
+	}
 
 	default: {
 		g_error ("marshalling conversion %d not implemented", conv);

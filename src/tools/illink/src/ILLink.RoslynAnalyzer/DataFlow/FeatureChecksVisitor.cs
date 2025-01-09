@@ -24,7 +24,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// (a set features that are checked to be enabled or disabled).
 	// The visitor takes a LocalDataFlowState as an argument, allowing for checks that
 	// depend on the current dataflow state.
-	public class FeatureChecksVisitor : OperationVisitor<StateValue, FeatureChecksValue>
+	internal sealed class FeatureChecksVisitor : OperationVisitor<StateValue, FeatureChecksValue>
 	{
 		DataFlowAnalyzerContext _dataFlowAnalyzerContext;
 
@@ -77,7 +77,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return FeatureChecksValue.None;
 		}
 
-		public bool? GetLiteralBool (IOperation operation)
+		public static bool? GetLiteralBool (IOperation operation)
 		{
 			if (operation is not ILiteralOperation literal)
 				return null;

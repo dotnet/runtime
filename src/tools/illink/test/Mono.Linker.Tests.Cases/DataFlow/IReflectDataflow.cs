@@ -112,7 +112,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public PropertyInfo GetProperty (string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) => throw new NotImplementedException ();
 			[Kept]
 			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			public object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new NotImplementedException ();
 		}
 
@@ -164,6 +164,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
+			// MyReflectOverType is not intrinsically understood by the analysis, so
+			// it doesn't satisfy the PublicFields | NonPublicFields requirement.
+			[ExpectedWarning ("IL2075")]
 			public static void Test ()
 			{
 				new MyReflectOverType (typeof (TestType)).GetFields (BindingFlags.Instance | BindingFlags.Public);

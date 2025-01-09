@@ -48,16 +48,6 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// Marshalling information is lacking because of support not because it is
-    /// unknown or non-existent.
-    /// </summary>
-    /// <remarks>
-    /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaller.
-    /// </remarks>
-    public record MissingSupportMarshallingInfo : MarshallingInfo;
-
-    /// <summary>
     /// Character encoding enumeration.
     /// </summary>
     public enum CharEncoding
@@ -130,31 +120,19 @@ namespace Microsoft.Interop
             Marshallers);
 
     /// <summary>
-    /// Marshalling information is lacking because of support not because it is
-    /// unknown or non-existent. Includes information about element types in case
-    /// we need to rehydrate the marshalling info into an attribute for the fallback marshaller.
-    /// </summary>
-    /// <remarks>
-    /// An indication of "missing support" will trigger the fallback logic, which is
-    /// the forwarder marshaller.
-    /// </remarks>
-    public sealed record MissingSupportCollectionMarshallingInfo(CountInfo CountInfo, MarshallingInfo ElementMarshallingInfo) : MissingSupportMarshallingInfo;
-
-
-    /// <summary>
     /// Marshal an exception based on the same rules as the built-in COM system based on the unmanaged type of the native return marshaller.
     /// </summary>
     public sealed record ComExceptionMarshalling : MarshallingInfo
     {
         internal static MarshallingInfo CreateSpecificMarshallingInfo(ManagedTypeInfo unmanagedReturnType)
         {
-            return unmanagedReturnType switch
+            return (unmanagedReturnType as SpecialTypeInfo)?.SpecialType switch
             {
-                SpecialTypeInfo(_, _, SpecialType.System_Void) => CreateWellKnownComExceptionMarshallingData(TypeNames.ExceptionAsVoidMarshaller, unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_Int32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<int>", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_UInt32) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<uint>", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_Single) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<float>", unmanagedReturnType),
-                SpecialTypeInfo(_, _, SpecialType.System_Double) => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<double>", unmanagedReturnType),
+                SpecialType.System_Void => CreateWellKnownComExceptionMarshallingData(TypeNames.ExceptionAsVoidMarshaller, unmanagedReturnType),
+                SpecialType.System_Int32 => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<int>", unmanagedReturnType),
+                SpecialType.System_UInt32 => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<uint>", unmanagedReturnType),
+                SpecialType.System_Single => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<float>", unmanagedReturnType),
+                SpecialType.System_Double => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<double>", unmanagedReturnType),
                 _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameterSyntax(SyntaxFactory.ParseTypeName(unmanagedReturnType.FullTypeName))}>", unmanagedReturnType),
             };
 

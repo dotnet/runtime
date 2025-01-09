@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 	{
 		public static void Main ()
 		{
-#if NETCOREAPP
+#if NET
 			Foo foo = new Foo ();
 			GetBar (foo).Bar ();
 			IReferenced baz = GetBaz (foo);
@@ -32,7 +32,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 #endif
 		}
 
-#if NETCOREAPP
+#if NET
 		[Kept]
 		private static IReferencedAndCalled GetBar (object obj)
 		{
@@ -53,7 +53,7 @@ namespace Mono.Linker.Tests.Cases.Attributes
 #endif
 	}
 
-#if NETCOREAPP
+#if NET
 	[Kept]
 	[KeptMember (".ctor()")]
 	[KeptInterface (typeof (IDynamicInterfaceCastable))]

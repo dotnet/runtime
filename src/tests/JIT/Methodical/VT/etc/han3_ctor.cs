@@ -70,6 +70,7 @@ namespace JitTest_han3_ctor_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             return move(new Column(17, 17),

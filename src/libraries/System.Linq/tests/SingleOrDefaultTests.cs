@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -30,7 +29,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyIList()
         {
-            int?[] source = { };
+            int?[] source = [];
             int? expected = null;
 
             Assert.Equal(expected, source.SingleOrDefault());
@@ -39,7 +38,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyIListDefault()
         {
-            int?[] source = { };
+            int?[] source = [];
             int expected = 5;
 
             Assert.Equal(expected, source.SingleOrDefault(5));
@@ -48,7 +47,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleElementIList()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
             Assert.Equal(expected, source.SingleOrDefault());
@@ -57,7 +56,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleElementIListDefault()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
             Assert.Equal(expected, source.SingleOrDefault(5));
@@ -66,7 +65,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementIList()
         {
-            int[] source = { 4, 4, 4, 4, 4 };
+            int[] source = [4, 4, 4, 4, 4];
 
             Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault());
         }
@@ -74,7 +73,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ManyElementIListDefault()
         {
-            int[] source = { 4, 4, 4, 4, 4 };
+            int[] source = [4, 4, 4, 4, 4];
 
             Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(5));
         }
@@ -108,107 +107,143 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySourceWithPredicate()
         {
-            int[] source = { };
+            int[] source = [];
             int expected = default(int);
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void EmptySourceWithPredicateDefault()
         {
-            int[] source = { };
+            int[] source = [];
             int expected = 5;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            });
         }
 
         [Fact]
         public void SingleElementPredicateTrue()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void SingleElementPredicateTrueDefault()
         {
-            int[] source = { 4 };
+            int[] source = [4];
             int expected = 4;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            });
         }
 
         [Fact]
         public void SingleElementPredicateFalse()
         {
-            int[] source = { 3 };
+            int[] source = [3];
             int expected = default(int);
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void SingleElementPredicateFalseDefault()
         {
-            int[] source = { 3 };
+            int[] source = [3];
             int expected = 5;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateFalseForAll()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19 };
+            int[] source = [3, 1, 7, 9, 13, 19];
             int expected = default(int);
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateFalseForAllDefault()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19 };
+            int[] source = [3, 1, 7, 9, 13, 19];
             int expected = 5;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateTrueForLast()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19, 20 };
+            int[] source = [3, 1, 7, 9, 13, 19, 20];
             int expected = 20;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateTrueForLastDefault()
         {
-            int[] source = { 3, 1, 7, 9, 13, 19, 20 };
+            int[] source = [3, 1, 7, 9, 13, 19, 20];
             int expected = 20;
 
-            Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.SingleOrDefault(i => i % 2 == 0, 5));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateTrueForFirstAndFifth()
         {
-            int[] source = { 2, 3, 1, 7, 10, 13, 19, 9 };
+            int[] source = [2, 3, 1, 7, 10, 13, 19, 9];
 
-            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0));
+            });
         }
 
         [Fact]
         public void ManyElementsPredicateTrueForFirstAndFifthDefault()
         {
-            int[] source = { 2, 3, 1, 7, 10, 13, 19, 9 };
+            int[] source = [2, 3, 1, 7, 10, 13, 19, 9];
 
-            Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0, 5));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.SingleOrDefault(i => i % 2 == 0, 5));
+            });
         }
 
         [Theory]
@@ -216,7 +251,10 @@ namespace System.Linq.Tests
         [InlineData(42, 100)]
         public void FindSingleMatch(int target, int range)
         {
-            Assert.Equal(target, Enumerable.Range(0, range).SingleOrDefault(i => i == target));
+            Assert.All(CreateSources(Enumerable.Range(0, range)), source =>
+            {
+                Assert.Equal(target, source.SingleOrDefault(i => i == target));
+            });
         }
 
         [Theory]
@@ -224,7 +262,10 @@ namespace System.Linq.Tests
         [InlineData(42, 100)]
         public void RunOnce(int target, int range)
         {
-            Assert.Equal(target, Enumerable.Range(0, range).RunOnce().SingleOrDefault(i => i == target));
+            Assert.All(CreateSources(Enumerable.Range(0, range)), source =>
+            {
+                Assert.Equal(target, source.RunOnce().SingleOrDefault(i => i == target));
+            });
         }
 
         [Fact]
@@ -246,7 +287,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowsOnNullPredicate()
         {
-            int[] source = { };
+            int[] source = [];
             Func<int, bool> nullPredicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate));
         }
@@ -254,7 +295,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ThrowsOnNullPredicateDefault()
         {
-            int[] source = { };
+            int[] source = [];
             Func<int, bool> nullPredicate = null;
             AssertExtensions.Throws<ArgumentNullException>("predicate", () => source.SingleOrDefault(nullPredicate, 5));
         }

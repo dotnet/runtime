@@ -8,7 +8,7 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
-    <NoWarn>RS2008;RS1038;$(NoWarn)</NoWarn>
+    <NoWarn>$(NoWarn);RS2008;RS1038</NoWarn>
     <DefineConstants>$(DefineConstants);JSIMPORTGENERATOR</DefineConstants>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
@@ -25,6 +25,8 @@
     <Folder Include="Resources\xlf\" />
     <Compile Include="$(CommonPath)Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\MarshalerType.cs" Link="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Common\UnreachableException.cs" Link="System\Runtime\InteropServices\Common\UnreachableException.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 
 </Project>

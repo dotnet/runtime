@@ -19,14 +19,14 @@ namespace System.Runtime.CompilerServices
             InitializeArray(array, fldHandle.Value);
         }
 
-        private static unsafe void* GetSpanDataFrom(
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
             out int count)
         {
             fixed (int *pCount = &count)
             {
-                return (void*)GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(pCount));
+                return ref GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(pCount));
             }
         }
 
@@ -77,6 +77,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [return: NotNullIfNotNull(nameof(obj))]
         public static extern object? GetObjectValue(object? obj);
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
@@ -153,9 +154,6 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
 
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>() => IsReferenceOrContainsReferences<T>();
-
-        [Intrinsic]
         internal static bool IsBitwiseEquatable<T>() => IsBitwiseEquatable<T>();
 
         [Intrinsic]
@@ -198,7 +196,7 @@ namespace System.Runtime.CompilerServices
         private static extern void InitializeArray(Array array, IntPtr fldHandle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr GetSpanDataFrom(
+        private static extern unsafe ref byte GetSpanDataFrom(
             IntPtr fldHandle,
             IntPtr targetTypeHandle,
             IntPtr count);
@@ -213,7 +211,7 @@ namespace System.Runtime.CompilerServices
         private static extern bool SufficientExecutionStack();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void InternalBox(QCallTypeHandle type, ref byte target, ObjectHandleOnStack result);
+        private static extern object InternalBox(QCallTypeHandle type, ref byte target);
 
         /// <summary>
         /// Create a boxed object of the specified type from the data located at the target reference.
@@ -254,8 +252,7 @@ namespace System.Runtime.CompilerServices
             if (rtType.IsByRefLike)
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
-            object? result = null;
-            InternalBox(new QCallTypeHandle(ref rtType), ref target, ObjectHandleOnStack.Create(ref result));
+            object? result = InternalBox(new QCallTypeHandle(ref rtType), ref target);
             return result;
         }
 

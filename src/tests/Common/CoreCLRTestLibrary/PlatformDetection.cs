@@ -14,6 +14,7 @@ namespace TestLibrary
 
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
+        public static bool IsArm64Process => RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
 
         public static bool IsWindows => OperatingSystem.IsWindows();
 
@@ -45,6 +46,10 @@ namespace TestLibrary
                 return s_lazyNonZeroLowerBoundArraySupported.Item1;
             }
         }
+
+        public static bool IsNonZeroLowerBoundArrayNotSupported => !IsNonZeroLowerBoundArraySupported;
+
+        public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 

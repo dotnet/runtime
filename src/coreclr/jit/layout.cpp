@@ -421,22 +421,21 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 }
 
 //------------------------------------------------------------------------
-// HasGCByRef: does the layout contain at least one GC ByRef
+// IsStackOnly: does the layout represent a block that can never be on the heap?
+//
+// Parameters:
+//   comp - The Compiler object
 //
 // Return value:
-//    true if at least one GC ByRef, false otherwise.
+//    true if the block is stack only
 //
-bool ClassLayout::HasGCByRef() const
+bool ClassLayout::IsStackOnly(Compiler* comp) const
 {
-    unsigned slots = GetSlotCount();
-    for (unsigned i = 0; i < slots; i++)
+    // Byref-like structs are stack only
+    if ((m_classHandle != NO_CLASS_HANDLE) && comp->eeIsByrefLike(m_classHandle))
     {
-        if (IsGCByRef(i))
-        {
-            return true;
-        }
+        return true;
     }
-
     return false;
 }
 

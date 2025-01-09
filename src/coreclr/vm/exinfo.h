@@ -48,7 +48,7 @@ public:  // @TODO: make more of these private!
     OBJECTHANDLE    m_hThrowable;       // thrown exception
     PTR_Frame       m_pSearchBoundary;  // topmost frame for current managed frame group
 private:
-    DWORD           m_ExceptionCode;    // After a catch of a COM+ exception, pointers/context are trashed.
+    DWORD           m_ExceptionCode;    // After a catch of a CLR exception, pointers/context are trashed.
 public:
     PTR_EXCEPTION_REGISTRATION_RECORD m_pBottomMostHandler; // most recent EH record registered
 
@@ -56,8 +56,6 @@ public:
     PTR_EXCEPTION_REGISTRATION_RECORD m_pTopMostHandlerDuringSO;
 
     LPVOID              m_dEsp;             // Esp when  fault occurred, OR esp to restore on endcatch
-
-    StackTraceInfo      m_StackTraceInfo;
 
     PTR_ExInfo          m_pPrevNestedInfo;  // pointer to nested info if are handling nested exception
 
@@ -167,6 +165,12 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_FAULT = 1,
     RH_EH_CLAUSE_FILTER = 2,
     RH_EH_CLAUSE_UNUSED = 3,
+};
+
+enum RhEHFrameType
+{
+    RH_EH_FIRST_FRAME = 1,
+    RH_EH_FIRST_RETHROW_FRAME = 2,
 };
 
 struct RhEHClause

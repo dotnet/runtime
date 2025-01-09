@@ -3,7 +3,6 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <DefineConstants>$(DefineConstants);NESTED_HFA;FLOAT32;NATIVE_CPP</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

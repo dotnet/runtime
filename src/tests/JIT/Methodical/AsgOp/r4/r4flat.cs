@@ -9,6 +9,7 @@ namespace Test_r4flat_cs
 public class test
 {
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         float x;

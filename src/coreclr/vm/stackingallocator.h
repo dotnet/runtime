@@ -38,7 +38,7 @@
     {
         StackBlock     *m_Next;         // Next oldest block in list
         DWORD_PTR   m_Length;       // Length of block excluding header  (needs to be pointer-sized for alignment on IA64)
-        INDEBUG(Sentinel*   m_Sentinel;)    // insure that we don't fall of the end of the buffer
+        INDEBUG(Sentinel*   m_Sentinel;)    // ensure that we don't fall of the end of the buffer
         INDEBUG(void**      m_Pad;)    		// keep the size a multiple of 8
         char *GetData() { return (char *)(this + 1);}
     };
@@ -271,8 +271,8 @@ class StackingAllocatorHolder
 
 void * __cdecl operator new(size_t n, StackingAllocator *alloc);
 void * __cdecl operator new[](size_t n, StackingAllocator *alloc);
-void * __cdecl operator new(size_t n, StackingAllocator *alloc, const NoThrow&) throw();
-void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const NoThrow&) throw();
+void * __cdecl operator new(size_t n, StackingAllocator *alloc, const std::nothrow_t&) noexcept;
+void * __cdecl operator new[](size_t n, StackingAllocator *alloc, const std::nothrow_t&) noexcept;
 
 #ifdef _MSC_VER
 #pragma warning(pop)

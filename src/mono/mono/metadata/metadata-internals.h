@@ -418,11 +418,11 @@ struct _MonoImage {
 	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
-	GHashTable *method_cache; /*protected by the image lock*/
+	dn_simdhash_u32_ptr_t *method_cache; /*protected by the image lock*/
 	MonoInternalHashTable class_cache;
 
 	/* Indexed by memberref + methodspec tokens */
-	GHashTable *methodref_cache; /*protected by the image lock*/
+	dn_simdhash_u32_ptr_t *methodref_cache; /*protected by the image lock*/
 
 	/*
 	 * Indexed by fielddef and memberref tokens
@@ -1010,6 +1010,8 @@ MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, Mono
 MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 MonoMethodSignature  *mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_allocate_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, size_t sig_size);
+MonoMethodSignature  *mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params);
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container);
@@ -1019,8 +1021,14 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open);
 
 MONO_API void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
 
+enum {
+	MONO_TYPE_EQ_FLAGS_NONE = 0,
+	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
+	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2,
+};
+
 gboolean
-mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only);
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, int flags);
 
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image, const char *ptr);

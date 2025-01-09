@@ -105,7 +105,19 @@ namespace System.Tests
             D nothing = (D)(Delegate.Combine());
             Assert.Null(nothing);
 
-            D one = (D)(Delegate.Combine(a));
+            nothing = (D)(Delegate.Combine(null));
+            Assert.Null(nothing);
+
+            nothing = (D)(Delegate.Combine(ReadOnlySpan<Delegate>.Empty));
+            Assert.Null(nothing);
+
+            D one = (D)(Delegate.Combine(new[] { a }));
+            t1.Clear();
+            one(5);
+            Assert.Equal("A5", t1.S);
+            CheckInvokeList(new D[] { a }, one, t1);
+
+            one = (D)(Delegate.Combine((ReadOnlySpan<Delegate>)new[] { a }));
             t1.Clear();
             one(5);
             Assert.Equal("A5", t1.S);
@@ -117,13 +129,25 @@ namespace System.Tests
             Assert.Equal("A5B5", t1.S);
             CheckInvokeList(new D[] { a, b }, ab, t1);
 
-            D abc = (D)(Delegate.Combine(a, b, c));
+            D abc = (D)(Delegate.Combine(new[] { a, b, c }));
             t1.Clear();
             abc(5);
             Assert.Equal("A5B5C5", t1.S);
             CheckInvokeList(new D[] { a, b, c }, abc, t1);
 
-            D abcdabc = (D)(Delegate.Combine(abc, d, abc));
+            abc = (D)(Delegate.Combine((ReadOnlySpan<Delegate>)new[] { a, b, c }));
+            t1.Clear();
+            abc(5);
+            Assert.Equal("A5B5C5", t1.S);
+            CheckInvokeList(new D[] { a, b, c }, abc, t1);
+
+            D abcdabc = (D)(Delegate.Combine(new[] { abc, d, abc }));
+            t1.Clear();
+            abcdabc(9);
+            Assert.Equal("A9B9C9D9A9B9C9", t1.S);
+            CheckInvokeList(new D[] { a, b, c, d, a, b, c }, abcdabc, t1);
+
+            abcdabc = (D)(Delegate.Combine((ReadOnlySpan<Delegate>)new[] { abc, d, abc }));
             t1.Clear();
             abcdabc(9);
             Assert.Equal("A9B9C9D9A9B9C9", t1.S);

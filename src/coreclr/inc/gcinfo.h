@@ -36,7 +36,7 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 2
+#define GCINFO_VERSION 4
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -65,9 +65,8 @@ struct GCInfoToken
     }
 #endif
 
-    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion)
+    static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
     {
-        // GcInfo version is current from  ReadyToRun version 2.0
         return GCINFO_VERSION;
     }
 };

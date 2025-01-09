@@ -707,7 +707,7 @@ void ResolveHolder::InitializeStatic()
     resolveInit.part1 [ 9]             = 0xC2;
     resolveInit.part1 [10]             = 0x48;
     resolveInit.part1 [11]             = 0x35;
-// Review truncation from unsigned __int64 to UINT32 of a constant value.
+// Review truncation from uint64_t to UINT32 of a constant value.
 #if defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable:4305 4309)

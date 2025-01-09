@@ -90,12 +90,12 @@ namespace System.Net.Http.Functional.Tests
             const string ExpectedPassword = "rightpassword";
             LoopbackServer.Options options = new LoopbackServer.Options { IsProxy = true, Username = ExpectedUsername, Password = ExpectedPassword };
 
-            await LoopbackServer.CreateClientAndServerAsync(uri => Task.Run(() =>
+            await LoopbackServer.CreateClientAndServerAsync(uri => Task.Run(async () =>
             {
                 var psi = new ProcessStartInfo();
                 psi.Environment.Add("http_proxy", $"http://{uri.Host}:{uri.Port}");
 
-                RemoteExecutor.Invoke(async (useProxyString, useVersionString, uriString) =>
+                await RemoteExecutor.Invoke(async (useProxyString, useVersionString, uriString) =>
                 {
                     using (HttpClientHandler handler = CreateHttpClientHandler(useVersionString))
                     using (HttpClient client = CreateHttpClient(handler, useVersionString))
@@ -111,7 +111,7 @@ namespace System.Net.Http.Functional.Tests
                 }, useProxy.ToString(), UseVersion.ToString(),
                     // If proxy is used , the url does not matter. We set it to be different to avoid confusion.
                    useProxy ? Configuration.Http.RemoteEchoServer.ToString() : uri.ToString(),
-                   new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+                   new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
             }),
             server => server.AcceptConnectionAsync(async connection =>
             {

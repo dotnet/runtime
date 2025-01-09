@@ -5,11 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="BinaryDataFromFileTests.cs" />
     <Compile Include="BinaryDataTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Memory.Data.csproj"/>
+    <ProjectReference Include="..\src\System.Memory.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

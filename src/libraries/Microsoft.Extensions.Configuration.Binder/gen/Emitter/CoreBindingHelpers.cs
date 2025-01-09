@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
                                     checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
-                                    useDefaultValueIfSectionValueIsNull: false,
+                                    defaultValueSource: null,
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
@@ -204,7 +204,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         Expression.sectionPath,
                         writeOnSuccess: (parsedValueExpr) => _writer.WriteLine($"return {parsedValueExpr};"),
                         checkForNullSectionValue: false,
-                        useDefaultValueIfSectionValueIsNull: false,
+                        defaultValueSource: null,
                         useIncrementalStringValueIdentifier: false);
 
                     EmitEndBlock();
@@ -325,7 +325,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     type is { Properties: not null, ConstructorParameters: not null },
                     $"Expecting type for init method, {type.DisplayString}, to have both properties and ctor params.");
 
-                IEnumerable<PropertySpec> initOnlyProps = type.Properties.Where(prop => prop is { SetOnInit: true });
+                IEnumerable<PropertySpec> initOnlyProps = type.Properties
+                    .Where(prop => prop.SetOnInit && _typeIndex.ShouldBindTo(prop));
                 List<string> ctorArgList = new();
 
                 EmitStartBlock($"public static {type.TypeRef.FullyQualifiedName} {GetInitializeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
@@ -349,7 +350,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (PropertySpec property in initOnlyProps)
                 {
-                    if (_typeIndex.ShouldBindTo(property) && property.MatchingCtorParam is null)
+                    if (property.MatchingCtorParam is null)
                     {
                         EmitBindImplForMember(property);
                     }
@@ -409,7 +410,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         member,
                         member.Name,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
+                        // Since we're binding to local variables, we can always get and set
                         canSet: true,
+                        canGet: true,
                         InitializationKind.None);
 
                     if (canBindToMember)
@@ -569,11 +572,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitEnumParseMethod()
             {
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof(T)}}");
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.path}}}", $"{{typeof(T)}}");
 
                 string parseEnumCall = _emitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
-                    public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+                    public static T ParseEnum<T>(string value, string? path) where T : struct
                     {
                         try
                         {
@@ -639,9 +642,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                 }
 
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof({typeFQN})}}");
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.path}}}", $"{{typeof({typeFQN})}}");
 
-                EmitStartBlock($"public static {typeFQN} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, Func<string?> {Identifier.getPath})");
+                EmitStartBlock($"public static {typeFQN} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, string? {Identifier.path})");
                 EmitEndBlock($$"""
                     try
                     {
@@ -698,7 +701,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 Expression.sectionPath,
                                 (parsedValueExpr) => _writer.WriteLine($"{addExpr}({parsedValueExpr});"),
                                 checkForNullSectionValue: true,
-                                useDefaultValueIfSectionValueIsNull: false,
+                                defaultValueSource: null,
                                 useIncrementalStringValueIdentifier: false);
                         }
                         break;
@@ -752,7 +755,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Expression.sectionPath,
                     Emit_BindAndAddLogic_ForElement,
                     checkForNullSectionValue: false,
-                    useDefaultValueIfSectionValueIsNull: false,
+                    defaultValueSource: null,
                     useIncrementalStringValueIdentifier: false);
 
                 void Emit_BindAndAddLogic_ForElement(string parsedKeyExpr)
@@ -767,7 +770,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
                                     checkForNullSectionValue: true,
-                                    useDefaultValueIfSectionValueIsNull: false,
+                                    defaultValueSource: null,
                                     useIncrementalStringValueIdentifier: false);
                             }
                             break;
@@ -850,6 +853,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             memberAccessExpr: $"{containingTypeRef}.{property.Name}",
                             GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                             canSet: property.CanSet,
+                            canGet: property.CanGet,
                             InitializationKind.Declaration);
                     }
                 }
@@ -860,6 +864,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string memberAccessExpr,
                 string sectionPathExpr,
                 bool canSet,
+                bool canGet,
                 InitializationKind initializationKind)
             {
                 string sectionParseExpr = GetSectionFromConfigurationExpression(member.ConfigurationKeyName);
@@ -868,14 +873,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     case ParsableFromStringSpec stringParsableType:
                         {
-                            if (canSet)
+                            // Reflection binder does not support binding to set-only properties
+                            if (canSet && canGet)
                             {
-                                bool useDefaultValueIfSectionValueIsNull =
-                                    initializationKind == InitializationKind.Declaration &&
-                                    member is PropertySpec &&
-                                    member.TypeRef.IsValueType &&
-                                    _typeIndex.GetTypeSpec(member.TypeRef) is not NullableSpec;
-
                                 EmitBlankLineIfRequired();
                                 EmitBindingLogic(
                                     stringParsableType,
@@ -883,7 +883,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
                                     checkForNullSectionValue: true,
-                                    useDefaultValueIfSectionValueIsNull,
+                                    defaultValueSource: initializationKind == InitializationKind.Declaration ? memberAccessExpr : null,
                                     useIncrementalStringValueIdentifier: true);
                             }
 
@@ -901,6 +901,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                     case ComplexTypeSpec complexType:
                         {
+                            // Early detection of types we cannot bind to and skip it.
+                            if (!_typeIndex.HasBindableMembers(complexType) &&
+                                !_typeIndex.GetEffectiveTypeSpec(complexType).IsValueType &&
+                                complexType is not CollectionSpec &&
+                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            {
+                                return false;
+                            }
+
                             string sectionValidationCall = $"{MethodsToGen_CoreBindingHelper.AsConfigWithChildren}({sectionParseExpr})";
                             string sectionIdentifier = GetIncrementalIdentifier(Identifier.section);
 
@@ -968,15 +977,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     initKind = InitializationKind.SimpleAssignment;
                 }
 
-                Action<string>? writeOnSuccess = !canSet
-                     ? null
-                     : bindedValueIdentifier =>
-                     {
-                         if (memberAccessExpr != bindedValueIdentifier)
-                         {
-                             _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
-                         }
-                     };
+                Action<string, string?>? writeOnSuccess = !canSet
+                    ? null
+                    : (bindedValueIdentifier, tempIdentifierStoringExpr) =>
+                    {
+                        if (memberAccessExpr != bindedValueIdentifier)
+                        {
+                            _writer.WriteLine($"{memberAccessExpr} = {bindedValueIdentifier};");
+
+                            if (tempIdentifierStoringExpr is not null)
+                            {
+                                _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                            }
+
+                            if (member.CanGet && _typeIndex.CanInstantiate(effectiveMemberType))
+                            {
+                                EmitEndBlock();
+                                EmitStartBlock("else");
+                                _writer.WriteLine($"{memberAccessExpr} = {memberAccessExpr};");
+                            }
+                        }
+                        else
+                        {
+                            _writer.WriteLine($"{tempIdentifierStoringExpr}");
+                        }
+                    };
 
                 EmitBindingLogic(
                     effectiveMemberType,
@@ -994,7 +1019,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string configArgExpr,
                 InitializationKind initKind,
                 ValueDefaulting valueDefaulting,
-                Action<string>? writeOnSuccess = null)
+                Action<string, string?>? writeOnSuccess = null)
             {
                 if (!_typeIndex.HasBindableMembers(type))
                 {
@@ -1022,15 +1047,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (initKind is InitializationKind.None && type.IsValueType)
                 {
-                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration);
-                    _writer.WriteLine($"{memberAccessExpr} = {tempIdentifier};");
+                    EmitBindingLogic(tempIdentifier, InitializationKind.Declaration, $"{memberAccessExpr} = {tempIdentifier};");
                 }
                 else
                 {
                     EmitBindingLogic(memberAccessExpr, initKind);
                 }
 
-                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind)
+                void EmitBindingLogic(string instanceToBindExpr, InitializationKind initKind, string? tempIdentifierStoringExpr = null)
                 {
                     string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions});";
 
@@ -1060,7 +1084,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     void EmitBindCoreCall()
                     {
                         _writer.WriteLine(bindCoreCall);
-                        writeOnSuccess?.Invoke(instanceToBindExpr);
+                        writeOnSuccess?.Invoke(instanceToBindExpr, tempIdentifierStoringExpr);
                     }
 
                     string FormatDefaultValueIfNotFound() => valueDefaulting == ValueDefaulting.CallSetter ? "true" : "false";
@@ -1073,7 +1097,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string sectionPathExpr,
                 Action<string>? writeOnSuccess,
                 bool checkForNullSectionValue,
-                bool useDefaultValueIfSectionValueIsNull,
+                string? defaultValueSource,
                 bool useIncrementalStringValueIdentifier)
             {
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
@@ -1084,30 +1108,41 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string parsedValueExpr = typeKind switch
                 {
                     StringParsableTypeKind.AssignFromSectionValue => stringValueToParse_Expr,
-                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({stringValueToParse_Expr}, () => {sectionPathExpr})",
-                    _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, () => {sectionPathExpr})",
+                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({stringValueToParse_Expr}, {sectionPathExpr})",
+                    _ => $"{TypeIndex.GetParseMethodName(type)}({stringValueToParse_Expr}, {sectionPathExpr})",
                 };
 
                 if (!checkForNullSectionValue)
                 {
-                    InvokeWriteOnSuccess();
+                    writeOnSuccess?.Invoke(parsedValueExpr);
                 }
                 else
                 {
-                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
-                    InvokeWriteOnSuccess();
+                    // In case of calling parsing methods, check the section value first for null or empty before calling parse.
+                    string extraCondition = typeKind == StringParsableTypeKind.AssignFromSectionValue ? "" : $" && !string.IsNullOrEmpty({nonNull_StringValue_Identifier})";
+                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier}{extraCondition})");
+                    writeOnSuccess?.Invoke(parsedValueExpr);
                     EmitEndBlock();
                 }
 
-                if (useDefaultValueIfSectionValueIsNull)
+                if (defaultValueSource is not null)
                 {
-                    parsedValueExpr = $"default";
+                    Debug.Assert(checkForNullSectionValue);
+
                     EmitStartBlock($"else if (defaultValueIfNotFound)");
-                    InvokeWriteOnSuccess();
+                    if (!type.TypeRef.CanBeNull)
+                    {
+                        writeOnSuccess?.Invoke(defaultValueSource);
+                    }
+                    else
+                    {
+                        _writer.WriteLine($"var currentValue = {defaultValueSource};");
+                        EmitStartBlock($"if (currentValue is not null)");
+                        writeOnSuccess?.Invoke("currentValue");
+                        EmitEndBlock();
+                    }
                     EmitEndBlock();
                 }
-
-                void InvokeWriteOnSuccess() => writeOnSuccess?.Invoke(parsedValueExpr);
             }
 
             private bool EmitObjectInit(ComplexTypeSpec type, string memberAccessExpr, InitializationKind initKind, string configArgExpr)
@@ -1221,15 +1256,25 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                string castTypeDisplayString = TypeIndex.GetPopulationCastTypeDisplayString(type);
                 instanceIdentifier = Identifier.temp;
+                string castExpression = $"{TypeIndex.GetPopulationCastTypeDisplayString(type)} {instanceIdentifier}";
 
-                _writer.WriteLine($$"""
-                        if ({{Identifier.instance}} is not {{castTypeDisplayString}} {{instanceIdentifier}})
-                        {
-                            return;
-                        }
-                        """);
+                if (type.ShouldTryCast)
+                {
+                    _writer.WriteLine($$"""
+                            if ({{Identifier.instance}} is not {{castExpression}})
+                            {
+                                return;
+                            }
+                            """);
+                }
+                else
+                {
+                    _writer.WriteLine($$"""
+                            {{castExpression}} = {{Identifier.instance}};
+                            """);
+                }
+
                 _writer.WriteLine();
 
             }

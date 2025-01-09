@@ -39,21 +39,25 @@ internal static partial class MsQuicConfiguration
         }
         else if (authenticationOptions.LocalCertificateSelectionCallback != null)
         {
-            X509Certificate selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
+            X509Certificate? selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
                 options,
                 authenticationOptions.TargetHost ?? string.Empty,
                 authenticationOptions.ClientCertificates ?? new X509CertificateCollection(),
                 null,
                 Array.Empty<string>());
-            if (selectedCertificate.HasPrivateKey())
+
+            if (selectedCertificate is not null)
             {
-                certificate = selectedCertificate;
-            }
-            else
-            {
-                if (NetEventSource.Log.IsEnabled())
+                if (selectedCertificate.HasPrivateKey())
                 {
-                    NetEventSource.Info(options, $"'{certificate}' not selected because it doesn't have a private key.");
+                    certificate = selectedCertificate;
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(options, $"'{certificate}' not selected because it doesn't have a private key.");
+                    }
                 }
             }
         }
@@ -157,16 +161,16 @@ internal static partial class MsQuicConfiguration
         }
 
         settings.IsSet.ConnFlowControlWindow = 1;
-        settings.ConnFlowControlWindow = (uint)(options._initialRecieveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
+        settings.ConnFlowControlWindow = (uint)(options._initialReceiveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
 
         settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
-        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialRecieveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialReceiveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
-        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialRecieveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialReceiveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         settings.IsSet.StreamRecvWindowUnidiDefault = 1;
-        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialRecieveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialReceiveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
 
         if (options.HandshakeTimeout != TimeSpan.Zero)
         {

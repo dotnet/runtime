@@ -70,12 +70,12 @@ namespace System.Diagnostics.Tracing
         }
 
         // Register an event provider.
-        internal override unsafe void Register(EventSource eventSource)
+        internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 
-            _provHandle = EventPipeInternal.CreateProvider(eventSource.Name, &Callback, (void*)GCHandle.ToIntPtr(_gcHandle));
+            _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle.ToIntPtr(_gcHandle));
             if (_provHandle == 0)
             {
                 // Unable to create the provider.
@@ -85,6 +85,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Unregister an event provider.
+        // Calling Unregister within a Callback will result in a deadlock
+        // as deleting the provider with an active tracing session will block
+        // until all of the provider's callbacks are completed.
         internal override void Unregister()
         {
             if (_provHandle != 0)

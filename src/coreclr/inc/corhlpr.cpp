@@ -8,9 +8,7 @@
  ****************************************************************************/
 #ifndef SOS_INCLUDE
 
-#ifdef _BLD_CLR
 #include "utilcode.h"
-#endif
 #include "corhlpr.h"
 #include <stdlib.h>
 

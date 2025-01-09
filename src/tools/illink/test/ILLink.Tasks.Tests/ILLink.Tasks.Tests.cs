@@ -588,6 +588,27 @@ namespace ILLink.Tasks.Tests
 			}
 		}
 
+		[Theory]
+		[InlineData (true)]
+		[InlineData (false)]
+		public void TestPreserveSymbolPaths (bool preserveSymbolPaths)
+		{
+			var task = new MockTask () {
+				PreserveSymbolPaths = preserveSymbolPaths
+			};
+			using (var driver = task.CreateDriver ()) {
+				Assert.Equal (preserveSymbolPaths, driver.Context.PreserveSymbolPaths);
+			}
+		}
+
+		[Fact]
+		public void TestPreserveSymbolPathsDefault ()
+		{
+			var task = new MockTask ();
+			using (var driver = task.CreateDriver ()) {
+				Assert.False (driver.Context.PreserveSymbolPaths);
+			}
+		}
 
 		[Fact]
 		public void TestKeepCustomMetadata ()

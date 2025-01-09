@@ -39,13 +39,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type annotatedField = GetUnknown ();
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedProperty), CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/93277
+			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedProperty), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93277", CompilerGeneratedCode = true)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type AnnotatedProperty { get; } = GetUnknown ();
 
-			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedPropertyWithSetter), CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/runtime/issues/93277
+			[ExpectedWarning ("IL2074", nameof (GetUnknown), nameof (AnnotatedPropertyWithSetter), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/93277", CompilerGeneratedCode = true)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
 			Type AnnotatedPropertyWithSetter { get; set; } = GetUnknown ();
 
@@ -81,12 +79,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			int PropertyWithThrowStatementInInitializer { get; } = string.Empty.Length == 0 ? throw new Exception() : 0;
 
-			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2158
+			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158", CompilerGeneratedCode = true)]
 			int fieldWithLocalReferenceInInitializer = TryGetUnknown (out var type) ? RequireAll (type) : 0;
 
-			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), CompilerGeneratedCode = true,
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2158
+			[ExpectedWarning ("IL2067", nameof (TryGetUnknown), nameof (RequireAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158", CompilerGeneratedCode = true)]
 			int PropertyWithLocalReferenceInInitializer { get; } = TryGetUnknown (out var type) ? RequireAll (type) : 0;
 
 			public static void Test ()

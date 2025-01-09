@@ -76,7 +76,7 @@ namespace System
         [RequiresUnreferencedCode("The type might be removed")]
         private static Type? GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
+            return TypeNameResolver.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
         public static Type? GetTypeFromHandle(RuntimeTypeHandle handle)

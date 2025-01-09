@@ -401,7 +401,7 @@ typedef BitVector ptrArgTP;
 
 #else // !USE_BITVECTOR
 
-typedef unsigned __int64 ptrArgTP;
+typedef uint64_t ptrArgTP;
 
     // Maximum number of bits in our bitvector
 #define MAX_PTRARG_OFS (sizeof(ptrArgTP) * 8)

@@ -136,28 +136,6 @@ namespace System.Reflection
         // TODO: consider a dedicated icall instead
         public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this)!.IsCollectible;
 
-        internal static AssemblyName? CreateAssemblyName(string assemblyString, out RuntimeAssembly? assemblyFromResolveEvent)
-        {
-            ArgumentNullException.ThrowIfNull(assemblyString);
-
-            if ((assemblyString.Length == 0) ||
-                (assemblyString[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            assemblyFromResolveEvent = null;
-            try
-            {
-                return new AssemblyName(assemblyString);
-            }
-            catch (Exception)
-            {
-                assemblyFromResolveEvent = (RuntimeAssembly?)AssemblyLoadContext.DoAssemblyResolve(assemblyString);
-                if (assemblyFromResolveEvent == null)
-                    throw new FileLoadException(assemblyString);
-                return null;
-            }
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetManifestResourceNames(QCallAssembly assembly_h, ObjectHandleOnStack res);
 

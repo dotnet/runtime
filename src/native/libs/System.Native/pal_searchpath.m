@@ -16,7 +16,7 @@ const char* SystemNative_SearchPath(int32_t folderId)
     return path == NULL ? NULL : strdup (path);
 }
 
-const char* SystemNative_SearchPath_TempDirectory()
+const char* SystemNative_SearchPath_TempDirectory(void)
 {
     NSString* tempPath = NSTemporaryDirectory();
     const char *path = [tempPath UTF8String];

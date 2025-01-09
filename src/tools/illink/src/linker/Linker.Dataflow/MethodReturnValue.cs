@@ -2,11 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
+using Mono.Linker;
 using Mono.Linker.Dataflow;
-using TypeDefinition = Mono.Cecil.TypeDefinition;
+using TypeReference = Mono.Cecil.TypeReference;
 
 
 namespace ILLink.Shared.TrimAnalysis
@@ -16,9 +19,17 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal partial record MethodReturnValue
 	{
-		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public static MethodReturnValue Create (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, ITryResolveMetadata resolver)
 		{
-			StaticType = staticType == null ? null : new (staticType);
+			Debug.Assert (!isNewObj || method.Definition.IsConstructor, "isNewObj can only be true for constructors");
+			var methodRef = method.Method;
+			var staticType = isNewObj ? methodRef.DeclaringType : methodRef.ReturnType.InflateFrom (methodRef as IGenericInstance ?? methodRef.DeclaringType as IGenericInstance);
+			return new MethodReturnValue (staticType, method.Definition, dynamicallyAccessedMemberTypes, resolver);
+		}
+
+		private MethodReturnValue (TypeReference? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, ITryResolveMetadata resolver)
+		{
+			StaticType = staticType == null ? null : new (staticType, resolver);
 			Method = method;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}

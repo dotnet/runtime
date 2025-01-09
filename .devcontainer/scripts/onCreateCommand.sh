@@ -3,9 +3,6 @@
 set -e
 
 function wasm_common() {
-    # prebuild for WASM, so it is ready for wasm development
-    make -C src/mono/browser provision-wasm
-    export EMSDK_PATH=$PWD/src/mono/browser/emsdk
     case "$1" in
     wasm)
         # Put your common commands for wasm here

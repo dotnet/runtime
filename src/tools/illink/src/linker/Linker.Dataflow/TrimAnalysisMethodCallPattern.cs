@@ -69,8 +69,7 @@ namespace Mono.Linker.Dataflow
 				diagnosticContext,
 				reflectionMarker,
 				context,
-				markStep,
-				out MultiValue _);
+				markStep);
 		}
 	}
 }

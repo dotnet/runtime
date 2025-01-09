@@ -11,11 +11,10 @@ import { mono_wasm_load_bytes_into_heap_persistent } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
-import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8Array): void {
-    mono_log_debug(`Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+    mono_log_debug(() => `Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
     const mark = startMeasure();
 
     const virtualName: string = typeof (asset.virtualPath) === "string"
@@ -27,7 +26,6 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
         case "dotnetwasm":
         case "js-module-threads":
         case "symbols":
-        case "segmentation-rules":
             // do nothing
             break;
         case "resource":
@@ -52,6 +50,9 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
             if (fileName.startsWith("/"))
                 fileName = fileName.substring(1);
             if (parentDirectory) {
+                if (!parentDirectory.startsWith("/"))
+                    parentDirectory = "/" + parentDirectory;
+
                 mono_log_debug(`Creating directory '${parentDirectory}'`);
 
                 Module.FS_createPath(
@@ -61,7 +62,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
                 parentDirectory = "/";
             }
 
-            mono_log_debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
+            mono_log_debug(() => `Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             Module.FS_createDataFile(
                 parentDirectory, fileName,
@@ -85,8 +86,7 @@ export function instantiate_asset (asset: AssetEntry, url: string, bytes: Uint8A
     } else if (asset.behavior === "pdb") {
         cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
     } else if (asset.behavior === "icu") {
-        if (!mono_wasm_load_icu_data(offset!))
-            Module.err(`Error loading ICU asset ${asset.name}`);
+        mono_wasm_load_icu_data(offset!);
     } else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture || "", offset!, bytes.length);
     }
@@ -101,16 +101,6 @@ export async function instantiate_symbols_asset (pendingAsset: AssetEntryInterna
         parseSymbolMapFile(text);
     } catch (error: any) {
         mono_log_info(`Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
-    }
-}
-
-export async function instantiate_segmentation_rules_asset (pendingAsset: AssetEntryInternal): Promise<void> {
-    try {
-        const response = await pendingAsset.pendingDownloadInternal!.response;
-        const json = await response.json();
-        setSegmentationRulesFromJson(json);
-    } catch (error: any) {
-        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
 }
 

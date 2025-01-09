@@ -92,19 +92,19 @@ namespace ILCompiler.DependencyAnalysis
             switch (_id)
             {
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    sb.Append("__GetNonGCStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__GetNonGCStaticBase_"u8).Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    sb.Append("__GetGCStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__GetGCStaticBase_"u8).Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    sb.Append("__GetThreadStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__GetThreadStaticBase_"u8).Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.DelegateCtor:
                     ((DelegateCreationInfo)_target).AppendMangledName(nameMangler, sb);
                     break;
                 case ReadyToRunHelperId.ResolveVirtualFunction:
-                    sb.Append("__ResolveVirtualFunction_");
+                    sb.Append("__ResolveVirtualFunction_"u8);
                     sb.Append(nameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
                 default:
@@ -155,6 +155,9 @@ namespace ILCompiler.DependencyAnalysis
                     }
 #endif
                 }
+
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType,
+                    info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
                 return dependencyList;
             }

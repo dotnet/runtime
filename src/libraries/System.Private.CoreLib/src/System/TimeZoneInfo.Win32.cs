@@ -152,7 +152,7 @@ namespace System
                 AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(regZone, DateTime.MinValue.Date, DateTime.MaxValue.Date, zone.Bias);
                 if (rule != null)
                 {
-                    _adjustmentRules = new[] { rule };
+                    _adjustmentRules = [rule];
                 }
             }
 
@@ -524,7 +524,7 @@ namespace System
                             defaultTimeZoneInformation, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
                         if (rule != null)
                         {
-                            rules = new[] { rule };
+                            rules = [rule];
                         }
                         return true;
                     }
@@ -558,7 +558,7 @@ namespace System
                         AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(dtzi, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
                         if (rule != null)
                         {
-                            rules = new[] { rule };
+                            rules = [rule];
                         }
                         return true;
                     }
@@ -640,7 +640,7 @@ namespace System
 
         private static unsafe bool TryGetTimeZoneEntryFromRegistry(RegistryKey key, string name, out REG_TZI_FORMAT dtzi)
         {
-            if (!(key.GetValue(name, null) is byte[] regValue) || regValue.Length != sizeof(REG_TZI_FORMAT))
+            if (key.GetValue(name, null) is not byte[] regValue || regValue.Length != sizeof(REG_TZI_FORMAT))
             {
                 dtzi = default;
                 return false;

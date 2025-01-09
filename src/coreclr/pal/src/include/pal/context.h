@@ -33,7 +33,9 @@ extern "C"
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
+#if HAVE_UCONTEXT_H
 #include <ucontext.h>
+#endif // HAVE_UCONTEXT_H
 
 typedef ucontext_t native_context_t;
 #else   // HAVE_UCONTEXT_T
@@ -42,14 +44,14 @@ typedef ucontext_t native_context_t;
 
 #if !HAVE_MACH_EXCEPTIONS
 
-#if defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64) && !HAVE_PUBLIC_XSTATE_STRUCT
 namespace asm_sigcontext
 {
 #include <asm/sigcontext.h>
 };
 using asm_sigcontext::_fpx_sw_bytes;
 using asm_sigcontext::_xstate;
-#endif // defined(XSTATE_SUPPORTED) && !HAVE_PUBLIC_XSTATE_STRUCT
+#endif // XSTATE_SUPPORTED && HOST_AMD64 && !HAVE_PUBLIC_XSTATE_STRUCT
 
 #else // !HAVE_MACH_EXCEPTIONS
 #include <mach/kern_return.h>
@@ -58,7 +60,92 @@ using asm_sigcontext::_xstate;
 
 #if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS))
 bool Xstate_IsAvx512Supported();
+bool Xstate_IsApxSupported();
 #endif // XSTATE_SUPPORTED || (HOST_AMD64 && HAVE_MACH_EXCEPTIONS)
+
+#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
+#if !defined(SVE_MAGIC)
+
+// Add the missing SVE defines
+
+#define EXTRA_MAGIC 0x45585401
+
+struct extra_context {
+    struct _aarch64_ctx head;
+    __u64 datap; /* 16-byte aligned pointer to extra space cast to __u64 */
+    __u32 size; /* size in bytes of the extra space */
+    __u32 __reserved[3];
+};
+
+#define SVE_MAGIC   0x53564501
+
+struct sve_context {
+    struct _aarch64_ctx head;
+    __u16 vl;
+    __u16 flags;
+    __u16 __reserved[2];
+};
+
+#define __SVE_VQ_BYTES      16  /* number of bytes per quadword */
+
+#define __SVE_NUM_ZREGS     32
+#define __SVE_NUM_PREGS     16
+
+#define sve_vq_from_vl(vl)    ((vl) / __SVE_VQ_BYTES)
+#define sve_vl_from_vq(vq)    ((vq) * __SVE_VQ_BYTES)
+
+#define __SVE_ZREG_SIZE(vq) ((__u32)(vq) * __SVE_VQ_BYTES)
+#define __SVE_PREG_SIZE(vq) ((__u32)(vq) * (__SVE_VQ_BYTES / 8))
+#define __SVE_FFR_SIZE(vq)  __SVE_PREG_SIZE(vq)
+
+#define __SVE_ZREGS_OFFSET  0
+#define __SVE_ZREG_OFFSET(vq, n) \
+    (__SVE_ZREGS_OFFSET + __SVE_ZREG_SIZE(vq) * (n))
+#define __SVE_ZREGS_SIZE(vq) \
+    (__SVE_ZREG_OFFSET(vq, __SVE_NUM_ZREGS) - __SVE_ZREGS_OFFSET)
+
+#define __SVE_PREGS_OFFSET(vq) \
+    (__SVE_ZREGS_OFFSET + __SVE_ZREGS_SIZE(vq))
+#define __SVE_PREG_OFFSET(vq, n) \
+    (__SVE_PREGS_OFFSET(vq) + __SVE_PREG_SIZE(vq) * (n))
+#define __SVE_PREGS_SIZE(vq) \
+    (__SVE_PREG_OFFSET(vq, __SVE_NUM_PREGS) - __SVE_PREGS_OFFSET(vq))
+
+#define __SVE_FFR_OFFSET(vq) \
+    (__SVE_PREGS_OFFSET(vq) + __SVE_PREGS_SIZE(vq))
+
+
+#define SVE_SIG_ZREG_SIZE(vq)   __SVE_ZREG_SIZE(vq)
+#define SVE_SIG_PREG_SIZE(vq)   __SVE_PREG_SIZE(vq)
+#define SVE_SIG_FFR_SIZE(vq)    __SVE_FFR_SIZE(vq)
+
+#define SVE_SIG_REGS_OFFSET                 \
+    ((sizeof(struct sve_context) + (__SVE_VQ_BYTES - 1))    \
+        / __SVE_VQ_BYTES * __SVE_VQ_BYTES)
+
+#define SVE_SIG_ZREGS_OFFSET \
+        (SVE_SIG_REGS_OFFSET + __SVE_ZREGS_OFFSET)
+#define SVE_SIG_ZREG_OFFSET(vq, n) \
+        (SVE_SIG_REGS_OFFSET + __SVE_ZREG_OFFSET(vq, n))
+#define SVE_SIG_ZREGS_SIZE(vq) __SVE_ZREGS_SIZE(vq)
+
+#define SVE_SIG_PREGS_OFFSET(vq) \
+        (SVE_SIG_REGS_OFFSET + __SVE_PREGS_OFFSET(vq))
+#define SVE_SIG_PREG_OFFSET(vq, n) \
+        (SVE_SIG_REGS_OFFSET + __SVE_PREG_OFFSET(vq, n))
+#define SVE_SIG_PREGS_SIZE(vq) __SVE_PREGS_SIZE(vq)
+
+#define SVE_SIG_FFR_OFFSET(vq) \
+        (SVE_SIG_REGS_OFFSET + __SVE_FFR_OFFSET(vq))
+
+#define SVE_SIG_REGS_SIZE(vq) \
+        (__SVE_FFR_OFFSET(vq) + __SVE_FFR_SIZE(vq))
+
+#define SVE_SIG_CONTEXT_SIZE(vq) \
+        (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
+
+#endif // SVE_MAGIC
+#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !TARGET_OSX
 
 #ifdef HOST_S390X
 
@@ -351,7 +438,7 @@ bool Xstate_IsAvx512Supported();
 /////////////////////
 // Extended state
 
-#ifdef XSTATE_SUPPORTED
+#if defined(XSTATE_SUPPORTED) && defined(HOST_AMD64)
 
 #if HAVE_FPSTATE_GLIBC_RESERVED1
 #define FPSTATE_RESERVED __glibc_reserved1
@@ -383,6 +470,14 @@ bool Xstate_IsAvx512Supported();
 #define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
 #endif // XFEATURE_MASK_AVX512
 
+#ifndef XSTATE_APX
+#define XSTATE_APX 19
+#endif // XSTATE_APX
+
+#ifndef XFEATURE_MASK_APX
+#define XFEATURE_MASK_APX (1 << XSTATE_APX)
+#endif  // XFEATURE_MASK_APX
+
 #if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
 #define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xstate_bv
 #else
@@ -405,7 +500,7 @@ struct Xstate_ExtendedFeature
     uint32_t size;
 };
 
-#define Xstate_ExtendedFeatures_Count (XSTATE_AVX512_ZMM + 1)
+#define Xstate_ExtendedFeatures_Count (XSTATE_APX + 1)
 extern Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
@@ -542,7 +637,28 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
     _ASSERTE(FPREG_HasAvx512Registers(uc));
     return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
 }
-#endif // XSTATE_SUPPORTED
+
+inline bool FPREG_HasApxRegisters(const ucontext_t *uc)
+{
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
+
+    if ((FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_APX) != XFEATURE_MASK_APX)
+    {
+        return false;
+    }
+
+    return Xstate_IsApxSupported();
+}
+
+inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasApxRegisters(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_APX);
+}
+#endif // XSTATE_SUPPORTED && HOST_AMD64
 
 /////////////////////
 
@@ -662,41 +778,18 @@ const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define MCREG_Pc(mc)      ((mc).pc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
 
+void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_ptr, sve_context **sve_ptr);
 
 inline
-fpsimd_context* GetNativeSigSimdContext(native_context_t *mc)
+void GetNativeSigSimdContext(native_context_t *mc, fpsimd_context **fp_ptr, sve_context **sve_ptr)
 {
-    size_t size = 0;
-
-    do
-    {
-        fpsimd_context* fp = reinterpret_cast<fpsimd_context *>(&mc->uc_mcontext.__reserved[size]);
-
-        if(fp->head.magic == FPSIMD_MAGIC)
-        {
-            _ASSERTE(fp->head.size >= sizeof(fpsimd_context));
-            _ASSERTE(size + fp->head.size <= sizeof(mc->uc_mcontext.__reserved));
-
-            return fp;
-        }
-
-        if (fp->head.size == 0)
-        {
-            break;
-        }
-
-        size += fp->head.size;
-    } while (size + sizeof(fpsimd_context) <= sizeof(mc->uc_mcontext.__reserved));
-
-    _ASSERTE(false);
-
-    return nullptr;
+    _GetNativeSigSimdContext((uint8_t *)&mc->uc_mcontext.__reserved[0], sizeof(mc->uc_mcontext.__reserved), fp_ptr, sve_ptr);
 }
 
 inline
-const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
+void GetConstNativeSigSimdContext(const native_context_t *mc, fpsimd_context const **fp_ptr, sve_context const **sve_ptr)
 {
-    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+    GetNativeSigSimdContext(const_cast<native_context_t*>(mc), const_cast<fpsimd_context **>(fp_ptr), const_cast<sve_context **>(sve_ptr));
 }
 
 #else // TARGET_OSX
@@ -874,6 +967,41 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
     *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
 }
+#elif defined(TARGET_HAIKU)
+
+#define MCREG_Rbp(mc)	    ((mc).rbp)
+#define MCREG_Rip(mc)	    ((mc).rip)
+#define MCREG_Rsp(mc)	    ((mc).rsp)
+#define MCREG_Rsi(mc)       ((mc).rsi)
+#define MCREG_Rdi(mc)	    ((mc).rdi)
+#define MCREG_Rbx(mc)	    ((mc).rbx)
+#define MCREG_Rdx(mc)	    ((mc).rdx)
+#define MCREG_Rcx(mc)	    ((mc).rcx)
+#define MCREG_Rax(mc)	    ((mc).rax)
+#define MCREG_R8(mc)	    ((mc).r8)
+#define MCREG_R9(mc)	    ((mc).r9)
+#define MCREG_R10(mc)	    ((mc).r10)
+#define MCREG_R11(mc)	    ((mc).r11)
+#define MCREG_R12(mc)	    ((mc).r12)
+#define MCREG_R13(mc)	    ((mc).r13)
+#define MCREG_R14(mc)	    ((mc).r14)
+#define MCREG_R15(mc)	    ((mc).r15)
+#define MCREG_EFlags(mc)    ((mc).rflags)
+// Haiku: missing SegCs
+
+#define FPSTATE(uc)             ((uc)->uc_mcontext.fpu)
+#define FPREG_ControlWord(uc)   FPSTATE(uc).fp_fxsave.control
+#define FPREG_StatusWord(uc)    FPSTATE(uc).fp_fxsave.status
+#define FPREG_TagWord(uc)       FPSTATE(uc).fp_fxsave.tag
+#define FPREG_MxCsr(uc)         FPSTATE(uc).fp_fxsave.mxcsr
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc).fp_fxsave.mscsr_mask
+#define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc).fp_fxsave.rip)
+#define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc).fp_fxsave.rip) + 2)
+#define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc).fp_fxsave.rdp)
+#define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc).fp_fxsave.rdp) + 2)
+
+#define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc).fp_fxsave.xmm[index])
+#define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc).fp_fxsave.fp[index].value)
 #else //TARGET_OSX
 
     // For FreeBSD, as found in x86/ucontext.h
@@ -1482,6 +1610,22 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                                        const native_context_t *context);
 
 #endif  // HAVE_MACH_EXCEPTIONS else
+
+#if defined(HOST_ARM64)
+/*++
+Function :
+    CONTEXT_GetSveLengthFromOS
+
+    Gets the SVE vector length
+Parameters :
+    None
+Return value :
+    The SVE vector length in bytes
+--*/
+DWORD64
+CONTEXT_GetSveLengthFromOS(
+    );
+#endif // HOST_ARM64
 
 #ifdef __cplusplus
 }

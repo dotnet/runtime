@@ -218,15 +218,24 @@ internal sealed class Xcode
                 targetName = Target.ToString();
                 break;
         }
-        var deployTarget = (Target == TargetNames.MacCatalyst) ? " -DCMAKE_OSX_ARCHITECTURES=" + XcodeArch : " -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0";
         var cmakeArgs = new StringBuilder();
         cmakeArgs
             .Append("-S.")
             .Append(" -B").Append(projectName)
             .Append(" -GXcode")
             .Append(" -DTARGETS_APPLE_MOBILE=1")
-            .Append(" -DCMAKE_SYSTEM_NAME=").Append(targetName)
-            .Append(deployTarget);
+            .Append(" -DCMAKE_SYSTEM_NAME=").Append(targetName);
+
+        if (Target == TargetNames.MacCatalyst)
+        {
+            // min deploy target version is passed later when invoking xcodebuild
+            cmakeArgs.Append(" -DCMAKE_OSX_ARCHITECTURES=" + XcodeArch);
+        }
+        else
+        {
+            // arch is passed later when invoking xcodebuild
+            cmakeArgs.Append(" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.2");
+        }
 
         Utils.RunProcess(Logger, "cmake", cmakeArgs.ToString(), workingDir: cmakeDirectoryPath);
     }
@@ -398,7 +407,10 @@ internal sealed class Xcode
             }
 
             string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
-            foreach (string lib in Directory.GetFiles(workspace, "*.a"))
+
+            // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
+            List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
+            foreach (string lib in staticLibsToLink)
             {
                 // all component libs already added to linker.
                 if (allComponentLibs.Any(lib.Contains))
@@ -608,7 +620,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=14.2");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
                     break;
             }
         }
@@ -633,7 +645,7 @@ internal sealed class Xcode
                         .Append(" -UseModernBuildSystem=YES")
                         .Append(" -archivePath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
                         .Append(" -derivedDataPath \"").Append(Path.GetDirectoryName(xcodePrjPath)).Append('"')
-                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=13.5");
+                        .Append(" IPHONEOS_DEPLOYMENT_TARGET=15.0");
                     break;
             }
         }

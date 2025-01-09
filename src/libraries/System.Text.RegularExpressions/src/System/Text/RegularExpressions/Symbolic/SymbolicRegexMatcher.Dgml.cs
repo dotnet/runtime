@@ -147,8 +147,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 foreach (MatchingState<TSet> source in matcher._stateCache.Values)
                 {
                     // Get the span of entries in delta that gives the transitions for the different minterms
-                    Span<int> deltas = matcher.GetDeltasFor(source);
-                    Span<int[]?> nfaDeltas = matcher.GetNfaDeltasFor(source);
+                    ReadOnlySpan<int> deltas = matcher.GetDeltasFor(source);
+                    ReadOnlySpan<int[]?> nfaDeltas = matcher.GetNfaDeltasFor(source);
                     Debug.Assert(deltas.Length == matcher._minterms.Length);
                     for (int i = 0; i < deltas.Length; ++i)
                     {

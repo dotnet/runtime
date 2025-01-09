@@ -348,8 +348,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
         {
-            if (newBuffer == null)
-                throw new ArgumentNullException(nameof(newBuffer));
+            ArgumentNullException.ThrowIfNull(newBuffer);
 
             int lenAnsi;
             int lenUnicode;
@@ -435,8 +434,7 @@ namespace System.Runtime.InteropServices
                 return;
 
             // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (pNative == null)
-                throw new ArgumentNullException(nameof(pNative));
+            ArgumentNullException.ThrowIfNull(pNative);
 
             int lenUnicode = managedArray.Length;
             fixed (char* pManaged = managedArray)

@@ -65,19 +65,7 @@ namespace System.Runtime.InteropServices
             MethodTable* structureMT = structure.GetMethodTable();
             RuntimeTypeHandle structureTypeHandle = new RuntimeTypeHandle(structureMT);
 
-            IntPtr unmarshalStub;
-            if (structureTypeHandle.IsBlittable())
-            {
-                if (!RuntimeInteropData.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
-                {
-                    unmarshalStub = IntPtr.Zero;
-                }
-            }
-            else
-            {
-                unmarshalStub = RuntimeInteropData.GetStructUnmarshalStub(structureTypeHandle);
-            }
-
+            IntPtr unmarshalStub = RuntimeInteropData.GetStructUnmarshalStub(structureTypeHandle);
             if (unmarshalStub != IntPtr.Zero)
             {
                 if (structureMT->IsValueType)
@@ -116,15 +104,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
 
-            if (structureTypeHandle.IsBlittable())
-            {
-                // ok to call with blittable structure, but no work to do in this case.
-                return;
-            }
-
-            IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
-            if (hasInvalidLayout)
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
+            IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle);
             // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
             if (destroyStructureStub != IntPtr.Zero)
             {
@@ -147,24 +127,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
             }
 
-            IntPtr marshalStub;
-            if (structureTypeHandle.IsBlittable())
-            {
-                if (!RuntimeInteropData.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
-                {
-                    marshalStub = IntPtr.Zero;
-                }
-            }
-            else
-            {
-                marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
-            }
-
             if (fDeleteOld)
             {
                 DestroyStructure(ptr, structure.GetType());
             }
 
+            IntPtr marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
             if (marshalStub != IntPtr.Zero)
             {
                 if (structureMT->IsValueType)
@@ -292,9 +260,7 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-#pragma warning disable 8500 // sizeof of managed types
             ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
-#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);
@@ -372,9 +338,7 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-#pragma warning disable 8500 // sizeof of managed types
             ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
-#pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
             NativeMemory.Clear((void*)nativeBytes, (nuint)size);

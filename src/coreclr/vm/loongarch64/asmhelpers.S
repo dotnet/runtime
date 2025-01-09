@@ -538,19 +538,6 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
 NESTED_END VirtualMethodFixupStub, _TEXT
 #endif // FEATURE_PREJIT
 
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    beq  $a0, $zero, LOCAL_LABEL(LNullThis)
-
-    ld.d $t4, $a0, DelegateObject___methodPtr
-    ld.d $a0, $a0, DelegateObject___target
-    jirl  $r0, $t4, 0
-
-LOCAL_LABEL(LNullThis):
-    addi.d  $a0, $zero, CORINFO_NullReferenceException_ASM
-    b JIT_InternalThrow
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 // ------------------------------------------------------------------
 // ThePreStubPatch()
 LEAF_ENTRY ThePreStubPatch, _TEXT
@@ -610,26 +597,6 @@ NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
     // and tailcall to the actual method
     EPILOG_BRANCH_REG $t4
 NESTED_END TheUMEntryPrestub, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    addi.d $a2, $a0, DomainLocalModule__m_pDataBlob
-    add.d $a2, $a2, $a1
-    ld.b $a2, $a2, 0
-    andi  $t8, $a2, 1
-    beq  $t8, $zero, 1f //LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
-
-    ld.d  $a0, $a0, DomainLocalModule__m_pGCStatics
-    jirl  $r0, $ra, 0
-
-1:
-//LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetSharedGCStaticBase_Helper
-    bl  JIT_GetSharedGCStaticBase_Helper
-LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
 
 // Make sure the `FaultingExceptionFrame_StackAlloc` is 16-byte aligned.
 #define FaultingExceptionFrame_StackAlloc (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame + 0x8)
@@ -792,22 +759,6 @@ NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
     EPILOG_BRANCH_REG  $t4
 NESTED_END ResolveWorkerAsmStub, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    jirl  $r0, $ra, 0
-LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    ld.d  $a0, $a0, DomainLocalModule__m_pGCStatics
-    jirl  $r0, $ra, 0
-LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
 
 #ifdef FEATURE_HIJACK
 // ------------------------------------------------------------------
@@ -980,28 +931,43 @@ LEAF_END setFPReturn, _TEXT
 
 #endif // FEATURE_COMINTEROP
 
-//
-// JIT Static access helpers when coreclr host specifies single appdomain flag
-//
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    dbar 0
+    bnez $a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
+    ori  $a0, $a1, 0
+    jirl $r0, $ra, 0
+
+LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call GetNonGCStaticBase
+    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, $t4
+    ld.d $t4, $t4, 0
+    EPILOG_BRANCH_REG        $t4
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    //dext $a1, $a1, 0, 32
-    addi.d  $a2, $a0, DomainLocalModule__m_pDataBlob
+    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    dbar 0
+    bnez $a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
+    ori  $a0, $a1, 0
+    jirl $r0, $ra, 0
 
-    ldx.b $a2, $a2, $a1
-    andi  $t4, $a2, 1
-    beq  $t4, $zero, LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper)
-
-    jirl  $r0, $ra, 0
-
-LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b  JIT_GetSharedNonGCStaticBase_Helper
-LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call GetGCStaticBase
+    ld.d $a0, $a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable
+    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, $t4
+    ld.d $t4, $t4, 0
+    EPILOG_BRANCH_REG        $t4
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
 
@@ -1019,7 +985,6 @@ C_FUNC(DelayLoad_MethodCall):
     ori  $t4,$a0,0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   $t4
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
@@ -1117,7 +1082,7 @@ GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
-    addi.d     $a0, $sp, __PWTB_TransitionBlock // TransitionBlock *
+    addi.d  $a0, $sp, __PWTB_TransitionBlock // TransitionBlock *
     ori     $a1, $t1, 0 // stub-identifying token
     bl      C_FUNC(OnCallCountThresholdReached)
     ori     $t4,$a0,0
@@ -1136,8 +1101,23 @@ NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
         PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
-        la.tls.ie   $a0, t_ThreadStatics
+        la.tls.desc   $a0, t_ThreadStatics
         EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 16
         EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
+// ------------------------------------------------------------------
+
+// ------------------------------------------------------------------
+// size_t GetTLSResolverAddress()
+
+// Helper to get the TLS resolver address. This will be then used to determine if we have a static or dynamic resolver.
+LEAF_ENTRY GetTLSResolverAddress, _TEXT
+        //                           $fp,$ra
+        PROLOG_SAVE_REG_PAIR_INDEXED  22, 1, 16
+        pcalau12i  $a0, %desc_pc_hi20(t_ThreadStatics)
+        addi.d     $a0, $a0, %desc_pc_lo12(t_ThreadStatics)
+        ld.d       $a0, $a0, %desc_ld(t_ThreadStatics)
+        EPILOG_RESTORE_REG_PAIR_INDEXED  22, 1, 16
+        EPILOG_RETURN
+LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------

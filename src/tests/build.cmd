@@ -114,6 +114,7 @@ if /i "%arg%" == "Perfmap"               (set __CreatePerfmap=1&set processedArg
 if /i "%arg%" == "AllTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=allTargets"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "ExcludeMonoFailures"   (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "Mono"                  (set __Mono=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "CoreCLR"               (set __Mono=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM The following arguments also consume one subsequent argument
 if /i "%arg%" == "test"                  (set __BuildTestProject=!__BuildTestProject!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)

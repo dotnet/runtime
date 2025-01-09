@@ -34,6 +34,7 @@ namespace Test_methodthrowsinfinally_cs
         }
 
         [Fact]
+        [OuterLoop]
         static public int TestEntryPoint()
         {
             //Start recording

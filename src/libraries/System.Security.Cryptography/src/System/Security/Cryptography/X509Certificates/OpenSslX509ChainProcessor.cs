@@ -15,8 +15,6 @@ using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using X509VerifyStatusCodeUniversal = Interop.Crypto.X509VerifyStatusCodeUniversal;
 
-#pragma warning disable 8500 // taking address of managed type
-
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed class OpenSslX509ChainProcessor : IChainPal

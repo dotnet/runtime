@@ -116,6 +116,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertificate")]
         internal static partial IntPtr SslGetPeerCertificate(SafeSslHandle ssl);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetCertificate")]
+        internal static partial IntPtr SslGetCertificate(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetCertificate")]
+        internal static partial IntPtr SslGetCertificate(IntPtr ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetPeerCertChain")]
         internal static partial SafeSharedX509StackHandle SslGetPeerCertChain(SafeSslHandle ssl);
 
@@ -128,6 +134,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionReused")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslSessionReused(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetSession")]
+        internal static partial IntPtr SslGetSession(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetClientCAList")]
         private static partial SafeSharedX509NameStackHandle SslGetClientCAList_private(SafeSslHandle ssl);
@@ -181,6 +190,12 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
         internal static partial int SessionSetHostname(IntPtr session, IntPtr name);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetData")]
+        internal static partial IntPtr SslSessionGetData(IntPtr session);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetData")]
+        internal static partial void SslSessionSetData(IntPtr session, IntPtr val);
 
         internal static class Capabilities
         {
@@ -430,7 +445,9 @@ namespace Microsoft.Win32.SafeHandles
                 Disconnect();
             }
 
-            SslContextHandle?.DangerousRelease();
+            // drop reference to any SSL_CTX handle, any handle present here is being
+            // rented from (client) SSL_CTX cache.
+            SslContextHandle?.Dispose();
 
             if (AlpnHandle.IsAllocated)
             {

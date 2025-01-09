@@ -21,7 +21,7 @@ namespace System
         // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method) : base(target, method)
+        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method) : base(target, method)
         {
         }
 

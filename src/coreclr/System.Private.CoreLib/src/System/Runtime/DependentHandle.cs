@@ -253,9 +253,7 @@ namespace System.Runtime
         // This optimization is the same that is used in GCHandle in RELEASE mode.
         // This is not used in DEBUG builds as the runtime performs additional checks.
         // The logic below is the inlined copy of ObjectFromHandle in the unmanaged runtime.
-#pragma warning disable 8500 // address of managed types
         private static unsafe object? InternalGetTarget(IntPtr dependentHandle) => *(object*)dependentHandle;
-#pragma warning restore 8500
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]

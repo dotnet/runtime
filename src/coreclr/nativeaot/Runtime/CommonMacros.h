@@ -119,41 +119,19 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
+#elif defined(HOST_LOONGARCH64)
+
+#define LOG2_PTRSIZE 3
+#define POINTER_SIZE 8
+
 #else
 #error Unsupported target architecture
 #endif
 
 #ifndef __GCENV_BASE_INCLUDED__
 
-#if defined(HOST_WASM)
-#define OS_PAGE_SIZE    0x4
-#else
 #define OS_PAGE_SIZE    PalOsPageSize()
-#endif
 
-#if defined(HOST_AMD64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_X86)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM)
-
-#define DATA_ALIGNMENT  4
-
-#elif defined(HOST_ARM64)
-
-#define DATA_ALIGNMENT  8
-
-#elif defined(HOST_WASM)
-
-#define DATA_ALIGNMENT  4
-
-#else
-#error Unsupported target architecture
-#endif
 #endif // __GCENV_BASE_INCLUDED__
 
 #if defined(TARGET_ARM)
@@ -315,14 +293,11 @@ typedef uint8_t CODE_LOCATION;
 
 typedef bool CLR_BOOL;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-// The return value is artificially widened on x86 and amd64
 typedef int32_t FC_BOOL_RET;
-#else
-typedef bool FC_BOOL_RET;
-#endif
+typedef int32_t FC_BOOL_ARG;
 
 #define FC_RETURN_BOOL(x)   do { return !!(x); } while(0)
+#define FC_ACCESS_BOOL(x) ((uint8_t)x != 0)
 
 #ifndef DACCESS_COMPILE
 #define IN_DAC(x)
@@ -345,7 +320,7 @@ enum STARTUP_TIMELINE_EVENT_ID
 };
 
 #ifdef PROFILE_STARTUP
-extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
+extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)

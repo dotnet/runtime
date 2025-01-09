@@ -11,6 +11,7 @@
     <!-- Suppress analyzer and trimming warnings as these are tests -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 </Project>

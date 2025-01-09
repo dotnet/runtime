@@ -237,9 +237,22 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--dump-dependencies":
-						dumpDependencies = true;
-						continue;
+					case "--dump-dependencies": {
+							dumpDependencies = true;
+
+							string? assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError (null, DiagnosticId.InvalidAssemblyName, assemblyName);
+									return -1;
+								}
+
+								context.TraceAssembly ??= new HashSet<string> ();
+								context.TraceAssembly.Add (assemblyName);
+							}
+
+							continue;
+						}
 
 					case "--dependencies-file-format":
 						if (!GetStringParam (token, out var dependenciesFileFormat))
@@ -604,6 +617,12 @@ namespace Mono.Linker
 
 							continue;
 						}
+
+					case "--preserve-symbol-paths":
+						if (!GetBoolParam (token, l => context.PreserveSymbolPaths = l))
+							return -1;
+
+						continue;
 
 					case "--version":
 						Version ();
@@ -1320,12 +1339,13 @@ namespace Mono.Linker
 
 			Console.WriteLine ();
 			Console.WriteLine ("Options");
-			Console.WriteLine ("  -d PATH             Specify additional directory to search in for assembly references");
-			Console.WriteLine ("  -reference FILE     Specify additional file location used to resolve assembly references");
-			Console.WriteLine ("  -b                  Update debug symbols for all modified files. Defaults to false");
-			Console.WriteLine ("  -out PATH           Specify the output directory. Defaults to 'output'");
-			Console.WriteLine ("  -h                  Lists all {0} options", _linker);
-			Console.WriteLine ("  @FILE               Read response file for more options");
+			Console.WriteLine ("  -d PATH                  Specify additional directory to search in for assembly references");
+			Console.WriteLine ("  -reference FILE          Specify additional file location used to resolve assembly references");
+			Console.WriteLine ("  -b                       Update debug symbols for all modified files. Defaults to false");
+			Console.WriteLine ("  --preserve-symbol-paths  Preserve debug header paths to pdb files. Defaults to false");
+			Console.WriteLine ("  -out PATH                Specify the output directory. Defaults to 'output'");
+			Console.WriteLine ("  -h                       Lists all {0} options", _linker);
+			Console.WriteLine ("  @FILE                    Read response file for more options");
 
 			Console.WriteLine ();
 			Console.WriteLine ("Actions");

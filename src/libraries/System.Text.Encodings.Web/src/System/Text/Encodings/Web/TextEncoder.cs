@@ -73,7 +73,7 @@ namespace System.Text.Encodings.Web
                 uint utf8lsb = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)nextScalarValue.Value);
                 do
                 {
-                    if (SpanUtility.IsValidIndex(utf8Destination, dstIdx))
+                    if ((uint)utf8Destination.Length > (uint)dstIdx)
                     {
                         utf8Destination[dstIdx++] = (byte)utf8lsb;
                     }
@@ -150,7 +150,7 @@ namespace System.Text.Encodings.Web
             ReadOnlySpan<char> remainingInput = value.Slice(indexOfFirstCharToEncode);
             ValueStringBuilder stringBuilder = new ValueStringBuilder(stackalloc char[EncodeStartingOutputBufferSize]);
 
-#if !NETCOREAPP
+#if !NET
             // Can't call string.Concat later in the method, so memcpy now.
             stringBuilder.Append(value.Slice(0, indexOfFirstCharToEncode));
 #endif
@@ -175,7 +175,7 @@ namespace System.Text.Encodings.Web
                 stringBuilder.Length -= destBuffer.Length - charsWrittenJustNow;
             } while (!remainingInput.IsEmpty);
 
-#if NETCOREAPP
+#if NET
             string retVal = string.Concat(value.Slice(0, indexOfFirstCharToEncode), stringBuilder.AsSpan());
             stringBuilder.Dispose();
             return retVal;

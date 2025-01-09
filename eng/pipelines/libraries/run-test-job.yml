@@ -104,9 +104,13 @@ jobs:
               arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
             env:
               Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
+        # This ensures that creds are set appropriately for all feeds in the config, and that the
+        # credential provider is installed.
+        - task: NuGetAuthenticate@1
 
       - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
-        - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+        - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
           displayName: Install Build Dependencies
 
       - template: /eng/pipelines/common/download-artifact-step.yml
