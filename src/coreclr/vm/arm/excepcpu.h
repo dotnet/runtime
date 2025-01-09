@@ -31,7 +31,7 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext);
 
 //
 // Retrieves the FaultingExceptionFrame* from the stack frame of
-// RedirectForThrowControl.
+// RedirectForThreadAbort.
 //
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (T_DISPATCHER_CONTEXT *pDispatcherContext);
 
