@@ -487,6 +487,7 @@
       <GroupBuildCmd Condition="'$(BuildTestsOnHelix)' == 'true'">$(GroupBuildCmd) "/p:BuildTestsOnHelix=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(MonoForceInterpreter)' == 'true'">$(GroupBuildCmd) "/p:MonoForceInterpreter=true"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(DevTeamProvisioning)' != ''">$(GroupBuildCmd) "/p:DevTeamProvisioning=$(DevTeamProvisioning)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(RunAOTCompilation)' != ''">$(GroupBuildCmd) "/p:RunAOTCompilation=$(RunAOTCompilation)"</GroupBuildCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
