@@ -1697,7 +1697,7 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
         public static Half MinNative(Half x, Half y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
