@@ -7936,12 +7936,26 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 
     switch (type)
     {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return gtNewIconNode(0xFF);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return gtNewIconNode(0xFFFF);
+        }
+
         case TYP_INT:
+        case TYP_UINT:
         {
             return gtNewIconNode(-1);
         }
 
         case TYP_LONG:
+        case TYP_ULONG:
         {
             return gtNewLconNode(-1);
         }
@@ -21132,10 +21146,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     std::swap(shiftCountDup, op2->AsHWIntrinsic()->Op(1));
                 }
 
-                maskAmountOp =
-                    varTypeIsByte(simdBaseType)
-                        ? gtNewOperNode(instrOp, TYP_INT, gtNewIconNode(0xFF), shiftCountDup)
-                        : gtNewOperNode(instrOp, simdBaseType, gtNewLconNode(0xFFFFFFFFFFFFFFFFULL), shiftCountDup);
+                maskAmountOp = gtNewOperNode(instrOp, genActualType(simdBaseType), gtNewAllBitsSetConNode(simdBaseType),
+                                             shiftCountDup);
             }
 
             if (op == GT_RSH)

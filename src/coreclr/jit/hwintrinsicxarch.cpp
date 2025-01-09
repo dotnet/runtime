@@ -3448,7 +3448,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (!compOpportunisticallyDependsOn(InstructionSet_EVEX) && !impStackTop(0).val->IsCnsIntOrI())
                 {
-                    // we need vpsraq to handle signed long with non-const shift amount, use software fallback
+                    // If vpsraq is available, we can use that. We can also trivially emulate arithmetic shift by const
+                    // amount. Otherwise, more work is required for long types, so we fall back to managed for now.
                     break;
                 }
             }
