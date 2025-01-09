@@ -66,6 +66,7 @@ namespace System.Net.Test.Common
                     // https://github.com/dotnet/runtime/issues/101115
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                     // return [RemoteEchoServer];
+                    return [];
                 }
                 return [
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
@@ -117,6 +118,7 @@ namespace System.Net.Test.Common
                     // https://github.com/dotnet/runtime/issues/101115
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                     // return new RemoteServer[] { RemoteHttp11Server };
+                    return [];
                 }
                 return new RemoteServer[]
                 {
