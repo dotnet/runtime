@@ -12,9 +12,9 @@ resources:
 variables:
   - template: /eng/common/templates-official/variables/pool-providers.yml
   - name: FrameworkVersion
-    value: 8.0
+    value: 8.x
   - name: TargetFramework
-    value: net$(FrameworkVersion)
+    value: net8.0
 
 extends:
   template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
