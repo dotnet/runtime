@@ -121,15 +121,7 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
-        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode)
-        {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
-
-            return Dictionary.TryGetValue(propertyName, out jsonNode);
-        }
+        public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) => TryGetPropertyValue(propertyName, out jsonNode, out _);
 
         /// <summary>
         ///   Gets the value associated with the specified property name.
