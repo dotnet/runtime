@@ -402,6 +402,7 @@ namespace System.Threading
         private bool _dispatchNormalPriorityWorkFirst;
         private bool _mayHaveHighPriorityWorkItems;
 
+#if !FEATURE_SINGLE_THREAD
         // SOS's ThreadPool command depends on the following names
         internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>();
         internal readonly ConcurrentQueue<object> highPriorityWorkItems = new ConcurrentQueue<object>();
@@ -416,6 +417,11 @@ namespace System.Threading
         // help with limiting the concurrency level.
         internal readonly ConcurrentQueue<object>[] _assignableWorkItemQueues =
             new ConcurrentQueue<object>[s_assignableWorkItemQueueCount];
+#else // FEATURE_SINGLE_THREAD
+        internal readonly Queue<object> workItems = new Queue<object>();
+        internal readonly Queue<object> highPriorityWorkItems = new Queue<object>();
+        internal readonly Queue<object>[] _assignableWorkItemQueues = new Queue<object>[s_assignableWorkItemQueueCount];
+#endif // FEATURE_SINGLE_THREAD
 
         private readonly LowLevelLock _queueAssignmentLock = new();
         private readonly int[] _assignedWorkItemQueueThreadCounts =
@@ -455,7 +461,11 @@ namespace System.Threading
         {
             for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
             {
+#if !FEATURE_SINGLE_THREAD
                 _assignableWorkItemQueues[i] = new ConcurrentQueue<object>();
+#else
+                _assignableWorkItemQueues[i] = new Queue<object>();
+#endif
             }
 
             RefreshLoggingEnabled();
@@ -560,7 +570,7 @@ namespace System.Threading
             // This queue is not assigned to any other worker threads. Move its work items to the global queue to prevent them
             // from being starved for a long duration.
             bool movedWorkItem = false;
-            ConcurrentQueue<object> queue = tl.assignedGlobalWorkItemQueue;
+            var queue = tl.assignedGlobalWorkItemQueue;
             while (_assignedWorkItemQueueThreadCounts[queueIndex] <= 0 && queue.TryDequeue(out object? workItem))
             {
                 workItems.Enqueue(workItem);
@@ -640,7 +650,7 @@ namespace System.Threading
                 }
                 else
                 {
-                    ConcurrentQueue<object> queue =
+                    var queue =
                         s_assignableWorkItemQueueCount > 0 && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null
                             ? tl.assignedGlobalWorkItemQueue
                             : workItems;
@@ -892,7 +902,7 @@ namespace System.Threading
             if (dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
             {
                 workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
-                ConcurrentQueue<object> queue =
+                var queue =
                     s_assignableWorkItemQueueCount > 0 ? tl.assignedGlobalWorkItemQueue : workQueue.workItems;
                 if (!queue.TryDequeue(out workItem) && s_assignableWorkItemQueueCount > 0)
                 {
@@ -1236,7 +1246,11 @@ namespace System.Threading
 
         public bool isProcessingHighPriorityWorkItems;
         public int queueIndex;
+#if !FEATURE_SINGLE_THREAD
         public ConcurrentQueue<object> assignedGlobalWorkItemQueue;
+#else
+        public Queue<object> assignedGlobalWorkItemQueue;
+#endif
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
@@ -1918,7 +1932,7 @@ namespace System.Threading
             }
 
             // Enumerate assignable global queues
-            foreach (ConcurrentQueue<object> queue in s_workQueue._assignableWorkItemQueues)
+            foreach (var queue in s_workQueue._assignableWorkItemQueues)
             {
                 foreach (object workItem in queue)
                 {
