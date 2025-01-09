@@ -1454,6 +1454,8 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (FAILED(hr=CreateTLSDirectory())) goto exit;
 
+    if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
+
     // Reserve a buffer for the meta-data
     DWORD metaDataSize;
     if (FAILED(hr=m_pEmitter->GetSaveSize(cssAccurate, &metaDataSize))) goto exit;
@@ -1504,8 +1506,6 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
         if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
     }
-
-    if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
 
     // set managed resource entry, if any
     if(m_pManifest && m_pManifest->m_dwMResSizeTotal)
