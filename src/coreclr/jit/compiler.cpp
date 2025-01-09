@@ -4808,7 +4808,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Enable IR checks
         activePhaseChecks |= PhaseChecks::CHECK_IR;
     };
-
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
 
     // GS security checks for unsafe buffers
