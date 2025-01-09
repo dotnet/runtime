@@ -281,6 +281,7 @@ struct REGDISPLAY
     inline PCODE GetIP() { return IP; }
     inline uintptr_t GetSP() { return SP; }
     inline uintptr_t GetFP() { return *pFP; }
+    inline PTR_uintptr_t GetReturnAddressRegisterLocation() { return pRA; }
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
