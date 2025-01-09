@@ -34,7 +34,7 @@ namespace System.Numerics.Tensors.Tests
             return totalLength;
         }
 
-        public delegate Tensor<T> PerformSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input);
+        public delegate Tensor<T> PerformSpanInSpanOut<T>(in ReadOnlyTensorSpan<T> input);
         public delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);
 
         public static IEnumerable<object[]> SpanInSpanOutData()
@@ -153,7 +153,7 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        public delegate Tensor<T> PerformTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> input2);
+        public delegate Tensor<T> PerformTwoSpanInSpanOut<T>(in ReadOnlyTensorSpan<T> input, in ReadOnlyTensorSpan<T> input2);
         public delegate void PerformCalculationTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
         public static IEnumerable<object[]> TwoSpanInSpanOutData()
         {
@@ -201,7 +201,7 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
-        public delegate T PerformTwoSpanInFloatOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> input2);
+        public delegate T PerformTwoSpanInFloatOut<T>(in ReadOnlyTensorSpan<T> input, in ReadOnlyTensorSpan<T> input2);
         public delegate T PerformCalculationTwoSpanInFloatOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {

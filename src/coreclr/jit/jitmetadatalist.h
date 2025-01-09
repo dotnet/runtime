@@ -35,6 +35,7 @@ JITMETADATAMETRIC(GCInfoBytes,                           int,              JIT_M
 JITMETADATAMETRIC(EHClauseCount,                         int,              0)
 JITMETADATAMETRIC(PhysicallyPromotedFields,              int,              0)
 JITMETADATAMETRIC(LoopsFoundDuringOpts,                  int,              0)
+JITMETADATAMETRIC(LoopsInverted,                         int,              0)
 JITMETADATAMETRIC(LoopsCloned,                           int,              0)
 JITMETADATAMETRIC(LoopsUnrolled,                         int,              0)
 JITMETADATAMETRIC(LoopAlignmentCandidates,               int,              0)

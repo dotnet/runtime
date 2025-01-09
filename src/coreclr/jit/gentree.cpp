@@ -17306,6 +17306,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
             comma->gtVNPair =
                 vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(sideEffectsSource->gtVNPair));
         }
+        comma->SetMorphed(this);
         return comma;
     }
     return tree;

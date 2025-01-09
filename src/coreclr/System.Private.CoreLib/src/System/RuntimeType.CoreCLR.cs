@@ -863,7 +863,7 @@ namespace System
                     }
                 }
 
-                private unsafe void PopulateRtFields(Filter filter,
+                private void PopulateRtFields(Filter filter,
                     ReadOnlySpan<IntPtr> fieldHandles, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
                     Debug.Assert(declaringType != null);

@@ -85,6 +85,15 @@ namespace ILLink.Shared
 
 		public static (DiagnosticId Id, string[] Arguments) GetDiagnosticForAnnotationMismatch (ValueWithDynamicallyAccessedMembers source, ValueWithDynamicallyAccessedMembers target, string missingAnnotations)
 		{
+			source = source switch {
+				// FieldValue and MethodReturnValue have only one diagnostic argument, so formatting throws when the source
+				// is a NullableValueWithDynamicallyAccessedMembers.
+				// The correct behavior here is to unwrap always, as the underlying type is the one that has the annotations,
+				// but it is a breaking change for other UnderlyingTypeValues.
+				// https://github.com/dotnet/runtime/issues/93800
+				NullableValueWithDynamicallyAccessedMembers { UnderlyingTypeValue: FieldValue or MethodReturnValue } nullable => nullable.UnderlyingTypeValue,
+				_ => source
+			};
 			DiagnosticId diagnosticId = (source, target) switch {
 				(MethodParameterValue maybeThisSource, MethodParameterValue maybeThisTarget) when maybeThisSource.IsThisParameter () && maybeThisTarget.IsThisParameter () => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter,
 				(MethodParameterValue maybeThis, MethodParameterValue) when maybeThis.IsThisParameter () => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter,

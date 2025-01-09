@@ -33,10 +33,6 @@
 #include "comtoclrcall.h"
 #endif // FEATURE_COMINTEROP
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #include "argdestination.h"
 
 #define CHECK_APP_DOMAIN    0
@@ -311,13 +307,9 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
 #ifndef DACCESS_COMPILE
     TADDR vptr = pFrame->GetVTablePtr();
     //
-    // Helper MethodFrame,GCFrame,DebuggerSecurityCodeMarkFrame are the most
-    // common frame types, explicitly check for them.
+    // Explicitly check for the most common frames.
     //
     if (vptr == HelperMethodFrame::GetMethodFrameVPtr())
-        return true;
-
-    if (vptr == DebuggerSecurityCodeMarkFrame::GetMethodFrameVPtr())
         return true;
 
     //
@@ -1116,27 +1108,6 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_INTERPRETER
-// Methods of InterpreterFrame.
-InterpreterFrame::InterpreterFrame(Interpreter* interp)
-  : Frame(), m_interp(interp)
-{
-    Push();
-}
-
-
-MethodDesc* InterpreterFrame::GetFunction()
-{
-    return m_interp->GetMethodDesc();
-}
-
-void InterpreterFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
-{
-    return m_interp->GCScanRoots(fn, sc);
-}
-
-#endif // FEATURE_INTERPRETER
-
 #if defined(_DEBUG) && !defined (DACCESS_COMPILE)
 
 struct IsProtectedByGCFrameStruct
@@ -1202,7 +1173,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
 #endif //!DACCESS_COMPILE
 
 #ifdef FEATURE_HIJACK
-
+#ifdef TARGET_X86
 void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1220,9 +1191,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
         switch (r)
         {
-#ifdef TARGET_X86
         case RT_Float: // Fall through
-#endif
         case RT_Scalar:
             // nothing to report
             break;
@@ -1248,7 +1217,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
         regNo++;
     } while (moreRegisters);
 }
-
+#endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
 void ProtectByRefsFrame::GcScanRoots(promote_func *fn, ScanContext *sc)
@@ -1787,7 +1756,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
     WRAPPER_NO_CONTRACT;
 
 #ifndef DACCESS_COMPILE
-    InsureInit(NULL);
+    EnsureInit(NULL);
     return m_pMD;
 #else
     if (m_MachState.isValid())
@@ -1813,7 +1782,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //
 //
 
-BOOL HelperMethodFrame::InsureInit(MachState * unwindState)
+BOOL HelperMethodFrame::EnsureInit(MachState * unwindState)
 {
     CONTRACTL {
         NOTHROW;
@@ -1863,7 +1832,7 @@ BOOL HelperMethodFrame::InsureInit(MachState * unwindState)
             // result of failing to take a reader lock (because we told it not to yield,
             // but the writer lock was already held).  Since we've not yet updated
             // m_MachState, this HelperMethodFrame will still be considered not fully
-            // initialized (so a future call into InsureInit() will attempt to complete
+            // initialized (so a future call into EnsureInit() will attempt to complete
             // initialization again).
             //
             // Note that, in DAC builds, the contract with LazyMachState::unwindLazyState
