@@ -20,8 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.WebAssembly.Threading\ref\System.Threading.WebAssembly.Threading.csproj;
                                $(LibrariesProjectRoot)System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj;
-                               $(LibrariesProjectRoot)System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj;
-                               $(LibrariesProjectRoot)System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj"
+                               $(LibrariesProjectRoot)System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj"
                       Pack="true"
                       PrivateAssets="all"
                       Private="true"

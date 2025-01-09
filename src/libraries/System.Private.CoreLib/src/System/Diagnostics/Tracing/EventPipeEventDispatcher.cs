@@ -131,6 +131,11 @@ namespace System.Diagnostics.Tracing
 
         private void StartDispatchTask(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
         {
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
             Debug.Assert(sessionID != 0);
 
