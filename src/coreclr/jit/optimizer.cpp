@@ -2020,6 +2020,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
+    bool           haveProfileWeights        = false;
     bool           allProfileWeightsAreValid = false;
     weight_t const weightBlock               = block->bbWeight;
     weight_t const weightTest                = bTest->bbWeight;
@@ -2039,6 +2040,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             {
                 return true;
             }
+
+            haveProfileWeights = true;
 
             // We generally expect weightTest > weightTop
             //
@@ -2203,25 +2206,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // Flag the block that received the copy as potentially having various constructs.
     bNewCond->CopyFlags(bTest, BBF_COPY_PROPAGATE);
 
-    // Fix flow and profile
-    //
-    bNewCond->inheritWeight(block);
-
-    if (allProfileWeightsAreValid)
-    {
-        weight_t const delta = weightTest - weightTop;
-
-        // If there is just one outside edge incident on bTest, then ideally delta == block->bbWeight.
-        // But this might not be the case if profile data is inconsistent.
-        //
-        // And if bTest has multiple outside edges we want to account for the weight of them all.
-        //
-        if (delta > block->bbWeight)
-        {
-            bNewCond->setBBProfileWeight(delta);
-        }
-    }
-
     // Update pred info
     //
     // For now we set the likelihood of the newCond branch to match
@@ -2245,6 +2229,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     fgRedirectTargetEdge(block, bNewCond);
     assert(block->JumpsToNext());
 
+    // Fix flow and profile
+    //
+    bNewCond->inheritWeight(block);
+
+    if (haveProfileWeights)
+    {
+        bTest->decreaseBBProfileWeight(block->bbWeight);
+    }
+
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
     // `bNewCond`, but leave other `bTest` predecessors still pointing to `bTest`, when we eventually
@@ -2256,8 +2249,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     unsigned const loopFirstNum  = bTop->bbNum;
     unsigned const loopBottomNum = bTest->bbNum;
-    for (BasicBlock* const predBlock : bTest->PredBlocksEditing())
+    for (FlowEdge* const predEdge : bTest->PredEdgesEditing())
     {
+        BasicBlock* const predBlock = predEdge->getSourceBlock();
         unsigned const bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
         {
@@ -2278,6 +2272,14 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             case BBJ_SWITCH:
             case BBJ_EHFINALLYRET:
                 fgReplaceJumpTarget(predBlock, bTest, bNewCond);
+
+                // Redirect profile weight, too
+                if (haveProfileWeights)
+                {
+                    const weight_t edgeWeight = predEdge->getLikelyWeight();
+                    bNewCond->increaseBBProfileWeight(edgeWeight);
+                    bTest->decreaseBBProfileWeight(edgeWeight);
+                }
                 break;
 
             case BBJ_EHCATCHRET:
@@ -2289,41 +2291,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 assert(!"Unexpected bbKind for predecessor block");
                 break;
         }
-    }
-
-    // If we have profile data for all blocks and we know that we are cloning the
-    // `bTest` block into `bNewCond` and thus changing the control flow from `block` so
-    // that it no longer goes directly to `bTest` anymore, we have to adjust
-    // various weights.
-    //
-    if (allProfileWeightsAreValid)
-    {
-        // Update the weight for bTest. Normally, this reduces the weight of the bTest, except in odd
-        // cases of stress modes with inconsistent weights.
-        //
-        JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
-                weightTop);
-        bTest->inheritWeight(bTop);
-
-#ifdef DEBUG
-        // If we're checking profile data, see if profile for the two target blocks is consistent.
-        //
-        if ((activePhaseChecks & PhaseChecks::CHECK_PROFILE) == PhaseChecks::CHECK_PROFILE)
-        {
-            if (JitConfig.JitProfileChecks() > 0)
-            {
-                const ProfileChecks checks        = (ProfileChecks)JitConfig.JitProfileChecks();
-                const bool          nextProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetFalseTarget(), checks);
-                const bool          jumpProfileOk = fgDebugCheckIncomingProfileData(bNewCond->GetTrueTarget(), checks);
-
-                if (hasFlag(checks, ProfileChecks::RAISE_ASSERT))
-                {
-                    assert(nextProfileOk);
-                    assert(jumpProfileOk);
-                }
-            }
-        }
-#endif // DEBUG
     }
 
 #ifdef DEBUG
