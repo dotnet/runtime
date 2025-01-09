@@ -22,19 +22,8 @@
 
   <ItemGroup>
     <AdditionalRuntimeIdentifiers Include="$(AdditionalRuntimeIdentifiers)" Imports="$(AdditionalRuntimeIdentifierParent)" />
-  </ItemGroup>
-
-  <!-- Workaround for https://github.com/dotnet/sdk/pull/45566: Ensure that the OS portion of the RID we're building for is part of the RID graph as a separate RID. -->
-  <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
-    <OutputRidOS Condition="$(OutputRID.Contains('-'))">$(OutputRID.Split('-')[0])</OutputRidOS>
-    <AdditionalRidParentOS Condition="$(AdditionalRuntimeIdentifierParent.Contains('-'))">$(AdditionalRuntimeIdentifierParent.Split('-')[0])</AdditionalRidParentOS>
-    <AdditionalRidParentOS Condition="!$(AdditionalRuntimeIdentifierParent.Contains('-'))">$(AdditionalRuntimeIdentifierParent)</AdditionalRidParentOS>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
     <!-- When building from source, ensure the RID we're building for is part of the RID graph. -->
-    <AdditionalRuntimeIdentifiers Include="$(OutputRidOS)" Imports="$(AdditionalRidParentOS)" Condition="'$(OutputRidOS)' != ''" />
-    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent);$(OutputRidOS)" />
+    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>
