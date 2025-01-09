@@ -26,8 +26,6 @@ struct vxsort_machine_traits {
     typedef T TV;
     typedef T TMASK;
     typedef T TPACK;
-    typedef alignment_hint<sizeof(TV)> AH;
-    static const int N = sizeof(TV) / sizeof(T);
 
     static constexpr bool supports_compress_writes() {
         static_assert(sizeof(TV) != sizeof(TV), "func must be specialized!");
