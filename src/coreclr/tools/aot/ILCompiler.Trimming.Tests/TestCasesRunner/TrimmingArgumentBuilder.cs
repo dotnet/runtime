@@ -48,6 +48,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Options.FeatureSwitches.Add ("System.Text.Encoding.EnableUnsafeUTF7Encoding", false);
 			Options.FeatureSwitches.Add ("System.Diagnostics.Tracing.EventSource.IsSupported", false);
 			Options.FeatureSwitches.Add ("System.Globalization.Invariant", true);
+			Options.FeatureSwitches.Add ("System.TimeZoneInfo.Invariant", true);
 			Options.FeatureSwitches.Add ("System.Resources.UseSystemResourceKeys", true);
 
 			Options.FrameworkCompilation = false;

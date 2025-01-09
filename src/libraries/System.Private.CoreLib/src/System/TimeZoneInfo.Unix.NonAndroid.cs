@@ -147,6 +147,11 @@ namespace System
         /// </remarks>
         private static IEnumerable<string> GetTimeZoneIds()
         {
+            if (Invariant)
+            {
+                return Array.Empty<string>();
+            }
+
             try
             {
                 var fileName = Path.Combine(GetTimeZoneDirectory(), TimeZoneFileName);
@@ -469,6 +474,11 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
         private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
         {
+            if (Invariant)
+            {
+                rawData = null;
+                return false;
+            }
             IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
             if (bytes == IntPtr.Zero)
             {
@@ -504,6 +514,10 @@ namespace System
         {
             rawData = null;
             id = null;
+            if (Invariant)
+            {
+                return false;
+            }
             string? tzVariable = GetTzEnvironmentVariable();
 
             // If the env var is null, on iOS/tvOS, grab the default tz from the device.
@@ -573,6 +587,11 @@ namespace System
         /// </summary>
         private static TimeZoneInfo GetLocalTimeZoneFromTzFile()
         {
+            if (Invariant)
+            {
+                return Utc;
+            }
+
             byte[]? rawData;
             string? id;
             if (TryGetLocalTzFile(out rawData, out id))
