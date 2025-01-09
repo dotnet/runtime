@@ -35,13 +35,11 @@ class AsmOffsets
 #define PLAT_ASM_OFFSET(offset, cls, member) \
     static_assert(offsetof(cls, member) == 0x##offset, "Bad asm offset for '" #cls "." #member "'. Actual offset: " OFFSET_STRING(cls, member));
 
-#define PLAT_ASM_SIZEOF(size,   cls        ) \
-    static_assert((sizeof(cls) == 0x##size) || (sizeof(cls) > 0x##size), "Bad asm size for '" #cls "', the actual size is smaller than 0x" #size "."); \
-    static_assert((sizeof(cls) == 0x##size) || (sizeof(cls) < 0x##size), "Bad asm size for '" #cls "', the actual size is larger than 0x" #size ".");
+#define PLAT_ASM_SIZEOF(size, cls) \
+    static_assert(sizeof(cls) == 0x##size, "Bad asm size for '" #cls "'. Actual size: " OFFSET_STRING(cls, 0x##size));
 
 #define PLAT_ASM_CONST(constant, expr) \
-    static_assert(((expr) == 0x##constant) || ((expr) > 0x##constant), "Bad asm constant for '" #expr "', the actual value is smaller than 0x" #constant "."); \
-    static_assert(((expr) == 0x##constant) || ((expr) < 0x##constant), "Bad asm constant for '" #expr "', the actual value is larger than 0x" #constant ".");
+    static_assert((expr) == 0x##constant, "Bad asm constant for '" #expr "'. Actual value: " OFFSET_STRING(expr, 0x##constant));
 
 #include "AsmOffsets.h"
 
