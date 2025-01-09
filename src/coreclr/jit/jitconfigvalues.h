@@ -59,7 +59,7 @@ CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitCloneLoops, "JitCloneLoops", 1)         // If 0, don't clone. Otherwise clone loops for optimizations.
-CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 0) // If 0, don't clone loops containing EH regions
+CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 1) // If 0, don't clone loops containing EH regions
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     // If 0, don't clone loops based on
                                                                               // invariant type/method address tests
 RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with no more

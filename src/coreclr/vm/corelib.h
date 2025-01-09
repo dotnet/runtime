@@ -341,6 +341,8 @@ DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,              
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
+DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLE,GetRuntimeTypeFromHandle,  SM_IntPtr_RetRuntimeType)
+DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLEMAYBENULL,GetRuntimeTypeFromHandleMaybeNull,  SM_IntPtr_RetRuntimeType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
@@ -929,7 +931,7 @@ DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
-DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,                  SM_RetVoid)
+DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
