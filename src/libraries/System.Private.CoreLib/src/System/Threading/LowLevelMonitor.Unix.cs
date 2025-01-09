@@ -46,6 +46,8 @@ namespace System.Threading
 
         private bool WaitCore(int timeoutMilliseconds)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeoutMilliseconds >= -1);
 
             if (timeoutMilliseconds < 0)

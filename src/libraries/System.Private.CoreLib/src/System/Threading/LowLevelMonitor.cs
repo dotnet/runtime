@@ -87,6 +87,7 @@ namespace System.Threading
 
         public void Wait()
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
             ResetOwnerThread();
             WaitCore();
             SetOwnerThreadToCurrent();
@@ -94,6 +95,7 @@ namespace System.Threading
 
         public bool Wait(int timeoutMilliseconds)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
             Debug.Assert(timeoutMilliseconds >= -1);
 
             ResetOwnerThread();

@@ -166,13 +166,6 @@ namespace System.Threading
         internal static bool IsThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart()
-        {
-            if (IsThreadStartSupported)
-                return;
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
@@ -199,10 +192,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
-            ThrowIfNoThreadStart();
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
 
             StartHelper? startHelper = _startHelper;
 
@@ -245,7 +235,8 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart();
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)

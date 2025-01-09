@@ -186,7 +186,9 @@ namespace System.Threading
         /// </summary>
         /// <param name="initialState">Whether the event is set initially or not.</param>
         /// <param name="spinCount">The spin count that decides when the event will block.</param>
+#pragma warning disable IDE0060 // Remove unused parameter
         private void Initialize(bool initialState, int spinCount)
+#pragma warning restore IDE0060 // Remove unused parameter
         {
             m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
             // the spinCount argument has been validated by the ctors.
@@ -350,9 +352,8 @@ namespace System.Threading
 #endif
         public void Wait()
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Wait(Timeout.Infinite, CancellationToken.None);
         }
 
@@ -484,14 +485,13 @@ namespace System.Threading
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
 #endif

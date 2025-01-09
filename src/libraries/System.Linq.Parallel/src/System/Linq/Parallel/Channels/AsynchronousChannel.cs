@@ -324,6 +324,10 @@ namespace System.Linq.Parallel
 
         private void WaitUntilNonFull()
         {
+#if !FEATURE_WASM_MANAGED_THREADS
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#endif
+
             Debug.Assert(_producerEvent != null);
 
             // We must loop; sometimes the producer event will have been set

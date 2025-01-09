@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework Condition="'$(WasmEnableThreads)' != 'true'">$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFrameworks Condition="'$(WasmEnableThreads)' == 'true'">$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <FeatureWasmManagedThreads Condition="'$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
     <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
   </PropertyGroup>

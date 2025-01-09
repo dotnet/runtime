@@ -91,6 +91,8 @@ namespace System.Threading
         {
             get
             {
+                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
                 ThrowIfDisposed();
 
                 // Return the handle if it was already allocated.
@@ -1167,6 +1169,7 @@ namespace System.Threading
             /// <summary>Enters the lock for this instance.  The current thread must not be holding the lock, but that is not validated.</summary>
             public void EnterLock()
             {
+#if !FEATURE_SINGLE_THREAD
                 ref bool value = ref _locked;
                 if (Interlocked.Exchange(ref value, true))
                 {
@@ -1179,6 +1182,9 @@ namespace System.Threading
                         do { sw.SpinOnce(); } while (Interlocked.Exchange(ref value, true));
                     }
                 }
+#else
+                _locked = true;
+#endif
             }
 
             /// <summary>Exits the lock for this instance.  The current thread must be holding the lock, but that is not validated.</summary>

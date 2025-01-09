@@ -77,6 +77,10 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void AcquireReaderLock(int millisecondsTimeout)
         {
+#if !FEATURE_WASM_MANAGED_THREADS
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#endif
+
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             ThreadLocalLockEntry threadLocalLockEntry = ThreadLocalLockEntry.GetOrCreateCurrent(_lockID);

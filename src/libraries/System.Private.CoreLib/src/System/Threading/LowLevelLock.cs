@@ -13,13 +13,21 @@ namespace System.Threading
     /// </summary>
     internal sealed class LowLevelLock : IDisposable
     {
+        private const int LockedMask = 1;
+
+#if !FEATURE_SINGLE_THREAD
         private const int SpinCount = 8;
         private const int SpinSleep0Threshold = 4;
+        private static readonly Func<object, bool> s_spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
 
-        private const int LockedMask = 1;
         private const int WaiterCountIncrement = 2;
 
-        private static readonly Func<object, bool> s_spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
+        // Indicates whether a thread has been signaled, but has not yet been released from the wait. See SignalWaiter. Reads
+        // and writes must occur while _monitor is locked.
+        private bool _isAnyWaitingThreadSignaled;
+
+        private LowLevelSpinWaiter _spinWaiter;
+#endif
 
         // Layout:
         //   - Bit 0: 1 if the lock is locked, 0 otherwise
@@ -30,16 +38,13 @@ namespace System.Threading
         private Thread? _ownerThread;
 #endif
 
-        // Indicates whether a thread has been signaled, but has not yet been released from the wait. See SignalWaiter. Reads
-        // and writes must occur while _monitor is locked.
-        private bool _isAnyWaitingThreadSignaled;
-
-        private LowLevelSpinWaiter _spinWaiter;
         private LowLevelMonitor _monitor;
 
         public LowLevelLock()
         {
+#if !FEATURE_SINGLE_THREAD
             _spinWaiter = default(LowLevelSpinWaiter);
+#endif
             _monitor.Initialize();
         }
 
@@ -114,6 +119,7 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
+#if !FEATURE_SINGLE_THREAD
             // A common case is that there are no waiters, so hope for that and try to acquire the lock
             int state = Interlocked.CompareExchange(ref _state, LockedMask, 0);
             if (state == 0 || TryAcquire_NoFastPath(state))
@@ -121,9 +127,18 @@ namespace System.Threading
                 SetOwnerThreadToCurrent();
                 return true;
             }
+#else
+            if (_state == 0)
+            {
+                _state = LockedMask;
+                SetOwnerThreadToCurrent();
+                return true;
+            }
+#endif
             return false;
         }
 
+#if !FEATURE_SINGLE_THREAD
         private bool TryAcquire_NoFastPath(int state)
         {
             // The lock may be available, but there may be waiters. This thread could acquire the lock in that case. Acquiring
@@ -140,6 +155,7 @@ namespace System.Threading
             var thisRef = (LowLevelLock)state;
             return thisRef.TryAcquire_NoFastPath(thisRef._state);
         }
+#endif
 
         public void Acquire()
         {
@@ -151,6 +167,9 @@ namespace System.Threading
 
         private void WaitAndAcquire()
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
+#if !FEATURE_SINGLE_THREAD
             VerifyIsNotLocked();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
@@ -188,6 +207,7 @@ namespace System.Threading
             }
 
             _monitor.Release();
+#endif
 
             Debug.Assert((_state & LockedMask) != 0);
             SetOwnerThreadToCurrent();
@@ -198,12 +218,17 @@ namespace System.Threading
             Debug.Assert((_state & LockedMask) != 0);
             ResetOwnerThread();
 
+#if !FEATURE_SINGLE_THREAD
             if (Interlocked.Decrement(ref _state) != 0)
             {
                 SignalWaiter();
             }
+#else
+            _state--;
+#endif
         }
 
+#if !FEATURE_SINGLE_THREAD
         private void SignalWaiter()
         {
             // Since the lock was already released by the caller, there are no guarantees on the state at this point. For
@@ -229,5 +254,6 @@ namespace System.Threading
 
             _monitor.Release();
         }
+#endif
     }
 }

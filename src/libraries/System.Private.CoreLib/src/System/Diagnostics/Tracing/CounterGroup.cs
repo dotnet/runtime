@@ -148,6 +148,8 @@ namespace System.Diagnostics.Tracing
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Debug.Assert(pollingIntervalInSeconds > 0);
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)

@@ -536,6 +536,10 @@ namespace System.Threading
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+#if !FEATURE_WASM_MANAGED_THREADS
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#endif
+
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             ObjectDisposedException.ThrowIf(_disposed, this);

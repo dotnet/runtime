@@ -81,7 +81,7 @@ namespace Tests.System
                         Stopwatch.GetElapsedTime(startingTimestamp, endingTimestamp);
 #endif // NETFRAMEWORK
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void TestSystemTimestamp()
         {
             long timestamp1 = Stopwatch.GetTimestamp();

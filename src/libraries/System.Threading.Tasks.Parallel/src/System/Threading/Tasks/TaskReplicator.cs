@@ -45,6 +45,10 @@ namespace System.Threading.Tasks
 
             public void Wait()
             {
+#if !FEATURE_WASM_MANAGED_THREADS
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#endif
+
                 //
                 // We wait in a loop because each Task might queue another Task, and so on.
                 // It's entirely possible for multiple Tasks to be queued without this loop seeing them,

@@ -85,7 +85,8 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            Thread.ThrowIfNoThreadStart();
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             return PortableThreadPool.RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, flowExecutionContext);
         }
 

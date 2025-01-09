@@ -320,6 +320,10 @@ namespace System.Threading
 #endif
         public long AddParticipants(int participantCount)
         {
+#if !FEATURE_WASM_MANAGED_THREADS
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#endif
+
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(participantCount);

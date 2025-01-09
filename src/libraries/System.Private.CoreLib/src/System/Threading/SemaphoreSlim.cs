@@ -174,9 +174,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             // Call wait with infinite timeout
             Wait(Timeout.Infinite, CancellationToken.None);
         }
@@ -194,9 +193,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             // Call wait with infinite timeout
             Wait(Timeout.Infinite, cancellationToken);
         }
@@ -216,9 +214,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
@@ -250,9 +247,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
@@ -278,9 +274,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             return Wait(millisecondsTimeout, CancellationToken.None);
         }
 
@@ -299,9 +294,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             CheckDispose();
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
@@ -451,9 +445,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
-#if TARGET_WASI
-            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
-#endif
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             int remainingWaitMilliseconds = Timeout.Infinite;
 
             // Wait on the monitor as long as the count is zero

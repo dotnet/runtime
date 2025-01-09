@@ -312,7 +312,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -375,7 +375,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Test_EventSourceCreatedEvents_AfterListener()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

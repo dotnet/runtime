@@ -99,6 +99,8 @@ namespace System.Threading
 
         public virtual bool WaitOne(int millisecondsTimeout)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             return WaitOneNoCheck(millisecondsTimeout);
@@ -110,6 +112,8 @@ namespace System.Threading
             object? associatedObject = null,
             NativeRuntimeEventSource.WaitHandleWaitSourceMap waitSource = NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Debug.Assert(millisecondsTimeout >= -1);
 
             // The field value is modifiable via the public <see cref="WaitHandle.SafeWaitHandle"/> property, save it locally
@@ -296,6 +300,8 @@ namespace System.Threading
 
         private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             if (waitHandles.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyWaithandleArray, nameof(waitHandles));
@@ -359,6 +365,8 @@ namespace System.Threading
 
         private static int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             // - Callers are expected to manage the lifetimes of the safe wait handles such that they would not expire during
             //   this wait
             // - If the safe wait handle that satisfies the wait is an abandoned mutex, the wait result would reflect that and

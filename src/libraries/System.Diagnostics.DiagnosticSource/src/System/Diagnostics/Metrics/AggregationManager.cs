@@ -156,6 +156,10 @@ namespace System.Diagnostics.Metrics
 
         public void Start()
         {
+#if OS_ISBROWSER_SUPPORT && !FEATURE_WASM_MANAGED_THREADS
+            if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) throw new PlatformNotSupportedException();
+#endif
+
             // if already started or already stopped we can't be started again
             Debug.Assert(_collectThread == null && !_cts.IsCancellationRequested);
             Debug.Assert(CollectionPeriod.TotalSeconds >= MinCollectionTimeSecs);

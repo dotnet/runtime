@@ -85,7 +85,11 @@ namespace System.Threading
         /// depends on the likelihood of the spin being successful and how long the wait would be but those are not accounted
         /// for here.
         /// </remarks>
+#if !FEATURE_SINGLE_THREAD
         internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
+#else
+        internal const int SpinCountforSpinBeforeWait = 0;
+#endif
 
         // The number of times we've spun already.
         private int _count;
@@ -124,7 +128,9 @@ namespace System.Threading
         /// </remarks>
         public void SpinOnce()
         {
+#if !FEATURE_SINGLE_THREAD
             SpinOnceCore(DefaultSleep1Threshold);
+#endif
         }
 
         /// <summary>
@@ -143,6 +149,7 @@ namespace System.Threading
         /// </remarks>
         public void SpinOnce(int sleep1Threshold)
         {
+#if !FEATURE_SINGLE_THREAD
             ArgumentOutOfRangeException.ThrowIfLessThan(sleep1Threshold, -1);
 
             if (sleep1Threshold >= 0 && sleep1Threshold < YieldThreshold)
@@ -151,6 +158,7 @@ namespace System.Threading
             }
 
             SpinOnceCore(sleep1Threshold);
+#endif
         }
 
         private void SpinOnceCore(int sleep1Threshold)

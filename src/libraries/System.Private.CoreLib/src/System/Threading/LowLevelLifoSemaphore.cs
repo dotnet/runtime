@@ -39,6 +39,8 @@ namespace System.Threading
 
         public bool Wait(int timeoutMs, bool spinWait)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Debug.Assert(timeoutMs >= -1);
 
 #if FEATURE_WASM_MANAGED_THREADS

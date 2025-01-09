@@ -392,6 +392,8 @@ namespace System.Threading
                 spinCount = maxSpinCount;
             }
 
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException(); // this should not happen, but it helps to trim the code below on ST platforms
+
             for (short spinIndex = 0; ;)
             {
                 LowLevelSpinWaiter.Wait(spinIndex, SpinSleep0Threshold, isSingleProcessor: false);
@@ -480,6 +482,8 @@ namespace System.Threading
                 // Lock was acquired and a waiter was not registered
                 goto Locked;
             }
+
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException(); // this should not happen, but it helps to trim the code below on ST platforms
 
             // Lock was not acquired and a waiter was registered. All following paths need to unregister the waiter, including
             // exceptional paths.

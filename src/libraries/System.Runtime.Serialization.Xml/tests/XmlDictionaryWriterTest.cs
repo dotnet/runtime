@@ -115,7 +115,7 @@ public static class XmlDictionaryWriterTest
 
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void XmlBaseWriter_WriteStartEndElementAsync()
     {
         string actual;
@@ -224,7 +224,7 @@ public static class XmlDictionaryWriterTest
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public static void StreamProvoiderTest()
     {
         List<string> ReaderWriterType = new List<string>

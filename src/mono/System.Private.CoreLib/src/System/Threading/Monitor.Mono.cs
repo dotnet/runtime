@@ -76,6 +76,8 @@ namespace System.Threading
 #endif
         public static bool Wait(object obj, int millisecondsTimeout)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             ArgumentNullException.ThrowIfNull(obj);
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();
@@ -122,6 +124,8 @@ namespace System.Threading
 
         private static bool ObjWait(int millisecondsTimeout, object obj)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             if (millisecondsTimeout < 0 && millisecondsTimeout != (int)Timeout.Infinite)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout));
             if (!ObjectHeader.HasOwner(obj))

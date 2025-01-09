@@ -333,6 +333,8 @@ namespace System.Threading
             bool interruptible = true,
             bool prioritize = false)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Debug.Assert(waitableObject != null);
             Debug.Assert(timeoutMilliseconds >= -1);
 
@@ -344,6 +346,8 @@ namespace System.Threading
             bool waitForAll,
             int timeoutMilliseconds)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             Debug.Assert(waitHandles.Length > 0);
             Debug.Assert(waitHandles.Length <= WaitHandle.MaxWaitHandles);
             Debug.Assert(timeoutMilliseconds >= -1);

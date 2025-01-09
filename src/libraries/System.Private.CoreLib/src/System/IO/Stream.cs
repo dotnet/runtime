@@ -203,6 +203,8 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback? callback, object? state,
             bool serializeAsynchronously, bool apm)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             ValidateBufferArguments(buffer, offset, count);
             if (!CanRead)
             {
@@ -477,6 +479,8 @@ namespace System.IO
             byte[] buffer, int offset, int count, AsyncCallback? callback, object? state,
             bool serializeAsynchronously, bool apm)
         {
+            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+
             ValidateBufferArguments(buffer, offset, count);
             if (!CanWrite)
             {

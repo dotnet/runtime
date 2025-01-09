@@ -335,7 +335,7 @@ namespace System.Diagnostics.Metrics
             {
                 try
                 {
-#if OS_ISBROWSER_SUPPORT
+#if OS_ISBROWSER_SUPPORT && !FEATURE_WASM_MANAGED_THREADS
                     if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
                         // AggregationManager uses a dedicated thread to avoid losing data for apps experiencing threadpool starvation
