@@ -651,7 +651,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(pUnwoundState);
+        EnsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
         pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
@@ -1098,7 +1098,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._cacheMask           = CALL_STUB_CACHE_MASK * sizeof(void*);
 
     _ASSERTE(resolveWorkerTarget == (PCODE)ResolveWorkerChainLookupAsmStub);
-    _ASSERTE(patcherTarget == NULL);
+    _ASSERTE(patcherTarget == (PCODE)NULL);
 }
 
 Stub *GenerateInitPInvokeFrameHelper()

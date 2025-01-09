@@ -91,9 +91,6 @@ bool GcInfoDecoder::PredecodeFatHeader(int remainingFlags)
     int numFlagBits = (m_Version == 1) ? GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GC_INFO_FLAGS_BIT_SIZE;
     m_headerFlags = (GcInfoHeaderFlags)m_Reader.Read(numFlagBits);
 
-    // skip over the unused return kind.
-    m_Reader.Read(SIZE_OF_RETURN_KIND_IN_FAT_HEADER);
-
     remainingFlags &= ~DECODE_VARARG;
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     remainingFlags &= ~DECODE_HAS_TAILCALLS;
@@ -299,9 +296,6 @@ GcInfoDecoder::GcInfoDecoder(
             m_StackBaseRegister = NO_STACK_BASE_REGISTER;
         }
 
-        // skip over the unused return kind.
-        m_Reader.Read(SIZE_OF_RETURN_KIND_IN_SLIM_HEADER);
-
         remainingFlags &= ~DECODE_VARARG;
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         remainingFlags &= ~DECODE_HAS_TAILCALLS;
@@ -370,11 +364,7 @@ GcInfoDecoder::GcInfoDecoder(
     {
         if(m_NumSafePoints)
         {
-            // Safepoints are encoded with a -1 adjustment
-            // DECODE_GC_LIFETIMES adjusts the offset accordingly, but DECODE_INTERRUPTIBILITY does not
-            // adjust here
-            UINT32 offset = flags & DECODE_INTERRUPTIBILITY ? m_InstructionOffset - 1 : m_InstructionOffset;
-            m_SafePointIndex = FindSafePoint(offset);
+            m_SafePointIndex = FindSafePoint(m_InstructionOffset);
         }
     }
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
@@ -450,10 +440,6 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    codeOffset--;
-#endif
     size_t savedPos = m_Reader.GetCurrentPos();
     UINT32 safePointIndex = FindSafePoint(codeOffset);
     m_Reader.SetCurrentPos(savedPos);
@@ -500,32 +486,26 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const size_t savedPos = m_Reader.GetCurrentPos();
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    if ((breakOffset & 1) != 0)
-#endif
+    const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+    UINT32 linearSearchStart = 0;
+    UINT32 linearSearchEnd = m_NumSafePoints;
+    if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
     {
-        const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
-        UINT32 linearSearchStart = 0;
-        UINT32 linearSearchEnd = m_NumSafePoints;
-        if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
+        linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+    }
+
+    for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+    {
+        UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+        if (spOffset == normBreakOffset)
         {
-            linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+            result = i;
+            break;
         }
 
-        for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+        if (spOffset > normBreakOffset)
         {
-            UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-            if (spOffset == normBreakOffset)
-            {
-                result = i;
-                break;
-            }
-
-            if (spOffset > normBreakOffset)
-            {
-                break;
-            }
+            break;
         }
     }
 
@@ -546,13 +526,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
     for(UINT32 i = 0; i < m_NumSafePoints; i++)
     {
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // Safepoints are encoded with a -1 adjustment
-        offset--;
-#endif
-
+        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset);
         pCallback(this, offset, hCallback);
     }
 }
@@ -714,15 +688,6 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
-
-    //
-    // If this is a non-leaf frame and we are executing a call, the unwinder has given us the PC
-    //  of the call instruction. We should adjust it to the PC of the instruction after the call in order to
-    //  obtain transition information for scratch slots. However, we always assume scratch slots to be
-    //  dead for non-leaf frames (except for ResumableFrames), so we don't need to adjust the PC.
-    // If this is a non-leaf frame and we are not executing a call (i.e.: a fault occurred in the function),
-    //  then it would be incorrect to adjust the PC
-    //
 
     _ASSERTE(GC_SLOT_INTERIOR == GC_CALL_INTERIOR);
     _ASSERTE(GC_SLOT_PINNED == GC_CALL_PINNED);

@@ -213,18 +213,9 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
 #ifdef TARGET_ARM
     // Ensure that code offset doesn't have the Thumb bit set. We need
-    // it to be aligned to instruction start to make the !isActiveStackFrame
-    // branch below work.
+    // it to be aligned to instruction start
     ASSERT(((uintptr_t)codeOffset & 1) == 0);
 #endif
-
-    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
-
-    if (!isActiveStackFrame && !executionAborted)
-    {
-        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
-        codeOffset--;
-    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
@@ -232,25 +223,8 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         codeOffset
     );
 
-    if (isActiveStackFrame)
-    {
-        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
-        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
-        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
-        //           does not seem possible.
-        if (!decoder.HasInterruptibleRanges())
-        {
-            decoder = GcInfoDecoder(
-                GCInfoToken(gcInfo),
-                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-                codeOffset - 1
-            );
-
-            assert(decoder.IsSafePoint());
-        }
-    }
-
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
     if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
@@ -1369,43 +1343,23 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    PTR_uintptr_t pLR = pRegisterSet->pLR;
+    PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
     }
 
-    if (pRegisterSet->pLR == pLR)
+    if (pRegisterSet->GetReturnAddressRegisterLocation() == oldLocation)
     {
         // This is the case when we are either:
         //
-        // 1) In a leaf method that does not push LR on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed LR on stack
-        //    or has LR already popped off.
+        // 1) In a leaf method that does not push return address register on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed return address register on stack
+        //    or has return address register already popped off.
         return false;
     }
 
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
-#else
-    PTR_uintptr_t pRA = pRegisterSet->pRA;
-    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
-    {
-        return false;
-    }
-
-    if (pRegisterSet->pRA == pRA)
-    {
-        // This is the case when we are either:
-        //
-        // 1) In a leaf method that does not push RA on stack, OR
-        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed RA on stack
-        //    or has RA already popped off.
-        return false;
-    }
-
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pRA;
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
 
     return true;
 #else
