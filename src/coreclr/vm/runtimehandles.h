@@ -104,8 +104,6 @@ public:
     ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
 
     // Static method on RuntimeTypeHandle
-    static FCDECL1(ReflectClassBaseObject*, GetRuntimeTypeFromHandleIfExists, EnregisteredTypeHandle th);
-
     static FCDECL1(AssemblyBaseObject*, GetAssemblyIfExists, ReflectClassBaseObject *pType);
     static FCDECL1(ReflectModuleBaseObject*, GetModuleIfExists, ReflectClassBaseObject* pType);
     static FCDECL1(INT32, GetAttributes, ReflectClassBaseObject* pType);

@@ -50,8 +50,9 @@
            Properties that control flags from the VMR build, and the expected output for the VMR build should be added to this file. -->
 
       <!-- Enable regular Arcade signing and publishing in VMR build -->
-      <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)restore $(FlagParameterPrefix)build $(FlagParameterPrefix)pack $(FlagParameterPrefix)publish</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)restore $(FlagParameterPrefix)build $(FlagParameterPrefix)publish</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(Sign)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)sign</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)pack</InnerBuildArgs>
 
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>

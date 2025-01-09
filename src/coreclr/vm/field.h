@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// COM+ Data Field Abstraction
+// CLR Data Field Abstraction
 //
 
 
@@ -718,7 +718,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    REFLECTFIELDREF GetStubFieldInfo();
+    REFLECTFIELDREF AllocateStubFieldInfo();
 #endif
 };
 

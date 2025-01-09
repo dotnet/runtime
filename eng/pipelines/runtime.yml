@@ -478,28 +478,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR without building test assets
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: checked
-          runtimeFlavor: coreclr
-          platforms:
-          - linux_riscv64
-          jobParameters:
-            testScope: innerloop
-            nameSuffix: CoreCLR
-            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig)
-            timeoutInMinutes: 120
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      #
-      # Build CoreCLR + Libs + Host + Packs
+      # Build CoreCLR + Libs + Host
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -509,10 +488,12 @@ extends:
           runtimeFlavor: coreclr
           platforms:
           - freebsd_x64
+          - linux_riscv64
+          - linux_loongarch64
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+host+packs -c $(_BuildConfig) -rc Checked
+            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked
             timeoutInMinutes: 120
             condition: >-
               or(
@@ -793,7 +774,6 @@ extends:
           runtimeFlavor: mono
           platforms:
           - linux_musl_x64
-          - linux_riscv64
           - osx_x64
           jobParameters:
             testGroup: innerloop
