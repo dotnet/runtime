@@ -11,7 +11,7 @@ using Xunit;
 
 namespace CollectibleThreadStaticShutdownRace
 {
-    public class CollectilbleThreadStaticShutdownRace
+    public class CollectibleThreadStaticShutdownRace
     {
         Action? UseTLSStaticFromLoaderAllocator = null;
         GCHandle IsLoaderAllocatorLive;
