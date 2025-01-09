@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <ItemGroup>
-    <InstallerProjectReference Include="Microsoft.NETCore.App/*.sfxproj" />
+    <InstallerProjectReference Include="Microsoft.NETCore.App/Microsoft.NETCore.App.Ref.sfxproj" />
+    <InstallerProjectReference Include="Microsoft.NETCore.App/Microsoft.NETCore.App.Host.sfxproj" />
+    <InstallerProjectReference Include="Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.$(PrimaryRuntimeFlavor).sfxproj" />
     <InstallerProjectReference Include="installers/*.proj" />
     <InstallerProjectReference Include="bundle/*.bundleproj" />
   </ItemGroup>

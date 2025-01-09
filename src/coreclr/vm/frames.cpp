@@ -1785,7 +1785,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
     WRAPPER_NO_CONTRACT;
 
 #ifndef DACCESS_COMPILE
-    InsureInit(NULL);
+    EnsureInit(NULL);
     return m_pMD;
 #else
     if (m_MachState.isValid())
@@ -1811,7 +1811,7 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //
 //
 
-BOOL HelperMethodFrame::InsureInit(MachState * unwindState)
+BOOL HelperMethodFrame::EnsureInit(MachState * unwindState)
 {
     CONTRACTL {
         NOTHROW;
@@ -1861,7 +1861,7 @@ BOOL HelperMethodFrame::InsureInit(MachState * unwindState)
             // result of failing to take a reader lock (because we told it not to yield,
             // but the writer lock was already held).  Since we've not yet updated
             // m_MachState, this HelperMethodFrame will still be considered not fully
-            // initialized (so a future call into InsureInit() will attempt to complete
+            // initialized (so a future call into EnsureInit() will attempt to complete
             // initialization again).
             //
             // Note that, in DAC builds, the contract with LazyMachState::unwindLazyState

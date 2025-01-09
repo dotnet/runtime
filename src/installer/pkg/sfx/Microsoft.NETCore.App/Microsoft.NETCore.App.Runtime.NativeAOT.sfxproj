@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+    <OutDirName>naot-pack</OutDirName>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />

@@ -85,14 +85,9 @@ extends:
             # Now that we've signed the diagnostic files, do the rest of the build.
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
                 displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
-                condition: ne('$(archType)', 'arm64')
             - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
-                displayName: Build managed CoreCLR components, all libraries, hosts, and packs
-                condition: eq('$(archType)', 'arm64')
 
             # Upload the results.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -142,7 +137,7 @@ extends:
               # Now that we've entitled and signed createdump, we can build the rest.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig)  /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
+                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
                   displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
 
               # Upload the results.
@@ -167,7 +162,7 @@ extends:
           - linux_musl_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -261,6 +256,10 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
+          - android_x64
+          - android_x86
+          - android_arm
+          - android_arm64
           - maccatalyst_x64
           - maccatalyst_arm64
           - tvossimulator_x64
@@ -270,61 +269,11 @@ extends:
           - iossimulator_arm64
           - ios_arm64
           - linux_bionic_x64
+          - linux_bionic_arm
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+mono+libs+host+packs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - android_x64
-          - android_x86
-          - android_arm
-          - android_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:BuildAllRuntimePacks=true
-            nameSuffix: AllRuntimes
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              # delete duplicate RIDless packages to prevent upload conflict
-              - task: DeleteFiles@1
-                displayName: 'Delete Microsoft.NETCore.App.Ref and Microsoft.NETCore.App.HostModel package'
-                inputs:
-                  SourceFolder: $(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/Shipping
-                  Contents: |
-                    'Microsoft.NETCore.App.Ref.*.nupkg'
-                    'Microsoft.NET.HostModel.*.nupkg'
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MobileRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms:
-          - linux_bionic_arm
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
@@ -393,34 +342,6 @@ extends:
                   name: MobileRuntimePacks
 
       #
-      # Build Mono release AOT cross-compilers
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - linux_x64
-          - linux_musl_x64
-          - linux_arm64
-          - linux_musl_arm64
-          - windows_arm64
-          - windows_x64
-          - osx_x64
-          - osx_arm64
-          jobParameters:
-            templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:DotNetBuildMonoCrossAOT=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            postBuildSteps:
-              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                parameters:
-                  name: MonoAOTCompilers
-
-      #
       # Build Mono LLVM runtime packs
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -453,7 +374,7 @@ extends:
                   name: $(osGroup)$(osSubgroup)_$(archType)
 
       #
-      # Build libraries AllConfigurations for packages
+      # Build libraries (all TFMs) and packages
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -463,13 +384,13 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
-            nameSuffix: Libraries_AllConfigurations
+            buildArgs: -s tools+libs -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
-                  name: Libraries_AllConfigurations
+                  name: Libraries_WithPackages
             timeoutInMinutes: 95
       #
       # Build SourceBuild packages
@@ -524,12 +445,12 @@ extends:
                 artifact: 'IntermediateArtifacts'
                 path: $(Build.SourcesDirectory)/artifacts/workloadPackages
                 patterns: |
-                  IntermediateArtifacts/MonoAOTCompilers/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
-                  IntermediateArtifacts/MonoAOTCompilers/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
-                  IntermediateArtifacts/MonoAOTCompilers/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
-                  IntermediateArtifacts/MonoAOTCompilers/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
-                  IntermediateArtifacts/MonoAOTCompilers/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
-                  IntermediateArtifacts/MonoAOTCompilers/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
+                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
+                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.android-*.nupkg
+                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
+                  IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
+                  IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
                   IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
                   IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
                   IntermediateArtifacts/MobileRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
@@ -616,8 +537,6 @@ extends:
             - Build_tvos_arm64_release_AllRuntimes
             - Build_tvossimulator_arm64_release_AllRuntimes
             - Build_tvossimulator_x64_release_AllRuntimes
-            - Build_windows_arm64_release_CrossAOT_Mono
-            - Build_windows_x64_release_CrossAOT_Mono
             - Build_windows_x64_release_AllRuntimes
             - Build_windows_x86_release_AllRuntimes
             - Build_windows_arm64_release_AllRuntimes
