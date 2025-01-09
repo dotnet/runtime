@@ -46,24 +46,35 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (session->session_type != EP_SESSION_TYPE_IPCSTREAM && session->session_type != EP_SESSION_TYPE_FILESTREAM)
 		return 1;
 
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+#else
 	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
 		return 1;
+#endif
 
 	session->streaming_thread = thread_params->thread;
 
 	bool success = true;
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+#else
 	ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
+#endif
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
 	EP_GCX_PREEMP_ENTER
-		while (ep_session_get_streaming_enabled (session)) {
+		do {
+			if (!ep_session_get_streaming_enabled (session)){
+				return 1; // do not schedule again
+			}
 			bool events_written = false;
 			if (!ep_session_write_all_buffers_to_file (session, &events_written)) {
 				success = false;
 				break;
 			}
 
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+#else
 			if (!events_written) {
 				// No events were available, sleep until more are available
 				ep_rt_wait_event_wait (wait_event, EP_INFINITE_WAIT, false);
@@ -72,10 +83,15 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 			// Wait until it's time to sample again.
 			const uint32_t timeout_ns = 100000000; // 100 msec.
 			ep_rt_thread_sleep (timeout_ns);
+#endif
 		}
-
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+		while (false);
+#else
+		while (true);
 		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
+#endif
 	EP_GCX_PREEMP_EXIT
 
 	if (!success)
@@ -122,7 +138,10 @@ session_disable_streaming_thread (EventPipeSession *session)
 
 	// Wait for the streaming thread to clean itself up.
 	ep_rt_wait_event_handle_t *rt_thread_shutdown_event = &session->rt_thread_shutdown_event;
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+#else
 	ep_rt_wait_event_wait (rt_thread_shutdown_event, EP_INFINITE_WAIT, false /* bAlertable */);
+#endif
 	ep_rt_wait_event_free (rt_thread_shutdown_event);
 }
 

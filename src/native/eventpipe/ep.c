@@ -1339,8 +1339,14 @@ ep_delete_provider (EventPipeProvider *provider)
 	// Helps prevent the EventPipeEventProvider Unregister logic from
 	// freeing freeing the provider's weak reference gchandle before
 	// callbacks using that handle have completed.
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+	// TODO Pavel review the wait and deferred delete logic
+	if (wait_for_provider_callbacks_completion)
+		ep_rt_wait_event_wait (&provider->callbacks_complete_event, 0, false);
+#else
 	if (wait_for_provider_callbacks_completion)
 		ep_rt_wait_event_wait (&provider->callbacks_complete_event, EP_INFINITE_WAIT, false);
+#endif
 
 	EP_LOCK_ENTER (section2)
 		if (!enabled ())

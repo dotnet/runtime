@@ -154,6 +154,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+        // TODO Pavel
         public void Start()
         {
             // if already started or already stopped we can't be started again

@@ -322,6 +322,14 @@ extern void schedule_background_exec (void);
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
 // when this is called from gc, it would be mono_runtime_do_background_work
 #ifdef DISABLE_THREADS
+typedef struct {
+	background_job_cb1 cb;
+	void* data;
+} Job1Registration;
+
+GSList *jobs;
+GSList *jobs_ep;
+
 void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {
@@ -335,7 +343,15 @@ mono_main_thread_schedule_background_job (background_job_cb cb)
 		jobs = g_slist_prepend (jobs, (gpointer)cb);
 }
 
-GSList *jobs;
+void
+mono_main_thread_schedule_ds_job (background_job_cb1 cb, void* data)
+{
+	g_assert (cb);
+	Job1Registration* reg = g_new0 (Job1Registration, 1);
+	reg->cb = cb;
+	reg->data = data;
+	jobs_ep = g_slist_prepend (jobs_ep, (gpointer)reg);
+}
 
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
@@ -348,11 +364,31 @@ mono_background_exec (void)
 	for (cur = j; cur; cur = cur->next) {
 		background_job_cb cb = (background_job_cb)cur->data;
 		g_assert (cb);
-		THREADS_DEBUG ("mono_background_exec on thread %p running job %p \n", (gpointer)pthread_self(), (gpointer)cb);
+		THREADS_DEBUG ("mono_background_exec running job %p \n", (gpointer)cb);
 		cb ();
-		THREADS_DEBUG ("mono_background_exec on thread %p done job %p \n", (gpointer)pthread_self(), (gpointer)cb);
+		THREADS_DEBUG ("mono_background_exec done job %p \n", (gpointer)cb);
 	}
 	g_slist_free (j);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+G_EXTERN_C
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_ds_exec (void)
+{
+	MONO_ENTER_GC_UNSAFE;
+	GSList *j1 = jobs_ep, *cur1;
+	jobs_ep = NULL;
+
+	for (cur1 = j1; cur1; cur1 = cur1->next) {
+		Job1Registration* reg = (Job1Registration*)cur1->data;
+		g_assert (reg->cb);
+		THREADS_DEBUG ("mono_wasm_ds_exec running job %p \n", (gpointer)cb);
+		reg->cb (reg->data);
+		THREADS_DEBUG ("mono_wasm_ds_exec done job %p \n", (gpointer)cb);
+		g_free (reg);
+	}
+	g_slist_free (j1);
 	MONO_EXIT_GC_UNSAFE;
 }
 
