@@ -2666,6 +2666,24 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Vector<uint> ShiftLeft(Vector<uint> value, int shiftCount) => value << shiftCount;
 
+        [Intrinsic]
+        internal static Vector<uint> ShiftLeft(Vector<uint> vector, Vector<uint> shiftCount)
+        {
+            if (sizeof(Vector<uint>) == sizeof(Vector512<uint>))
+            {
+                return Vector512.ShiftLeft(vector.AsVector512(), shiftCount.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<uint>) == sizeof(Vector256<uint>))
+            {
+                return Vector256.ShiftLeft(vector.AsVector256(), shiftCount.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == sizeof(Vector128<uint>));
+                return Vector128.ShiftLeft(vector.AsVector128(), shiftCount.AsVector128()).AsVector();
+            }
+        }
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -2673,6 +2691,24 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<ulong> ShiftLeft(Vector<ulong> value, int shiftCount) => value << shiftCount;
+
+        [Intrinsic]
+        internal static Vector<ulong> ShiftLeft(Vector<ulong> vector, Vector<ulong> shiftCount)
+        {
+            if (sizeof(Vector<ulong>) == sizeof(Vector512<ulong>))
+            {
+                return Vector512.ShiftLeft(vector.AsVector512(), shiftCount.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<ulong>) == sizeof(Vector256<ulong>))
+            {
+                return Vector256.ShiftLeft(vector.AsVector256(), shiftCount.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ulong>) == sizeof(Vector128<ulong>));
+                return Vector128.ShiftLeft(vector.AsVector128(), shiftCount.AsVector128()).AsVector();
+            }
+        }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>

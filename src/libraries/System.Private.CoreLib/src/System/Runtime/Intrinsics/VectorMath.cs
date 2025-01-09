@@ -2681,7 +2681,14 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out TVectorUInt32 result);
 
-            if (typeof(TVectorUInt32) == typeof(Vector64<uint>))
+            if (typeof(TVectorUInt32) == typeof(Vector<uint>))
+            {
+                result = (TVectorUInt32)(object)Vector.ShiftLeft(
+                    (Vector<uint>)(object)vector,
+                    (Vector<uint>)(object)shiftAmount
+                );
+            }
+            else if (typeof(TVectorUInt32) == typeof(Vector64<uint>))
             {
                 result = (TVectorUInt32)(object)Vector64.ShiftLeft(
                     (Vector64<uint>)(object)vector,
@@ -2723,7 +2730,14 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out TVectorUInt64 result);
 
-            if (typeof(TVectorUInt64) == typeof(Vector64<ulong>))
+            if (typeof(TVectorUInt64) == typeof(Vector<ulong>))
+            {
+                result = (TVectorUInt64)(object)Vector.ShiftLeft(
+                    (Vector<ulong>)(object)vector,
+                    (Vector<ulong>)(object)shiftAmount
+                );
+            }
+            else if (typeof(TVectorUInt64) == typeof(Vector64<ulong>))
             {
                 result = (TVectorUInt64)(object)Vector64.ShiftLeft(
                     (Vector64<ulong>)(object)vector,

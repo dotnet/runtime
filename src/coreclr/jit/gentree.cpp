@@ -23826,6 +23826,8 @@ GenTree* Compiler::gtNewSimdIsNormalNode(var_types type, GenTree* op1, CorInfoTy
 
     if (varTypeIsFloating(simdBaseType))
     {
+        op1 = gtNewSimdAbsNode(type, op1, simdBaseJitType, simdSize);
+
         GenTree* cnsNode1;
         GenTree* cnsNode2;
 
@@ -23851,9 +23853,7 @@ GenTree* Compiler::gtNewSimdIsNormalNode(var_types type, GenTree* op1, CorInfoTy
         cnsNode1 = gtNewSimdCreateBroadcastNode(type, cnsNode1, simdBaseJitType, simdSize);
         cnsNode2 = gtNewSimdCreateBroadcastNode(type, cnsNode2, simdBaseJitType, simdSize);
 
-        op1 = gtNewSimdAbsNode(type, op1, simdBaseJitType, simdSize);
         op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, cnsNode1, simdBaseJitType, simdSize);
-
         return gtNewSimdCmpOpNode(GT_LT, type, op1, cnsNode2, simdBaseJitType, simdSize);
     }
 
@@ -24017,6 +24017,8 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types   type,
 
     if (varTypeIsFloating(simdBaseType))
     {
+        op1 = gtNewSimdAbsNode(type, op1, simdBaseJitType, simdSize);
+
         GenTree* cnsNode1;
         GenTree* cnsNode2;
 
@@ -24040,7 +24042,6 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types   type,
         cnsNode1 = gtNewOneConNode(type, simdBaseType);
         cnsNode2 = gtNewSimdCreateBroadcastNode(type, cnsNode2, simdBaseJitType, simdSize);
 
-        op1 = gtNewSimdAbsNode(type, op1, simdBaseJitType, simdSize);
         op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, cnsNode1, simdBaseJitType, simdSize);
 
         return gtNewSimdCmpOpNode(GT_LT, type, op1, cnsNode2, simdBaseJitType, simdSize);
