@@ -85,8 +85,8 @@ namespace System.Runtime.Intrinsics.X86
         // VMOVW xmm1, xmm2/m16
         public static Vector128<ushort> ConvertToVector128UInt16(Vector128<ushort> value)  { throw new PlatformNotSupportedException(); }
 
-        //The below instructions are those where 
-        //embedded rouding support have been added 
+        //The below instructions are those where
+        //embedded rouding support have been added
         //to the existing API
 
         // VCVTDQ2PS ymm1{k1}{z}, ymm2/m256/m32bcst {er}
@@ -171,7 +171,7 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>Provides access to the x86 AVX10.2/512 hardware instructions via intrinsics.</summary>
-        public abstract class V512 : Avx10v1.V512
+        public new abstract class V512 : Avx10v1.V512
         {
             internal V512() { }
 
