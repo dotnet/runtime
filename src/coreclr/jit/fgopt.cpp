@@ -655,7 +655,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                         JITDUMP("Updating block weight for now-reachable try entry " FMT_BB " via " FMT_BB "\n",
                                 fromBlock->bbNum, fgFirstBB->bbNum);
-                        fromBlock->setBBProfileWeight(fromBlock->bbWeight + entryWeight);
+                        fromBlock->increaseBBProfileWeight(entryWeight);
 
                         // We updated the weight of fromBlock above.
                         //
@@ -1317,30 +1317,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         }
 #endif // DEBUG
 
-        //
-        // When we optimize a branch to branch we need to update the profile weight
-        // of bDest by subtracting out the weight of the path that is being optimized.
-        //
-        if (bDest->hasProfileWeight())
-        {
-            FlowEdge* const edge = fgGetPredForBlock(bDest, block);
-            noway_assert(edge != nullptr);
-
-            const weight_t edgeWeight = edge->getLikelyWeight();
-
-            //
-            // Update the bDest->bbWeight
-            //
-            if (bDest->bbWeight > edgeWeight)
-            {
-                bDest->bbWeight -= edgeWeight;
-            }
-            else
-            {
-                bDest->bbWeight = BB_ZERO_WEIGHT;
-                bDest->SetFlags(BBF_RUN_RARELY); // Set the RarelyRun flag
-            }
-        }
+        weight_t removedWeight;
 
         // Optimize the JUMP to empty unconditional JUMP to go to the new target
         switch (block->GetKind())
@@ -1348,6 +1325,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
             case BBJ_ALWAYS:
             case BBJ_CALLFINALLYRET:
             {
+                removedWeight = block->bbWeight;
                 fgRedirectTargetEdge(block, bDest->GetTarget());
                 break;
             }
@@ -1356,17 +1334,28 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
                 if (block->TrueTargetIs(bDest))
                 {
                     assert(!block->FalseTargetIs(bDest));
+                    removedWeight = block->GetTrueEdge()->getLikelyWeight();
                     fgRedirectTrueEdge(block, bDest->GetTarget());
                 }
                 else
                 {
                     assert(block->FalseTargetIs(bDest));
+                    removedWeight = block->GetFalseEdge()->getLikelyWeight();
                     fgRedirectFalseEdge(block, bDest->GetTarget());
                 }
                 break;
 
             default:
                 unreached();
+        }
+
+        //
+        // When we optimize a branch to branch we need to update the profile weight
+        // of bDest by subtracting out the weight of the path that is being optimized.
+        //
+        if (bDest->hasProfileWeight())
+        {
+            bDest->setBBProfileWeight(max(0.0, bDest->bbWeight - removedWeight));
         }
 
         return true;
@@ -1628,17 +1617,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             //
             FlowEdge* const oldEdge = *jmpTab;
 
-            if (fgIsUsingProfileWeights() && bDest->hasProfileWeight())
+            if (bDest->hasProfileWeight())
             {
                 weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
-                if (bDest->bbWeight > branchThroughWeight)
-                {
-                    bDest->bbWeight -= branchThroughWeight;
-                }
-                else
-                {
-                    bDest->bbSetRunRarely();
-                }
+                bDest->setBBProfileWeight(max(0.0, bDest->bbWeight - branchThroughWeight));
             }
 
             // Update the switch jump table
@@ -1676,6 +1658,11 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
     {
         // Invalidate the set of unique targets for block, since we modified the targets
         fgInvalidateSwitchDescMapEntry(block);
+
+        JITDUMP(
+            "fgOptimizeSwitchBranches: Optimized switch flow. Profile needs to be re-propagated. Data %s consistent.\n",
+            fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     Statement*  switchStmt = nullptr;
@@ -2277,7 +2264,7 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
         //
         weight_t targetWeight = target->bbWeight;
         weight_t blockWeight  = block->bbWeight;
-        target->setBBProfileWeight(max(0.0, targetWeight - blockWeight));
+        target->decreaseBBProfileWeight(blockWeight);
         JITDUMP("Decreased " FMT_BB " profile weight from " FMT_WT " to " FMT_WT "\n", target->bbNum, targetWeight,
                 target->bbWeight);
     }
@@ -2944,11 +2931,10 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         // Update profile data
         //
-        const weight_t fraction              = newBlock->GetSwitchTargets()->bbsDominantFraction;
-        const weight_t blockToTargetWeight   = block->bbWeight * fraction;
-        const weight_t blockToNewBlockWeight = block->bbWeight - blockToTargetWeight;
+        const weight_t fraction            = newBlock->GetSwitchTargets()->bbsDominantFraction;
+        const weight_t blockToTargetWeight = block->bbWeight * fraction;
 
-        newBlock->setBBProfileWeight(blockToNewBlockWeight);
+        newBlock->decreaseBBProfileWeight(blockToTargetWeight);
 
         blockToTargetEdge->setLikelihood(fraction);
         blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
@@ -6632,6 +6618,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 {
                     FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
                     predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                }
+
+                // For tail merge we have a common successor of predBlock and
+                // crossJumpTarget, so the profile update can be done locally.
+                if (crossJumpTarget->hasProfileWeight())
+                {
+                    crossJumpTarget->setBBProfileWeight(crossJumpTarget->bbWeight + predBlock->bbWeight);
                 }
             }
 
