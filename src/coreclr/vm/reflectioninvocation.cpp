@@ -254,14 +254,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (*m_ppNativeSig)->NumFixedArgs();
     }
-
-#ifdef FEATURE_INTERPRETER
-    BYTE CallConv()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IMAGE_CEE_CS_CALLCONV_DEFAULT;
-    }
-#endif // FEATURE_INTERPRETER
 };
 
 class ArgIteratorForMethodInvoke : public ArgIteratorTemplate<ArgIteratorBaseForMethodInvoke>
@@ -1095,6 +1087,35 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
     }
 }
 FCIMPLEND
+
+// Returns the address of the EnC instance field in the object (This is an interior
+// pointer and the caller has to use it appropriately) or an EnC static field.
+extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandleOnStack target, FieldDesc* pFD)
+{
+    CONTRACTL
+    {
+        QCALL_CHECK;
+        PRECONDITION(pFD != NULL);
+    }
+    CONTRACTL_END;
+
+    void* ret = NULL;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // Only handling EnC
+    _ASSERTE(pFD->IsEnCNew());
+
+    // If the field is static, or if the object is non-null, get the address of the field.
+    if (pFD->IsStatic() || target.Get() != NULL)
+        ret = pFD->GetAddress(OBJECTREFToObject(target.Get()));
+
+    END_QCALL;
+
+    return ret;
+}
 
 extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size)
 {

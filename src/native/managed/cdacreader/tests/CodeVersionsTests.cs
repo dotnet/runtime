@@ -11,9 +11,10 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
+using static Microsoft.Diagnostics.DataContractReader.Tests.MockExtensions;
 using MockCodeVersions = MockDescriptors.CodeVersions;
 
-public class CodeVersionsTests
+internal static class MockExtensions
 {
     internal class MockModule
     {
@@ -21,6 +22,7 @@ public class CodeVersionsTests
         public TargetPointer MethodDefToILCodeVersioningStateAddress { get; set; }
         public Dictionary<uint, TargetPointer> MethodDefToILCodeVersioningStateTable {get; set;}
     }
+
     internal class MockMethodTable
     {
         public TargetPointer Address { get; set; }
@@ -63,202 +65,84 @@ public class CodeVersionsTests
             };
         }
     }
+
     internal class MockCodeBlockStart
     {
         public TargetCodePointer StartAddress { get; set;}
         public uint Length { get; set; }
-
-        public bool Contains(TargetPointer ip) =>  ip >= StartAddress && ip < StartAddress + Length;
-        public bool Contains(TargetCodePointer ip) => Contains(ip.AsTargetPointer);
         public MockMethodDesc MethodDesc {get; set;}
-        public TargetPointer MethodDescAddress => MethodDesc.Address;
     }
 
-    internal class MockExecutionManager : IExecutionManager
+    public static void AddCodeBlock(this Mock<IExecutionManager> mock, MockCodeBlockStart block)
     {
-        private IReadOnlyCollection<MockCodeBlockStart> _codeBlocks;
-
-        public MockExecutionManager(IReadOnlyCollection<MockCodeBlockStart> codeBlocks)
-        {
-            _codeBlocks = codeBlocks;
-        }
-
-        private MockCodeBlockStart? FindCodeBlock(TargetPointer ip)
-        {
-            if (ip == TargetPointer.Null)
-            {
-                return null;
-            }
-            foreach (var block in _codeBlocks)
-            {
-                if (block.Contains(ip))
-                {
-                    return block;
-                }
-            }
-            return null;
-        }
-
-        CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
-        {
-            var block = FindCodeBlock(ip.AsTargetPointer);
-            if (block == null)
-                return null;
-            return new CodeBlockHandle(ip.AsTargetPointer);
-        }
-
-        TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle) => FindCodeBlock(codeInfoHandle.Address)?.StartAddress ?? TargetCodePointer.Null;
-        TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle) => FindCodeBlock(codeInfoHandle.Address)?.MethodDescAddress ?? TargetPointer.Null;
+        CodeBlockHandle handle = new CodeBlockHandle(block.StartAddress.AsTargetPointer);
+        mock.Setup(e => e.GetCodeBlockHandle(It.Is<TargetCodePointer>(ip => ip >= block.StartAddress && ip < block.StartAddress + block.Length)))
+            .Returns(handle);
+        mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress);
+        mock.Setup(e => e.GetMethodDesc(handle)).Returns(block.MethodDesc.Address);
     }
 
-    internal class MockRuntimeTypeSystem : IRuntimeTypeSystem
+    public static void AddModule(this Mock<ILoader> mock, MockModule module)
     {
-        private readonly Target _target;
-        IReadOnlyCollection<MockMethodDesc> _methodDescs;
-        IReadOnlyCollection<MockMethodTable> _methodTables;
-        public MockRuntimeTypeSystem(Target target, IReadOnlyCollection<MockMethodDesc> methodDescs, IReadOnlyCollection<MockMethodTable> methodTables)
+        Contracts.ModuleHandle handle = new Contracts.ModuleHandle(module.Address);
+        mock.Setup(l => l.GetModuleHandle(module.Address)).Returns(handle);
+        mock.Setup(l => l.GetLookupTables(handle)).Returns(new ModuleLookupTables() {
+            MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
+        });
+        mock.Setup(l => l.GetModuleLookupMapElement(module.MethodDefToILCodeVersioningStateAddress, It.IsAny<uint>(), out It.Ref<TargetNUInt>.IsAny))
+        .Returns<TargetPointer, uint, TargetNUInt>((table, token, flags) =>
         {
-            _target = target;
-            _methodDescs = methodDescs;
-            _methodTables = methodTables;
-        }
-
-        private MockMethodDesc? TryFindMethodDesc(TargetPointer targetPointer)
-        {
-            foreach (var methodDesc in _methodDescs)
+            flags = new TargetNUInt(0);
+            if (module.MethodDefToILCodeVersioningStateTable.TryGetValue(EcmaMetadataUtils.GetRowId(token), out TargetPointer value))
             {
-                if (methodDesc.Address == targetPointer)
-                {
-                    return methodDesc;
-                }
+                return value;
             }
-            return null;
-        }
+            throw new InvalidOperationException($"No token found for 0x{token:x} in table {table}");
+        });
+    }
 
-        private MockMethodTable? TryFindMethodTable(TargetPointer targetPointer)
+    public static void AddMethodDesc(this Mock<IRuntimeTypeSystem> mock, MockMethodDesc methodDesc)
+    {
+        MethodDescHandle handle = new MethodDescHandle(methodDesc.Address);
+        mock.Setup(r => r.GetMethodDescHandle(methodDesc.Address)).Returns(handle);
+        mock.Setup(r => r.IsVersionable(handle)).Returns(methodDesc.IsVersionable);
+        mock.Setup(r => r.GetNativeCode(handle)).Returns(methodDesc.NativeCode);
+        mock.Setup(r => r.GetMethodDescVersioningState(handle)).Returns(methodDesc.MethodDescVersioningState);
+        mock.Setup(r => r.GetMethodTable(handle)).Returns(() => methodDesc.MethodTable?.Address ?? throw new InvalidOperationException($"MethodTable not found for {methodDesc.Address}"));
+        mock.Setup(r => r.GetMethodToken(handle)).Returns(methodDesc.MethodToken);
+    }
+
+    public static void AddMethodTable(this Mock<IRuntimeTypeSystem> mock, MockCodeVersions builder, MockMethodTable methodTable)
+    {
+        TypeHandle handle = new TypeHandle(methodTable.Address);
+        mock.Setup(r => r.GetTypeHandle(methodTable.Address)).Returns<TargetPointer>(address =>
         {
-            foreach (var methodTable in _methodTables)
-            {
-                if (methodTable.Address == targetPointer)
-                {
-                    return methodTable;
-                }
-            }
-            return null;
-        }
-
-        private MockMethodDesc FindMethodDesc(TargetPointer targetPointer) => TryFindMethodDesc(targetPointer) ?? throw new InvalidOperationException($"MethodDesc not found for {targetPointer}");
-        private MockMethodTable FindMethodTable(TargetPointer targetPointer) => TryFindMethodTable(targetPointer) ?? throw new InvalidOperationException($"MethodTable not found for {targetPointer}");
-
-        MethodDescHandle IRuntimeTypeSystem.GetMethodDescHandle(TargetPointer targetPointer) => new MethodDescHandle(FindMethodDesc(targetPointer).Address);
-
-        bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).IsVersionable;
-        TargetCodePointer IRuntimeTypeSystem.GetNativeCode(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).NativeCode;
-        TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).MethodDescVersioningState;
-
-        TargetPointer IRuntimeTypeSystem.GetMethodTable(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).MethodTable?.Address ?? throw new InvalidOperationException($"MethodTable not found for {methodDesc.Address}");
-        uint IRuntimeTypeSystem.GetMethodToken(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).MethodToken;
-
-        TypeHandle IRuntimeTypeSystem.GetTypeHandle(TargetPointer address)
-        {
-            ulong addressLowBits = (ulong)address & ((ulong)_target.PointerSize - 1);
-
+            // this is not quite accurate on 32 bit architectures, but it's good enough for testing
+            ulong addressLowBits = (ulong)address & ((ulong)builder.Builder.TargetTestHelpers.PointerSize - 1);
             // no typedescs for now, just method tables with 0 in the low bits
             if (addressLowBits != 0)
             {
                 throw new InvalidOperationException("Invalid type handle pointer");
             }
-            MockMethodTable methodTable = FindMethodTable(address);
-            return new TypeHandle(methodTable.Address);
-        }
-
-        TargetPointer IRuntimeTypeSystem.GetModule(TypeHandle typeHandle) => FindMethodTable(typeHandle.Address).Module?.Address ?? throw new InvalidOperationException($"Module not found for {typeHandle.Address}");
+            return handle;
+        });
+        mock.Setup(r => r.GetModule(handle)).Returns(methodTable.Module?.Address ?? throw new InvalidOperationException($"Module not found for {handle.Address}"));
     }
+}
 
-    internal class MockLoader : ILoader
-    {
-        private readonly IReadOnlyCollection<MockModule> _modules;
-        public MockLoader(IReadOnlyCollection<MockModule> modules)
-        {
-            _modules = modules;
-        }
-        private MockModule? TryFindModule(TargetPointer targetPointer)
-        {
-            foreach (var module in _modules)
-            {
-                if (module.Address == targetPointer)
-                {
-                    return module;
-                }
-            }
-            return null;
-        }
-
-        private MockModule FindModule(TargetPointer targetPointer) => TryFindModule(targetPointer) ?? throw new InvalidOperationException($"Module not found for {targetPointer}");
-
-        Contracts.ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer) => new Contracts.ModuleHandle(FindModule(modulePointer).Address);
-
-        ModuleLookupTables ILoader.GetLookupTables(Contracts.ModuleHandle handle)
-        {
-            MockModule module = FindModule(handle.Address);
-            return new ModuleLookupTables() {
-                MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
-            };
-        }
-
-        TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer tableAddress, uint token, out TargetNUInt flags)
-        {
-            flags = new TargetNUInt(0);
-            Dictionary<uint,TargetPointer>? table = null;
-            foreach (var module in _modules)
-            {
-                if (module.MethodDefToILCodeVersioningStateTable != null && module.MethodDefToILCodeVersioningStateAddress == tableAddress)
-                {
-                    table = module.MethodDefToILCodeVersioningStateTable;
-                }
-            }
-            if (table == null) {
-                throw new InvalidOperationException($"No table found with address {tableAddress} for token 0x{token:x}, {flags}");
-            }
-            uint rowId = EcmaMetadataUtils.GetRowId(token);
-            if (table.TryGetValue(rowId, out TargetPointer value))
-            {
-                return value;
-            }
-            throw new InvalidOperationException($"No token found for 0x{token:x} in table {tableAddress}");
-        }
-    }
-
-    internal static Target CreateTarget(
-        MockTarget.Architecture arch,
-        IReadOnlyCollection<MockMethodDesc> methodDescs = null,
-        IReadOnlyCollection<MockMethodTable> methodTables = null,
-        IReadOnlyCollection<MockCodeBlockStart> codeBlocks = null,
-        IReadOnlyCollection<MockModule> modules = null,
-        MockCodeVersions builder = null)
-    {
-        TestPlaceholderTarget target = builder != null
-            ? new TestPlaceholderTarget(arch, builder.Builder.GetReadContext().ReadFromTarget, builder.Types)
-            : new TestPlaceholderTarget(arch, null);
-
-        IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
-        IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(target, methodDescs ?? [], methodTables ?? []);
-        ILoader loader = new MockLoader(modules ?? []);
-        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
-        ContractRegistry reg = Mock.Of<ContractRegistry>(
-            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
-                && c.ExecutionManager == mockExecutionManager
-                && c.RuntimeTypeSystem == mockRuntimeTypeSystem
-                && c.Loader == loader);
-        target.SetContracts(reg);
-        return target;
-    }
-
-    internal static Target CreateTarget(
+public class CodeVersionsTests
+{
+    internal Target CreateTarget(
         MockTarget.Architecture arch,
         MockCodeVersions builder,
-        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem)
+        Mock<ILoader> mockLoader = null,
+        Mock<IExecutionManager> mockExecutionManager = null,
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = null)
     {
+        mockLoader ??= new Mock<ILoader>();
+        mockExecutionManager ??= new Mock<IExecutionManager>();
+        mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
+
         TestPlaceholderTarget target = new TestPlaceholderTarget(
             arch,
             builder.Builder.GetReadContext().ReadFromTarget,
@@ -267,7 +151,9 @@ public class CodeVersionsTests
         IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
         ContractRegistry reg = Mock.Of<ContractRegistry>(
             c => c.CodeVersions == cvfactory.CreateContract(target, 1)
-                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object);
+                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object
+                && c.ExecutionManager == mockExecutionManager.Object
+                && c.Loader == mockLoader.Object);
         target.SetContracts(reg);
         return target;
     }
@@ -276,7 +162,9 @@ public class CodeVersionsTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeVersion_Null(MockTarget.Architecture arch)
     {
-        var target = CreateTarget(arch);
+        var mockExecutionManager = new Mock<IExecutionManager>();
+        mockExecutionManager.Setup(e => e.GetCodeBlockHandle(TargetCodePointer.Null)).Returns(() => null);
+        var target = CreateTarget(arch, new MockCodeVersions(arch), mockExecutionManager: mockExecutionManager);
         var codeVersions = target.Contracts.CodeVersions;
 
         Assert.NotNull(codeVersions);
@@ -300,9 +188,21 @@ public class CodeVersionsTests
             MethodDesc = oneMethod,
         };
 
-        var target = CreateTarget(arch, methodDescs: [oneMethod], codeBlocks: [oneBlock]);
-        var codeVersions = target.Contracts.CodeVersions;
+        Mock<IExecutionManager> mockExecutionManager = new Mock<IExecutionManager>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
 
+        mockExecutionManager.AddCodeBlock(oneBlock);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+
+        var target = CreateTarget(
+            arch,
+            new MockCodeVersions(arch),
+            mockExecutionManager: mockExecutionManager,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+
+        var codeVersions = target.Contracts.CodeVersions;
         Assert.NotNull(codeVersions);
 
         TargetCodePointer codeBlockEnd = codeBlockStart + oneBlock.Length;
@@ -334,12 +234,21 @@ public class CodeVersionsTests
         };
         builder.FillNativeCodeVersionNode(nativeCodeVersionNode, methodDesc: oneMethod.Address, nativeCode: codeBlockStart, next: TargetPointer.Null, isActive: false, ilVersionId: default);
 
-        var target = CreateTarget(arch, [oneMethod], [], [oneBlock], [], builder);
+        Mock<IExecutionManager> mockExecutionManager = new Mock<IExecutionManager>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockExecutionManager.AddCodeBlock(oneBlock);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockExecutionManager: mockExecutionManager,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
         var codeVersions = target.Contracts.CodeVersions;
-
         Assert.NotNull(codeVersions);
 
         TargetCodePointer codeBlockEnd = codeBlockStart + oneBlock.Length;
@@ -390,7 +299,19 @@ public class CodeVersionsTests
         var methodNilToken = MockMethodDesc.CreateVersionable(selfAddress: methodDescNilTokenAddress, methodDescVersioningState: TargetPointer.Null, nativeCode: expectedNativeCodePointer);
         methodNilToken.MethodTable = methodTable;
 
-        var target = CreateTarget(arch, [method, methodNilToken], [methodTable], [], [module], builder);
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockRuntimeTypeSystem.AddMethodDesc(method);
+        mockRuntimeTypeSystem.AddMethodDesc(methodNilToken);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+        mockLoader.AddModule(module);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
@@ -466,7 +387,18 @@ public class CodeVersionsTests
         methodDesc.MethodTable = methodTable;
         methodDesc.RowId = methodRowId;
 
-        var target = CreateTarget(arch, [methodDesc], [methodTable], [], [module], builder);
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(methodDesc);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
@@ -542,7 +474,18 @@ public class CodeVersionsTests
         oneMethod.MethodTable = methodTable;
         oneMethod.RowId = methodRowId;
 
-        var target = CreateTarget(arch, [oneMethod], [methodTable], [], [module], builder);
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
@@ -605,7 +548,18 @@ public class CodeVersionsTests
         oneMethod.MethodTable = methodTable;
         oneMethod.RowId = methodRowId;
 
-        var target = CreateTarget(arch, [oneMethod], [methodTable], [], [module], builder);
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
@@ -669,7 +623,18 @@ public class CodeVersionsTests
         oneMethod.MethodTable = methodTable;
         oneMethod.RowId = methodRowId;
 
-        var target = CreateTarget(arch, [oneMethod], [methodTable], [], [module], builder);
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
@@ -700,15 +665,15 @@ public class CodeVersionsTests
     private void GetGCStressCodeCopy_Impl(MockTarget.Architecture arch, bool returnsNull)
     {
         MockCodeVersions builder = new(arch);
-        Mock<IRuntimeTypeSystem> mockRTS = new();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new();
 
         // Setup synthetic NativeCodeVersion
         TargetPointer expectedSyntheticCodeCopyAddr = returnsNull ? TargetPointer.Null : new(0x2345_6789);
         TargetPointer syntheticMethodDescAddr = new(0x2345_8000);
         NativeCodeVersionHandle syntheticHandle = NativeCodeVersionHandle.CreateSynthetic(syntheticMethodDescAddr);
         MethodDescHandle methodDescHandle = new MethodDescHandle(syntheticMethodDescAddr);
-        mockRTS.Setup(rts => rts.GetMethodDescHandle(syntheticMethodDescAddr)).Returns(methodDescHandle);
-        mockRTS.Setup(rts => rts.GetGCStressCodeCopy(methodDescHandle)).Returns(expectedSyntheticCodeCopyAddr);
+        mockRuntimeTypeSystem.Setup(rts => rts.GetMethodDescHandle(syntheticMethodDescAddr)).Returns(methodDescHandle);
+        mockRuntimeTypeSystem.Setup(rts => rts.GetGCStressCodeCopy(methodDescHandle)).Returns(expectedSyntheticCodeCopyAddr);
 
         // Setup explicit NativeCodeVersion
         TargetPointer? explicitGCCoverageInfoAddr = returnsNull ? TargetPointer.Null : new(0x1234_5678);
@@ -723,10 +688,10 @@ public class CodeVersionsTests
             gcCoverageInfo: explicitGCCoverageInfoAddr);
         NativeCodeVersionHandle explicitHandle = NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
 
-        var target = CreateTarget(arch, builder, mockRTS);
-        var codeVersions = target.Contracts.CodeVersions;
+        var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
+        var codeVersions = target.Contracts.CodeVersions;
         TargetPointer actualSyntheticCodeCopyAddr = codeVersions.GetGCStressCodeCopy(syntheticHandle);
         Assert.Equal(expectedSyntheticCodeCopyAddr, actualSyntheticCodeCopyAddr);
 
