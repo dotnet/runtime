@@ -485,12 +485,12 @@ namespace System.Threading
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
-
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
 #if FEATURE_WASM_MANAGED_THREADS
             Thread.AssureBlockingPossible();

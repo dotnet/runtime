@@ -1237,7 +1237,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ScopedServiceResolvedFromSingletonAfterCompilation()
         {
             var serviceCollection = new ServiceCollection();
@@ -1252,7 +1252,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ScopedServiceResolvedFromSingletonAfterCompilation2()
         {
             var serviceCollection = new ServiceCollection();
@@ -1270,7 +1270,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void ScopedServiceResolvedFromSingletonAfterCompilation3()
         {
             // Singleton IFakeX<A> -> Scoped A -> Scoped Aa
