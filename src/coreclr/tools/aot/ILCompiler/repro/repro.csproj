@@ -40,7 +40,6 @@
       <ReproResponseLines Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <ReproResponseLines Include="--feature:System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported=false" />
       <ReproResponseLines Include="--feature:System.Globalization.Invariant=true" />
-      <ReproResponseLines Include="--feature:System.TimeZoneInfo.Invariant=true" />
       <ReproResponseLines Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
       <ReproResponseLines Include="--feature:System.StartupHookProvider.IsSupported=false" />
     </ItemGroup>
