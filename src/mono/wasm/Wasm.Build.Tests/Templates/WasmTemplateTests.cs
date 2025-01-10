@@ -285,7 +285,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void LibraryModeBuild(bool useWasmSdk)
+        public async void LibraryModeBuild(bool useWasmSdk)
         {
             var config = Configuration.Release;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
@@ -296,6 +296,12 @@ namespace Wasm.Build.Tests
                 });
             }
             BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+            if (useWasmSdk)
+            {
+                var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+                Assert.Contains("WASM Library MyExport is called", result.TestOutput);
+            }
+            
         }
     }
 }

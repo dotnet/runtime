@@ -3,17 +3,9 @@
 
 import { dotnet } from './_framework/dotnet.js'
 
-const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
-    .withApplicationArguments("start")
-    .create();
-
-setModuleImports('main.js', {
-    dom: {
-        setInnerText: (selector, time) => document.querySelector(selector).innerText = time
-    }
-});
+const { getAssemblyExports, getConfig } = await dotnet.create();
 
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-var result = exports.LibraryMode.Test.MyExport();
-console.log(`MyExport: ${result}`);
+var code = exports.LibraryMode.Test.MyExport();
+console.log(`WASM EXIT ${code}`);
