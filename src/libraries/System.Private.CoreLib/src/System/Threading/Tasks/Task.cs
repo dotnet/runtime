@@ -3056,6 +3056,12 @@ namespace System.Threading.Tasks
         /// <returns>true if the task is completed; otherwise, false.</returns>
         private bool SpinThenBlockingWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+            // TODO Pavel - review again
+            if (!Thread.IsMultiThreadedPlatform)
+            {
+                return false;
+            }
+
             bool infiniteWait = millisecondsTimeout == Timeout.Infinite;
             uint startTimeTicks = infiniteWait ? 0 : (uint)Environment.TickCount;
             bool returnValue = SpinWait(millisecondsTimeout);
@@ -3086,7 +3092,6 @@ namespace System.Threading.Tasks
                 try
                 {
                     AddCompletionAction(mres, addBeforeOthers: true);
-#pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44622
                     if (infiniteWait)
                     {
                         bool notifyWhenUnblocked = ThreadPool.NotifyThreadBlocked();
@@ -3121,7 +3126,6 @@ namespace System.Threading.Tasks
                             }
                         }
                     }
-#pragma warning restore CA1416
                 }
                 finally
                 {

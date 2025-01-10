@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -67,7 +68,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal("Hello", Encoding.UTF8.GetString(buffer.Span));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendHelloWithContextTakeover()
         {
             WebSocketTestStream stream = new();
@@ -164,7 +165,7 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task SendHelloWithoutContextTakeover()
         {
             WebSocketTestStream stream = new();

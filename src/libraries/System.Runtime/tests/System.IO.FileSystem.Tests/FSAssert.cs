@@ -36,9 +36,12 @@ namespace System.IO.Tests
             }
             else
             {
-                // first wait for the task to complete without throwing
-                using WaitHandle wh = ((IAsyncResult)task).AsyncWaitHandle;
-                wh.WaitOne();
+                if (status != TaskStatus.RanToCompletion && status != TaskStatus.Faulted)
+                {
+                    // first wait for the task to complete without throwing
+                    using WaitHandle wh = ((IAsyncResult)task).AsyncWaitHandle;
+                    wh.WaitOne();
+                }
 
                 // now assert, we ignore the result of the task intentionally,
                 // As it previously did not complete synchronously.

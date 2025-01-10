@@ -99,6 +99,8 @@ namespace System.Linq.Parallel
                 // See also "QueryOpeningEnumerator" which duplicates some of this logic.
                 // See also "ExceptionAggregator" which duplicates some of this logic.
 
+                // TODO could we query the state of the tasks instead of waiting on them?
+                // or spin thread pool until solved?
                 try
                 {
                     // Wait for all the tasks to complete
