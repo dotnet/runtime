@@ -12,42 +12,42 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector4.All(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool All(Vector2 vector, float value) => Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() == 0b11;
+        internal static bool All(Vector2 vector, float value) => vector.AsVector128() == Vector2.Create(value).AsVector128();
 
         /// <inheritdoc cref="Vector4.All(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool All(Vector3 vector, float value) => Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() == 0b111;
+        internal static bool All(Vector3 vector, float value) => vector.AsVector128() == Vector3.Create(value).AsVector128();
 
         /// <inheritdoc cref="Vector4.AllWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool AllWhereAllBitsSet(Vector2 vector) => Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() == 0b11;
+        internal static bool AllWhereAllBitsSet(Vector2 vector) => vector.AsVector128().AsInt32() == Vector2.AllBitsSet.AsVector128().AsInt32();
 
         /// <inheritdoc cref="Vector4.AllWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool AllWhereAllBitsSet(Vector3 vector) => Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() == 0b111;
+        internal static bool AllWhereAllBitsSet(Vector3 vector) => vector.AsVector128().AsInt32() == Vector3.AllBitsSet.AsVector128().AsInt32();
 
         /// <inheritdoc cref="Vector4.Any(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool Any(Vector2 vector, float value) => Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() != 0b00;
+        internal static bool Any(Vector2 vector, float value) => EqualsAny(vector.AsVector128(), Create(value, value, -1, -1));
 
         /// <inheritdoc cref="Vector4.Any(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool Any(Vector3 vector, float value) => Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() != 0b000;
+        internal static bool Any(Vector3 vector, float value) => EqualsAny(vector.AsVector128(), Create(value, value, value, -1));
 
         /// <inheritdoc cref="Vector4.AnyWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool AnyWhereAllBitsSet(Vector2 vector) => Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() != 0b00;
+        internal static bool AnyWhereAllBitsSet(Vector2 vector) => EqualsAny(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet);
 
         /// <inheritdoc cref="Vector4.AnyWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool AnyWhereAllBitsSet(Vector3 vector) => Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() != 0b000;
+        internal static bool AnyWhereAllBitsSet(Vector3 vector) => EqualsAny(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet);
 
         /// <summary>Reinterprets a <see langword="Vector128&lt;Single&gt;" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -225,29 +225,29 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector4.Count(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int Count(Vector2 vector, float value) => BitOperations.PopCount(Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() & 0b11);
+        internal static int Count(Vector2 vector, float value) => BitOperations.PopCount(Equals(vector.AsVector128(), Create(value, value, -1, -1)).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.Count(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int Count(Vector3 vector, float value) => BitOperations.PopCount(Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() & 0b111);
+        internal static int Count(Vector3 vector, float value) => BitOperations.PopCount(Equals(vector.AsVector128(), Create(value, value, value, -1)).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.CountWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int CountWhereAllBitsSet(Vector2 vector) => BitOperations.PopCount(Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() & 0b11);
+        internal static int CountWhereAllBitsSet(Vector2 vector) => BitOperations.PopCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.CountWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int CountWhereAllBitsSet(Vector3 vector) => BitOperations.PopCount(Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() & 0b111);
+        internal static int CountWhereAllBitsSet(Vector3 vector) => BitOperations.PopCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.IndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOf(Vector2 vector, float value)
         {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() & 0b11);
+            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128(), Create(value, value, -1, -1)).ExtractMostSignificantBits());
             return (result != 32) ? result : -1;
         }
 
@@ -256,7 +256,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOf(Vector3 vector, float value)
         {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() & 0b111);
+            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128(), Create(value, value, value, -1)).ExtractMostSignificantBits());
             return (result != 32) ? result : -1;
         }
 
@@ -265,7 +265,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfWhereAllBitsSet(Vector2 vector)
         {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() & 0b11);
+            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
             return (result != 32) ? result : -1;
         }
 
@@ -274,48 +274,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfWhereAllBitsSet(Vector3 vector)
         {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() & 0b111);
+            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
             return (result != 32) ? result : -1;
         }
 
         /// <inheritdoc cref="Vector4.LastIndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOf(Vector2 vector, float value) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() & 0b11);
+        internal static int LastIndexOf(Vector2 vector, float value) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128(), Create(value, value, -1, -1)).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.LastIndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOf(Vector3 vector, float value) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() & 0b111);
+        internal static int LastIndexOf(Vector3 vector, float value) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128(), Create(value, value, value, -1)).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.LastIndexOfWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfWhereAllBitsSet(Vector2 vector) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() & 0b11);
+        internal static int LastIndexOfWhereAllBitsSet(Vector2 vector) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.LastIndexOfWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfWhereAllBitsSet(Vector3 vector) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() & 0b111);
+        internal static int LastIndexOfWhereAllBitsSet(Vector3 vector) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
 
         /// <inheritdoc cref="Vector4.None(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool None(Vector2 vector, float value) => Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() == 0b00;
+        internal static bool None(Vector2 vector, float value) => !EqualsAny(vector.AsVector128(), Create(value, value, -1, -1));
 
         /// <inheritdoc cref="Vector4.None(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool None(Vector3 vector, float value) => Equals(vector.AsVector128Unsafe(), Create(value)).ExtractMostSignificantBits() == 0b000;
+        internal static bool None(Vector3 vector, float value) => !EqualsAny(vector.AsVector128(), Create(value, value, value, -1));
 
         /// <inheritdoc cref="Vector4.NoneWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NoneWhereAllBitsSet(Vector2 vector) => Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() == 0b00;
+        internal static bool NoneWhereAllBitsSet(Vector2 vector) => !EqualsAny(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet);
 
         /// <inheritdoc cref="Vector4.NoneWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NoneWhereAllBitsSet(Vector3 vector) => Equals(vector.AsVector128Unsafe().AsInt32(), Create(-1)).ExtractMostSignificantBits() == 0b000;
+        internal static bool NoneWhereAllBitsSet(Vector3 vector) => !EqualsAny(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet);
     }
 }
