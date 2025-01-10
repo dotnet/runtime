@@ -2019,12 +2019,11 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         estDupCostSz += tree->GetCostSz();
     }
 
-    weight_t       loopIterations            = BB_LOOP_WEIGHT_SCALE;
-    bool           haveProfileWeights        = false;
-    bool           allProfileWeightsAreValid = false;
-    weight_t const weightBlock               = block->bbWeight;
-    weight_t const weightTest                = bTest->bbWeight;
-    weight_t const weightTop                 = bTop->bbWeight;
+    weight_t       loopIterations     = BB_LOOP_WEIGHT_SCALE;
+    bool           haveProfileWeights = false;
+    weight_t const weightBlock        = block->bbWeight;
+    weight_t const weightTest         = bTest->bbWeight;
+    weight_t const weightTop          = bTop->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -2054,8 +2053,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             }
             else
             {
-                allProfileWeightsAreValid = true;
-
                 // Determine average iteration count
                 //
                 //   weightTop is the number of time this loop executes
@@ -2152,10 +2149,10 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // tree walk to count them was not done.
         printf(
             "\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
-            "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, validProfileWeights = %s\n",
+            "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, haveProfileWeights = %s\n",
             dspTreeID(condTree), costIsTooHigh ? "not done" : "performed", estDupCostSz,
             costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
-            optInvertTotalInfo.sharedStaticHelperCount, dspBool(allProfileWeightsAreValid));
+            optInvertTotalInfo.sharedStaticHelperCount, dspBool(haveProfileWeights));
     }
 #endif
 

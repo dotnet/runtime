@@ -4824,14 +4824,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
 
+        // Run some flow graph optimizations (but don't reorder)
+        //
+        DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
+
         // Drop back to just checking profile likelihoods.
         //
         activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
         activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
-        // Run some flow graph optimizations (but don't reorder)
-        //
-        DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
 
         // Second pass of tail merge
         //
