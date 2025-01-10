@@ -15,7 +15,7 @@ namespace System.Threading
     {
         private const int LockedMask = 1;
 
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
         private const int SpinCount = 8;
         private const int SpinSleep0Threshold = 4;
         private static readonly Func<object, bool> s_spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
@@ -42,7 +42,7 @@ namespace System.Threading
 
         public LowLevelLock()
         {
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
             _spinWaiter = default(LowLevelSpinWaiter);
 #endif
             _monitor.Initialize();
@@ -119,7 +119,7 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
             // A common case is that there are no waiters, so hope for that and try to acquire the lock
             int state = Interlocked.CompareExchange(ref _state, LockedMask, 0);
             if (state == 0 || TryAcquire_NoFastPath(state))
@@ -138,7 +138,7 @@ namespace System.Threading
             return false;
         }
 
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
         private bool TryAcquire_NoFastPath(int state)
         {
             // The lock may be available, but there may be waiters. This thread could acquire the lock in that case. Acquiring
@@ -169,7 +169,7 @@ namespace System.Threading
         {
             if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
             VerifyIsNotLocked();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
@@ -218,7 +218,7 @@ namespace System.Threading
             Debug.Assert((_state & LockedMask) != 0);
             ResetOwnerThread();
 
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
             if (Interlocked.Decrement(ref _state) != 0)
             {
                 SignalWaiter();
@@ -228,7 +228,7 @@ namespace System.Threading
 #endif
         }
 
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
         private void SignalWaiter()
         {
             // Since the lock was already released by the caller, there are no guarantees on the state at this point. For

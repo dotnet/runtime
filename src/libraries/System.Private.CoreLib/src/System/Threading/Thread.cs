@@ -156,7 +156,7 @@ namespace System.Threading
             Initialize();
         }
 
-#if FEATURE_SINGLE_THREAD
+#if FEATURE_SINGLE_THREADED
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsMultiThreadedPlatform => false;

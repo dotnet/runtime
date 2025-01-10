@@ -1169,7 +1169,7 @@ namespace System.Threading
             /// <summary>Enters the lock for this instance.  The current thread must not be holding the lock, but that is not validated.</summary>
             public void EnterLock()
             {
-#if !FEATURE_SINGLE_THREAD
+#if !FEATURE_SINGLE_THREADED
                 ref bool value = ref _locked;
                 if (Interlocked.Exchange(ref value, true))
                 {
