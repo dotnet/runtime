@@ -45,11 +45,13 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatc
 #endif // TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
 
+#if !defined(TARGET_UNIX)
 //
 // Retrieves the FaultingExceptionFrame* from the stack frame of
 // RedirectForThrowControl.
 //
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext);
+#endif // !TARGET_UNIX
 
 //
 // Functions that wrap RtlVirtualUnwind to make sure that in the AMD64 case all the

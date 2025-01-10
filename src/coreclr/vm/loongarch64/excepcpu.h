@@ -26,12 +26,6 @@ class FaultingExceptionFrame;
 //
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext);
 
-//
-// Retrieves the FaultingExceptionFrame* from the stack frame of
-// RedirectForThreadAbort.
-//
-FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (T_DISPATCHER_CONTEXT *pDispatcherContext);
-
 inline
 PCODE GetAdjustedCallAddress(PCODE returnAddress)
 {

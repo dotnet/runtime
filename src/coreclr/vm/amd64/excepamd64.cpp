@@ -65,14 +65,14 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
-
+#if !defined(TARGET_UNIX)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
 
     return (FaultingExceptionFrame*)(pDispatcherContext->EstablisherFrame + THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame);
 }
-
+#endif // !TARGET_UNIX
 #endif // !DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE)

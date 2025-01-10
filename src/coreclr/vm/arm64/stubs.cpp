@@ -922,13 +922,14 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
+#if !defined(TARGET_UNIX)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
 
     return (FaultingExceptionFrame*)((TADDR)pDispatcherContext->ContextRecord->X19);
 }
-
+#endif // !TARGET_UNIX
 
 BOOL
 AdjustContextForVirtualStub(

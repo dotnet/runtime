@@ -851,15 +851,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
-#if !defined(DACCESS_COMPILE)
-FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
-{
-    _ASSERTE(!"RISCV64: not implementation on riscv64!!!");
-    LIMITED_METHOD_CONTRACT;
-
-    return (FaultingExceptionFrame*)NULL;
-}
-
 
 BOOL
 AdjustContextForVirtualStub(
