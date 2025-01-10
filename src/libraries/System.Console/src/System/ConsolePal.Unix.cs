@@ -924,6 +924,10 @@ namespace System
 
                     // Mark us as initialized
                     s_initialized = true;
+
+                    // InitializeTerminalAndSignalHandling will reset the terminal on a normal exit.
+                    // This also resets it for termination due to an unhandled exception.
+                    AppDomain.CurrentDomain.UnhandledException += delegate { Interop.Sys.UninitializeTerminal(); };
                 }
             }
         }
