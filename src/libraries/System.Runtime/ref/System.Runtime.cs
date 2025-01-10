@@ -10769,17 +10769,17 @@ namespace System.IO
         public static readonly new System.IO.StreamReader Null;
         public StreamReader(System.IO.Stream stream) { }
         public StreamReader(System.IO.Stream stream, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.IO.FileStreamOptions options) { }
-        public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
+        public StreamReader(string path, System.Text.Encoding? encoding) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }
