@@ -4828,11 +4828,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_FLOW, &Compiler::optOptimizeFlow);
 
-        // Drop back to just checking profile likelihoods.
-        //
-        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-        activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
         // Second pass of tail merge
         //
         DoPhase(this, PHASE_HEAD_TAIL_MERGE2, [this]() {
@@ -4843,10 +4838,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
 
-        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels.
+        // Discover and classify natural loops (e.g. mark iterative loops as such).
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
+
+        // Drop back to just checking profile likelihoods.
+        //
+        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+        activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
         // Scale block weights and mark run rarely blocks.
         //

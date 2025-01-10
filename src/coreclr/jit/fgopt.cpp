@@ -2790,7 +2790,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     // bJump now falls through into the next block
     //
     BasicBlock* const bDestFalseTarget = bJump->Next();
-    FlowEdge* const falseEdge = fgAddRefPred(bDestFalseTarget, bJump, destFalseEdge);
+    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destFalseEdge);
 
     // bJump now jumps to bDest's normal jump target
     //
@@ -2816,7 +2816,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
         if ((bDestNormalTarget->NumSucc() > 0) || (bDestFalseTarget->NumSucc() > 0))
         {
-            JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", fgPgoConsistent ? "is now" : "was already");
+            JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
             fgPgoConsistent = false;
         }
     }
@@ -2947,7 +2948,8 @@ bool Compiler::fgOptimizeSwitchJumps()
         blockToTargetEdge->setLikelihood(fraction);
         blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
 
-        JITDUMP("fgOptimizeSwitchJumps: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n", newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+        JITDUMP("fgOptimizeSwitchJumps: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
         fgPgoConsistent = false;
 
         // For now we leave the switch as is, since there's no way

@@ -2249,7 +2249,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     for (FlowEdge* const predEdge : bTest->PredEdgesEditing())
     {
         BasicBlock* const predBlock = predEdge->getSourceBlock();
-        unsigned const bNum = predBlock->bbNum;
+        unsigned const    bNum      = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
         {
             // Looks like the predecessor is from within the potential loop; skip it.
