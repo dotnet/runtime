@@ -932,6 +932,13 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     Thread* pThread         = GetThread();
 
+    if (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP)
+    {
+        // This is an exception used to unwind during longjmp function. We just let it pass through managed
+        // frames without any interaction.
+        return ExceptionContinueSearch;
+    }
+
     if (pThread->HasThreadStateNC(Thread::TSNC_ProcessedUnhandledException))
     {
         if ((pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
