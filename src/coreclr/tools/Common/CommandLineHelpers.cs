@@ -60,7 +60,7 @@ namespace System.CommandLine
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return TargetOS.Windows;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID")))
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                     return TargetOS.Linux;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                     return TargetOS.OSX;
@@ -81,7 +81,6 @@ namespace System.CommandLine
                 "ios" => TargetOS.iOS,
                 "tvossimulator" => TargetOS.tvOSSimulator,
                 "tvos" => TargetOS.tvOS,
-                "android" => TargetOS.Android,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }

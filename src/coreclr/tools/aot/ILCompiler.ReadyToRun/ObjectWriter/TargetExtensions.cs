@@ -109,7 +109,6 @@ namespace ILCompiler.PEWriter
                     return MachineOSOverride.Windows;
 
                 case TargetOS.Linux:
-                case TargetOS.Android:
                     return MachineOSOverride.Linux;
 
                 case TargetOS.OSX:
