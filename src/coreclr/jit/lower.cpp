@@ -7995,6 +7995,16 @@ void Lowering::MapParameterRegisterLocals()
 //
 void Lowering::FindInducedParameterRegisterLocals()
 {
+#ifdef TARGET_ARM
+    // On arm32 the profiler hook does not preserve arg registers, so
+    // parameters are prespilled and cannot stay enregistered.
+    if (comp->compIsProfilerHookNeeded())
+    {
+        JITDUMP("Skipping FindInducedParameterRegisterLocals on arm32 with profiler hook\n");
+        return;
+    }
+#endif
+
     // Check if we possibly have any parameters we can induce new register
     // locals from.
     bool anyCandidates = false;
