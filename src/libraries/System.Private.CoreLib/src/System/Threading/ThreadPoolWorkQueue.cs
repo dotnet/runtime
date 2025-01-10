@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
-#if FEATURE_SINGLE_THREAD
+#if FEATURE_SINGLE_THREADED
 using WorkQueue = System.Collections.Generic.Queue<object>;
 #else
 using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
@@ -1308,7 +1308,7 @@ namespace System.Threading
         }
 
         private QueueProcessingStage _queueProcessingStage;
-#if FEATURE_SINGLE_THREAD
+#if FEATURE_SINGLE_THREADED
         private readonly Queue<T> _workItems = new Queue<T>();
 #else
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
@@ -1397,7 +1397,7 @@ namespace System.Threading
                 }
             }
 
-#if FEATURE_SINGLE_THREAD
+#if FEATURE_SINGLE_THREADED
             UpdateQueueProcessingStage(_workItems.Count == 0);
 #else
             UpdateQueueProcessingStage(_workItems.IsEmpty);
