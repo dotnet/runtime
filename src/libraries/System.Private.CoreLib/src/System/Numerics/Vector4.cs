@@ -409,15 +409,21 @@ namespace System.Numerics
             //    (vector1.W * vector2.W)
             //);
 
+            // This implementation is based on the DirectX Math Library XMVector3Cross method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
             Vector128<float> v1 = vector1.AsVector128();
             Vector128<float> v2 = vector2.AsVector128();
 
-            Vector128<float> m1 = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)) *
-                Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3));
             Vector128<float> m2 = Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)) *
-                Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3));
+                 Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3));
+            m2 = m2.WithElement(3, 0);
 
-            return (m1 - m2.WithElement(3, 0)).AsVector4();
+            return Vector128.MultiplyAddEstimate(
+                Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)),
+                Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3)),
+                -m2
+            ).AsVector4();
         }
 
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />
