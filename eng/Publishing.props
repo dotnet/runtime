@@ -9,6 +9,15 @@
   </PropertyGroup>
 
   <!--
+    Mark assets as Vertical visibility when building in the VMR
+  -->
+  <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
+              Visibility="Vertical" />
+  </ItemGroup>
+
+  <!--
     Look through the downloaded artifacts to figure out how to ship them. Creates item groups for
     other types of publishing to use.
 

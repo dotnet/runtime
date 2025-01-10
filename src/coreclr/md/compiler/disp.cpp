@@ -581,6 +581,8 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
     else if (riid == IID_IMetaDataDispenserEx2)
         *ppUnk = (IMetaDataDispenserEx2 *) this;
+    else if (riid == IID_IILAsmPortablePdbWriter)
+        *ppUnk = (IILAsmPortablePdbWriter *) this;
 #endif
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     else if (riid == IID_IMetaDataDispenserCustom)

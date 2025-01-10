@@ -9250,8 +9250,11 @@ void emitter::emitIns_SIMD_R_R_A_R(instruction   ins,
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-        assert(targetReg != REG_XMM0);
+        // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
+        // reuse REG_XMM0 for destination i.e. targetReg. In such case, make sure
+        // that XMM0 value after the (op3Reg -> XMM0) move done above is not
+        // overwritten by op1Reg.
+        assert((targetReg != REG_XMM0) || (op1Reg == op3Reg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_A(ins, attr, targetReg, indir);
@@ -9325,8 +9328,11 @@ void emitter::emitIns_SIMD_R_R_C_R(instruction          ins,
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-        assert(targetReg != REG_XMM0);
+        // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
+        // reuse REG_XMM0 for destination i.e. targetReg. In such case, make sure
+        // that XMM0 value after the (op3Reg -> XMM0) move done above is not
+        // overwritten by op1Reg.
+        assert((targetReg != REG_XMM0) || (op1Reg == op3Reg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
@@ -9400,8 +9406,11 @@ void emitter::emitIns_SIMD_R_R_S_R(instruction ins,
         // SSE4.1 blendv* hardcode the mask vector (op3) in XMM0
         emitIns_Mov(INS_movaps, attr, REG_XMM0, op3Reg, /* canSkip */ true);
 
-        // Ensure we aren't overwriting op3 (which should be REG_XMM0)
-        assert(targetReg != REG_XMM0);
+        // If targetReg == REG_XMM0, it means that op3 was last use and we decided to
+        // reuse REG_XMM0 for destination i.e. targetReg. In such case, make sure
+        // that XMM0 value after the (op3Reg -> XMM0) move done above is not
+        // overwritten by op1Reg.
+        assert((targetReg != REG_XMM0) || (op1Reg == op3Reg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
         emitIns_R_S(ins, attr, targetReg, varx, offs);
@@ -12358,10 +12367,18 @@ void emitter::emitDispIns(
                 reg2          = reg3;
                 reg3          = tmp;
             }
+
+            emitAttr attr3 = attr;
+            if (hasTupleTypeInfo(ins) && ((insTupleTypeInfo(ins) & INS_TT_MEM128) != 0))
+            {
+                // Shift instructions take xmm for the 3rd operand regardless of instruction size.
+                attr3 = EA_16BYTE;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, ", emitRegName(reg2, attr));
-            printf("%s", emitRegName(reg3, attr));
+            printf("%s", emitRegName(reg3, attr3));
             emitDispEmbRounding(id);
             break;
         }
