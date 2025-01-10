@@ -36,8 +36,8 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
   </PropertyGroup>
 
-  <!-- Override default trimming switches  -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+  <!-- Override default trimming switches for Apple mobile -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
     <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
     <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>
