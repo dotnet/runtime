@@ -24,7 +24,8 @@ namespace System.Buffers.Text
             ];
             Debug.Assert(log2ToPow10.Length == 64);
 
-            // We use 'nint' because it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
+            // We use a native-sized integer
+            // because it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
             // TODO: Replace with log2ToPow10[BitOperations.Log2(value)] once https://github.com/dotnet/runtime/issues/79257 is fixed
             nint elementOffset = Unsafe.Add(ref MemoryMarshal.GetReference(log2ToPow10), BitOperations.Log2(value));
 
