@@ -4704,6 +4704,7 @@ void Compiler::fgDebugCheckLoops()
         {
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+            assert(!bbIsTryBeg(loop->GetHeader()));
 
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())

@@ -1747,7 +1747,7 @@ void EnsureTlsDestructionMonitor()
 
 #ifdef DEBUGGING_SUPPORTED
 //
-// InitializeDebugger initialized the Runtime-side COM+ Debugging Services
+// InitializeDebugger initialized the Runtime-side CLR Debugging Services
 //
 static void InitializeDebugger(void)
 {
@@ -1830,7 +1830,7 @@ static void InitializeDebugger(void)
 
 
 //
-// TerminateDebugger shuts down the Runtime-side COM+ Debugging Services
+// TerminateDebugger shuts down the Runtime-side CLR Debugging Services
 // InitializeDebugger will call this if it fails.
 // This may be called even if the debugger is partially initialized.
 // This can be called multiple times.

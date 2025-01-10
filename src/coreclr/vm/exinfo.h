@@ -48,7 +48,7 @@ public:  // @TODO: make more of these private!
     OBJECTHANDLE    m_hThrowable;       // thrown exception
     PTR_Frame       m_pSearchBoundary;  // topmost frame for current managed frame group
 private:
-    DWORD           m_ExceptionCode;    // After a catch of a COM+ exception, pointers/context are trashed.
+    DWORD           m_ExceptionCode;    // After a catch of a CLR exception, pointers/context are trashed.
 public:
     PTR_EXCEPTION_REGISTRATION_RECORD m_pBottomMostHandler; // most recent EH record registered
 
