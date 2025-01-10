@@ -485,7 +485,7 @@ namespace System.Globalization
                 message: ((options & CompareOptions.Ordinal) != 0) ? SR.Argument_CompareOptionOrdinal : SR.Argument_InvalidFlag);
         }
 
-        private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
+        private int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
@@ -863,7 +863,7 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        public unsafe int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
+        public int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -893,7 +893,7 @@ namespace System.Globalization
             return result;
         }
 
-        public unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
+        public int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -1579,7 +1579,7 @@ namespace System.Globalization
             }
         }
 
-        private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
+        private int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
                 IcuGetHashCodeOfString(source, options);
