@@ -203,6 +203,24 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
     pContext->Sp = pPalContext->SP;
     pContext->Ra = pPalContext->RA;
     pContext->Pc = pPalContext->IP;
+#elif defined(HOST_RISCV64)
+    pContext->A0 = pPalContext->A0;
+    pContext->A1 = pPalContext->A1;
+    pContext->S1 = pPalContext->S1;
+    pContext->S2 = pPalContext->S2;
+    pContext->S3 = pPalContext->S3;
+    pContext->S4 = pPalContext->S4;
+    pContext->S5 = pPalContext->S5;
+    pContext->S6 = pPalContext->S6;
+    pContext->S7 = pPalContext->S7;
+    pContext->S8 = pPalContext->S8;
+    pContext->S9 = pPalContext->S9;
+    pContext->S10 = pPalContext->S10;
+    pContext->S11 = pPalContext->S11;
+    pContext->Fp = pPalContext->FP;
+    pContext->Sp = pPalContext->SP;
+    pContext->Ra = pPalContext->RA;
+    pContext->Pc = pPalContext->IP;
 #elif defined(HOST_WASM)
     // No registers, no work to do yet
 #else
@@ -295,7 +313,7 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
 #endif
 
@@ -328,7 +346,7 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
         (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
         (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
     };
@@ -410,7 +428,7 @@ static uintptr_t UnwindSimpleHelperToCaller(
     pContext->SetSp(sp+sizeof(uintptr_t)); // pop the stack
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
-#elif defined(HOST_LOONGARCH64)
+#elif defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     uintptr_t adjustedFaultingIP = pContext->GetRa();
 #else
     uintptr_t adjustedFaultingIP = 0; // initializing to make the compiler happy

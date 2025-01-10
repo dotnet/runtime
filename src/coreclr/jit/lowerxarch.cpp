@@ -9137,431 +9137,224 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     assert(supportsRegOptional != nullptr);
 
     NamedIntrinsic      parentIntrinsicId = parentNode->GetHWIntrinsicId();
+    var_types           parentBaseType    = parentNode->GetSimdBaseType();
     HWIntrinsicCategory category          = HWIntrinsicInfo::lookupCategory(parentIntrinsicId);
 
     // We shouldn't have called in here if parentNode doesn't support containment
     assert(HWIntrinsicInfo::SupportsContainment(parentIntrinsicId));
 
-    // parentNode supports nodes that read from an aligned memory address
+    // In general, we can mark the child regOptional as long as it is at least as large as the parent instruction's
+    // memory operand size.
     //
-    // This will generally be an explicit LoadAligned instruction and is false for
-    // machines with VEX support when minOpts is enabled. This is because there is
-    // currently no way to guarantee that the address read from will always be
-    // aligned and we want to assert that the address is aligned when optimizations
-    // aren't enabled. However, when optimizations are enabled, we want to allow
-    // folding of memory operands as it produces better codegen and allows simpler
-    // coding patterns on the managed side.
-    bool supportsAlignedSIMDLoads = false;
+    // In cases where we are going to mark an operand regOptional, we need to know whether the reg will be GP or SIMD.
+    // We can only contain a SIMD child if a GP reg is not a possibility.
 
-    // parentNode supports nodes that read from general memory
-    //
-    // We currently have to assume all "general" loads are unaligned. As such, this is
-    // generally used to determine if we can mark the node as `regOptional` in the case
-    // where `childNode` is not containable. However, this can also be used to determine whether
-    // we can mark other types of reads as contained (such as when directly reading a local).
-    bool supportsGeneralLoads = false;
-
-    // parentNode supports nodes that read from a scalar memory address
-    //
-    // This will generally be an explicit LoadScalar instruction but is also used to determine
-    // whether we can read an address of type T (we don't support this when the load would
-    // read more than sizeof(T) bytes).
-    bool supportsSIMDScalarLoads = false;
+    unsigned expectedSize     = parentNode->GetSimdSize();
+    unsigned operandSize      = genTypeSize(childNode);
+    bool     supportsMemoryOp = true;
+    bool     supportsSIMDLoad = true;
 
     switch (category)
     {
         case HW_Category_MemoryLoad:
         {
-            supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
+            // The operand is a pointer, so we can't check the load size. Assume it matches.
+            assert(varTypeIsI(childNode));
+
+            operandSize = expectedSize;
             break;
         }
 
         case HW_Category_SimpleSIMD:
+        case HW_Category_IMM:
         {
+            instruction  ins       = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType);
+            insTupleType tupleType = comp->GetEmitter()->insTupleTypeInfo(ins);
+
             switch (parentIntrinsicId)
             {
+                case NI_SSE41_ConvertToVector128Int16:
+                case NI_SSE41_ConvertToVector128Int32:
+                case NI_SSE41_ConvertToVector128Int64:
+                case NI_AVX2_ConvertToVector256Int16:
+                case NI_AVX2_ConvertToVector256Int32:
+                case NI_AVX2_ConvertToVector256Int64:
                 case NI_AVX2_BroadcastVector128ToVector256:
                 case NI_AVX512F_BroadcastVector128ToVector512:
                 case NI_AVX512F_BroadcastVector256ToVector512:
                 {
-                    assert(!supportsSIMDScalarLoads);
-
+                    // These can have either pointer or vector operands. For the pointer case, we can't check
+                    // size, so just assume it matches. Otherwise, do normal size check based on tuple type.
                     if (parentNode->OperIsMemoryLoad())
                     {
-                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
+                        operandSize = expectedSize;
                         break;
                     }
 
-                    supportsGeneralLoads = true;
-                    break;
-                }
-
-                case NI_SSE2_ConvertToVector128Double:
-                case NI_SSE3_MoveAndDuplicate:
-                case NI_SSE41_ConvertToVector128Int16:
-                case NI_SSE41_ConvertToVector128Int32:
-                case NI_SSE41_ConvertToVector128Int64:
-                case NI_AVX_ConvertToVector256Double:
-                case NI_AVX2_ConvertToVector256Int16:
-                case NI_AVX2_ConvertToVector256Int32:
-                case NI_AVX2_ConvertToVector256Int64:
-                case NI_AVX512BW_ConvertToVector512Int16:
-                case NI_AVX512BW_ConvertToVector512UInt16:
-                case NI_AVX512F_ConvertToVector512Double:
-                case NI_AVX512F_ConvertToVector512Int32:
-                case NI_AVX512F_ConvertToVector512UInt32:
-                case NI_AVX512F_ConvertToVector512Int64:
-                case NI_AVX512F_ConvertToVector512UInt64:
-                case NI_AVX512F_VL_ConvertToVector128Double:
-                case NI_AVX512F_VL_ConvertToVector256Double:
-                case NI_AVX10v1_ConvertToVector128Double:
-                case NI_AVX10v1_ConvertToVector256Double:
-                {
-                    // Some of these intrinsics have pointer overloads. Treat those as normal memory loads.
-                    if (parentNode->OperIsMemoryLoad())
-                    {
-                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
-                        break;
-                    }
-
-                    // These are widening instructions. A load can be contained if the source is large enough
-                    // after taking into account the multiplier of source to target element size.
-
-                    const var_types   parentBaseType    = parentNode->GetSimdBaseType();
-                    const instruction parentInstruction = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType);
-
-                    const insTupleType tupleType   = comp->GetEmitter()->insTupleTypeInfo(parentInstruction);
-                    const unsigned     parentSize  = parentNode->GetSimdSize();
-                    unsigned           widenFactor = 0;
-
-                    switch (tupleType)
-                    {
-                        case INS_TT_FULL:
-                        case INS_TT_FULL_MEM:
-                        {
-                            widenFactor = 1;
-                            break;
-                        }
-
-                        case INS_TT_HALF:
-                        case INS_TT_HALF_MEM:
-                        {
-                            widenFactor = 2;
-                            break;
-                        }
-
-                        case INS_TT_QUARTER_MEM:
-                        {
-                            widenFactor = 4;
-                            break;
-                        }
-
-                        case INS_TT_EIGHTH_MEM:
-                        {
-                            widenFactor = 8;
-                            break;
-                        }
-
-                        case INS_TT_MOVDDUP:
-                        {
-                            widenFactor = parentSize == 16 ? 2 : 1;
-                            break;
-                        }
-
-                        default:
-                        {
-                            unreached();
-                            break;
-                        }
-                    }
-
-                    const unsigned expectedSize = parentSize / widenFactor;
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    if (expectedSize < 16)
-                    {
-                        // We do not need to consider alignment for non-VEX encoding here because we're
-                        // loading less than a full vector.
-                        //
-                        // We can also contain a SIMD scalar load, provided the element type is large enough.
-
-                        supportsAlignedSIMDLoads = !comp->opts.MinOpts();
-                        supportsGeneralLoads     = (operandSize >= expectedSize);
-
-                        if (childNode->OperIsHWIntrinsic())
-                        {
-                            GenTreeHWIntrinsic* childIntrinsic       = childNode->AsHWIntrinsic();
-                            const unsigned      sizeof_childBaseType = genTypeSize(childIntrinsic->GetSimdBaseType());
-
-                            supportsSIMDScalarLoads = (sizeof_childBaseType >= expectedSize);
-                        }
-                    }
-                    else
-                    {
-                        supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                        supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
-                    }
-
-                    break;
-                }
-
-                default:
-                {
-                    assert(!supportsSIMDScalarLoads);
-
-                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet());
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                    supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
-                    break;
-                }
-            }
-            break;
-        }
-
-        case HW_Category_IMM:
-        {
-            switch (parentIntrinsicId)
-            {
-                case NI_SSE_Shuffle:
-                case NI_SSE2_ShiftLeftLogical:
-                case NI_SSE2_ShiftRightArithmetic:
-                case NI_SSE2_ShiftRightLogical:
-                case NI_SSE2_Shuffle:
-                case NI_SSE2_ShuffleHigh:
-                case NI_SSE2_ShuffleLow:
-                case NI_SSSE3_AlignRight:
-                case NI_SSE41_Blend:
-                case NI_SSE41_DotProduct:
-                case NI_SSE41_MultipleSumAbsoluteDifferences:
-                case NI_AES_KeygenAssist:
-                case NI_PCLMULQDQ_CarrylessMultiply:
-                case NI_PCLMULQDQ_V256_CarrylessMultiply:
-                case NI_PCLMULQDQ_V512_CarrylessMultiply:
-                case NI_AVX_Blend:
-                case NI_AVX_Compare:
-                case NI_AVX_DotProduct:
-                case NI_AVX_Permute:
-                case NI_AVX_Permute2x128:
-                case NI_AVX_Shuffle:
-                case NI_AVX2_AlignRight:
-                case NI_AVX2_Blend:
-                case NI_AVX2_MultipleSumAbsoluteDifferences:
-                case NI_AVX2_Permute2x128:
-                case NI_AVX2_Permute4x64:
-                case NI_AVX2_ShiftLeftLogical:
-                case NI_AVX2_ShiftRightArithmetic:
-                case NI_AVX2_ShiftRightLogical:
-                case NI_AVX2_Shuffle:
-                case NI_AVX2_ShuffleHigh:
-                case NI_AVX2_ShuffleLow:
-                case NI_AVX512F_AlignRight32:
-                case NI_AVX512F_AlignRight64:
-                case NI_EVEX_CompareMask:
-                case NI_AVX512F_Fixup:
-                case NI_AVX512F_GetMantissa:
-                case NI_AVX512F_Permute2x64:
-                case NI_AVX512F_Permute4x32:
-                case NI_AVX512F_Permute4x64:
-                case NI_AVX512F_RotateLeft:
-                case NI_AVX512F_RotateRight:
-                case NI_AVX512F_RoundScale:
-                case NI_AVX512F_ShiftLeftLogical:
-                case NI_AVX512F_ShiftRightArithmetic:
-                case NI_AVX512F_ShiftRightLogical:
-                case NI_AVX512F_Shuffle:
-                case NI_AVX512F_Shuffle4x128:
-                case NI_AVX512F_TernaryLogic:
-                case NI_AVX512F_VL_AlignRight32:
-                case NI_AVX512F_VL_AlignRight64:
-                case NI_AVX512F_VL_Fixup:
-                case NI_AVX512F_VL_GetMantissa:
-                case NI_AVX512F_VL_RotateLeft:
-                case NI_AVX512F_VL_RotateRight:
-                case NI_AVX512F_VL_RoundScale:
-                case NI_AVX512F_VL_ShiftRightArithmetic:
-                case NI_AVX512F_VL_Shuffle2x128:
-                case NI_AVX512F_VL_TernaryLogic:
-                case NI_AVX512BW_AlignRight:
-                case NI_AVX512BW_ShiftLeftLogical:
-                case NI_AVX512BW_ShiftRightArithmetic:
-                case NI_AVX512BW_ShiftRightLogical:
-                case NI_AVX512BW_ShuffleHigh:
-                case NI_AVX512BW_ShuffleLow:
-                case NI_AVX512BW_SumAbsoluteDifferencesInBlock32:
-                case NI_AVX512BW_VL_SumAbsoluteDifferencesInBlock32:
-                case NI_AVX512DQ_Range:
-                case NI_AVX512DQ_Reduce:
-                case NI_AVX512DQ_VL_Range:
-                case NI_AVX512DQ_VL_Reduce:
-                case NI_AVX10v1_AlignRight32:
-                case NI_AVX10v1_AlignRight64:
-                case NI_AVX10v1_Fixup:
-                case NI_AVX10v1_GetMantissa:
-                case NI_AVX10v1_Range:
-                case NI_AVX10v1_Reduce:
-                case NI_AVX10v1_RotateLeft:
-                case NI_AVX10v1_RotateRight:
-                case NI_AVX10v1_RoundScale:
-                case NI_AVX10v1_ShiftRightArithmetic:
-                case NI_AVX10v1_Shuffle2x128:
-                case NI_AVX10v1_SumAbsoluteDifferencesInBlock32:
-                case NI_AVX10v1_TernaryLogic:
-                case NI_AVX10v1_V512_Range:
-                case NI_AVX10v1_V512_Reduce:
-                case NI_GFNI_GaloisFieldAffineTransform:
-                case NI_GFNI_GaloisFieldAffineTransformInverse:
-                case NI_GFNI_V256_GaloisFieldAffineTransform:
-                case NI_GFNI_V256_GaloisFieldAffineTransformInverse:
-                case NI_GFNI_V512_GaloisFieldAffineTransform:
-                case NI_GFNI_V512_GaloisFieldAffineTransformInverse:
-                {
-                    assert(!supportsSIMDScalarLoads);
-
-                    const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                    supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
-                    break;
+                    goto SIZE_FROM_TUPLE_TYPE;
                 }
 
                 case NI_SSE2_ShiftLeftLogical128BitLane:
                 case NI_SSE2_ShiftRightLogical128BitLane:
                 case NI_AVX2_ShiftLeftLogical128BitLane:
                 case NI_AVX2_ShiftRightLogical128BitLane:
-                case NI_AVX512BW_ShiftLeftLogical128BitLane:
-                case NI_AVX512BW_ShiftRightLogical128BitLane:
                 {
-                    if (comp->IsBaselineVector512IsaSupportedOpportunistically())
+                    if (!comp->canUseEvexEncoding())
                     {
-                        assert(!supportsSIMDScalarLoads);
-
-                        const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
-                        const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                        supportsAlignedSIMDLoads = !comp->canUseVexEncoding() || !comp->opts.MinOpts();
-                        supportsGeneralLoads     = comp->canUseVexEncoding() && (operandSize >= expectedSize);
+                        supportsMemoryOp = false;
+                        break;
                     }
-                    else
-                    {
-                        assert(supportsAlignedSIMDLoads == false);
-                        assert(supportsGeneralLoads == false);
-                        assert(supportsSIMDScalarLoads == false);
-                    }
-                    break;
+
+                    goto SIZE_FROM_TUPLE_TYPE;
                 }
 
-                case NI_AVX_InsertVector128:
-                case NI_AVX2_InsertVector128:
-                case NI_AVX512F_InsertVector128:
-                case NI_AVX512DQ_InsertVector128:
-                case NI_AVX10v1_V512_InsertVector128:
+                case NI_SSE2_ShiftLeftLogical:
+                case NI_SSE2_ShiftRightArithmetic:
+                case NI_SSE2_ShiftRightLogical:
+                case NI_AVX2_ShiftLeftLogical:
+                case NI_AVX2_ShiftRightArithmetic:
+                case NI_AVX2_ShiftRightLogical:
+                case NI_AVX512BW_ShiftLeftLogical:
+                case NI_AVX512BW_ShiftRightArithmetic:
+                case NI_AVX512BW_ShiftRightLogical:
+                case NI_AVX512F_ShiftLeftLogical:
+                case NI_AVX512F_ShiftRightArithmetic:
+                case NI_AVX512F_ShiftRightLogical:
+                case NI_AVX512F_VL_ShiftRightArithmetic:
+                case NI_AVX10v1_ShiftRightArithmetic:
                 {
-                    // InsertVector128 is special in that it returns a TYP_SIMD32 but takes a TYP_SIMD16.
-                    assert(!supportsSIMDScalarLoads);
+                    assert((tupleType & INS_TT_MEM128) != 0);
 
-                    const unsigned expectedSize = 16;
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+                    // Shift amount (op2) can be either imm8 or vector. If vector, it will always be xmm/m128.
+                    //
+                    // Otherwise, when using EVEX encoding, we can contain a load for the input vector (op1),
+                    // so size comes from the parent.
 
-                    supportsAlignedSIMDLoads = !comp->opts.MinOpts();
-                    supportsGeneralLoads     = (operandSize >= expectedSize);
-                    break;
-                }
+                    if (!HWIntrinsicInfo::isImmOp(parentIntrinsicId, parentNode->Op(2)))
+                    {
+                        expectedSize = genTypeSize(TYP_SIMD16);
+                        break;
+                    }
+                    else if ((expectedSize < genTypeSize(TYP_SIMD64)) && (ins != INS_vpsraq))
+                    {
+                        // TODO-XArch-CQ: This should really only be checking EVEX capability, however
+                        // emitter::TakesEvexPrefix doesn't currently handle requiring EVEX based on presence
+                        // of an immediate operand. For now we disable containment of op1 unless EVEX is
+                        // required for some other reason.
+                        supportsMemoryOp = false;
+                        break;
+                    }
 
-                case NI_AVX512F_InsertVector256:
-                case NI_AVX512DQ_InsertVector256:
-                case NI_AVX10v1_V512_InsertVector256:
-                {
-                    // InsertVector256 is special in that it returns a TYP_SIMD64 but takes a TYP_SIMD32.
-                    assert(!supportsSIMDScalarLoads);
-
-                    const unsigned expectedSize = 32;
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    supportsAlignedSIMDLoads = !comp->opts.MinOpts();
-                    supportsGeneralLoads     = (operandSize >= expectedSize);
-                    break;
+                    goto SIZE_FROM_TUPLE_TYPE;
                 }
 
                 case NI_SSE2_Insert:
                 case NI_SSE41_Insert:
                 case NI_SSE41_X64_Insert:
                 {
-                    assert(supportsAlignedSIMDLoads == false);
+                    // insertps op2 is xmm/m32. If xmm, the upper 2 bits of op3 (imm8) are used to select the element
+                    // position from the source vector; if m32, the source element selection bits in the imm8 are
+                    // ignored.
+                    //
+                    // We will allow containment only if the immediate is constant and the element selection bits are
+                    // explicitly zero.
 
-                    if (parentNode->GetSimdBaseType() == TYP_FLOAT)
+                    if (ins == INS_insertps)
                     {
-                        assert(parentIntrinsicId == NI_SSE41_Insert);
+                        supportsMemoryOp = false;
 
-                        // Sse41.Insert(V128<float>, V128<float>, byte) is a bit special
-                        // in that it has different behavior depending on whether the
-                        // second operand is coming from a register or memory. When coming
-                        // from a register, all 4 elements of the vector can be used and it
-                        // is effectively a regular `SimpleSIMD` operation; but when loading
-                        // from memory, it only works with the lowest element and is effectively
-                        // a `SIMDScalar`.
-
-                        assert(supportsGeneralLoads == false);
-                        assert(supportsSIMDScalarLoads == false);
-
-                        GenTree* op1 = parentNode->Op(1);
-                        GenTree* op2 = parentNode->Op(2);
                         GenTree* op3 = parentNode->Op(3);
-
-                        // The upper two bits of the immediate value are ignored if
-                        // op2 comes from memory. In order to support using the upper
-                        // bits, we need to disable containment support if op3 is not
-                        // constant or if the constant is greater than 0x3F (which means
-                        // at least one of the upper two bits is set).
-
                         if (op3->IsCnsIntOrI())
                         {
                             ssize_t ival = op3->AsIntCon()->IconValue();
                             assert((ival >= 0) && (ival <= 255));
 
-                            supportsSIMDScalarLoads = (ival <= 0x3F);
-                            supportsGeneralLoads    = supportsSIMDScalarLoads;
+                            expectedSize     = genTypeSize(TYP_FLOAT);
+                            supportsMemoryOp = (ival <= 0x3F);
                         }
                         break;
                     }
 
-                    // We should only get here for integral nodes.
                     assert(varTypeIsIntegral(childNode->TypeGet()));
-                    assert(supportsSIMDScalarLoads == false);
 
-                    const unsigned expectedSize = genTypeSize(parentNode->GetSimdBaseType());
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    supportsGeneralLoads = (operandSize >= expectedSize);
-                    break;
-                }
-
-                case NI_AVX_CompareScalar:
-                case NI_AVX512F_FixupScalar:
-                case NI_AVX512F_GetMantissaScalar:
-                case NI_AVX512F_RoundScaleScalar:
-                case NI_AVX512DQ_RangeScalar:
-                case NI_AVX512DQ_ReduceScalar:
-                case NI_AVX10v1_FixupScalar:
-                case NI_AVX10v1_GetMantissaScalar:
-                case NI_AVX10v1_RangeScalar:
-                case NI_AVX10v1_ReduceScalar:
-                case NI_AVX10v1_RoundScaleScalar:
-                {
-                    assert(supportsAlignedSIMDLoads == false);
-
-                    supportsSIMDScalarLoads = true;
-                    supportsGeneralLoads    = supportsSIMDScalarLoads;
+                    // These load a scalar, so if the base type is integral, it may be in a GP reg.
+                    expectedSize     = genTypeSize(parentBaseType);
+                    supportsSIMDLoad = false;
                     break;
                 }
 
                 default:
+                SIZE_FROM_TUPLE_TYPE:
                 {
-                    assert(supportsAlignedSIMDLoads == false);
-                    assert(supportsGeneralLoads == false);
-                    assert(supportsSIMDScalarLoads == false);
+                    tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
+                    switch (tupleType)
+                    {
+                        case INS_TT_NONE:
+                        case INS_TT_FULL:
+                        case INS_TT_FULL_MEM:
+                        {
+                            // full parent size required
+                            break;
+                        }
+
+                        case INS_TT_HALF:
+                        case INS_TT_HALF_MEM:
+                        {
+                            expectedSize /= 2;
+                            break;
+                        }
+
+                        case INS_TT_QUARTER_MEM:
+                        {
+                            expectedSize /= 4;
+                            break;
+                        }
+
+                        case INS_TT_EIGHTH_MEM:
+                        {
+                            expectedSize /= 8;
+                            break;
+                        }
+
+                        case INS_TT_MOVDDUP:
+                        {
+                            if (expectedSize == genTypeSize(TYP_SIMD16))
+                            {
+                                expectedSize /= 2;
+                            }
+                            break;
+                        }
+
+                        case INS_TT_TUPLE1_FIXED:
+                        case INS_TT_TUPLE1_SCALAR:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins);
+                            break;
+                        }
+
+                        case INS_TT_TUPLE2:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins) * 2;
+                            break;
+                        }
+
+                        case INS_TT_TUPLE4:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins) * 4;
+                            break;
+                        }
+
+                        case INS_TT_TUPLE8:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins) * 8;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
                     break;
                 }
             }
@@ -9570,7 +9363,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
         case HW_Category_SIMDScalar:
         {
-            assert(supportsAlignedSIMDLoads == false);
+            expectedSize = genTypeSize(parentBaseType);
 
             switch (parentIntrinsicId)
             {
@@ -9578,21 +9371,13 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:
                 {
-                    if (!varTypeIsIntegral(childNode->TypeGet()))
+                    // Integral scalar loads to vector use movd/movq, so small types must be sized up.
+                    // They may also use a GR reg, so disable SIMD operand containment.
+                    if (varTypeIsIntegral(childNode->TypeGet()))
                     {
-                        // The floating-point overload doesn't require any special semantics
-                        supportsSIMDScalarLoads = true;
-                        supportsGeneralLoads    = supportsSIMDScalarLoads;
-                        break;
+                        expectedSize     = genTypeSize(genActualType(parentBaseType));
+                        supportsSIMDLoad = false;
                     }
-
-                    // The integral overloads only take GPR/mem
-                    assert(supportsSIMDScalarLoads == false);
-
-                    const unsigned expectedSize = genTypeSize(genActualType(parentNode->GetSimdBaseType()));
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    supportsGeneralLoads = (operandSize >= expectedSize);
                     break;
                 }
 
@@ -9601,63 +9386,23 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_BroadcastScalarToVector512:
                 case NI_AVX512BW_BroadcastScalarToVector512:
                 {
-                    if (!parentNode->OperIsMemoryLoad())
+                    // These can have either pointer or vector operands. For the pointer case, we can't check
+                    // size, so just assume it matches.
+                    if (parentNode->OperIsMemoryLoad())
                     {
-                        // The containable form is the one that takes a SIMD value, that may be in memory.
-                        supportsSIMDScalarLoads = true;
-                        supportsGeneralLoads    = supportsSIMDScalarLoads;
-                    }
-                    else
-                    {
-                        // The memory form of this already takes a pointer and should be treated like a MemoryLoad
-                        supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
-                    }
-
-                    supportsGeneralLoads =
-                        supportsGeneralLoads && (genTypeSize(childNode) >= genTypeSize(parentNode->GetSimdBaseType()));
-                    break;
-                }
-
-                case NI_SSE_ConvertScalarToVector128Single:
-                case NI_SSE2_ConvertScalarToVector128Double:
-                case NI_SSE2_ConvertScalarToVector128Int32:
-                case NI_SSE2_ConvertScalarToVector128UInt32:
-                case NI_SSE_X64_ConvertScalarToVector128Single:
-                case NI_SSE2_X64_ConvertScalarToVector128Double:
-                case NI_SSE2_X64_ConvertScalarToVector128Int64:
-                case NI_SSE2_X64_ConvertScalarToVector128UInt64:
-                case NI_AVX512F_ConvertScalarToVector128Double:
-                case NI_AVX512F_ConvertScalarToVector128Single:
-                case NI_AVX512F_X64_ConvertScalarToVector128Double:
-                case NI_AVX512F_X64_ConvertScalarToVector128Single:
-                case NI_AVX10v1_X64_ConvertScalarToVector128Double:
-                case NI_AVX10v1_X64_ConvertScalarToVector128Single:
-                case NI_AVX10v1_ConvertScalarToVector128Double:
-                case NI_AVX10v1_ConvertScalarToVector128Single:
-                {
-                    if (!varTypeIsIntegral(childNode->TypeGet()))
-                    {
-                        // The floating-point overload doesn't require any special semantics
-                        assert(parentIntrinsicId == NI_SSE2_ConvertScalarToVector128Double);
-                        supportsSIMDScalarLoads = true;
-                        supportsGeneralLoads    = supportsSIMDScalarLoads;
+                        operandSize = expectedSize;
                         break;
                     }
 
-                    // The integral overloads only take GPR/mem
-                    assert(supportsSIMDScalarLoads == false);
-
-                    const unsigned expectedSize = genTypeSize(genActualType(parentNode->GetSimdBaseType()));
-                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
-
-                    supportsGeneralLoads = (operandSize >= expectedSize);
+                    // The vector case that supports containment is the
+                    // BroadcastScalarToVector(CreateScalarUnsafe()) pattern.
                     break;
                 }
 
                 default:
                 {
-                    supportsSIMDScalarLoads = true;
-                    supportsGeneralLoads    = supportsSIMDScalarLoads;
+                    // Scalar integral values may be in a GP reg.
+                    supportsSIMDLoad = !varTypeIsIntegral(childNode->TypeGet());
                     break;
                 }
             }
@@ -9669,44 +9414,40 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             // We should only get here for integral nodes.
             assert(varTypeIsIntegral(childNode->TypeGet()));
 
-            assert(supportsAlignedSIMDLoads == false);
-            assert(supportsSIMDScalarLoads == false);
-
-            unsigned       expectedSize = genTypeSize(parentNode->TypeGet());
-            const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+            expectedSize = genTypeSize(parentNode);
 
             // CRC32 codegen depends on its second operand's type.
             // Currently, we are using SIMDBaseType to store the op2Type info.
             if (parentIntrinsicId == NI_SSE42_Crc32)
             {
-                var_types op2Type = parentNode->GetSimdBaseType();
-                expectedSize      = genTypeSize(op2Type);
+                expectedSize = genTypeSize(parentBaseType);
             }
 
-            supportsGeneralLoads = (operandSize >= expectedSize);
             break;
         }
 
         default:
         {
-            assert(supportsAlignedSIMDLoads == false);
-            assert(supportsGeneralLoads == false);
-            assert(supportsSIMDScalarLoads == false);
-            break;
+            unreached();
         }
     }
 
-    *supportsRegOptional = supportsGeneralLoads && IsSafeToMarkRegOptional(parentNode, childNode);
+    supportsMemoryOp = supportsMemoryOp && (operandSize >= expectedSize);
+    supportsSIMDLoad = supportsSIMDLoad && supportsMemoryOp;
+
+    // SIMD16 loads are containable on non-VEX hardware only if the address is aligned.
+    bool supportsUnalignedLoad = (expectedSize < genTypeSize(TYP_SIMD16)) || comp->canUseVexEncoding();
+    *supportsRegOptional = supportsMemoryOp && supportsUnalignedLoad && IsSafeToMarkRegOptional(parentNode, childNode);
 
     if (!childNode->OperIsHWIntrinsic())
     {
         bool canBeContained = false;
 
-        if (supportsGeneralLoads)
+        if (supportsMemoryOp)
         {
             if (IsContainableMemoryOp(childNode))
             {
-                canBeContained = IsSafeToContainMem(parentNode, childNode);
+                canBeContained = supportsUnalignedLoad && IsSafeToContainMem(parentNode, childNode);
             }
             else if (childNode->IsCnsNonZeroFltOrDbl())
             {
@@ -9722,10 +9463,11 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         return canBeContained;
     }
 
-    // TODO-XArch: Update this to be table driven, if possible.
+    GenTreeHWIntrinsic* hwintrinsic   = childNode->AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
+    var_types           childBaseType = hwintrinsic->GetSimdBaseType();
 
-    GenTreeHWIntrinsic* hwintrinsic = childNode->AsHWIntrinsic();
-    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+    bool supportsSIMDScalarLoad = supportsSIMDLoad && (expectedSize <= genTypeSize(childBaseType));
 
     switch (intrinsicId)
     {
@@ -9733,7 +9475,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_Vector256_CreateScalarUnsafe:
         case NI_Vector512_CreateScalarUnsafe:
         {
-            if (!supportsSIMDScalarLoads)
+            if (!supportsSIMDScalarLoad)
             {
                 // Nothing to do if the intrinsic doesn't support scalar loads
                 return false;
@@ -9773,93 +9515,24 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX512F_LoadAlignedVector512:
         {
-            return supportsAlignedSIMDLoads;
+            // In minOpts, we need to ensure that an unaligned address will fault when an explicit LoadAligned is used.
+            // Non-VEX encoded instructions will fault if an unaligned SIMD16 load is contained but will not for scalar
+            // loads, and VEX-encoded instructions will not fault for unaligned loads in any case.
+            //
+            // When optimizations are enabled, we want to contain any aligned load that is large enough for the parent's
+            // requirement.
+
+            return (supportsSIMDLoad &&
+                    ((!comp->canUseVexEncoding() && expectedSize == genTypeSize(TYP_SIMD16)) || !comp->opts.MinOpts()));
         }
 
         case NI_SSE_LoadScalarVector128:
         case NI_SSE2_LoadScalarVector128:
         {
-            return supportsSIMDScalarLoads;
-        }
+            // These take only pointer operands.
+            assert(hwintrinsic->OperIsMemoryLoad());
 
-        case NI_AVX512F_ConvertToVector256Int32:
-        case NI_AVX512F_ConvertToVector256UInt32:
-        case NI_AVX512F_VL_ConvertToVector128UInt32:
-        case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
-        case NI_AVX10v1_ConvertToVector128UInt32:
-        case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
-        {
-            // These ones are not containable as stores when the base
-            // type is a floating-point type
-            FALLTHROUGH;
-        }
-
-        case NI_Vector128_GetElement:
-        case NI_Vector128_ToScalar:
-        case NI_Vector256_ToScalar:
-        case NI_Vector512_ToScalar:
-        case NI_SSE2_ConvertToInt32:
-        case NI_SSE2_ConvertToUInt32:
-        case NI_SSE2_X64_ConvertToInt64:
-        case NI_SSE2_X64_ConvertToUInt64:
-        case NI_SSE2_Extract:
-        case NI_SSE41_Extract:
-        case NI_SSE41_X64_Extract:
-        case NI_AVX_ExtractVector128:
-        case NI_AVX2_ConvertToInt32:
-        case NI_AVX2_ConvertToUInt32:
-        case NI_AVX2_ExtractVector128:
-        case NI_AVX512F_ExtractVector128:
-        case NI_AVX512F_ExtractVector256:
-        case NI_AVX512F_ConvertToVector128Byte:
-        case NI_AVX512F_ConvertToVector128ByteWithSaturation:
-        case NI_AVX512F_ConvertToVector128Int16:
-        case NI_AVX512F_ConvertToVector128Int16WithSaturation:
-        case NI_AVX512F_ConvertToVector128SByte:
-        case NI_AVX512F_ConvertToVector128SByteWithSaturation:
-        case NI_AVX512F_ConvertToVector128UInt16:
-        case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
-        case NI_AVX512F_ConvertToVector256Int16:
-        case NI_AVX512F_ConvertToVector256Int16WithSaturation:
-        case NI_AVX512F_ConvertToVector256Int32WithSaturation:
-        case NI_AVX512F_ConvertToVector256UInt16:
-        case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
-        case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
-        case NI_AVX512F_VL_ConvertToVector128Byte:
-        case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
-        case NI_AVX512F_VL_ConvertToVector128Int16:
-        case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
-        case NI_AVX512F_VL_ConvertToVector128Int32:
-        case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
-        case NI_AVX512F_VL_ConvertToVector128SByte:
-        case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
-        case NI_AVX512F_VL_ConvertToVector128UInt16:
-        case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
-        case NI_AVX512BW_ConvertToVector256Byte:
-        case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
-        case NI_AVX512BW_ConvertToVector256SByte:
-        case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
-        case NI_AVX512BW_VL_ConvertToVector128Byte:
-        case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
-        case NI_AVX512BW_VL_ConvertToVector128SByte:
-        case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
-        case NI_AVX512DQ_ExtractVector128:
-        case NI_AVX512DQ_ExtractVector256:
-        case NI_AVX10v1_ConvertToVector128Byte:
-        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
-        case NI_AVX10v1_ConvertToVector128Int16:
-        case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
-        case NI_AVX10v1_ConvertToVector128Int32:
-        case NI_AVX10v1_ConvertToVector128Int32WithSaturation:
-        case NI_AVX10v1_ConvertToVector128SByte:
-        case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
-        case NI_AVX10v1_ConvertToVector128UInt16:
-        case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
-        case NI_AVX10v1_V512_ExtractVector128:
-        case NI_AVX10v1_V512_ExtractVector256:
-        {
-            // These are only containable as part of a store
-            return false;
+            return supportsSIMDScalarLoad;
         }
 
         case NI_SSE3_MoveAndDuplicate:
@@ -9871,9 +9544,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             {
                 return false;
             }
-
-            var_types parentBaseType = parentNode->GetSimdBaseType();
-            var_types childBaseType  = hwintrinsic->GetSimdBaseType();
 
             if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
             {
@@ -9915,24 +9585,25 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             return false;
         }
 
+        case NI_SSE3_LoadAndDuplicateToVector128:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
         {
-            var_types parentBaseType = parentNode->GetSimdBaseType();
-            var_types childBaseType  = hwintrinsic->GetSimdBaseType();
-
-            if (varTypeIsSmall(parentBaseType) || (genTypeSize(parentBaseType) != genTypeSize(childBaseType)))
+            if (!comp->canUseEmbeddedBroadcast())
             {
-                // early return if either base type is not embedded broadcast compatible.
                 return false;
             }
 
-            return parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding();
+            // These take only pointer operands.
+            assert(hwintrinsic->OperIsMemoryLoad());
+            assert(varTypeIsFloating(childBaseType));
+
+            return (parentBaseType == childBaseType) && parentNode->OperIsEmbBroadcastCompatible() &&
+                   comp->canUseEvexEncoding();
         }
 
         default:
         {
-            assert(!childNode->isContainableHWIntrinsic());
             return false;
         }
     }
@@ -9954,24 +9625,23 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
     var_types   simdType            = parentNode->TypeGet();
     var_types   simdBaseType        = parentNode->GetSimdBaseType();
     CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
-    unsigned    simdSize            = parentNode->GetSimdSize();
     bool        isCreatedFromScalar = true;
+
+    if (!comp->canUseEmbeddedBroadcast())
+    {
+        MakeSrcContained(parentNode, childNode);
+        return;
+    }
 
     if (simdType == TYP_MASK)
     {
-        simdType = Compiler::getSIMDTypeForSize(simdSize);
+        simdType = Compiler::getSIMDTypeForSize(parentNode->GetSimdSize());
     }
 
     if (varTypeIsSmall(simdBaseType))
     {
         isCreatedFromScalar = false;
     }
-#ifndef TARGET_64BIT
-    else if (varTypeIsLong(simdBaseType))
-    {
-        isCreatedFromScalar = false;
-    }
-#endif // TARGET_64BIT
     else
     {
         isCreatedFromScalar = childNode->IsBroadcast(simdBaseType);
@@ -9992,50 +9662,45 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         {
             assert(simdType == TYP_SIMD16);
         }
+
         GenTree* constScalar = nullptr;
         switch (simdBaseType)
         {
             case TYP_FLOAT:
             {
-                float scalar = static_cast<float>(childNode->gtSimdVal.f32[0]);
+                float scalar = childNode->gtSimdVal.f32[0];
                 constScalar  = comp->gtNewDconNodeF(scalar);
                 break;
             }
             case TYP_DOUBLE:
             {
-                double scalar = static_cast<double>(childNode->gtSimdVal.f64[0]);
+                double scalar = childNode->gtSimdVal.f64[0];
                 constScalar   = comp->gtNewDconNodeD(scalar);
                 break;
             }
             case TYP_INT:
             {
-                int32_t scalar = static_cast<int32_t>(childNode->gtSimdVal.i32[0]);
+                int32_t scalar = childNode->gtSimdVal.i32[0];
                 constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
                 break;
             }
             case TYP_UINT:
             {
-                uint32_t scalar = static_cast<uint32_t>(childNode->gtSimdVal.u32[0]);
+                uint32_t scalar = childNode->gtSimdVal.u32[0];
                 constScalar     = comp->gtNewIconNode(scalar, TYP_INT);
                 break;
             }
-#if defined(TARGET_AMD64)
             case TYP_LONG:
-            {
-                int64_t scalar = static_cast<int64_t>(childNode->gtSimdVal.i64[0]);
-                constScalar    = comp->gtNewIconNode(scalar, simdBaseType);
-                break;
-            }
             case TYP_ULONG:
             {
-                uint64_t scalar = static_cast<uint64_t>(childNode->gtSimdVal.u64[0]);
-                constScalar     = comp->gtNewIconNode(scalar, TYP_LONG);
+                int64_t scalar = childNode->gtSimdVal.i64[0];
+                constScalar    = comp->gtNewLconNode(scalar);
                 break;
             }
-#endif // TARGET_AMD64
             default:
                 unreached();
         }
+
         GenTreeHWIntrinsic* createScalar =
             comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, constScalar, NI_Vector128_CreateScalarUnsafe, simdBaseJitType,
                                            16);
@@ -10355,12 +10020,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (varTypeIsIntegral(simdBaseType) && op1->OperIsHWIntrinsic())
                         {
-                            GenTreeHWIntrinsic* childNode   = op1->AsHWIntrinsic();
-                            NamedIntrinsic      childNodeId = childNode->GetHWIntrinsicId();
+                            GenTreeHWIntrinsic* childNode = op1->AsHWIntrinsic();
 
-                            if ((childNodeId == NI_Vector128_CreateScalarUnsafe) ||
-                                (childNodeId == NI_Vector256_CreateScalarUnsafe) ||
-                                (childNodeId == NI_Vector512_CreateScalarUnsafe))
+                            if (childNode->OperIsCreateScalarUnsafe())
                             {
                                 // We have a very special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
                                 //
@@ -10404,7 +10066,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (node->OperIsMemoryLoad())
                         {
-                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 16);
+                            ContainCheckHWIntrinsicAddr(node, op1, /* conservative maximum */ 32);
                             return;
                         }
 
@@ -10604,36 +10266,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             break;
                         }
 
-                        case NI_SSE2_ShiftLeftLogical:
-                        case NI_SSE2_ShiftRightArithmetic:
-                        case NI_SSE2_ShiftRightLogical:
-                        case NI_AVX2_ShiftLeftLogical:
-                        case NI_AVX2_ShiftRightArithmetic:
-                        case NI_AVX2_ShiftRightLogical:
-                        case NI_AVX512F_RotateLeft:
-                        case NI_AVX512F_RotateRight:
-                        case NI_AVX512F_ShiftLeftLogical:
-                        case NI_AVX512F_ShiftRightArithmetic:
-                        case NI_AVX512F_ShiftRightLogical:
-                        case NI_AVX512F_VL_RotateLeft:
-                        case NI_AVX512F_VL_RotateRight:
-                        case NI_AVX512F_VL_ShiftRightArithmetic:
-                        case NI_AVX512BW_ShiftLeftLogical:
-                        case NI_AVX512BW_ShiftRightArithmetic:
-                        case NI_AVX512BW_ShiftRightLogical:
-                        case NI_AVX10v1_RotateLeft:
-                        case NI_AVX10v1_RotateRight:
-                        case NI_AVX10v1_ShiftRightArithmetic:
-                        {
-                            // These intrinsics can have op2 be imm or reg/mem
-
-                            if (!HWIntrinsicInfo::isImmOp(intrinsicId, op2))
-                            {
-                                TryMakeSrcContainedOrRegOptional(node, op2);
-                            }
-                            break;
-                        }
-
                         case NI_AVX2_Shuffle:
                         {
                             if (varTypeIsByte(simdBaseType))
@@ -10659,6 +10291,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_Shuffle:
                         case NI_AVX512BW_ShuffleHigh:
                         case NI_AVX512BW_ShuffleLow:
+                        case NI_AVX512F_RotateLeft:
+                        case NI_AVX512F_RotateRight:
+                        case NI_AVX512F_VL_RotateLeft:
+                        case NI_AVX512F_VL_RotateRight:
+                        case NI_AVX10v1_RotateLeft:
+                        case NI_AVX10v1_RotateRight:
                         {
                             // These intrinsics have op2 as an imm and op1 as a reg/mem
 
@@ -10683,6 +10321,20 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         case NI_AVX_Permute:
+                        case NI_SSE2_ShiftLeftLogical:
+                        case NI_SSE2_ShiftRightArithmetic:
+                        case NI_SSE2_ShiftRightLogical:
+                        case NI_AVX2_ShiftLeftLogical:
+                        case NI_AVX2_ShiftRightArithmetic:
+                        case NI_AVX2_ShiftRightLogical:
+                        case NI_AVX512F_ShiftLeftLogical:
+                        case NI_AVX512F_ShiftRightArithmetic:
+                        case NI_AVX512F_ShiftRightLogical:
+                        case NI_AVX512F_VL_ShiftRightArithmetic:
+                        case NI_AVX512BW_ShiftLeftLogical:
+                        case NI_AVX512BW_ShiftRightArithmetic:
+                        case NI_AVX512BW_ShiftRightLogical:
+                        case NI_AVX10v1_ShiftRightArithmetic:
                         {
                             // These intrinsics can have op2 be imm or reg/mem
                             // They also can have op1 be reg/mem and op2 be imm
