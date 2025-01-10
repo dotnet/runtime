@@ -417,12 +417,11 @@ namespace System.Numerics
 
             Vector128<float> m2 = Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)) *
                  Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3));
-            m2 = m2.WithElement(3, 0);
 
             return Vector128.MultiplyAddEstimate(
                 Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)),
                 Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3)),
-                -m2
+                -m2.WithElement(3, 0)
             ).AsVector4();
         }
 
