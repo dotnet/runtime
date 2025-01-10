@@ -28,15 +28,18 @@ class FaultingExceptionFrame;
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
+#ifdef TARGET_WINDOWS
+PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
+#endif // TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext);
 
-#if !defined(TARGET_UNIX)
+#ifdef TARGET_WINDOWS
 //
 // Retrieves the FaultingExceptionFrame* from the stack frame of
 // RedirectForThreadAbort.
 //
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (T_DISPATCHER_CONTEXT *pDispatcherContext);
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS
 
 inline
 PCODE GetAdjustedCallAddress(PCODE returnAddress)
