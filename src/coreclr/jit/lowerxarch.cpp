@@ -10403,9 +10403,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_GetMantissaScalar:
                         case NI_AVX10v1_ReduceScalar:
                         case NI_AVX10v1_RoundScaleScalar:
-                        case NI_AVX10v2_MinMaxScalar:
-                        case NI_AVX10v2_MinMax:
-                        case NI_AVX10v2_V512_MinMax:
                         {
                             // These intrinsics have both 2 and 3-operand overloads.
                             //
