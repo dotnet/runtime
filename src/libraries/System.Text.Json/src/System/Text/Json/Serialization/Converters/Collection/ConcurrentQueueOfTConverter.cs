@@ -12,7 +12,6 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool CanPopulate => true;
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(ConcurrentQueue<>))]
         protected override void Add(in TElement value, ref ReadStack state)
         {
             ((TCollection)state.Current.ReturnValue!).Enqueue(value);

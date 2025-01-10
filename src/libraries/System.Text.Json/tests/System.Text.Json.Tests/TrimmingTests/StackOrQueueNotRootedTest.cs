@@ -16,6 +16,14 @@ class Program
 {
     static int Main(string[] args)
     {
+        if(OperatingSystem.IsBrowser())
+        {
+            // all the other platforms are using ConcurrentQueue and its constructor in the threadpool and so it's not trimmed
+            // we are protecting it here
+            // all the other targets will trim this code path
+            new ConcurrentQueue<int>();
+        }
+
         // Test serialization.
         var stack = new ConcurrentStack<int>();
         string json = JsonSerializer.Serialize(stack); // "[]"
