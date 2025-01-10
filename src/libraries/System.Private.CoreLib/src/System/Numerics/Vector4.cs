@@ -335,6 +335,7 @@ namespace System.Numerics
         /// <param name="z">The Z component.</param>
         /// <param name="w">The W component.</param>
         /// <returns>A new <see cref="Vector4" /> from the specified <see cref="Vector2" /> object and a Z and a W component.</returns>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Create(Vector2 vector, float z, float w)
         {
