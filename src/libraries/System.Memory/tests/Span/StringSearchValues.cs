@@ -620,7 +620,7 @@ namespace System.Memory.Tests.Span
                     }));
                 }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(_randomChars));
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(_randomChars.AsSpan()));
             }
 
             public void StressRandomInputs(TimeSpan duration)

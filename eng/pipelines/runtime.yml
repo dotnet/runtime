@@ -1225,7 +1225,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build and test libraries AllConfigurations
+      # Build and test libraries for all TFMs and create packages
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1234,8 +1234,8 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
-            nameSuffix: Libraries_AllConfigurations
+            buildArgs: -test -s tools+libs+libs.tests -pack -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_WithPackages
             timeoutInMinutes: 150
             condition: >-
               or(

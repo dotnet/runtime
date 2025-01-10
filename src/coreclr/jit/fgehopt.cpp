@@ -1037,9 +1037,13 @@ PhaseStatus Compiler::fgRemoveEmptyTryCatchOrTryFault()
         //
         fgRemoveEHTableEntry(XTnum);
 
-        // (6) The old try entry no longer needs special protection.
+        // (6) The old try entry may no longer need special protection.
+        // (it may still be an entry of an enclosing try)
         //
-        firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        if (!bbIsTryBeg(firstTryBlock))
+        {
+            firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        }
 
         // Another one bites the dust...
         emptyCount++;
@@ -1194,7 +1198,6 @@ PhaseStatus Compiler::fgCloneFinally()
         unsigned    regionBBCount   = 0;
         unsigned    regionStmtCount = 0;
         bool        hasFinallyRet   = false;
-        bool        isAllRare       = true;
         bool        hasSwitch       = false;
 
         for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
@@ -1215,7 +1218,6 @@ PhaseStatus Compiler::fgCloneFinally()
             }
 
             hasFinallyRet = hasFinallyRet || block->KindIs(BBJ_EHFINALLYRET);
-            isAllRare     = isAllRare && block->isRunRarely();
         }
 
         // Skip cloning if the finally has a switch.
@@ -1229,13 +1231,6 @@ PhaseStatus Compiler::fgCloneFinally()
         if (!hasFinallyRet)
         {
             JITDUMP("Finally in EH#%u does not return; skipping.\n", XTnum);
-            continue;
-        }
-
-        // Skip cloning if the finally is rarely run code.
-        if (isAllRare)
-        {
-            JITDUMP("Finally in EH#%u is run rarely; skipping.\n", XTnum);
             continue;
         }
 
@@ -2338,7 +2333,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // The second pass modifies flow so that predecessors of
     // non-canonical throw blocks now transfer control to the
     // appropriate canonical block.
-    unsigned numCandidates = 0;
 
     // First pass
     //
@@ -2402,7 +2396,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
             // Yes, this one can be optimized away...
             JITDUMP("    in " FMT_BB " can be dup'd to canonical " FMT_BB "\n", block->bbNum, canonicalBlock->bbNum);
             blockMap.Set(block, canonicalBlock);
-            numCandidates++;
         }
         else
         {
@@ -2412,9 +2405,8 @@ PhaseStatus Compiler::fgTailMergeThrows()
         }
     }
 
-    assert(numCandidates <= optNoReturnCallCount);
-
     // Bail if no candidates were found
+    const unsigned numCandidates = blockMap.GetCount();
     if (numCandidates == 0)
     {
         JITDUMP("\n*************** no throws can be tail merged, sorry\n");
@@ -2426,56 +2418,25 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // Second pass.
     //
     // We walk the map rather than the block list, to save a bit of time.
-    unsigned updateCount = 0;
-
     for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
     {
         BasicBlock* const nonCanonicalBlock = iter->GetKey();
         BasicBlock* const canonicalBlock    = iter->GetValue();
-        FlowEdge*         nextPredEdge      = nullptr;
-        bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
         for (BasicBlock* const predBlock : nonCanonicalBlock->PredBlocksEditing())
         {
-            switch (predBlock->GetKind())
-            {
-                case BBJ_ALWAYS:
-                case BBJ_COND:
-                case BBJ_SWITCH:
-                {
-                    JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
-                    fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
-                    updated = true;
-                }
-                break;
-
-                default:
-                    // We don't expect other kinds of preds, and it is safe to ignore them
-                    // as flow is still correct, just not as optimized as it could be.
-                    break;
-            }
-        }
-
-        if (updated)
-        {
-            updateCount++;
+            JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
+            fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
         }
     }
 
-    if (updateCount == 0)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    // TODO: Update the count of noreturn call sites -- this feeds a heuristic in morph
-    // to determine if these noreturn calls should be tail called.
+    // Update the count of noreturn call sites
     //
-    // Updating the count does not lead to better results, so deferring for now.
-    //
-    JITDUMP("Made %u updates\n", updateCount);
-    assert(updateCount < optNoReturnCallCount);
+    JITDUMP("Made %u updates\n", numCandidates);
+    assert(numCandidates < optNoReturnCallCount);
+    optNoReturnCallCount -= numCandidates;
 
     // If we altered flow, reset fgModified. Given where we sit in the
     // phase list, flow-dependent side data hasn't been built yet, so
