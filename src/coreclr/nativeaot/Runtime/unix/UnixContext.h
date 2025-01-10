@@ -217,6 +217,61 @@ struct UNIX_CONTEXT
         lambda((size_t*)&Ra());
     }
 
+#elif defined(TARGET_RISCV64)
+
+    uint64_t& R0();
+    uint64_t& Ra();
+    uint64_t& Sp();
+    uint64_t& Gp();
+    uint64_t& Tp();
+    uint64_t& T0();
+    uint64_t& T1();
+    uint64_t& T2();
+    uint64_t& Fp();
+    uint64_t& S1();
+    uint64_t& A0();
+    uint64_t& A1();
+    uint64_t& A2();
+    uint64_t& A3();
+    uint64_t& A4();
+    uint64_t& A5();
+    uint64_t& A6();
+    uint64_t& A7();
+    uint64_t& S2();
+    uint64_t& S3();
+    uint64_t& S4();
+    uint64_t& S5();
+    uint64_t& S6();
+    uint64_t& S7();
+    uint64_t& S8();
+    uint64_t& S9();
+    uint64_t& S10();
+    uint64_t& S11();
+    uint64_t& T3();
+    uint64_t& T4();
+    uint64_t& T5();
+    uint64_t& T6();
+    uint64_t& Pc();
+
+    uintptr_t GetIp() { return (uintptr_t)Pc(); }
+    uintptr_t GetSp() { return (uintptr_t)Sp(); }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        // It is expected that registers are stored in a contiguous manner
+        // Here are some asserts to check
+        ASSERT(&A0() + 1 == &A1());
+        ASSERT(&A0() + 7 == &A7());
+
+        for (uint64_t* pReg = &Ra(); pReg <= &T6(); pReg++)
+            lambda((size_t*)pReg);
+
+        // Ra and Fp can be used as scratch registers
+        lambda((size_t*)&Ra());
+        lambda((size_t*)&Fp());
+    }
+
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");
 #endif // TARGET_ARM

@@ -12658,63 +12658,23 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 fgRemoveStmt(block, lastStmt);
                 result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
-            // block is a BBJ_COND that we are folding the conditional for.
-            // bTaken is the path that will always be taken from block.
-            // bNotTaken is the path that will never be taken from block.
-            //
-            BasicBlock* bTaken;
-            BasicBlock* bNotTaken;
-            FlowEdge*   edgeTaken;
+
+            FlowEdge *retainedEdge, *removedEdge;
 
             if (cond->AsIntCon()->gtIconVal != 0)
             {
-                // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
-                bTaken    = block->GetTrueTarget();
-                bNotTaken = block->GetFalseTarget();
-
-                // Remove 'block' from the predecessor list of 'bNotTaken' */
-                fgRemoveRefPred(block->GetFalseEdge());
-
-                edgeTaken = block->GetTrueEdge();
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, edgeTaken);
+                retainedEdge = block->GetTrueEdge();
+                removedEdge  = block->GetFalseEdge();
             }
             else
             {
-                // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
-                bTaken    = block->GetFalseTarget();
-                bNotTaken = block->GetTrueTarget();
-
-                // Remove 'block' from the predecessor list of 'bNotTaken' */
-                fgRemoveRefPred(block->GetTrueEdge());
-
-                edgeTaken = block->GetFalseEdge();
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                retainedEdge = block->GetFalseEdge();
+                removedEdge  = block->GetTrueEdge();
             }
 
-            // We examine the taken edge (block -> bTaken)
-            // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
-            // else if bTaken has valid profile weight and block does not we try to adjust block's weight
-            // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
-            //
-            if (block->hasProfileWeight())
-            {
-                if (!bTaken->hasProfileWeight())
-                {
-                    if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
-                    {
-                        // Update the weight of bTaken
-                        bTaken->inheritWeight(block);
-                    }
-                }
-            }
-            else if (bTaken->hasProfileWeight())
-            {
-                if (bTaken->countOfInEdges() == 1)
-                {
-                    // Update the weight of block
-                    block->inheritWeight(bTaken);
-                }
-            }
+            fgRemoveRefPred(removedEdge);
+            block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+            fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
 
 #ifdef DEBUG
             if (verbose)
