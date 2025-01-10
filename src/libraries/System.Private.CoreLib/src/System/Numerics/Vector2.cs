@@ -388,6 +388,7 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector4.Exp(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Exp(Vector2 vector) => Vector128.Exp(vector.AsVector128()).AsVector2();
+
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
