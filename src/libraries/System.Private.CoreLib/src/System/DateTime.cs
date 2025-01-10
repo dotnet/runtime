@@ -1663,7 +1663,7 @@ namespace System
         {
             if (value == 0)
                 return 0.0;  // Returns OleAut's zero'ed date value.
-            if (value < TimeSpan.TicksPerDay) // This is a fix for VB. They want the default day to be 1/1/0001 rathar then 12/30/1899.
+            if (value < TimeSpan.TicksPerDay) // This is a fix for VB. They want the default day to be 1/1/0001 rather than 12/30/1899.
                 value += DoubleDateOffset; // We could have moved this fix down but we would like to keep the bounds check.
             if (value < OADateMinAsTicks)
                 throw new OverflowException(SR.Arg_OleAutDateInvalid);
