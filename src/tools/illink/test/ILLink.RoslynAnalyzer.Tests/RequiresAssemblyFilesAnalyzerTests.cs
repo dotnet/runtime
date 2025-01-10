@@ -230,7 +230,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestRequiresAssemblyFilesWithMessageAndUrl,
 				// (12,3): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. https://helpurl
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (12, 3, 12, 7).WithArguments ("C.M1()", "", " https://helpurl"));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (12, 3, 12, 5).WithArguments ("C.M1()", "", " https://helpurl"));
 		}
 
 		[Fact]
@@ -275,7 +275,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (TestNoDiagnosticIsProducedIfCallerIsAnnotated,
 				// (7,3): warning IL3002: Using member 'C.M2()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. Warn from M2.
-				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (7, 3, 7, 7).WithArguments ("C.M2()", " Warn from M2.", ""));
+				VerifyCS.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (7, 3, 7, 5).WithArguments ("C.M2()", " Warn from M2.", ""));
 		}
 
 		[Fact]
@@ -334,9 +334,9 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			return VerifyRequiresAssemblyFilesAnalyzer (src,
 				// (7,7): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (7, 7, 7, 35).WithArguments ("System.Reflection.Assembly.GetFile(String)"),
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (7, 7, 7, 16).WithArguments ("System.Reflection.Assembly.GetFile(String)"),
 				// (8,7): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 19).WithArguments ("System.Reflection.Assembly.GetFiles()")
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 17).WithArguments ("System.Reflection.Assembly.GetFiles()")
 				);
 		}
 
@@ -388,7 +388,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				// (7,7): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
 				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (7, 7, 7, 17).WithArguments ("System.Reflection.Assembly.Location.get"),
 				// (8,7): warning IL3001: Assemblies embedded in a single-file app cannot have additional files in the manifest.
-				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 19).WithArguments ("System.Reflection.Assembly.GetFiles()")
+				VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 17).WithArguments ("System.Reflection.Assembly.GetFiles()")
 				);
 		}
 
@@ -493,13 +493,13 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				fixedSource: fixtest,
 				baselineExpected: new[] {
 					// /0/Test0.cs(6,14): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(6, 14, 6, 18).WithArguments("C.M1()", " message.", ""),
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(6, 14, 6, 16).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(10,24): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(10, 24, 10, 30).WithArguments("C.M1()", " message.", ""),
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(10, 24, 10, 28).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(13,25): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 25, 13, 31).WithArguments("C.M1()", " message.", ""),
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 25, 13, 29).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(20,25): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(20, 25, 20, 31).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(20, 25, 20, 29).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -542,7 +542,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 					// /0/Test0.cs(6,24): warning IL3000: 'System.Reflection.Assembly.Location' always returns an empty string for assemblies embedded in a single-file app. If the path to the app directory is needed, consider calling 'System.AppContext.BaseDirectory'.
 					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyLocationInSingleFile).WithSpan (6, 24, 6, 41).WithArguments ("System.Reflection.Assembly.Location.get", "", ""),
 					// /0/Test0.cs(8,7): warning IL3001: 'System.Reflection.Assembly.GetFiles()' will throw for assemblies embedded in a single-file app
-					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 26).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
+					VerifyCS.Diagnostic (DiagnosticId.AvoidAssemblyGetFilesInSingleFile).WithSpan (8, 7, 8, 24).WithArguments("System.Reflection.Assembly.GetFiles()", "", ""),
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -580,7 +580,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				fixedSource: fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(9,12): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 12, 9, 16).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 12, 9, 14).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -627,9 +627,9 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			""";
 			var diag = new[] {
 				// /0/Test0.cs(12,16): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(12, 16, 12, 20).WithArguments("C.M1()", " message.", ""),
+				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(12, 16, 12, 18).WithArguments("C.M1()", " message.", ""),
 				// /0/Test0.cs(13,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 17, 13, 21).WithArguments("C.M1()", " message.", "")
+				VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 17, 13, 19).WithArguments("C.M1()", " message.", "")
 			};
 			return VerifyRequiresAssemblyFilesCodeFix (src, fix, diag, Array.Empty<DiagnosticResult> ());
 		}
@@ -702,7 +702,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				fixedSource: fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(11,22): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(11, 22, 11, 26).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(11, 22, 11, 24).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> (),
 				numberOfIterations: 2);
@@ -741,7 +741,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				fixedSource: fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(9,17): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 17, 9, 21).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(9, 17, 9, 19).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
@@ -793,7 +793,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 				fixedSource: fix,
 				baselineExpected: new[] {
 					// /0/Test0.cs(13,12): warning IL3002: Using method 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when trimming application code. message.
-					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 12, 13, 16).WithArguments("C.M1()", " message.", "")
+					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(13, 12, 13, 14).WithArguments("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}
