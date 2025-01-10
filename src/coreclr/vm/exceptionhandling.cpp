@@ -5867,7 +5867,8 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
     InterlockedExchangeT(&(pTracker->m_pThread), NULL);
 }
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
+#if defined(TARGET_ARM64)
 // This is Windows specific implementation as it is based upon the notion of collided unwind that is specific
 // to Windows 64bit.
 //
@@ -5891,7 +5892,6 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
 
-#if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
     // where such exceptions have happened do not have callsites. On a similar
@@ -5913,8 +5913,6 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
     // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
     pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_ARM64;
-
-#endif // TARGET_ARM64
 
     INDEBUG(pDispatcherContext->FunctionEntry = (PT_RUNTIME_FUNCTION)INVALID_POINTER_CD);
     INDEBUG(pDispatcherContext->ImageBase     = INVALID_POINTER_CD);
@@ -5999,7 +5997,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
     _ASSERTE(pDispatcherContext->LanguageHandler != NULL);
 }
-
+#endif // TARGET_ARM64
 
 BOOL FirstCallToHandler (
         DISPATCHER_CONTEXT *pDispatcherContext,
@@ -6090,7 +6088,7 @@ HijackHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
 }
 
 
-#endif // !TARGET_UNIX
+#endif // !TARGET_WINDOWS
 
 #ifdef _DEBUG
 // IsSafeToUnwindFrameChain:
