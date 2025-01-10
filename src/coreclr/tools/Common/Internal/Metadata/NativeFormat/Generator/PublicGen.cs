@@ -73,7 +73,7 @@ internal sealed class PublicGen : CsWriter
                     }
                     .Concat(
                         SchemaDef.HandleSchema.Select((name, index) =>
-                            new MemberDef(name: name, value: $"0x{index + 1 + 64:x}"))
+                            new MemberDef(name: name, value: $"0x{index + 1:x}"))
                     )
                     .ToArray()
                 )
