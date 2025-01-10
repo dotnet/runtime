@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// common.h - precompiled headers include for the COM+ Execution Engine
+// common.h - precompiled headers include for the CLR Execution Engine
 //
 
 //

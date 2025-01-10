@@ -65,6 +65,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetUnderlyingTypeOnNonNullableKnownType.Test ();
 			MakeGenericTypeWithUnknownValue (new object[2] { 1, 2 });
 			MakeGenericTypeWithKnowAndUnknownArray ();
+			RequiresOnNullableMakeGenericType.Test();
 
 			// Prevents optimizing away 'as Type' conversion.
 			PreserveSystemType ();
@@ -98,6 +99,68 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void RequireAllFromMadeGenericNullableOfTypeWithMethodWithRuc ()
 		{
 			typeof (Nullable<>).MakeGenericType (typeof (TestStructWithRucMethod)).RequiresAll ();
+		}
+
+		public class RequiresOnNullableMakeGenericType
+		{
+			[Kept]
+			static Type UnannotatedField;
+			[Kept]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type FieldWithMethods;
+			[Kept]
+			[UnexpectedWarning("IL2080", nameof(UnannotatedField), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			static void Field()
+			{
+				typeof (Nullable<>).MakeGenericType (UnannotatedField).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (FieldWithMethods).GetMethods ();
+			}
+
+			[Kept]
+			[UnexpectedWarning("IL2090", nameof(unannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			static void Parameter(
+				Type unannotated,
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated)
+			{
+				typeof (Nullable<>).MakeGenericType (unannotated).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (annotated).GetMethods ();
+			}
+
+			[Kept]
+			[ExpectedWarning("IL2090", "TUnannotated")]
+			static void TypeParameter<
+				TUnannotated,
+				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TAnnotated>()
+			{
+				typeof (Nullable<>).MakeGenericType (typeof(TUnannotated)).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (typeof(TAnnotated)).GetMethods ();
+			}
+
+			[Kept]
+			[UnexpectedWarning("IL2075", nameof(GetUnannotated), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/runtime/issues/93800")]
+			static void ReturnValue()
+			{
+				typeof (Nullable<>).MakeGenericType (GetUnannotated()).GetMethods ();
+				typeof (Nullable<>).MakeGenericType (GetAnnotated()).GetMethods ();
+			}
+			[Kept]
+			static Type GetUnannotated() => null;
+			[Kept]
+			[return: KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			[return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type GetAnnotated() => null;
+
+			[Kept]
+			public static void Test()
+			{
+				Field();
+				Parameter(null, null);
+				TypeParameter<object, object>();
+				ReturnValue();
+			}
 		}
 
 		[Kept]

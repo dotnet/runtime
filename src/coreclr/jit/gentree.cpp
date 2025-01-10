@@ -7936,12 +7936,26 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 
     switch (type)
     {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return gtNewIconNode(0xFF);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return gtNewIconNode(0xFFFF);
+        }
+
         case TYP_INT:
+        case TYP_UINT:
         {
             return gtNewIconNode(-1);
         }
 
         case TYP_LONG:
+        case TYP_ULONG:
         {
             return gtNewLconNode(-1);
         }
@@ -17306,6 +17320,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
             comma->gtVNPair =
                 vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(sideEffectsSource->gtVNPair));
         }
+        comma->SetMorphed(this);
         return comma;
     }
     return tree;
@@ -20415,6 +20430,7 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_SSE3_LoadAndDuplicateToVector128:
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector128:
@@ -20924,8 +20940,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
             unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
 
-            GenTree* nonConstantByteShiftCountOp = NULL;
-
             if (op2->IsCnsIntOrI())
             {
                 op2->AsIntCon()->gtIconVal &= shiftCountMask;
@@ -21089,16 +21103,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(
         }
 
 #if defined(TARGET_XARCH)
-        case GT_RSZ:
         case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
         {
-            // We don't have actual instructions for shifting bytes, so we'll emulate them
-            // by shifting 32-bit values and masking off the bits that should be zeroed.
+            // This emulates byte shift instructions, which don't exist in x86 SIMD,
+            // plus arithmetic shift of qwords, which did not exist before AVX-512.
 
-            assert(varTypeIsByte(simdBaseType));
+            assert(varTypeIsByte(simdBaseType) || (varTypeIsLong(simdBaseType) && (op == GT_RSH)));
 
-            intrinsic =
-                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup, TYP_INT, simdSize, false);
+            // We will emulate arithmetic shift by using logical shift and then masking in the sign bits.
+            genTreeOps instrOp = op == GT_RSH ? GT_RSZ : op;
+            intrinsic          = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, instrOp, op1, op2ForLookup,
+                                                                              genActualType(simdBaseType), simdSize, false);
             assert(intrinsic != NI_Illegal);
 
             GenTree* maskAmountOp;
@@ -21106,22 +21123,53 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op2->IsCnsIntOrI())
             {
                 ssize_t shiftCount = op2->AsIntCon()->gtIconVal;
-                ssize_t mask       = op == GT_RSZ ? (255 >> shiftCount) : ((255 << shiftCount) & 0xFF);
-
-                maskAmountOp = gtNewIconNode(mask, type);
+                if (varTypeIsByte(simdBaseType))
+                {
+                    ssize_t mask = op == GT_LSH ? ((0xFF << shiftCount) & 0xFF) : (0xFF >> shiftCount);
+                    maskAmountOp = gtNewIconNode(mask, type);
+                }
+                else
+                {
+                    int64_t mask = static_cast<int64_t>(0xFFFFFFFFFFFFFFFFULL >> shiftCount);
+                    maskAmountOp = gtNewLconNode(mask);
+                }
             }
             else
             {
                 assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
 
-                GenTree* nonConstantByteShiftCountOp = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
-                maskAmountOp = gtNewOperNode(op, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
+                GenTree* shiftCountDup = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
+                if (op == GT_RSH)
+                {
+                    // For arithmetic shift, we will be using ConditionalSelect to mask in the sign bits, which means
+                    // the mask will be evaluated before the shift. We swap the copied operand with the shift amount
+                    // operand here in order to preserve correct evaluation order for the masked shift count.
+                    std::swap(shiftCountDup, op2->AsHWIntrinsic()->Op(1));
+                }
+
+                maskAmountOp = gtNewOperNode(instrOp, genActualType(simdBaseType), gtNewAllBitsSetConNode(simdBaseType),
+                                             shiftCountDup);
             }
 
-            GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);
-            GenTree* maskOp  = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
+            if (op == GT_RSH)
+            {
+                GenTree* op1Dup = fgMakeMultiUse(&op1);
+                GenTree* signOp =
+                    gtNewSimdCmpOpNode(GT_GT, type, gtNewZeroConNode(type), op1Dup, simdBaseJitType, simdSize);
 
-            return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
+                CorInfoType shiftType = varTypeIsSmall(simdBaseType) ? CORINFO_TYPE_INT : simdBaseJitType;
+                GenTree*    shiftOp   = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, shiftType, simdSize);
+                GenTree*    maskOp    = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
+
+                return gtNewSimdCndSelNode(type, maskOp, shiftOp, signOp, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);
+                GenTree* maskOp  = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
+
+                return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
+            }
         }
 #endif // TARGET_XARCH
 
@@ -26964,8 +27012,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_SSE41_ConvertToVector128Int64:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
-                case NI_AVX512F_BroadcastScalarToVector512:
-                case NI_AVX512BW_BroadcastScalarToVector512:
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
@@ -27234,6 +27280,7 @@ bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
+        case NI_SSE3_LoadAndDuplicateToVector128:
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX512F_BroadcastScalarToVector512:
             return true;

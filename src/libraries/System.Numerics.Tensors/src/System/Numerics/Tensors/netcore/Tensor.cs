@@ -91,7 +91,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.Create(ReadOnlySpan<nint> lengths, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -104,7 +104,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.Create(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -116,7 +116,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(ReadOnlySpan<nint> lengths, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -129,7 +129,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -516,7 +516,7 @@ namespace System.Numerics.Tensors
         /// Thrown when the destination TensorSpan is shorter than the source Tensor.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
+        public void CopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
 
         /// <summary>
         /// Fills the contents of this span with the given value.
@@ -532,19 +532,19 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The span to copy items into.</param>
         /// <returns>If the destination span is shorter than the source tensor, this method
         /// return false and no data is written to the destination.</returns>
-        public bool TryCopyTo(TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
+        public bool TryCopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public void FlattenTo(Span<T> destination) => AsTensorSpan().FlattenTo(destination);
+        public void FlattenTo(scoped Span<T> destination) => AsTensorSpan().FlattenTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public bool TryFlattenTo(Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
+        public bool TryFlattenTo(scoped Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
 
         // IEnumerable
         /// <summary>
