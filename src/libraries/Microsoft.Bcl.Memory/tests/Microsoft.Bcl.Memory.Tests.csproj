@@ -32,6 +32,13 @@
     </Compile>
   </ItemGroup>
 
+  <!-- Targetting .Net 8.0 -->
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\Text\Unicode\Utf8Tests.cs">
+      <Link>System\Text\Unicode\Utf8Tests.cs</Link>
+    </Compile>
+  </ItemGroup>
+
   <!-- Targetting  NetFramework & Netstandard 2.0 -->
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs">
