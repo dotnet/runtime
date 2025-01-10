@@ -16,7 +16,11 @@ using System.Threading.Tasks;
 using WorkQueue = System.Collections.Generic.Queue<object>;
 #else
 using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
+using Event = System.Threading.PortableThreadPool.IOCompletionPoller.Event;
 #endif
+#if TARGET_WINDOWS
+using IOCompletionPollerEvent = System.Threading.PortableThreadPool.IOCompletionPoller.Event;
+#endif // TARGET_WINDOWS
 
 
 namespace System.Threading
@@ -1279,17 +1283,9 @@ namespace System.Threading
         }
     }
 
-    // A strongly typed callback for ThreadPoolTypedWorkItemQueue<T, TCallback>.
-    // This way we avoid the indirection of a delegate call.
-    internal interface IThreadPoolTypedWorkItemQueueCallback<T>
-    {
-        static abstract void Invoke(T item);
-    }
+#if TARGET_WINDOWS
 
-    internal sealed class ThreadPoolTypedWorkItemQueue<T, TCallback> : IThreadPoolWorkItem
-        // https://github.com/dotnet/runtime/pull/69278#discussion_r871927939
-        where T : struct
-        where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
+    internal sealed class ThreadPoolTypedWorkItemQueue : IThreadPoolWorkItem
     {
         // The scheme works as follows:
         // - From NotScheduled, the only transition is to Scheduled when new items are enqueued and a TP work item is enqueued to process them.
@@ -1308,21 +1304,17 @@ namespace System.Threading
         }
 
         private QueueProcessingStage _queueProcessingStage;
-#if FEATURE_SINGLE_THREADED
-        private readonly Queue<T> _workItems = new Queue<T>();
-#else
-        private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
-#endif
+        private readonly ConcurrentQueue<IOCompletionPollerEvent> _workItems = new();
 
         public int Count => _workItems.Count;
 
-        public void Enqueue(T workItem)
+        public void Enqueue(Event workItem)
         {
             BatchEnqueue(workItem);
             CompleteBatchEnqueue();
         }
 
-        public void BatchEnqueue(T workItem) => _workItems.Enqueue(workItem);
+        public void BatchEnqueue(Event workItem) => _workItems.Enqueue(workItem);
         public void CompleteBatchEnqueue()
         {
             // Only enqueue a work item if the stage is NotScheduled.
@@ -1364,7 +1356,7 @@ namespace System.Threading
 
         void IThreadPoolWorkItem.Execute()
         {
-            T workItem;
+            Event workItem;
             while (true)
             {
                 Debug.Assert(_queueProcessingStage == QueueProcessingStage.Scheduled);
@@ -1397,11 +1389,7 @@ namespace System.Threading
                 }
             }
 
-#if FEATURE_SINGLE_THREADED
-            UpdateQueueProcessingStage(_workItems.Count == 0);
-#else
             UpdateQueueProcessingStage(_workItems.IsEmpty);
-#endif
 
             ThreadPoolWorkQueueThreadLocals tl = ThreadPoolWorkQueueThreadLocals.threadLocals!;
             Debug.Assert(tl != null);
@@ -1411,7 +1399,7 @@ namespace System.Threading
             int startTimeMs = Environment.TickCount;
             while (true)
             {
-                TCallback.Invoke(workItem);
+                workItem.Invoke();
 
                 // This work item processes queued work items until certain conditions are met, and tracks some things:
                 // - Keep track of the number of work items processed, it will be added to the counter later
@@ -1443,6 +1431,8 @@ namespace System.Threading
             }
         }
     }
+
+#endif
 
     public delegate void WaitCallback(object? state);
 
