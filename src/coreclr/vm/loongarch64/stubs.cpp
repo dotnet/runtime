@@ -953,6 +953,7 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
     return *ppContext;
 }
 
+#if !defined(DACCESS_COMPILE)
 
 BOOL
 AdjustContextForVirtualStub(
