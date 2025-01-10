@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -701,6 +702,27 @@ namespace System.Threading
             EnsureThreadRequested();
         }
 
+        internal static void TransferAllLocalWorkItemsToHighPriorityGlobalQueue()
+        {
+            // If there's no local queue, there's nothing to transfer.
+            if (ThreadPoolWorkQueueThreadLocals.threadLocals is not ThreadPoolWorkQueueThreadLocals tl)
+            {
+                return;
+            }
+
+            // Pop each work item off the local queue and push it onto the global. This is a
+            // bounded loop as no other thread is allowed to push into this thread's queue.
+            ThreadPoolWorkQueue queue = ThreadPool.s_workQueue;
+            while (tl.workStealingQueue.LocalPop() is object workItem)
+            {
+                queue.highPriorityWorkItems.Enqueue(workItem);
+            }
+
+            Volatile.Write(ref queue._mayHaveHighPriorityWorkItems, true);
+
+            queue.EnsureThreadRequested();
+        }
+
         internal static bool LocalFindAndPop(object callback)
         {
             ThreadPoolWorkQueueThreadLocals? tl = ThreadPoolWorkQueueThreadLocals.threadLocals;
@@ -906,10 +928,7 @@ namespace System.Threading
             // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
             // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
             // Scheduled, and try to dequeue again or request another thread.
-#if !TARGET_WASI
-            // TODO https://github.com/dotnet/runtime/issues/104803
             Debug.Assert(workQueue._separated.queueProcessingStage == QueueProcessingStage.Scheduled);
-#endif
             workQueue._separated.queueProcessingStage = QueueProcessingStage.Determining;
             Interlocked.MemoryBarrier();
 
@@ -1190,12 +1209,21 @@ namespace System.Threading
         {
             if (workItem is Task task)
             {
+                // Task workitems catch their exceptions for later observation
+                // We do not need to pass unhandled ones to ExceptionHandling.s_handler
                 task.ExecuteFromThreadPool(currentThread);
             }
             else
             {
                 Debug.Assert(workItem is IThreadPoolWorkItem);
-                Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                try
+                {
+                    Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
+                }
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
+                {
+                    // the handler returned "true" means the exception is now "handled" and we should continue.
+                }
             }
         }
     }
@@ -1393,7 +1421,11 @@ namespace System.Threading
                 currentThread.ResetThreadPoolThread();
             }
 
-            ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount);
+            // Discount a work item here to avoid counting most of the queue processing work items
+            if (completedCount > 1)
+            {
+                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+            }
         }
     }
 
@@ -1620,6 +1652,9 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_LessEqualToIntegerMaxVal);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
@@ -1637,6 +1672,9 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             if (millisecondsTimeOutInterval > (uint)int.MaxValue && millisecondsTimeOutInterval != uint.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeOutInterval), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
@@ -1668,6 +1706,9 @@ namespace System.Threading
              bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
              )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
@@ -1683,6 +1724,9 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
@@ -1699,6 +1743,9 @@ namespace System.Threading
             bool executeOnlyOnce    // NOTE: we do not allow other options that allow the callback to be queued as an APC
         )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeOutInterval, -1);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(millisecondsTimeOutInterval, int.MaxValue);
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
@@ -1715,6 +1762,9 @@ namespace System.Threading
                           bool executeOnlyOnce
                           )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long tm = (long)timeout.TotalMilliseconds;
 
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));
@@ -1734,6 +1784,9 @@ namespace System.Threading
                           bool executeOnlyOnce
                           )
         {
+#if TARGET_WASI
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+#endif
             long tm = (long)timeout.TotalMilliseconds;
 
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, nameof(timeout));

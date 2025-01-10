@@ -20,7 +20,6 @@ Abstract:
 #include "pal/thread.hpp"
 #include "pal/handlemgr.hpp"
 #include "pal/cs.hpp"
-#include "pal/malloc.hpp"
 #include "pal/dbgmsg.h"
 
 using namespace CorUnix;

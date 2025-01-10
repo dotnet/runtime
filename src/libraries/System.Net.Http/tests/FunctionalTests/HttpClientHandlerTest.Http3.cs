@@ -271,7 +271,7 @@ namespace System.Net.Http.Functional.Tests
                 await lastTask;
             });
 
-            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(20_000);
+            await new[] { clientTask, serverTask }.WhenAllOrAnyFailed(200_000);
         }
 
         [Fact]

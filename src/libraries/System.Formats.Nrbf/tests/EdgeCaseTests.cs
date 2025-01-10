@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Serialization.Formatters;
 using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.DotNet.XUnitExtensions;
@@ -102,5 +103,45 @@ public class EdgeCaseTests : ReadTests
         ms.Position = 0;
 
         Assert.Throws<NotSupportedException>(() => NrbfDecoder.Decode(ms));
+    }
+
+    public static IEnumerable<object[]> CanReadAllKindsOfDateTimes_Arguments
+    {
+        get
+        {
+            yield return new object[] { new DateTime(1990, 11, 24, 0, 0, 0, DateTimeKind.Local) };
+            yield return new object[] { new DateTime(1990, 11, 25, 0, 0, 0, DateTimeKind.Utc) };
+            yield return new object[] { new DateTime(1990, 11, 26, 0, 0, 0, DateTimeKind.Unspecified) };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(CanReadAllKindsOfDateTimes_Arguments))]
+    public void CanReadAllKindsOfDateTimes_DateTimeIsTheRootRecord(DateTime input)
+    {
+        using MemoryStream stream = Serialize(input);
+
+        PrimitiveTypeRecord<DateTime> dateTimeRecord = (PrimitiveTypeRecord<DateTime>)NrbfDecoder.Decode(stream);
+
+        Assert.Equal(input.Ticks, dateTimeRecord.Value.Ticks);
+        Assert.Equal(input.Kind, dateTimeRecord.Value.Kind);
+    }
+
+    [Serializable]
+    public class ClassWithDateTime
+    {
+        public DateTime Value;
+    }
+
+    [Theory]
+    [MemberData(nameof(CanReadAllKindsOfDateTimes_Arguments))]
+    public void CanReadAllKindsOfDateTimes_DateTimeIsMemberOfTheRootRecord(DateTime input)
+    {
+        using MemoryStream stream = Serialize(new ClassWithDateTime() { Value = input });
+
+        ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(stream);
+
+        Assert.Equal(input.Ticks, classRecord.GetDateTime(nameof(ClassWithDateTime.Value)).Ticks);
+        Assert.Equal(input.Kind, classRecord.GetDateTime(nameof(ClassWithDateTime.Value)).Kind);
     }
 }

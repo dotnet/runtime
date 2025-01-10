@@ -2405,6 +2405,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             GenTreeVecCon* vecCon = tree->AsVecCon();
@@ -2414,7 +2415,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             switch (tree->TypeGet())
             {
-#if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
@@ -2470,7 +2470,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     break;
                 }
-#endif // FEATURE_SIMD
 
                 default:
                 {
@@ -2480,6 +2479,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             break;
         }
+#endif // FEATURE_SIMD
 
         default:
             unreached();
@@ -3704,8 +3704,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (cpObjNode->IsVolatile())
     {
-        // issue a full memory barrier before a volatile CpObj operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile CpObj operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     emitter* emit = GetEmitter();
@@ -5179,10 +5179,17 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         callTarget = callTargetReg;
 
-        // adrp + add with relocations will be emitted
-        GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
-                                   (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
-                                       DEBUGARG(GTF_ICON_METHOD_HDL));
+        if (compiler->opts.compReloc)
+        {
+            // adrp + add with relocations will be emitted
+            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
+                                       (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTarget, (ssize_t)addr);
+        }
         GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
         callType = emitter::EC_INDIR_R;
     }
@@ -5754,6 +5761,10 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
         return;
     }
 #endif // DEBUG
+
+    // We cannot emit BARRIER_STORE_ONLY better than BARRIER_FULL on arm64 today
+    if (barrierKind == BARRIER_STORE_ONLY)
+        barrierKind = BARRIER_FULL;
 
     // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
     // and there were no memory accesses in-between them

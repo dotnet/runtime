@@ -23,12 +23,14 @@ namespace ILCompiler
         private readonly ILProvider _nestedILProvider;
         private readonly SubstitutionProvider _substitutionProvider;
         private readonly DevirtualizationManager _devirtualizationManager;
+        private readonly MetadataManager _metadataManager;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager, MetadataManager metadataManager = null)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
             _devirtualizationManager = devirtualizationManager;
+            _metadataManager = metadataManager;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -746,12 +748,12 @@ namespace ILCompiler
                     {
                         BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
                         if (substitution != null && substitution.Value is int
-                            && (opcode != ILOpcode.callvirt || !method.IsVirtual))
+                            && ((opcode != ILOpcode.callvirt && !method.Signature.IsStatic) || !method.IsVirtual))
                         {
                             constant = (int)substitution.Value;
                             return true;
                         }
-                        if ((opcode != ILOpcode.callvirt || !method.IsVirtual)
+                        if (((opcode != ILOpcode.callvirt && !method.Signature.IsStatic) || !method.IsVirtual)
                             && TryGetMethodConstantValue(method, out constant))
                         {
                             return true;
@@ -989,7 +991,13 @@ namespace ILCompiler
                 if (!ConstructedEETypeNode.CreationAllowed(knownType))
                     return false;
 
+                // If a constructed MethodTable for this type exists, the comparison could succeed.
                 if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                    return false;
+
+                // If we can have metadata for the type the comparison could succeed even if no MethodTable present.
+                // (This is the case of metadata-only types, where we were able to optimize the MethodTable away.)
+                if (_metadataManager != null && knownType.GetTypeDefinition() is MetadataType mdType && _metadataManager.CanGenerateMetadata(mdType))
                     return false;
 
                 constant = 0;

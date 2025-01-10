@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
     <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true'">true</SkipBuild>
-    <GenerateInstallers>true</GenerateInstallers>
+    <GenerateInstallers Condition="'$(DotNetBuildSourceOnly)' != 'true'">true</GenerateInstallers>
     <InstallerName>dotnet-host</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-host-internal</InstallerName>
-    <LinuxInstallRoot Condition="'$(BuildRpmPackage)' == 'true'">/</LinuxInstallRoot>
     <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
     <VSInsertionShortComponentName>NetCore.SharedHost</VSInsertionShortComponentName>
     <UseCustomDirectoryHarvesting>true</UseCustomDirectoryHarvesting>
@@ -35,37 +34,23 @@
   <Target Name="PublishToDisk">
     <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
 
-    <PropertyGroup>
-      <_DestinationPath>$(OutputPath)</_DestinationPath>
-      <_DestinationPath Condition="'$(BuildRpmPackage)' == 'true'">$(OutputPath)usr/share/dotnet/</_DestinationPath>
-      <_UsrBinPath>$(OutputPath)usr/bin/</_UsrBinPath>
-    </PropertyGroup>
-
-    <MakeDir Condition="'$(BuildRpmPackage)' == 'true'" Directories="$(_DestinationPath)" />
-    <MakeDir Condition="'$(BuildRpmPackage)' == 'true'" Directories="$(_UsrBinPath)" />
+    <MakeDir Directories="$(OutputPath)" />
 
     <ItemGroup>
       <FilesToPublish Include="$(DotNetHostBinDir)\dotnet$(ExeSuffix)"
-            Destination="$(_DestinationPath)dotnet$(ExeSuffix)" />
+            Destination="$(OutputPath)dotnet$(ExeSuffix)" />
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT"
-            Destination="$(_DestinationPath)ThirdPartyNotices.txt" />
+            Destination="$(OutputPath)ThirdPartyNotices.txt" />
       <FilesToPublish Include="$(RepoRoot)LICENSE.TXT"
-            Destination="$(_DestinationPath)LICENSE.txt"
+            Destination="$(OutputPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' == 'true'"/>
       <FilesToPublish Include="$(InstallerProjectRoot)pkg\LICENSE-MSFT.TXT"
-            Destination="$(_DestinationPath)LICENSE.txt"
+            Destination="$(OutputPath)LICENSE.txt"
             Condition="'$(TargetsUnix)' != 'true'"/>
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"
           DestinationFiles="%(FilesToPublish.Destination)" />
-
-    <!--
-      Create symlink so the dotnet host is in PATH. It points to where dotnet will be installed, so
-      it may seem to point to the wrong place in the build machine's layout.
-    -->
-    <Exec Condition="'$(BuildRpmPackage)' == 'true'" Command="ln -sf &quot;/usr/share/dotnet/dotnet&quot; &quot;$(_UsrBinPath)dotnet&quot;" />
-
   </Target>
 
   <Target Name="PublishSymbolsToDisk">
@@ -80,18 +65,15 @@
           DestinationFolder="$(SymbolsOutputPath)" />
   </Target>
 
-  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
-    <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
-      <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
-    </ItemGroup>
-    <ItemGroup>
-      <DebJsonProperty Include="symlinks" Object="{ &quot;dotnet&quot;: &quot;/usr/bin/dotnet&quot; }" />
-      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet&quot;, &quot;/usr/share/doc/dotnet-host&quot; ]" />
-      <PackageConflictsProperty Include="package_conflicts" Object="[ &quot;dotnet&quot;, &quot;dotnet-nightly&quot; ]" />
-      <DebJsonProperty Include="@(PackageConflictsProperty)" />
-      <RpmJsonProperty Include="@(PackageConflictsProperty)" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
+    <LinuxPackageDependency Include="libc6;libgcc1;libstdc++6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <LinuxPackageSymlink Include="/usr/bin/dotnet" LinkTarget="../share/dotnet/dotnet" />
+    <LinuxPackageConflicts Include="dotnet;dotnet-nightly" />
+    <RpmOwnedDirectory Include="/usr/share/dotnet" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_MacOSIntermediatesPath>$(IntermediateOutputPath)macos/</_MacOSIntermediatesPath>
@@ -101,7 +83,7 @@
   <ItemGroup>
     <_MacOSScript Include="$(MacOSScriptsTemplateDirectory)/*" Destination="$(MacOSScriptsDirectory)/%(FileName)%(Extension)"/>
   </ItemGroup>
-  <Target Name="ReplaceTemplateParametersInMacOsScripts" 
+  <Target Name="ReplaceTemplateParametersInMacOsScripts"
           Inputs="@(_MacOSScript)"
           Outputs="@(_MacOSScript->'%(Destination)')"
           DependsOnTargets="_GetInstallerProperties"
@@ -113,8 +95,8 @@
       <_UnameMachineRegex Condition="'$(InstallerTargetArchitecture)' == 'x64'">amd64|x86_64</_UnameMachineRegex>
       <_MacOSScriptsTemplateProperties>InstallerTargetArchitecture=$(InstallerTargetArchitecture);UnameMachineRegex=$(_UnameMachineRegex)</_MacOSScriptsTemplateProperties>
     </PropertyGroup>
-    
-    <GenerateFileFromTemplate TemplateFile="@(_MacOSScript)" 
+
+    <GenerateFileFromTemplate TemplateFile="@(_MacOSScript)"
                               OutputPath="@(_MacOSScript->'%(Destination)')"
                               Properties="$(_MacOSScriptsTemplateProperties)">
       <Output TaskParameter="ResolvedOutputPath" ItemName="FileWrites" />

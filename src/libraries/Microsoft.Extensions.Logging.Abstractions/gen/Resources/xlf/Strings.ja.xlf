@@ -4,7 +4,7 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="translated">引数 '{0}' はログ メッセージから参照されていません</target>
+        <target state="needs-review-translation">引数 '{0}' はログ メッセージから参照されていません</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">引数 '{0}' はサポートされていない out パラメーター修飾子を使用しています</target>
+        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">引数はサポートされていない out パラメーター修飾子を使用しています</target>
+        <target state="new">Argument is using the unsupported out parameter modifier</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -69,22 +69,22 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">ログ ソース ジェネレーターは、C# {0} では使用できません。言語バージョン {1} 以降を使用してください。</target>
+        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="translated">ソース ジェネレーターでサポートされていない C# 言語バージョン。</target>
+        <target state="new">C# language version not supported by the source generator.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">ログ メソッド '{0}' に、形式の正しくない文字列が含まれています</target>
+        <target state="new">Logging method '{0}' contains malformed format strings</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="translated">ログ メソッドに形式の正しくない文字列が含まれています</target>
+        <target state="new">Logging method contains malformed format strings</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -184,12 +184,12 @@
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">複数のログ記録方法でクラス {1} 内のイベント名 {0} を使用しています</target>
+        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">複数のログ記録方法では、クラス内で同じイベント名を使用しないようにする必要があります</target>
+        <target state="new">Multiple logging methods should not use the same event name within a class</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

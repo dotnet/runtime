@@ -53,9 +53,9 @@ namespace JSImportGenerator.Unit.Tests
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToFail))]
-        public async Task ValidateFailSnippets(string source, string[]? generatorMessages, string[]? compilerMessages)
+        public void ValidateFailSnippets(string source, string[]? generatorMessages, string[]? compilerMessages)
         {
-            Compilation comp = await TestUtils.CreateCompilation(source, allowUnsafe: true);
+            Compilation comp = TestUtils.CreateCompilation(source, allowUnsafe: true);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,
@@ -75,10 +75,10 @@ namespace JSImportGenerator.Unit.Tests
         }
 
         [Fact]
-        public async Task ValidateRequireAllowUnsafeBlocksDiagnostic()
+        public void ValidateRequireAllowUnsafeBlocksDiagnostic()
         {
             string source = CodeSnippets.TrivialClassDeclarations;
-            Compilation comp = await TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
+            Compilation comp = TestUtils.CreateCompilation(new[] { source }, allowUnsafe: false);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,

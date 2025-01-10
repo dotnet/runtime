@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass2), s_configKeys_ProgramMyClass2, configuration, binderOptions);
 
-            if (configuration["MyInt"] is string value1)
+            if (configuration["MyInt"] is string value1 && !string.IsNullOrEmpty(value1))
             {
                 instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
             }

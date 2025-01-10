@@ -22,9 +22,9 @@ namespace Microsoft.Interop
             return new(generator, ImmutableArray<GeneratorDiagnostic>.Empty);
         }
 
-        public static ResolvedGenerator NotSupported(TypePositionInfo info, GeneratorDiagnostic.NotSupported notSupportedDiagnostic)
+        public static ResolvedGenerator NotSupported(TypePositionInfo info, StubCodeContext context, GeneratorDiagnostic.NotSupported notSupportedDiagnostic)
         {
-            return new(s_forwarder.Bind(info), ImmutableArray.Create<GeneratorDiagnostic>(notSupportedDiagnostic));
+            return new(s_forwarder.Bind(info, context), ImmutableArray.Create<GeneratorDiagnostic>(notSupportedDiagnostic));
         }
 
         public static ResolvedGenerator ResolvedWithDiagnostics(IBoundMarshallingGenerator generator, ImmutableArray<GeneratorDiagnostic> diagnostics)

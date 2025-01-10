@@ -2,10 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 
 include(CheckCCompilerFlag)
 
-project(CoreFX C)
+project(LibsNative C)
 
-include(../../../eng/native/configurepaths.cmake)
-include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+    # This is our root CMakeList.txt, so we need to set up some global settings and include the minipal here.
+    include(../../../eng/native/configurepaths.cmake)
+    include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal minipal)
+endif()
 
 include_directories(${CLR_SRC_NATIVE_DIR})
 
@@ -46,8 +51,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_WASI)
         set(HOST_WASI 1)
-        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/include/)
-        add_compile_options(-I${CLR_REPO_ROOT_DIR}/src/mono/wasi/libs-include/)
         add_compile_options(-Wno-unused-variable)
         add_compile_options(-Wno-unused-parameter)
         add_compile_options(-Wno-gnu-statement-expression)
@@ -55,9 +58,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
         add_compile_options(-D_WASI_EMULATED_SIGNAL)
         add_compile_options(-D_WASI_EMULATED_MMAN)
+        add_compile_options(-D_WASI_EMULATED_PTHREAD)
         # keep in sync with src\mono\wasi\build\WasiApp.targets
         # keep in sync with src\mono\wasi\wasi.proj
-        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman)
+        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread)
     endif ()
 
     if (CLR_CMAKE_TARGET_ANDROID)
@@ -123,10 +127,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-empty-translation-unit)
         add_compile_options(-Wno-cast-align)
         add_compile_options(-Wno-typedef-redefinition)
-        add_compile_options(-Wno-c11-extensions)
-        add_compile_options(-Wno-pre-c11-compat) # fixes build on Debian
-        add_compile_options(-Wno-unknown-warning-option) # unknown warning option '-Wno-pre-c11-compat'
         add_compile_options(-Wno-thread-safety-analysis)
+        add_compile_options(-Wno-c11-extensions)
+
+        check_c_compiler_flag(-Wpre-c11-compat COMPILER_SUPPORTS_W_PRE_C11_COMPAT)
+        if (COMPILER_SUPPORTS_W_PRE_C11_COMPAT)
+            add_compile_options(-Wno-pre-c11-compat)
+        endif()
+
         if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             add_compile_options(-Wno-unsafe-buffer-usage)
             add_compile_options(-Wno-cast-function-type-strict)

@@ -13,6 +13,8 @@
     <IsShipping>true</IsShipping>
     <BuildingOutsideDiagnostics>false</BuildingOutsideDiagnostics>
     <BuildingOutsideDiagnostics Condition="'$(GitHubRepositoryName)' != 'diagnostics'">true</BuildingOutsideDiagnostics>
+    <!-- TODO: Add package readme -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(BuildingOutsideDiagnostics)">

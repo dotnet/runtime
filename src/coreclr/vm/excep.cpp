@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*  EXCEP.CPP:
  *
@@ -2192,15 +2189,7 @@ VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
 
     ThreadExceptionState* pExState = pCurThread->GetExceptionState();
 
-#ifdef FEATURE_INTERPRETER
-    // Abort if we don't have any state from the original exception.
-    if (!pExState->IsExceptionInProgress())
-    {
-        return;
-    }
-#endif // FEATURE_INTERPRETER
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the COM+ exception.
+    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
     if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
     {
         return;
@@ -2369,9 +2358,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
         if (!pParam->isRethrown ||
-#ifdef FEATURE_INTERPRETER
-            !pParam->pExState->IsExceptionInProgress() ||
-#endif // FEATURE_INTERPRETER
              pParam->pExState->IsComPlusException() ||
             (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
         {
@@ -2425,7 +2411,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     {
     }
     PAL_ENDTRY
-    _ASSERTE(!"Cannot continue after COM+ exception");      // Debugger can bring you here.
+    _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
     // User hits 'g'
@@ -2711,7 +2697,7 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 #endif // FEATURE_COMINTEROP
 
 //
-// Maps a Win32 fault to a COM+ Exception enumeration code
+// Maps a Win32 fault to a CLR Exception enumeration code
 //
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 {
@@ -2808,7 +2794,7 @@ void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord)
 // gc mode.  As we leave the EE, we fix a few things:
 //
 //      - the gc state must be set back to preemptive-operative
-//      - the COM+ frame chain must be rewound to what it was on entry
+//      - the CLR frame chain must be rewound to what it was on entry
 //      - ExInfo()->m_pSearchBoundary must be adjusted
 //        if we popped the frame that is identified as begnning the next
 //        crawl.
@@ -2837,9 +2823,9 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     CONSISTENCY_CHECK(pFrame == pThread->GetFrame());
 
 #ifndef FEATURE_EH_FUNCLETS
-    // An exception is being thrown through here.  The COM+ exception
+    // An exception is being thrown through here.  The CLR exception
     // info keeps a pointer to a frame that is used by the next
-    // COM+ Exception Handler as the starting point of its crawl.
+    // CLR Exception Handler as the starting point of its crawl.
     // We may have popped this marker -- in which case, we need to
     // update it to the current frame.
     //
@@ -3504,12 +3490,12 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
     // VS debugger team requested the Whidbey experience, which is no Watson when the debugger thread detects
     // that the debugger process is abruptly terminated, and triggers a failfast error.  In this particular
-    // scenario CORDebuggerAttached() will be TRUE, but IsDebuggerPresent() will be FALSE because from OS
+    // scenario CORDebuggerAttached() will be TRUE, but minipal_is_native_debugger_present() will be FALSE because from OS
     // perspective the native debugger has been detached from the debuggee, but CLR has not yet marked the
     // managed debugger as detached.  Therefore, CORDebuggerAttached() is checked, so Watson will not pop up
     // when a debugger is abruptly terminated.  It also prevents a debugger from being launched on a helper
     // thread.
-    BOOL alreadyDebugging     = CORDebuggerAttached() || IsDebuggerPresent();
+    BOOL alreadyDebugging     = CORDebuggerAttached() || minipal_is_native_debugger_present();
 
     BOOL jitAttachRequested   = !alreadyDebugging; // Launch debugger if not already running.
 
@@ -3600,7 +3586,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         }
 
 
-        if (IsDebuggerPresent())
+        if (minipal_is_native_debugger_present())
         {
             result = FaultReportResultDebug;
             jitAttachRequested = FALSE;
@@ -3674,9 +3660,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         }
     }
     // When the debugger thread detects that the debugger process is abruptly terminated, and triggers
-    // a failfast error, CORDebuggerAttached() will be TRUE, but IsDebuggerPresent() will be FALSE.
-    // If IsDebuggerPresent() is FALSE, do not try to notify the deubgger.
-    else if (CORDebuggerAttached() && IsDebuggerPresent())
+    // a failfast error, CORDebuggerAttached() will be TRUE, but minipal_is_native_debugger_present() will be FALSE.
+    // If minipal_is_native_debugger_present() is FALSE, do not try to notify the deubgger.
+    else if (CORDebuggerAttached() && minipal_is_native_debugger_present())
 #else
     }
     else if (CORDebuggerAttached())
@@ -3721,7 +3707,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 NotifyDebuggerLastChance(pThread, pExceptionInfo, jitAttachRequested);
 
                 // If the registed debugger is not a managed debugger, we need to stop the debugger here.
-                if (!CORDebuggerAttached() && IsDebuggerPresent())
+                if (!CORDebuggerAttached() && minipal_is_native_debugger_present())
                 {
                     DebugBreak();
                 }
@@ -5705,9 +5691,6 @@ void AdjustContextForThreadStop(Thread* pThread,
 
     pThread->ResetThrowControlForThread();
 
-    // Should never get here if we're already throwing an exception.
-    _ASSERTE(!pThread->IsExceptionInProgress() || pThread->IsRudeAbort());
-
     // Should never get here if we're already abort initiated.
     _ASSERTE(!pThread->IsAbortInitiated() || pThread->IsRudeAbort());
 
@@ -5717,7 +5700,7 @@ void AdjustContextForThreadStop(Thread* pThread,
     }
 }
 
-// Create a COM+ exception , stick it in the thread.
+// Create a CLR exception , stick it in the thread.
 OBJECTREF
 CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, BOOL bAsynchronousThreadStop)
 {
@@ -5985,7 +5968,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     }
 #endif // FEATURE_EMULATE_SINGLESTEP
 
-    // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there
+    // Is this exception really meant for the CLR Debugger? Note: we will let the debugger have a chance if there
     // is a debugger attached to any part of the process. It is incorrect to consider whether or not the debugger
     // is attached the thread's current app domain at this point.
 
@@ -6363,6 +6346,11 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
     m_ReturnAddress = ::GetIP(pContext);
     CopyOSContext(&m_ctx, pContext);
 #endif // !FEATURE_EH_FUNCLETS
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    m_SSP = 0;
+#endif
+
 }
 
 //
@@ -6400,7 +6388,7 @@ bool ShouldHandleManagedFault(
     //
     //  The helper will push a frame for us, and then throw the correct managed exception.
     //
-    // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there is a
+    // Is this exception really meant for the CLR Debugger? Note: we will let the debugger have a chance if there is a
     // debugger attached to any part of the process. It is incorrect to consider whether or not the debugger is attached
     // the thread's current app domain at this point.
 
@@ -6531,24 +6519,18 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
             // When the CET is enabled, the interruption happens on the ret instruction in the calee.
             // We need to "pop" rsp to the caller, as if the ret has consumed it.
             interruptedContext->Rsp += 8;
+            DWORD64 ssp = GetSSP(interruptedContext);
+            SetSSP(interruptedContext, ssp + 8);
         }
 
         // Change the IP to be at the original return site, as if we have returned to the caller.
         // That IP is an interruptible safe point, so we can suspend right there.
-        uintptr_t origIp = interruptedContext->Rip;
         interruptedContext->Rip = (uintptr_t)pThread->GetHijackedReturnAddress();
 
         FrameWithCookie<ResumableFrame> frame(pExceptionInfo->ContextRecord);
         frame.Push(pThread);
         CommonTripThread();
         frame.Pop(pThread);
-
-        if (areShadowStacksEnabled)
-        {
-            // Undo the "pop", so that the ret could now succeed.
-            interruptedContext->Rsp = interruptedContext->Rsp - 8;
-            interruptedContext->Rip = origIp;
-        }
 
         return VEH_CONTINUE_EXECUTION;
     }
@@ -6872,7 +6854,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
 
                     DWORD tid = GetCurrentThreadId();
 
-                    BOOL debuggerPresentBeforeAssert = IsDebuggerPresent();
+                    BOOL debuggerPresentBeforeAssert = minipal_is_native_debugger_present();
 
 
                     CONSISTENCY_CHECK_MSGF(false, ("AV in clr at this callstack:\n------\n%s\n-----\n.AV on tid=0x%x (%d), cxr=%p, exr=%p\n",
@@ -6884,7 +6866,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     // return EXCEPTION_CONTINUE_EXECUTION to re-execute the faulting instruction. This is
                     // supposed to be a nice little feature for CLR devs who attach debuggers on the "Av in
                     // mscorwks" assert above. Since this is only for that case, its only in debug builds.
-                    if (!debuggerPresentBeforeAssert && IsDebuggerPresent())
+                    if (!debuggerPresentBeforeAssert && minipal_is_native_debugger_present())
                     {
                         return VEH_CONTINUE_EXECUTION;;
                     }
@@ -7504,7 +7486,7 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
         }
         else
         {
-            DispatchManagedException(orThrowable, /* preserveStackTrace */ false);
+            DispatchManagedException(orThrowable);
         }
     }
     else
@@ -11551,3 +11533,79 @@ MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDe
 #endif // FEATURE_COMINTEROP
     return pUserMD;
 }
+
+
+#ifdef FEATURE_EH_FUNCLETS
+
+void SoftwareExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = *dac_cast<PTR_SIZE_T>((TADDR)m_ContextPointers.regname);
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContext->regname = m_Context.regname;
+    ENUM_FP_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SetIP(pRD->pCurrentContext, ::GetIP(&m_Context));
+    SetSP(pRD->pCurrentContext, ::GetSP(&m_Context));
+
+    pRD->ControlPC = ::GetIP(&m_Context);
+    pRD->SP = ::GetSP(&m_Context);
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+}
+
+#ifndef DACCESS_COMPILE
+//
+// Init a new frame
+//
+void SoftwareExceptionFrame::Init()
+{
+    WRAPPER_NO_CONTRACT;
+
+#define CALLEE_SAVED_REGISTER(regname) m_ContextPointers.regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+#ifndef TARGET_UNIX
+    Thread::VirtualUnwindCallFrame(&m_Context, &m_ContextPointers);
+#else // !TARGET_UNIX
+    BOOL success = PAL_VirtualUnwind(&m_Context, &m_ContextPointers);
+    if (!success)
+    {
+        _ASSERTE(!"SoftwareExceptionFrame::Init failed");
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+#endif // !TARGET_UNIX
+
+#define CALLEE_SAVED_REGISTER(regname) if (m_ContextPointers.regname == NULL) m_ContextPointers.regname = &m_Context.regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    _ASSERTE(ExecutionManager::IsManagedCode(::GetIP(&m_Context)));
+
+    m_ReturnAddress = ::GetIP(&m_Context);
+}
+
+//
+// Init and Link in a new frame
+//
+void SoftwareExceptionFrame::InitAndLink(Thread *pThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Init();
+
+    Push(pThread);
+}
+
+#endif // DACCESS_COMPILE
+#endif // FEATURE_EH_FUNCLETS

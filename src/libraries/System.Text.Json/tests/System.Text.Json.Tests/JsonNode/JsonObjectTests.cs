@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -1601,6 +1602,34 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(3, ilist.Count);
             Assert.DoesNotContain("Two", jObject);
             Assert.Equal(-1, jObject.IndexOf("Two"));
+        }
+
+        [Theory]
+        [InlineData(10_000)]
+        [InlineData(50_000)]
+        [InlineData(100_000)]
+        public static void JsonObject_ExtensionData_ManyDuplicatePayloads(int size)
+        {
+            // Generate the payload
+            StringBuilder builder = new StringBuilder();
+            builder.Append("{");
+            for (int i = 0; i < size; i++)
+            {
+                builder.Append($"\"{i}\": 0,");
+                builder.Append($"\"{i}\": 0,");
+            }
+            builder.Length--; // strip trailing comma
+            builder.Append("}");
+
+            string jsonPayload = builder.ToString();
+            ClassWithObjectExtensionData result = JsonSerializer.Deserialize<ClassWithObjectExtensionData>(jsonPayload);
+            Assert.Equal(size, result.ExtensionData.Count);
+        }
+
+        class ClassWithObjectExtensionData
+        {
+            [JsonExtensionData]
+            public JsonObject ExtensionData { get; set; }
         }
     }
 }

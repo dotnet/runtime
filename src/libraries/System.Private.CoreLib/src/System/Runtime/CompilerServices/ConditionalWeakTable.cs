@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
         where TValue : class?
     {
         // Lifetimes of keys and values:
-        // Inserting a key and value into the dictonary will not
+        // Inserting a key and value into the dictionary will not
         // prevent the key from dying, even if the key is strongly reachable
         // from the value. Once the key dies, the dictionary automatically removes
         // the key/value entry.
@@ -698,10 +698,13 @@ namespace System.Runtime.CompilerServices
                 Entry[] newEntries = new Entry[newSize];
                 int newEntriesIndex = 0;
                 bool activeEnumerators = _parent != null && _parent._activeEnumeratorRefCount > 0;
+                bool transferredHandles;
 
                 // Migrate existing entries to the new table.
                 if (activeEnumerators)
                 {
+                    transferredHandles = true;
+
                     // There's at least one active enumerator, which means we don't want to
                     // remove any expired/removed entries, in order to not affect existing
                     // entries indices.  Copy over the entries while rebuilding the buckets list,
@@ -721,6 +724,8 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
+                    transferredHandles = false;
+
                     // There are no active enumerators, which means we want to compact by
                     // removing expired/removed entries.
                     for (int entriesIndex = 0; entriesIndex < _entries.Length; entriesIndex++)
@@ -732,6 +737,8 @@ namespace System.Runtime.CompilerServices
                         {
                             if (depHnd.UnsafeGetTarget() is not null)
                             {
+                                transferredHandles = true;
+
                                 ref Entry newEntry = ref newEntries[newEntriesIndex];
 
                                 // Entry is used and has not expired. Link it into the appropriate bucket list.
@@ -765,7 +772,13 @@ namespace System.Runtime.CompilerServices
                     // from being finalized, as it no longer has any responsibility for any cleanup.
                     GC.SuppressFinalize(this);
                 }
-                _oldKeepAlive = newContainer; // once this is set, the old container's finalizer will not free transferred dependent handles
+
+                if (transferredHandles)
+                {
+                    // Once this is set, the old container's finalizer will not free transferred dependent handles,
+                    // and the new container's finalizer can't be run until this container is no longer in use.
+                    _oldKeepAlive = newContainer;
+                }
 
                 GC.KeepAlive(this); // ensure we don't get finalized while accessing DependentHandles.
 

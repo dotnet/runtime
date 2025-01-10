@@ -52,21 +52,13 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainAssembly *  pDomainAssembly,
-                                      AppDomain *   pAppDomain) :
+                                      DomainAssembly *  pDomainAssembly) :
         m_enableClassLoadCallbacks(FALSE),
-        m_pPrimaryModule(NULL),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeDomainAssembly(pDomainAssembly),
-        m_pAppDomain(pAppDomain)
+        m_pRuntimeDomainAssembly(pDomainAssembly)
 {
-    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x AD:0x%x\n",
-        this, pRuntimeModule, pDomainAssembly, pAppDomain));
-
-    // Pick a primary module.
-    // Arguably, this could be in DebuggerModuleTable::AddModule
-    PickPrimaryModule();
-
+    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
+        this, pRuntimeModule, pDomainAssembly));
 
     // Do we have any optimized code?
     DWORD dwDebugBits = pRuntimeModule->GetDebuggerInfoBits();
@@ -90,7 +82,7 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
 inline bool DebuggerModule::HasAnyOptimizedCode()
 {
     LIMITED_METHOD_CONTRACT;
-    Module * pModule = this->GetPrimaryModule()->GetRuntimeModule();
+    Module * pModule = GetRuntimeModule();
     DWORD dwDebugBits = pModule->GetDebuggerInfoBits();
     return CORDebuggerAllowJITOpts(dwDebugBits);
 }
@@ -126,54 +118,12 @@ inline void DebuggerModule::EnableClassLoadCallbacks(BOOL f)
 }
 
 //-----------------------------------------------------------------------------
-// Return the appdomain that this module exists in.
-//-----------------------------------------------------------------------------
-inline AppDomain* DebuggerModule::GetAppDomain()
-{
-    return m_pAppDomain;
-}
-
-//-----------------------------------------------------------------------------
 // Return the EE module that this module corresponds to.
 //-----------------------------------------------------------------------------
 inline Module * DebuggerModule::GetRuntimeModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_pRuntimeModule;
-}
-
-//-----------------------------------------------------------------------------
-// <TODO> (8/12/2002)
-// Currently we create a new DebuggerModules for each appdomain a shared
-// module lives in. We then pretend there aren't any shared modules.
-// This is bad. We need to move away from this.
-// Once we stop lying, then every module will be it's own PrimaryModule. :)
-//
-// Currently, Module* is 1:n w/ DebuggerModule.
-// We add a notion of PrimaryModule so that:
-// Module* is 1:1 w/ DebuggerModule::GetPrimaryModule();
-// This should help transition towards exposing shared modules.
-// If the Runtime module is shared, then this gives a common DM.
-// If the runtime module is not shared, then this is an identity function.
-// </TODO>
-//-----------------------------------------------------------------------------
-inline DebuggerModule * DebuggerModule::GetPrimaryModule()
-{
-    _ASSERTE(m_pPrimaryModule != NULL);
-    return m_pPrimaryModule;
-}
-
-//-----------------------------------------------------------------------------
-// This is called by DebuggerModuleTable to set our primary module.
-//-----------------------------------------------------------------------------
-inline void DebuggerModule::SetPrimaryModule(DebuggerModule * pPrimary)
-{
-    _ASSERTE(pPrimary != NULL);
-    // Our primary module must by definition refer to the same runtime module as us
-    _ASSERTE(pPrimary->GetRuntimeModule() == this->GetRuntimeModule());
-
-    LOG((LF_CORDB, LL_EVERYTHING, "DM::SetPrimaryModule - this=%p, pPrimary=%p\n", this, pPrimary));
-    m_pPrimaryModule = pPrimary;
 }
 
 inline DebuggerEval * FuncEvalFrame::GetDebuggerEval()

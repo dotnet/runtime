@@ -13,8 +13,9 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Logging.EventSource
 {
     /// <summary>
-    /// The LoggingEventSource is the bridge from all ILogger based logging to EventSource/EventListener logging.
-    ///
+    /// Bridges all ILogger-based logging to EventSource/EventListener logging.
+    /// </summary>
+    /// <remarks>
     /// You turn this logging on by enabling the EventSource called
     ///
     ///      Microsoft-Extensions-Logging
@@ -76,7 +77,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     ///             Console.WriteLine("Logger {0}: {1}", eventData.Payload[2], eventData.Payload[4]);
     ///     }
     /// }
-    /// </summary>
+    /// </remarks>
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
     {
