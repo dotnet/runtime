@@ -368,8 +368,8 @@ namespace System.Numerics
             // This implementation is based on the DirectX Math Library XMVector3Cross method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            Vector128<float> v1 = vector1.AsVector128();
-            Vector128<float> v2 = vector2.AsVector128();
+            Vector128<float> v1 = vector1.AsVector128Unsafe();
+            Vector128<float> v2 = vector2.AsVector128Unsafe();
 
             Vector128<float> temp = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)) * Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3));
 

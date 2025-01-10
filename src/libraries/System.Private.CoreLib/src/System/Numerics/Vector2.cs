@@ -338,10 +338,11 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cross(Vector2 value1, Vector2 value2)
         {
-            // Vector64 is not optimized on xarch. The emulated vector math is much worse
-            // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEBDAzgWwB8ABABgAJiBGAOgDkBXfGKASzFwG4BYAKDMq0ASgwB2GVsxoBJcW1G52XPn2IBmSgCZyAYXIBvPuWOUN1JOQBmAGwjYMuqBFy4AFADUYYDNG0A3bGsGGCo0ck9vX3IAoJhNAEojE0NeEzTwrx8oVAAeGzsMAD5oqnIAXgzI7JQaHVh7GFcY4NoADTDmkJoATXieVPTjCKzc/Ptiv20K4ehUWvqMRs7NHo7A4JXWvvIAeh3yXAB3bAAHcnbybqTBmeq823HyfAZrBwq/UoAqaM1+6/TiAB2J4vDA0ADiMAwAFFrDBmOJXKR4uQ4CDXhCobD4TBEVQ+v8AL7/f7qQQWMYOOrOXB0bCsPyNW7+dYhMLM6KshL/FKDYxAzmxNrkb7LHqowUtcWirk0Vr9NLE3iEoA===
+            //return value1.X * value2.Y - value1.Y * value2.X;
 
-            return value1.X * value2.Y - value1.Y * value2.X;
+            Vector128<float> mul = value1.AsVector128Unsafe() *
+                Vector128.Shuffle(value2.AsVector128Unsafe(), Vector128.Create(1, 0, 1, 0));
+            return (mul - Vector128.Shuffle(mul, Vector128.Create(1, 0, 1, 0))).ToScalar();
         }
 
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
