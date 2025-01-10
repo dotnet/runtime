@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <PropertyGroup>
-    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
-
     <_BuildNativeTargetOS>$(TargetOS)</_BuildNativeTargetOS>
     <_BuildNativeTargetOS Condition="'$(TargetsLinuxBionic)' == 'true'">linux-bionic</_BuildNativeTargetOS>
+    <HasCdacBuildTool Condition="'$(ClrFullNativeBuild)' == 'true' or '$(ClrRuntimeSubset)' == 'true' or '$(ClrDebugSubset)' == 'true' or '$(ClrCrossComponentsSubset)' == 'true'">true</HasCdacBuildTool>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="runtime-prereqs.proj" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
-    <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <ProjectReference Condition="'$(HasCdacBuildTool)' == 'true'" Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" GlobalPropertiesToRemove="$(NativeBuildPartitionPropertiesToRemove)" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
@@ -51,7 +47,7 @@
       <_CoreClrBuildArg Include="-outputrid $(OutputRID)" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
+      <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(CxxStandardLibrary)' != ''">
@@ -77,10 +73,6 @@
       <_CoreClrBuildArg Condition="'$(ClrSpmiSubset)' == 'true'" Include="-component spmi" />
       <_CoreClrBuildArg Condition="'$(ClrCrossComponentsSubset)' == 'true'" Include="-component crosscomponents" />
       <_CoreClrBuildArg Condition="'$(ClrDebugSubset)' == 'true'" Include="-component debug" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
-      <_CoreClrBuildArg Include="-cmakeargs -DCMAKE_ICU_DIR=&quot;$(_IcuDir)&quot;" />
     </ItemGroup>
 
     <ItemGroup Condition="('$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and '$(ANDROID_NDK_ROOT)' != ''">

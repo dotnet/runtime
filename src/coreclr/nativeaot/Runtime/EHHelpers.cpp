@@ -203,6 +203,24 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
     pContext->Sp = pPalContext->SP;
     pContext->Ra = pPalContext->RA;
     pContext->Pc = pPalContext->IP;
+#elif defined(HOST_RISCV64)
+    pContext->A0 = pPalContext->A0;
+    pContext->A1 = pPalContext->A1;
+    pContext->S1 = pPalContext->S1;
+    pContext->S2 = pPalContext->S2;
+    pContext->S3 = pPalContext->S3;
+    pContext->S4 = pPalContext->S4;
+    pContext->S5 = pPalContext->S5;
+    pContext->S6 = pPalContext->S6;
+    pContext->S7 = pPalContext->S7;
+    pContext->S8 = pPalContext->S8;
+    pContext->S9 = pPalContext->S9;
+    pContext->S10 = pPalContext->S10;
+    pContext->S11 = pPalContext->S11;
+    pContext->Fp = pPalContext->FP;
+    pContext->Sp = pPalContext->SP;
+    pContext->Ra = pPalContext->RA;
+    pContext->Pc = pPalContext->IP;
 #elif defined(HOST_WASM)
     // No registers, no work to do yet
 #else
@@ -295,7 +313,7 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
 #endif
 
@@ -328,7 +346,7 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
         (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
         (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
     };
@@ -410,7 +428,7 @@ static uintptr_t UnwindSimpleHelperToCaller(
     pContext->SetSp(sp+sizeof(uintptr_t)); // pop the stack
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
-#elif defined(HOST_LOONGARCH64)
+#elif defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     uintptr_t adjustedFaultingIP = pContext->GetRa();
 #else
     uintptr_t adjustedFaultingIP = 0; // initializing to make the compiler happy
@@ -485,6 +503,9 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
 
 #else // TARGET_UNIX
 
+uintptr_t GetSSP(CONTEXT *pContext);
+void SetSSP(CONTEXT *pContext, uintptr_t ssp);
+
 static bool g_ContinueOnFatalErrors = false;
 
 // Set the runtime to continue search when encountering an unhandled runtime exception. Once done it is forever.
@@ -539,21 +560,15 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
             // When the CET is enabled, the interruption happens on the ret instruction in the calee.
             // We need to "pop" rsp to the caller, as if the ret has consumed it.
             interruptedContext->SetSp(interruptedContext->GetSp() + 8);
+            uintptr_t ssp = GetSSP(interruptedContext);
+            SetSSP(interruptedContext, ssp + 8);
         }
 
         // Change the IP to be at the original return site, as if we have returned to the caller.
         // That IP is an interruptible safe point, so we can suspend right there.
-        uintptr_t origIp = interruptedContext->GetIp();
         interruptedContext->SetIp((uintptr_t)pThread->GetHijackedReturnAddress());
 
         pThread->InlineSuspend(interruptedContext);
-
-        if (areShadowStacksEnabled)
-        {
-            // Undo the "pop", so that the ret could now succeed.
-            interruptedContext->SetSp(interruptedContext->GetSp() - 8);
-            interruptedContext->SetIp(origIp);
-        }
 
         ASSERT(!pThread->IsHijacked());
         return EXCEPTION_CONTINUE_EXECUTION;

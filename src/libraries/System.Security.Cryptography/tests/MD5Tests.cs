@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void MD5_VerifyLargeStream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -md5
             VerifyRepeating("0102030405060708", 1024, "5fc6366852074da6e4795a014574282c");
         }
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void MD5_VerifyLargeStream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -md5
             VerifyRepeating("0102030405060708", 1025, "c5f6181a24446a583b14282f32786513");
         }
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task MD5_VerifyLargeStream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -md5
             await VerifyRepeatingAsync("0102030405060708", 1025, "c5f6181a24446a583b14282f32786513");
         }
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public async Task MD5_VerifyLargeStream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -md5
             await VerifyRepeatingAsync("0102030405060708", 1024, "5fc6366852074da6e4795a014574282c");
         }

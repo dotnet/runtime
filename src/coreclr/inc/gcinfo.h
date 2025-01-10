@@ -36,7 +36,7 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 3
+#define GCINFO_VERSION 4
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -67,14 +67,6 @@ struct GCInfoToken
 
     static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
     {
-        // Once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
-        // delete the following and just return GCINFO_VERSION
-        //
-        // R2R 9.0 and 9.1 use GCInfo v2
-        // R2R 9.2 uses GCInfo v3
-        if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
-            return 2;
-
         return GCINFO_VERSION;
     }
 };

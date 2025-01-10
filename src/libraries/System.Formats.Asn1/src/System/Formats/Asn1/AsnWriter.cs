@@ -13,13 +13,16 @@ using System.Security.Cryptography;
 namespace System.Formats.Asn1
 {
     /// <summary>
-    ///   A writer for BER-, CER-, and DER-encoded ASN.1 data.
+    ///   A writer for BER-encoded, CER-encoded, and DER-encoded ASN.1 data.
     /// </summary>
     public sealed partial class AsnWriter
     {
         private byte[] _buffer = null!;
         private int _offset;
         private Stack<StackFrame>? _nestingStack;
+#if NET9_0_OR_GREATER
+        private int _encodeDepth;
+#endif
 
         /// <summary>
         ///   Gets the encoding rules in use by this writer.
@@ -30,7 +33,7 @@ namespace System.Formats.Asn1
         public AsnEncodingRules RuleSet { get; }
 
         /// <summary>
-        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules.
+        ///   Creates a new <see cref="AsnWriter"/> with a given set of encoding rules.
         /// </summary>
         /// <param name="ruleSet">The encoding constraints for the writer.</param>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -49,7 +52,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules and an initial capacity.
+        ///   Initializes a new instance of <see cref="AsnWriter" /> with a given set of encoding rules and an initial capacity.
         /// </summary>
         /// <param name="ruleSet">The encoding constraints for the writer.</param>
         /// <param name="initialCapacity">The minimum capacity with which to initialize the underlying buffer.</param>
@@ -74,10 +77,17 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Reset the writer to have no data, without releasing resources.
+        ///   Resets the writer to have no data, without releasing resources.
         /// </summary>
         public void Reset()
         {
+#if NET9_0_OR_GREATER
+            if (_encodeDepth != 0)
+            {
+                throw new InvalidOperationException(SR.AsnWriter_ModifyingWhileEncoding);
+            }
+#endif
+
             if (_offset > 0)
             {
                 Debug.Assert(_buffer != null);
@@ -114,7 +124,7 @@ namespace System.Formats.Asn1
         /// </summary>
         /// <param name="destination">The buffer in which to write.</param>
         /// <param name="bytesWritten">
-        ///   On success, receives the number of bytes written to <paramref name="destination"/>.
+        ///   When this method returns, contains the number of bytes written to <paramref name="destination"/>.
         /// </param>
         /// <returns>
         ///   <see langword="true"/> if the encode succeeded,
@@ -173,7 +183,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Return a new array containing the encoded value.
+        ///   Returns a new array containing the encoded value.
         /// </summary>
         /// <returns>
         ///   A precisely-sized array containing the encoded value.
@@ -198,6 +208,87 @@ namespace System.Formats.Asn1
             // required indefinite encoding (CER). So we're correctly sized up, and ready to copy.
             return _buffer.AsSpan(0, _offset).ToArray();
         }
+
+#if NET9_0_OR_GREATER
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <typeparam name="TReturn">
+        ///   The type of the return value.
+        /// </typeparam>
+        /// <returns>
+        ///   Returns the value returned from <paramref name="encodeCallback" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public TReturn Encode<TReturn>(Func<ReadOnlySpan<byte>, TReturn> encodeCallback)
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                return encodeCallback(encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
+        }
+
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <param name="state">
+        ///   The state to pass to <paramref name="encodeCallback" />.
+        /// </param>
+        /// <typeparam name="TState">
+        ///   The type of the state.
+        /// </typeparam>
+        /// <typeparam name="TReturn">
+        ///   The type of the return value.
+        /// </typeparam>
+        /// <returns>
+        ///   Returns the value returned from <paramref name="encodeCallback" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public TReturn Encode<TState, TReturn>(TState state, Func<TState, ReadOnlySpan<byte>, TReturn> encodeCallback)
+            where TState : allows ref struct
+        {
+            if (encodeCallback is null)
+                throw new ArgumentNullException(nameof(encodeCallback));
+
+            try
+            {
+                _encodeDepth = checked(_encodeDepth + 1);
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                return encodeCallback(state, encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
+        }
+#endif
 
         private ReadOnlySpan<byte> EncodeAsSpan()
         {
@@ -264,6 +355,13 @@ namespace System.Formats.Asn1
             {
                 throw new OverflowException();
             }
+
+#if NET9_0_OR_GREATER
+            if (_encodeDepth != 0)
+            {
+                throw new InvalidOperationException(SR.AsnWriter_ModifyingWhileEncoding);
+            }
+#endif
 
             if (_buffer == null || _buffer.Length - _offset < pendingCount)
             {
@@ -382,7 +480,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Copy the value of this writer into another.
+        ///   Copies the value of this writer into another.
         /// </summary>
         /// <param name="destination">The writer to receive the value.</param>
         /// <exception cref="ArgumentNullException">
@@ -423,7 +521,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Write a single value which has already been encoded.
+        ///   Writes a single value that has already been encoded.
         /// </summary>
         /// <param name="value">The value to write.</param>
         /// <remarks>
@@ -730,6 +828,14 @@ namespace System.Formats.Asn1
             public static bool operator !=(StackFrame left, StackFrame right) => !left.Equals(right);
         }
 
+        /// <summary>
+        ///   Represents a pushed ASN.1 scope.
+        /// </summary>
+        /// <remarks>
+        ///   Instances of this type are expected to be created from a <c>Push</c> member on <see cref="AsnWriter"/>,
+        ///   not instantiated directly.
+        ///   Calling <see cref="Dispose" /> calls the corresponding <c>Pop</c> associated with the <c>Push</c>.
+        /// </remarks>
         public readonly struct Scope : IDisposable
         {
             private readonly AsnWriter _writer;
@@ -745,6 +851,12 @@ namespace System.Formats.Asn1
                 _depth = _writer._nestingStack.Count;
             }
 
+            /// <summary>
+            ///   Pops the ASN.1 scope.
+            /// </summary>
+            /// <exception cref="InvalidOperationException">
+            ///   A scope was pushed within this scope, but has yet to be popped.
+            /// </exception>
             public void Dispose()
             {
                 Debug.Assert(_writer == null || _writer._nestingStack != null);

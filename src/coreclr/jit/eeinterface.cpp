@@ -210,8 +210,8 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDL
 }
 
 static const char* s_jitHelperNames[CORINFO_HELP_COUNT] = {
-#define JITHELPER(code, pfnHelper, sig)        #code,
-#define DYNAMICJITHELPER(code, pfnHelper, sig) #code,
+#define JITHELPER(code, pfnHelper, binderId)        #code,
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) #code,
 #include "jithelpers.h"
 };
 
@@ -594,6 +594,27 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     }
 
     return printer.GetBuffer();
+}
+
+//------------------------------------------------------------------------
+// eeGetClassAssemblyName:
+//   Get the assembly name of a type.
+//   If missing information (in SPMI), then return a placeholder string.
+//
+// Parameters:
+//   clsHnd - the handle of the class
+//
+// Return value:
+//   The name string.
+//
+const char* Compiler::eeGetClassAssemblyName(CORINFO_CLASS_HANDLE clsHnd)
+{
+    const char* assemblyName = "<unknown assembly>";
+    eeRunFunctorWithSPMIErrorTrap([&]() {
+        assemblyName = info.compCompHnd->getClassAssemblyName(clsHnd);
+    });
+
+    return assemblyName != nullptr ? assemblyName : "<no assembly>";
 }
 
 void Compiler::eePrintObjectDescription(const char* prefix, CORINFO_OBJECT_HANDLE handle)

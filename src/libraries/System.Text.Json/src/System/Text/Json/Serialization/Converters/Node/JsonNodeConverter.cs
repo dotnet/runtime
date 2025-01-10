@@ -80,6 +80,6 @@ namespace System.Text.Json.Serialization.Converters
             return node;
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

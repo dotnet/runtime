@@ -201,7 +201,9 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 #if defined(FEATURE_EH_FUNCLETS)
         flagsStackWalk |= GC_FUNCLET_REFERENCE_REPORTING;
 #endif // defined(FEATURE_EH_FUNCLETS)
+        gcctx.pScannedSlots = NULL;
         pThread->StackWalkFrames( GcStackCrawlCallBack, &gcctx, flagsStackWalk);
+        delete gcctx.pScannedSlots;
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
@@ -443,7 +445,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context;
+    return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -460,16 +462,29 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            gc_alloc_context* palloc_context = pThread->GetAllocContext();
+            ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
             if (palloc_context != nullptr)
             {
-                fn(palloc_context, param);
+                gc_alloc_context* ac = &palloc_context->m_GCAllocContext;
+                fn(ac, param);
+                // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+                // m_CombinedLimit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+                // with no synchronization. If you need to change this code think carefully about how that concurrency
+                // may affect the results.
+                if (ac->alloc_limit == 0 && palloc_context->m_CombinedLimit != 0)
+                {
+                    palloc_context->m_CombinedLimit = 0;
+                }
             }
         }
     }
     else
     {
-        fn(&g_global_alloc_context, param);
+        fn(&g_global_alloc_context.m_GCAllocContext, param);
+        if (g_global_alloc_context.m_GCAllocContext.alloc_limit == 0 && g_global_alloc_context.m_CombinedLimit != 0)
+        {
+            g_global_alloc_context.m_CombinedLimit = 0;
+        }
     }
 }
 
@@ -1393,6 +1408,9 @@ struct SuspendableThreadStubArguments
     class Thread* Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 struct ThreadStubArguments
@@ -1402,6 +1420,9 @@ struct ThreadStubArguments
     HANDLE Thread;
     bool HasStarted;
     CLREvent ThreadStartedEvent;
+#ifdef __APPLE__
+    const WCHAR* name;
+#endif //__APPLE__
 };
 
 namespace
@@ -1420,6 +1441,9 @@ namespace
         args.ThreadStart = threadStart;
         args.Thread = nullptr;
         args.HasStarted = false;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1444,6 +1468,10 @@ namespace
         {
             SuspendableThreadStubArguments* args = static_cast<SuspendableThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             args->Thread->SetGCSpecial();
@@ -1502,6 +1530,9 @@ namespace
         args.Argument = argument;
         args.ThreadStart = threadStart;
         args.Thread = INVALID_HANDLE_VALUE;
+#ifdef __APPLE__
+        args.name = name;
+#endif //__APPLE__
         if (!args.ThreadStartedEvent.CreateAutoEventNoThrow(FALSE))
         {
             return false;
@@ -1511,6 +1542,10 @@ namespace
         {
             ThreadStubArguments* args = static_cast<ThreadStubArguments*>(argument);
             assert(args != nullptr);
+
+#ifdef __APPLE__
+            SetThreadName(GetCurrentThread(), args->name);
+#endif //__APPLE__
 
             ClrFlsSetThreadType(ThreadType_GC);
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -1605,7 +1640,7 @@ uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return SystemDomain::System()->GetTotalNumSizedRefHandles();
+    return 0;
 }
 
 NormalizedTimer analysisTimer;
@@ -1790,4 +1825,9 @@ void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
     ::LogErrorToHost("GC: %s", message);
+}
+
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return thread->GetOSThreadId64();
 }

@@ -103,7 +103,7 @@ struct Agnostic_CORINFO_METHODNAME_TOKENin
     DWORDLONG ftn;
     DWORD     className;
     DWORD     namespaceName;
-    DWORD     enclosingClassName;
+    DWORD     maxEnclosingClassNames;
 };
 
 struct Agnostic_CORINFO_METHODNAME_TOKENout
@@ -111,7 +111,7 @@ struct Agnostic_CORINFO_METHODNAME_TOKENout
     DWORD methodName;
     DWORD className;
     DWORD namespaceName;
-    DWORD enclosingClassName;
+    DWORD enclosingClassNames;
 };
 
 struct Agnostic_CORINFO_RESOLVED_TOKENin
@@ -654,11 +654,19 @@ struct Agnostic_ResolveVirtualMethodResult
 {
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
-    bool                            requiresInstMethodTableArg;
+    bool                            isInstantiatingStub;
+    bool                            wasArrayInterfaceDevirt;
     DWORDLONG                       exactContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
+};
+
+struct Agnostic_GetInstantiatedEntryResult
+{
+    DWORDLONG                       methodHandle;
+    DWORDLONG                       classHandle;
+    DWORDLONG                       result;
 };
 
 struct ResolveTokenValue

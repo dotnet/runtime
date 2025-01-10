@@ -18,8 +18,6 @@ namespace Microsoft.Extensions.Http.Logging
         private readonly ILogger _logger;
         private readonly HttpClientFactoryOptions? _options;
 
-        private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="LoggingScopeHttpMessageHandler"/> class with a specified logger.
         /// </summary>
@@ -56,21 +54,30 @@ namespace Microsoft.Extensions.Http.Logging
             {
                 var stopwatch = ValueStopwatch.StartNew();
 
-                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? LogHelper.ShouldRedactHeaderValue;
 
                 using (_logger.BeginRequestPipelineScope(request, out string? formattedUri))
                 {
                     _logger.LogRequestPipelineStart(request, formattedUri, shouldRedactHeaderValue);
-                    HttpResponseMessage response = useAsync
-                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
-#if NET
-                        : base.Send(request, cancellationToken);
-#else
-                        : throw new NotImplementedException("Unreachable code");
-#endif
-                    _logger.LogRequestPipelineEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
-                    return response;
+                    try
+                    {
+                        HttpResponseMessage response = useAsync
+                            ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
+#if NET
+                            : base.Send(request, cancellationToken);
+#else
+                            : throw new NotImplementedException("Unreachable code");
+#endif
+                        _logger.LogRequestPipelineEnd(response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+                        return response;
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        _logger.LogRequestPipelineFailed(stopwatch.GetElapsedTime(), ex);
+                        throw;
+                    }
                 }
             }
         }

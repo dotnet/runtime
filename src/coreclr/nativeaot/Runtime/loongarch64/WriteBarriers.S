@@ -231,7 +231,7 @@ LEAF_END RhpByRefAssignRef, _TEXT
         or  $t4, $t0, $t4
         beq  $t4, $zero, C_FUNC(RhpAssignRefLoongArch64)
 
-NotInHeap:
+LOCAL_LABEL(NotInHeap):
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
         st.d  $t7, $t6, 0
         addi.d $t6, $t6, 8
@@ -293,26 +293,28 @@ LEAF_END RhpAssignRef, _TEXT
 //
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
-        ori  $t1, $a2, 0
-        ld.d  $t0, $a0, 0
-        beq  $t0, $t1, 12
-        ori  $t1, $t0, 0
-        b  EndOfExchange
-        st.d  $a1, $a0, 0
+LOCAL_LABEL(RetryLoop):
+        ll.d  $t3, $a0, 0
+        ori  $t1, $a1, 0
+        bne  $t3, $a2, LOCAL_LABEL(EndOfExchange)
+        sc.d  $t1, $a0, 0
+        beqz  $t1, LOCAL_LABEL(RetryLoop)
+        b  LOCAL_LABEL(DoCardsCmpXchg)
 
-EndOfExchange:
-        bne  $a2, $t1, CmpXchgNoUpdate
+LOCAL_LABEL(EndOfExchange):
+        dbar 0x700
+        b  LOCAL_LABEL(CmpXchgNoUpdate)
 
-DoCardsCmpXchg:
+LOCAL_LABEL(DoCardsCmpXchg):
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in $a0 and the value in $a1 so the arguments are
         // already correctly set up.
 
         INSERT_CHECKED_WRITE_BARRIER_CORE  $a0, $a1
 
-CmpXchgNoUpdate:
-        // t1 still contains the original value.
-        ori  $a0, $t1, 0
+LOCAL_LABEL(CmpXchgNoUpdate):
+        // a2 still contains the original value.
+        ori  $a0, $a2, 0
 
         jirl  $r0, $ra, 0
 
@@ -337,10 +339,8 @@ CmpXchgNoUpdate:
 //
     LEAF_ENTRY RhpCheckedXchg, _TEXT
 
-        ld.d  $t1, $a0, 0
-        st.d  $a1, $a0, 0
+        amswap_db.d  $t1, $a1, $a0      // exchange
 
-DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in $a0 and the value in $a1 so the arguments are
         // already correctly set up.

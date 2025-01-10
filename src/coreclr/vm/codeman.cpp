@@ -253,7 +253,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
         ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
 
-        // To insure the test the growing logic in debug code make the size much smaller.
+        // To ensure the test the growing logic in debug code make the size much smaller.
         INDEBUG(size = size / 4 + 1);
         unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
         unwindInfo->Register();
@@ -423,11 +423,6 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     }
 }
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-extern StubUnwindInfoHeapSegment *g_StubHeapSegments;
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
-extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
 /*****************************************************************************/
 // Publish all existing JIT compiled methods by iterating through the code heap
 // Note that because we need to keep the entries in order we have to hold
@@ -438,7 +433,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
 {
     STANDARD_VM_CONTRACT;
     {
-        // CodeHeapIterator holds the m_CodeHeapCritSec, which insures code heaps don't get deallocated while being walked
+        // CodeHeapIterator holds the m_CodeHeapCritSec, which ensures code heaps don't get deallocated while being walked
         EEJitManager::CodeHeapIterator heapIterator(NULL);
 
         // Currently m_CodeHeapCritSec is given the CRST_UNSAFE_ANYMODE flag which allows it to be taken in a GC_NOTRIGGER
@@ -468,25 +463,6 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
             }
         }
     }
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    // Enumerate all existing stubs
-    CrstHolder crst(&g_StubUnwindInfoHeapSegmentsCrst);
-    for (StubUnwindInfoHeapSegment* pStubHeapSegment = g_StubHeapSegments; pStubHeapSegment; pStubHeapSegment = pStubHeapSegment->pNext)
-    {
-        // The stubs are in reverse order, so we reverse them so they are in memory order
-        CQuickArrayList<StubUnwindInfoHeader*> list;
-        for (StubUnwindInfoHeader *pHeader = pStubHeapSegment->pUnwindHeaderList; pHeader; pHeader = pHeader->pNext)
-            list.Push(pHeader);
-
-        for(int i = (int) list.Size()-1; i >= 0; --i)
-        {
-            StubUnwindInfoHeader *pHeader = list[i];
-            AddToUnwindInfoTable(&pStubHeapSegment->pUnwindInfoTable, &pHeader->FunctionEntry,
-                (TADDR) pStubHeapSegment->pbBaseAddress, (TADDR) pStubHeapSegment->pbBaseAddress + pStubHeapSegment->cbSegment);
-        }
-    }
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
 }
 
 /*****************************************************************************/
@@ -1416,6 +1392,12 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_PCLMULQDQ);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Vpclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVPCLMULQDQ))
+    {
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V256);
+        CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
     {
         CPUCompileFlags.Set(InstructionSet_AVXVNNI);
@@ -1426,6 +1408,13 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_GFNI);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V256);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
         ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
     {
@@ -1433,13 +1422,25 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-
-            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
-            }
+            CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
         }
     }
+
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0)
+    {
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
+        {
+            CPUCompileFlags.Set(InstructionSet_AVX10v2);
+            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
+        }
+    }
+
+    #if defined(TARGET_AMD64)
+    if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_APX);
+    }
+    #endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)
 
 #if !defined(TARGET_WINDOWS)
@@ -2376,6 +2377,16 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
+        // Include internal CodeHeap structures in the reserve
+        allocationSize = ALIGN_UP(allocationSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
+        reserveSize = max(reserveSize, allocationSize);
+
+        if (reserveSize != (DWORD) reserveSize)
+        {
+            _ASSERTE(!"reserveSize does not fit in a DWORD");
+            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        }
+
         if (loAddr != NULL || hiAddr != NULL)
         {
 #ifdef _DEBUG
@@ -2625,8 +2636,7 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
                   (PVOID)pStartRange,
                   (ULONG)((ULONG64)pEndRange - (ULONG64)pStartRange),
                   GetRuntimeFunctionCallback,
-                  this,
-                  DYNFNTABLE_JIT);
+                  this);
     }
     EX_CATCH
     {
@@ -3173,7 +3183,7 @@ JumpStubBlockHeader *  EEJitManager::allocJumpStubBlock(MethodDesc* pMD, DWORD n
         ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
         codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
 
         blockWriterHolder.AssignExecutableWriterHolder((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
@@ -3225,7 +3235,7 @@ void * EEJitManager::allocCodeFragmentBlock(size_t blockSize, unsigned alignment
         ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
         codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(kind);
 
-        NibbleMapSetUnlocked(pCodeHeap, mem, TRUE);
+        NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
 
         // Record the jump stub reservation
         pCodeHeap->reserveForJumpStubs += requestInfo.getReserveForJumpStubs();
@@ -3372,7 +3382,7 @@ void EEJitManager::RemoveJitData (CodeHeader * pCHdr, size_t GCinfo_len, size_t 
         if (pHp == NULL)
             return;
 
-        NibbleMapSetUnlocked(pHp, (TADDR)(pCHdr + 1), FALSE);
+        NibbleMapDeleteUnlocked(pHp, (TADDR)(pCHdr + 1));
     }
 
     // Backout the GCInfo
@@ -3534,7 +3544,7 @@ void EEJitManager::FreeCodeMemory(HostCodeHeap *pCodeHeap, void * codeStart)
     // so pCodeHeap can only be a HostCodeHeap.
 
     // clean up the NibbleMap
-    NibbleMapSetUnlocked(pCodeHeap->m_pHeapList, (TADDR)codeStart, FALSE);
+    NibbleMapDeleteUnlocked(pCodeHeap->m_pHeapList, (TADDR)codeStart);
 
     // The caller of this method doesn't call HostCodeHeap->FreeMemForCode
     // directly because the operation should be protected by m_CodeHeapCritSec.
@@ -3932,6 +3942,7 @@ StubCodeBlockKind EEJitManager::GetStubCodeBlockKind(RangeSection * pRangeSectio
     return pCHdr->IsStubCodeBlock() ? pCHdr->GetStubCodeBlockKind() : STUB_CODE_BLOCK_MANAGED;
 }
 
+
 TADDR EEJitManager::FindMethodCode(PCODE currentPC)
 {
     CONTRACTL {
@@ -3948,9 +3959,11 @@ TADDR EEJitManager::FindMethodCode(PCODE currentPC)
 
 // Finds the header corresponding to the code at offset "delta".
 // Returns NULL if there is no header for the given "delta"
-
+// For implementation details, see comment in nibblemapmacros.h
 TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC)
 {
+    using namespace NibbleMap;
+
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(pRangeSection != NULL);
@@ -3969,6 +3982,7 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
     PTR_DWORD pMap = pHp->pHdrMap;
     PTR_DWORD pMapStart = pMap;
 
+    DWORD dword;
     DWORD tmp;
 
     size_t startPos = ADDR2POS(delta);  // align to 32byte buckets
@@ -3979,68 +3993,78 @@ TADDR EEJitManager::FindMethodCode(RangeSection * pRangeSection, PCODE currentPC
 
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
-    // get DWORD and shift down our nibble
-
+    // #1 look up DWORD represnting current PC
     PREFIX_ASSUME(pMap != NULL);
-    tmp = VolatileLoadWithoutBarrier<DWORD>(pMap) >> POS2SHIFTCOUNT(startPos);
+    dword = VolatileLoadWithoutBarrier<DWORD>(pMap);
 
-    if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset) )
+    // #2 if DWORD is a pointer, then we can return
+    if (IsPointer(dword))
+    {
+        TADDR newAddr = base + DecodePointer(dword);
+        return newAddr;
+    }
+
+    // #3 check if corresponding nibble is intialized and points to an equal or earlier address
+    tmp = dword >> POS2SHIFTCOUNT(startPos);
+    if ((tmp & NIBBLE_MASK) && ((tmp & NIBBLE_MASK) <= offset))
     {
         return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
-    // Is there a header in the remainder of the DWORD ?
-    tmp = tmp >> NIBBLE_SIZE;
-
+    // #4 try to find preceeding nibble in the DWORD
+    tmp >>= NIBBLE_SIZE;
     if (tmp)
     {
         startPos--;
-        while (!(tmp & NIBBLE_MASK))
+        while(!(tmp & NIBBLE_MASK))
         {
-            tmp = tmp >> NIBBLE_SIZE;
+            tmp >>= NIBBLE_SIZE;
             startPos--;
         }
         return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
+    // #5.1 read previous DWORD
     // We skipped the remainder of the DWORD,
     // so we must set startPos to the highest position of
     // previous DWORD, unless we are already on the first DWORD
-
     if (startPos < NIBBLES_PER_DWORD)
+    {
         return 0;
+    }
 
     startPos = ((startPos >> LOG2_NIBBLES_PER_DWORD) << LOG2_NIBBLES_PER_DWORD) - 1;
+    dword = VolatileLoadWithoutBarrier<DWORD>(--pMap);
 
-    // Skip "headerless" DWORDS
+    // We should not have read a value before the start of the map.
+    _ASSERTE(pMapStart <= pMap);
 
-    while (pMapStart < pMap && 0 == (tmp = VolatileLoadWithoutBarrier<DWORD>(--pMap)))
+    // If the second dword is not empty, it either has a nibble or a pointer
+    if (dword)
     {
-        startPos -= NIBBLES_PER_DWORD;
+        // #5.2 either DWORD is a pointer
+        if (IsPointer(dword))
+        {
+            return base + DecodePointer(dword);
+        }
+
+        // #5.4 or contains a nibble
+        tmp = dword;
+        while(!(tmp & NIBBLE_MASK))
+        {
+            tmp >>= NIBBLE_SIZE;
+            startPos--;
+        }
+        return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
     }
 
-    // This helps to catch degenerate error cases. This relies on the fact that
-    // startPos cannot ever be bigger than MAX_UINT
-    if (((INT_PTR)startPos) < 0)
-        return 0;
-
-    // Find the nibble with the header in the DWORD
-
-    while (startPos && !(tmp & NIBBLE_MASK))
-    {
-        tmp = tmp >> NIBBLE_SIZE;
-        startPos--;
-    }
-
-    if (startPos == 0 && tmp == 0)
-        return 0;
-
-    return base + POSOFF2ADDR(startPos, tmp & NIBBLE_MASK);
+    // If none of the above was found, return 0
+    return 0;
 }
 
 #if !defined(DACCESS_COMPILE)
 
-void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
+void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize)
 {
     CONTRACTL {
         NOTHROW;
@@ -4048,11 +4072,77 @@ void EEJitManager::NibbleMapSet(HeapList * pHp, TADDR pCode, BOOL bSet)
     } CONTRACTL_END;
 
     CrstHolder ch(&m_CodeHeapCritSec);
-    NibbleMapSetUnlocked(pHp, pCode, bSet);
+    NibbleMapSetUnlocked(pHp, pCode, codeSize);
 }
 
-void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
+// For implementation details, see comment in nibblemapmacros.h
+void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, size_t codeSize)
 {
+    using namespace NibbleMap;
+
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    // Currently all callers to this method ensure EEJitManager::m_CodeHeapCritSec
+    // is held.
+    _ASSERTE(m_CodeHeapCritSec.OwnedByCurrentThread());
+
+    _ASSERTE(pCode >= pHp->mapBase);
+    _ASSERTE(pCode + codeSize <= pHp->startAddress + pHp->maxCodeHeapSize);
+
+    // remove bottom two bits to ensure alignment math
+    // on ARM32 Thumb, the low bits indicate the thumb instruction set
+    pCode = ALIGN_DOWN(pCode, CODE_ALIGN);
+
+    size_t delta = pCode - pHp->mapBase;
+
+    size_t pos = ADDR2POS(delta);
+    DWORD value = ADDR2OFFS(delta);
+
+    DWORD index = (DWORD) (pos >> LOG2_NIBBLES_PER_DWORD);
+    DWORD mask  = POS2MASK(pos);
+
+    value <<= POS2SHIFTCOUNT(pos);
+
+    PTR_DWORD pMap = pHp->pHdrMap;
+
+    // assert that we don't overwrite an existing offset
+    // the nibble is empty and the DWORD is not a pointer
+    _ASSERTE(!((*(pMap+index)) & ~mask) && !IsPointer(*(pMap+index)));
+
+    VolatileStore<DWORD>(pMap+index, ((*(pMap+index))&mask)|value);
+
+    size_t firstByteAfterMethod = delta + codeSize;
+    DWORD encodedPointer = EncodePointer(delta);
+    index++;
+    while ((index + 1) * BYTES_PER_DWORD <= firstByteAfterMethod)
+    {
+        // All of these DWORDs should be empty
+        _ASSERTE(!(*(pMap+index)));
+        VolatileStore<DWORD>(pMap+index, encodedPointer);
+
+        index++;
+    }
+}
+
+// For implementation details, see comment in nibblemapmacros.h
+void EEJitManager::NibbleMapDelete(HeapList* pHp, TADDR pCode)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    CrstHolder ch(&m_CodeHeapCritSec);
+    NibbleMapDeleteUnlocked(pHp, pCode);
+}
+
+void EEJitManager::NibbleMapDeleteUnlocked(HeapList* pHp, TADDR pCode)
+{
+    using namespace NibbleMap;
+
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -4064,25 +4154,38 @@ void EEJitManager::NibbleMapSetUnlocked(HeapList * pHp, TADDR pCode, BOOL bSet)
 
     _ASSERTE(pCode >= pHp->mapBase);
 
+    // remove bottom two bits to ensure alignment math
+    // on ARM32 Thumb, the low bits indicate the thumb instruction set
+    pCode = ALIGN_DOWN(pCode, CODE_ALIGN);
+
     size_t delta = pCode - pHp->mapBase;
 
-    size_t pos  = ADDR2POS(delta);
-    DWORD value = bSet?ADDR2OFFS(delta):0;
+    size_t pos = ADDR2POS(delta);
+    DWORD value = ADDR2OFFS(delta);
 
     DWORD index = (DWORD) (pos >> LOG2_NIBBLES_PER_DWORD);
-    DWORD mask  = ~((DWORD) HIGHEST_NIBBLE_MASK >> ((pos & NIBBLES_PER_DWORD_MASK) << LOG2_NIBBLE_SIZE));
-
-    value = value << POS2SHIFTCOUNT(pos);
+    DWORD mask  = POS2MASK(pos);
 
     PTR_DWORD pMap = pHp->pHdrMap;
 
-    // assert that we don't overwrite an existing offset
-    // (it's a reset or it is empty)
-    _ASSERTE(!value || !((*(pMap+index))& ~mask));
+    // Assert that the DWORD is not a pointer. Deleting a portion of a pointer
+    // would cause the state of the map to be invalid. Deleting empty nibbles,
+    // a no-op, is allowed and can occur when removing JIT data.
+    pMap += index;
+    _ASSERTE(!IsPointer(*pMap));
 
-    // It is important for this update to be atomic. Synchronization would be required with FindMethodCode otherwise.
-    *(pMap+index) = ((*(pMap+index))&mask)|value;
+    // delete the relevant nibble
+    VolatileStore<DWORD>(pMap, (*pMap) & mask);
+
+    // the last DWORD of the nibble map is reserved to be empty for bounds checking
+    pMap++;
+    while (IsPointer(*pMap) && DecodePointer(*pMap) == delta){
+        // The next DWORD is a pointer to the nibble being deleted, so we can delete it
+        VolatileStore<DWORD>(pMap, 0);
+        pMap++;
+    }
 }
+
 #endif // !DACCESS_COMPILE
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -4875,7 +4978,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 // (This is also true on ARM64, but it not true for x86)
 //
 // For these architectures, in JITed code and in the prestub, we encode direct calls
-// using the preferred call instruction and we also try to insure that the Jitted
+// using the preferred call instruction and we also try to ensure that the Jitted
 // code is within the 32-bit pc-rel range of clr.dll to allow direct JIT helper calls.
 //
 // When the call target is too far away to encode using the preferred call instruction.
@@ -5811,8 +5914,6 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 #ifdef FEATURE_EH_FUNCLETS
     // Save the raw entry
     PTR_RUNTIME_FUNCTION RawFunctionEntry = pRuntimeFunctions + MethodIndex;
-
-    ULONG UMethodIndex = (ULONG)MethodIndex;
 
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
     if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))

@@ -7,12 +7,6 @@
 
 .global RhpTrapThreads
 
-// Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
-PTFF_SAVE_SP            = 0x00000200
-
-// Bit position for the flags above, to be used with andi+beq/bne instructions
-PTFF_THREAD_ABORT_BIT   = 36
-
 //
 // RhpPInvoke
 //

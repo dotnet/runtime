@@ -52,21 +52,13 @@ inline DebuggerModuleTable * Debugger::GetModuleTable()
 // @dbgtodo inspection - get rid of this entire class as we move things out-of-proc.
 //-----------------------------------------------------------------------------
 inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
-                                      DomainAssembly *  pDomainAssembly,
-                                      AppDomain *   pAppDomain) :
+                                      DomainAssembly *  pDomainAssembly) :
         m_enableClassLoadCallbacks(FALSE),
-        m_pPrimaryModule(NULL),
         m_pRuntimeModule(pRuntimeModule),
-        m_pRuntimeDomainAssembly(pDomainAssembly),
-        m_pAppDomain(pAppDomain)
+        m_pRuntimeDomainAssembly(pDomainAssembly)
 {
-    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x AD:0x%x\n",
-        this, pRuntimeModule, pDomainAssembly, pAppDomain));
-
-    // Pick a primary module.
-    // Arguably, this could be in DebuggerModuleTable::AddModule
-    PickPrimaryModule();
-
+    LOG((LF_CORDB,LL_INFO10000, "DM::DM this:0x%x Module:0x%x DF:0x%x\n",
+        this, pRuntimeModule, pDomainAssembly));
 
     // Do we have any optimized code?
     DWORD dwDebugBits = pRuntimeModule->GetDebuggerInfoBits();
@@ -90,7 +82,7 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
 inline bool DebuggerModule::HasAnyOptimizedCode()
 {
     LIMITED_METHOD_CONTRACT;
-    Module * pModule = this->GetPrimaryModule()->GetRuntimeModule();
+    Module * pModule = GetRuntimeModule();
     DWORD dwDebugBits = pModule->GetDebuggerInfoBits();
     return CORDebuggerAllowJITOpts(dwDebugBits);
 }
@@ -126,54 +118,12 @@ inline void DebuggerModule::EnableClassLoadCallbacks(BOOL f)
 }
 
 //-----------------------------------------------------------------------------
-// Return the appdomain that this module exists in.
-//-----------------------------------------------------------------------------
-inline AppDomain* DebuggerModule::GetAppDomain()
-{
-    return m_pAppDomain;
-}
-
-//-----------------------------------------------------------------------------
 // Return the EE module that this module corresponds to.
 //-----------------------------------------------------------------------------
 inline Module * DebuggerModule::GetRuntimeModule()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return m_pRuntimeModule;
-}
-
-//-----------------------------------------------------------------------------
-// <TODO> (8/12/2002)
-// Currently we create a new DebuggerModules for each appdomain a shared
-// module lives in. We then pretend there aren't any shared modules.
-// This is bad. We need to move away from this.
-// Once we stop lying, then every module will be it's own PrimaryModule. :)
-//
-// Currently, Module* is 1:n w/ DebuggerModule.
-// We add a notion of PrimaryModule so that:
-// Module* is 1:1 w/ DebuggerModule::GetPrimaryModule();
-// This should help transition towards exposing shared modules.
-// If the Runtime module is shared, then this gives a common DM.
-// If the runtime module is not shared, then this is an identity function.
-// </TODO>
-//-----------------------------------------------------------------------------
-inline DebuggerModule * DebuggerModule::GetPrimaryModule()
-{
-    _ASSERTE(m_pPrimaryModule != NULL);
-    return m_pPrimaryModule;
-}
-
-//-----------------------------------------------------------------------------
-// This is called by DebuggerModuleTable to set our primary module.
-//-----------------------------------------------------------------------------
-inline void DebuggerModule::SetPrimaryModule(DebuggerModule * pPrimary)
-{
-    _ASSERTE(pPrimary != NULL);
-    // Our primary module must by definition refer to the same runtime module as us
-    _ASSERTE(pPrimary->GetRuntimeModule() == this->GetRuntimeModule());
-
-    LOG((LF_CORDB, LL_EVERYTHING, "DM::SetPrimaryModule - this=%p, pPrimary=%p\n", this, pPrimary));
-    m_pPrimaryModule = pPrimary;
 }
 
 inline DebuggerEval * FuncEvalFrame::GetDebuggerEval()
@@ -389,6 +339,47 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFl
     pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
 
     SyncRegDisplayToCurrentContext(pRD);
+#elif defined(TARGET_LOONGARCH64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->S0 = &(pDE->m_context.S0);
+    pRD->pCurrentContextPointers->S1 = &(pDE->m_context.S1);
+    pRD->pCurrentContextPointers->S2 = &(pDE->m_context.S2);
+    pRD->pCurrentContextPointers->S3 = &(pDE->m_context.S3);
+    pRD->pCurrentContextPointers->S4 = &(pDE->m_context.S4);
+    pRD->pCurrentContextPointers->S5 = &(pDE->m_context.S5);
+    pRD->pCurrentContextPointers->S6 = &(pDE->m_context.S6);
+    pRD->pCurrentContextPointers->S7 = &(pDE->m_context.S7);
+    pRD->pCurrentContextPointers->S8 = &(pDE->m_context.S8);
+    pRD->pCurrentContextPointers->Tp = &(pDE->m_context.Tp);
+    pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
+    pRD->pCurrentContextPointers->Ra = &(pDE->m_context.Ra);
+
+    pRD->volatileCurrContextPointers.R0 = &(pDE->m_context.R0);
+    pRD->volatileCurrContextPointers.A0 = &(pDE->m_context.A0);
+    pRD->volatileCurrContextPointers.A1 = &(pDE->m_context.A1);
+    pRD->volatileCurrContextPointers.A2 = &(pDE->m_context.A2);
+    pRD->volatileCurrContextPointers.A3 = &(pDE->m_context.A3);
+    pRD->volatileCurrContextPointers.A4 = &(pDE->m_context.A4);
+    pRD->volatileCurrContextPointers.A5 = &(pDE->m_context.A5);
+    pRD->volatileCurrContextPointers.A6 = &(pDE->m_context.A6);
+    pRD->volatileCurrContextPointers.A7 = &(pDE->m_context.A7);
+    pRD->volatileCurrContextPointers.T0 = &(pDE->m_context.T0);
+    pRD->volatileCurrContextPointers.T1 = &(pDE->m_context.T1);
+    pRD->volatileCurrContextPointers.T2 = &(pDE->m_context.T2);
+    pRD->volatileCurrContextPointers.T3 = &(pDE->m_context.T3);
+    pRD->volatileCurrContextPointers.T4 = &(pDE->m_context.T4);
+    pRD->volatileCurrContextPointers.T5 = &(pDE->m_context.T5);
+    pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
+    pRD->volatileCurrContextPointers.T7 = &(pDE->m_context.T7);
+    pRD->volatileCurrContextPointers.T8 = &(pDE->m_context.T8);
+    pRD->volatileCurrContextPointers.X0 = &(pDE->m_context.X0);
+
+    SyncRegDisplayToCurrentContext(pRD);
+
 #else
     PORTABILITY_ASSERT("FuncEvalFrame::UpdateRegDisplay is not implemented on this platform.");
 #endif

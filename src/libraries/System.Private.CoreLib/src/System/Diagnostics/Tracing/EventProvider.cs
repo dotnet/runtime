@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tracing
         [StructLayout(LayoutKind.Sequential)]
         public struct EventData
         {
-            internal unsafe ulong Ptr;
+            internal ulong Ptr;
             internal uint Size;
             internal uint Reserved;
         }
@@ -103,14 +103,14 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This method registers the controlGuid of this class with ETW.
+        /// This method registers the provider with the backing tracing mechanism, either ETW or EventPipe.
         /// </summary>
-        internal unsafe void Register(EventSource eventSource)
+        internal void Register(Guid id, string name)
         {
-            _providerName = eventSource.Name;
-            _providerId = eventSource.Guid;
+            _providerName = name;
+            _providerId = id;
 
-            _eventProvider.Register(eventSource);
+            _eventProvider.Register(id, name);
         }
 
         //
@@ -827,13 +827,13 @@ namespace System.Diagnostics.Tracing
 
 
         // Register an event provider.
-        internal override unsafe void Register(EventSource eventSource)
+        internal override unsafe void Register(Guid id, string name)
         {
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = GCHandle.Alloc(this);
 
             long registrationHandle = 0;
-            _providerId = eventSource.Guid;
+            _providerId = id;
             Guid providerId = _providerId;
             uint status = Interop.Advapi32.EventRegister(
                 &providerId,
@@ -940,7 +940,7 @@ namespace System.Diagnostics.Tracing
         /// to get the data. The function returns an array of bytes representing the data, the index into that byte array
         /// where the data starts, and the command being issued associated with that data.
         /// </summary>
-        private unsafe bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
+        private bool TryReadRegistryFilterData(int etwSessionId, out ControllerCommand command, out byte[]? data)
         {
             command = ControllerCommand.Update;
             data = null;
@@ -1235,7 +1235,7 @@ namespace System.Diagnostics.Tracing
             _allKeywordMask = 0;
         }
 
-        internal virtual void Register(EventSource eventSource)
+        internal virtual void Register(Guid id, string name)
         {
         }
 
@@ -1320,7 +1320,7 @@ namespace System.Diagnostics.Tracing
             return idx;
         }
 
-        protected static unsafe IDictionary<string, string?>? ParseFilterData(byte[]? data)
+        protected static IDictionary<string, string?>? ParseFilterData(byte[]? data)
         {
             Dictionary<string, string?>? args = null;
 

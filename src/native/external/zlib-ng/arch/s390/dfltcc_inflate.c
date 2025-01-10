@@ -20,24 +20,15 @@
 #include "dfltcc_inflate.h"
 #include "dfltcc_detail.h"
 
-struct inflate_state Z_INTERNAL *PREFIX(dfltcc_alloc_inflate_state)(PREFIX3(streamp) strm) {
-    return (struct inflate_state *)dfltcc_alloc_state(strm, sizeof(struct inflate_state), sizeof(struct dfltcc_state));
-}
-
 void Z_INTERNAL PREFIX(dfltcc_reset_inflate_state)(PREFIX3(streamp) strm) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
 
-    dfltcc_reset_state(dfltcc_state);
-}
-
-void Z_INTERNAL PREFIX(dfltcc_copy_inflate_state)(struct inflate_state *dst, const struct inflate_state *src) {
-    dfltcc_copy_state(dst, src, sizeof(struct inflate_state), sizeof(struct dfltcc_state));
+    dfltcc_reset_state(&state->arch.common);
 }
 
 int Z_INTERNAL PREFIX(dfltcc_can_inflate)(PREFIX3(streamp) strm) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
+    struct dfltcc_state *dfltcc_state = &state->arch.common;
 
     /* Unsupported hardware */
     return is_bit_set(dfltcc_state->af.fns, DFLTCC_XPND) && is_bit_set(dfltcc_state->af.fmts, DFLTCC_FMT0);
@@ -45,7 +36,7 @@ int Z_INTERNAL PREFIX(dfltcc_can_inflate)(PREFIX3(streamp) strm) {
 
 static inline dfltcc_cc dfltcc_xpnd(PREFIX3(streamp) strm) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_param_v0 *param = &GET_DFLTCC_STATE(state)->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
     size_t avail_in = strm->avail_in;
     size_t avail_out = strm->avail_out;
     dfltcc_cc cc;
@@ -60,7 +51,7 @@ static inline dfltcc_cc dfltcc_xpnd(PREFIX3(streamp) strm) {
 
 dfltcc_inflate_action Z_INTERNAL PREFIX(dfltcc_inflate)(PREFIX3(streamp) strm, int flush, int *ret) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
+    struct dfltcc_state *dfltcc_state = &state->arch.common;
     struct dfltcc_param_v0 *param = &dfltcc_state->param;
     dfltcc_cc cc;
 
@@ -86,10 +77,9 @@ dfltcc_inflate_action Z_INTERNAL PREFIX(dfltcc_inflate)(PREFIX3(streamp) strm, i
     if (strm->avail_in == 0 && !param->cf)
         return DFLTCC_INFLATE_BREAK;
 
-    if (PREFIX(inflate_ensure_window)(state)) {
-        state->mode = MEM;
-        return DFLTCC_INFLATE_CONTINUE;
-    }
+    /* if window not in use yet, initialize */
+    if (state->wsize == 0)
+        state->wsize = 1U << state->wbits;
 
     /* Translate stream to parameter block */
     param->cvt = ((state->wrap & 4) && state->flags) ? CVT_CRC32 : CVT_ADLER32;
@@ -123,9 +113,8 @@ dfltcc_inflate_action Z_INTERNAL PREFIX(dfltcc_inflate)(PREFIX3(streamp) strm, i
 
 int Z_INTERNAL PREFIX(dfltcc_was_inflate_used)(PREFIX3(streamp) strm) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_param_v0 *param = &GET_DFLTCC_STATE(state)->param;
 
-    return !param->nt;
+    return !state->arch.common.param.nt;
 }
 
 /*
@@ -153,7 +142,7 @@ static void rotate(unsigned char *start, unsigned char *pivot, unsigned char *en
 
 int Z_INTERNAL PREFIX(dfltcc_inflate_disable)(PREFIX3(streamp) strm) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
+    struct dfltcc_state *dfltcc_state = &state->arch.common;
     struct dfltcc_param_v0 *param = &dfltcc_state->param;
 
     if (!PREFIX(dfltcc_can_inflate)(strm))
@@ -178,13 +167,11 @@ int Z_INTERNAL PREFIX(dfltcc_inflate_disable)(PREFIX3(streamp) strm) {
 int Z_INTERNAL PREFIX(dfltcc_inflate_set_dictionary)(PREFIX3(streamp) strm,
                                                      const unsigned char *dictionary, uInt dict_length) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
-    struct dfltcc_param_v0 *param = &dfltcc_state->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
 
-    if (PREFIX(inflate_ensure_window)(state)) {
-        state->mode = MEM;
-        return Z_MEM_ERROR;
-    }
+    /* if window not in use yet, initialize */
+    if (state->wsize == 0)
+        state->wsize = 1U << state->wbits;
 
     append_history(param, state->window, dictionary, dict_length);
     state->havedict = 1;
@@ -194,8 +181,7 @@ int Z_INTERNAL PREFIX(dfltcc_inflate_set_dictionary)(PREFIX3(streamp) strm,
 int Z_INTERNAL PREFIX(dfltcc_inflate_get_dictionary)(PREFIX3(streamp) strm,
                                                      unsigned char *dictionary, uInt *dict_length) {
     struct inflate_state *state = (struct inflate_state *)strm->state;
-    struct dfltcc_state *dfltcc_state = GET_DFLTCC_STATE(state);
-    struct dfltcc_param_v0 *param = &dfltcc_state->param;
+    struct dfltcc_param_v0 *param = &state->arch.common.param;
 
     if (dictionary && state->window)
         get_history(param, state->window, dictionary);

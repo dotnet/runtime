@@ -104,18 +104,10 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
     block->bbRefs++;
 
-    // Keep the predecessor list in lowest to highest bbNum order. This allows us to discover the loops in
-    // optFindNaturalLoops from innermost to outermost.
+    // Keep the predecessor list in lowest to highest bbID order.
     //
     // If we are initializing preds, we rely on the fact that we are adding references in increasing
-    // order of blockPred->bbNum to avoid searching the list.
-    //
-    // TODO-Throughput: Inserting an edge for a block in sorted order requires searching every existing edge.
-    // Thus, inserting all the edges for a block is quadratic in the number of edges. We need to either
-    // not bother sorting for debuggable code, or sort in optFindNaturalLoops, or better, make the code in
-    // optFindNaturalLoops not depend on order. This also requires ensuring that nobody else has taken a
-    // dependency on this order. Note also that we don't allow duplicates in the list; we maintain a DupCount
-    // count of duplication. This also necessitates walking the flow list for every edge we add.
+    // order of blockPred->bbID to avoid searching the list.
     //
     FlowEdge*  flow = nullptr;
     FlowEdge** listp;
@@ -123,7 +115,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     if (initializingPreds)
     {
         // List is sorted order and we're adding references in
-        // increasing blockPred->bbNum order. The only possible
+        // increasing blockPred->bbID order. The only possible
         // dup list entry is the last one.
         //
         listp              = &block->bbPreds;
@@ -132,7 +124,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         {
             listp = flowLast->getNextPredEdgeRef();
 
-            assert(flowLast->getSourceBlock()->bbNum <= blockPred->bbNum);
+            assert(flowLast->getSourceBlock()->bbID <= blockPred->bbID);
 
             if (flowLast->getSourceBlock() == blockPred)
             {
@@ -365,7 +357,7 @@ FlowEdge** Compiler::fgGetPredInsertPoint(BasicBlock* blockPred, BasicBlock* new
 
     // Search pred list for insertion point
     //
-    while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbNum < blockPred->bbNum))
+    while ((*listp != nullptr) && ((*listp)->getSourceBlock()->bbID < blockPred->bbID))
     {
         listp = (*listp)->getNextPredEdgeRef();
     }
@@ -538,11 +530,7 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
     {
         // We must compute the descriptor. Find which are dups, by creating a bit set with the unique successors.
         // We create a temporary bitset of blocks to compute the unique set of successor blocks,
-        // since adding a block's number twice leaves just one "copy" in the bitset. Note that
-        // we specifically don't use the BlockSet type, because doing so would require making a
-        // call to EnsureBasicBlockEpoch() to make sure the epoch is up-to-date. However, that
-        // can create a new epoch, thus invalidating all existing BlockSet objects, such as
-        // reachability information stored in the blocks. To avoid that, we just use a local BitVec.
+        // since adding a block's number twice leaves just one "copy" in the bitset.
 
         BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));

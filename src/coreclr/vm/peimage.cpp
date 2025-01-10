@@ -536,9 +536,10 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // these necessary fields enumerated no matter what.
     m_path.EnumMemoryRegions(flags);
 
-    // We always want this field in mini/triage/heap dumps.
+    // SString skips enumeration for triage dumps, but we always want this field, so we specify
+    // CLRDATA_ENUM_MEM_DEFAULT as the flags. This value is used in cases where we either can't
+    // use the full path (triage dumps) or don't have a path (in-memory assembly)
     m_sModuleFileNameHintUsedByDac.EnumMemoryRegions(CLRDATA_ENUM_MEM_DEFAULT);
-
 
     EX_TRY
     {
@@ -615,9 +616,8 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #endif // #ifdef DACCESS_COMPILE
 
-
-PEImage::PEImage():
-    m_path(),
+PEImage::PEImage(const WCHAR* path):
+    m_path{path},
     m_pathHash(0),
     m_refCount(1),
     m_bInHashMap(FALSE),
@@ -788,7 +788,7 @@ PTR_PEImage PEImage::CreateFromByteArray(const BYTE* array, COUNT_T size)
     }
     CONTRACT_END;
 
-    PEImageHolder pImage(new PEImage());
+    PEImageHolder pImage(new PEImage(NULL /*path*/));
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFromByteArray(pImage, array, size);
     _ASSERTE(!pLayout->IsMapped());
 

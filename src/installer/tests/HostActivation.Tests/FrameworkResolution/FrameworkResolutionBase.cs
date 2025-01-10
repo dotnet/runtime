@@ -11,8 +11,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
     public abstract partial class FrameworkResolutionBase
     {
-        protected const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
-
         public static class ResolvedFramework
         {
             public const string NotFound = "[not found]";
@@ -23,7 +21,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             DotNetCli dotnet,
             TestApp app,
             TestSettings settings,
-            Action<CommandResult> resultAction = null,
             bool? multiLevelLookup = false)
         {
             using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
@@ -52,8 +49,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .MultilevelLookup(multiLevelLookup)
                     .Environment(settings.Environment)
                     .Execute();
-
-                resultAction?.Invoke(result);
 
                 return result;
             }

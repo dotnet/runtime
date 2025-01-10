@@ -18,31 +18,39 @@ Useful links:
 
 ### Prerequisites
 
-Build the runtime with the following arguments:
+Build the runtime with the desired configuration if you haven't already:
 ```cmd
-./build.cmd clr+libs+packs+host -rc Checked -c Debug
+./build.cmd clr+libs -rc release
 ```
-and install the SharpFuzz command line tool:
+
+> [!TIP]
+> The `-rc release` configuration here builds runime in `Release` and libraries in `Debug` mode.
+> Automated fuzzing runs use a `Checked` runtime + `Debug` libraries configuration by default.
+> You can use any configuration locally, but `Checked` is recommended when testing changes in `System.Private.CoreLib`.
+
+Install the SharpFuzz command line tool:
 ```cmd
 dotnet tool install --global SharpFuzz.CommandLine
 ```
 
-> [!TIP]
-> The project uses a checked runtime + debug libraries configuration by default.
-> If you want to use a different configuration, make sure to also adjust the artifact paths in `nuget.config`.
-
 ### Fuzzing locally
 
-The `prepare-onefuzz` command will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
-Note that this command must be ran on the published artifacts (won't work with `dotnet run`).
+Build the `DotnetFuzzing` fuzzing project. It is self-contained, so it will produce `DotnetFuzzing.exe` along with a copy of all required libraries.
 
 ```cmd
 cd src/libraries/Fuzzing/DotnetFuzzing
 
-dotnet publish -o publish; publish/DotnetFuzzing.exe prepare-onefuzz deployment
+dotnet build
 ```
 
-You can now start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
+Run `run.bat`, which will create separate directories for each fuzzing target, instrument the relevant assemblies, and generate a helper script for running them locally.
+When iterating on changes, remember to rebuild the project again: `dotnet build; .\run.bat`.
+
+```cmd
+run.bat
+```
+
+Start fuzzing by running the `local-run.bat` script in the folder of the fuzzer you are interested in.
 ```cmd
 deployment/HttpHeadersFuzzer/local-run.bat
 ```

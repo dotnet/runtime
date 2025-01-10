@@ -77,12 +77,6 @@ inline UInt32_BOOL PalInitializeCriticalSectionEx(CRITICAL_SECTION * arg1, uint3
     return InitializeCriticalSectionEx(arg1, arg2, arg3);
 }
 
-extern "C" UInt32_BOOL __stdcall IsDebuggerPresent();
-inline UInt32_BOOL PalIsDebuggerPresent()
-{
-    return IsDebuggerPresent();
-}
-
 extern "C" void __stdcall LeaveCriticalSection(CRITICAL_SECTION *);
 inline void PalLeaveCriticalSection(CRITICAL_SECTION * arg1)
 {

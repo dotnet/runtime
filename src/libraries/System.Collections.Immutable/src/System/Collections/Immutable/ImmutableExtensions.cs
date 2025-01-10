@@ -41,11 +41,11 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of elements in the collection.</typeparam>
         /// <param name="sequence">The collection.</param>
         /// <returns>An ordered collection.  May not be thread-safe.  Never null.</returns>
-        internal static IOrderedCollection<T> AsOrderedCollection<T>(this IEnumerable<T> sequence)
+        internal static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T> sequence)
         {
             Requires.NotNull(sequence, nameof(sequence));
 
-            if (sequence is IOrderedCollection<T> orderedCollection)
+            if (sequence is IReadOnlyList<T> orderedCollection)
             {
                 return orderedCollection;
             }
@@ -105,7 +105,7 @@ namespace System.Collections.Immutable
         /// Wraps a <see cref="IList{T}"/> as an ordered collection.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private sealed class ListOfTWrapper<T> : IOrderedCollection<T>
+        private sealed class ListOfTWrapper<T> : IReadOnlyList<T>
         {
             /// <summary>
             /// The list being exposed.
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
         /// Wraps any <see cref="IEnumerable{T}"/> as an ordered, indexable list.
         /// </summary>
         /// <typeparam name="T">The type of element in the collection.</typeparam>
-        private sealed class FallbackWrapper<T> : IOrderedCollection<T>
+        private sealed class FallbackWrapper<T> : IReadOnlyList<T>
         {
             /// <summary>
             /// The original sequence.

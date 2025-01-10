@@ -8,6 +8,7 @@ using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -27,8 +28,11 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected abstract DiagnosticDescriptor RequiresDiagnosticRule { get; }
 
+		private protected abstract DiagnosticId RequiresDiagnosticId { get; }
+
 		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
 		private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
+		private protected abstract DiagnosticDescriptor RequiresOnEntryPoint { get; }
 
 		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
 		private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
@@ -48,8 +52,15 @@ namespace ILLink.RoslynAnalyzer
 				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
-					if (methodSymbol.IsStaticConstructor () && methodSymbol.HasAttribute (RequiresAttributeName))
-						ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
+
+					if (methodSymbol.HasAttribute (RequiresAttributeName)) {
+						if (methodSymbol.IsStaticConstructor ())
+							ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
+
+						if (methodSymbol.IsEntryPoint (symbolAnalysisContext.Compilation) || methodSymbol.IsUnmanagedCallersOnlyEntryPoint ())
+							ReportRequiresOnEntryPointDiagnostic (symbolAnalysisContext, methodSymbol);
+					}
+
 					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
 				}, SymbolKind.Method);
 
@@ -96,7 +107,7 @@ namespace ILLink.RoslynAnalyzer
 								VerifyAttributeArguments (requiresAttribute)) {
 								syntaxNodeAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
 									syntaxNodeAnalysisContext.Node.GetLocation (),
-									containingSymbol.GetDisplayName (),
+									instanceCtor.GetDisplayName (),
 									(string) requiresAttribute.ConstructorArguments[0].Value!,
 									GetUrlFromAttribute (requiresAttribute)));
 							}
@@ -144,33 +155,30 @@ namespace ILLink.RoslynAnalyzer
 			});
 		}
 
-		public bool CheckAndCreateRequiresDiagnostic (
-			IOperation operation,
+		internal void CheckAndCreateRequiresDiagnostic (
 			ISymbol member,
 			ISymbol containingSymbol,
 			ImmutableArray<ISymbol> incompatibleMembers,
-			[NotNullWhen (true)] out Diagnostic? diagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
-			diagnostic = null;
 			// Do not emit any diagnostic if caller is annotated with the attribute too.
 			if (containingSymbol.IsInRequiresScope (RequiresAttributeName, out _))
-				return false;
+				return;
 
-			if (CreateSpecialIncompatibleMembersDiagnostic (operation, incompatibleMembers, member, out diagnostic))
-				return diagnostic != null;
+			if (CreateSpecialIncompatibleMembersDiagnostic (incompatibleMembers, member, diagnosticContext))
+				return;
 
 			// Warn on the most derived base method taking into account covariant returns
 			while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
 				member = method.OverriddenMethod;
 
 			if (!member.DoesMemberRequire (RequiresAttributeName, out var requiresAttribute))
-				return false;
+				return;
 
 			if (!VerifyAttributeArguments (requiresAttribute))
-				return false;
+				return;
 
-			diagnostic = CreateRequiresDiagnostic (operation, member, requiresAttribute);
-			return true;
+			CreateRequiresDiagnostic (member, requiresAttribute, diagnosticContext);
 		}
 
 		[Flags]
@@ -223,16 +231,11 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="operationContext">Analyzer operation context to be able to report the diagnostic.</param>
 		/// <param name="member">Information about the member that generated the diagnostic.</param>
 		/// <param name="requiresAttribute">Requires attribute data to print attribute arguments.</param>
-		private Diagnostic CreateRequiresDiagnostic (IOperation operation, ISymbol member, AttributeData requiresAttribute)
+		private void CreateRequiresDiagnostic (ISymbol member, AttributeData requiresAttribute, in DiagnosticContext diagnosticContext)
 		{
 			var message = GetMessageFromAttribute (requiresAttribute);
 			var url = GetUrlFromAttribute (requiresAttribute);
-			return Diagnostic.Create (
-				RequiresDiagnosticRule,
-				operation.Syntax.GetLocation (),
-				member.GetDisplayName (),
-				message,
-				url);
+			diagnosticContext.AddDiagnostic (RequiresDiagnosticId, member.GetDisplayName (), message, url);
 		}
 
 		private void ReportRequiresOnStaticCtorDiagnostic (SymbolAnalysisContext symbolAnalysisContext, IMethodSymbol ctor)
@@ -241,6 +244,14 @@ namespace ILLink.RoslynAnalyzer
 				RequiresOnStaticCtor,
 				ctor.Locations[0],
 				ctor.GetDisplayName ()));
+		}
+
+		private void ReportRequiresOnEntryPointDiagnostic (SymbolAnalysisContext symbolAnalysisContext, IMethodSymbol entryPoint)
+		{
+			symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (
+				RequiresOnEntryPoint,
+				entryPoint.Locations[0],
+				entryPoint.GetDisplayName ()));
 		}
 
 		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false, ISymbol? origin = null)
@@ -285,12 +296,10 @@ namespace ILLink.RoslynAnalyzer
 		/// <param name="member">Member to compare.</param>
 		/// <returns>True if the function generated a diagnostic; otherwise, returns false</returns>
 		protected virtual bool CreateSpecialIncompatibleMembersDiagnostic (
-			IOperation operation,
 			ImmutableArray<ISymbol> specialIncompatibleMembers,
 			ISymbol member,
-			out Diagnostic? incompatibleMembersDiagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
-			incompatibleMembersDiagnostic = null;
 			return false;
 		}
 
@@ -333,29 +342,26 @@ namespace ILLink.RoslynAnalyzer
 				|| IsRequiresCheck (propertySymbol, compilation);
 		}
 
-		internal bool CheckAndCreateRequiresDiagnostic (
+		internal void CheckAndCreateRequiresDiagnostic (
 			IOperation operation,
 			ISymbol member,
 			ISymbol owningSymbol,
 			DataFlowAnalyzerContext context,
 			FeatureContext featureContext,
-			[NotNullWhen (true)] out Diagnostic? diagnostic)
+			in DiagnosticContext diagnosticContext)
 		{
 			// Warnings are not emitted if the featureContext says the feature is available.
-			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName)) {
-				diagnostic = null;
-				return false;
-			}
+			if (featureContext.IsEnabled (RequiresAttributeFullyQualifiedName))
+				return;
 
 			ISymbol containingSymbol = operation.FindContainingSymbol (owningSymbol);
 
 			var incompatibleMembers = context.GetSpecialIncompatibleMembers (this);
-			return CheckAndCreateRequiresDiagnostic (
-				operation,
+			CheckAndCreateRequiresDiagnostic (
 				member,
 				containingSymbol,
 				incompatibleMembers,
-				out diagnostic);
+				diagnosticContext);
 		}
 
 		internal virtual bool IsIntrinsicallyHandled (

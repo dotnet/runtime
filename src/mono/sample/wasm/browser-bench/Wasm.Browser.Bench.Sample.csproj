@@ -8,7 +8,32 @@
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
+    <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
   </PropertyGroup>
+
+  <!-- NativeAOT -->
+  <PropertyGroup Condition="'$(UsingNativeAOT)' == 'true'">
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishDir>$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle</PublishDir>
+    <DebugType>none</DebugType>
+    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-experimental/nuget/v3/index.json</RestoreAdditionalProjectSources>
+    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
+    <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
+    <UsingEmscriptenWorkload>true</UsingEmscriptenWorkload>
+    <DotNetJsApi>true</DotNetJsApi>
+    <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(UsingNativeAOT)' == 'true'">
+    <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
+    <PackageReference Include="runtime.$(ToolsRID).Microsoft.DotNet.ILCompiler.LLVM" Version="$(ProductVersion)-*" />
+    <!-- TODO: Can be removed when emscripten workload refactoring is aligned with NativeAOT -->
+    <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_LLVM_ROOT=$(EmscriptenSdkToolsPath)bin" />
+    <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_BINARYEN_ROOT=$(EmscriptenSdkToolsPath)" />
+    <EmscriptenEnvVars Include="DOTNET_EMSCRIPTEN_NODE_JS=$([MSBuild]::NormalizePath($(EmscriptenNodeToolsPath), 'bin', 'node$(_ExeExt)'))" />
+    <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" />
+    <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+  </ItemGroup>
+  <!-- /NativeAOT -->
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
@@ -17,33 +42,35 @@
     <WasmExtraFilesToDeploy Include="frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
   </ItemGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+  <UsingTask TaskName="GetNugetConfigTask" AssemblyFile="$(OutputPath)Wasm.Browser.Bench.Sample.dll" />
+
+  <Target Name="SetWBTSdksPath" DependsOnTargets="BuildWBT">
+    <ItemGroup>
+      <ArtifactsDotnetLatestSdks Include="$(ArtifactsDir)bin/dotnet-latest/sdk/*/*" />
+    </ItemGroup>
+    <PropertyGroup>
+      <WBTSdksPath>%(ArtifactsDotnetLatestSdks.RootDir)%(ArtifactsDotnetLatestSdks.Directory)Sdks</WBTSdksPath>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="SetNugetConfigContent">
+    <GetNugetConfigTask
+      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget10.config"
+      ArtifactsDir="$(ArtifactsDir)"
+      Configuration="$(Configuration)">
+      <Output TaskParameter="NugetConfigContent" PropertyName="NugetConfigContent"/>
+    </GetNugetConfigTask>
+  </Target>
 
   <PropertyGroup>
-    <NugetConfigContent>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;configuration&gt;
-  &lt;!-- Don't use any higher level config files. --&gt;
-  &lt;fallbackPackageFolders&gt;
-    &lt;clear /&gt;
-  &lt;/fallbackPackageFolders&gt;
-  &lt;packageSources&gt;
-    &lt;clear /&gt;
-    &lt;add key=&quot;nuget-local&quot; value=&quot;$(ArtifactsDir)packages/$(Configuration)/Shipping/&quot; /&gt;
-    &lt;add key=&quot;dotnet8&quot; value=&quot;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json&quot; /&gt;
-    &lt;add key=&quot;dotnet9&quot; value=&quot;https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet9/nuget/v3/index.json&quot; /&gt;
-    &lt;add key=&quot;nuget.org&quot;  value=&quot;https://api.nuget.org/v3/index.json&quot; protocolVersion=&quot;3&quot; /&gt;
-  &lt;/packageSources&gt;
-    &lt;disabledPackageSources&gt;
-    &lt;clear /&gt;
-  &lt;/disabledPackageSources&gt;
-&lt;/configuration&gt;
-    </NugetConfigContent>
     <NugetPackagesPath>$(MSBuildThisFileDirectory)nugetPackages</NugetPackagesPath>
   </PropertyGroup>
 
-  <Target Name="BuildWBT">
+  <Target Name="BuildWBT" Condition="!Exists('$(ArtifactsDir)bin/dotnet-latest')">
     <PropertyGroup>
       <_ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</_ScriptExt>
       <_ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</_ScriptExt>
@@ -55,7 +82,7 @@
     <MakeDir Directories="$(NugetPackagesPath)" />
   </Target>
 
-  <Target Name="PrepareBlazorTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/blazor-frame/blazor')">
+  <Target Name="PrepareBlazorTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/blazor-frame/blazor')" DependsOnTargets="SetWBTSdksPath;SetNugetConfigContent">
     <ItemGroup>
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/WasmOverridePacks.targets" />
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/Blazor.Directory.Build.targets" />
@@ -71,15 +98,15 @@
         Overwrite="true"
         Lines="$(NugetConfigContent)" />
 
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet new blazorwasm" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=$(WBTSdksPath);NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet new blazorwasm" />
     <Exec WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame" Command="git apply blazor-frame.diff" />
   </Target>
 
-  <Target Name="BuildBlazorFrame" AfterTargets="BuildSampleInTree" Condition="'$(BlazorStartup)' == 'true'" DependsOnTargets="BuildWBT;PrepareBlazorTemplate">
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
+  <Target Name="BuildBlazorFrame" AfterTargets="BuildSampleInTree" Condition="'$(BlazorStartup)' == 'true'" DependsOnTargets="SetWBTSdksPath;BuildWBT;PrepareBlazorTemplate">
+    <Exec EnvironmentVariables="MSBuildSDKsPath=$(WBTSdksPath);NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../blazor-frame/blazor" Command="dotnet publish blazor.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-        <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/blazor-template/**/*.*"/>
+      <BlazorSourceFiles Include="$(MSBuildThisFileDirectory)../blazor-frame/blazor/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/blazor-template/**/*.*"/>
     </ItemGroup>
 
     <Copy
@@ -87,7 +114,7 @@
         DestinationFolder="$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle/blazor-template/%(RecursiveDir)" />
   </Target>
 
-  <Target Name="PrepareBrowserTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame')">
+  <Target Name="PrepareBrowserTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame')" DependsOnTargets="SetWBTSdksPath;SetNugetConfigContent">
     <ItemGroup>
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/WasmOverridePacks.targets" />
         <OverrideFiles Include="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/Blazor.Directory.Build.targets" />
@@ -107,16 +134,16 @@
         Overwrite="true"
         Lines="$(NugetConfigContent)" />
 
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/" Command="dotnet new wasmbrowser" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=$(WBTSdksPath);NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/" Command="dotnet new wasmbrowser" />
     <Exec WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame" Command="git apply browser-frame.diff" />
   </Target>
 
-  <Target Name="BuildBrowserFrame" AfterTargets="BuildSampleInTree" Condition="'$(BrowserStartup)' == 'true'" DependsOnTargets="BuildWBT;PrepareBrowserTemplate">
+  <Target Name="BuildBrowserFrame" AfterTargets="BuildSampleInTree" Condition="'$(BrowserStartup)' == 'true'" DependsOnTargets="SetWBTSdksPath;BuildWBT;PrepareBrowserTemplate">
 
-    <Exec EnvironmentVariables="MSBuildSDKsPath=;NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame" Command="dotnet publish browser-frame.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
+    <Exec EnvironmentVariables="MSBuildSDKsPath=$(WBTSdksPath);NUGET_PACKAGES=$(NugetPackagesPath);DOTNET_ROOT=$(ArtifactsDir)bin/dotnet-latest;PATH=$(ArtifactsDir)bin/dotnet-latest:$(PATH)" WorkingDirectory="$(MSBuildThisFileDirectory)../browser-frame/browser-frame" Command="dotnet publish browser-frame.csproj -c $(Configuration) -p:WBTOverrideRuntimePack=true -p:TargetOS=browser -p:TargetArchitecture=wasm $(BuildAdditionalArgs)" />
 
     <ItemGroup>
-        <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/**/*.*"/>
+      <BrowserSourceFiles Include="$(MSBuildThisFileDirectory)../browser-frame/browser-frame/bin/$(Configuration)/$(NetCoreAppCurrent)/publish/wwwroot/**/*.*"/>
     </ItemGroup>
 
     <Copy

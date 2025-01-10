@@ -13,7 +13,7 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 ///  <para>
 ///   Every instance returned to the end user can be either <see cref="PrimitiveTypeRecord{T}"/>,
-///   a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.
+///   a <see cref="ClassRecord"/>, or an <see cref="ArrayRecord"/>.
 ///  </para>
 /// </remarks>
 [DebuggerDisplay("{RecordType}, {Id}")]
@@ -46,11 +46,24 @@ public abstract class SerializationRecord
     /// </summary>
     /// <remarks>
     /// <para>This method ignores assembly names.</para>
-    /// <para>This method does NOT take into account member names or their genericTypes.</para>
+    /// <para>This method does NOT take into account member names or their types.</para>
     /// </remarks>
     /// <param name="type">The type to compare against.</param>
-    /// <returns><see langword="true" /> if the serialized type name match provided type; otherwise, <see langword="false" />.</returns>
-    public bool TypeNameMatches(Type type) => Matches(type, TypeName);
+    /// <returns><see langword="true" /> if the serialized type name matches the provided type; otherwise, <see langword="false" />.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="type" /> is <see langword="null" />.</exception>
+    public bool TypeNameMatches(Type type)
+    {
+#if NET
+        ArgumentNullException.ThrowIfNull(type);
+#else
+        if (type is null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+#endif
+
+        return Matches(type, TypeName);
+    }
 
     private static bool Matches(Type type, TypeName typeName)
     {
@@ -61,10 +74,38 @@ public abstract class SerializationRecord
             return false;
         }
 
+        // The TypeName.FullName property getter is recursive and backed by potentially hostile
+        // input. See comments in that property getter for more information, including what defenses
+        // are in place to prevent attacks.
+        //
+        // Note that the equality comparison below is worst-case O(n) since the adversary could ensure
+        // that only the last char differs. Even if the strings have equal contents, we should still
+        // expect the comparison to take O(n) time since RuntimeType.FullName and TypeName.FullName
+        // will never reference the same string instance with current runtime implementations.
+        //
+        // Since a call to Matches could take place within a loop, and since TypeName.FullName could
+        // be arbitrarily long (it's attacker-controlled and the NRBF protocol allows backtracking via
+        // the ClassWithId record, providing a form of compression), this presents opportunity
+        // for an algorithmic complexity attack, where a (2 * l)-length payload has an l-length type
+        // name and an array with l elements, resulting in O(l^2) total work factor. Protection against
+        // such attack is provided by the fact that the System.Type object is fully under the app's
+        // control and is assumed to be trusted and a reasonable length. This brings the cumulative loop
+        // work factor back down to O(l * RuntimeType.FullName), which is acceptable.
+        //
+        // The above statement assumes that "(string)m == (string)n" has worst-case complexity
+        // O(min(m.Length, n.Length)). This is not stated in string's public docs, but it is
+        // a guaranteed behavior for all built-in Ordinal string comparisons.
+
         // At first, check the non-allocating properties for mismatch.
         if (type.IsArray != typeName.IsArray || type.IsConstructedGenericType != typeName.IsConstructedGenericType
             || type.IsNested != typeName.IsNested
-            || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank()))
+            || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank())
+#if NET
+            || type.IsSZArray != typeName.IsSZArray // int[] vs int[*]
+#else
+            || (type.IsArray && type.Name != typeName.Name)
+#endif
+            )
         {
             return false;
         }
@@ -107,15 +148,20 @@ public abstract class SerializationRecord
     }
 
     /// <summary>
-    /// Gets the primitive, string or null record value.
+    /// Gets the primitive, string, or null record value.
     /// For reference records, it returns the referenced record.
     /// For other records, it returns the records themselves.
     /// </summary>
+    /// <remarks>
+    /// Overrides of this method should take care not to allow
+    /// the introduction of cycles, even in the face of adversarial
+    /// edges in the object graph.
+    /// </remarks>
     internal virtual object? GetValue() => this;
 
     internal virtual void HandleNextRecord(SerializationRecord nextRecord, NextInfo info)
-        => Debug.Fail($"HandleNextRecord should not have been called for '{GetType().Name}'");
+        => throw new InvalidOperationException();
 
     internal virtual void HandleNextValue(object value, NextInfo info)
-        => Debug.Fail($"HandleNextValue should not have been called for '{GetType().Name}'");
+        => throw new InvalidOperationException();
 }

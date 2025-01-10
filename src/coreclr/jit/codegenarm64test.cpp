@@ -1900,6 +1900,16 @@ void CodeGen::genArm64EmitterUnitTestsAdvSimd()
     theEmitter->emitIns_R_R_I(INS_stur, EA_8BYTE, REG_V7, REG_R10, 9);
     theEmitter->emitIns_R_R_I(INS_stur, EA_16BYTE, REG_V7, REG_R10, 17);
 
+    theEmitter->emitIns_R_R_I(INS_stlurb, EA_1BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlurh, EA_2BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_4BYTE, REG_V7, REG_R10, 0);
+    theEmitter->emitIns_R_R_I(INS_stlur, EA_8BYTE, REG_V7, REG_R10, 0);
+
+    theEmitter->emitIns_R_R_I(INS_ldapurb, EA_1BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapurh, EA_2BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_4BYTE, REG_V8, REG_R9, 0);
+    theEmitter->emitIns_R_R_I(INS_ldapur, EA_8BYTE, REG_V8, REG_R9, 0);
+
     // load/store pair
     theEmitter->emitIns_R_R_R(INS_ldnp, EA_8BYTE, REG_V0, REG_V1, REG_R10);
     theEmitter->emitIns_R_R_R_I(INS_stnp, EA_8BYTE, REG_V1, REG_V2, REG_R10, 0);
@@ -9101,4 +9111,32 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_extq, EA_SCALABLE, REG_V31, REG_V31, 15, INS_OPTS_SCALABLE_B);
 }
 
+/*****************************************************************************
+ * Unit tests for Pointer Authentication (PAC) instructions.
+ */
+void CodeGen::genArm64EmitterUnitTestsPac()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // IF_PC_0A
+    theEmitter->emitIns(INS_autia1716); // AUTIA1716
+    theEmitter->emitIns(INS_autiasp);   // AUTIASP
+    theEmitter->emitIns(INS_autiaz);    // AUTIAZ
+    theEmitter->emitIns(INS_pacia1716); // PACIA1716
+    theEmitter->emitIns(INS_paciasp);   // PACIASP
+    theEmitter->emitIns(INS_paciaz);    // PACIAZ
+    theEmitter->emitIns(INS_xpaclri);   // XPACLRI
+
+    // IF_PC_1A
+    theEmitter->emitIns_R(INS_autiza, EA_8BYTE, REG_R1); // AUTIZA <Xd>
+    theEmitter->emitIns_R(INS_paciza, EA_8BYTE, REG_R8); // PACIZA <Xd>
+    theEmitter->emitIns_R(INS_xpacd, EA_8BYTE, REG_R10); // XPACD <Xd>
+    theEmitter->emitIns_R(INS_xpaci, EA_8BYTE, REG_R12); // XPACI <Xd>
+
+    // IF_PC_2A
+    theEmitter->emitIns_R_R(INS_autia, EA_8BYTE, REG_R20, REG_SP); // AUTIA <Xd>, <Xn|SP>
+    theEmitter->emitIns_R_R(INS_pacia, EA_8BYTE, REG_R27, REG_SP); // PACIA <Xd>, <Xn|SP>
+}
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

@@ -1690,9 +1690,6 @@ void ResolveFuncEvalGenericArgInfo(DebuggerEval *pDE)
     }
 
     // Find the proper MethodDesc that we need to call.
-    // Since we're already in the target domain, it can't be unloaded so it's safe to
-    // use domain specific structures like the Module*.
-    _ASSERTE( GetAppDomain() == pDE->m_debuggerModule->GetAppDomain() );
     pDE->m_md = g_pEEInterface->LoadMethodDef(pDE->m_debuggerModule->GetRuntimeModule(),
                                               pDE->m_methodToken,
                                               nGenericArgs,

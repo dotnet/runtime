@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Hosting
         /// Checks if the current host environment name is <see cref="Environments.Development"/>.
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
-        /// <returns>True if the environment name is <see cref="Environments.Development"/>, otherwise false.</returns>
+        /// <returns><see langword="true"/> if the environment name is <see cref="Environments.Development"/>, otherwise <see langword="false"/>.</returns>
         public static bool IsDevelopment(this IHostEnvironment hostEnvironment)
         {
             ThrowHelper.ThrowIfNull(hostEnvironment);
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Hosting
         /// Checks if the current host environment name is <see cref="Environments.Staging"/>.
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
-        /// <returns>True if the environment name is <see cref="Environments.Staging"/>, otherwise false.</returns>
+        /// <returns><see langword="true"/> if the environment name is <see cref="Environments.Staging"/>, otherwise <see langword="false"/>.</returns>
         public static bool IsStaging(this IHostEnvironment hostEnvironment)
         {
             ThrowHelper.ThrowIfNull(hostEnvironment);
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Hosting
         /// Checks if the current host environment name is <see cref="Environments.Production"/>.
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
-        /// <returns>True if the environment name is <see cref="Environments.Production"/>, otherwise false.</returns>
+        /// <returns><see langword="true"/> if the environment name is <see cref="Environments.Production"/>, otherwise <see langword="false"/>.</returns>
         public static bool IsProduction(this IHostEnvironment hostEnvironment)
         {
             ThrowHelper.ThrowIfNull(hostEnvironment);
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="hostEnvironment">An instance of <see cref="IHostEnvironment"/>.</param>
         /// <param name="environmentName">Environment name to validate against.</param>
-        /// <returns>True if the specified name is the same as the current environment, otherwise false.</returns>
+        /// <returns><see langword="true"/> if the specified name is the same as the current environment, otherwise <see langword="false"/>.</returns>
         public static bool IsEnvironment(
             this IHostEnvironment hostEnvironment,
             string environmentName)

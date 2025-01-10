@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -59,6 +60,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Returns true if the apply assembly update is enabled and available.
         /// </summary>
+        [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
         public static bool IsSupported { get; } = IsApplyUpdateSupported();
     }
 }

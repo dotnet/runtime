@@ -1,4 +1,5 @@
 <Project>
+
   <PropertyGroup>
     <!-- For non-SDK projects that import this file and then import Microsoft.Common.props,
          tell Microsoft.Common.props not to import Directory.Build.props again. -->
@@ -86,7 +87,7 @@
 
   <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrentVersion>10.0</NetCoreAppCurrentVersion>
     <NetCoreAppCurrentIdentifier>.NETCoreApp</NetCoreAppCurrentIdentifier>
     <NetCoreAppCurrentTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
@@ -94,10 +95,8 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
 
     <!-- The previous supported .NET version. -->
-    <NetCoreAppPreviousVersion>8.0</NetCoreAppPreviousVersion>
-    <!-- For the .NET 9 release, set NetCoreAppPrevious to empty as NuGet has issues
-         with duplicate TFMs (when using both NetCoreAppPrevious and NetCoreAppMinimum). -->
-    <NetCoreAppPrevious />
+    <NetCoreAppPrevious>net9.0</NetCoreAppPrevious>
+    <NetCoreAppPrevious Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
@@ -106,11 +105,11 @@
     <!-- when this is updated, make sure to keep $(_NetCoreAppToolCurrent)
          in src/mono/wasm/build/WasmApp.LocalBuild.props
          and in src/mono/msbuild/apple/build/AppleBuild.LocalBuild.props in sync -->
-    <NetCoreAppToolCurrentVersion>9.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>10.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
-    <AspNetCoreAppCurrentVersion>9.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>10.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
@@ -121,9 +120,8 @@
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
-    <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>8.0.0</ApiCompatNetCoreAppBaselineVersion>
-    <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
+    <ApiCompatNetCoreAppBaselineVersion>9.0.0</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net9.0</ApiCompatNetCoreAppBaselineTFM>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
@@ -190,6 +188,17 @@
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
     <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">
+    <BuildNativeAOTRuntimePack>true</BuildNativeAOTRuntimePack>
+    <SkipLibrariesNativeRuntimePackages>true</SkipLibrariesNativeRuntimePackages>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
+    <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
+    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
+    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculatePortableBuild">
@@ -276,6 +285,7 @@
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
     <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
     <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
+    <TargetsLinuxGlibc Condition="'$(TargetsLinux)' == 'true' and '$(TargetsLinuxMusl)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</TargetsLinuxGlibc>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
@@ -387,8 +397,12 @@
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors Condition="'$(TreatWarningsAsErrors)' == ''">true</TreatWarningsAsErrors>
+    <!-- Only upgrade NuGetAudit warnings to errors for official builds. -->
+    <WarningsNotAsErrors Condition="'$(OfficialBuild)' != 'true' OR '$(NuGetAuditWarnNotError)' == 'true'">$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!-- Warnings to always disable -->
     <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors for private assemblies. -->
+    <NoWarn Condition="'$(IsPrivateAssembly)' == 'true'">$(NoWarn);CS1591</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">true</KeepNativeSymbols>
@@ -471,6 +485,8 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true'">
     <!-- we need to re-enable BinaryFormatter within test projects since some tests exercise these code paths to ensure compat -->
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <!-- For DotNetBuildSourceOnly, only the bundled BinaryFormatter is built which does not support serialization. -->
+    <EnableUnsafeBinaryFormatterSerialization Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</EnableUnsafeBinaryFormatterSerialization>
     <!-- don't warn on usage of BinaryFormatter or legacy serialization infrastructure from test projects -->
     <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0050;SYSLIB0051</NoWarn>
     <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->

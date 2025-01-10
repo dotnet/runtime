@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,6 +17,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Tensors
 {
+    /// <summary>
+    /// Represents a tensor.
+    /// </summary>
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
@@ -89,7 +91,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.Create(ReadOnlySpan<nint> lengths, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -102,7 +104,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.Create(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.Create(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -114,7 +116,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(ReadOnlySpan<nint> lengths, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -127,7 +129,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides, bool pinned)
+        static Tensor<T> ITensor<Tensor<T>, T>.CreateUninitialized(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -365,10 +367,19 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>
+        /// Defines an implicit conversion of an array to a <see cref="Tensor{T}"/>.
+        /// </summary>
         public static implicit operator Tensor<T>(T[] array) => new Tensor<T>(array, [array.Length]);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator TensorSpan<T>(Tensor<T> value) => new TensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value._flattenedLength);
 
+        /// <summary>
+        /// Defines an implicit conversion of a <see cref="Tensor{T}"/> to a <see cref="TensorSpan{T}"/>.
+        /// </summary>
         public static implicit operator ReadOnlyTensorSpan<T>(Tensor<T> value) => new ReadOnlyTensorSpan<T>(ref MemoryMarshal.GetArrayDataReference(value._values), value._lengths, value._strides, value.FlattenedLength);
 
         /// <summary>
@@ -505,7 +516,7 @@ namespace System.Numerics.Tensors
         /// Thrown when the destination TensorSpan is shorter than the source Tensor.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
+        public void CopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().CopyTo(destination);
 
         /// <summary>
         /// Fills the contents of this span with the given value.
@@ -521,19 +532,19 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The span to copy items into.</param>
         /// <returns>If the destination span is shorter than the source tensor, this method
         /// return false and no data is written to the destination.</returns>
-        public bool TryCopyTo(TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
+        public bool TryCopyTo(scoped TensorSpan<T> destination) => AsTensorSpan().TryCopyTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public void FlattenTo(Span<T> destination) => AsTensorSpan().FlattenTo(destination);
+        public void FlattenTo(scoped Span<T> destination) => AsTensorSpan().FlattenTo(destination);
 
         /// <summary>
         /// Flattens the contents of this Tensor into the provided <see cref="Span{T}"/>.
         /// </summary>
         /// <param name="destination">The span to copy items into.</param>
-        public bool TryFlattenTo(Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
+        public bool TryFlattenTo(scoped Span<T> destination) => AsTensorSpan().TryFlattenTo(destination);
 
         // IEnumerable
         /// <summary>
@@ -614,6 +625,11 @@ namespace System.Numerics.Tensors
         }
 
         // REVIEW: PENDING API REVIEW TO DETERMINE IMPLEMENTATION
+        /// <summary>
+        /// Gets the hash code for the <see cref="Tensor{T}"/>.
+        /// </summary>
+        /// <returns>The hash code of the tensor.</returns>
+        /// <exception cref="NotImplementedException">In all cases.</exception>
         public override int GetHashCode()
         {
             throw new NotImplementedException();
@@ -622,29 +638,18 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Get a string representation of the tensor.
         /// </summary>
-        private string ToMetadataString()
+        private void ToMetadataString(StringBuilder sb)
         {
-            var sb = new StringBuilder("[");
+            sb.Append('[');
 
-            int n = Rank;
-            if (n == 0)
+            for (int i = 0; i < Rank; i++)
             {
-                sb.Append(']');
+                sb.Append(Lengths[i]);
+                if (i + 1 < Rank)
+                    sb.Append('x');
             }
-            else
-            {
-                for (int i = 0; i < n; i++)
-                {
-                    sb.Append(Lengths[i]);
-                    if (i + 1 < n)
-                        sb.Append('x');
-                }
 
-                sb.Append(']');
-            }
-            sb.Append($", type = {typeof(T)}, isPinned = {IsPinned}");
-
-            return sb.ToString();
+            sb.Append($"], type = {typeof(T)}, isPinned = {IsPinned}");
         }
 
         /// <summary>
@@ -654,12 +659,15 @@ namespace System.Numerics.Tensors
         /// <returns>A <see cref="string"/> representation of the <see cref="Tensor{T}"/></returns>
         public string ToString(params ReadOnlySpan<nint> maximumLengths)
         {
-            if (maximumLengths.Length == 0)
-                maximumLengths = (from number in Enumerable.Range(0, Rank) select (nint)5).ToArray();
+            if (maximumLengths.IsEmpty)
+            {
+                maximumLengths = Rank <= TensorShape.MaxInlineRank ? stackalloc nint[Rank] : new nint[Rank];
+            }
+
             var sb = new StringBuilder();
-            sb.AppendLine(ToMetadataString());
+            ToMetadataString(sb);
             sb.AppendLine("{");
-            sb.Append(AsTensorSpan().ToString(maximumLengths));
+            ((ReadOnlyTensorSpan<T>)AsTensorSpan()).ToString(sb, maximumLengths);
             sb.AppendLine("}");
             return sb.ToString();
         }

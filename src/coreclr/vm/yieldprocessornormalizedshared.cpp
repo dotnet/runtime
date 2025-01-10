@@ -282,6 +282,7 @@ void YieldProcessorNormalization::FireMeasurementEvents()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_EVENT_TRACE
     if (!EventEnabledYieldProcessorMeasurement())
     {
         return;
@@ -304,6 +305,7 @@ void YieldProcessorNormalization::FireMeasurementEvents()
             nextIndex = 0;
         }
     }
+#endif // FEATURE_EVENT_TRACE
 }
 
 double YieldProcessorNormalization::AtomicLoad(double *valueRef)

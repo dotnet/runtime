@@ -1,5 +1,6 @@
 parameters:
   hybridGlobalization: True
+  perfBranch: 'main'
 
 jobs:
   # build mono iOS scenarios HybridGlobalization
@@ -61,13 +62,14 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -79,13 +81,14 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: False
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -97,13 +100,14 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -115,13 +119,14 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSLlvmBuild: True
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   # run NativeAOT iOS scenarios HybridGlobalization
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -134,12 +139,13 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSNativeAOT
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: False
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}
 
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -151,9 +157,10 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSNativeAOT
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
         iOSStripSymbols: True
         hybridGlobalization: ${{ parameters.hybridGlobalization }}
+        perfBranch: ${{ parameters.perfBranch }}

@@ -551,7 +551,7 @@ static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1
 static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #elif defined(TARGET_RISCV64)
 static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_FT0 | RBM_FT1 | RBM_FT2 | RBM_FS0 | RBM_FS1);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -911,52 +911,17 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
-    // This is so that any blocks that are added during the first traversal
-    // are accounted for (and we don't have BasicBlockEpoch issues).
-    blockSequencingDone   = false;
-    blockSequence         = nullptr;
-    blockSequenceWorkList = nullptr;
-    curBBSeqNum           = 0;
-    bbSeqCount            = 0;
+    // This is so that any blocks that are added during the first traversal are accounted for.
+    blockSequencingDone = false;
+    blockSequence       = nullptr;
+    curBBSeqNum         = 0;
+    bbSeqCount          = 0;
 
     // Information about each block, including predecessor blocks used for variable locations at block entry.
     blockInfo = nullptr;
 
     pendingDelayFree = false;
     tgtPrefUse       = nullptr;
-}
-
-//------------------------------------------------------------------------
-// getNextCandidateFromWorkList: Get the next candidate for block sequencing
-//
-// Arguments:
-//    None.
-//
-// Return Value:
-//    The next block to be placed in the sequence.
-//
-// Notes:
-//    This method currently always returns the next block in the list, and relies on having
-//    blocks added to the list only when they are "ready", and on the
-//    addToBlockSequenceWorkList() method to insert them in the proper order.
-//    However, a block may be in the list and already selected, if it was subsequently
-//    encountered as both a flow and layout successor of the most recently selected
-//    block.
-//
-BasicBlock* LinearScan::getNextCandidateFromWorkList()
-{
-    BasicBlockList* nextWorkList = nullptr;
-    for (BasicBlockList* workList = blockSequenceWorkList; workList != nullptr; workList = nextWorkList)
-    {
-        nextWorkList          = workList->next;
-        BasicBlock* candBlock = workList->block;
-        removeFromBlockSequenceWorkList(workList, nullptr);
-        if (!isBlockVisited(candBlock))
-        {
-            return candBlock;
-        }
-    }
-    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -969,8 +934,7 @@ BasicBlock* LinearScan::getNextCandidateFromWorkList()
 //    None
 //
 // Notes:
-//    On return, the blockSequence array contains the blocks, in the order in which they
-//    will be allocated.
+//    On return, the blockSequence array contains the blocks in reverse post-order.
 //    This method clears the bbVisitedSet on LinearScan, and when it returns the set
 //    contains all the bbNums for the block.
 //
@@ -978,27 +942,39 @@ void LinearScan::setBlockSequence()
 {
     assert(!blockSequencingDone); // The method should be called only once.
 
-    compiler->EnsureBasicBlockEpoch();
-#ifdef DEBUG
-    blockEpoch = compiler->GetCurBasicBlockEpoch();
-#endif // DEBUG
-
     // Initialize the "visited" blocks set.
-    bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
+    traits       = new (compiler, CMK_LSRA) BitVecTraits(compiler->fgBBcount, compiler);
+    bbVisitedSet = BitVecOps::MakeEmpty(traits);
 
-    BlockSet readySet(BlockSetOps::MakeEmpty(compiler));
-    BlockSet predSet(BlockSetOps::MakeEmpty(compiler));
+    assert((blockSequence == nullptr) && (bbSeqCount == 0));
+    FlowGraphDfsTree* const dfsTree = compiler->fgComputeDfs</* useProfile */ true>();
+    blockSequence                   = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
 
-    assert(blockSequence == nullptr && bbSeqCount == 0);
-    blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
+    if (compiler->opts.OptimizationEnabled() && dfsTree->HasCycle())
+    {
+        // Ensure loop bodies are compact in the visitation order
+        FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+        unsigned                     index = 0;
+
+        auto addToSequence = [this, &index](BasicBlock* block) {
+            blockSequence[index++] = block;
+        };
+
+        compiler->fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    }
+    else
+    {
+        // TODO: Just use lexical block order in MinOpts
+        for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+        {
+            blockSequence[i] = dfsTree->GetPostOrder(dfsTree->GetPostOrderCount() - i - 1);
+        }
+    }
+
     bbNumMaxBeforeResolution = compiler->fgBBNumMax;
     blockInfo                = new (compiler, CMK_LSRA) LsraBlockInfo[bbNumMaxBeforeResolution + 1];
 
-    assert(blockSequenceWorkList == nullptr);
-
-    verifiedAllBBs   = false;
     hasCriticalEdges = false;
-    BasicBlock* nextBlock;
     // We use a bbNum of 0 for entry RefPositions.
     // The other information in blockInfo[0] will never be used.
     blockInfo[0].weight = BB_UNITY_WEIGHT;
@@ -1009,14 +985,9 @@ void LinearScan::setBlockSequence()
     }
 #endif // TRACK_LSRA_STATS
 
-    JITDUMP("Start LSRA Block Sequence: \n");
-    for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
-    {
+    auto visitBlock = [this](BasicBlock* block) {
         JITDUMP("Current block: " FMT_BB "\n", block->bbNum);
-        blockSequence[bbSeqCount] = block;
         markBlockVisited(block);
-        bbSeqCount++;
-        nextBlock = nullptr;
 
         // Initialize the blockInfo.
         // predBBNum will be set later.
@@ -1087,73 +1058,43 @@ void LinearScan::setBlockSequence()
             assert(!"Switch with single successor");
         }
 
-        for (unsigned succIndex = 0; succIndex < numSuccs; succIndex++)
+        for (BasicBlock* const succ : block->Succs(compiler))
         {
-            BasicBlock* succ = block->GetSucc(succIndex, compiler);
-            if (checkForCriticalOutEdge && succ->GetUniquePred(compiler) == nullptr)
+            if (checkForCriticalOutEdge && (succ->GetUniquePred(compiler) == nullptr))
             {
                 blockInfo[block->bbNum].hasCriticalOutEdge = true;
                 hasCriticalEdges                           = true;
                 // We can stop checking now.
-                checkForCriticalOutEdge = false;
-            }
-
-            if (isTraversalLayoutOrder() || isBlockVisited(succ))
-            {
-                continue;
-            }
-
-            // We've now seen a predecessor, so add it to the work list and the "readySet".
-            // It will be inserted in the worklist according to the specified traversal order
-            // (i.e. pred-first or random, since layout order is handled above).
-            if (!BlockSetOps::IsMember(compiler, readySet, succ->bbNum))
-            {
-                JITDUMP("\tSucc block: " FMT_BB, succ->bbNum);
-                addToBlockSequenceWorkList(readySet, succ, predSet);
-                BlockSetOps::AddElemD(compiler, readySet, succ->bbNum);
-            }
-        }
-
-        // For layout order, simply use bbNext
-        if (isTraversalLayoutOrder())
-        {
-            nextBlock = block->Next();
-            continue;
-        }
-
-        while (nextBlock == nullptr)
-        {
-            nextBlock = getNextCandidateFromWorkList();
-
-            // TODO-Throughput: We would like to bypass this traversal if we know we've handled all
-            // the blocks - but fgBBcount does not appear to be updated when blocks are removed.
-            if (nextBlock == nullptr /* && bbSeqCount != compiler->fgBBcount*/ && !verifiedAllBBs)
-            {
-                // If we don't encounter all blocks by traversing the regular successor links, do a full
-                // traversal of all the blocks, and add them in layout order.
-                // This may include:
-                //   - internal-only blocks which may not be in the flow graph
-                //   - blocks that have become unreachable due to optimizations, but that are strongly
-                //     connected (these are not removed)
-                //   - EH blocks
-
-                for (BasicBlock* const seqBlock : compiler->Blocks())
-                {
-                    if (!isBlockVisited(seqBlock))
-                    {
-                        JITDUMP("\tUnvisited block: " FMT_BB, seqBlock->bbNum);
-                        addToBlockSequenceWorkList(readySet, seqBlock, predSet);
-                        BlockSetOps::AddElemD(compiler, readySet, seqBlock->bbNum);
-                    }
-                }
-                verifiedAllBBs = true;
-            }
-            else
-            {
                 break;
             }
         }
+    };
+
+    JITDUMP("Start LSRA Block Sequence: \n");
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        visitBlock(blockSequence[i]);
     }
+
+    // If the DFS didn't visit any blocks, add them to the end of blockSequence
+    if (dfsTree->GetPostOrderCount() < compiler->fgBBcount)
+    {
+        // Unvisited blocks are more likely to be at the back of the list, so iterate backwards
+        unsigned i = dfsTree->GetPostOrderCount();
+        for (BasicBlock* block = compiler->fgLastBB; i < compiler->fgBBcount; block = block->Prev())
+        {
+            assert(block != nullptr);
+            if (!dfsTree->Contains(block))
+            {
+                // Give this block a unique post-order number that can be used as a key into bbVisitedSet
+                block->bbPostorderNum = i;
+                visitBlock(block);
+                blockSequence[i++] = block;
+            }
+        }
+    }
+
+    bbSeqCount          = compiler->fgBBcount;
     blockSequencingDone = true;
 
 #ifdef DEBUG
@@ -1197,169 +1138,6 @@ void LinearScan::setBlockSequence()
     }
     JITDUMP("\n");
 #endif
-}
-
-//------------------------------------------------------------------------
-// compareBlocksForSequencing: Compare two basic blocks for sequencing order.
-//
-// Arguments:
-//    block1            - the first block for comparison
-//    block2            - the second block for comparison
-//    useBlockWeights   - whether to use block weights for comparison
-//
-// Return Value:
-//    -1 if block1 is preferred.
-//     0 if the blocks are equivalent.
-//     1 if block2 is preferred.
-//
-// Notes:
-//    See addToBlockSequenceWorkList.
-//
-int LinearScan::compareBlocksForSequencing(BasicBlock* block1, BasicBlock* block2, bool useBlockWeights)
-{
-    if (useBlockWeights)
-    {
-        weight_t weight1 = block1->getBBWeight(compiler);
-        weight_t weight2 = block2->getBBWeight(compiler);
-
-        if (weight1 > weight2)
-        {
-            return -1;
-        }
-        else if (weight1 < weight2)
-        {
-            return 1;
-        }
-    }
-
-    // If weights are the same prefer LOWER bbnum
-    if (block1->bbNum < block2->bbNum)
-    {
-        return -1;
-    }
-    else if (block1->bbNum == block2->bbNum)
-    {
-        return 0;
-    }
-    else
-    {
-        return 1;
-    }
-}
-
-//------------------------------------------------------------------------
-// addToBlockSequenceWorkList: Add a BasicBlock to the work list for sequencing.
-//
-// Arguments:
-//    sequencedBlockSet - the set of blocks that are already sequenced
-//    block             - the new block to be added
-//    predSet           - the buffer to save predecessors set. A block set allocated by the caller used here as a
-//    temporary block set for constructing a predecessor set. Allocated by the caller to avoid reallocating a new block
-//    set with every call to this function
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    The first block in the list will be the next one to be sequenced, as soon
-//    as we encounter a block whose successors have all been sequenced, in pred-first
-//    order, or the very next block if we are traversing in random order (once implemented).
-//    This method uses a comparison method to determine the order in which to place
-//    the blocks in the list.  This method queries whether all predecessors of the
-//    block are sequenced at the time it is added to the list and if so uses block weights
-//    for inserting the block.  A block is never inserted ahead of its predecessors.
-//    A block at the time of insertion may not have all its predecessors sequenced, in
-//    which case it will be sequenced based on its block number. Once a block is inserted,
-//    its priority\order will not be changed later once its remaining predecessors are
-//    sequenced.  This would mean that work list may not be sorted entirely based on
-//    block weights alone.
-//
-//    Note also that, when random traversal order is implemented, this method
-//    should insert the blocks into the list in random order, so that we can always
-//    simply select the first block in the list.
-//
-void LinearScan::addToBlockSequenceWorkList(BlockSet sequencedBlockSet, BasicBlock* block, BlockSet& predSet)
-{
-    // The block that is being added is not already sequenced
-    assert(!BlockSetOps::IsMember(compiler, sequencedBlockSet, block->bbNum));
-
-    // Get predSet of block
-    BlockSetOps::ClearD(compiler, predSet);
-    for (BasicBlock* const predBlock : block->PredBlocks())
-    {
-        BlockSetOps::AddElemD(compiler, predSet, predBlock->bbNum);
-    }
-
-    // If either a rarely run block or all its preds are already sequenced, use block's weight to sequence
-    bool useBlockWeight = block->isRunRarely() || BlockSetOps::IsSubset(compiler, sequencedBlockSet, predSet);
-    JITDUMP(", Criteria: %s", useBlockWeight ? "weight" : "bbNum");
-
-    BasicBlockList* prevNode = nullptr;
-    BasicBlockList* nextNode = blockSequenceWorkList;
-    while (nextNode != nullptr)
-    {
-        int seqResult;
-
-        if (nextNode->block->isRunRarely())
-        {
-            // If the block that is yet to be sequenced is a rarely run block, always use block weights for sequencing
-            seqResult = compareBlocksForSequencing(nextNode->block, block, true);
-        }
-        else if (BlockSetOps::IsMember(compiler, predSet, nextNode->block->bbNum))
-        {
-            // always prefer unsequenced pred blocks
-            seqResult = -1;
-        }
-        else
-        {
-            seqResult = compareBlocksForSequencing(nextNode->block, block, useBlockWeight);
-        }
-
-        if (seqResult > 0)
-        {
-            break;
-        }
-
-        prevNode = nextNode;
-        nextNode = nextNode->next;
-    }
-
-    BasicBlockList* newListNode = new (compiler, CMK_LSRA) BasicBlockList(block, nextNode);
-    if (prevNode == nullptr)
-    {
-        blockSequenceWorkList = newListNode;
-    }
-    else
-    {
-        prevNode->next = newListNode;
-    }
-
-#ifdef DEBUG
-    nextNode = blockSequenceWorkList;
-    JITDUMP(", Worklist: [");
-    while (nextNode != nullptr)
-    {
-        JITDUMP(FMT_BB " ", nextNode->block->bbNum);
-        nextNode = nextNode->next;
-    }
-    JITDUMP("]\n");
-#endif
-}
-
-void LinearScan::removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode)
-{
-    if (listNode == blockSequenceWorkList)
-    {
-        assert(prevNode == nullptr);
-        blockSequenceWorkList = listNode->next;
-    }
-    else
-    {
-        assert(prevNode != nullptr && prevNode->next == listNode);
-        prevNode->next = listNode->next;
-    }
-    // TODO-Cleanup: consider merging Compiler::BlockListNode and BasicBlockList
-    // compiler->FreeBlockListNode(listNode);
 }
 
 // Initialize the block order for allocation (called each time a new traversal begins).
@@ -1511,7 +1289,6 @@ PhaseStatus LinearScan::doLinearScan()
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
 
     assert(blockSequencingDone); // Should do at least one traversal.
-    assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 
 #if TRACK_LSRA_STATS
     if ((JitConfig.DisplayLsraStats() == 1)
@@ -1531,6 +1308,18 @@ PhaseStatus LinearScan::doLinearScan()
 #endif
 
     compiler->compLSRADone = true;
+
+    // If edge resolution didn't create new blocks,
+    // cache the block sequence so it can be used as an initial layout during block reordering.
+    if (compiler->fgBBcount == bbSeqCount)
+    {
+        compiler->fgBBs = blockSequence;
+    }
+    else
+    {
+        assert(compiler->fgBBcount > bbSeqCount);
+        compiler->fgBBs = nullptr;
+    }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -2982,6 +2771,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
             break;
         }
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             return
@@ -2990,11 +2780,14 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 #endif
                 GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
         }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
             return GenTreeMskCon::Equals(refPosition->treeNode->AsMskCon(), otherTreeNode->AsMskCon());
         }
+#endif // FEATURE_MASKED_HW_INTRINSICS)
 
         default:
             break;
@@ -9789,10 +9582,26 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
-            regNumber sourceReg = (regNumber)source[targetReg];
-            Interval* interval  = sourceIntervals[sourceReg];
+            // For Arm, check two things:
+            // 1. If sourceReg relates to DOUBLE interval, then make sure
+            //    the second half of targetReg is not participating in the resolution.
+            // 2. On the contrary, if targetReg is second half of a DOUBLE interval,
+            //    then make sure the first half is not participating in the resolution.
+            // Only when both these conditions are met, can we safely assume
+            // that sourceReg can be moved to targetReg.
+            regNumber sourceReg           = (regNumber)source[targetReg];
+            Interval* interval            = sourceIntervals[sourceReg];
+            Interval* otherTargetInterval = nullptr;
+            regNumber otherHalfTargetReg  = REG_NA;
+            if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+            {
+                otherHalfTargetReg  = REG_PREV(targetReg);
+                otherTargetInterval = sourceIntervals[otherHalfTargetReg];
+            }
+
             if (interval->registerType == TYP_DOUBLE)
             {
+                // Condition 1 above.
                 // For ARM32, make sure that both of the float halves of the double register are available.
                 assert(genIsValidDoubleReg(targetReg));
                 regNumber anotherHalfRegNum = REG_NEXT(targetReg);
@@ -9801,13 +9610,47 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     targetRegsReady.AddRegNumInMask(targetReg);
                 }
             }
+            else if ((otherTargetInterval != nullptr) && (otherTargetInterval->registerType == TYP_DOUBLE))
+            {
+                // Condition 2 above.
+                assert(otherHalfTargetReg != REG_NA);
+                if (location[otherHalfTargetReg] == REG_NA)
+                {
+                    targetRegsReady.AddRegNumInMask(targetReg);
+                }
+            }
             else
-#endif // TARGET_ARM
             {
                 targetRegsReady.AddRegNumInMask(targetReg);
             }
+#else
+            targetRegsReady.AddRegNumInMask(targetReg);
+#endif
         }
     }
+
+#ifdef TARGET_ARM
+    auto addOtherHalfRegToReady = [&](regNumber otherHalfReg) {
+        // For a double interval, if the first half if freed up, check if the other
+        // half can also be freed (if it is a target for resolution).
+
+        regNumber otherHalfSrcReg = (regNumber)source[otherHalfReg];
+        regNumber otherHalfSrcLoc = (regNumber)location[otherHalfReg];
+
+        // Necessary conditions:
+        // - There is a source register for this reg (otherHalfSrcReg != REG_NA)
+        // - It is currently free                    (otherHalfSrcLoc == REG_NA)
+        // - The source interval isn't yet completed (sourceIntervals[otherHalfSrcReg] != nullptr)
+        // - It's in the TODO set                    (targetRegsToDo.IsRegNumInMask(otherHalfReg))
+        // - It's not resolved from stack            (!targetRegsFromStack.IsRegNumInMask(otherHalfReg))
+        if ((otherHalfSrcReg != REG_NA) && (otherHalfSrcLoc == REG_NA) &&
+            (sourceIntervals[otherHalfSrcReg] != nullptr) && targetRegsToDo.IsRegNumInMask(otherHalfReg) &&
+            !targetRegsFromStack.IsRegNumInMask(otherHalfReg))
+        {
+            targetRegsReady.AddRegNumInMask(otherHalfReg);
+        }
+    };
+#endif // TARGET_ARM
 
     // Perform reg to reg moves
     while (targetRegsToDo.IsNonEmpty())
@@ -9848,34 +9691,20 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         {
                             targetRegsReady.RemoveRegNumFromMask(fromReg);
                         }
+
+                        // Since we want to check if we can free upperHalfReg, only do it
+                        // if lowerHalfReg is ready and it is one of the target candidate.
+                        if (targetRegsReady.IsRegNumInMask(fromReg))
+                        {
+                            addOtherHalfRegToReady(upperHalfReg);
+                        }
                     }
                 }
                 else if (genIsValidFloatReg(fromReg) && !genIsValidDoubleReg(fromReg))
                 {
                     // We may have freed up the other half of a double where the lower half
                     // was already free.
-                    regNumber lowerHalfReg     = REG_PREV(fromReg);
-                    regNumber lowerHalfSrcReg  = (regNumber)source[lowerHalfReg];
-                    regNumber lowerHalfSrcLoc  = (regNumber)location[lowerHalfReg];
-                    regMaskTP lowerHalfRegMask = genRegMask(lowerHalfReg);
-                    // Necessary conditions:
-                    // - There is a source register for this reg (lowerHalfSrcReg != REG_NA)
-                    // - It is currently free                    (lowerHalfSrcLoc == REG_NA)
-                    // - The source interval isn't yet completed (sourceIntervals[lowerHalfSrcReg] != nullptr)
-                    // - It's not in the ready set               ((targetRegsReady & lowerHalfRegMask) ==
-                    //                                            RBM_NONE)
-                    // - It's not resolved from stack            ((targetRegsFromStack & lowerHalfRegMask) !=
-                    //                                            lowerHalfRegMask)
-                    if ((lowerHalfSrcReg != REG_NA) && (lowerHalfSrcLoc == REG_NA) &&
-                        (sourceIntervals[lowerHalfSrcReg] != nullptr) &&
-                        !targetRegsReady.IsRegNumInMask(lowerHalfReg) &&
-                        !targetRegsFromStack.IsRegNumInMask(lowerHalfReg))
-                    {
-                        // This must be a double interval, otherwise it would be in targetRegsReady, or already
-                        // completed.
-                        assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady.AddRegNumInMask(lowerHalfReg);
-                    }
+                    addOtherHalfRegToReady(REG_PREV(fromReg));
 #endif // TARGET_ARM
                 }
             }
@@ -10019,6 +9848,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 {
                     compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
 #ifdef TARGET_ARM
+                    Interval* otherTargetInterval = nullptr;
+                    regNumber otherHalfTargetReg  = REG_NA;
+                    if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+                    {
+                        otherHalfTargetReg  = REG_PREV(targetReg);
+                        otherTargetInterval = sourceIntervals[otherHalfTargetReg];
+                    }
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {
                         assert(genIsValidDoubleReg(targetReg));
@@ -10027,8 +9863,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg, targetReg,
                                                resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
                     }
+                    else if (otherTargetInterval != nullptr)
+                    {
+                        assert(otherHalfTargetReg != REG_NA);
+                        assert(otherTargetInterval->registerType == TYP_DOUBLE);
+
+                        addResolutionForDouble(block, insertionPoint, sourceIntervals, location, tempReg,
+                                               otherHalfTargetReg, resolveType DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock));
+                    }
                     else
-#endif // TARGET_ARM
                     {
                         assert(sourceIntervals[targetReg] != nullptr);
 
@@ -10036,7 +9879,23 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                                       targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
                                           DEBUG_ARG(resolveTypeName[resolveType]));
                         location[targetReg] = (regNumberSmall)tempReg;
+
+                        if (sourceIntervals[targetReg]->registerType == TYP_DOUBLE)
+                        {
+                            // Free up upperHalf reg of this targetReg, if it is one of the target candidate.
+
+                            assert(genIsValidDoubleReg(targetReg));
+                            addOtherHalfRegToReady(REG_NEXT(targetReg));
+                        }
                     }
+#else
+                    assert(sourceIntervals[targetReg] != nullptr);
+
+                    addResolution(block, insertionPoint, sourceIntervals[targetReg], tempReg,
+                                  targetReg DEBUG_ARG(fromBlock) DEBUG_ARG(toBlock)
+                                      DEBUG_ARG(resolveTypeName[resolveType]));
+                    location[targetReg] = (regNumberSmall)tempReg;
+#endif // TARGET_ARM
                     targetRegsReady |= targetRegMask;
                 }
             }
@@ -10141,10 +10000,8 @@ void LinearScan::dumpLsraStats(FILE* file)
 
     fprintf(file, "----------\n");
 #ifdef DEBUG
-    LPCWSTR lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? W("ABCDEFGHIJKLMNOPQ") : JitConfig.JitLsraOrdering();
-    char    lsraOrderUtf8[(REGSELECT_HEURISTIC_COUNT * 3) + 1] = {};
-    WideCharToMultiByte(CP_UTF8, 0, lsraOrder, -1, lsraOrderUtf8, ARRAY_SIZE(lsraOrderUtf8), nullptr, nullptr);
-    fprintf(file, "Register selection order: %s\n", lsraOrderUtf8);
+    const char* lsraOrder = JitConfig.JitLsraOrdering() == nullptr ? "ABCDEFGHIJKLMNOPQ" : JitConfig.JitLsraOrdering();
+    fprintf(file, "Register selection order: %s\n", lsraOrder);
 #endif
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
@@ -12548,10 +12405,10 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
 
-    LPCWSTR ordering = JitConfig.JitLsraOrdering();
+    const char* ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
     {
-        ordering = W("ABCDEFGHIJKLMNOPQ");
+        ordering = "ABCDEFGHIJKLMNOPQ";
 
         if (!linearScan->enregisterLocalVars && linearScan->compiler->opts.OptimizationDisabled()
 #ifdef TARGET_ARM64
@@ -12559,7 +12416,7 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 #endif
         )
         {
-            ordering = W("MQQQQQQQQQQQQQQQQ");
+            ordering = "MQQQQQQQQQQQQQQQQ";
         }
     }
 
