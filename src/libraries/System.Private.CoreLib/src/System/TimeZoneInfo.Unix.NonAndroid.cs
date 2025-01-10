@@ -72,6 +72,11 @@ namespace System
             value = null;
             e = null;
 
+            if (Invariant)
+            {
+                e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
             if (Path.IsPathRooted(id) || IdContainsAnyDisallowedChars(id))
             {
                 e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
@@ -408,6 +413,11 @@ namespace System
         /// </summary>
         private static string FindTimeZoneId(byte[] rawData)
         {
+            if(Invariant)
+            {
+                return LocalId;
+            }
+
             // default to "Local" if we can't find the right tzfile
             string id = LocalId;
             string timeZoneDirectory = GetTimeZoneDirectory();

@@ -128,6 +128,11 @@ namespace System
         // Defaults to Utc if local time zone cannot be found
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
+            if (Invariant)
+            {
+                return Utc;
+            }
+
             string? id = Interop.Sys.GetDefaultTimeZone();
             if (!string.IsNullOrEmpty(id))
             {
@@ -144,6 +149,14 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
+            value = null;
+            e = null;
+
+            if (Invariant)
+            {
+                e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
 
             value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 

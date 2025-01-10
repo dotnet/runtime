@@ -113,6 +113,10 @@ namespace System
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
+            if (Invariant)
+            {
+                return;
+            }
 
             using (RegistryKey? reg = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
             {
@@ -145,7 +149,7 @@ namespace System
             }
             _baseUtcOffset = new TimeSpan(0, -(zone.Bias), 0);
 
-            if (!dstDisabled)
+            if (!Invariant && !dstDisabled)
             {
                 // only create the adjustment rule if DST is enabled
                 REG_TZI_FORMAT regZone = new REG_TZI_FORMAT(zone);
@@ -232,6 +236,11 @@ namespace System
         {
             dstDisabled = false;
 
+            if (Invariant)
+            {
+                return null;
+            }
+
             using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
             {
                 if (key == null)
@@ -260,6 +269,11 @@ namespace System
         private static TimeZoneInfo GetLocalTimeZone(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
+
+            if (Invariant)
+            {
+                return Utc;
+            }
 
             //
             // Try using the "kernel32!GetDynamicTimeZoneInformation" API to get the "id"
@@ -347,6 +361,12 @@ namespace System
         internal static TimeSpan GetDateTimeNowUtcOffsetFromUtc(DateTime time, out bool isAmbiguousLocalDst)
         {
             isAmbiguousLocalDst = false;
+
+            if (Invariant)
+            {
+                return TimeSpan.Zero;
+            }
+
             int timeYear = time.Year;
 
             OffsetAndRule match = s_cachedData.GetOneYearLocalFromUtc(timeYear);
@@ -492,6 +512,11 @@ namespace System
         {
             rules = null;
             e = null;
+
+            if (Invariant)
+            {
+                return false;
+            }
 
             try
             {
@@ -720,7 +745,7 @@ namespace System
         /// </summary>
         private static string GetLocalizedNameByMuiNativeResource(string resource)
         {
-            if (string.IsNullOrEmpty(resource) || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
+            if (string.IsNullOrEmpty(resource) || Invariant || (GlobalizationMode.Invariant && GlobalizationMode.PredefinedCulturesOnly))
             {
                 return string.Empty;
             }
@@ -785,6 +810,11 @@ namespace System
         /// </summary>
         private static unsafe string GetLocalizedNameByNativeResource(string filePath, int resource)
         {
+            if(Invariant)
+            {
+                return string.Empty;
+            }
+
             IntPtr handle = IntPtr.Zero;
             try
             {
@@ -868,6 +898,11 @@ namespace System
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
             e = null;
+            if(Invariant)
+            {
+                value = null;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
+            }
 
             // Standard Time Zone Registry Data
             // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -950,6 +985,11 @@ namespace System
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
+            if(Invariant)
+            {
+                return InvariantUtcStandardDisplayName;
+            }
+
             // Don't bother looking up the name for invariant or English cultures
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (uiCulture.Name.Length == 0 || uiCulture.TwoLetterISOLanguageName == "en")
