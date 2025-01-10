@@ -28,7 +28,6 @@ class FaultingExceptionFrame;
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext);
 
 //

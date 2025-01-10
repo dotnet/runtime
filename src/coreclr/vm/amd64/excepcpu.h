@@ -40,7 +40,9 @@ EXTERN_C void RedirectForThrowControl();
 // Retrieves the redirected CONTEXT* from the stack frame of one of the
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
+#ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatcherContext);
+#endif // TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
 
 //

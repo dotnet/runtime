@@ -89,9 +89,6 @@ EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD 
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
-#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
-#endif // defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
 
 // Determine the address of the instruction that made the current call.
 inline

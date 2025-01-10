@@ -48,12 +48,14 @@ inline PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrameWorker(UINT_PTR establi
     return *ppContext;
 }
 
+#ifndef TARGET_UNIX
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(DISPATCHER_CONTEXT * pDispatcherContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return GetCONTEXTFromRedirectedStubStackFrameWorker(pDispatcherContext->EstablisherFrame);
 }
+#endif // !TARGET_UNIX
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
 {

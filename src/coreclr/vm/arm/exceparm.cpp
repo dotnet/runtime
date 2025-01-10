@@ -7,15 +7,6 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    UINT_PTR stackSlot = pDispatcherContext->EstablisherFrame + REDIRECTSTUB_SP_OFFSET_CONTEXT;
-    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
-    return *ppContext;
-}
-
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
