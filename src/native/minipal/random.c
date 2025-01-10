@@ -150,9 +150,8 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
         return 0;
     }
 
-#endif
-
 devicerandom:
+#endif
 
     if (!sMissingDevURandom)
     {
