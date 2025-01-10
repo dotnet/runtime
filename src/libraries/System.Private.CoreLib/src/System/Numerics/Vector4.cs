@@ -411,16 +411,12 @@ namespace System.Numerics
             Vector128<float> v1 = vector1.AsVector128();
             Vector128<float> v2 = vector2.AsVector128();
 
-            Vector128<int> shuftleYZXW = Vector128.Create(1, 2, 0, 3);
-            Vector128<int> shuftleZXYW = Vector128.Create(2, 0, 1, 3);
+            Vector128<float> m1 = Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)) *
+                Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3));
+            Vector128<float> m2 = Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)) *
+                Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3));
 
-            Vector128<float> m1 = Vector128.Shuffle(v1, shuftleYZXW) *
-                Vector128.Shuffle(v2, shuftleZXYW);
-            Vector128<float> m2 = Vector128.Shuffle(v1, shuftleZXYW) *
-                Vector128.Shuffle(v2, shuftleYZXW);
-            m2.SetElementUnsafe(3, 0);
-
-            return (m1 - m2).AsVector4();
+            return (m1 - m2.WithElement(3, 0)).AsVector4();
         }
 
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />
