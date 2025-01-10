@@ -287,6 +287,36 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnsureRecordingClearedTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity.ForceDefaultIdFormat = true;
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                ActivitySource aSource = new ActivitySource("EnsureRecordingTest");
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => true,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.PropagationData
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                // Note: Remote parent is set as recorded
+                var parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, isRemote: true);
+
+                Activity a = aSource.StartActivity("RecordedActivity", ActivityKind.Internal, parentContext);
+                Assert.NotNull(a);
+
+                // Note: The sampler requests PropagationData so recorded should be removed
+                Assert.False(a.IsAllDataRequested);
+                Assert.False(a.Recorded);
+                Assert.False((a.Context.TraceFlags & ActivityTraceFlags.Recorded) != 0);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestExpectedListenersReturnValues()
         {
             RemoteExecutor.Invoke(() => {

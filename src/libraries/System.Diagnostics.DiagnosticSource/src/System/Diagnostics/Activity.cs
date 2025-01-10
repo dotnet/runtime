@@ -1244,6 +1244,12 @@ namespace System.Diagnostics
             {
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
             }
+            else
+            {
+                // Note: Recorded may be inherited from the parent so it needs
+                // to be cleared for the Activity being created when not desired
+                activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;
+            }
 
             if (startTime != default)
             {
