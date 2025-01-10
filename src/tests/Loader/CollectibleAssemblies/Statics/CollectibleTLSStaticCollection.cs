@@ -96,7 +96,7 @@ namespace CollectibleThreadStaticShutdownRace
         [Fact]
         public static void TestEntryPoint()
         {
-            new CollectilbleThreadStaticShutdownRace().ForceCollectibleTLSStaticToGoThroughThreadTermination();
+            new CollectibleThreadStaticShutdownRace().ForceCollectibleTLSStaticToGoThroughThreadTermination();
         }
     }
 }
