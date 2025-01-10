@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <!-- Crossgen is not used for Mono -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(TargetsAndroid)' == 'true'">true</SkipBuild>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
     <OverridePackageId>$(SharedFrameworkName).$(RuntimeIdentifier)</OverridePackageId>
