@@ -94,7 +94,7 @@ FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pD
     return result;
 }
 
-#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
 FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
 {
     __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
@@ -108,7 +108,7 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
     pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
     return iComparand == iResult;
 }
-#endif // HOST_AMD64 || HOST_ARM64 || HOST_LOONGARCH64
+#endif // HOST_AMD64 || HOST_ARM64 || HOST_LOONGARCH64 || HOST_RISCV64
 
 #ifdef HOST_64BIT
 
