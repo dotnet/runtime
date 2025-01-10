@@ -291,7 +291,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             writer.WriteUInt32(Signature);
             writer.Write(ScopeDefinitions);
-            writer.Write(new byte[16 * 1024 * 1024]);
         }
 
         public override HandleType HandleType
