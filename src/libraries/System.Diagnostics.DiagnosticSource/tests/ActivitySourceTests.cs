@@ -486,7 +486,10 @@ namespace System.Diagnostics.Tests
 
                     Assert.Equal(ctx.TraceId, activity.TraceId);
                     Assert.Equal(ctx.SpanId, activity.ParentSpanId);
-                    Assert.Equal(ctx.TraceFlags, activity.ActivityTraceFlags);
+                    Assert.NotEqual(ctx.TraceFlags, activity.ActivityTraceFlags);
+                    Assert.True(ctx.TraceFlags.HasFlag(ActivityTraceFlags.Recorded));
+                    Assert.False(activity.ActivityTraceFlags.HasFlag(ActivityTraceFlags.Recorded));
+                    Assert.False(activity.Recorded);
                     Assert.Equal(ctx.TraceState, activity.TraceStateString);
                     Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
 
