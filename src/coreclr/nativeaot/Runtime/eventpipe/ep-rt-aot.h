@@ -662,17 +662,6 @@ ep_rt_process_shutdown (void)
 
 static
 inline
-void
-ep_rt_create_activity_id (
-    uint8_t *activity_id,
-    uint32_t activity_id_len)
-{
-    extern void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len);
-    ep_rt_aot_create_activity_id(activity_id, activity_id_len);
-}
-
-static
-inline
 bool
 ep_rt_is_running (void)
 {
@@ -760,7 +749,9 @@ inline
 void
 ep_rt_set_server_name(void)
 {
-    // This is optional, decorates the thread name with EventPipe specific information
+    extern void
+    ep_rt_aot_set_server_name (void);
+    ep_rt_aot_set_server_name ();
 }
 
 

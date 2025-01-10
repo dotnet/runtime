@@ -169,6 +169,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GuidVersionsAndVariants()
+        {
+            for (int i = 0; i <= 0xF; ++i)
+            {
+                Guid guid = new Guid($"00000000-0000-{i:X}000-{i:X}000-000000000000");
+
+                Assert.Equal(i, guid.Version);
+                Assert.Equal(i, guid.Variant);
+            }
+        }
+
+        [Fact]
         public static void NewGuid_Randomness()
         {
             const int Iterations = 100;

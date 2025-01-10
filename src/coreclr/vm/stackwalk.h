@@ -79,16 +79,11 @@ public:
     /* Returns either a MethodDesc* or NULL for "non-function" frames */
             //<TODO>@TODO: what will it return for transition frames?</TODO>
 
-#ifdef FEATURE_INTERPRETER
-    MethodDesc *GetFunction();
-#else // FEATURE_INTERPRETER
     inline MethodDesc *GetFunction()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return pFunc;
     }
-#endif
-
 
     Assembly *GetAssembly();
 
@@ -129,9 +124,6 @@ public:
         x86 is the only platform using ambient SP.
     */
     TADDR GetAmbientSPFromCrawlFrame();
-
-    void GetExactGenericInstantiations(Instantiation *pClassInst,
-                                       Instantiation *pMethodInst);
 
     /* Returns extra information required to reconstruct exact generic parameters,
        if any.
@@ -666,7 +658,7 @@ private:
     enum class ForceGCReportingStage : BYTE
     {
         Off = 0,
-        // The stack walker has hit a funclet, we are looking for the first managed 
+        // The stack walker has hit a funclet, we are looking for the first managed
         // frame that would be one of the managed exception handling code frames
         LookForManagedFrame = 1,
         // The stack walker has already hit a managed exception handling code frame,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 using Xunit.Sdk;
 
@@ -32,6 +33,17 @@ namespace System.Collections.Immutable.Tests
             }
 
             throw ThrowsException.ForNoException(typeof(NullReferenceException));
+        }
+
+        internal static BinaryTreeProxy GetBinaryTreeProxy<T>(this IReadOnlyCollection<T> value)
+        {
+            FieldInfo rootField = value.GetType().GetField("_root", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(rootField);
+
+            object root = rootField.GetValue(value);
+            Assert.NotNull(root);
+
+            return new BinaryTreeProxy(root, root.GetType());
         }
     }
 }

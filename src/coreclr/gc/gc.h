@@ -139,10 +139,6 @@ extern size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
 class DacHeapWalker;
 #endif
 
-#ifdef _DEBUG
-#define  _LOGALLOC
-#endif
-
 #define MP_LOCKS
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES

@@ -11,7 +11,8 @@ namespace System.Net.WebSockets
     public sealed class WebSocketCreationOptions
     {
         private string? _subProtocol;
-        private TimeSpan _keepAliveInterval;
+        private TimeSpan _keepAliveInterval = WebSocketDefaults.DefaultKeepAliveInterval;
+        private TimeSpan _keepAliveTimeout = WebSocketDefaults.DefaultKeepAliveTimeout;
 
         /// <summary>
         /// Defines if this websocket is the server-side of the connection. The default value is false.
@@ -36,6 +37,8 @@ namespace System.Net.WebSockets
 
         /// <summary>
         /// The keep-alive interval to use, or <see cref="TimeSpan.Zero"/> or <see cref="Timeout.InfiniteTimeSpan"/> to disable keep-alives.
+        /// If <see cref="WebSocketCreationOptions.KeepAliveTimeout"/> is set, then PING messages are sent and peer's PONG responses are expected, otherwise,
+        /// unsolicited PONG messages are used as a keep-alive heartbeat.
         /// The default is <see cref="TimeSpan.Zero"/>.
         /// </summary>
         public TimeSpan KeepAliveInterval
@@ -49,6 +52,25 @@ namespace System.Net.WebSockets
                         SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
                 }
                 _keepAliveInterval = value;
+            }
+        }
+
+        /// <summary>
+        /// The timeout to use when waiting for the peer's PONG in response to us sending a PING; or <see cref="TimeSpan.Zero"/> or
+        /// <see cref="Timeout.InfiniteTimeSpan"/> to disable waiting for peer's response, and use an unsolicited PONG as a Keep-Alive heartbeat instead.
+        /// The default is <see cref="Timeout.InfiniteTimeSpan"/>.
+        /// </summary>
+        public TimeSpan KeepAliveTimeout
+        {
+            get => _keepAliveTimeout;
+            set
+            {
+                if (value != Timeout.InfiniteTimeSpan && value < TimeSpan.Zero)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(KeepAliveTimeout), value,
+                        SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
+                }
+                _keepAliveTimeout = value;
             }
         }
 

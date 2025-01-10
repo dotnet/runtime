@@ -35,6 +35,7 @@ parameters:
   preBuildSteps: []
   templatePath: 'templates'
   templateContext: ''
+  disableComponentGovernance: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -192,15 +193,8 @@ jobs:
         # credential provider is installed.
         - task: NuGetAuthenticate@1
 
-    - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
-      - task: DownloadPipelineArtifact@2
-        displayName: Download ${{monoCrossAOTTargetOS}} AOT offset files
-        inputs:
-          artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
-          path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
-      - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+      - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
 
       - script: |

@@ -110,6 +110,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return (uint)c < (uint)lookup.Length ? lookup[c] : 0;
             }
         }
+
         /// <summary>
         /// Gets a quick mapping from char to minterm for the common case when there are &lt;= 255 minterms.
         /// Null if there are greater than 255 minterms.

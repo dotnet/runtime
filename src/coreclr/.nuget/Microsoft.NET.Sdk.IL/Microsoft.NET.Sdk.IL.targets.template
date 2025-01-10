@@ -118,12 +118,15 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="$(CoreCompileDependsOn)">
 
     <PropertyGroup>
+      <IlasmAssemblyName Condition="('$(IlasmAssemblyName)' == '') and ('$(SynthesizeIlasmAssemblyName)' == 'true')">$(MSBuildProjectName)</IlasmAssemblyName>
+
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">-DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">-EXE</_OutputTypeArgument>
 
       <_KeyFileArgument Condition="'$(KeyOriginatorFile)' != ''">-KEY="$(KeyOriginatorFile)"</_KeyFileArgument>
 
       <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches>
+      <_IlasmSwitches Condition="'$(IlasmAssemblyName)' != ''">$(_IlasmSwitches) -ANAME=$(IlasmAssemblyName)</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) -STACK=$(SizeOfStackReserve)</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'Full'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
@@ -141,7 +144,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <CallTarget Targets="$(TargetsTriggeredByCompilation)" Condition="'$(TargetsTriggeredByCompilation)' != ''"/>
   </Target>
-  
+
   <!-- Target is called by the language server. No-op for ILProj as there is no language service support. -->
   <Target Name="CompileDesignTime" />
 

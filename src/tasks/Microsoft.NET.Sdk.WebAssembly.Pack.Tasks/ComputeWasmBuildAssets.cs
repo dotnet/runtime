@@ -41,9 +41,6 @@ public class ComputeWasmBuildAssets : Task
     public bool InvariantGlobalization { get; set; }
 
     [Required]
-    public bool HybridGlobalization { get; set; }
-
-    [Required]
     public bool LoadFullICUData { get; set; }
 
     [Required]
@@ -91,7 +88,7 @@ public class ComputeWasmBuildAssets : Task
             for (int i = 0; i < Candidates.Length; i++)
             {
                 var candidate = Candidates[i];
-                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, HybridGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
+                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                     filesToRemove.Add(candidate);
@@ -110,7 +107,12 @@ public class ComputeWasmBuildAssets : Task
                     assetCandidate.SetMetadata("AssetTraitName", "Culture");
                     assetCandidate.SetMetadata("AssetTraitValue", inferredCulture);
                     assetCandidate.SetMetadata("RelativePath", $"_framework/{inferredCulture}/{satelliteAssembly.GetMetadata("FileName")}{satelliteAssembly.GetMetadata("Extension")}");
-                    assetCandidate.SetMetadata("RelatedAsset", Path.GetFullPath(Path.Combine(OutputPath, "wwwroot", "_framework", Path.GetFileName(assetCandidate.GetMetadata("ResolvedFrom")))));
+
+                    var resolvedFrom = assetCandidate.GetMetadata("ResolvedFrom");
+                    if (resolvedFrom == "{RawFileName}") // Satellite assembly found from `<Reference />` element
+                        resolvedFrom = candidate.GetMetadata("OriginalItemSpec");
+
+                    assetCandidate.SetMetadata("RelatedAsset", Path.GetFullPath(Path.Combine(OutputPath, "wwwroot", "_framework", Path.GetFileName(resolvedFrom))));
 
                     assetCandidates.Add(assetCandidate);
                     continue;
@@ -230,7 +232,6 @@ public class ComputeWasmBuildAssets : Task
             case ".js" when filename.StartsWith("dotnet"):
             case ".mjs" when filename.StartsWith("dotnet"):
             case ".dat" when filename.StartsWith("icudt"):
-            case ".json" when filename.StartsWith("segmentation-rules"):
                 candidate.SetMetadata("AssetTraitName", "WasmResource");
                 candidate.SetMetadata("AssetTraitValue", "native");
                 break;

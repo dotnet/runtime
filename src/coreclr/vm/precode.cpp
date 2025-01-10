@@ -150,23 +150,6 @@ MethodDesc* Precode::GetMethodDesc(BOOL fSpeculative /*= FALSE*/)
     return (PTR_MethodDesc)pMD;
 }
 
-BOOL Precode::IsCorrectMethodDesc(MethodDesc *  pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    MethodDesc * pMDfromPrecode = GetMethodDesc(TRUE);
-
-    if (pMDfromPrecode == pMD)
-        return TRUE;
-
-    return FALSE;
-}
-
 BOOL Precode::IsPointingToPrestub(PCODE target)
 {
     CONTRACTL
@@ -662,4 +645,37 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     return FALSE;
 }
 
+void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
+{
+    dest->OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+#ifdef TARGET_LOONGARCH64
+    dest->ReadWidthOfPrecodeType = 2;
+#else
+    dest->ReadWidthOfPrecodeType = 1;
+#endif
+#if defined(SHIFTOF_PRECODE_TYPE)
+    dest->ShiftOfPrecodeType = SHIFTOF_PRECODE_TYPE;
+#else
+    dest->ShiftOfPrecodeType = 0;
+#endif
+
+    dest->InvalidPrecodeType = InvalidPrecode::Type;
+    dest->StubPrecodeType = StubPrecode::Type;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    dest->PInvokeImportPrecodeType = NDirectImportPrecode::Type;
+#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_FIXUP_PRECODE
+    dest->FixupPrecodeType = FixupPrecode::Type;
+#endif
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    dest->ThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+#endif
+    dest->StubCodePageSize = GetStubCodePageSize();
+}
+
 #endif // !DACCESS_COMPILE
+

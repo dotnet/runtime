@@ -60,17 +60,10 @@ PTFF_SAVE_ALL_SCRATCH   equ 0x3FFFF800  ;; NOTE: X0-X18
 PTFF_SAVE_FP            equ 0x40000000
 PTFF_SAVE_LR            equ 0x80000000
 
-;; NOTE: The following flags represent the upper 32 bits of the PInvokeTransitionFrameFlags.
-;; Since the assembler doesn't support 64 bit constants in any way, we need to define just
-;; the upper bits here
-PTFF_X0_IS_GCREF_HI     equ 0x00000001 ;; iff PTFF_SAVE_X0 : set->x0 is Object, clear->x0 is scalar
-PTFF_X0_IS_BYREF_HI     equ 0x00000002 ;; iff PTFF_SAVE_X0 : set->x0 is ByRef, clear->x0 is Object or scalar
-PTFF_X1_IS_GCREF_HI     equ 0x00000004 ;; iff PTFF_SAVE_X1 : set->x1 is Object, clear->x1 is scalar
-PTFF_X1_IS_BYREF_HI     equ 0x00000008 ;; iff PTFF_SAVE_X1 : set->x1 is ByRef, clear->x1 is Object or scalar
-PTFF_THREAD_ABORT_HI    equ 0x00000010 ;; indicates that ThreadAbortException should be thrown when returning from the transition
+PTFF_THREAD_HIJACK_HI   equ 0x00000002           // upper 32 bits of the PTFF_THREAD_HIJACK
 
 ;; Bit position for the flags above, to be used with tbz / tbnz instructions
-PTFF_THREAD_ABORT_BIT   equ 36
+PTFF_THREAD_ABORT_BIT   equ 32
 
 ;; These must match the TrapThreadsFlags enum
 TrapThreadsFlags_None            equ 0
@@ -87,8 +80,8 @@ STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
 
 ;;
 ;; IMPORTS

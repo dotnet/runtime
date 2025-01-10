@@ -46,7 +46,7 @@ internal sealed class DevServerStartup
                 if (ctx.Request.Path.StartsWithSegments("/_framework") && !ctx.Request.Path.StartsWithSegments("/_framework/blazor.server.js") && !ctx.Request.Path.StartsWithSegments("/_framework/blazor.web.js"))
                 {
                     string fileExtension = Path.GetExtension(ctx.Request.Path);
-                    if (string.Equals(fileExtension, ".js"))
+                    if (string.Equals(fileExtension, ".js") || string.Equals(fileExtension, ".mjs"))
                     {
                         // Browser multi-threaded runtime requires cross-origin policy headers to enable SharedArrayBuffer.
                         ApplyCrossOriginPolicyHeaders(ctx);
@@ -57,7 +57,9 @@ internal sealed class DevServerStartup
             });
         }
 
-        app.UseBlazorFrameworkFiles();
+        //app.UseBlazorFrameworkFiles();
+        app.UseRouting();
+
         app.UseStaticFiles(new StaticFileOptions
         {
             // In development, serve everything, as there's no other way to configure it.
@@ -92,6 +94,8 @@ internal sealed class DevServerStartup
 
         app.UseEndpoints(endpoints =>
         {
+            endpoints.MapStaticAssets(options.StaticWebAssetsEndpointsPath);
+
             endpoints.MapFallbackToFile("index.html", new StaticFileOptions
             {
                 OnPrepareResponse = fileContext =>

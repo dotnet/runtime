@@ -48,15 +48,22 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_SUNOS) // has POSIX implementation
-    char name[24];
-    sprintf(name, "/shm-dotnet-%d", getpid());
-    name[sizeof(name) - 1] = '\0';
-    shm_unlink(name);
-    int fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
-#else // TARGET_FREEBSD
+#elif defined(TARGET_LINUX)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
-#endif // TARGET_FREEBSD
+#else
+    int fd = -1;
+#endif
+
+    // POSIX fallback
+    if (fd == -1)
+    {
+        char name[24];
+        sprintf(name, "/shm-dotnet-%d", getpid());
+        name[sizeof(name) - 1] = '\0';
+        shm_unlink(name);
+        fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
+        shm_unlink(name);
+    }
 
     if (fd == -1)
     {
@@ -135,10 +142,14 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
 
     void* result = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size, 0 /* fStoreAllocationInfo */);
 #ifndef TARGET_OSX
+    int mmapFlags = MAP_SHARED;
+#ifdef TARGET_HAIKU
+    mmapFlags |= MAP_NORESERVE;
+#endif // TARGET_HAIKU
     if (result != NULL)
     {
         // Map the shared memory over the range reserved from the executable memory allocator.
-        result = mmap(result, size, PROT_NONE, MAP_SHARED | MAP_FIXED, fd, offset);
+        result = mmap(result, size, PROT_NONE, mmapFlags | MAP_FIXED, fd, offset);
         if (result == MAP_FAILED)
         {
             assert(false);
@@ -154,7 +165,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
     }
 
 #ifndef TARGET_OSX
-    result = mmap(NULL, size, PROT_NONE, MAP_SHARED, fd, offset);
+    result = mmap(NULL, size, PROT_NONE, mmapFlags, fd, offset);
 #else
     int mmapFlags = MAP_ANON | MAP_PRIVATE;
     if (IsMapJitFlagNeeded())
@@ -162,7 +173,7 @@ void* VMToOSInterface::ReserveDoubleMappedMemory(void *mapperHandle, size_t offs
         mmapFlags |= MAP_JIT;
     }
     result = mmap(NULL, size, PROT_NONE, mmapFlags, -1, 0);
-#endif    
+#endif
     if (result == MAP_FAILED)
     {
         assert(false);

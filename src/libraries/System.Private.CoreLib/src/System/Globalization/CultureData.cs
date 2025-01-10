@@ -163,7 +163,7 @@ namespace System.Globalization
                 { "AL", "sq-AL" },
                 { "AM", "hy-AM" },
                 { "AO", "pt-AO" },
-                { "AQ", "en-A" },
+                { "AQ", "en-AQ" },
                 { "AR", "es-AR" },
                 { "AS", "en-AS" },
                 { "AT", "de-AT" },
@@ -188,7 +188,7 @@ namespace System.Globalization
                 { "BR", "pt-BR" },
                 { "BS", "en-BS" },
                 { "BT", "dz-BT" },
-                { "BV", "nb-B" },
+                { "BV", "nb-BV" },
                 { "BW", "en-BW" },
                 { "BY", "be-BY" },
                 { "BZ", "en-BZ" },
@@ -201,7 +201,7 @@ namespace System.Globalization
                 { "CI", "fr-CI" },
                 { "CK", "en-CK" },
                 { "CL", "es-CL" },
-                { "CM", "fr-C" },
+                { "CM", "fr-CM" },
                 { "CN", "zh-CN" },
                 { "CO", "es-CO" },
                 { "CR", "es-CR" },
@@ -244,13 +244,13 @@ namespace System.Globalization
                 { "GP", "fr-GP" },
                 { "GQ", "es-GQ" },
                 { "GR", "el-GR" },
-                { "GS", "en-G" },
+                { "GS", "en-GS" },
                 { "GT", "es-GT" },
                 { "GU", "en-GU" },
                 { "GW", "pt-GW" },
                 { "GY", "en-GY" },
                 { "HK", "zh-HK" },
-                { "HM", "en-H" },
+                { "HM", "en-HM" },
                 { "HN", "es-HN" },
                 { "HR", "hr-HR" },
                 { "HT", "fr-HT" },
@@ -371,7 +371,7 @@ namespace System.Globalization
                 { "SZ", "ss-SZ" },
                 { "TC", "en-TC" },
                 { "TD", "fr-TD" },
-                { "TF", "fr-T" },
+                { "TF", "fr-TF" },
                 { "TG", "fr-TG" },
                 { "TH", "th-TH" },
                 { "TJ", "tg-Cyrl-TJ" },
@@ -815,11 +815,6 @@ namespace System.Globalization
                 return null;
             }
 #if TARGET_BROWSER
-            // populate fields for which ICU does not provide data in Hybrid mode
-            if (GlobalizationMode.Hybrid && !string.IsNullOrEmpty(culture._sName))
-            {
-                culture = JSLoadCultureInfoFromBrowser(culture._sName, culture);
-            }
             culture.JSInitLocaleInfo();
 #endif
 
@@ -1543,13 +1538,6 @@ namespace System.Globalization
                         _iFirstDayOfWeek = GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek);
                     }
                     else
-#elif TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid)
-                    {
-                        Debug.Assert(_sName != null, "[FirstDayOfWeek] Expected _sName to be populated already");
-                        _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
-                    }
-                    else
 #endif
                     {
                         _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
@@ -1569,17 +1557,7 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
-#if TARGET_BROWSER
-                    if (GlobalizationMode.Hybrid)
-                    {
-                        Debug.Assert(_sName != null, "[CalendarWeekRule] Expected _sName to be populated already");
-                        _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
-                    }
-                    else
-#endif
-                    {
-                        _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
-                    }
+                    _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
                 }
                 return _iFirstWeekOfYear;
             }

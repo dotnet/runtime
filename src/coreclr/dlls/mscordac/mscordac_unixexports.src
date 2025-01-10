@@ -36,12 +36,10 @@ nativeStringResourceTable_mscorrc
 #PAL_GetTransportPipeName
 #PAL_InitializeDLL
 #PAL_TerminateEx
-#PAL_IsDebuggerPresent
 #PAL_OpenProcessMemory
 #PAL_CloseProcessMemory
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
-#PAL_Random
 #PAL__wcstoui64
 #PAL_wcstoul
 #PAL_wcstod
@@ -79,9 +77,6 @@ nativeStringResourceTable_mscorrc
 #DeleteCriticalSection
 #DuplicateHandle
 #EnterCriticalSection
-#FindClose
-#FindFirstFileW
-#FindNextFileW
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
@@ -148,3 +143,5 @@ nativeStringResourceTable_mscorrc
 #WaitForSingleObjectEx
 #WideCharToMultiByte
 #WriteFile
+
+#GUID_NULL

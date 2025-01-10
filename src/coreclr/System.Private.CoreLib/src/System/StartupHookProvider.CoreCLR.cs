@@ -14,11 +14,6 @@ namespace System
     {
         private static unsafe void ManagedStartup(char* pDiagnosticStartupHooks)
         {
-#if FEATURE_PERFTRACING
-            if (EventSource.IsSupported)
-                RuntimeEventSource.Initialize();
-#endif
-
             if (IsSupported)
                 ProcessStartupHooks(new string(pDiagnosticStartupHooks));
         }

@@ -112,12 +112,21 @@
       <_AotOutputType>ObjectFile</_AotOutputType>
     </PropertyGroup>
 
-    <ItemGroup>
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-linux-gnueabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=aarch64-linux-android" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i686-linux-android" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-linux-android" />
+    <PropertyGroup>
+      <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
+      <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
+      <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
+      <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
+    </PropertyGroup>
 
+    <PropertyGroup>
+      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
+      <_LdName>clang</_LdName>
+      <_LdOptions>-fuse-ld=lld</_LdOptions>
+      <_AsName>clang</_AsName>
+    </PropertyGroup>
+
+    <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true'" Include="direct-icalls" />
@@ -140,19 +149,6 @@
     <PropertyGroup>
       <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
     </PropertyGroup>
-
-    <NdkToolFinderTask
-      Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'"
-      Architecture="$(TargetArchitecture)"
-      HostOS="$(_HostOS)"
-      MinApiLevel="$(AndroidLibraryMinApiLevel)">
-      <Output TaskParameter="AsPrefixPath" PropertyName="_AsPrefixPath" />
-      <Output TaskParameter="ToolPrefixPath" PropertyName="_ToolPrefixPath" />
-      <Output TaskParameter="Triple" PropertyName="_Triple" />
-      <Output TaskParameter="LdName" PropertyName="_LdName" />
-      <Output TaskParameter="LdPath" PropertyName="_LdPath" />
-      <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
-    </NdkToolFinderTask>
 
     <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'">
       <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
@@ -203,14 +199,15 @@
       <ProfiledAOTProfilePaths Include="$(MibcFilePath)" />
     </ItemGroup>
 
-    <!-- 
-      In order for the runtime to work when static linking, we must supply 
+    <!--
+      In order for the runtime to work when static linking, we must supply
       a list of direct pinvokes otherwise the runtime will crash
     -->
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <DirectPInvokes Include="libSystem.Native" />
       <DirectPInvokes Include="libSystem.IO.Compression.Native" />
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
+      <DirectPInvokes Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -221,20 +218,23 @@
 
     <MonoAOTCompiler
         AotModulesTablePath="$(_AotModuleTablePath)"
-        AsPrefix="$(_AsPrefixPath)"
+        AsName="$(_AsName)"
+        AsOptions="$(_AsOptions)"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="$(_CompilerBinaryPath)"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        LdName="$(_LdName)"
+        LdOptions="$(_LdOptions)"
         LibraryFormat="$(_AotLibraryFormat)"
         LLVMPath="$(_MonoLLVMPath)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
         OutputType="$(_AotOutputType)"
-        ToolPrefix="$(_ToolPrefixPath)"
+        Triple="$(_Triple)"
         UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />

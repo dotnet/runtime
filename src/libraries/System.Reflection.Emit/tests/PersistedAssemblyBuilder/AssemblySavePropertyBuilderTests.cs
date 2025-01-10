@@ -14,6 +14,94 @@ namespace System.Reflection.Emit.Tests
     public class AssemblySavePropertyBuilderTests
     {
         [Fact]
+        public void GetPropertiesAndGetProperty()
+        {
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private | FieldAttributes.Static);
+            CreateProperty("PublicGetSet", isPublic: true, isStatic: false, hasSet: true);
+            CreateProperty("PublicGet", isPublic: true, isStatic: false, hasSet: false);
+
+            CreateProperty("PrivateGetSet", isPublic: false, isStatic: false, hasSet: false);
+            CreateProperty("PrivateGet", isPublic: false, isStatic: false, hasSet: false);
+
+            CreateProperty("StaticPublicGetSet", isPublic: true, isStatic: true, hasSet: true);
+            CreateProperty("StaticPublicGet", isPublic: true, isStatic: true, hasSet: true);
+
+            CreateProperty("StaticPrivateGetSet", isPublic: false, isStatic: true, hasSet: true);
+            CreateProperty("StaticPrivateGet", isPublic: false, isStatic: true, hasSet: true);
+
+            // Try get before creation
+            Assert.Throws<NotSupportedException>(() => type.GetProperties());
+            Assert.Throws<NotSupportedException>(() => type.GetProperty("PublicGetSet"));
+
+            // Create the type
+            type.CreateType();
+
+            // By default GetProperties doesn't return private properties
+            Assert.Equal(4, type.GetProperties().Length);
+            Assert.True(type.GetProperties().All(x => x.Name.Contains("Public")));
+
+            // get all properties
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            Assert.Equal(8, properties.Length);
+
+            // get only private properties
+            properties = type.GetProperties(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            Assert.Equal(4, properties.Length);
+            Assert.True(properties.All(x => x.Name.Contains("Private")));
+
+            // get only static properties
+            properties = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.Equal(4, properties.Length);
+            Assert.True(properties.All(x => x.Name.Contains("Static")));
+
+            // get public property by name only
+            PropertyInfo? property = type.GetProperty("PublicGetSet");
+            Assert.NotNull(property);
+            Assert.Equal("PublicGetSet", property.Name);
+
+            // get public property by name and binding flags
+            property = type.GetProperty("PublicGetSet", BindingFlags.Public | BindingFlags.Instance);
+            Assert.NotNull(property);
+            Assert.Equal("PublicGetSet", property.Name);
+
+            // get public property by name and binding flags when there is not "set" method
+            property = type.GetProperty("StaticPublicGet", BindingFlags.Public | BindingFlags.Static);
+            Assert.NotNull(property);
+            Assert.Equal("StaticPublicGet", property.Name);
+
+            // Returns null when not found
+            Assert.Null(type.GetProperty("NotFound"));
+            Assert.Null(type.GetProperty("PublicGetSet", BindingFlags.NonPublic | BindingFlags.Instance));
+            Assert.Null(type.GetProperty("PublicGetSet", BindingFlags.Public | BindingFlags.Static));
+
+
+            void CreateProperty(string name, bool isPublic, bool isStatic, bool hasSet)
+            {
+                MethodAttributes methodAttributes = (isPublic ? MethodAttributes.Public : MethodAttributes.Private) | (isStatic ? MethodAttributes.Static : default) | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
+                PropertyBuilder property = type.DefineProperty(name, PropertyAttributes.SpecialName | PropertyAttributes.HasDefault, typeof(int), null);
+
+                MethodBuilder getMethod = type.DefineMethod($"{name}_GetMethod", methodAttributes, typeof(int), null);
+                ILGenerator getterLGenerator = getMethod.GetILGenerator();
+                getterLGenerator.Emit(OpCodes.Ldarg_0);
+                getterLGenerator.Emit(OpCodes.Ldfld, field);
+                getterLGenerator.Emit(OpCodes.Ret);
+                property.SetGetMethod(getMethod);
+
+                if (hasSet)
+                {
+                    MethodBuilder setMethod = type.DefineMethod($"{name}_SetMethod", methodAttributes, typeof(void), [typeof(int)]);
+                    ILGenerator setterILGenerator = setMethod.GetILGenerator();
+                    setterILGenerator.Emit(OpCodes.Ldarg_0);
+                    setterILGenerator.Emit(OpCodes.Ldarg_1);
+                    setterILGenerator.Emit(OpCodes.Stfld, field);
+                    setterILGenerator.Emit(OpCodes.Ret);
+                    property.SetSetMethod(setMethod);
+                }
+            }
+        }
+
+        [Fact]
         public void SetPropertyAccessorsAndOtherValues()
         {
             using (TempFile file = TempFile.Create())
@@ -163,6 +251,24 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(defaultValue, property.GetConstantValue());
         }
 
+        [Theory]
+        [MemberData(nameof(SetConstant_TestData))]
+        public void SetConstantVariousValuesMlcCoreAssembly(Type returnType, object defaultValue)
+        {
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyDynamicAssembly"), mlc.CoreAssembly);
+                ModuleBuilder mb = ab.DefineDynamicModule("My Module");
+                Type returnTypeFromCore = returnType != typeof(PropertyBuilderTest11.Colors) ? mlc.CoreAssembly.GetType(returnType.FullName, true) : returnType;
+                TypeBuilder type = mb.DefineType("MyType", TypeAttributes.Public);
+
+                PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, returnTypeFromCore, null);
+                property.SetConstant(defaultValue);
+
+                Assert.Equal(defaultValue, property.GetConstantValue());
+            }
+        }
+
         [Fact]
         public void SetCustomAttribute_ConstructorInfo_ByteArray_NullConstructorInfo_ThrowsArgumentNullException()
         {
@@ -194,7 +300,6 @@ namespace System.Reflection.Emit.Tests
             MethodAttributes getMethodAttributes = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig;
             MethodBuilder method = type.DefineMethod("TestMethod", getMethodAttributes, typeof(int), null);
             method.GetILGenerator().Emit(OpCodes.Ret);
-            AssertExtensions.Throws<ArgumentException>(() => property.SetConstant((decimal)10));
             CustomAttributeBuilder customAttrBuilder = new CustomAttributeBuilder(typeof(IntPropertyAttribute).GetConstructor([typeof(int)]), [10]);
             type.CreateType();
 
@@ -203,19 +308,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => property.AddOtherMethod(method));
             Assert.Throws<InvalidOperationException>(() => property.SetConstant(1));
             Assert.Throws<InvalidOperationException>(() => property.SetCustomAttribute(customAttrBuilder));
-        }
-
-        [Fact]
-        public void SetConstant_ValidationThrows()
-        {
-            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
-            FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Private);
-            PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(int), null);
-
-            AssertExtensions.Throws<ArgumentException>(() => property.SetConstant((decimal)10));
-            AssertExtensions.Throws<ArgumentException>(() => property.SetConstant(null));
-            type.CreateType();
-            Assert.Throws<InvalidOperationException>(() => property.SetConstant(1));
         }
     }
 }

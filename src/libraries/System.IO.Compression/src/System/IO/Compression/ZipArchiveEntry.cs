@@ -77,7 +77,7 @@ namespace System.IO.Compression
             _outstandingWriteStream = null;
 
             _storedEntryNameBytes = cd.Filename;
-            _storedEntryName = (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_storedEntryNameBytes);
+            _storedEntryName = DecodeEntryString(_storedEntryNameBytes);
             DetectEntryNameVersion();
 
             _lhUnknownExtraFields = null;
@@ -200,7 +200,7 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get => (_archive.EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_fileComment);
+            get => DecodeEntryString(_fileComment);
             set
             {
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
@@ -350,6 +350,18 @@ namespace System.IO.Compression
         public override string ToString()
         {
             return FullName;
+        }
+
+        private string DecodeEntryString(byte[] entryStringBytes)
+        {
+            Debug.Assert(entryStringBytes != null);
+
+            Encoding readEntryStringEncoding =
+                (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) == BitFlagValues.UnicodeFileNameAndComment
+                ? Encoding.UTF8
+                : _archive?.EntryNameAndCommentEncoding ?? Encoding.UTF8;
+
+            return readEntryStringEncoding.GetString(entryStringBytes);
         }
 
         // Only allow opening ZipArchives with large ZipArchiveEntries in update mode when running in a 64-bit process.
@@ -1055,7 +1067,7 @@ namespace System.IO.Compression
             // try to read it, even if the 32-bit size values aren't masked. thus, we should always put the
             // correct size information in there. note that order of uncomp/comp is switched, and these are
             // 64-bit values
-            // also, note that in order for this to be correct, we have to insure that the zip64 extra field
+            // also, note that in order for this to be correct, we have to ensure that the zip64 extra field
             // is always the first extra field that is written
             if (zip64HeaderUsed)
             {

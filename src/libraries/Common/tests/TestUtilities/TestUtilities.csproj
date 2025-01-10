@@ -23,6 +23,7 @@
     <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
     <Compile Include="System\Buffers\BoundedMemory.Unix.cs" />
     <Compile Include="System\Buffers\BoundedMemory.Windows.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Default.cs" />
     <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferUtil.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />

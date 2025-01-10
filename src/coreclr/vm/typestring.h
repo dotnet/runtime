@@ -184,7 +184,7 @@ public:
 
     // Append a representation of the method m to the string s
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatSignature  FormatNoVersion
-    static void AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format = FormatNamespace|FormatSignature|FormatStubInfo);
+    static void AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format);
 
     // Append the field name and generic instantiation info.
     static void AppendField(SString& s, FieldDesc *pFD, Instantiation typeInstantiation, const DWORD format = FormatNamespace);

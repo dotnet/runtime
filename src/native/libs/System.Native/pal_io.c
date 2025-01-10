@@ -10,8 +10,8 @@
 #include "pal_types.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -367,6 +367,72 @@ int32_t SystemNative_Unlink(const char* path)
     int32_t result;
     while ((result = unlink(path)) < 0 && errno == EINTR);
     return result;
+}
+
+#ifdef __NR_memfd_create
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC 0x0001U
+#endif
+#ifndef MFD_ALLOW_SEALING
+#define MFD_ALLOW_SEALING 0x0002U
+#endif
+#ifndef F_ADD_SEALS
+#define F_ADD_SEALS (1024 + 9)
+#endif
+#ifndef F_SEAL_WRITE
+#define F_SEAL_WRITE 0x0008
+#endif
+#endif
+
+int32_t SystemNative_IsMemfdSupported(void)
+{
+#ifdef __NR_memfd_create
+#ifdef TARGET_LINUX
+    struct utsname uts;
+    int32_t major, minor;
+
+    // memfd_create is known to only work properly on kernel version > 3.17.
+    // On earlier versions, it may raise SIGSEGV instead of returning ENOTSUP.
+    if (uname(&uts) == 0 && sscanf(uts.release, "%d.%d", &major, &minor) == 2 && (major < 3 || (major == 3 && minor < 17)))
+    {
+        return 0;
+    }
+#endif
+
+    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (fd < 0) return 0;
+
+    close(fd);
+    return 1;
+#else
+    errno = ENOTSUP;
+    return 0;
+#endif
+}
+
+intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly)
+{
+#ifdef __NR_memfd_create
+#if defined(SHM_NAME_MAX) // macOS
+    assert(strlen(name) <= SHM_NAME_MAX);
+#elif defined(PATH_MAX) // other Unixes
+    assert(strlen(name) <= PATH_MAX);
+#endif
+
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (!isReadonly || fd < 0) return fd;
+
+    // Add a write seal when readonly protection requested
+    while (fcntl(fd, F_ADD_SEALS, F_SEAL_WRITE) < 0 && errno == EINTR);
+    return fd;
+#else
+    (void)name;
+    (void)isReadonly;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
 
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
@@ -1883,6 +1949,53 @@ int32_t SystemNative_PWrite(intptr_t fd, void* buffer, int32_t bufferSize, int64
     return (int32_t)count;
 }
 
+#if (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
+{
+#if defined(IOV_MAX)
+    const int IovMax = IOV_MAX;
+#else
+    // In theory all the platforms that we support define IOV_MAX,
+    // but we want to be extra safe and provde a fallback
+    // in case it turns out to not be true.
+    // 16 is low, but supported on every platform.
+    const int IovMax = 16;
+#endif
+
+    int allowedCount = (int)vectorCount;
+
+    // We need to respect the limit of items that can be passed in iov.
+    // In case of writes, the managed code is responsible for handling incomplete writes.
+    // In case of reads, we simply returns the number of bytes read and it's up to the users.
+    if (IovMax < allowedCount)
+    {
+        allowedCount = IovMax;
+    }
+
+#if defined(TARGET_APPLE)
+    // For macOS preadv and pwritev can fail with EINVAL when the total length
+    // of all vectors overflows a 32-bit integer.
+    size_t totalLength = 0;
+    for (int i = 0; i < allowedCount; i++) 
+    {
+        assert(INT_MAX >= vectors[i].Count);
+
+        totalLength += vectors[i].Count;
+
+        if (totalLength > INT_MAX)
+        {
+            allowedCount = i;
+            break;
+        }
+    }
+#else
+    (void)vectors;
+#endif
+
+    return allowedCount;
+}
+#endif // (HAVE_PREADV || HAVE_PWRITEV) && !defined(TARGET_WASM)
+
 int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount, int64_t fileOffset)
 {
     assert(vectors != NULL);
@@ -1891,7 +2004,8 @@ int64_t SystemNative_PReadV(intptr_t fd, IOVector* vectors, int32_t vectorCount,
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PREADV && !defined(TARGET_WASM) // preadv is buggy on WASM
-    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+    while ((count = preadv(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)
@@ -1931,7 +2045,8 @@ int64_t SystemNative_PWriteV(intptr_t fd, IOVector* vectors, int32_t vectorCount
     int64_t count = 0;
     int fileDescriptor = ToFileDescriptor(fd);
 #if HAVE_PWRITEV && !defined(TARGET_WASM) // pwritev is buggy on WASM
-    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, (int)vectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
+    int allowedVectorCount = GetAllowedVectorCount(vectors, vectorCount);
+    while ((count = pwritev(fileDescriptor, (struct iovec*)vectors, allowedVectorCount, (off_t)fileOffset)) < 0 && errno == EINTR);
 #else
     int64_t current;
     for (int i = 0; i < vectorCount; i++)

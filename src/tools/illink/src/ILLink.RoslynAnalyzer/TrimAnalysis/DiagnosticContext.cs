@@ -10,46 +10,37 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal readonly partial struct DiagnosticContext
+	public readonly partial struct DiagnosticContext
 	{
-		public List<Diagnostic> Diagnostics { get; } = new ();
+		public readonly Location Location { get; }
 
-		readonly Location? Location { get; init; }
+		readonly Action<Diagnostic>? _reportDiagnostic;
 
-		public DiagnosticContext (Location location)
+		public DiagnosticContext (Location location, Action<Diagnostic>? reportDiagnostic)
 		{
 			Location = location;
+			_reportDiagnostic = reportDiagnostic;
 		}
 
-		public static DiagnosticContext CreateDisabled () => new () { Location = null };
-
-		public Diagnostic CreateDiagnostic (DiagnosticId id, params string[] args)
+		private Diagnostic CreateDiagnostic (DiagnosticId id, params string[] args)
 		{
 			return Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), Location, args);
 		}
 
-		public void AddDiagnostic (Diagnostic diagnostic)
-		{
-			if (Location == null)
-				return;
-
-			Diagnostics.Add (diagnostic);
-		}
-
 		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
 		{
-			if (Location == null)
+			if (_reportDiagnostic is null)
 				return;
 
-			Diagnostics.Add (CreateDiagnostic (id, args));
+			_reportDiagnostic (CreateDiagnostic (id, args));
 		}
 
 		public partial void AddDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
 		{
-			if (Location == null)
+			if (_reportDiagnostic is null)
 				return;
 
-			Diagnostics.Add (CreateDiagnostic (id, actualValue, expectedAnnotationsValue, args));
+			_reportDiagnostic (CreateDiagnostic (id, actualValue, expectedAnnotationsValue, args));
 		}
 
 		private Diagnostic CreateDiagnostic (DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)

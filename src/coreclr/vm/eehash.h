@@ -350,21 +350,6 @@ public:
 
 typedef EEHashTable<PtrPlusInt, EEPtrPlusIntHashTableHelper, FALSE> EEPtrPlusIntHashTable;
 
-// UTF8 string hash table. The UTF8 strings are NULL terminated.
-
-class EEUtf8HashTableHelper
-{
-public:
-    static EEHashEntry_t * AllocateEntry(LPCUTF8 pKey, BOOL bDeepCopy, AllocationHeap Heap);
-    static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t *pEntry, LPCUTF8 pKey);
-    static DWORD           Hash(LPCUTF8 pKey);
-    static LPCUTF8         GetKey(EEHashEntry_t *pEntry);
-};
-
-typedef EEHashTable<LPCUTF8, EEUtf8HashTableHelper, TRUE> EEUtf8StringHashTable;
-typedef DPTR(EEUtf8StringHashTable) PTR_EEUtf8StringHashTable;
-
 // Unicode String hash table - the keys are UNICODE strings which may
 // contain embedded nulls.  An EEStringData struct is used for the key
 // which contains the length of the item.  Note that this string is

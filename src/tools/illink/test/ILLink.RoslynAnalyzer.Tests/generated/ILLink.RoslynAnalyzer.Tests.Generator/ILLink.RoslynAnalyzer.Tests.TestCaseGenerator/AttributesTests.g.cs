@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		protected override string TestSuiteName => "Attributes";
 
 		[Fact]
+		public Task AssemblyAttributeAccessesMembers ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task AssemblyAttributeIsRemovedIfOnlyTypesUsedInAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);

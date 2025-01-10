@@ -68,12 +68,9 @@ public:
     //
     static void PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubFlags);
 
-    // helper to create a generic stub for com calls
-    static Stub* CreateGenericComCallStub(BOOL isFieldAccess);
-
     //---------------------------------------------------------
     // Either creates or retrieves from the cache, a stub to
-    // invoke com to com+
+    // invoke com to CLR
     // Each call refcounts the returned stub.
     // This routines throws an exception rather than returning
     // NULL.
@@ -326,12 +323,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return -COMMETHOD_PREPAD;
-    }
-
-    static DWORD GetOffsetOfMethodDesc()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((DWORD) offsetof(class ComCallMethodDesc, m_pMD));
     }
 
     //get call sig

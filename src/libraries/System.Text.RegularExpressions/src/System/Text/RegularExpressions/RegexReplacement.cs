@@ -97,7 +97,7 @@ namespace System.Text.RegularExpressions
         [InlineArray(4)]
         private struct FourStackStrings // used to do the equivalent of: Span<string> strings = stackalloc string[4];
         {
-            private string _item1;
+            private string? _item1;
         }
 
         /// <summary>

@@ -1746,7 +1746,7 @@ parse_qualified_method_name (char *method_name)
  * Process the command line options in \p argv as done by the runtime executable.
  * This should be called before \c mono_jit_init.
  */
-void
+int
 mono_jit_parse_options (int argc, char * argv[])
 {
 	ERROR_DECL (error);
@@ -1782,6 +1782,10 @@ mono_jit_parse_options (int argc, char * argv[])
 			mono_debugger_agent_parse_options (g_strdup (argv [i] + 17));
 			debug_opt ->mdb_optimizations = TRUE;
 			enable_debugging = TRUE;
+#ifdef HOST_WASI
+			mono_wasm_enable_debugging (-1);
+			mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+#endif
 		} else if (!strcmp (argv [i], "--soft-breakpoints")) {
 			MonoDebugOptions *debug_opt  = mini_get_debug_options ();
 			debug_opt ->soft_breakpoints = TRUE;
@@ -1857,6 +1861,8 @@ mono_jit_parse_options (int argc, char * argv[])
 
 	/* Free the copy */
 	g_free (argv);
+
+	return i;
 }
 
 static void

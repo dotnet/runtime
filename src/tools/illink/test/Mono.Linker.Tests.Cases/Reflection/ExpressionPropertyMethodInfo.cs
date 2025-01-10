@@ -83,10 +83,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2026", nameof (StaticPropertyExpressionAccess), Tool.Trimmer, "https://github.com/dotnet/linker/issues/2669")]
+			[ExpectedWarning ("IL2026", nameof (StaticPropertyExpressionAccess), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2669")]
 			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaReflection))]
 			[ExpectedWarning ("IL2026", nameof (StaticPropertyViaRuntimeMethod))]
-			[ExpectedWarning ("IL2026", nameof (InstancePropertyExpressionAccess), Tool.Trimmer, "https://github.com/dotnet/linker/issues/2669")]
+			[ExpectedWarning ("IL2026", nameof (InstancePropertyExpressionAccess), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2669")]
 			[ExpectedWarning ("IL2026", nameof (InstancePropertyViaReflection))]
 			public static void Test ()
 			{

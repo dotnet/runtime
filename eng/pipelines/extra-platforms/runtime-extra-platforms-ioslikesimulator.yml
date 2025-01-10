@@ -139,3 +139,4 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            buildAllTestsAsStandalone: true

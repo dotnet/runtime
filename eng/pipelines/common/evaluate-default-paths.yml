@@ -22,7 +22,7 @@ parameters:
         src/libraries/sendtohelix-browser.targets
         src/libraries/sendtohelix-wasi.targets
         src/libraries/sendtohelix-wasm.targets
-        src/libraries/System.Runtime.InteropServices.JavaScript/*
+        src/libraries/System.Runtime.InteropServices.JavaScript/src/*
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
@@ -258,22 +258,6 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    - subset: wasmdebuggertests
-      combined: true
-      include:
-      - ${{ parameters._const_paths._wasm_chrome }}
-      - src/libraries/System.Runtime.InteropServices/*
-      - src/libraries/System.Runtime.InteropServices.JavaScript/*
-      - src/mono/mono/*
-      - src/mono/browser/debugger/*
-      - src/mono/browser/runtime/*
-      - ${{ parameters._const_paths._wasm_src_native }}
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      exclude:
-      - src/mono/nuget/*
-      - ${{ parameters._const_paths._always_exclude }}
-      - ${{ parameters._const_paths._perf_pipeline_specific_only }}
-
     # wasm/runtimetests need to be run
     - subset: wasm_runtimetests
       combined: true
@@ -287,7 +271,7 @@ jobs:
       - src/mono/tests/*
       - src/mono/tools/*
       - src/mono/wasi/*
-      - src/mono/wasm/debugger/*
+      - src/mono/browser/debugger/*
       - src/mono/wasm/host/*
       - src/mono/wasm/templates/*
       - src/mono/wasm/testassets/*

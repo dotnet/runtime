@@ -15,7 +15,7 @@ jobs:
         os:
           - name: linux
             image: ubuntu-latest
-            container: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0
+            container: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64
             extension: '.sh'
             cross: '--cross'
             rootfs: '/crossrootfs/x64'
@@ -28,21 +28,10 @@ jobs:
     container: ${{ matrix.os.container }}
     name: Format jit codebase ${{ matrix.os.name }}
     steps:
-      - name: Checkout jitutils
-        uses: actions/checkout@v4
-        with:
-          path: jitutils
-          repository: dotnet/jitutils
-          ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Build jitutils
-        run: |
-          ./bootstrap${{ matrix.os.extension }}
-        working-directory: jitutils
       - name: Checkout runtime
         uses: actions/checkout@v4
         with:
@@ -52,7 +41,7 @@ jobs:
       
       - name: Run jitformat.py
         run: |
-          python3 runtime/src/coreclr/scripts/jitformat.py --jitutils jitutils -r runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+          python3 runtime/src/coreclr/scripts/jitformat.py -r runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
         env:
           ROOTFS_DIR: ${{ matrix.os.rootfs }}
       

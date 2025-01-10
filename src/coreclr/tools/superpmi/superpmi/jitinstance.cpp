@@ -31,10 +31,10 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     // or to force it on, then propagate that to the jit flags.
     jit->forceClearAltJitFlag = false;
     jit->forceSetAltJitFlag = false;
-    const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));
+    const char* altJitFlag = jit->getForceOption("AltJit");
     if (altJitFlag != nullptr)
     {
-        if (u16_strcmp(altJitFlag, W("")) == 0)
+        if (strcmp(altJitFlag, "") == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -43,10 +43,10 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
             jit->forceSetAltJitFlag = true;
         }
     }
-    const WCHAR* altJitNgenFlag = jit->getForceOption(W("AltJitNgen"));
+    const char* altJitNgenFlag = jit->getForceOption("AltJitNgen");
     if (altJitNgenFlag != nullptr)
     {
-        if (u16_strcmp(altJitNgenFlag, W("")) == 0)
+        if (strcmp(altJitNgenFlag, "") == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -409,8 +409,6 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
-
-            pParam->results.NumCodeBytes = NCodeSizeBlock;
         }
         else
         {
@@ -510,31 +508,31 @@ void JitInstance::timeResult(CORINFO_METHOD_INFO info, unsigned flags)
 
 /*-------------------------- Misc ---------------------------------------*/
 
-const WCHAR* JitInstance::getForceOption(const WCHAR* key)
+const char* JitInstance::getForceOption(const char* key)
 {
     return getOption(key, forceOptions);
 }
 
-const WCHAR* JitInstance::getOption(const WCHAR* key)
+const char* JitInstance::getOption(const char* key)
 {
     return getOption(key, options);
 }
 
-const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWORD>* options)
+const char* JitInstance::getOption(const char* key, LightWeightMap<DWORD, DWORD>* options)
 {
     if (options == nullptr)
     {
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(WCHAR) * (u16_strlen(key) + 1);
+    size_t keyLenInBytes = sizeof(char) * (strlen(key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {
         return nullptr;
     }
 
-    return (const WCHAR*)options->GetBuffer(options->Get(keyIndex));
+    return (const char*)options->GetBuffer(options->Get(keyIndex));
 }
 
 // Used to allocate memory that needs to handed to the EE.

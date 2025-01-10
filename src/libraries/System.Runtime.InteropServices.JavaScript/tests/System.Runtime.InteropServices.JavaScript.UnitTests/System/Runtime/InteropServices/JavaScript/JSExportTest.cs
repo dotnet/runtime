@@ -436,5 +436,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             Assert.Equal(JavaScriptLibrary.JavaScriptInterop.ValidationMethod(5, 6), await JavaScriptTestHelper.callJavaScriptLibrary(5, 6));
         }
+
+        [Fact]
+        public async void JSExportCompletedTaskReturnsResolvedPromise()
+        {
+            string result = await JavaScriptTestHelper.InvokeReturnCompletedTask();
+            Assert.Equal("resolved", result);
+        }
     }
 }

@@ -5,11 +5,13 @@
 
         <!-- Stress projects have their own global.json, the directory above that also has it is the repository root. -->
         <RepositoryRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, global.json))/</RepositoryRoot>
-
+    </PropertyGroup>
+  <Import Condition="'$(RepositoryRoot)' != '/'" Project="$(RepositoryRoot)/eng/Versions.props" />
+    <PropertyGroup>
+        <MsQuicInteropIncludes Condition="'$(MsQuicInteropIncludes)' == ''">$(RepositoryRoot)src/libraries/System.Net.Quic/src/System/Net/Quic/Interop/*.cs</MsQuicInteropIncludes>
         <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">$(RepositoryRoot)eng/targetingpacks.targets</TargetingPacksTargetsLocation>
-        <ProductVersion>9.0.0</ProductVersion>
-        <NetCoreAppCurrent>net9.0</NetCoreAppCurrent>
-        <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
+        <NetCoreAppCurrentVersion Condition="'$(NetCoreAppCurrentVersion)' == ''">$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
+        <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
         <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
         <MicrosoftNetCoreAppRefPackDir Condition="'$(MicrosoftNetCoreAppRefPackDir)' == ''" >$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.ref/</MicrosoftNetCoreAppRefPackDir>
         <MicrosoftNetCoreAppRuntimePackDir Condition="'$(MicrosoftNetCoreAppRuntimePackDir)' == ''">$(RepositoryRoot)artifacts/bin/microsoft.netcore.app.runtime.$(OutputRID)/$(Configuration)/</MicrosoftNetCoreAppRuntimePackDir>

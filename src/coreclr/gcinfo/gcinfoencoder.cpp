@@ -462,6 +462,7 @@ GcInfoEncoder::GcInfoEncoder(
     m_pCallSiteSizes = NULL;
     m_NumCallSites = 0;
 #endif
+    m_BlockSize = 0;
 
     m_GSCookieStackSlot = NO_GS_COOKIE;
     m_GSCookieValidRangeStart = 0;
@@ -489,13 +490,6 @@ GcInfoEncoder::GcInfoEncoder(
     m_IsSlotTableFrozen = FALSE;
 #endif //_DEBUG
 
-#ifndef TARGET_X86
-    // If the compiler doesn't set the GCInfo, report RT_Unset.
-    // This is used for compatibility with JITs that aren't updated to use the new API.
-    m_ReturnKind = RT_Unset;
-#else
-    m_ReturnKind = RT_Illegal;
-#endif // TARGET_X86
     m_CodeLength = 0;
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     m_SizeOfStackOutgoingAndScratchArea = -1;
@@ -775,13 +769,6 @@ void GcInfoEncoder::SetReversePInvokeFrameSlot(INT32 spOffset)
     m_ReversePInvokeFrameSlot = spOffset;
 }
 
-void GcInfoEncoder::SetReturnKind(ReturnKind returnKind)
-{
-    _ASSERTE(IsValidReturnKind(returnKind));
-
-    m_ReturnKind = returnKind;
-}
-
 struct GcSlotDescAndId
 {
     GcSlotDesc m_SlotDesc;
@@ -1044,16 +1031,15 @@ void GcInfoEncoder::Build()
     BOOL slimHeader = (!m_IsVarArg && !hasGSCookie && (m_PSPSymStackSlot == NO_PSP_SYM) &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
         ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
-        (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) &&
 #ifdef TARGET_AMD64
         !m_WantsReportOnlyLeaf &&
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         !m_HasTailCalls &&
 #endif // TARGET_AMD64
-        !IsStructReturnKind(m_ReturnKind);
+        (m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA);
 
     // All new code is generated for the latest GCINFO_VERSION.
-    // So, always encode RetunrKind and encode ReversePInvokeFrameSlot where applicable.
+    // So, always encode ReversePInvokeFrameSlot where applicable.
     if (slimHeader)
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
@@ -1064,8 +1050,6 @@ void GcInfoEncoder::Build()
         assert(m_StackBaseRegister == 8 || 2 == m_StackBaseRegister);
 #endif
         GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
-
-        GCINFO_WRITE(m_Info1, m_ReturnKind, SIZE_OF_RETURN_KIND_IN_SLIM_HEADER, RetKindSize);
     }
     else
     {
@@ -1088,8 +1072,6 @@ void GcInfoEncoder::Build()
 #endif // TARGET_AMD64
         GCINFO_WRITE(m_Info1, ((m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA) ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, (hasReversePInvokeFrame ? 1 : 0), 1, FlagsSize);
-
-        GCINFO_WRITE(m_Info1, m_ReturnKind, SIZE_OF_RETURN_KIND_IN_FAT_HEADER, RetKindSize);
     }
 
     _ASSERTE( m_CodeLength > 0 );
@@ -1216,42 +1198,19 @@ void GcInfoEncoder::Build()
 
     ///////////////////////////////////////////////////////////////////////
     // Normalize call sites
-    // Eliminate call sites that fall inside interruptible ranges
     ///////////////////////////////////////////////////////////////////////
+
+    _ASSERTE(m_NumCallSites == 0 || numInterruptibleRanges == 0);
 
     UINT32 numCallSites = 0;
     for(UINT32 callSiteIndex = 0; callSiteIndex < m_NumCallSites; callSiteIndex++)
     {
         UINT32 callSite = m_pCallSites[callSiteIndex];
-        // There's a contract with the EE that says for non-leaf stack frames, where the
-        // method is stopped at a call site, the EE will not query with the return PC, but
-        // rather the return PC *minus 1*.
-        // The reason is that variable/register liveness may change at the instruction immediately after the
-        // call, so we want such frames to appear as if they are "within" the call.
-        // Since we use "callSite" as the "key" when we search for the matching descriptor, also subtract 1 here
-        // (after, of course, adding the size of the call instruction to get the return PC).
-        callSite += m_pCallSiteSizes[callSiteIndex] - 1;
+        callSite += m_pCallSiteSizes[callSiteIndex];
 
         _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(callSite)) == callSite);
         UINT32 normOffset = NORMALIZE_CODE_OFFSET(callSite);
-
-        BOOL keepIt = TRUE;
-
-        for(UINT32 intRangeIndex = 0; intRangeIndex < numInterruptibleRanges; intRangeIndex++)
-        {
-            InterruptibleRange *pRange = &pRanges[intRangeIndex];
-            if(pRange->NormStopOffset > normOffset)
-            {
-                if(pRange->NormStartOffset <= normOffset)
-                {
-                    keepIt = FALSE;
-                }
-                break;
-            }
-        }
-
-        if(keepIt)
-            m_pCallSites[numCallSites++] = normOffset;
+        m_pCallSites[numCallSites++] = normOffset;
     }
 
     GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_NUM_SAFE_POINTS(numCallSites), NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
@@ -1418,7 +1377,7 @@ void GcInfoEncoder::Build()
 
         for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
         {
-            if(pCurrent->CodeOffset > callSite)
+            if(pCurrent->CodeOffset >= callSite)
             {
                 couldBeLive |= liveState;
 
@@ -1773,7 +1732,7 @@ void GcInfoEncoder::Build()
         {
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset > callSite)
+                if(pCurrent->CodeOffset >= callSite)
                 {
                     // Time to record the call site
 
@@ -1872,7 +1831,7 @@ void GcInfoEncoder::Build()
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset > callSite)
+                if(pCurrent->CodeOffset >= callSite)
                 {
                     // Time to encode the call site
 
@@ -1919,7 +1878,7 @@ void GcInfoEncoder::Build()
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset > callSite)
+                if(pCurrent->CodeOffset >= callSite)
                 {
                     // Time to encode the call site
                     GCINFO_WRITE_VECTOR(m_Info1, liveState, CallSiteStateSize);
@@ -2576,9 +2535,14 @@ BYTE* GcInfoEncoder::Emit()
 
 void * GcInfoEncoder::eeAllocGCInfo (size_t        blockSize)
 {
+    m_BlockSize = blockSize;
     return m_pCorJitInfo->allocGCInfo(blockSize);
 }
 
+size_t GcInfoEncoder::GetEncodedGCInfoSize() const
+{
+    return m_BlockSize;
+}
 
 BitStreamWriter::BitStreamWriter( IAllocator* pAllocator )
 {

@@ -43,7 +43,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				});
 			}
 
-			protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics (IEnumerable<(Project project, Diagnostic diagnostic)> diagnostics)
+			protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics (ImmutableArray<(Project project, Diagnostic diagnostic)> diagnostics)
 			{
 				// Only include non-suppressed diagnostics in the result. Our tests suppress diagnostics
 				// with 'UnconditionalSuppressMessageAttribute', and expect them not to be reported.

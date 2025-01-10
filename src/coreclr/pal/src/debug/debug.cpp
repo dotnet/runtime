@@ -32,7 +32,6 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include "pal/context.h"
 #include "pal/debug.h"
 #include "pal/environ.h"
-#include "pal/malloc.hpp"
 #include "pal/module.h"
 #include "pal/stackstring.hpp"
 #include "pal/virtual.h"
@@ -45,7 +44,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 #include <unistd.h>
 #elif defined(HAVE_TTRACE) // HAVE_PROCFS_CTL
 #include <sys/ttrace.h>
-#else // defined(HAVE_TTRACE)
+#elif HAVE_SYS_PTRACE_H
 #include <sys/ptrace.h>
 #endif  // HAVE_PROCFS_CTL
 #if HAVE_VM_READ
@@ -635,7 +634,7 @@ Function:
   PAL_ReadProcessMemory
 
 Abstract
-  Reads process memory. 
+  Reads process memory.
 
 Parameter
   handle : from PAL_OpenProcessMemory
@@ -753,7 +752,7 @@ PAL_ProbeMemory(
 
     flags = fcntl(fds[0], F_GETFL, 0);
     fcntl(fds[0], F_SETFL, flags | O_NONBLOCK);
-    
+
     flags = fcntl(fds[1], F_GETFL, 0);
     fcntl(fds[1], F_SETFL, flags | O_NONBLOCK);
 

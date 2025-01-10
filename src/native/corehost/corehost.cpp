@@ -112,11 +112,13 @@ int exe_start(const int argc, const pal::char_t* argv[])
     initialize_static_createdump();
 #endif
 
+    // Use realpath to find the path of the host, resolving any symlinks.
+    // hostfxr (for dotnet) and the app dll (for apphost) are found relative to the host.
     pal::string_t host_path;
     if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
-        return StatusCode::CoreHostCurHostFindFailure;
+        return StatusCode::CurrentHostFindFailure;
     }
 
     pal::string_t app_path;
@@ -148,10 +150,10 @@ int exe_start(const int argc, const pal::char_t* argv[])
     {
         trace::info(_X("Detected Single-File app bundle"));
     }
-    else if (!pal::realpath(&app_path))
+    else if (!pal::fullpath(&app_path))
     {
         trace::error(_X("The application to execute does not exist: '%s'."), app_path.c_str());
-        return StatusCode::LibHostAppRootFindFailure;
+        return StatusCode::AppPathFindFailure;
     }
 
     app_root.assign(get_directory(app_path));

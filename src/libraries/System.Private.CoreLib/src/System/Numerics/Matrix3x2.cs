@@ -161,7 +161,7 @@ namespace System.Numerics
         /// <summary>Negates the specified matrix by multiplying all its values by -1.</summary>
         /// <param name="value">The matrix to negate.</param>
         /// <returns>The negated matrix.</returns>
-        /// <altmember cref="Negate(Matrix3x2)"/>
+        /// <altmember cref="Negate(Matrix3x2)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 operator -(Matrix3x2 value)
             => (-value.AsImpl()).AsM3x2();

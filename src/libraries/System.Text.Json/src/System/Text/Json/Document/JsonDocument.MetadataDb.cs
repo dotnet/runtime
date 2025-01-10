@@ -68,7 +68,7 @@ namespace System.Text.Json
         //   * 31 bits for token offset
         // * Second int
         //   * Top bit is unassigned / always clear
-        //   * 31 bits for the token length (always 1, effectively unassigned)
+        //   * 31 bits for the number of properties in this object
         // * Third int
         //   * 4 bits JsonTokenType
         //   * 28 bits for the number of rows until the next value (never 0)
@@ -381,7 +381,7 @@ namespace System.Text.Json
                 byte[] newDatabase = new byte[length];
                 _data.AsSpan(startIndex, length).CopyTo(newDatabase);
 
-                Span<int> newDbInts = MemoryMarshal.Cast<byte, int>(newDatabase);
+                Span<int> newDbInts = MemoryMarshal.Cast<byte, int>(newDatabase.AsSpan());
                 int locationOffset = newDbInts[0];
 
                 // Need to nudge one forward to account for the hidden quote on the string.

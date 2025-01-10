@@ -82,6 +82,13 @@ namespace System.Reflection.Emit.Tests
             return ab;
         }
 
+        internal static PersistedAssemblyBuilder PopulateAssemblyAndModule(out ModuleBuilder moduleBuilder)
+        {
+            PersistedAssemblyBuilder ab = PopulateAssemblyBuilder(s_assemblyName, null);
+            moduleBuilder = ab.DefineDynamicModule("MyModule");
+            return ab;
+        }
+
         internal static PersistedAssemblyBuilder PopulateAssemblyBuilder(AssemblyName assemblyName, List<CustomAttributeBuilder>? assemblyAttributes = null) =>
             new PersistedAssemblyBuilder(assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes);
 

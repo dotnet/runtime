@@ -18,7 +18,6 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 
 #include "pal/thread.hpp"
 #include "pal/file.hpp"
-#include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
 #include "pal/palinternal.h"
@@ -32,10 +31,13 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
 #include <fcntl.h>
+
+#if HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
 
 using namespace CorUnix;
 
@@ -60,20 +62,17 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     );
 
 CObjectType CorUnix::otFile(
                 otiFile,
                 FileCleanupRoutine,
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
                 CFileProcessLocalDataCleanupRoutine,
-                0,      // No shared data
                 GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
                 CObjectType::SecuritySupported,
                 CObjectType::OSPersistedSecurityInfo,
@@ -119,8 +118,7 @@ void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
-    bool fShutdown,
-    bool fCleanupSharedState
+    bool fShutdown
     )
 {
     PAL_ERROR palError;
@@ -332,7 +330,6 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     }
     else
     {
-#if defined(HOST_AMD64)
         bool fSetFilename = true;
         // Since realpath implementation cannot handle inexistent filenames,
         // check if we are going to truncate the "/" corresponding to the
@@ -356,8 +353,9 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             fSetFilename = false;
         }
         else
-#endif // defined(HOST_AMD64)
+        {
             *pchSeparator = '\0';
+        }
 
         if (!RealPathHelper(lpExistingPath, lpBuffer))
         {
@@ -366,16 +364,12 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             goto LExit;
         }
 
-#if defined(HOST_AMD64)
         if (fSetFilename == true)
-#endif // defined(HOST_AMD64)
             lpFilename = pchSeparator + 1;
     }
 
-#if defined(HOST_AMD64)
     if (lpFilename == NULL)
         goto LExit;
-#endif // HOST_AMD64
 
     if (!lpBuffer.Append("/",1) || !lpBuffer.Append(lpFilename, strlen(lpFilename)))
     {

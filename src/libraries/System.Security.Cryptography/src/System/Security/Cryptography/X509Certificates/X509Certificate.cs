@@ -66,10 +66,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (!data.IsEmpty)
             {
                 // For compat reasons, this constructor treats passing a null or empty data set as the same as calling the nullary constructor.
-                using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
-                {
-                    Pal = CertificatePal.FromBlob(data, safePasswordHandle, X509KeyStorageFlags.DefaultKeySet);
-                }
+                Pal = CertificatePal.FromBlob(data, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.DefaultKeySet);
             }
         }
 

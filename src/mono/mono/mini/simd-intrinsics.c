@@ -138,9 +138,9 @@ simd_intrinsic_info_compare_by_name (const void *key, const void *value)
 }
 
 static int
-lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
+lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 {
-	const guint16 *result = (const guint16 *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
+	const guint16 *result = (const guint16 *)mono_binary_search (cmethod_name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
 
 	if (result == NULL)
 		return -1;
@@ -149,7 +149,7 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 }
 
 static SimdIntrinsic*
-lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
+lookup_intrins_info (SimdIntrinsic *intrinsics, int size, const char *cmethod_name)
 {
 #if 0
 	for (int i = 0; i < (size / sizeof (SimdIntrinsic)) - 1; ++i) {
@@ -167,7 +167,7 @@ lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
 		}
 	}
 #endif
-	return (SimdIntrinsic *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
+	return (SimdIntrinsic *)mono_binary_search (cmethod_name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
 }
 
 static gboolean
@@ -339,111 +339,73 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 	int instc0 = -1;
 	int op = OP_XBINOP;
 
-	if (id == SN_BitwiseAnd || id == SN_BitwiseOr || id == SN_Xor ||
-		id == SN_op_BitwiseAnd || id == SN_op_BitwiseOr || id == SN_op_ExclusiveOr) {
-		op = OP_XBINOP_FORCEINT;
-
-		switch (id) {
-		case SN_BitwiseAnd:
-		case SN_op_BitwiseAnd:
-			instc0 = XBINOP_FORCEINT_AND;
-			break;
-		case SN_BitwiseOr:
-		case SN_op_BitwiseOr:
-			instc0 = XBINOP_FORCEINT_OR;
-			break;
-		case SN_op_ExclusiveOr:
-		case SN_Xor:
-			instc0 = XBINOP_FORCEINT_XOR;
+	switch (id) {
+		case SN_Add:
+		case SN_op_Addition: {
+			if (type_enum_is_float (arg_type)) {
+				instc0 = OP_FADD;
+			} else {
+				instc0 = OP_IADD;
+			}
 			break;
 		}
-	} else {
-		if (type_enum_is_float (arg_type)) {
-			switch (id) {
-			case SN_Add:
-			case SN_op_Addition:
-				instc0 = OP_FADD;
-				break;
-			case SN_Divide:
-			case SN_op_Division: {
-				const char *class_name = m_class_get_name (klass);
-				if (strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
-					if (!type_is_simd_vector (fsig->params [1]))
-						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FDIV);
-					else if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
-						instc0 = OP_FDIV;
-						break;
-					} else {
-						return NULL;
-					}
-				}
+		case SN_BitwiseAnd:
+		case SN_op_BitwiseAnd: {
+			op = OP_XBINOP_FORCEINT;
+			instc0 = XBINOP_FORCEINT_AND;
+			break;
+		}
+		case SN_BitwiseOr:
+		case SN_op_BitwiseOr: {
+			op = OP_XBINOP_FORCEINT;
+			instc0 = XBINOP_FORCEINT_OR;
+			break;
+		}
+		case SN_Divide:
+		case SN_op_Division: {
+			if (type_enum_is_float (arg_type)) {
 				instc0 = OP_FDIV;
-				break;
-			}
-#ifdef TARGET_ARM64
-			case SN_Max:
-#endif
-			case SN_MaxNative:
-				instc0 = OP_FMAX;
-				break;
-#ifdef TARGET_ARM64
-			case SN_Min:
-#endif
-			case SN_MinNative:
-				instc0 = OP_FMIN;
-				break;
-			case SN_Multiply:
-			case SN_op_Multiply: {
-				const char *class_name = m_class_get_name (klass);
-				if (strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
-					if (!type_is_simd_vector (fsig->params [1]))
-						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FMUL);
-					else if (!type_is_simd_vector (fsig->params [0]))
-						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, OP_FMUL);
-					else if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
-						instc0 = OP_FMUL;
-						break;
-					} else {
-						return NULL;
-					}
+				if (MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [1])) { // vector / scalar
+					return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, instc0);
 				}
-				instc0 = OP_FMUL;
-				break;
-			}
-			case SN_Subtract:
-			case SN_op_Subtraction:
-				instc0 = OP_FSUB;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-		} else {
-			switch (id) {
-			case SN_Add:
-			case SN_op_Addition:
-				instc0 = OP_IADD;
-				break;
-			case SN_Divide:
-			case SN_op_Division:
+			} else {
 				return NULL;
-			case SN_Max:
-			case SN_MaxNative:
+			}
+			break;
+		}
+		case SN_Max:
+		case SN_MaxNative: {
+			if (type_enum_is_float (arg_type)) {
+				instc0 = OP_FMAX;
+			} else {
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMAX_UN : OP_IMAX;
+
 #ifdef TARGET_AMD64
 				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMAX_UN)
 					return NULL;
 #endif
-				break;
-			case SN_Min:
-			case SN_MinNative:
+			}
+			break;
+		}
+		case SN_Min:
+		case SN_MinNative: {
+			if (type_enum_is_float (arg_type)) {
+				instc0 = OP_FMIN;
+			} else {
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
+
 #ifdef TARGET_AMD64
 				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMIN_UN)
 					return NULL;
 #endif
-				break;
-			case SN_Multiply:
-			case SN_op_Multiply: {
+			}
+			break;
+		}
+		case SN_Multiply:
+		case SN_op_Multiply: {
+			if (type_enum_is_float (arg_type)) {
+				instc0 = OP_FMUL;
+			} else {
 #ifdef TARGET_ARM64
 				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8 || arg_type == MONO_TYPE_I || arg_type == MONO_TYPE_U))
 					return NULL;
@@ -452,22 +414,34 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				if (!COMPILE_LLVM (cfg))
 					return NULL;
 #endif
-				if (fsig->params [1]->type != MONO_TYPE_GENERICINST)
-					return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_IMUL);
-				else if (fsig->params [0]->type != MONO_TYPE_GENERICINST)
-					return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, OP_IMUL);
 				instc0 = OP_IMUL;
-				break;
 			}
-			case SN_Subtract:
-			case SN_op_Subtraction:
-				instc0 = OP_ISUB;
-				break;
-			default:
-				g_assert_not_reached ();
+			if (MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [1])) { // vector * scalar
+				return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, instc0);
+			} else if (MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [0])) { // scalar * vector
+				return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, instc0);
 			}
+			break;
 		}
+		case SN_Subtract:
+		case SN_op_Subtraction: {
+			if (type_enum_is_float (arg_type)) {
+				instc0 = OP_FSUB;
+			} else {
+				instc0 = OP_ISUB;
+			}
+			break;
+		}
+		case SN_Xor:
+		case SN_op_ExclusiveOr: {
+			op = OP_XBINOP_FORCEINT;
+			instc0 = XBINOP_FORCEINT_XOR;
+			break;
+		}
+		default:
+			g_assert_not_reached ();
 	}
+
 	return emit_simd_ins_for_sig (cfg, klass, op, instc0, arg_type, fsig, args);
 }
 
@@ -1074,7 +1048,7 @@ emit_hardware_intrinsics (
 	const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
 	int intrinsics_size = intrin_group->intrinsics_size;
 	MonoCPUFeatures feature = intrin_group->feature;
-	const SimdIntrinsic *info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
+	const SimdIntrinsic *info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod->name);
 	{
 		if (!info)
 			goto support_probe_complete;
@@ -1922,7 +1896,25 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
+	const char *cmethod_name = cmethod->name;
+
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+		// but, they all prefix the qualified name of the interface first, so we'll check for that and
+		// skip the prefix before trying to resolve the method.
+
+		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+			cmethod_name += 77;
+		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+			cmethod_name += 79;
+		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+			cmethod_name += 80;
+		}
+	}
+
+	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod_name);
 	if (id == -1) {
 		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
@@ -1974,7 +1966,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 
-	MonoClass* klass = fsig->param_count > 0 ? args[0]->klass : cmethod->klass;
+	MonoClass *klass = fsig->param_count > 0 ? args [0]->klass : cmethod->klass;
 	MonoTypeEnum arg0_type = fsig->param_count > 0 ? get_underlying_type (fsig->params [0]) : MONO_TYPE_VOID;
 
 	if (cfg->verbose_level > 1) {
@@ -2039,21 +2031,56 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Add:
 	case SN_BitwiseAnd:
 	case SN_BitwiseOr:
-	case SN_Divide:
 	case SN_Max:
 	case SN_MaxNative:
 	case SN_Min:
 	case SN_MinNative:
-	case SN_Multiply:
 	case SN_Subtract:
-	case SN_Xor:
-		if (!is_element_type_primitive (fsig->params [0]))
+	case SN_Xor: {
+		if (fsig->param_count != 2)
 			return NULL;
+
+		if (!is_element_type_primitive (fsig->params [0]) || !is_element_type_primitive (fsig->params [1]))
+			return NULL;
+
 #ifndef TARGET_ARM64
 		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
 			return NULL;
 #endif
+
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
+	}
+	case SN_Divide: {
+		if (fsig->param_count != 2)
+			return NULL;
+		
+		if (!is_element_type_primitive (fsig->params [0]) || 
+			!(MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [1]) || is_element_type_primitive (fsig->params [1])))
+			return NULL;
+
+		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
+	}
+	case SN_Multiply: {
+		if (fsig->param_count != 2)
+			return NULL;
+
+		MonoTypeEnum vector_inner_type = arg0_type;
+		if (MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [0])) {
+			if (MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [1]) || !is_element_type_primitive (fsig->params [1]))
+				return NULL;
+			// By default, we expect the first argument to be the vector type
+			// however, for Multiply, the first argument can be scalar. In this case, we need to
+			// get the vector type from the second argument.
+			klass = args [1]->klass;
+			vector_inner_type = get_underlying_type (fsig->params [1]);
+		} else if (MONO_TYPE_IS_VECTOR_PRIMITIVE (fsig->params [1])) {
+			if (!is_element_type_primitive (fsig->params [0]))
+				return NULL;
+		} else if (!(is_element_type_primitive (fsig->params [0]) && is_element_type_primitive (fsig->params [1])))
+			return NULL;
+
+		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, vector_inner_type, id);
+	}
 	case SN_AndNot: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
@@ -2962,7 +2989,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				return ins;
 			} else {
 				g_assert ((arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4));
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, new_args);
+				return NULL;
+//				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, args);
 			}
 		}
 		// There is no variable shuffle until avx512
@@ -3169,10 +3197,36 @@ static guint16 sri_vector_t_methods [] = {
 static MonoInst*
 emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod);
+	const char *cmethod_name = cmethod->name;
+	bool explicitly_implemented = false;
+
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+		// but, they all prefix the qualified name of the interface first, so we'll check for that and
+		// skip the prefix before trying to resolve the method.
+
+		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+			cmethod_name += 77;
+			explicitly_implemented = true;
+		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+			cmethod_name += 79;
+			explicitly_implemented = true;
+		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+			cmethod_name += 80;
+			explicitly_implemented = true;
+		}
+	}
+
+	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod_name);
 	if (id == -1) {
-		//check_no_intrinsic_cattr (cmethod);
-		return NULL;
+		if (explicitly_implemented) {
+			return emit_sri_vector (cfg, cmethod, fsig, args);
+		} else {
+			//check_no_intrinsic_cattr (cmethod);
+			return NULL;
+		}
 	}
 
 	MonoClass *klass = cmethod->klass;
@@ -3430,7 +3484,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoClass *klass;
 	MonoType *type, *etype;
 
-	id = lookup_intrins (vector_2_3_4_methods, sizeof (vector_2_3_4_methods), cmethod);
+	id = lookup_intrins (vector_2_3_4_methods, sizeof (vector_2_3_4_methods), cmethod->name);
 	if (id == -1) {
 		// https://github.com/dotnet/runtime/issues/81961
 		// check_no_intrinsic_cattr (cmethod);
@@ -5982,7 +6036,7 @@ emit_wasm_zero_count (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **ar
 static MonoInst*
 emit_wasm_bitoperations_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int id = lookup_intrins (bitoperations_methods, sizeof (bitoperations_methods), cmethod);
+	int id = lookup_intrins (bitoperations_methods, sizeof (bitoperations_methods), cmethod->name);
 	if (id == -1) {
 		return NULL;
 	}

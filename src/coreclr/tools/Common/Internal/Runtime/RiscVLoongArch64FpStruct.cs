@@ -9,37 +9,6 @@ using static Internal.JitInterface.FpStruct;
 
 namespace Internal.JitInterface
 {
-    // StructFloatFieldInfoFlags: used on LoongArch64 and RISC-V architecture as a legacy representation of
-    // FpStructInRegistersInfo, returned by FpStructInRegistersInfo.ToOldFlags()
-    //
-    // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
-    //
-    // Otherwise, and only for structs with no more than two fields and a total struct size no larger
-    // than two pointers:
-    //
-    // The lowest four bits denote the floating-point info:
-    //   bit 0: `1` means there is only one float or double field within the struct.
-    //   bit 1: `1` means only the first field is floating-point type.
-    //   bit 2: `1` means only the second field is floating-point type.
-    //   bit 3: `1` means the two fields are both floating-point type.
-    // The bits[5:4] denoting whether the field size is 8-bytes:
-    //   bit 4: `1` means the first field's size is 8.
-    //   bit 5: `1` means the second field's size is 8.
-    //
-    // Note that bit 0 and 3 cannot both be set.
-    [Flags]
-    public enum StructFloatFieldInfoFlags
-    {
-        STRUCT_NO_FLOAT_FIELD         = 0x0,
-        STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
-        STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
-        STRUCT_FLOAT_FIELD_FIRST      = 0x2,
-        STRUCT_FLOAT_FIELD_SECOND     = 0x4,
-        STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
-        STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
-    };
-
-
     // Bitfields for FpStructInRegistersInfo.flags
     [Flags]
     public enum FpStruct
@@ -74,22 +43,10 @@ namespace Internal.JitInterface
         public uint offset2nd;
 
         public uint SizeShift1st() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11; }
-
         public uint SizeShift2nd() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11; }
 
         public uint Size1st() { return 1u << (int)SizeShift1st(); }
         public uint Size2nd() { return 1u << (int)SizeShift2nd(); }
-
-        public StructFloatFieldInfoFlags ToOldFlags()
-        {
-            return
-                ((flags & FpStruct.OnlyOne) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
-                ((flags & FpStruct.BothFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
-                ((flags & FpStruct.FloatInt) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_FIRST : 0) |
-                ((flags & FpStruct.IntFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND : 0) |
-                ((SizeShift1st() == 3) ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-                ((SizeShift2nd() == 3) ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
-        }
     }
 
     internal static class RiscVLoongArch64FpStruct
@@ -126,7 +83,7 @@ namespace Internal.JitInterface
             int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
             if (nFlattenedFieldsPerElement == 0)
             {
-                Debug.Assert(nElements == 1, "HasImpliedRepeatedFields must have returned a false positive");
+                Debug.Assert(nElements == 1, "HasImpliedRepeatedFields must have returned a false, it can't be an array");
                 return true; // ignoring empty struct
             }
 
@@ -200,6 +157,14 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(nFields == 1);
                 int nElements = td.GetElementSize().AsInt / prevField.FieldType.GetElementSize().AsInt;
+
+                // Only InlineArrays can have element type of empty struct, fixed-size buffers take only primitives
+                if ((typeIndex - elementTypeIndex) == 0 && (td as MetadataType).IsInlineArray)
+                {
+                    Debug.Assert(nElements > 0, "InlineArray length must be > 0");
+                    return false; // struct containing an array of empty structs is passed by integer calling convention
+                }
+
                 if (!HandleInlineArray(elementTypeIndex, nElements, ref info, ref typeIndex))
                     return false;
             }

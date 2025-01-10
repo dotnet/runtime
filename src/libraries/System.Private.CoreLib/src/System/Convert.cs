@@ -2470,7 +2470,7 @@ namespace System
         /// <param name="bytes">The bytes to encode.</param>
         /// <param name="chars">The destination buffer large enough to handle the encoded chars.</param>
         /// <param name="charLengthRequired">The pre-calculated, exact number of chars that will be written.</param>
-        private static unsafe void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
+        private static void ToBase64CharsLargeNoLineBreaks(ReadOnlySpan<byte> bytes, Span<char> chars, int charLengthRequired)
         {
             // For large enough inputs, it's beneficial to use the vectorized UTF8-based Base64 encoding
             // and then widen the resulting bytes into chars.
@@ -2999,7 +2999,7 @@ namespace System
                 return remainder == 1 ? OperationStatus.NeedMoreData : OperationStatus.Done;
             }
 
-            var result = OperationStatus.Done;
+            OperationStatus result;
 
             if (destination.Length < quotient)
             {
@@ -3007,11 +3007,19 @@ namespace System
                 quotient = destination.Length;
                 result = OperationStatus.DestinationTooSmall;
             }
-            else if (remainder == 1)
+            else
             {
-                source = source.Slice(0, source.Length - 1);
-                destination = destination.Slice(0, destination.Length - 1);
-                result = OperationStatus.NeedMoreData;
+                if (remainder == 1)
+                {
+                    source = source.Slice(0, source.Length - 1);
+                    result = OperationStatus.NeedMoreData;
+                }
+                else
+                {
+                    result = OperationStatus.Done;
+                }
+
+                destination = destination.Slice(0, quotient);
             }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
@@ -3091,7 +3099,7 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            else if (source.Length > int.MaxValue / 2 || destination.Length < source.Length * 2)
             {
                 charsWritten = 0;
                 return false;
@@ -3168,7 +3176,7 @@ namespace System
                 charsWritten = 0;
                 return true;
             }
-            else if (source.Length > int.MaxValue / 2 || destination.Length > source.Length * 2)
+            else if (source.Length > int.MaxValue / 2 || destination.Length < source.Length * 2)
             {
                 charsWritten = 0;
                 return false;

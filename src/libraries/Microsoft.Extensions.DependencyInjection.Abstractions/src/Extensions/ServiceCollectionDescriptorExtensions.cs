@@ -435,7 +435,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <summary>
         /// Adds a <see cref="ServiceDescriptor"/> if an existing descriptor with the same
         /// <see cref="ServiceDescriptor.ServiceType"/> and an implementation that does not already exist
-        /// in <paramref name="services."/>.
+        /// in <paramref name="services"/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptor">The <see cref="ServiceDescriptor"/>.</param>
@@ -487,7 +487,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <summary>
         /// Adds the specified <see cref="ServiceDescriptor"/>s if an existing descriptor with the same
         /// <see cref="ServiceDescriptor.ServiceType"/> and an implementation that does not already exist
-        /// in <paramref name="services."/>.
+        /// in <paramref name="services"/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptors">The <see cref="ServiceDescriptor"/>s.</param>

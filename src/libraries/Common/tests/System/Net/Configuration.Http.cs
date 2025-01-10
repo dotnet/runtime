@@ -51,6 +51,7 @@ namespace System.Net.Test.Common
             private const string EmptyContentHandler = "EmptyContent.ashx";
             private const string RedirectHandler = "Redirect.ashx";
             private const string VerifyUploadHandler = "VerifyUpload.ashx";
+            private const string StatusCodeHandler = "StatusCode.ashx";
             private const string DeflateHandler = "Deflate.ashx";
             private const string GZipHandler = "GZip.ashx";
             private const string RemoteLoopHandler = "RemoteLoop";
@@ -63,14 +64,22 @@ namespace System.Net.Test.Common
                 if (PlatformDetection.IsFirefox)
                 {
                     // https://github.com/dotnet/runtime/issues/101115
-                    return [RemoteEchoServer];
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                    // return [RemoteEchoServer];
+                    return [];
                 }
-                return [RemoteEchoServer, SecureRemoteEchoServer, Http2RemoteEchoServer];
+                return [
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                    // RemoteEchoServer,
+                    SecureRemoteEchoServer,
+                    Http2RemoteEchoServer
+                ];
             }
 
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
             public static readonly Uri Http2RemoteVerifyUploadServer = new Uri("https://" + Http2Host + "/" + VerifyUploadHandler);
+            public static readonly Uri Http2RemoteStatusCodeServer = new Uri("https://" + Http2Host + "/" + StatusCodeHandler);
 
             public static readonly Uri RemoteEmptyContentServer = new Uri("http://" + Host + "/" + EmptyContentHandler);
             public static readonly Uri RemoteDeflateServer = new Uri("http://" + Host + "/" + DeflateHandler);
@@ -80,8 +89,20 @@ namespace System.Net.Test.Common
             public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
             public static readonly object[][] EchoServers = GetEchoServerList().Select(x => new object[] { x }).ToArray();
-            public static readonly object[][] VerifyUploadServers = { new object[] { RemoteVerifyUploadServer }, new object[] { SecureRemoteVerifyUploadServer }, new object[] { Http2RemoteVerifyUploadServer } };
-            public static readonly object[][] CompressedServers = { new object[] { RemoteDeflateServer }, new object[] { RemoteGZipServer }, new object[] { Http2RemoteDeflateServer }, new object[] { Http2RemoteGZipServer } };
+            public static readonly object[][] VerifyUploadServers = {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                // new object[] { RemoteVerifyUploadServer },
+                new object[] { SecureRemoteVerifyUploadServer },
+                new object[] { Http2RemoteVerifyUploadServer }
+            };
+
+            public static readonly object[][] CompressedServers = {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                // new object[] { RemoteDeflateServer },
+                new object[] { RemoteGZipServer },
+                new object[] { Http2RemoteDeflateServer },
+                new object[] { Http2RemoteGZipServer }
+            };
 
             public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
@@ -95,9 +116,17 @@ namespace System.Net.Test.Common
                 if (PlatformDetection.IsFirefox)
                 {
                     // https://github.com/dotnet/runtime/issues/101115
-                    return new RemoteServer[] { RemoteHttp11Server };
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                    // return new RemoteServer[] { RemoteHttp11Server };
+                    return [];
                 }
-                return new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
+                return new RemoteServer[]
+                {
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                    // RemoteHttp11Server,
+                    RemoteSecureHttp11Server,
+                    RemoteHttp2Server
+                };
             }
 
             public static readonly IEnumerable<object[]> RemoteServersMemberData = GetRemoteServers().Select(s => new object[] { s });

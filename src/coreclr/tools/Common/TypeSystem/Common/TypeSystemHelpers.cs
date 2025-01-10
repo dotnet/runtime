@@ -415,7 +415,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public static bool RequiresAlign8(this TypeDesc type)
         {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
+            if (!type.Context.Target.SupportsAlign8)
             {
                 return false;
             }

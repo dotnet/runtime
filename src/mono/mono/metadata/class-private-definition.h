@@ -101,7 +101,7 @@ struct _MonoClass {
 	guint16    *interface_offsets_packed;
 	guint8     *interface_bitmap;
 
-	gint32      inlinearray_value; /* System.Runtime.CompilerServices.InlineArrayAttribute length value */
+	
 	guint       name_hash;
 
 	MonoClass **interfaces;

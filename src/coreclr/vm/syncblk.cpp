@@ -1816,7 +1816,9 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
 
             _ASSERTE(psb->GetMonitor() != NULL);
             Thread* pThread = psb->GetMonitor()->GetHoldingThread();
-            if(pThread == NULL)
+            // If the lock is orphaned during sync block creation, pThread would be assigned -1.
+            // Otherwise pThread would point to the owning thread if there was one or NULL if there wasn't.
+            if (pThread == NULL || pThread == (Thread*) -1)
             {
                 *pThreadId = 0;
                 *pAcquisitionCount = 0;
@@ -1824,7 +1826,12 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             }
             else
             {
-                *pThreadId = pThread->GetThreadId();
+                // However, the lock might get orphaned after the sync block is created.
+                // Therefore accessing pThread is not safe and pThread->GetThreadId() shouldn't be used.
+                // The thread id can be obtained from the monitor, which would be the id of the thread that owned the lock.
+                // Notice this id now could have been reused for a different thread,
+                // but this way we avoid crashing the process and orphaned locks shouldn't be expected to work correctly anyway.
+                *pThreadId = psb->GetMonitor()->GetHoldingThreadId();
                 *pAcquisitionCount = psb->GetMonitor()->GetRecursionLevel();
                 return TRUE;
             }
@@ -2190,20 +2197,23 @@ SyncBlock *ObjHeader::GetSyncBlock()
                             _ASSERTE(lockThreadId != 0);
 
                             Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
+                            DWORD threadId = 0;
                             SIZE_T osThreadId;
 
                             if (pThread == NULL)
                             {
                                 // The lock is orphaned.
                                 pThread = (Thread*) -1;
+                                threadId = -1;
                                 osThreadId = (SIZE_T)-1;
                             }
                             else
                             {
+                                threadId = pThread->GetThreadId();
                                 osThreadId = pThread->GetOSThreadId64();
                             }
 
-                            syncBlock->InitState(recursionLevel + 1, pThread, osThreadId);
+                            syncBlock->InitState(recursionLevel + 1, pThread, threadId, osThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2367,6 +2377,7 @@ void AwareLock::Enter()
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
@@ -2430,6 +2441,7 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
         {
             // We get here if we successfully acquired the mutex.
             m_HoldingThread = pCurThread;
+            m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
 
@@ -2709,6 +2721,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
     }
 
     m_HoldingThread = pCurThread;
+    m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
 

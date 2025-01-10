@@ -139,7 +139,7 @@ LEAF_END RtlCaptureContext, _TEXT
 //
 
 LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
-    PROLOG_STACK_ALLOC 24
+    PROLOG_STACK_ALLOC 32
     sd  t0, 0(sp)
     sd  t1, 8(sp)
     sd  t3, 16(sp)
@@ -149,7 +149,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     and  t3, t1, t0
     bne t3, t0, LOCAL_LABEL(Done_CONTEXT_CONTROL)
 
-    addi  t0, sp, 24
+    addi  t0, sp, 32
     sd  fp, CONTEXT_Fp(a0)
     sd  t0, CONTEXT_Sp(a0)
     sd  ra, CONTEXT_Ra(a0)
@@ -243,6 +243,6 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
 
-    EPILOG_STACK_FREE 24
+    EPILOG_STACK_FREE 32
     ret
 LEAF_END CONTEXT_CaptureContext, _TEXT

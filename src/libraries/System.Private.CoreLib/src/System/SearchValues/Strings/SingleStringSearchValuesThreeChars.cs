@@ -31,6 +31,18 @@ namespace System.Buffers
 
         private static bool IgnoreCase => typeof(TCaseSensitivity) != typeof(CaseSensitive);
 
+        // If the value is short (!TValueLength.AtLeast4Chars => 2 or 3 characters), the anchors already represent the whole value.
+        // With case-sensitive comparisons, we've therefore already confirmed the match.
+        // With case-insensitive comparisons, we've applied the CaseConversionMask to the input, so while the anchors likely matched, we can't be sure.
+        // An exception to that is if we know the value is composed of only ASCII letters, in which case masking the input can't produce false positives.
+        private static bool CanSkipAnchorMatchVerification
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get =>
+                !TValueLength.AtLeast4Chars &&
+                (typeof(TCaseSensitivity) == typeof(CaseSensitive) || typeof(TCaseSensitivity) == typeof(CaseInsensitiveAsciiLetters));
+        }
+
         public SingleStringSearchValuesThreeChars(HashSet<string>? uniqueValues, string value) : base(uniqueValues)
         {
             // We could have more than one entry in 'uniqueValues' if this value is an exact prefix of all the others.
@@ -327,11 +339,7 @@ namespace System.Buffers
 
                 ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
-                // If the value is short (!TValueLength.AtLeast4Chars => 2 or 3 characters), the anchors already represent the whole value.
-                // With case-sensitive comparisons, we've therefore already confirmed the match, so we can skip doing so here.
-                // With case-insensitive comparisons, we applied a mask to the input, so while the anchors likely matched, we can't be sure.
-                if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
-                    TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
+                if (CanSkipAnchorMatchVerification || TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
                 {
                     offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
                     return true;
@@ -359,11 +367,7 @@ namespace System.Buffers
 
                 ValidateReadPosition(ref searchSpaceStart, searchSpaceLength, ref matchRef, _value.Length);
 
-                // If the value is short (!TValueLength.AtLeast4Chars => 2 or 3 characters), the anchors already represent the whole value.
-                // With case-sensitive comparisons, we've therefore already confirmed the match, so we can skip doing so here.
-                // With case-insensitive comparisons, we applied a mask to the input, so while the anchors likely matched, we can't be sure.
-                if ((typeof(TCaseSensitivity) == typeof(CaseSensitive) && !TValueLength.AtLeast4Chars) ||
-                    TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
+                if (CanSkipAnchorMatchVerification || TCaseSensitivity.Equals<TValueLength>(ref matchRef, _value))
                 {
                     offsetFromStart = (int)((nuint)Unsafe.ByteOffset(ref searchSpaceStart, ref matchRef) / 2);
                     return true;

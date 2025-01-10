@@ -82,12 +82,44 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhResolveDispatchOnType")]
-        private static IntPtr RhResolveDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot, MethodTable** ppGenericContext)
+        private static IntPtr RhResolveDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot)
         {
             return DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
                                                                           pInterfaceType,
                                                                           slot,
+                                                                          flags: default,
+                                                                          ppGenericContext: null);
+        }
+
+        [RuntimeExport("RhResolveStaticDispatchOnType")]
+        private static IntPtr RhResolveStaticDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot, MethodTable** ppGenericContext)
+        {
+            return DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
+                                                                          pInterfaceType,
+                                                                          slot,
+                                                                          DispatchResolve.ResolveFlags.Static,
                                                                           ppGenericContext);
+        }
+
+        [RuntimeExport("RhResolveDynamicInterfaceCastableDispatchOnType")]
+        private static IntPtr RhResolveDynamicInterfaceCastableDispatchOnType(MethodTable* pInstanceType, MethodTable* pInterfaceType, ushort slot, MethodTable** ppGenericContext)
+        {
+            IntPtr result =  DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
+                                                                                    pInterfaceType,
+                                                                                    slot,
+                                                                                    DispatchResolve.ResolveFlags.IDynamicInterfaceCastable,
+                                                                                    ppGenericContext);
+
+            if ((result & (nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag) != 0)
+            {
+                result &= ~(nint)DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag;
+            }
+            else
+            {
+                *ppGenericContext = null;
+            }
+
+            return result;
         }
 
         private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
@@ -97,13 +129,10 @@ namespace System.Runtime
 
             if (cellInfo.CellType == DispatchCellType.InterfaceAndSlot)
             {
-                // Type whose DispatchMap is used. Usually the same as the above but for types which implement IDynamicInterfaceCastable
-                // we may repeat this process with an alternate type.
-                MethodTable* pResolvingInstanceType = pInstanceType;
-
-                IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
+                IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pInstanceType,
                                                                               cellInfo.InterfaceType,
                                                                               cellInfo.InterfaceSlot,
+                                                                              flags: default,
                                                                               ppGenericContext: null);
                 if (pTargetCode == IntPtr.Zero && pInstanceType->IsIDynamicInterfaceCastable)
                 {

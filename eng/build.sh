@@ -65,10 +65,9 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net9.0 or net48."
-  echo "                             [Default: net9.0]"
+  echo "  --framework (-f)           Build framework: net10.0 or net48."
+  echo "                             [Default: net10.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -308,8 +307,8 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
-     -allconfigurations)
-      arguments="$arguments /p:BuildAllConfigurations=true"
+     -pack)
+      arguments="$arguments --pack /p:BuildAllConfigurations=true"
       shift 1
       ;;
 
@@ -550,7 +549,7 @@ if [[ "$os" == "wasi" ]]; then
 fi
 
 if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
-    arguments="$arguments -warnAsError 0"
+    arguments="$arguments -warnAsError false"
 fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211

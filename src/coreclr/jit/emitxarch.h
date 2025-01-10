@@ -38,6 +38,18 @@ inline static bool isHighSimdReg(regNumber reg)
 #endif
 }
 
+inline static bool isHighGPReg(regNumber reg)
+{
+#ifdef TARGET_AMD64
+    // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
+    //           for now, we can simply use REX2 as REX.
+    return ((reg >= REG_R8) && (reg <= REG_R15));
+#else
+    // X86 JIT operates in 32-bit mode and hence extended regs are not available.
+    return false;
+#endif
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -83,11 +95,13 @@ BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
+unsigned emitGetRexPrefixSize(instrDesc* id, instruction ins);
 unsigned emitGetVexPrefixSize(instrDesc* id) const;
 unsigned emitGetEvexPrefixSize(instrDesc* id) const;
 unsigned emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
 unsigned emitGetAdjustedSize(instrDesc* id, code_t code) const;
 
+code_t emitExtractRex2Prefix(instruction ins, code_t& code) const;
 code_t emitExtractVexPrefix(instruction ins, code_t& code) const;
 code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
@@ -113,22 +127,28 @@ static bool IsPermuteVar2xInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
+static bool IsKInstructionWithLBit(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
 bool             HasVexEncoding(instruction ins) const;
 bool             HasEvexEncoding(instruction ins) const;
+bool             HasRex2Encoding(instruction ins) const;
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
+bool             IsRex2EncodableInstruction(instruction ins) const;
+bool             IsLegacyMap1(code_t code) const;
 bool             IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
 code_t AddRexWPrefix(const instrDesc* id, code_t code);
+code_t AddRex2WPrefix(const instrDesc* id, code_t code);
 code_t AddRexRPrefix(const instrDesc* id, code_t code);
 code_t AddRexXPrefix(const instrDesc* id, code_t code);
 code_t AddRexBPrefix(const instrDesc* id, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
+code_t AddRex2Prefix(instruction ins, code_t code);
 
 bool   EncodedBySSE38orSSE3A(instruction ins) const;
 bool   Is4ByteSSEInstruction(instruction ins) const;
@@ -200,6 +220,32 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 }
 
 insTupleType insTupleTypeInfo(instruction ins) const;
+
+// 2-byte REX2 prefix starts with byte 0xD5
+#define REX2_PREFIX_MASK_2BYTE 0xFF0000000000ULL
+#define REX2_PREFIX_CODE_2BYTE 0xD50000000000ULL
+
+bool TakesRex2Prefix(const instrDesc* id) const;
+//------------------------------------------------------------------------
+// hasEvexPrefix: Returns true if the instruction encoding already
+// contains Evex prefix.
+//
+// Arguments:
+//    code - opcode + prefixes bits at some stage of encoding.
+//
+// Returns:
+//    `true` if code has an Evex prefix.
+//
+bool hasRex2Prefix(code_t code)
+{
+#ifdef TARGET_AMD64
+    return (code & REX2_PREFIX_MASK_2BYTE) == REX2_PREFIX_CODE_2BYTE;
+#else
+    return false;
+#endif
+}
+
+bool IsExtendedGPReg(regNumber reg) const;
 
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
@@ -274,6 +320,18 @@ void SetUseEvexEncoding(bool value)
     useEvexEncodings = value;
 }
 
+// Is Rex2 encoding supported.
+bool useRex2Encodings;
+bool UseRex2Encoding() const
+{
+    return useRex2Encodings;
+}
+
+void SetUseRex2Encoding(bool value)
+{
+    useRex2Encodings = value;
+}
+
 //------------------------------------------------------------------------
 // UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
 // contains Evex prefix.
@@ -332,6 +390,78 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
     if (TakesVexPrefix(ins))
     {
         return AddVexPrefix(ins, code, size);
+    }
+
+    return code;
+}
+
+//------------------------------------------------------------------------
+// AddX86PrefixIfNeeded: Add the correct instruction prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
+{
+    // TODO-xarch-apx:
+    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
+    // of these functions are overlapping.
+
+    if (TakesEvexPrefix(id))
+    {
+        return AddEvexPrefix(id, code, size);
+    }
+
+    instruction ins = id->idIns();
+
+    if (TakesVexPrefix(ins))
+    {
+        return AddVexPrefix(ins, code, size);
+    }
+
+    // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
+    // overlapping part between REX2 and VEX/EVEX, so order of the checks does not matter.
+    if (TakesRex2Prefix(id))
+    {
+        return AddRex2Prefix(ins, code);
+    }
+
+    return code;
+}
+
+//------------------------------------------------------------------------
+// AddX86PrefixIfNeededAndNotPresent: Add the correct instruction prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+code_t AddX86PrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitAttr size)
+{
+    // TODO-xarch-apx:
+    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
+    // of these functions are overlapping.
+
+    if (TakesEvexPrefix(id))
+    {
+        return !hasEvexPrefix(code) ? AddEvexPrefix(id, code, size) : code;
+    }
+
+    instruction ins = id->idIns();
+
+    if (TakesVexPrefix(ins))
+    {
+        return !hasVexPrefix(code) ? AddVexPrefix(ins, code, size) : code;
+    }
+
+    // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
+    // overlapping part between REX2 and VEX/EVEX, so order of the checks does not matter.
+    if (TakesRex2Prefix(id))
+    {
+        return !hasRex2Prefix(code) ? AddRex2Prefix(ins, code) : code;
     }
 
     return code;
@@ -484,6 +614,7 @@ bool        IsThreeOperandAVXInstruction(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
+static bool DoesWriteParityFlag(instruction ins);
 static bool DoesWriteSignFlag(instruction ins);
 static bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool        IsFlagsAlwaysModified(instrDesc* id);
@@ -1087,6 +1218,7 @@ inline bool HasEmbeddedMask(const instrDesc* id) const
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
+inline bool HasExtendedGPReg(const instrDesc* id) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
 

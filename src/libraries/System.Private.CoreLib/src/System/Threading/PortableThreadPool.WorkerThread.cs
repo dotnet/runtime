@@ -53,8 +53,9 @@ namespace System.Threading
                 new LowLevelLifoSemaphore(
                     0,
                     MaxPossibleThreadCount,
-                    AppContextConfigHelper.GetInt32Config(
+                    AppContextConfigHelper.GetInt32ComPlusOrDotNetConfig(
                         "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
+                        "ThreadPool_UnfairSemaphoreSpinLimit",
                         SemaphoreSpinCountDefault,
                         false),
                     onWait: () =>
@@ -75,14 +76,12 @@ namespace System.Threading
                 Thread workerThread = new Thread(s_workerThreadStart);
                 workerThread.IsThreadPoolThread = true;
                 workerThread.IsBackground = true;
-                // thread name will be set in thread proc
+                workerThread.SetThreadPoolWorkerThreadName();
                 workerThread.UnsafeStart();
             }
 
             private static void WorkerThreadStart()
             {
-                Thread.CurrentThread.SetThreadPoolWorkerThreadName();
-
                 PortableThreadPool threadPoolInstance = ThreadPoolInstance;
 
                 if (NativeRuntimeEventSource.Log.IsEnabled())

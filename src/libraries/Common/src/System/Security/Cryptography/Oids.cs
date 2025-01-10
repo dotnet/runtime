@@ -103,14 +103,52 @@ namespace System.Security.Cryptography
         // PKCS#7
         internal const string NoSignature = "1.3.6.1.5.5.7.6.2";
 
-        // X500 Names
-        internal const string CommonName = "2.5.4.3";
-        internal const string CountryOrRegionName = "2.5.4.6";
-        internal const string LocalityName = "2.5.4.7";
-        internal const string StateOrProvinceName = "2.5.4.8";
-        internal const string Organization = "2.5.4.10";
-        internal const string OrganizationalUnit = "2.5.4.11";
-        internal const string EmailAddress = "1.2.840.113549.1.9.1";
+        // X500 Names - T-REC X.520-201910
+        internal const string KnowledgeInformation = "2.5.4.2"; // 6.1.1 - id-at-knowledgeInformation
+        internal const string CommonName = "2.5.4.3"; // 6.2.2 - id-at-commonName
+        internal const string Surname = "2.5.4.4"; // 6.2.3 - id-at-surname
+        internal const string SerialNumber = "2.5.4.5"; // 6.2.9 - id-at-serialNumber
+        internal const string CountryOrRegionName = "2.5.4.6"; // 6.3.1 - id-at-countryName
+        internal const string LocalityName = "2.5.4.7"; // 6.3.4 - id-at-localityName
+        internal const string StateOrProvinceName = "2.5.4.8"; // 6.3.5 - id-at-stateOrProvinceName
+        internal const string StreetAddress = "2.5.4.9"; // 6.3.6 - id-at-streetAddress
+        internal const string Organization = "2.5.4.10"; // 6.4.1 - id-at-organizationName
+        internal const string OrganizationalUnit = "2.5.4.11"; // 6.4.2 - id-at-organizationalUnitName
+        internal const string Title = "2.5.4.12"; // 6.4.3 - id-at-title
+        internal const string Description = "2.5.4.13"; // 6.5.1 - id-at-description
+        internal const string BusinessCategory = "2.5.4.15"; // 6.5.4 - id-at-businessCategory
+        internal const string PostalCode = "2.5.4.17"; // 6.6.2 - id-at-postalCode
+        internal const string PostOfficeBox = "2.5.4.18"; // 6.6.3 - id-at-postOfficeBox
+        internal const string PhysicalDeliveryOfficeName = "2.5.4.19"; // 6.6.4 - id-at-physicalDeliveryOfficeName
+        internal const string TelephoneNumber = "2.5.4.20"; // 6.7.1 - id-at-telephoneNumber
+        internal const string X121Address = "2.5.4.24"; // 6.7.5 - id-at-x121Address
+        internal const string InternationalISDNNumber = "2.5.4.25"; // 6.7.6 - id-at-internationalISDNNumber
+        internal const string DestinationIndicator = "2.5.4.27"; // 6.7.8 - id-at-destinationIndicator
+        internal const string Name = "2.5.4.41"; // 6.2.1 - id-at-name
+        internal const string GivenName = "2.5.4.42"; // 6.2.4 - id-at-givenName
+        internal const string Initials = "2.5.4.43"; // 6.2.5 - id-at-initials
+        internal const string GenerationQualifier = "2.5.4.44"; // 6.2.6 - id-at-generationQualifier
+        internal const string DnQualifier = "2.5.4.46"; // 6.2.8 - id-at-dnQualifier
+        internal const string HouseIdentifier = "2.5.4.51"; // 6.3.7 - id-at-houseIdentifier
+        internal const string DmdName = "2.5.4.54"; // 6.11.1 - id-at-dmdName
+        internal const string Pseudonym = "2.5.4.65"; // 6.2.10 - id-at-pseudonym
+        internal const string UiiInUrn = "2.5.4.80"; // 6.13.3 - id-at-uiiInUrn
+        internal const string ContentUrl = "2.5.4.81"; // 6.13.4 - id-at-contentUrl
+        internal const string Uri = "2.5.4.83"; // 6.2.12 - id-at-uri
+        internal const string Urn = "2.5.4.86"; // 6.2.13 - id-at-urn
+        internal const string Url = "2.5.4.87"; // 6.2.14 - id-at-url
+        internal const string UrnC = "2.5.4.89"; // 6.12.4 - id-at-urnC
+        internal const string EpcInUrn = "2.5.4.94"; // 6.13.9 - id-at-epcInUrn
+        internal const string LdapUrl = "2.5.4.95"; // 6.13.10 - id-at-ldapUrl
+        internal const string OrganizationIdentifier = "2.5.4.97"; // 6.4.4 - id-at-organizationIdentifier
+        internal const string CountryOrRegionName3C = "2.5.4.98"; // 6.3.2 - id-at-countryCode3c
+        internal const string CountryOrRegionName3N = "2.5.4.99"; // 6.3.3 - id-at-countryCode3n
+        internal const string DnsName = "2.5.4.100"; // 6.2.15 - id-at-dnsName
+        internal const string IntEmail = "2.5.4.104"; // 6.2.16 - id-at-intEmail
+        internal const string JabberId = "2.5.4.105"; // 6.2.17 - id-at-jid
+
+        // RFC 2985
+        internal const string EmailAddress = "1.2.840.113549.1.9.1"; //  B.3.5
 
         // Cert Extensions
         internal const string BasicConstraints = "2.5.29.10";

@@ -45,11 +45,20 @@ namespace System.Net.Sockets.Tests
 
                 byte[] buf = new byte[3];
                 EndPoint receiveFromEP = new IPEndPoint(Wildcard, 0);
-                receiver.ReceiveFrom(buf, ref receiveFromEP);
+
+                var tcs = new TaskCompletionSource<EndPoint>();
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = receiveFromEP;
+                args.SetBuffer(buf, 0, buf.Length);
+                args.Completed += (s, e) => tcs.SetResult(e.RemoteEndPoint);
+                if (receiver.ReceiveFromAsync(args))
+                {
+                    Assert.True(await Task.WhenAny(tcs.Task, Task.Delay(TestSettings.PassingTestTimeout)) == tcs.Task, "Timed out");
+                }
 
                 Assert.Equal(new byte[] { 1, 2, 3 }, buf);
-                Assert.Equal(Loopback, ((IPEndPoint)receiveFromEP).Address); // received from specific address
-                Assert.Equal(senderPortAfterBind, ((IPEndPoint)receiveFromEP).Port);
+                Assert.Equal(Loopback, ((IPEndPoint)args.RemoteEndPoint).Address); // received from specific address
+                Assert.Equal(senderPortAfterBind, ((IPEndPoint)args.RemoteEndPoint).Port);
             }
         }
 
@@ -71,14 +80,24 @@ namespace System.Net.Sockets.Tests
 
                 byte[] buf = new byte[3];
                 EndPoint receiveFromEP = new IPEndPoint(Wildcard, 0);
-                receiver.ReceiveFrom(buf, ref receiveFromEP);
+
+                var tcs = new TaskCompletionSource<EndPoint>();
+                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+                args.RemoteEndPoint = receiveFromEP;
+                args.SetBuffer(buf, 0, buf.Length);
+                args.Completed += (s, e) => tcs.SetResult(e.RemoteEndPoint);
+                if (receiver.ReceiveFromAsync(args))
+                {
+                    Assert.True(await Task.WhenAny(tcs.Task, Task.Delay(TestSettings.PassingTestTimeout)) == tcs.Task, "Timed out");
+                }
 
                 Assert.Equal(new byte[] { 1, 2, 3 }, buf);
-                Assert.Equal(Loopback, ((IPEndPoint)receiveFromEP).Address); // received from specific address
+                Assert.Equal(Loopback, ((IPEndPoint)args.RemoteEndPoint).Address); // received from specific address
             }
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)] // see also https://github.com/WebAssembly/wasi-libc/issues/540
         public async Task TcpClientSocket_WhenBoundToWildcardAddress_LocalEPChangeToSpecificOnConnect()
         {
             using (Socket server = CreateTcpSocket())
@@ -228,18 +247,21 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv4", "true")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class LocalEndPointTestIPv4Sync : LocalEndPointTestIPv4<SocketHelperArraySync>
     {
         public LocalEndPointTestIPv4Sync(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv4", "true")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class LocalEndPointTestIPv4SyncForceNonBlocking : LocalEndPointTestIPv4<SocketHelperSyncForceNonBlocking>
     {
         public LocalEndPointTestIPv4SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv4", "true")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class LocalEndPointTestIPv4Apm : LocalEndPointTestIPv4<SocketHelperApm>
     {
         public LocalEndPointTestIPv4Apm(ITestOutputHelper output) : base(output) { }
@@ -258,18 +280,21 @@ namespace System.Net.Sockets.Tests
     }
 
     [Trait("IPv6", "true")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class LocalEndPointTestIPv6Sync : LocalEndPointTestIPv6<SocketHelperArraySync>
     {
         public LocalEndPointTestIPv6Sync(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv6", "true")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class LocalEndPointTestIPv6SyncForceNonBlocking : LocalEndPointTestIPv6<SocketHelperSyncForceNonBlocking>
     {
         public LocalEndPointTestIPv6SyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
     [Trait("IPv6", "true")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class LocalEndPointTestIPv6Apm : LocalEndPointTestIPv6<SocketHelperApm>
     {
         public LocalEndPointTestIPv6Apm(ITestOutputHelper output) : base(output) { }

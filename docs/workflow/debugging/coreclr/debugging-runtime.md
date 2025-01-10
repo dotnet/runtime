@@ -3,6 +3,7 @@
 * [Debugging CoreCLR on Windows](#debugging-coreclr-on-windows)
   * [Using Visual Studio](#using-visual-studio)
     * [Using Visual Studio Open Folder with CMake](#using-visual-studio-open-folder-with-cmake)
+    * [Using Visual Studio to debug CLI builds](#using-visual-studio-to-debug-cli-builds)
   * [Using Visual Studio Code](#using-visual-studio-code)
   * [Using SOS with Windbg or Cdb on Windows](#using-sos-with-windbg-or-cdb-on-windows)
 * [Debugging CoreCLR on Linux and macOS](#debugging-coreclr-on-linux-and-macos)
@@ -54,7 +55,7 @@ Visual Studio's capabilities as a full IDE provide a lot of help making the runt
 5. Set `Command=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)\corerun.exe`. This points to the folder where the built runtime binaries are present.
 6. Set `Command Arguments=<managed app you wish to run>` (e.g. HelloWorld.dll).
 7. Set `Working Directory=$(SolutionDir)\..\..\..\..\bin\coreclr\windows.$(Platform).$(Configuration)`. This points to the folder containing CoreCLR binaries.
-8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch; for example `net6.0`, `net8.0` or `net9.0`. A few notes on this step:
+8. Set `Environment=CORE_LIBRARIES=$(SolutionDir)\..\..\..\..\bin\runtime\<target-framework>-windows-$(Configuration)-$(Platform)`, where '\<target-framework\>' is the target framework of current branch: `net10.0`. A few notes on this step:
 
 * This points to the folder containing core libraries except `System.Private.CoreLib`.
 * This step can be skipped if you are debugging CLR tests that reference only `System.Private.CoreLib`. Otherwise, it's required to debug a real-world application that references anything else, including `System.Runtime`.
@@ -84,7 +85,7 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
         },
         {
           "name": "CORE_LIBRARIES",
-          // for example net9.0-windows-Debug-x64
+          // for example net10.0-windows-debug-x64
           "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
         }
       ],
@@ -102,6 +103,18 @@ Steps 1-9 only need to be done once as long as there's been no changes to the CM
 6. Press F10 or F11 to start debugging at main, or set a breakpoint and press F5.
 
 Whenever you make changes to the CoreCLR source code, don't forget to invoke the _Install_ command again to have them set in place.
+
+#### Using Visual Studio to debug CLI builds
+Visual Studio can also be used to debug builds built externally from CLI scripts.
+
+1. Build at least the `clr` and `libs` subsets as described in the [build instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md#building-the-repo). Example command: `.\build.cmd -subset clr+libs -configuration Release -runtimeConfiguration Debug`
+2. Build the Core_Root as described in the [testing instructions](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md#building-the-core_root). This generates `corerun.exe` which serves as the entry point to run managed code. It is placed inside the core root folder along with all required dlls. Example command: `.\src\tests\build.cmd generatelayoutonly`
+3. Launch a Visual Studio instance and select the option to open an existing project/solution. Select `artifacts\tests\coreclr\<OS>.<arch>.<configuration>\Tests\Core_Root\corerun.exe` as the project. Alternatively, launch Visual Studio using `devenv /debugexe artifacts\tests\coreclr\<OS>.<arch>.<configuration>\Tests\Core_Root\corerun.exe`
+4. In the Solution Explorer, right click `corerun` and select properties. Set `Debugger Type` to `Native Only`. Set the `Arguments` field to a path of a managed application to debug.
+5. To set breakpoints, runtime source files can to be added by right clicking the solution in the Solution Explorer and selecting Add -> Existing Item.
+6. Set breakpoints and run the application with `F5` to start debugging.
+
+Note, the `.sln` file can be saved and stores paths to `corerun.exe`, included files, and debug settings. It can be reused as long as the paths do not change.
 
 ### Using Visual Studio Code
 
@@ -223,15 +236,19 @@ Native C++ code is not everything in our runtime. Nowadays, there are lots of st
 
 #### Resolving Signature Validation Errors in Visual Studio
 
-Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that the debugging libraries that shipped with the .NET Runtime are correctly signed before loading them. If they are unsigned, Visual Studio will show an error like:
+Visual Studio 2022 version 17.5 and later validates that the debugging libraries shipped with the .NET Runtime are signed before loading them. If they are unsigned, Visual Studio shows an error similar to the following:
 
 > Unable to attach to CoreCLR. Signature validation failed for a .NET Runtime Debugger library because the file is unsigned.
 >
 > This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/sdk). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
 
-If the target process is using a .NET Runtime that is either from a daily build, or one that you built on your own computer, this error will show up. **NOTE**: This error should never happen for official builds of the .NET Runtime from Microsoft. So don’t disable the validation if you expect to be using a .NET Runtime supported by Microsoft.
+This error occurs if the target process is using a daily build .NET Runtime or one that you built. **NOTE**: This error never happens with [released builds of the .NET Runtime from Microsoft](https://dotnet.microsoft.com/en-us/download/dotnet). ***Don’t*** disable the validation if you are using an official release of the .NET Runtime.
 
-There are three ways to configure Visual Studio to disable signature validation:
-1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
-2.	The `VSDebugger_ValidateDotnetDebugLibSignatures` environment variable: If you want to temporarily disable signature validation, run `set VSDebugger_ValidateDotnetDebugLibSignatures=0` in a command prompt, and start Visual Studio (devenv.exe) from this command prompt.
-3.	Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent basis, you can set the VS registry key to turn it off. To do so, open a Developer Command Prompt, and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`
+The following approaches configure Visual Studio to disable signature validation:
+
+1. The `VSDebugger_ValidateDotnetDebugLibSignatures` environment variable:
+  * This is the easiest and recommended approach to temporarily disable signature validation.
+  * At the command line, run `set VSDebugger_ValidateDotnetDebugLibSignatures=0` and then start Visual Studio (`devenv.exe`) from the same command prompt.
+  * This setting is only valid for the Visual Studio instance that is started from the command prompt where the environment variable is set.
+1. The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it ignores unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
+1. ***NOT RECOMMENDED*** Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent basis, set the `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0` VS registry key. For example, open a Developer Command Prompt and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`

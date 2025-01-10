@@ -12,7 +12,7 @@
 #ifndef __excepx86_h__
 #define __excepx86_h__
 
-#include "corerror.h"  // HResults for the COM+ Runtime
+#include "corerror.h"
 
 #include "../dlls/mscorrc/resource.h"
 

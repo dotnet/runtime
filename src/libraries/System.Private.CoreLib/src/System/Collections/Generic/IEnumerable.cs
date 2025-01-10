@@ -4,6 +4,7 @@
 #if MONO
 using System.Diagnostics.CodeAnalysis;
 #endif
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -16,6 +17,7 @@ namespace System.Collections.Generic
 #if MONO
         [DynamicDependency(nameof(Array.InternalArray__IEnumerable_GetEnumerator) + "``1 ", typeof(Array))]
 #endif
+        [Intrinsic]
         new IEnumerator<T> GetEnumerator();
     }
 }

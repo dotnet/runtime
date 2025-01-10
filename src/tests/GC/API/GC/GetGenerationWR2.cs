@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 /********************************************************************/
 /* Test: GetGeneration
 /* Purpose: Test GC.GetGeneration() works
@@ -13,9 +14,10 @@
 namespace DefaultNamespace {
     using System;
 
-    internal class GetGeneration
+    public class GetGeneration
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.Out.WriteLine("Test should return with ExitCode 100 ...");
             Object o = new int[10];

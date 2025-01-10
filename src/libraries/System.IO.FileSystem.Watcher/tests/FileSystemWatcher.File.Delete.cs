@@ -8,10 +8,10 @@ using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Delete_Tests : FileSystemWatcherTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Delete()
         {
             using (var watcher = new FileSystemWatcher(TestDirectory))
@@ -28,7 +28,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Delete_ForcedRestart()
         {
             using (var watcher = new FileSystemWatcher(TestDirectory))
@@ -49,7 +48,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_File_Delete_InNestedDirectory()
         {
             string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");

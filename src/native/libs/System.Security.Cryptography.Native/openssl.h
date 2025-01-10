@@ -29,10 +29,6 @@ PALEXPORT int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pB
 
 PALEXPORT int32_t CryptoNative_GetX509NameRawBytes(X509_NAME* x509Name, uint8_t* pBuf, int32_t cBuf);
 
-PALEXPORT int32_t CryptoNative_GetX509EkuFieldCount(EXTENDED_KEY_USAGE* eku);
-
-PALEXPORT ASN1_OBJECT* CryptoNative_GetX509EkuField(EXTENDED_KEY_USAGE* eku, int32_t loc);
-
 PALEXPORT BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssuer);
 
 PALEXPORT int32_t CryptoNative_CheckX509Hostname(X509* x509, const char* hostname, int32_t cchHostname);

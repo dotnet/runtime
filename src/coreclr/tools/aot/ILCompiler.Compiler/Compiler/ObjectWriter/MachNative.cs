@@ -96,6 +96,7 @@ namespace ILCompiler.ObjectWriter
         public const byte N_INDR = 0xA;
         public const byte N_SECT = 0xE;
         public const byte N_PBUD = 0xC;
+        public const byte N_PEXT = 0x10;
 
         // Symbol descriptor flags
         public const ushort REFERENCE_FLAG_UNDEFINED_NON_LAZY = 0;

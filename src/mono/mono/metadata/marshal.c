@@ -3714,9 +3714,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						break;
 					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
-					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && i > 0) {
+					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && (i != method->signature->param_count - 1)) {
 						swift_error_args = swift_self_args = 0;
-						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the first argument in the signature.");
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftSelf<T> must be the last argument in the signature.");
 						break;
 					} else if (param_gklass && (param_gklass->container_class == swift_self_t) && m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
@@ -3963,7 +3963,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
 	    return res;
 
 	char *name = mono_signature_to_name (sig, "wrapper_native_indirect");
-	MonoMethodBuilder *mb = mono_mb_new (caller_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	MonoMethodBuilder *mb = mono_mb_new (get_wrapper_target_class (image), name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
 	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT);
@@ -5983,7 +5983,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 			// Limit the max size of array instance to 1MiB
 			const int struct_max_size = 1024 * 1024;
 			guint32 initial_size = size;
-			size *= m_class_inlinearray_value (klass);
+			size *= mono_class_get_inlinearray_value (klass);
 			if(size == 0 || size > struct_max_size) {
 				if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback) {
 					if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array struct size out of bounds, abnormally large."))
@@ -6798,11 +6798,25 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 
 static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
 {
-	// Get the first field and record its physical lowering N times
-	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
+	int align;
+	int type_offset = MONO_ABI_SIZEOF (MonoObject);
+	gpointer iter = NULL;
+	MonoClassField* field;
+
+	// Get the first instance field and record its physical lowering N times
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		if (mono_field_is_deleted (field))
+			continue;
+		break;
+	}
+
+	g_assert (field);
+
 	MonoType* fieldType = field->type;
-	for (int i = 0; i < m_class_inlinearray_value(klass); ++i) {
-		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, NULL));
+	for (int i = 0; i < mono_class_get_inlinearray_value (klass); ++i) {
+		record_struct_field_physical_lowering(lowered_bytes, fieldType, offset + m_field_get_offset(field) + i * mono_type_size(fieldType, &align) - type_offset);
 	}
 }
 

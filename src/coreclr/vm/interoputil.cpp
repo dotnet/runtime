@@ -790,21 +790,11 @@ BOOL IsComObjectClass(TypeHandle type)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    if (!type.IsTypeDesc())
-    {
-        MethodTable *pMT = type.AsMethodTable();
-
-        if (pMT->IsComObjectType())
-        {
-            // May be __ComObject or typed RCW. __ComObject must have already been loaded
-            // if we see an MT marked like this so calling the *NoInit method is sufficient.
-
-            return pMT == g_pBaseCOMObject;
-        }
-    }
-#endif
-
+    // May be __ComObject or typed RCW.
+    return type == TypeHandle(g_pBaseCOMObject);
+#else
     return FALSE;
+#endif
 }
 
 VOID
@@ -1420,7 +1410,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
 
         // Attempt to set the thread's apartment model (to MTA by default). May not
         // succeed (if someone beat us to the punch). That doesn't matter (since
-        // COM+ objects are now apartment agile), we only care that a CoInitializeEx
+        // CLR objects are now apartment agile), we only care that a CoInitializeEx
         // has been performed on this thread by us.
         if (fCoInitCurrentThread)
             GetThread()->SetApartment(Thread::AS_InMTA);
@@ -2187,10 +2177,9 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
     }
 }
 
-
 //--------------------------------------------------------------------------------
-// These methods convert a native IEnumVARIANT to a managed IEnumerator.
-OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT *pNativeEnum)
+// This method converts an OLE_COLOR to a boxed Color object.
+void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, OBJECTREF *pDestSysColor)
 {
     CONTRACTL
     {
@@ -2200,57 +2189,14 @@ OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT *pNativeEnum)
     }
     CONTRACTL_END;
 
-    OBJECTREF MngEnum = NULL;
-    OBJECTREF EnumeratorToEnumVariantMarshaler = NULL;
-    GCPROTECT_BEGIN(EnumeratorToEnumVariantMarshaler)
-    {
-        // Retrieve the custom marshaler and the MD to use to convert the IEnumVARIANT.
-        StdMngIEnumerator *pStdMngIEnumInfo = SystemDomain::GetCurrentDomain()->GetMngStdInterfacesInfo()->GetStdMngIEnumerator();
-        MethodDesc *pEnumNativeToManagedMD = pStdMngIEnumInfo->GetCustomMarshalerMD(CustomMarshalerMethods_MarshalNativeToManaged);
-        EnumeratorToEnumVariantMarshaler = pStdMngIEnumInfo->GetCustomMarshaler();
-        MethodDescCallSite enumNativeToManaged(pEnumNativeToManagedMD, &EnumeratorToEnumVariantMarshaler);
-
-        // Prepare the arguments that will be passed to MarshalNativeToManaged.
-        ARG_SLOT MarshalNativeToManagedArgs[] = {
-            ObjToArgSlot(EnumeratorToEnumVariantMarshaler),
-            (ARG_SLOT)pNativeEnum
-        };
-
-        // Retrieve the managed view for the current native interface pointer.
-        MngEnum = enumNativeToManaged.Call_RetOBJECTREF(MarshalNativeToManagedArgs);
-    }
-    GCPROTECT_END();
-
-    return MngEnum;
-}
-
-//--------------------------------------------------------------------------------
-// This method converts an OLE_COLOR to a System.Color.
-void ConvertOleColorToSystemColor(OLE_COLOR SrcOleColor, SYSTEMCOLOR *pDestSysColor)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // Retrieve the method desc to use for the current AD.
-    MethodDesc *pOleColorToSystemColorMD =
-        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
-
-    MethodDescCallSite oleColorToSystemColor(pOleColorToSystemColorMD);
-
-    _ASSERTE(pOleColorToSystemColorMD->HasRetBuffArg());
+    MethodDescCallSite oleColorToSystemColor(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED);
 
     ARG_SLOT Args[] =
     {
-        PtrToArgSlot(pDestSysColor),
-        PtrToArgSlot(SrcOleColor)
+        PtrToArgSlot(&SrcOleColor)
     };
 
-    oleColorToSystemColor.Call(Args);
+    *pDestSysColor = oleColorToSystemColor.Call_RetOBJECTREF(Args);
 }
 
 //--------------------------------------------------------------------------------
@@ -2265,14 +2211,24 @@ OLE_COLOR ConvertSystemColorToOleColor(OBJECTREF *pSrcObj)
     }
     CONTRACTL_END;
 
-    // Retrieve the method desc to use for the current AD.
-    MethodDesc *pSystemColorToOleColorMD =
-        GetAppDomain()->GetLoaderAllocator()->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
-    MethodDescCallSite systemColorToOleColor(pSystemColorToOleColorMD);
+    OLE_COLOR result;
+    OBJECTREF sysColor = NULL;
 
-    // Set up the args and call the method.
-    SYSTEMCOLOR *pSrcSysColor = (SYSTEMCOLOR *)(*pSrcObj)->UnBox();
-    return systemColorToOleColor.CallWithValueTypes_RetOleColor((const ARG_SLOT *)&pSrcSysColor);
+    GCPROTECT_BEGIN(sysColor);
+
+    sysColor = *pSrcObj;
+
+    MethodDescCallSite sysColorToOleColor(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE);
+
+    ARG_SLOT Args[] =
+    {
+        ObjToArgSlot(sysColor)
+    };
+
+    result = (OLE_COLOR)sysColorToOleColor.Call_RetI4(Args);
+
+    GCPROTECT_END();
+    return result;
 }
 
 //--------------------------------------------------------------------------------
@@ -3042,11 +2998,31 @@ public:
     }
 };
 
+//--------------------------------------------------------------------------------
+// This methods converts an IEnumVARIANT to a managed IEnumerator.
+static OBJECTREF ConvertEnumVariantToMngEnum(IEnumVARIANT* pNativeEnum)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
+    OBJECTREF retObjRef;
+
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ENUMERATORTOENUMVARIANTMARSHALER__INTERNALMARSHALNATIVETOMANAGED);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0]  = PTR_TO_ARGHOLDER(pNativeEnum);
+    CALL_MANAGED_METHOD_RETREF(retObjRef, OBJECTREF, args);
+
+    return retObjRef;
+}
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a CLR Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,
@@ -3412,7 +3388,7 @@ void IUInvokeDispMethod(
                 DispParams.cNamedArgs = cNamedArgs;
                 DispParams.rgdispidNamedArgs = (cNamedArgs == 0) ? NULL : &aDispID[1];
 
-                // Convert the named arguments from COM+ to OLE. These arguments are in the same order
+                // Convert the named arguments from CLR to OLE. These arguments are in the same order
                 // on both sides.
                 for (i = 0; i < cNamedArgs; i++)
                 {
@@ -3447,7 +3423,7 @@ void IUInvokeDispMethod(
                 TmpObj = ((OBJECTREF*)(*pArrArgs)->GetDataPtr())[iSrcArg];
                 DispInvokeConvertObjectToVariant(&TmpObj, &DispParams.rgvarg[iDestArg], &aByrefArgInfos[iSrcArg]);
 
-                // Convert the named arguments from COM+ to OLE. These arguments are in the same order
+                // Convert the named arguments from CLR to OLE. These arguments are in the same order
                 // on both sides.
                 for (i = 0; i < cNamedArgs; i++)
                 {
@@ -3533,7 +3509,7 @@ void IUInvokeDispMethod(
         }
         else
         {
-            // Convert the return variant to a COR variant.
+            // Convert the return variant to a CLR object.
             OleVariant::MarshalObjectForOleVariant(&VarResult, pRetVal);
         }
     }

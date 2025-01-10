@@ -138,7 +138,7 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public void UnregisterSocket(IntPtr socketHandle)
+        public void UnregisterSocket(IntPtr socketHandle, SocketAsyncContext __)
         {
             _handleToContextMap.TryRemove(socketHandle, out _);
         }

@@ -38,12 +38,10 @@ namespace System.Runtime.Caching
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
-        private EventHandler _onAppDomainUnload;
-        private UnhandledExceptionEventHandler _onUnhandledException;
-        private int _inUnhandledExceptionHandler;
 #if NET
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
-        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+        private static bool _countersSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
         private static bool _countersSupported => true;
 #endif
@@ -216,13 +214,6 @@ namespace System.Runtime.Caching
                     _storeRefs[i] = new GCHandleRef<MemoryCacheStore>(new MemoryCacheStore(this, _perfCounters));
                 }
                 _stats = new MemoryCacheStatistics(this, config);
-                AppDomain appDomain = Thread.GetDomain();
-                EventHandler onAppDomainUnload = new EventHandler(OnAppDomainUnload);
-                appDomain.DomainUnload += onAppDomainUnload;
-                _onAppDomainUnload = onAppDomainUnload;
-                UnhandledExceptionEventHandler onUnhandledException = new UnhandledExceptionEventHandler(OnUnhandledException);
-                appDomain.UnhandledException += onUnhandledException;
-                _onUnhandledException = onUnhandledException;
                 dispose = false;
             }
             finally
@@ -232,26 +223,6 @@ namespace System.Runtime.Caching
                     Dispose();
                 }
             }
-        }
-
-        private void OnAppDomainUnload(object unusedObject, EventArgs unusedEventArgs)
-        {
-            Dispose();
-        }
-
-        internal bool InUnhandledExceptionHandler => _inUnhandledExceptionHandler > 0;
-        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs eventArgs)
-        {
-            Interlocked.Increment(ref _inUnhandledExceptionHandler);
-
-            // if the CLR is terminating, dispose the cache.
-            // This will dispose the perf counters
-            if (eventArgs.IsTerminating)
-            {
-                Dispose();
-            }
-
-            Interlocked.Decrement(ref _inUnhandledExceptionHandler);
         }
 
         private static void ValidatePolicy(CacheItemPolicy policy)
@@ -477,8 +448,6 @@ namespace System.Runtime.Caching
         {
             if (Interlocked.Exchange(ref _disposed, 1) == 0)
             {
-                // unhook domain events
-                DisposeSafeCritical();
                 // stats must be disposed prior to disposing the stores.
                 _stats?.Dispose();
                 if (_storeRefs != null)
@@ -496,19 +465,6 @@ namespace System.Runtime.Caching
                     }
                 }
                 GC.SuppressFinalize(this);
-            }
-        }
-
-        private void DisposeSafeCritical()
-        {
-            AppDomain appDomain = Thread.GetDomain();
-            if (_onAppDomainUnload != null)
-            {
-                appDomain.DomainUnload -= _onAppDomainUnload;
-            }
-            if (_onUnhandledException != null)
-            {
-                appDomain.UnhandledException -= _onUnhandledException;
             }
         }
 

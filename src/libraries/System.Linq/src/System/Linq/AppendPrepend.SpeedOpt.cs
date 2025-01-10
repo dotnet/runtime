@@ -104,7 +104,7 @@ namespace System.Linq
                     return new List<TSource>(1) { _item };
                 }
 
-                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
+                List<TSource> list = count == -1 ? [] : new List<TSource>(count);
                 if (!_appending)
                 {
                     list.Add(_item);
@@ -257,7 +257,7 @@ namespace System.Linq
             public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
-                List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
+                List<TSource> list = count == -1 ? [] : new List<TSource>(count);
 
                 _prepended?.Fill(SetCountAndGetSpan(list, _prependCount));
 

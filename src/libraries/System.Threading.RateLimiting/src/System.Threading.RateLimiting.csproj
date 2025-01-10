@@ -26,6 +26,7 @@ System.Threading.RateLimiting.RateLimitLease</PackageDescription>
     <Compile Include="System\Threading\RateLimiting\PartitionedRateLimiter.T.cs" />
     <Compile Include="System\Threading\RateLimiting\QueueProcessingOrder.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\RateLimiterHelper.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimiterStatistics.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimitLease.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimitPartition.cs" />

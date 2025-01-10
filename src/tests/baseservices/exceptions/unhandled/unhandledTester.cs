@@ -98,7 +98,8 @@ namespace TestUnhandledExceptionTester
                 }
                 else if (unhandledType == "foreign")
                 {
-                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:"))
+                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:") &&
+                        !lines[0].StartsWith("Unhandled exception. System.EntryPointNotFoundException: Unable to find an entry point named 'HelloCpp'"))
                     {
                         throw new Exception("Missing Unhandled exception header");
                     }

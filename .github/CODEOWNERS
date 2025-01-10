@@ -19,49 +19,49 @@
 
 # Mono Code Owners
 
-/src/mono @marek-safar
+/src/mono @steveisok @vitek-karas
 
-/src/mono/llvm @lambdageek @steveisok
+/src/mono/llvm @steveisok @vitek-karas
 
-/src/mono/mono/arch @lambdageek @steveisok
-/src/mono/mono/eglib @lambdageek @steveisok
+/src/mono/mono/arch @steveisok @vitek-karas
+/src/mono/mono/eglib @steveisok @vitek-karas
 
-/src/mono/mono/metadata @lambdageek @thaystg
-/src/mono/mono/metadata/*-win* @lateralusX @lambdageek
-/src/mono/mono/metadata/handle* @lambdageek @steveisok
-/src/mono/mono/metadata/monitor* @brzvlad @steveisok
-/src/mono/mono/metadata/sgen* @brzvlad @lambdageek
-/src/mono/mono/metadata/thread* @lateralusX @lambdageek
-/src/mono/mono/metadata/w32* @lateralusX @lambdageek
+/src/mono/mono/metadata @thaystg @steveisok @vitek-karas
+/src/mono/mono/metadata/*-win* @lateralusX @steveisok
+/src/mono/mono/metadata/handle* @steveisok @vitek-karas
+/src/mono/mono/metadata/monitor* @brzvlad @steveisok @vitek-karas
+/src/mono/mono/metadata/sgen* @brzvlad @steveisok @vitek-karas
+/src/mono/mono/metadata/thread* @lateralusX @steveisok @vitek-karas
+/src/mono/mono/metadata/w32* @lateralusX @steveisok @vitek-karas
 
-/src/mono/mono/eventpipe @lateralusX @lambdageek
+/src/mono/mono/eventpipe @lateralusX @steveisok @vitek-karas
 
-/src/mono/mono/mini @lambdageek @steveisok
-/src/mono/mono/mini/*cfgdump* @lambdageek
-/src/mono/mono/mini/*exceptions* @BrzVlad
-/src/mono/mono/mini/*llvm* @fanyang-mono @steveisok
-/src/mono/mono/mini/*ppc* @lambdageek
-/src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
-/src/mono/mono/mini/*riscv* @lambdageek @steveisok
-/src/mono/mono/mini/*type-check* @lambdageek @steveisok
-/src/mono/mono/mini/debugger-agent.c @thaystg @lambdageek
-/src/mono/mono/mini/interp/* @BrzVlad @kotlarmilos
-/src/mono/mono/mini/interp/*jiterp* @kg
-/src/mono/mono/mini/*simd* @fanyang-mono
+/src/mono/mono/mini @steveisok @vitek-karas
+/src/mono/mono/mini/*cfgdump* @steveisok @vitek-karas
+/src/mono/mono/mini/*exceptions* @BrzVlad @steveisok @vitek-karas
+/src/mono/mono/mini/*llvm* @steveisok @vitek-karas
+/src/mono/mono/mini/*ppc* @steveisok @vitek-karas
+/src/mono/mono/mini/*profiler* @BrzVlad @steveisok @vitek-karas
+/src/mono/mono/mini/*riscv* @steveisok @vitek-karas
+/src/mono/mono/mini/*type-check* @steveisok @vitek-karas
+/src/mono/mono/mini/debugger-agent.c @thaystg @steveisok @vitek-karas
+/src/mono/mono/mini/interp/* @BrzVlad @kotlarmilos @steveisok @vitek-karas
+/src/mono/mono/mini/interp/*jiterp* @kg @steveisok @vitek-karas
+/src/mono/mono/mini/*simd* @steveisok @vitek-karas
 
-/src/mono/mono/profiler @BrzVlad @lambdageek
-/src/mono/mono/sgen @BrzVlad @lambdageek
+/src/mono/mono/profiler @BrzVlad @steveisok @vitek-karas
+/src/mono/mono/sgen @BrzVlad @steveisok @vitek-karas
 
-/src/mono/mono/utils @lambdageek @steveisok
-/src/mono/mono/utils/*-win* @lateralusX @lambdageek
-/src/mono/mono/utils/atomic* @lambdageek @steveisok
-/src/mono/mono/utils/mono-hwcap* @lambdageek
-/src/mono/mono/utils/mono-mem* @lambdageek @steveisok
-/src/mono/mono/utils/mono-threads* @lambdageek
+/src/mono/mono/utils @steveisok @vitek-karas
+/src/mono/mono/utils/*-win* @lateralusX @steveisok @vitek-karas
+/src/mono/mono/utils/atomic* @steveisok @vitek-karas
+/src/mono/mono/utils/mono-hwcap* @steveisok @vitek-karas
+/src/mono/mono/utils/mono-mem* @steveisok @vitek-karas
+/src/mono/mono/utils/mono-threads* @steveisok @vitek-karas
 
-/src/mono/dlls @thaystg @lambdageek
+/src/mono/dlls @thaystg @steveisok @vitek-karas
 
-/src/native/public/mono @marek-safar @lambdageek
+/src/native/public/mono @steveisok @vitek-karas
 /src/native/external/libunwind @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 /src/native/external/libunwind_extras @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 
@@ -71,7 +71,6 @@
 /src/mono/browser @lewing @pavelsavara
 /src/mono/wasi @lewing @pavelsavara
 /src/mono/wasm @lewing @pavelsavara
-/src/mono/wasm/debugger @thaystg @ilonatommy
 /src/mono/browser/debugger @thaystg @ilonatommy
 /src/mono/wasm/build @maraf @akoeplinger
 /src/mono/wasi/build @maraf @akoeplinger

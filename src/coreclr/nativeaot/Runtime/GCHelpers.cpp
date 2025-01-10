@@ -29,6 +29,12 @@
 
 #include "gcdesc.h"
 
+#ifdef FEATURE_EVENT_TRACE
+   #include "clretwallmain.h"
+#else // FEATURE_EVENT_TRACE
+   #include "etmdummy.h"
+#endif // FEATURE_EVENT_TRACE
+
 #define RH_LARGE_OBJECT_SIZE 85000
 
 MethodTable g_FreeObjectEEType;
@@ -170,9 +176,9 @@ FCIMPL0(int32_t, RhGetMaxGcGeneration)
 }
 FCIMPLEND
 
-FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, CLR_BOOL getSpecialGCCount)
+FCIMPL2(int32_t, RhGetGcCollectionCount, int32_t generation, FC_BOOL_ARG getSpecialGCCount)
 {
-    return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
+    return GCHeapUtilities::GetGCHeap()->CollectionCount(generation, FC_ACCESS_BOOL(getSpecialGCCount));
 }
 FCIMPLEND
 
@@ -471,6 +477,24 @@ EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
+void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
+{
+#ifdef FEATURE_EVENT_TRACE
+    void* typeId = GetLastAllocEEType();
+    // Note: Just as for AllocationTick, the type name cannot be retrieved
+    WCHAR* name = nullptr;
+
+    if (typeId != nullptr)
+    {
+        unsigned int allocKind =
+            (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+            (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+            0;  // SOH
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
+    }
+#endif
+}
+
 static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements, Thread* pThread)
 {
     ASSERT(!pThread->IsDoNotTriggerGcSet());
@@ -539,7 +563,47 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     // Save the MethodTable for instrumentation purposes.
     tls_pLastAllocationEEType = pEEType;
 
-    Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    // check for dynamic allocation sampling
+    ee_alloc_context* pEEAllocContext = pThread->GetEEAllocContext();
+    gc_alloc_context* pAllocContext = pEEAllocContext->GetGCAllocContext();
+    bool isSampled = false;
+    size_t availableSpace = 0;
+    size_t samplingBudget = 0;
+
+    bool isRandomizedSamplingEnabled = ee_alloc_context::IsRandomizedSamplingEnabled();
+    if (isRandomizedSamplingEnabled)
+    {
+        // The number bytes we can allocate before we need to emit a sampling event.
+        // This calculation is only valid if combined_limit < alloc_limit.
+        samplingBudget = (size_t)(pEEAllocContext->combined_limit - pAllocContext->alloc_ptr);
+
+        // The number of bytes available in the current allocation context
+        availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+        // Check to see if the allocated object overlaps a sampled byte
+        // in this AC. This happens when both:
+        // 1) The AC contains a sampled byte (combined_limit < alloc_limit)
+        // 2) The object is large enough to overlap it (samplingBudget < aligned_size)
+        //
+        // Note that the AC could have no remaining space for allocations (alloc_ptr =
+        // alloc_limit = combined_limit). When a thread hasn't done any SOH allocations
+        // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+        // combined_limit = nullptr. The (1) check handles both of these situations
+        // properly as an empty AC can not have a sampled byte inside of it.
+        isSampled =
+            (pEEAllocContext->combined_limit < pAllocContext->alloc_limit) &&
+            (samplingBudget < cbSize);
+
+        // if the object overflows the AC, we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (cbSize > availableSpace && !isSampled)
+        {
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom() + availableSpace;
+            isSampled = (samplingBudget < cbSize);
+        }
+    }
+
+    Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, cbSize, uFlags);
     if (pObject == NULL)
         return NULL;
 
@@ -549,6 +613,19 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
         ASSERT(numElements == (uint32_t)numElements);
         ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
     }
+
+    if (isSampled)
+    {
+        FireAllocationSampled((GC_ALLOC_FLAGS)uFlags, cbSize, samplingBudget, pObject);
+    }
+
+    // There are a variety of conditions that may have invalidated the previous combined_limit value
+    // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding
+    // extra alignment padding, allocating a new AC, or allocating an object that consumed the sampling budget.
+    // Rather than test for all the different invalidation conditions individually we conservatively always
+    // recompute it. If sampling isn't enabled this inlined function is just trivially setting
+    // combined_limit=alloc_limit.
+    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled);
 
     if (uFlags & GC_ALLOC_USER_OLD_HEAP)
         GCHeapUtilities::GetGCHeap()->PublishObject((uint8_t*)pObject);

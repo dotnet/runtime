@@ -39,7 +39,7 @@
     <ItemGroup>
       <ProjectReferenceWithConfiguration PrivateAssets="all"
                                          Private="false"
-                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))" />
+                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);')) and '%(ProjectReferenceWithConfiguration.Private)' == ''" />
     </ItemGroup>
   </Target>
 

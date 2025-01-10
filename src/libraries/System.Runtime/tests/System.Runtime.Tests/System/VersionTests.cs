@@ -312,6 +312,23 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8_ValidInput_ReturnsExpected(string input, int offset, int count, Version expected)
+        {
+            if (input == null)
+            {
+                return;
+            }
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input.Substring(offset, count));
+
+            Assert.Equal(expected, Version.Parse(utf8Bytes));
+
+            Assert.True(Version.TryParse(utf8Bytes, out Version version));
+            Assert.Equal(expected, version);
+        }
+
+        [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Span_InvalidInput_ThrowsException(string input, Type exceptionType)
         {
@@ -323,6 +340,23 @@ namespace System.Tests
             Assert.Throws(exceptionType, () => Version.Parse(input.AsSpan()));
 
             Assert.False(Version.TryParse(input.AsSpan(), out Version version));
+            Assert.Null(version);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8_InvalidInput_ThrowsException(string input, Type exceptionType)
+        {
+            if (input == null)
+            {
+                return;
+            }
+
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
+            Assert.Throws(exceptionType, () => Version.Parse(utf8Bytes));
+
+            Assert.False(Version.TryParse(utf8Bytes, out Version version));
             Assert.Null(version);
         }
 

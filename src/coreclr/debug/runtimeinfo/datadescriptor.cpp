@@ -9,8 +9,13 @@
 #include "static_assert.h"
 
 #include <sospriv.h>
+#include "cdacplatformmetadata.hpp"
 #include "methodtable.h"
 #include "threads.h"
+
+#ifdef HAVE_GCCOVER
+#include "gccover.h"
+#endif // HAVE_GCCOVER
 
 // begin blob definition
 

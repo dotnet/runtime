@@ -1,13 +1,13 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('h')]$help,
+  [switch]$pack,
   [switch][Alias('t')]$test,
   [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
   [ValidateSet("windows","linux","osx","android","browser","wasi")][string]$os,
-  [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
@@ -77,10 +77,9 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net9.0 or net48."
-  Write-Host "                          [Default: net9.0]"
+  Write-Host "  -framework (-f)         Build framework: net10.0 or net48."
+  Write-Host "                          [Default: net10.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -312,7 +311,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
-    "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
+    "pack"                   { $arguments += " -pack /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }
@@ -329,7 +328,7 @@ foreach ($argument in $PSBoundParameters.Keys)
 }
 
 if ($env:TreatWarningsAsErrors -eq 'false') {
-  $arguments += " -warnAsError 0"
+  $arguments += " -warnAsError `$false"
 }
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211

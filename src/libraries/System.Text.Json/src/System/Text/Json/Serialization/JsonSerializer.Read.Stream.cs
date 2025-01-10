@@ -553,10 +553,11 @@ namespace System.Text.Json
             {
                 Debug.Assert(listTypeInfo.IsConfigured);
 
-                ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
+                // Note: The ReadBufferState ctor rents pooled buffers.
+                ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
 
                 try
                 {

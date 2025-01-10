@@ -68,7 +68,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
 #define METHOD_DESC_SIZES(adjustment)                                       \
     adjustment + sizeof(MethodDesc),                 /* mcIL            */  \
     adjustment + sizeof(FCallMethodDesc),            /* mcFCall         */  \
-    adjustment + sizeof(NDirectMethodDesc),          /* mcNDirect       */  \
+    adjustment + sizeof(NDirectMethodDesc),          /* mcPInvoke       */  \
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
@@ -194,20 +194,6 @@ CHECK MethodDesc::CheckActivated()
 }
 
 #ifndef DACCESS_COMPILE
-
-//*******************************************************************************
-LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
-{
-    if (GetLoaderModule()->IsCollectible())
-    {
-        return GetLoaderAllocator();
-    }
-    else
-    {
-        return ::GetAppDomain()->GetLoaderAllocator();
-    }
-
-}
 
 HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
 {
@@ -474,19 +460,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
 }
 
 //*******************************************************************************
-PCCOR_SIGNATURE MethodDesc::GetSig()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD           cSig;
-
-    GetSig(&pSig, &cSig);
-
-    PREFIX_ASSUME(pSig != NULL);
-
-    return pSig;
-}
 
 Signature MethodDesc::GetSignature()
 {
@@ -791,36 +764,6 @@ Instantiation MethodDesc::LoadMethodInstantiation()
 }
 
 //*******************************************************************************
-Module *MethodDesc::GetDefiningModuleForOpenMethod()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    Module *pModule = GetMethodTable()->GetDefiningModuleForOpenType();
-    if (pModule != NULL)
-        return pModule;
-
-    if (IsGenericMethodDefinition())
-        return GetModule();
-
-    Instantiation inst = GetMethodInstantiation();
-    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-    {
-        pModule = inst[i].GetDefiningModuleForOpenType();
-        if (pModule != NULL)
-            return pModule;
-    }
-
-    return NULL;
-}
-
-
-//*******************************************************************************
 BOOL MethodDesc::ContainsGenericVariables()
 {
     CONTRACTL
@@ -1079,7 +1022,7 @@ PCODE MethodDesc::GetNativeCode()
         PCODE pCode = *ppCode;
 
 #ifdef TARGET_ARM
-        if (pCode != NULL)
+        if (pCode != (PCODE)NULL)
             pCode |= THUMB_CODE;
 #endif
         return pCode;
@@ -1506,6 +1449,20 @@ DWORD MethodDesc::GetImplAttrs()
     return props;
 }
 
+PTR_Module MethodDescChunk::GetLoaderModule()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (IsLoaderModuleAttachedToChunk())
+    {
+        TADDR ppLoaderModule = dac_cast<TADDR>(this) + SizeOf() - sizeof(PTR_Module);
+        return *dac_cast<DPTR(PTR_Module)>(ppLoaderModule);
+    }
+    else
+    {
+        return GetMethodTable()->GetLoaderModule();
+    }
+}
+
 //*******************************************************************************
 Module* MethodDesc::GetLoaderModule()
 {
@@ -1517,17 +1474,24 @@ Module* MethodDesc::GetLoaderModule()
     }
     CONTRACTL_END;
 
+    Module* pLoaderModule = GetMethodDescChunk()->GetLoaderModule();
+
+#ifdef _DEBUG
+    // Verify that the LoaderModule stored in the MethodDescChunk matches the result achieved by computation
     if (HasMethodInstantiation() && !IsGenericMethodDefinition())
     {
-        Module *retVal = ClassLoader::ComputeLoaderModule(GetMethodTable(),
+        Module *computeLoaderModuleAlgorithmResult = ClassLoader::ComputeLoaderModule(GetMethodTable(),
                                                 GetMemberDef(),
                                                 GetMethodInstantiation());
-        return retVal;
+        _ASSERTE(computeLoaderModuleAlgorithmResult == pLoaderModule);
     }
     else
     {
-        return GetMethodTable()->GetLoaderModule();
+        _ASSERTE(pLoaderModule == GetMethodTable()->GetLoaderModule());
     }
+#endif // _DEBUG
+
+    return pLoaderModule;
 }
 
 //*******************************************************************************
@@ -1845,7 +1809,7 @@ MethodDesc* MethodDesc::StripMethodInstantiation()
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
-    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker)
+    DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
 {
     CONTRACT(MethodDescChunk *)
     {
@@ -1878,18 +1842,28 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     MethodDescChunk * pFirstChunk = NULL;
 
+    bool needsExplicitLoaderModule = false;
+    if (pLoaderModule != NULL && pLoaderModule != pInitialMT->GetLoaderModule())
+    {
+        needsExplicitLoaderModule = true;
+    }
+
     do
     {
         DWORD count = min(methodDescCount, maxMethodDescsPerChunk);
 
         void * pMem = pamTracker->Track(
-                pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + oneSize * count)));
+                pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + oneSize * count + (needsExplicitLoaderModule ? sizeof(Module *) : 0))));
 
         // Skip pointer to temporary entrypoints
         MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
         pChunk->SetSizeAndCount(oneSize * count, count);
         pChunk->SetMethodTable(pInitialMT);
+        if (needsExplicitLoaderModule)
+        {
+            pChunk->SetLoaderModuleAttachedToChunk(pLoaderModule);
+        }
 
         MethodDesc * pMD = pChunk->GetFirstMethodDesc();
         for (DWORD i = 0; i < count; i++)
@@ -2038,6 +2012,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
+        PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
         POSTCONDITION(RETVAL != NULL);
     }
     CONTRACT_END;
@@ -2539,7 +2514,7 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcNDirect:         // NDirect never have native code (note that the NDirect method
+    case mcPInvoke:         // NDirect never have native code (note that the NDirect method
         return FALSE;       //  does not appear as having a native code even for stubs as IL)
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
@@ -3160,10 +3135,10 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
     if (HasNativeCodeSlot())
     {
 #ifdef TARGET_ARM
-        _ASSERTE(IsThumbCode(addr) || (addr==NULL));
+        _ASSERTE(IsThumbCode(addr) || (addr == (PCODE)NULL));
         addr &= ~THUMB_CODE;
 
-        if (pExpected != NULL)
+        if (pExpected != (PCODE)NULL)
         {
             _ASSERTE(IsThumbCode(pExpected));
             pExpected &= ~THUMB_CODE;
@@ -3486,14 +3461,6 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
         WellKnownAttribute::UnmanagedCallersOnly,
         nullptr,
         nullptr);
-    if (hr != S_OK)
-    {
-        // See https://github.com/dotnet/runtime/issues/37622
-        hr = GetCustomAttribute(
-            WellKnownAttribute::NativeCallableInternal,
-            nullptr,
-            nullptr);
-    }
 
     return (hr == S_OK) ? TRUE : FALSE;
 }
@@ -3757,7 +3724,7 @@ PTR_LoaderAllocator MethodDesc::GetLoaderAllocator()
 }
 
 #if !defined(DACCESS_COMPILE)
-REFLECTMETHODREF MethodDesc::GetStubMethodInfo()
+REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
 {
     CONTRACTL
     {

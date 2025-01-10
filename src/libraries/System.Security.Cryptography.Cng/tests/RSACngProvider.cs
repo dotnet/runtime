@@ -37,6 +37,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool SupportsSha1Signatures => true;
 
+        public bool SupportsMd5Signatures => true;
+
         public bool SupportsSha3 { get; } = SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }
 

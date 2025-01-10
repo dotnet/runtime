@@ -41,7 +41,6 @@ option (ENABLE_CHECKED_BUILD_GC "Enable runtime GC Safe / Unsafe mode assertion 
 option (ENABLE_CHECKED_BUILD_THREAD "Enable runtime history of per-thread coop state transitions (must set env var MONO_CHECK_MODE=thread)")
 option (ENABLE_CHECKED_BUILD_METADATA "Enable runtime checks of mempool references between metadata images (must set env var MONO_CHECK_MODE=metadata)")
 option (ENABLE_CHECKED_BUILD_CASTS "Enable runtime checks of casts between types")
-option (ENABLE_MSCORDBI "Generate mscordbi to support icordbg interface")
 option (ENABLE_SMALL_CONFIG "Reduce runtime requirements (and capabilities)")
 option (ENABLE_DTRACE "Enable DTrace probes")
 option (ENABLE_EXPERIMENT_TIERED "Enable experiment 'Tiered Compilation'")

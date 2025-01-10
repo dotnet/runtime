@@ -15,13 +15,13 @@ internal static class Entrypoints
     private static unsafe int Init(ulong descriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, IntPtr* handle)
     {
         // TODO: [cdac] Better error code/details
-        if (!Target.TryCreate(descriptor, (address, buffer) =>
+        if (!ContractDescriptorTarget.TryCreate(descriptor, (address, buffer) =>
             {
                 fixed (byte* bufferPtr = buffer)
                 {
                     return readFromTarget(address, bufferPtr, (uint)buffer.Length, readContext);
                 }
-            }, out Target? target))
+            }, out ContractDescriptorTarget? target))
             return -1;
 
         GCHandle gcHandle = GCHandle.Alloc(target);
@@ -38,20 +38,24 @@ internal static class Entrypoints
     }
 
     /// <summary>
-    /// Get the SOS-DAC interface implementation.
+    /// Create the SOS-DAC interface implementation.
     /// </summary>
     /// <param name="handle">Handle crated via cdac initialization</param>
+    /// <param name="legacyImplPtr">Optional. Pointer to legacy implementation of ISOSDacInterface*</param>
     /// <param name="obj"><c>IUnknown</c> pointer that can be queried for ISOSDacInterface*</param>
     /// <returns></returns>
-    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}get_sos_interface")]
-    private static unsafe int GetSOSInterface(IntPtr handle, nint* obj)
+    [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_sos_interface")]
+    private static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
         ComWrappers cw = new StrategyBasedComWrappers();
         Target? target = GCHandle.FromIntPtr(handle).Target as Target;
         if (target == null)
             return -1;
 
-        Legacy.SOSDacImpl impl = new(target);
+        object? legacyImpl = legacyImplPtr != IntPtr.Zero
+            ? cw.GetOrCreateObjectForComInstance(legacyImplPtr, CreateObjectFlags.None)
+            : null;
+        Legacy.SOSDacImpl impl = new(target, legacyImpl);
         nint ptr = cw.GetOrCreateComInterfaceForObject(impl, CreateComInterfaceFlags.None);
         *obj = ptr;
         return 0;

@@ -45,11 +45,6 @@ typedef struct {
 	MonoGenericContext context;
 } MonoInflatedMethodSignature;
 
-enum {
-	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
-	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2,
-};
-
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
 					 const char *ptr, const char **rptr, MonoError *error);
 
@@ -2936,7 +2931,7 @@ aggregate_modifiers_equal (gconstpointer ka, gconstpointer kb)
 	for (int i = 0; i < amods1->count; ++i) {
 		if (amods1->modifiers [i].required != amods2->modifiers [i].required)
 			return FALSE;
-		if (!mono_metadata_type_equal_full (amods1->modifiers [i].type, amods2->modifiers [i].type, TRUE))
+		if (!mono_metadata_type_equal_full (amods1->modifiers [i].type, amods2->modifiers [i].type, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 			return FALSE;
 	}
 	return TRUE;
@@ -5936,24 +5931,23 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags)
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
-	return do_mono_metadata_type_equal (t1, t2, 0);
+	return do_mono_metadata_type_equal (t1, t2, MONO_TYPE_EQ_FLAGS_NONE);
 }
 
 /**
  * mono_metadata_type_equal_full:
  * \param t1 a type
  * \param t2 another type
- * \param signature_only if signature only comparison should be made
+ * \param flags flags used to modify comparison logic
  *
- * Determine if \p t1 and \p t2 are signature compatible if \p signature_only is TRUE, otherwise
- * behaves the same way as mono_metadata_type_equal.
- * The function mono_metadata_type_equal(a, b) is just a shortcut for mono_metadata_type_equal_full(a, b, FALSE).
- * \returns TRUE if \p t1 and \p t2 are equal taking \p signature_only into account.
+ * Determine if \p t1 and \p t2 are compatible based on the supplied flags.
+ * The function mono_metadata_type_equal(a, b) is just a shortcut for mono_metadata_type_equal_full(a, b, MONO_TYPE_EQ_FLAGS_NONE).
+ * \returns TRUE if \p t1 and \p t2 are equal.
  */
 gboolean
-mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, int flags)
 {
-	return do_mono_metadata_type_equal (t1, t2, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
+	return do_mono_metadata_type_equal (t1, t2, flags);
 }
 
 enum {

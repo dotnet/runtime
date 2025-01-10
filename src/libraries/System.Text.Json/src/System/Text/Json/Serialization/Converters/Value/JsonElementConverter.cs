@@ -18,6 +18,6 @@ namespace System.Text.Json.Serialization.Converters
             value.WriteTo(writer);
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

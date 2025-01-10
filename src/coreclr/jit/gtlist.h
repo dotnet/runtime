@@ -46,8 +46,12 @@ GTNODE(CNS_INT          , GenTreeIntCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_LNG          , GenTreeLngCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_DBL          , GenTreeDblCon      ,0,0,GTK_LEAF)
 GTNODE(CNS_STR          , GenTreeStrCon      ,0,0,GTK_LEAF)
+#if defined(FEATURE_SIMD)
 GTNODE(CNS_VEC          , GenTreeVecCon      ,0,0,GTK_LEAF)
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 GTNODE(CNS_MSK          , GenTreeMskCon      ,0,0,GTK_LEAF)
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //-----------------------------------------------------------------------------
 //  Unary  operators (1 operand):

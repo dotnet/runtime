@@ -78,11 +78,11 @@ static FILE* volatile s_jitstdout;
 
 static FILE* jitstdoutInit()
 {
-    const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
-    FILE*        file          = nullptr;
+    const char* jitStdOutFile = JitConfig.JitStdOutFile();
+    FILE*       file          = nullptr;
     if (jitStdOutFile != nullptr)
     {
-        file = _wfopen(jitStdOutFile, W("a"));
+        file = fopen_utf8(jitStdOutFile, "a");
         assert(file != nullptr);
     }
 

@@ -26,10 +26,10 @@
 
       if (machState.setMachState != 0) return;
 
-   setMachState is guarnenteed to return 0 (so the return
+   setMachState is guaranteed to return 0 (so the return
    statement will never be executed), but the expression above
-   insures insures that there is a 'quick' path to epilog
-   of the function.  This insures that setMachState will only
+   ensures that there is a 'quick' path to epilog
+   of the function.  This ensures that setMachState will only
    have to parse a limited number of X86 instructions.   */
 
 
@@ -47,7 +47,7 @@
 #if !defined(DACCESS_COMPILE)
 
 #ifdef _MSC_VER
-#pragma optimize("gsy", on )        // optimize to insure that code generation does not have junk in it
+#pragma optimize("gsy", on )        // optimize to ensure that code generation does not have junk in it
 #endif // _MSC_VER
 #pragma warning(disable:4717)
 
@@ -1124,7 +1124,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
 #ifndef DACCESS_COMPILE
             case 0xCC:
-                if (IsDebuggerPresent())
+                if (minipal_is_native_debugger_present())
                 {
                     OutputDebugStringA("CLR: Invalid breakpoint in a helpermethod frame epilog\n");
                     DebugBreak();

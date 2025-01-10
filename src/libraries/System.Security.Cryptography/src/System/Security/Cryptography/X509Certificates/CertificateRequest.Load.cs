@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentOutOfRangeException(nameof(options), options, SR.Argument_InvalidFlag);
             }
 
-            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(pkcs10Pem))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in PemEnumerator.Utf16(pkcs10Pem))
             {
                 if (contents[fields.Label].SequenceEqual(PemLabels.Pkcs10CertificateRequest))
                 {

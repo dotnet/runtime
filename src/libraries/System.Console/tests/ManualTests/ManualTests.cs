@@ -5,9 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using Xunit;
 
 namespace System
@@ -332,37 +330,6 @@ namespace System
             Console.Write("1");
             Console.WriteLine();
             AssertUserExpectedResults("single line with '1' at the start and '2' at the end.");
-        }
-
-        [ConditionalFact(nameof(ManualTestsEnabled))]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
-        public static void ResizeTest()
-        {
-            bool wasResized = false;
-
-            using (ManualResetEvent manualResetEvent = new(false))
-            using (PosixSignalRegistration.Create(PosixSignal.SIGWINCH,
-                       ctx =>
-                       {
-                           wasResized = true;
-                           Assert.Equal(PosixSignal.SIGWINCH, ctx.Signal);
-                           manualResetEvent.Set();
-                       }))
-            {
-                int widthBefore = Console.WindowWidth;
-                int heightBefore = Console.WindowHeight;
-
-                Assert.False(wasResized);
-
-                Console.SetWindowSize(widthBefore / 2, heightBefore / 2);
-
-                Assert.True(manualResetEvent.WaitOne(TimeSpan.FromMilliseconds(50)));
-                Assert.True(wasResized);
-                Assert.Equal(widthBefore / 2, Console.WindowWidth );
-                Assert.Equal(heightBefore / 2, Console.WindowHeight );
-
-                Console.SetWindowSize(widthBefore, heightBefore);
-            }
         }
 
         private static void AssertUserExpectedResults(string expected)

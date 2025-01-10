@@ -1958,18 +1958,18 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_ClassImplementingIXmlSerialiable()
+    public static void DCS_ClassImplementingIXmlSerializable()
     {
-        ClassImplementingIXmlSerialiable value = new ClassImplementingIXmlSerialiable() { StringValue = "Foo" };
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerialiable>(value, @"<ClassImplementingIXmlSerialiable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
+        ClassImplementingIXmlSerializable value = new ClassImplementingIXmlSerializable() { StringValue = "Foo" };
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<ClassImplementingIXmlSerializable>(value, @"<ClassImplementingIXmlSerializable StringValue=""Foo"" BoolValue=""True"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
     [Fact]
-    public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerialiable()
+    public static void DCS_TypeWithNestedGenericClassImplementingIXmlSerializable()
     {
-        TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>() { StringValue = "Foo" };
-        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerialiable.NestedGenericClassImplementingIXmlSerialiableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
+        TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool> value = new TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>() { StringValue = "Foo" };
+        var deserializedValue = DataContractSerializerHelper.SerializeAndDeserialize<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializable<bool>>(value, @"<TypeWithNestedGenericClassImplementingIXmlSerializable.NestedGenericClassImplementingIXmlSerializableOfbooleanRvdAXEcW StringValue=""Foo"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes""/>");
         Assert.Equal(value.StringValue, deserializedValue.StringValue);
     }
 
@@ -3541,8 +3541,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(genericBase2, $@"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.GenericBase2`2[[SerializationTestTypes.KT1Base, {assemblyName}],[SerializationTestTypes.NonDCPerson, {assemblyName}]]***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.GenericBase2`2[[SerializationTestTypes.KT1Base, {assemblyName}],[SerializationTestTypes.NonDCPerson, {assemblyName}]]***""><genericData1 z:Id=""i2""><BData z:Id=""i3"" i:type=""b:SerializationTestTypes.KT1Derived***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.KT1Derived***""><BData i:nil=""true""/><DData>TestData</DData></BData></genericData1><genericData2><Age>20</Age><Name>jeff</Name></genericData2></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
     }
 
-
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 
@@ -4477,8 +4476,11 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
+    // Random OSR might cause a stack overflow on Windows x64
+    private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsRandomOSR))]
     public static void DCS_DeeplyLinkedData()
     {
         TypeWithLinkedProperty head = new TypeWithLinkedProperty();

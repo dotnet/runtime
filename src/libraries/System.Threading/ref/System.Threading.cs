@@ -613,6 +613,8 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
         public static void Write<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location, T value) where T : class? { }
+        public static void ReadBarrier() { }
+        public static void WriteBarrier() { }
     }
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {

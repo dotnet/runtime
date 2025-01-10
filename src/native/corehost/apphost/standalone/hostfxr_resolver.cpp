@@ -125,8 +125,6 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     else
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, m_fxr_path.c_str());
-        trace::error(_X("  - Installing .NET prerequisites might help resolve this problem."));
-        trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
         m_status_code = StatusCode::CoreHostLibLoadFailure;
     }
 }

@@ -115,9 +115,12 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflowLargeFrameMainThread()
         {
-            if ((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) &&
+            if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
+                (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64)) &&
                 ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
             {
+                // Disabled on Unix RISCV64 and LoongArch64, similar to ARM64.
+                // LoongArch64 hit this issue on Alpine. TODO: implement stack probing using helpers.
                 // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/13519
                 // The current stack probing doesn't move the stack pointer and so the runtime sometimes cannot
                 // recognize the underlying sigsegv as stack overflow when it probes too far from SP.
@@ -181,9 +184,12 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflowLargeFrameSecondaryThread()
         {
-            if ((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) &&
+            if (((RuntimeInformation.ProcessArchitecture == Architecture.Arm64) || (RuntimeInformation.ProcessArchitecture == Architecture.RiscV64) ||
+                (RuntimeInformation.ProcessArchitecture == Architecture.LoongArch64)) &&
                 ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX)))
             {
+                // Disabled on Unix RISCV64 and LoongArch64, similar to ARM64.
+                // LoongArch64 hit this issue on Alpine. TODO: implement stack probing using helpers.
                 // Disabled on Unix ARM64 due to https://github.com/dotnet/runtime/issues/13519
                 // The current stack probing doesn't move the stack pointer and so the runtime sometimes cannot
                 // recognize the underlying sigsegv as stack overflow when it probes too far from SP.
@@ -216,6 +222,12 @@ namespace TestStackOverflow
         [Fact]
         public static void TestStackOverflow3()
         {
+            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm)
+            {
+                // Disabled on ARM due to https://github.com/dotnet/runtime/issues/107184
+                return;
+            }
+
             TestStackOverflow("stackoverflow3", "", out List<string> lines);
 
             if (!lines[lines.Count - 1].EndsWith("at TestStackOverflow3.Program.Main()"))

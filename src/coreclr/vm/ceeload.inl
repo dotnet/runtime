@@ -285,7 +285,6 @@ inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef
     }
     CONTRACTL_END
 
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
     return m_ILCodeVersioningStateMap.GetElement(RidFromToken(token));
 }

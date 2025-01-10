@@ -116,6 +116,33 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
+        internal bool TryResolveTypeNameAndMark(ModuleDesc assembly, string typeName, in DiagnosticContext diagnosticContext, string reason, [NotNullWhen(true)] out TypeDesc? type)
+        {
+            List<ModuleDesc> referencedModules = new();
+            TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, assembly, assembly.Context,
+                referencedModules, needsAssemblyName: false, out _);
+            if (foundType == null)
+            {
+                type = default;
+                return false;
+            }
+
+            if (_enabled)
+            {
+                foreach (ModuleDesc referencedModule in referencedModules)
+                {
+                    // Also add module metadata in case this reference was through a type forward
+                    if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
+                        _dependencies.Add(Factory.ModuleMetadata(referencedModule), reason);
+                }
+
+                MarkType(diagnosticContext.Origin, foundType, reason);
+            }
+
+            type = foundType;
+            return true;
+        }
+
         internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason, AccessKind accessKind = AccessKind.Unspecified)
         {
             if (!_enabled)
@@ -325,9 +352,6 @@ namespace ILCompiler.Dataflow
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
             }
-
-            // We decided to not warn on reflection access to compiler-generated methods:
-            // https://github.com/dotnet/runtime/issues/85042
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)

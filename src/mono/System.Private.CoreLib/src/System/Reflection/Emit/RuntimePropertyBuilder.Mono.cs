@@ -61,12 +61,12 @@ namespace System.Reflection.Emit
         private CallingConventions callingConvention;
 #endregion
 
-        internal RuntimePropertyBuilder(RuntimeTypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
+        internal RuntimePropertyBuilder(RuntimeTypeBuilder tb, string name, PropertyAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? returnModReq, Type[]? returnModOpt, Type[]? parameterTypes, Type[][]? paramModReq, Type[][]? paramModOpt)
         {
             this.name = name;
             this.attrs = attributes;
             this.callingConvention = callingConvention;
-            this.type = returnType;
+            this.type = returnType ?? typeof(void);
             this.returnModReq = returnModReq;
             this.returnModOpt = returnModOpt;
             this.paramModReq = paramModReq;

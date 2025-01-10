@@ -31,6 +31,8 @@ namespace BasicEventSourceTests
                     eventSource.Name != "System.Reflection.Runtime.Tracing" &&
                     eventSource.Name != "Microsoft-Windows-DotNETRuntime" &&
                     eventSource.Name != "System.Runtime" &&
+                    eventSource.Name != "System.Diagnostics.Metrics" &&
+                    eventSource.Name != "Microsoft-Diagnostics-DiagnosticSource" &&
 
                     // event source from xunit runner
                     eventSource.Name != "xUnit.TestEventSource" &&

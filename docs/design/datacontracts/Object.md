@@ -13,6 +13,9 @@ string GetStringValue(TargetPointer address);
 
 // Get the pointer to the data corresponding to a managed array object. Error if address does not represent a array.
 TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+
+// Get built-in COM data for the object if available. Returns false, if address does not represent a COM object using built-in COM
+bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
 ```
 
 ## Version 1
@@ -21,9 +24,13 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `Array` | `m_NumComponents` | Number of items in the array |
+| `InteropSyncBlockInfo` | `RCW` | Pointer to the RCW for the object (if it exists) |
+| `InteropSyncBlockInfo` | `CCW` | Pointer to the CCW for the object (if it exists) |
 | `Object` | `m_pMethTab` | Method table for the object |
 | `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
 | `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
+| `SyncBlock` | `InteropInfo` | Optional `InteropSyncBlockInfo` for the sync block |
+| `SyncTableEntry` | `SyncBlock` | `SyncBlock` corresponding to the entry |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -32,6 +39,8 @@ Global variables used:
 | `ObjectHeaderSize` | uint32 | Size of the object header (sync block and alignment) |
 | `ObjectToMethodTableUnmask` | uint8 | Bits to clear for converting to a method table address |
 | `StringMethodTable` | TargetPointer | The method table for System.String |
+| `SyncTableEntries` | TargetPointer | The `SyncTableEntry` list |
+| `SyncBlockValueToObjectOffset` | uint16 | Offset from the sync block value (in the object header) to the object itself |
 
 Contracts used:
 | Contract Name |
@@ -90,5 +99,30 @@ TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPoin
     // Sync block is before `this` pointer, so substract the object header size
     ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.ReadGlobal<uint>("ObjectHeaderSize");
     return address + dataOffset;
+}
+
+bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw);
+{
+    uint syncBlockValue = target.Read<uint>(address - _target.ReadGlobal<ushort>("SyncBlockValueToObjectOffset"));
+
+    // Check if the sync block value represents a sync block index
+    if ((syncBlockValue & (uint)(SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex | SyncBlockValue.Bits.IsHashCode)) != (uint)SyncBlockValue.Bits.IsHashCodeOrSyncBlockIndex)
+        return false;
+
+    // Get the offset into the sync table entries
+    uint index = syncBlockValue & SyncBlockValue.SyncBlockIndexMask;
+    ulong offsetInSyncTableEntries = index * /* SyncTableEntry size */;
+
+    TargetPointer syncBlock = target.ReadPointer(_syncTableEntries + offsetInSyncTableEntries + /* SyncTableEntry::SyncBlock offset */);
+    if (syncBlock == TargetPointer.Null)
+        return false;
+
+    TargetPointer interopInfo = target.ReadPointer(syncBlock + /* SyncTableEntry::InteropInfo offset */);
+    if (interopInfo == TargetPointer.Null)
+        return false;
+
+    rcw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::RCW offset */);
+    ccw = target.ReadPointer(interopInfo + /* InteropSyncBlockInfo::CCW offset */);
+    return rcw != TargetPointer.Null && ccw != TargetPointer.Null;
 }
 ```

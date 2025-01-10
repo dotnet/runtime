@@ -134,6 +134,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
+  com/guid.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
   exception/seh.cpp
@@ -141,7 +142,6 @@ set(SOURCES
   file/directory.cpp
   file/file.cpp
   file/filetime.cpp
-  file/find.cpp
   file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp
@@ -149,8 +149,6 @@ set(SOURCES
   init/sxs.cpp
   loader/module.cpp
   locale/unicode.cpp
-  ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
-  ${CLR_SRC_NATIVE_DIR}/minipal/unicodedata.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -160,15 +158,14 @@ set(SOURCES
   misc/error.cpp
   misc/errorstrings.cpp
   misc/fmtmessage.cpp
-  misc/miscpalapi.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
   misc/time.cpp
   misc/utils.cpp
   objmgr/palobjbase.cpp
-  objmgr/shmobject.cpp
-  objmgr/shmobjectmanager.cpp
+  objmgr/listedobject.cpp
+  objmgr/listedobjectmanager.cpp
   safecrt/makepath_s.cpp
   safecrt/memcpy_s.cpp
   safecrt/memmove_s.cpp
@@ -191,7 +188,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
   sharedmemory/sharedmemory.cpp
-  shmemory/shmemory.cpp
   sync/cs.cpp
   synchobj/event.cpp
   synchobj/semaphore.cpp
@@ -203,6 +199,12 @@ set(SOURCES
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
+)
+
+set_source_files_properties(
+    com/guid.cpp
+    PROPERTIES
+    INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/../inc/rt
 )
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -337,6 +339,9 @@ if(CLR_CMAKE_TARGET_SUNOS)
     rt
   )
 endif(CLR_CMAKE_TARGET_SUNOS)
+
+target_link_libraries(coreclrpal
+  PRIVATE minipal)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

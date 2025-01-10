@@ -72,8 +72,10 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
         Assert.Equal("System.Collections.Hashtable", systemClass.TypeName.FullName);
         Assert.Equal("System.OrdinalComparer", systemClass.GetClassRecord("Comparer")!.TypeName.FullName);
         Assert.Equal("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider", systemClass.GetClassRecord("HashCodeProvider")!.TypeName.FullName);
-        Assert.True(systemClass.GetSerializationRecord("Keys") is SZArrayRecord<object>);
-        Assert.True(systemClass.GetSerializationRecord("Values") is SZArrayRecord<object>);
+        Assert.True(systemClass.GetSerializationRecord("Keys") is SZArrayRecord<SerializationRecord>);
+        Assert.Equal(SerializationRecordType.ArraySingleObject, systemClass.GetSerializationRecord("Keys").RecordType);
+        Assert.True(systemClass.GetSerializationRecord("Values") is SZArrayRecord<SerializationRecord>);
+        Assert.Equal(SerializationRecordType.ArraySingleObject, systemClass.GetSerializationRecord("Values").RecordType);
     }
 
     [Serializable]

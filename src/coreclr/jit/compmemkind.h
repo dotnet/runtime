@@ -64,6 +64,8 @@ CompMemKindMacro(TailMergeThrows)
 CompMemKindMacro(EarlyProp)
 CompMemKindMacro(ZeroInit)
 CompMemKindMacro(Pgo)
+CompMemKindMacro(MaskConversionOpt)
+CompMemKindMacro(TryRegionClone)
 //clang-format on
 
 #undef CompMemKindMacro

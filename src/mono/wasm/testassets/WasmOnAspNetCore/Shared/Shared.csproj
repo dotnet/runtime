@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The name of the assembly is important, one the lazy loading checks is that when System.Text.Json(.dll) is already loaded, we can lazy load Json(.dll) -->
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
@@ -10,7 +10,7 @@
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
   <ItemGroup>
-    <PackageReference Include="System.Net.Http.Json" Version="9.0.0-preview.6.24327.7" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0-preview.6.24328.4" />
+    <PackageReference Include="System.Net.Http.Json" Version="10.0.0-alpha.1.24570.9 " />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0-alpha.2.24572.1" />
   </ItemGroup>
 </Project>

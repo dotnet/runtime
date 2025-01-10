@@ -59,12 +59,6 @@ DEFINE_BOOL_READONLY(readonly_flag, "readonly-flag", FALSE, "Example")
 
 DEFINE_BOOL(wasm_exceptions, "wasm-exceptions", FALSE, "Enable codegen for WASM exceptions")
 DEFINE_BOOL(aot_lazy_assembly_load, "aot-lazy-assembly-load", FALSE, "Load assemblies referenced by AOT images lazily")
-#ifdef DISABLE_THREADS
-DEFINE_BOOL(wasm_mmap, "wasm-mmap", TRUE, "Enable custom memory manager for WASM")
-#else
-// Disabled by default for MT because it breaks strcmp somehow (??????)
-DEFINE_BOOL(wasm_mmap, "wasm-mmap", FALSE, "Enable custom memory manager for WASM")
-#endif
 
 #if HOST_BROWSER
 DEFINE_BOOL(interp_pgo_recording, "interp-pgo-recording", FALSE, "Record interpreter tiering information for automatic PGO")
@@ -89,7 +83,7 @@ DEFINE_BOOL(jiterpreter_jit_call_enabled, "jiterpreter-jit-call-enabled", TRUE, 
 DEFINE_BOOL(wasm_gc_safepoints, "wasm-gc-safepoints", FALSE, "Use GC safepoints on WASM")
 #else
 // traces_enabled controls whether the jiterpreter will JIT individual interpreter opcode traces
-DEFINE_BOOL_READONLY(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", FALSE, "JIT interpreter opcode traces into WASM")
+DEFINE_BOOL(jiterpreter_traces_enabled, "jiterpreter-traces-enabled", TRUE, "JIT interpreter opcode traces into WASM")
 // interp_entry_enabled controls whether specialized interp_entry wrappers will be jitted
 DEFINE_BOOL_READONLY(jiterpreter_interp_entry_enabled, "jiterpreter-interp-entry-enabled", FALSE, "JIT specialized WASM interp_entry wrappers")
 // jit_call_enabled controls whether do_jit_call will use specialized trampolines for hot call sites
@@ -129,6 +123,8 @@ DEFINE_BOOL(jiterpreter_eliminate_null_checks, "jiterpreter-eliminate-null-check
 DEFINE_BOOL(jiterpreter_backward_branches_enabled, "jiterpreter-backward-branches-enabled", TRUE, "Enable performing backward branches without exiting traces")
 // Attempt to use WASM v128 opcodes to implement SIMD interpreter opcodes
 DEFINE_BOOL(jiterpreter_enable_simd, "jiterpreter-simd-enabled", TRUE, "Attempt to use WebAssembly SIMD support")
+// Attempt to use WASM atomics opcodes to implement interpreter atomics opcodes
+DEFINE_BOOL(jiterpreter_enable_atomics, "jiterpreter-atomics-enabled", TRUE, "Attempt to use WebAssembly atomics support")
 // Since the zero page is unallocated, loading array/string/span lengths from null ptrs will yield zero
 DEFINE_BOOL(jiterpreter_zero_page_optimization, "jiterpreter-zero-page-optimization", TRUE, "Exploit the zero page being unallocated to optimize out null checks")
 // We can produce higher quality code by embedding known constants directly into traces instead of loading
@@ -138,7 +134,8 @@ DEFINE_BOOL(jiterpreter_constant_propagation, "jiterpreter-constant-propagation"
 // When compiling a jit_call wrapper, bypass sharedvt wrappers if possible by inlining their
 //  logic into the compiled wrapper and calling the target AOTed function with native call convention
 DEFINE_BOOL(jiterpreter_direct_jit_call, "jiterpreter-direct-jit-calls", TRUE, "Bypass gsharedvt wrappers when compiling JIT call wrappers")
-// any trace that doesn't have at least this many meaningful (non-nop) opcodes in it will be rejected
+// when deciding whether to generate a trace, we sum the value of sequential opcodes that will fit into it
+//  and reject any trace entry point where the score is below this value
 DEFINE_INT(jiterpreter_minimum_trace_value, "jiterpreter-minimum-trace-value", 18, "Reject traces that perform less than this amount of (approximate) work")
 // ensure that we don't create trace entry points too close together
 DEFINE_INT(jiterpreter_minimum_distance_between_traces, "jiterpreter-minimum-distance-between-traces", 4, "Don't insert entry points closer together than this")
@@ -167,12 +164,14 @@ DEFINE_INT(jiterpreter_interp_entry_trampoline_hit_count, "jiterpreter-interp-en
 DEFINE_INT(jiterpreter_interp_entry_queue_flush_threshold, "jiterpreter-interp-entry-queue-flush-threshold", 3000, "Flush the interp_entry JIT queue after an unJITted call site has this many hits")
 // In degenerate cases the jiterpreter could end up generating lots of WASM, so shut off jitting once it reaches this limit
 // Each wasm byte likely maps to multiple bytes of native code, so it's important for this limit not to be too high
-DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 6 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
+DEFINE_INT(jiterpreter_wasm_bytes_limit, "jiterpreter-wasm-bytes-limit", 8 * 1024 * 1024, "Disable jiterpreter code generation once this many bytes of WASM have been generated")
 DEFINE_INT(jiterpreter_table_size, "jiterpreter-table-size", 6 * 1024, "Size of the jiterpreter trace function table")
 // In real-world scenarios these tables can fill up at this size, but making them bigger causes startup time
 //  to bloat to an unacceptable degree. In practice this is still better than nothing.
 // FIXME: In the future if we find a way to reduce the number of unique tables we can raise this constant
 DEFINE_INT(jiterpreter_aot_table_size, "jiterpreter-aot-table-size", 3 * 1024, "Size of the jiterpreter AOT trampoline function tables")
+DEFINE_INT(jiterpreter_max_module_size, "jiterpreter-max-module-size", 16384, "Size limit for jiterpreter generated WASM modules")
+DEFINE_INT(jiterpreter_max_switch_size, "jiterpreter-max-switch-size", 128, "Jump table size limit for jiterpreter switch opcodes (0 to disable)")
 #endif // HOST_BROWSER
 
 #if defined(TARGET_WASM) || defined(TARGET_IOS)  || defined(TARGET_TVOS) || defined (TARGET_MACCAT)

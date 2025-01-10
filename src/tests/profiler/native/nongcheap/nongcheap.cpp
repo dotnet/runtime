@@ -4,6 +4,12 @@
 #include "nongcheap.h"
 #include <vector>
 
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__((visibility("default")))
+#endif // _MSC_VER
+
 GUID NonGcHeapProfiler::GetClsid()
 {
     // {EF0D191C-3FC7-4311-88AF-E474CBEB2859}
@@ -11,8 +17,17 @@ GUID NonGcHeapProfiler::GetClsid()
     return clsid;
 }
 
+std::atomic<bool> _allocationsFinished;
+
+extern "C" DLLEXPORT void NotifyNongcAllocationsFinished()
+{
+    printf("NotifyNongcAllocationsFinished is invoked.\n");
+    _allocationsFinished = true;
+}
+
 HRESULT NonGcHeapProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
 {
+    _allocationsFinished = false;
     Profiler::Initialize(pICorProfilerInfoUnk);
 
     HRESULT hr = S_OK;
@@ -20,7 +35,7 @@ HRESULT NonGcHeapProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
         COR_PRF_ENABLE_OBJECT_ALLOCATED | COR_PRF_MONITOR_OBJECT_ALLOCATED,
         COR_PRF_HIGH_BASIC_GC)))
     {
-        printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x", hr);
+        printf("FAIL: ICorProfilerInfo::SetEventMask2() failed hr=0x%x\n", hr);
         return hr;
     }
 
@@ -41,16 +56,22 @@ HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, 
         {
             // We expect GetObjectGeneration to return an error (CORPROF_E_NOT_GC_OBJECT)
             // for non-GC objects.
+            printf("FAIL: GetObjectGeneration failed for nongc object: hr=0x%x\n", hr);
             _failures++;
         }
-        _nonGcHeapObjects++;
+
         if (gen.rangeLength != 0 || gen.rangeLengthReserved != 0 || gen.rangeStart != 0)
         {
+            printf("FAIL: GetObjectGeneration returned unexpected values: rangeLength=%u, rangeLengthReserved=%u, rangeStart=%p\n",
+                (uint32_t)gen.rangeLength, (uint32_t)gen.rangeLengthReserved, (void*)gen.rangeStart);
             _failures++;
         }
+
+        _nonGcHeapObjects++;
     }
     else if (FAILED(hr))
     {
+        printf("FAIL: GetObjectGeneration failed: hr=0x%x\n", hr);
         _failures++;
     }
     return S_OK;
@@ -59,6 +80,12 @@ HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, 
 HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 {
     SHUTDOWNGUARD();
+
+    if (!_allocationsFinished)
+    {
+        printf("Ignoring this GarbageCollectionFinished: NotifyNongcAllocationsFinished has not been invoked yet.\n");
+        return S_OK;
+    }
 
     _garbageCollections++;
 
@@ -93,13 +120,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if (nongc_segments[i].rangeLength > nongc_segments[i].rangeLengthReserved)
             {
-                printf("FAIL: GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
+                printf("FAIL: GetNonGCHeapBounds: rangeLength > rangeLengthReserved\n");
                 _failures++;
             }
 
             if (!nongc_segments[i].rangeStart)
             {
-                printf("FAIL: GetNonGCHeapBounds: rangeStart is null");
+                printf("FAIL: GetNonGCHeapBounds: rangeStart is null\n");
                 _failures++;
             }
             segment_starts.push_back(nongc_segments[i].rangeStart);
@@ -128,13 +155,13 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if (gc_segments[i].rangeLength > gc_segments[i].rangeLengthReserved)
             {
-                printf("FAIL: GetGenerationBounds: rangeLength > rangeLengthReserved");
+                printf("FAIL: GetGenerationBounds: rangeLength > rangeLengthReserved\n");
                 _failures++;
             }
 
             if (!gc_segments[i].rangeStart)
             {
-                printf("FAIL: GetGenerationBounds: rangeStart is null");
+                printf("FAIL: GetGenerationBounds: rangeStart is null\n");
                 _failures++;
             }
             segment_starts.push_back(gc_segments[i].rangeStart);
@@ -154,12 +181,12 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
             if (segment_starts[i] == segment_starts[i+1])
             {
-                printf("FAIL: Duplicated segment starts");
+                printf("FAIL: Duplicated segment starts\n");
                 _failures++;
             }
             if (segment_ends[i] == segment_ends[i+1])
             {
-                printf("FAIL: Duplicated segment ends");
+                printf("FAIL: Duplicated segment ends\n");
                 _failures++;
             }
             if (segment_ends[i] > segment_starts[i+1])
@@ -211,7 +238,7 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
         if (nonGcObjectsEnumerated != _nonGcHeapObjects)
         {
-            printf("FAIL: objectAllocated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
+            printf("FAIL: nonGcObjectsEnumerated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
             _failures++;
         }
     }

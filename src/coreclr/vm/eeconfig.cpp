@@ -111,6 +111,7 @@ HRESULT EEConfig::Init()
     fJitFramed = false;
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
+    fDisableOptimizedThreadStaticAccess = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
@@ -189,10 +190,6 @@ HRESULT EEConfig::Init()
 
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
-
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = FALSE;
-#endif
 
 #if defined(_DEBUG) && defined(FEATURE_EH_FUNCLETS)
     fSuppressLockViolationsOnReentryFromOS = false;
@@ -424,6 +421,8 @@ HRESULT EEConfig::sync()
     iGCConservative =  (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_gcConservative) != 0);
 #endif // FEATURE_CONSERVATIVE_GC
 
+    fCheckDoubleReporting = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_CheckDoubleReporting, iGCStress ? 1 : 0) != 0);
+
 #ifdef HOST_64BIT
     iGCAllowVeryLargeObjects = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_gcAllowVeryLargeObjects) != 0);
 #endif
@@ -502,6 +501,8 @@ HRESULT EEConfig::sync()
     fJitEnableOptionalRelocs = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_JitEnableOptionalRelocs) == 1);
     iJitOptimizeType      =  CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitOptimizeType);
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
+
+    fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
@@ -630,10 +631,6 @@ HRESULT EEConfig::sync()
     fSuppressLockViolationsOnReentryFromOS = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLockViolationsOnReentryFromOS) != 0);
 #endif
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
-    fStubLinkerUnwindInfoVerificationOn = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_StubLinkerUnwindInfoVerificationOn) != 0);
-#endif
-
 #if defined(_DEBUG) && defined(TARGET_AMD64)
     m_cGenerateLongJumpDispatchStubRatio = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GenerateLongJumpDispatchStubRatio,
                                                           static_cast<DWORD>(m_cGenerateLongJumpDispatchStubRatio));
@@ -684,7 +681,7 @@ HRESULT EEConfig::sync()
 
         tieredCompilation_CallCountingDelayMs =
             Configuration::GetKnobDWORDValue(W("System.Runtime.TieredCompilation.CallCountingDelayMs"), CLRConfig::EXTERNAL_TC_CallCountingDelayMs);
-        
+
         bool hasSingleProcessor = GetCurrentProcessCpuCount() == 1;
         if (hasSingleProcessor)
         {
@@ -850,25 +847,24 @@ bool EEConfig::IsInMethList(MethodNamesList* list, MethodDesc* pMD)
     } CONTRACTL_END;
 
     if (list == 0)
-        return(false);
-    else
-    {
-        DefineFullyQualifiedNameForClass();
+        return false;
 
-        LPCUTF8 name = pMD->GetName();
-        if (name == NULL)
-        {
-            return false;
-        }
-        LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-        if (className == NULL)
-        {
-            return false;
-        }
-        PCCOR_SIGNATURE sig = pMD->GetSig();
+    DefineFullyQualifiedNameForClass();
 
-        return list->IsInList(name, className, sig);
-    }
+    LPCUTF8 name = pMD->GetName();
+    if (name == NULL)
+        return false;
+
+    LPCUTF8 className = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
+    if (className == NULL)
+        return false;
+
+    SigPointer sig = pMD->GetSigPointer();
+    uint32_t argCount = 0;
+    if (FAILED(sig.SkipMethodHeaderSignature(&argCount)))
+        return false;
+
+    return list->IsInList(name, className, (int32_t)argCount);
 }
 
 // Ownership of the string buffer passes to ParseTypeList

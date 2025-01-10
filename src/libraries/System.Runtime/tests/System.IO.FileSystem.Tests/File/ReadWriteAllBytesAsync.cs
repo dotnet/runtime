@@ -123,9 +123,11 @@ namespace System.IO.Tests
             {
                 if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
-                    await File.WriteAllBytesAsync(path, "text"u8.ToArray());
-                    await File.WriteAllBytesAsync(path, "text"u8.ToArray().AsMemory());
-                    Assert.Equal("texttext"u8.ToArray(), await File.ReadAllBytesAsync(path));
+                    await File.WriteAllBytesAsync(path, "text1"u8.ToArray());
+                    Assert.Equal("text1"u8.ToArray(), await File.ReadAllBytesAsync(path));
+
+                    await File.WriteAllBytesAsync(path, "text2"u8.ToArray().AsMemory());
+                    Assert.Equal("text2"u8.ToArray(), await File.ReadAllBytesAsync(path));
                 }
                 else
                 {

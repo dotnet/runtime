@@ -220,6 +220,7 @@
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Diagnostics\DebuggerStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttribute.cs" />
@@ -231,6 +232,8 @@
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Array.cs" />
+    <Compile Include="System\Buffer.cs" />
+    <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Type.cs" />

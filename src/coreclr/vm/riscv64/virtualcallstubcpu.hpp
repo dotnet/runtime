@@ -193,7 +193,7 @@ struct ResolveHolder
         ;;cachemask => [CALL_STUB_CACHE_MASK * sizeof(void*)]
 
         // Called directly by JITTED code
-        // ResolveStub._resolveEntryPoint(a0:Object*, a1 ...,a7, t8:IndirectionCellAndFlags)
+        // ResolveStub._resolveEntryPoint(a0:Object*, a1 ...,a7, t5:IndirectionCellAndFlags)
         // {
         //    MethodTable mt = a0.m_pMethTab;
         //    int i = ((mt + mt >> 12) ^ this._hashedToken) & _cacheMask
@@ -263,14 +263,14 @@ struct ResolveHolder
         _stub._resolveEntryPoint[n++] = 0x01cf9a63;// | PC_REL_OFFSET(_slowEntryPoint[0], n);
 
         // 	ld  t6, 0(t1)    # t6 = e.token;
-        _stub._resolveEntryPoint[n++] = 0x00033f83 | ((offsetof(ResolveCacheElem, token) & 0xfff)<<10);
+        _stub._resolveEntryPoint[n++] = 0x00033f83 | ((offsetof(ResolveCacheElem, token) & 0xfff)<<20);
         // 	bne	 t6, t2, next
         _stub._resolveEntryPoint[n++] = 0x007f9663;// | PC_REL_OFFSET(_slowEntryPoint[0], n);
 
          pc_offset = offsetof(ResolveCacheElem, target) & 0xffffffff;
          _ASSERTE(pc_offset >=0 && pc_offset%8 == 0);
         // 	ld  t3, 0(t1)    # t3 = e.target;
-        _stub._resolveEntryPoint[n++] = 0x00033e03 | ((offsetof(ResolveCacheElem, target) & 0xfff)<<10);
+        _stub._resolveEntryPoint[n++] = 0x00033e03 | ((offsetof(ResolveCacheElem, target) & 0xfff)<<20);
         // 	jalr x0, t3, 0
         _stub._resolveEntryPoint[n++] = 0x000e0067;
 
@@ -289,7 +289,7 @@ struct ResolveHolder
 
         // 	auipc t0, 0
         _stub._slowEntryPoint[0] = 0x00000297;
-        // 	ld  t6, 0(t0)    # r21 = _resolveWorkerTarget;
+        // 	ld  t6, 0(t0)    # t6 = _resolveWorkerTarget;
         static_assert_no_msg((0x14*4) == ((INT32)(offsetof(ResolveStub, _resolveWorkerTarget) - (offsetof(ResolveStub, _slowEntryPoint[0])))));
         static_assert_no_msg((ResolveStub::slowEntryPointLen + ResolveStub::failEntryPointLen+1+3*2) == 0x14);
         _stub._slowEntryPoint[1] = 0x0002bf83 | ((0x14 * 4) << 20);

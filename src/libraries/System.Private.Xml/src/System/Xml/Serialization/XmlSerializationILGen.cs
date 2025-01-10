@@ -11,6 +11,8 @@ using System.Text.RegularExpressions;
 
 namespace System.Xml.Serialization
 {
+    [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+    [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
     internal class XmlSerializationILGen
     {
         private int _nextMethodNumber;
@@ -34,7 +36,6 @@ namespace System.Xml.Serialization
         protected TypeBuilder typeBuilder = null!;
         protected CodeGenerator ilg = null!;
 
-        [RequiresUnreferencedCode("Calls GetTypeDesc")]
         internal XmlSerializationILGen(TypeScope[] scopes, string access, string className)
         {
             _scopes = scopes;
@@ -102,10 +103,8 @@ namespace System.Xml.Serialization
             System.Diagnostics.Debug.Assert(_methodBuilders.ContainsKey(methodName));
             return _methodBuilders[methodName];
         }
-        [RequiresUnreferencedCode("calls WriteStructMethod")]
         internal virtual void GenerateMethod(TypeMapping mapping) { }
 
-        [RequiresUnreferencedCode("calls GenerateMethod")]
         internal void GenerateReferencedMethods()
         {
             while (_references > 0)
@@ -143,7 +142,6 @@ namespace System.Xml.Serialization
             return ReflectionAwareILGen.GetCSharpString(value);
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         internal FieldBuilder GenerateHashtableGetBegin(string privateName, string publicName, TypeBuilder serializerContractTypeBuilder)
         {
             FieldBuilder fieldBuilder = serializerContractTypeBuilder.DefineField(
@@ -184,7 +182,6 @@ namespace System.Xml.Serialization
             return fieldBuilder;
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         internal void GenerateHashtableGetEnd(FieldBuilder fieldBuilder)
         {
             ilg!.Ldarg(0);
@@ -207,7 +204,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls GenerateHashtableGetBegin")]
         internal FieldBuilder GeneratePublicMethods(string privateName, string publicName, string[] methods, XmlMapping[] xmlMappings, TypeBuilder serializerContractTypeBuilder)
         {
             FieldBuilder fieldBuilder = GenerateHashtableGetBegin(privateName, publicName, serializerContractTypeBuilder);
@@ -268,7 +264,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("Uses CreatedTypes Dictionary")]
         internal string GenerateBaseSerializer(string baseSerializer, string readerClass, string writerClass, CodeIdentifiers classes)
         {
             baseSerializer = CodeIdentifier.MakeValid(baseSerializer);
@@ -314,7 +309,6 @@ namespace System.Xml.Serialization
             return baseSerializer;
         }
 
-        [RequiresUnreferencedCode("uses CreatedTypes dictionary")]
         internal string GenerateTypedSerializer(string readMethod, string writeMethod, XmlMapping mapping, CodeIdentifiers classes, string baseSerializer, string readerClass, string writerClass)
         {
             string serializerName = CodeIdentifier.MakeValid(Accessor.UnescapeName(mapping.Accessor.Mapping!.TypeDesc!.Name));
@@ -411,7 +405,6 @@ namespace System.Xml.Serialization
             return typedSerializerType.Name;
         }
 
-        [RequiresUnreferencedCode("calls GetConstructor")]
         private FieldBuilder GenerateTypedSerializers(Dictionary<string, string> serializers, TypeBuilder serializerContractTypeBuilder)
         {
             string privateName = "typedSerializers";
@@ -438,7 +431,6 @@ namespace System.Xml.Serialization
         }
 
         //GenerateGetSerializer(serializers, xmlMappings);
-        [RequiresUnreferencedCode("Uses CreatedTypes Dictionary")]
         private void GenerateGetSerializer(Dictionary<string, string> serializers, XmlMapping[] xmlMappings, TypeBuilder serializerContractTypeBuilder)
         {
             ilg = new CodeGenerator(serializerContractTypeBuilder);
@@ -484,7 +476,6 @@ namespace System.Xml.Serialization
             ilg.EndMethod();
         }
 
-        [RequiresUnreferencedCode("calls GenerateTypedSerializers")]
         internal void GenerateSerializerContract(XmlMapping[] xmlMappings, Type[] types, string readerType, string[] readMethods, string writerType, string[] writerMethods, Dictionary<string, string> serializers)
         {
             TypeBuilder serializerContractTypeBuilder = CodeGenerator.CreateTypeBuilder(
@@ -578,13 +569,11 @@ namespace System.Xml.Serialization
             return mapping.TypeDesc!.CanBeElementValue;
         }
 
-        [RequiresUnreferencedCode("calls ILGenLoad")]
         internal void ILGenLoad(string source)
         {
             ILGenLoad(source, null);
         }
 
-        [RequiresUnreferencedCode("calls LoadMember")]
         internal void ILGenLoad(string source, Type? type)
         {
             if (source.StartsWith("o.@", StringComparison.Ordinal))

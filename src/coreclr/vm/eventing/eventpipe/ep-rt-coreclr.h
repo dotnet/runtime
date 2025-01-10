@@ -17,6 +17,8 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include <minipal/guid.h>
+#include <minipal/strings.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -739,20 +741,6 @@ ep_rt_process_shutdown (void)
 
 static
 inline
-void
-ep_rt_create_activity_id (
-	uint8_t *activity_id,
-	uint32_t activity_id_len)
-{
-	STATIC_CONTRACT_NOTHROW;
-	EP_ASSERT (activity_id != NULL);
-	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
-
-	CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
-}
-
-static
-inline
 bool
 ep_rt_is_running (void)
 {
@@ -1460,7 +1448,7 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (str != NULL);
 
-	return u16_strlen (reinterpret_cast<LPCWSTR>(str));
+	return minipal_u16_strlen (reinterpret_cast<const CHAR16_T*> (str));
 }
 
 static

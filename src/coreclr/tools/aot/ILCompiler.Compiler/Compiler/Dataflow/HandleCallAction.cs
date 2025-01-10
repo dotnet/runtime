@@ -373,6 +373,11 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Object_GetType:
                     {
+                        if (instanceValue.IsEmpty ()) {
+                            AddReturnValue (MultiValueLattice.Top);
+                            break;
+                        }
+
                         foreach (var valueNode in instanceValue.AsEnumerable ())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
@@ -450,7 +455,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                                 if (annotation != default)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
+                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeCalled(closestMetadataType), "GetType called on this type");
                                 }
 
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node
@@ -633,17 +638,31 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
-#pragma warning disable IDE0060
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
-            // TODO: niche APIs that we probably shouldn't even have added
-            // We have to issue a warning, otherwise we could break the app without a warning.
-            // This is not the ideal warning, but it's good enough for now.
-            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameter((ParameterIndex)(1 + (calledMethod.HasImplicitThis() ? 1 : 0))).GetDisplayName(), calledMethod.GetDisplayName());
-            resolvedType = default;
-            return false;
+            if (!System.Reflection.Metadata.AssemblyNameInfo.TryParse(assemblyName, out var an)
+                || _callingMethod.Context.ResolveAssembly(an) is not ModuleDesc resolvedAssembly)
+            {
+                _diagnosticContext.AddDiagnostic(DiagnosticId.UnresolvedAssemblyInCreateInstance,
+                    assemblyName,
+                    calledMethod.GetDisplayName());
+                resolvedType = default;
+                return false;
+            }
+
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", out TypeDesc? foundType))
+            {
+                // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
+                // Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
+                // but ILLink can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+                // might expect an exception to be thrown.
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType);
+            return true;
         }
-#pragma warning restore IDE0060
 
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type, _reason);
@@ -692,7 +711,9 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
                 return list;
             }
         }
@@ -706,7 +727,9 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
+                TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;
             }
         }

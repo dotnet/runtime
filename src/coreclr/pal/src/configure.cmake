@@ -47,6 +47,8 @@ check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
+check_include_files("sys/ucontext.h" HAVE_SYS_UCONTEXT_H)
+check_include_files("sys/mount.h" HAVE_SYS_MOUNT_H)
 check_include_files(ucontext.h HAVE_UCONTEXT_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
@@ -399,6 +401,22 @@ int main()
   exit((ret == 0) ? 1 : 0);
 }" HAVE_CLOCK_GETTIME_NSEC_NP)
 
+set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
+check_cxx_source_runs("
+#include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+
+int main()
+{
+  int ret;
+  struct timespec ts;
+  ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+
+  exit(ret);
+}" HAVE_CLOCK_THREAD_CPUTIME)
+set(CMAKE_REQUIRED_LIBRARIES)
+
 check_cxx_source_runs("
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -624,6 +642,7 @@ int main(int argc, char **argv)
 
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
+check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
 check_cxx_source_compiles("
 #include <libunwind.h>

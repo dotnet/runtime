@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Caching.Memory
 {
     /// <summary>
-    /// An implementation of <see cref="IMemoryCache"/> using a dictionary to
+    /// Implements <see cref="IMemoryCache"/> using a dictionary to
     /// store its entries.
     /// </summary>
     public class MemoryCache : IMemoryCache
@@ -434,9 +434,13 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Returns true if increasing the cache size by the size of entry would
-        /// cause it to exceed any size limit on the cache, otherwise, returns false.
+        /// Determines if increasing the cache size by the size of the
+        /// entry would cause it to exceed any size limit on the cache.
         /// </summary>
+        /// <returns>
+        /// <see langword="true" /> if increasing the cache size would
+        /// cause it to exceed the size limit; otherwise, <see langword="false" />.
+        /// </returns>
         private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CacheEntry? priorEntry, CoherentState coherentState)
         {
             long sizeLimit = _options.SizeLimitValue;
@@ -621,9 +625,9 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Dispose the cache and clear all entries.
+        /// Disposes the cache and clears all entries.
         /// </summary>
-        /// <param name="disposing">Dispose the object resources if true; otherwise, take no action.</param>
+        /// <param name="disposing"><see langword="true" /> to dispose the object resources; <see langword="false" /> to take no action.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)

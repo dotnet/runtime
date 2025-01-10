@@ -98,21 +98,22 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                //auipc x29, 0
+                // auipc x29, 0
                 EmitPC(Register.X29);
-                //ld x29,16(x29)
+                // ld x29,16(x29)
                 EmitLD(Register.X29, Register.X29, 16);
-                //ld x29,0(x29)
+                // ld x29,0(x29)
                 EmitLD(Register.X29, Register.X29, 0);
-                //jalr x0,0(x29)
+                // jalr x0,0(x29)
                 EmitJALR(Register.X0, Register.X29, 0);
 
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {
-                Builder.EmitUInt(0x00000000); // bad code.
-                throw new NotImplementedException();
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_JALR);
+                EmitPC(Register.X29); // auipc x29, 0
+                EmitJALR(Register.X0, Register.X29, 0); // jalr x0, 0(x29)
             }
         }
 

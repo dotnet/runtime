@@ -106,24 +106,7 @@ endif()
 
 set(AOT_EVENTPIPE_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-set (MINIPAL_SOURCES "")
 set (EVENTPIPE_SOURCES "")
-
-set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
-
-list(APPEND MINIPAL_SOURCES
-  utf8.c
-)
-
-if(CLR_CMAKE_HOST_UNIX)
-  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
-  list(APPEND MINIPAL_SOURCES
-    random.c
-  )
-
-endif(CLR_CMAKE_HOST_UNIX)
-
-addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
 
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
   ${AOT_EVENTPIPE_SHIM_DIR}/ep-rt-aot.cpp
@@ -185,26 +168,11 @@ set_target_properties(eventpipe-shared-objects PROPERTIES
   COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>"
 )
 if (CLR_CMAKE_TARGET_WIN32)
-    add_library(eventpipe-shared-objects.GuardCF OBJECT)
-    target_link_libraries(eventpipe-shared-objects.GuardCF PRIVATE dn-diagnosticserver dn-eventpipe dn-diagnosticserver-pal)
-
     target_compile_options(eventpipe-shared-objects PRIVATE
         "/FI${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
 
-    target_compile_options(eventpipe-shared-objects.GuardCF PRIVATE
-        "/FI${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
-
-    # Build EventPipe and DiagnosticServer as unity-builds for better inlining.
-    set_target_properties(eventpipe-shared-objects.GuardCF PROPERTIES
-        UNITY_BUILD ON
-        UNITY_BUILD_BATCH_SIZE 0
-        CLR_CONTROL_FLOW_GUARD ON
-        COMPILE_PDB_NAME "eventpipe-shared-objects.GuardCF"
-        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
-
     # Install the compile PDB for the eventpipe unity builds.
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/eventpipe-shared-objects.pdb" DESTINATION aotsdk COMPONENT nativeaot)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/eventpipe-shared-objects.GuardCF.pdb" DESTINATION aotsdk COMPONENT nativeaot)
     # For the container library, we need to produce a compile PDB and install it
     set_target_properties(dn-containers-no-lto PROPERTIES
         COMPILE_PDB_NAME "dn-containers"
@@ -218,7 +186,6 @@ list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTTRACE_SOURCES}
   ${GEN_EVENTPIPE_PROVIDER_SOURCES}
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
-  ${MINIPAL_SOURCES}
 )
 
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
@@ -240,20 +207,5 @@ endif()
 add_library(eventpipe-disabled STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
 add_dependencies(eventpipe-disabled aot_eventing_headers)
 
-if (CLR_CMAKE_TARGET_WIN32)
-  add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
-  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE eventpipe-shared-objects.GuardCF dn-containers-no-lto)
-  add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
-  add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
-  add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
-  add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
-  set_target_properties(eventpipe-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  set_target_properties(eventpipe-disabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-endif (CLR_CMAKE_TARGET_WIN32)
-
 install_static_library(eventpipe-enabled aotsdk nativeaot)
 install_static_library(eventpipe-disabled aotsdk nativeaot)
-if (CLR_CMAKE_TARGET_WIN32)
-  install_static_library(eventpipe-enabled.GuardCF aotsdk nativeaot)
-  install_static_library(eventpipe-disabled.GuardCF aotsdk nativeaot)
-endif (CLR_CMAKE_TARGET_WIN32)

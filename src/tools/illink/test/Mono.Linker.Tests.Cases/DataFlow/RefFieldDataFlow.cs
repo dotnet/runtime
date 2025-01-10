@@ -13,10 +13,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	class RefFieldDataFlow
 	{
 		[Kept]
-		[UnexpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
-		[UnexpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
-		[UnexpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
-		[UnexpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
 		public static void Main ()
 		{
 			RefFieldWithMethods withMethods = new (ref fieldWithMethods);

@@ -77,7 +77,6 @@ namespace System.Threading
 
         internal static unsafe void RequestWorkerThread()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static void NotifyWorkItemProgress()
@@ -88,15 +87,11 @@ namespace System.Threading
 
         internal static void NotifyThreadUnblocked()
         {
-            throw new PlatformNotSupportedException();
         }
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-        internal static bool NotifyWorkItemComplete(object? _1, int _2)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        internal static bool NotifyWorkItemComplete(object? _1, int _2) => true;
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle? waitObject,

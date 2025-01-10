@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class Directory_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -77,7 +78,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void Directory_Move_From_Unwatched_To_Watched()
         {
             DirectoryMove_FromUnwatchedToWatched(WatcherChangeTypes.Created);
@@ -86,7 +86,6 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void Directory_Move_In_Nested_Directory(bool includeSubdirectories)
         {
             DirectoryMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Renamed : 0, includeSubdirectories);

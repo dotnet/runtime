@@ -544,7 +544,7 @@
     <value>SOCKS server returned an unknown address type.</value>
   </data>
   <data name="net_socks_connection_failed" xml:space="preserve">
-    <value>SOCKS server failed to connect to the destination.</value>
+    <value>SOCKS server failed to connect to the destination. Received error code 0x{0}.</value>
   </data>
   <data name="net_socks_ipv6_notsupported" xml:space="preserve">
     <value>SOCKS4 does not support IPv6 addresses.</value>

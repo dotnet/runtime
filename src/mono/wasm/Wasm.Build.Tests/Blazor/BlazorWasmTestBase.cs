@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,15 +16,56 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class BlazorWasmTestBase : WasmTemplateTestBase
+public abstract class BlazorWasmTestBase : WasmTemplateTestsBase
 {
-    protected readonly BlazorWasmProjectProvider _provider;
+    protected readonly WasmSdkBasedProjectProvider _provider;
+    private readonly string _blazorExtraMSBuildArgs = "/warnaserror";
+    protected readonly PublishOptions _defaultBlazorPublishOptions;
+    private readonly BuildOptions _defaultBlazorBuildOptions;
+
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(output, buildContext, new BlazorWasmProjectProvider(output))
+                : base(output, buildContext, new WasmSdkBasedProjectProvider(output, DefaultTargetFrameworkForBlazor))
     {
-        _provider = GetProvider<BlazorWasmProjectProvider>();
-        _provider.BundleDirName = "wwwroot";
+        _provider = GetProvider<WasmSdkBasedProjectProvider>();
+        _defaultBlazorPublishOptions = _defaultPublishOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
+        _defaultBlazorBuildOptions = _defaultBuildOptions with { ExtraMSBuildArgs = _blazorExtraMSBuildArgs };
     }
+
+    private Dictionary<string, string> blazorHomePageReplacements = new Dictionary<string, string>
+        {
+            {
+                "Welcome to your new app.",
+                """
+                Welcome to your new app.
+                @code {
+                    protected override void OnAfterRender(bool firstRender)
+                    {
+                        if (firstRender)
+                        {
+                            Console.WriteLine("WASM EXIT 0");
+                        }
+                    }
+                }
+                """ }
+        };
+
+    private Func<RunOptions, IPage, Task>? _executeAfterLoaded = async (runOptions, page) =>
+        {
+            if (runOptions is BlazorRunOptions bro && bro.CheckCounter)
+            {
+                await page.Locator("text=Counter").ClickAsync();
+                var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                Assert.Equal("Current count: 0", txt);
+
+                await page.Locator("text=\"Click me\"").ClickAsync();
+                await Task.Delay(300);
+                txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+                Assert.Equal("Current count: 1", txt);
+            }
+        };
+
+    protected void UpdateHomePage() =>
+        UpdateFile(Path.Combine("Pages", "Home.razor"), blazorHomePageReplacements);
 
     public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
     {
@@ -46,93 +88,83 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
     public string CreateBlazorWasmTemplateProject(string id)
     {
         InitBlazorWasmProjectDir(id);
-        new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                .WithWorkingDirectory(_projectDir!)
-                .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                .ExecuteWithCapturedOutput("new blazorwasm")
-                .EnsureSuccessful();
+        using DotNetCommand dotnetCommand = new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false);
+        CommandResult result = dotnetCommand.WithWorkingDirectory(_projectDir)
+            .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+            .ExecuteWithCapturedOutput("new blazorwasm")
+            .EnsureSuccessful();
 
-        return Path.Combine(_projectDir!, $"{id}.csproj");
+        return Path.Combine(_projectDir, $"{id}.csproj");
     }
 
-    protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
-    {
-        if (options.WarnAsError)
-            extraArgs = extraArgs.Append("/warnaserror").ToArray();
+    protected (string projectDir, string buildOutput) BlazorBuild(ProjectInfo info, Configuration config, bool? isNativeBuild = null) =>
+        BlazorBuild(info, config, _defaultBlazorBuildOptions, isNativeBuild);
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
-
-        if (options.ExpectSuccess && options.AssertAppBundle)
-        {
-            AssertBundle(res.Output, options with { IsPublish = false });
-        }
-
-        return (res, logPath);
-    }
-
-    protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
-    {
-        if (options.WarnAsError)
-            extraArgs = extraArgs.Append("/warnaserror").ToArray();
-
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
-
-        if (options.ExpectSuccess && options.AssertAppBundle)
-        {
-            // Because we do relink in Release publish by default
-            if (options.Config == "Release")
-                options = options with { ExpectedFileType = NativeFilesType.Relinked };
-
-            AssertBundle(res.Output, options with { IsPublish = true });
-        }
-
-        return (res, logPath);
-    }
-
-    protected (CommandResult res, string logPath) BlazorBuildInternal(
-        string id,
-        string config,
-        bool publish = false,
-        bool setWasmDevel = true,
-        bool expectSuccess = true,
-        params string[] extraArgs)
+    protected (string projectDir, string buildOutput) BlazorBuild(
+        ProjectInfo info, Configuration config, BuildOptions buildOptions, bool? isNativeBuild = null)
     {
         try
         {
-            return BuildProjectWithoutAssert(
-                        id,
-                        config,
-                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess),
-                        extraArgs.Concat(new[]
-                        {
-                            "-p:BlazorEnableCompression=false",
-                            setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
-                        }).ToArray());
+            if (buildOptions != _defaultBlazorBuildOptions)
+                buildOptions = buildOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {buildOptions.ExtraMSBuildArgs}" };
+            (string projectDir, string buildOutput) = BuildProject(
+                info,
+                config,
+                buildOptions,
+                isNativeBuild);
+            if (buildOptions.ExpectSuccess && buildOptions.AssertAppBundle)
+            {
+                // additional blazor-only assert, basic assert is done in BuildProject
+                AssertBundle(config, buildOutput, buildOptions, isNativeBuild);
+            }
+            return (projectDir, buildOutput);
         }
         catch (XunitException xe)
         {
             if (xe.Message.Contains("error CS1001: Identifier expected"))
-                Utils.DirectoryCopy(_projectDir!, Path.Combine(s_buildEnv.LogRootPath, id), testOutput: _testOutput);
+                Utils.DirectoryCopy(_projectDir, _logPath, testOutput: _testOutput);
             throw;
         }
     }
 
-    public void AssertBundle(string buildOutput, BlazorBuildOptions blazorBuildOptions)
+    protected (string projectDir, string buildOutput) BlazorPublish(ProjectInfo info, Configuration config, bool? isNativeBuild = null) =>
+        BlazorPublish(info, config, _defaultBlazorPublishOptions, isNativeBuild);
+
+    protected (string projectDir, string buildOutput) BlazorPublish(
+        ProjectInfo info, Configuration config, PublishOptions publishOptions, bool? isNativeBuild = null)
     {
-        if (IsUsingWorkloads)
+        try
         {
-            // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, blazorBuildOptions.TargetFramework ?? DefaultTargetFramework, blazorBuildOptions.RuntimeType);
+            if (publishOptions != _defaultBlazorPublishOptions)
+                publishOptions = publishOptions with { ExtraMSBuildArgs = $"{_blazorExtraMSBuildArgs} {publishOptions.ExtraMSBuildArgs}" };
+            (string projectDir, string buildOutput) = PublishProject(
+                info,
+                config,
+                publishOptions,
+                isNativeBuild);
+            if (publishOptions.ExpectSuccess && publishOptions.AssertAppBundle)
+            {
+                // additional blazor-only assert, basic assert is done in PublishProject
+                AssertBundle(config, buildOutput, publishOptions, isNativeBuild);
+            }
+            return (projectDir, buildOutput);
         }
+        catch (XunitException xe)
+        {
+            if (xe.Message.Contains("error CS1001: Identifier expected"))
+                Utils.DirectoryCopy(_projectDir, _logPath, testOutput: _testOutput);
+            throw;
+        }
+    }
 
-        _provider.AssertBundle(blazorBuildOptions);
-
-        if (!blazorBuildOptions.IsPublish)
+    public void AssertBundle(Configuration config, string buildOutput, MSBuildOptions buildOptions, bool? isNativeBuild = null)
+    {
+        if (!buildOptions.IsPublish)
             return;
 
+        var expectedFileType = _provider.GetExpectedFileType(config, buildOptions.AOT, buildOptions.IsPublish, IsUsingWorkloads, isNativeBuild);
         // Publish specific checks
-
-        if (blazorBuildOptions.ExpectedFileType == NativeFilesType.AOT)
+        if (expectedFileType == NativeFilesType.AOT)
         {
             // check for this too, so we know the format is correct for the negative
             // test for jsinterop.webassembly.dll
@@ -142,118 +174,52 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", buildOutput);
         }
 
-        string objBuildDir = Path.Combine(_projectDir!, "obj", blazorBuildOptions.Config, blazorBuildOptions.TargetFramework!, "wasm", "for-build");
+        string objBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), buildOptions.TargetFramework!, "wasm", "for-build");
         // Check that we linked only for publish
-        if (blazorBuildOptions.ExpectRelinkDirWhenPublishing)
+        if (buildOptions is PublishOptions publishOptions && publishOptions.ExpectRelinkDirWhenPublishing)
             Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
         else
             Assert.False(File.Exists(Path.Combine(objBuildDir, "emcc-link.rsp")), $"Found unexpected `emcc-link.rsp` in {objBuildDir}, which gets created when relinking during Build.");
     }
 
-    protected string CreateProjectWithNativeReference(string id)
+    protected ProjectInfo CreateProjectWithNativeReference(Configuration config, bool aot, string extraProperties)
     {
-        CreateBlazorWasmTemplateProject(id);
-
         string extraItems = @$"
             {GetSkiaSharpReferenceItems()}
             <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
         ";
-        string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-        AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
-
-        return projectFile;
+        return CopyTestAsset(
+            config, aot, TestAsset.BlazorBasicTestApp, "blz_nativeref_aot", extraItems: extraItems, extraProperties: extraProperties);
     }
 
     // Keeping these methods with explicit Build/Publish in the name
     // so in the test code it is evident which is being run!
-    public Task BlazorRunForBuildWithDotnetRun(BlazorRunOptions runOptions)
-        => BlazorRunTest(runOptions with { Host = BlazorRunHost.DotnetRun });
+    public override async Task<RunResult> RunForBuildWithDotnetRun(RunOptions runOptions) =>
+        await base.RunForBuildWithDotnetRun(runOptions with {
+            ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded,
+            ServerEnvironment = GetServerEnvironmentForBuild(runOptions.ServerEnvironment)
+        });
 
-    public Task BlazorRunForPublishWithWebServer(BlazorRunOptions runOptions)
-        => BlazorRunTest(runOptions with { Host = BlazorRunHost.WebServer });
+    public override async Task<RunResult> RunForPublishWithWebServer(RunOptions runOptions)
+        => await base.RunForPublishWithWebServer(runOptions with {
+            ExecuteAfterLoaded = runOptions.ExecuteAfterLoaded ?? _executeAfterLoaded
+        });
 
-    public Task BlazorRunTest(BlazorRunOptions runOptions) => runOptions.Host switch
+    private Dictionary<string, string>? GetServerEnvironmentForBuild(Dictionary<string, string>? originalServerEnv)
     {
-        BlazorRunHost.DotnetRun =>
-                BlazorRunTest($"run -c {runOptions.Config} --no-build", _projectDir!, runOptions),
-
-        BlazorRunHost.WebServer =>
-                BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files",
-                     Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(runOptions.Config, forPublish: true), "..")),
-                     runOptions),
-
-        _ => throw new NotImplementedException(runOptions.Host.ToString())
-    };
-
-    public async Task BlazorRunTest(string runArgs,
-                                    string workingDirectory,
-                                    BlazorRunOptions runOptions)
-    {
-        if (!string.IsNullOrEmpty(runOptions.ExtraArgs))
-            runArgs += $" {runOptions.ExtraArgs}";
-
-        runOptions.ServerEnvironment?.ToList().ForEach(
-            kv => s_buildEnv.EnvVars[kv.Key] = kv.Value);
-
-        using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(workingDirectory);
-
-        await using var runner = new BrowserRunner(_testOutput);
-        var page = await runner.RunAsync(
-            runCommand,
-            runArgs,
-            onConsoleMessage: OnConsoleMessage,
-            onServerMessage: runOptions.OnServerMessage,
-            onError: OnErrorMessage,
-            modifyBrowserUrl: browserUrl => new Uri(new Uri(browserUrl), runOptions.BrowserPath + runOptions.QueryString).ToString());
-
-        _testOutput.WriteLine("Waiting for page to load");
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded, new () { Timeout = 1 * 60 * 1000 });
-
-        if (runOptions.CheckCounter)
+        var serverEnvironment = new Dictionary<string, string>();
+        if (originalServerEnv != null)
         {
-            await page.Locator("text=Counter").ClickAsync();
-            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 0", txt);
-
-            await page.Locator("text=\"Click me\"").ClickAsync();
-            await Task.Delay(300);
-            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 1", txt);
-        }
-
-        if (runOptions.Test is not null)
-            await runOptions.Test(page);
-
-        _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        await Task.Delay(10_000);
-
-        void OnConsoleMessage(IPage page, IConsoleMessage msg)
-        {
-            _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
-
-            runOptions.OnConsoleMessage?.Invoke(page, msg);
-
-            if (runOptions.DetectRuntimeFailures)
+            foreach (var kvp in originalServerEnv)
             {
-                if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
-                    throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
+                serverEnvironment.Add(kvp.Key, kvp.Value);
             }
         }
-
-        void OnErrorMessage(string msg)
-        {
-            _testOutput.WriteLine($"[ERROR] {msg}");
-            runOptions.OnErrorMessage?.Invoke(msg);
-        }
+        // avoid "System.IO.IOException: address already in use"
+        serverEnvironment.Add("ASPNETCORE_URLS", "http://127.0.0.1:0");
+        return serverEnvironment;
     }
 
-    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
-        => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
-
-    public string FindBlazorHostedBinFrameworkDir(string config, bool forPublish, string clientDirRelativeToProjectDir, string framework = DefaultTargetFrameworkForBlazor)
-    {
-        string? clientProjectDir = _projectDir == null ? null : Path.Combine(_projectDir, clientDirRelativeToProjectDir);
-        return _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: clientProjectDir);
-    }
+    public string GetBlazorBinFrameworkDir(Configuration config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
+        => _provider.GetBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
 }

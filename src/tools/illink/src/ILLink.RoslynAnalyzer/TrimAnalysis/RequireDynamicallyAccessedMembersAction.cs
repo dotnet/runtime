@@ -35,6 +35,6 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		private partial void MarkTypeForDynamicallyAccessedMembers (in TypeProxy type, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes) =>
-			_reflectionAccessAnalyzer.GetReflectionAccessDiagnostics (_diagnosticContext, type.Type, dynamicallyAccessedMemberTypes);
+			_reflectionAccessAnalyzer.GetReflectionAccessDiagnostics (_diagnosticContext.Location, type.Type, dynamicallyAccessedMemberTypes);
 	}
 }

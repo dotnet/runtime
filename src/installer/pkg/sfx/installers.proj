@@ -5,11 +5,8 @@
     <InstallerProjectReference Include="bundle/*.bundleproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildDebPackage)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinuxGlibc)' == 'true'">
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-debian.proj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(BuildRpmPackage)' == 'true'">
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-azl.3.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-centos.9.proj" />
     <InstallerProjectReference Include="installers/dotnet-runtime-deps/dotnet-runtime-deps-cm.1.proj" />

@@ -69,7 +69,8 @@ namespace System.Numerics.Tensors
         /// <summary>x / y</summary>
         internal readonly struct DivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
         {
-            public static bool Vectorizable => true;
+            public static bool Vectorizable => typeof(T) == typeof(float)
+                                            || typeof(T) == typeof(double);
             public static T Invoke(T x, T y) => x / y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;

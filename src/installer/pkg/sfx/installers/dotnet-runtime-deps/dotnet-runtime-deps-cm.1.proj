@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
+    <BuildDebPackage>false</BuildDebPackage>
+    <BuildRpmPackage>true</BuildRpmPackage>
     <PackageTargetOS>cm.1</PackageTargetOS>
   </PropertyGroup>
 

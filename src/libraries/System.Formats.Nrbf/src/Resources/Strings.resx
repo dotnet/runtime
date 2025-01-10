@@ -126,26 +126,23 @@
   <data name="Serialization_UnexpectedNullRecordCount" xml:space="preserve">
     <value>Unexpected Null Record count.</value>
   </data>
-  <data name="Serialization_MaxArrayLength" xml:space="preserve">
-    <value>The serialized array length ({0}) was larger than the configured limit {1}.</value>
-  </data>
   <data name="NotSupported_RecordType" xml:space="preserve">
     <value>{0} Record Type is not supported by design.</value>
   </data>
   <data name="Serialization_InvalidReference" xml:space="preserve">
-    <value>Member reference was pointing to a record of unexpected type.</value>
+    <value>Invalid member reference.</value>
   </data>
   <data name="Serialization_InvalidTypeName" xml:space="preserve">
-    <value>Invalid type name: `{0}`.</value>
+    <value>Invalid type name.</value>
   </data>
   <data name="Serialization_TypeMismatch" xml:space="preserve">
     <value>Expected the array to be of type {0}, but its element type was {1}.</value>
   </data>
   <data name="Serialization_InvalidTypeOrAssemblyName" xml:space="preserve">
-    <value>Invalid type or assembly name: `{0},{1}`.</value>
+    <value>Invalid type or assembly name.</value>
   </data>
   <data name="Serialization_DuplicateMemberName" xml:space="preserve">
-    <value>Duplicate member name: `{0}`.</value>
+    <value>Duplicate member name.</value>
   </data>
   <data name="Argument_NonSeekableStream" xml:space="preserve">
     <value>Stream does not support seeking.</value>
@@ -158,5 +155,14 @@
   </data>
   <data name="NotSupported_NonZeroOffsets" xml:space="preserve">
     <value>Only arrays with zero offsets are supported.</value>
+  </data>
+  <data name="Serialization_InvalidAssemblyName" xml:space="preserve">
+    <value>Invalid assembly name.</value>
+  </data>
+  <data name="Serialization_InvalidFormat" xml:space="preserve">
+    <value>Invalid format.</value>
+  </data>
+  <data name="Serialization_SurrogateCharacter" xml:space="preserve">
+    <value>A surrogate character was read.</value>
   </data>
 </root>

@@ -150,7 +150,7 @@ BOOL RangeList::AddRangeWorker(const BYTE *start, const BYTE *end, void *id)
     }
 }
 
-void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
+void RangeList::RemoveRangesWorker(void *id)
 {
     CONTRACTL
     {
@@ -177,24 +177,9 @@ void RangeList::RemoveRangesWorker(void *id, const BYTE* start, const BYTE* end)
 
         while (r < rEnd)
         {
-            if (r->id != (TADDR)NULL)
+            if (r->id == (TADDR)id)
             {
-                if (start != NULL)
-                {
-                    _ASSERTE(end != NULL);
-
-                    if (r->start >= (TADDR)start && r->start < (TADDR)end)
-                    {
-                        CONSISTENCY_CHECK_MSGF(r->end >= (TADDR)start &&
-                                               r->end <= (TADDR)end,
-                                               ("r: %p start: %p end: %p", r, start, end));
-                        r->id = (TADDR)NULL;
-                    }
-                }
-                else if (r->id == (TADDR)id)
-                {
-                    r->id = (TADDR)NULL;
-                }
+                r->id = (TADDR)NULL;
             }
 
             r++;
@@ -337,7 +322,7 @@ RangeList::RangeListBlock::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         _ASSERTE( size < UINT32_MAX );    // ranges should be less than 4gig!
 
         // We can't be sure this entire range is mapped.  For example, the code:StubLinkStubManager
-        // keeps track of all ranges in the code:BaseDomain::m_pStubHeap LoaderHeap, and
+        // keeps track of all ranges in the code:LoaderAllocator::m_pStubHeap LoaderHeap, and
         // code:LoaderHeap::UnlockedReservePages adds a range for the entire reserved region, instead
         // of updating the RangeList when pages are committed.  But in that case, the committed region of
         // memory will be enumerated by the LoaderHeap anyway, so it's OK if this fails
@@ -965,8 +950,6 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     s_dwNumInstancesOfLoaderHeaps++;
     m_pEventList                 = NULL;
     m_dwDebugFlags               = LoaderHeapSniffer::InitDebugFlags();
-    m_fPermitStubsWithUnwindInfo = FALSE;
-    m_fStubUnwindInfoUnregistered= FALSE;
 #endif
 
     m_kind = kind;
@@ -992,8 +975,6 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
         FORBID_FAULT;
     }
     CONTRACTL_END
-
-    _ASSERTE(!m_fPermitStubsWithUnwindInfo || m_fStubUnwindInfoUnregistered);
 
     if (m_pRangeList != NULL)
         m_pRangeList->RemoveRanges((void *) this);

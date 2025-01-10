@@ -446,12 +446,21 @@ HRESULT ICeeFileGen::SetVTableEntry64(HCEEFILE ceeFile, ULONG size, void* ptr)
     return gen->setVTableEntry64(size, ptr);
 }
 
-HRESULT ICeeFileGen::GetFileTimeStamp (HCEEFILE ceeFile, DWORD *pTimeStamp)
+HRESULT ICeeFileGen::GetFileTimeStamp(HCEEFILE ceeFile, DWORD *pTimeStamp)
 {
     TESTANDRETURNPOINTER(ceeFile);
     TESTANDRETURNPOINTER(pTimeStamp);
 
     CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
     return(gen->getFileTimeStamp(pTimeStamp));
+}
+
+HRESULT ICeeFileGen::SetFileHeaderTimeStamp(HCEEFILE ceeFile, DWORD timeStamp)
+{
+    TESTANDRETURNPOINTER(ceeFile);
+
+    CeeFileGenWriter *gen = reinterpret_cast<CeeFileGenWriter*>(ceeFile);
+    gen->setFileHeaderTimeStamp(timeStamp);
+    return S_OK;
 }
 

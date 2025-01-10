@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <GenerateInstallers Condition="'$(BuildDebPackage)' != 'true'">false</GenerateInstallers>
+    <BuildDebPackage Condition="'$(TargetArchitecture)' == 'x64'">true</BuildDebPackage>
+    <BuildRpmPackage>false</BuildRpmPackage>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection.Metadata
 {
     public static class MetadataUpdater
@@ -10,6 +12,7 @@ namespace System.Reflection.Metadata
             throw new PlatformNotSupportedException();
         }
 
+        [FeatureSwitchDefinition("System.Reflection.Metadata.MetadataUpdater.IsSupported")]
         public static bool IsSupported => false;
     }
 }

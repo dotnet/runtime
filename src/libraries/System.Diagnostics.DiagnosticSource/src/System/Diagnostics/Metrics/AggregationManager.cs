@@ -88,12 +88,23 @@ namespace System.Diagnostics.Metrics
 
         public void Include(string meterName)
         {
-            Include(i => i.Meter.Name == meterName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void IncludeAll()
+        {
+            Include(i => true);
+        }
+
+        public void IncludePrefix(string meterNamePrefix)
+        {
+            Include(i => i.Meter.Name.StartsWith(meterNamePrefix, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Include(string meterName, string instrumentName)
         {
-            Include(i => i.Meter.Name == meterName && i.Name == instrumentName);
+            Include(i => i.Meter.Name.Equals(meterName, StringComparison.OrdinalIgnoreCase)
+                && i.Name.Equals(instrumentName, StringComparison.OrdinalIgnoreCase));
         }
 
         private void Include(Predicate<Instrument> instrumentFilter)
@@ -317,13 +328,23 @@ namespace System.Diagnostics.Metrics
                     }
                 };
             }
-            else if (genericDefType == typeof(ObservableGauge<>) || genericDefType == typeof(Gauge<>))
+            else if (genericDefType == typeof(ObservableGauge<>))
             {
                 return () =>
                 {
                     lock (this)
                     {
                         return CheckTimeSeriesAllowed() ? new LastValue() : null;
+                    }
+                };
+            }
+            else if (genericDefType == typeof(Gauge<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new SynchronousLastValue() : null;
                     }
                 };
             }

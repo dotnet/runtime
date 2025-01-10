@@ -59,13 +59,22 @@ typedef int __ptrace_request;
 #endif // !HAVE_MACH_EXCEPTIONS
 
 #ifdef HOST_AMD64
+#ifdef __HAIKU__
 #define ASSIGN_CONTROL_REGS \
-    ASSIGN_REG(Rbp)     \
-    ASSIGN_REG(Rip)     \
-    ASSIGN_REG(SegCs)   \
-    ASSIGN_REG(EFlags)  \
-    ASSIGN_REG(Rsp)     \
+        ASSIGN_REG(Rbp)     \
+        ASSIGN_REG(Rip)     \
+        ASSIGN_REG(EFlags)  \
+        ASSIGN_REG(Rsp)     \
 
+#else // __HAIKU__
+#define ASSIGN_CONTROL_REGS \
+        ASSIGN_REG(Rbp)     \
+        ASSIGN_REG(Rip)     \
+        ASSIGN_REG(SegCs)   \
+        ASSIGN_REG(EFlags)  \
+        ASSIGN_REG(Rsp)     \
+
+#endif // __HAIKU__
 #define ASSIGN_INTEGER_REGS \
     ASSIGN_REG(Rdi)     \
     ASSIGN_REG(Rsi)     \
@@ -378,6 +387,59 @@ bool Xstate_IsAvx512Supported()
     }
 
     return Xstate_Avx512Supported == 1;
+#endif
+}
+
+bool Xstate_IsApxSupported()
+{
+#if defined(HAVE_MACH_EXCEPTIONS)
+    // TODO-xarch-apx: I assume OSX will never support APX
+    return false;
+#else
+    static int Xstate_ApxSupported = -1;
+
+    if (Xstate_ApxSupported == -1)
+    {
+        int cpuidInfo[4];
+
+        const int CPUID_EAX = 0;
+        const int CPUID_EBX = 1;
+        const int CPUID_ECX = 2;
+        const int CPUID_EDX = 3;
+
+#ifdef _DEBUG
+        // We should only be calling this function if we know the extended feature exists
+        __cpuid(cpuidInfo, 0x00000000);
+        _ASSERTE(static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) >= 0x0D);
+#endif // _DEBUG
+
+        __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
+
+        if ((cpuidInfo[CPUID_EAX] & XSTATE_MASK_APX) == XSTATE_MASK_APX)
+        {
+            // Knight's Landing and Knight's Mill shipped without all 5 of the "baseline"
+            // AVX-512 ISAs that are required by x86-64-v4. Specifically they do not include
+            // BW, DQ, or VL. RyuJIT currently requires all 5 ISAs to be present so we will
+            // only enable Avx512 context save/restore when all exist. This requires us to
+            // query which ISAs are actually supported to ensure they're all present.
+
+            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+
+            const int requiredApxFlags = (1 << 21);
+
+            if ((cpuidInfo[CPUID_EDX] & requiredApxFlags) == requiredApxFlags)
+            {
+                Xstate_ApxSupported = 1;
+            }
+        }
+
+        if (Xstate_ApxSupported == -1)
+        {
+            Xstate_ApxSupported = 0;
+        }
+    }
+
+    return Xstate_ApxSupported == 1;
 #endif
 }
 #endif // XSTATE_SUPPORTED || defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS)
@@ -809,6 +871,18 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 dest = FPREG_Xstate_Hi16Zmm(native, &size);
                 _ASSERT(size == (sizeof(M512) * 16));
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
+
+#ifndef TARGET_OSX
+                // TODO-xarch-apx: I suppose OSX will not support APX.
+                if (FPREG_HasApxRegisters(native))
+                {
+                    _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
+
+                    dest = FPREG_Xstate_Egpr(native, &size);
+                    _ASSERT(size == (sizeof(DWORD64) * 16));
+                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->Egpr16, sizeof(DWORD64) * 16);
+                }
+#endif //  !TARGET_OSX
             }
         }
 #elif defined(HOST_ARM64)
@@ -1157,6 +1231,16 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
                 lpContext->XStateFeaturesMask |= XSTATE_MASK_AVX512;
             }
+#if !defined(TARGET_OSX)
+            if (FPREG_HasApxRegisters(native))
+            {
+                src = FPREG_Xstate_Egpr(native, &size);
+                _ASSERT(size == (sizeof(DWORD64) * 16));
+                memcpy_s(&lpContext->Egpr16, sizeof(DWORD64) * 16, src, sizeof(DWORD64) * 16);
+
+                lpContext->XStateFeaturesMask |= XSTATE_MASK_APX;
+            }
+#endif // TARGET_OSX
         }
 #elif defined(HOST_ARM64)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
@@ -1700,6 +1784,12 @@ CONTEXT_GetThreadContextFromThreadState(
 
                 // AMD64's FLOATING_POINT includes the xmm registers.
                 memcpy(&lpContext->Xmm0, &pState->__fpu_xmm0, 16 * 16);
+
+                if (threadStateFlavor == x86_FLOAT_STATE64)
+                {
+                     // There was just a floating point state, so make sure the CONTEXT_XSTATE is not set
+                     lpContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+                }
             }
             break;
         }
@@ -2068,12 +2158,12 @@ DBG_FlushInstructionCache(
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
     const SIZE_T pageSize = GetVirtualPageSize();
-    INT_PTR begin = (INT_PTR)lpBaseAddress;
-    const INT_PTR end = begin + dwSize;
+    UINT_PTR begin = (UINT_PTR)lpBaseAddress;
+    const UINT_PTR end = begin + dwSize;
 
     while (begin < end)
     {
-        INT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        UINT_PTR endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
         if (endOrNextPageBegin > end)
             endOrNextPageBegin = end;
 
@@ -2103,9 +2193,13 @@ CONTEXT& CONTEXT::operator=(const CONTEXT& ctx)
     size_t copySize;
     if (ctx.ContextFlags & CONTEXT_XSTATE & CONTEXT_AREA_MASK)
     {
-        if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        if ((ctx.XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX)
         {
             copySize = sizeof(CONTEXT);
+        }
+        else if ((ctx.XStateFeaturesMask & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512)
+        {
+            copySize = offsetof(CONTEXT, Egpr16);
         }
         else
         {
