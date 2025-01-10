@@ -16,7 +16,6 @@ using System.Threading.Tasks;
 using WorkQueue = System.Collections.Generic.Queue<object>;
 #else
 using WorkQueue = System.Collections.Concurrent.ConcurrentQueue<object>;
-using Event = System.Threading.PortableThreadPool.IOCompletionPoller.Event;
 #endif
 #if TARGET_WINDOWS
 using IOCompletionPollerEvent = System.Threading.PortableThreadPool.IOCompletionPoller.Event;

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Tests that the System.Collections.NonGeneric dll is not dragged into a user's app
@@ -14,16 +15,10 @@ using System.Text.Json;
 /// </summary>
 class Program
 {
+    // NOTE: ConcurrentQueue is only trimming safe because it's used by runtime thread pool. Except on single-threaded runtimes, where public parameterless constructor is trimmed.
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(ConcurrentQueue<int>))]
     static int Main(string[] args)
     {
-        if(OperatingSystem.IsBrowser())
-        {
-            // all the other platforms are using ConcurrentQueue and its constructor in the threadpool and so it's not trimmed
-            // we are protecting it here
-            // all the other targets will trim this code path
-            new ConcurrentQueue<int>();
-        }
-
         // Test serialization.
         var stack = new ConcurrentStack<int>();
         string json = JsonSerializer.Serialize(stack); // "[]"

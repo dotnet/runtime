@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SerializerTrimmingTest
 {
@@ -12,14 +13,8 @@ namespace SerializerTrimmingTest
     /// </summary>
     internal class Program
     {
-        if(OperatingSystem.IsBrowser())
-        {
-            // all the other platforms are using ConcurrentQueue and its constructor in the threadpool and so it's not trimmed
-            // we are protecting it here
-            // all the other targets will trim this code path
-            new ConcurrentQueue<int>();
-        }
-
+        // NOTE: ConcurrentQueue is only trimming safe because it's used by runtime thread pool. Except on single-threaded runtimes, where public parameterless constructor is trimmed.
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(ConcurrentQueue<int>))]
         static int Main(string[] args)
         {
             string json = "[1]";
