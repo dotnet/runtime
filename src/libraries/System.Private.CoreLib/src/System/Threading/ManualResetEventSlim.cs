@@ -352,7 +352,7 @@ namespace System.Threading
 #endif
         public void Wait()
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             Wait(Timeout.Infinite, CancellationToken.None);
         }
@@ -485,7 +485,7 @@ namespace System.Threading
 #endif
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             ObjectDisposedException.ThrowIf(IsDisposed, this);
             cancellationToken.ThrowIfCancellationRequested(); // an early convenience check

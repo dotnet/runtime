@@ -174,7 +174,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             // Call wait with infinite timeout
             Wait(Timeout.Infinite, CancellationToken.None);
@@ -193,7 +193,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             // Call wait with infinite timeout
             Wait(Timeout.Infinite, cancellationToken);
@@ -214,7 +214,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -247,7 +247,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             // Validate the timeout
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
@@ -274,7 +274,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             return Wait(millisecondsTimeout, CancellationToken.None);
         }
@@ -294,7 +294,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             CheckDispose();
 #if FEATURE_WASM_MANAGED_THREADS
@@ -445,7 +445,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             int remainingWaitMilliseconds = Timeout.Infinite;
 

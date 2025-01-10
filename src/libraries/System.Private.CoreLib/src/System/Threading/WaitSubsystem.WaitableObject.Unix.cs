@@ -361,7 +361,7 @@ namespace System.Threading
                     return WaitHandle.WaitTimeout;
                 }
 
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                 WaitableObject?[] waitableObjects = waitInfo.GetWaitedObjectArray(1);
                 waitableObjects[0] = this;
@@ -384,7 +384,7 @@ namespace System.Threading
                 bool interruptible,
                 bool prioritize)
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                 s_lock.VerifyIsNotLocked();
                 Debug.Assert(waitInfo != null);

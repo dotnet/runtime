@@ -1218,7 +1218,7 @@ namespace System.Diagnostics.Tests
         /// <summary>
         /// Tests Activity Start and Stop with timestamp
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void StartStopWithTimestamp()
         {
             var activity = new Activity("activity");

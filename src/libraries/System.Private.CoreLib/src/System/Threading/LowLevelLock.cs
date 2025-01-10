@@ -167,7 +167,7 @@ namespace System.Threading
 
         private void WaitAndAcquire()
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
 #if !FEATURE_SINGLE_THREAD
             VerifyIsNotLocked();

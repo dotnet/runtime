@@ -39,7 +39,7 @@ namespace System.Threading
 
         public bool Wait(int timeoutMs, bool spinWait)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             Debug.Assert(timeoutMs >= -1);
 

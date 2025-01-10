@@ -122,7 +122,7 @@ namespace System.Threading
             /// </summary>
             public WaitableObject?[] GetWaitedObjectArray(int requiredCapacity)
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                 Debug.Assert(_thread == Thread.CurrentThread);
                 Debug.Assert(_waitedCount == 0);
@@ -168,7 +168,7 @@ namespace System.Threading
             /// </summary>
             public void RegisterWait(int waitedCount, bool prioritize, bool isWaitForAll)
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                 s_lock.VerifyIsLocked();
                 Debug.Assert(_thread == Thread.CurrentThread);
@@ -230,7 +230,7 @@ namespace System.Threading
 
             public void UnregisterWait()
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                 s_lock.VerifyIsLocked();
                 Debug.Assert(_waitedCount > (_isWaitForAll ? 1 : 0));
@@ -284,8 +284,6 @@ namespace System.Threading
 
             public int Wait(int timeoutMilliseconds, bool interruptible, bool isSleep, ref LockHolder lockHolder)
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
-
                 if (isSleep)
                 {
                     s_lock.VerifyIsNotLocked();
@@ -298,6 +296,22 @@ namespace System.Threading
 
                 Debug.Assert(timeoutMilliseconds >= -1);
                 Debug.Assert(timeoutMilliseconds != 0); // caller should have taken care of it
+
+                if (!Thread.IsMultiThreadedPlatform)
+                {
+                    // on single-threaded platforms, we don't support waiting except for Sleep()
+                    if (!isSleep) throw new PlatformNotSupportedException();
+
+                    // sleep is implemented using a busy loop
+                    // it doesn't need to acquire the lock because nothing else could interrupt it or observe its state
+                    int elapsedMilliseconds = 0;
+                    int startTimeMilliseconds = Environment.TickCount;
+                    while (elapsedMilliseconds < timeoutMilliseconds)
+                    {
+                        elapsedMilliseconds = Environment.TickCount - startTimeMilliseconds;
+                    }
+                    return WaitHandle.WaitTimeout;
+                }
 
                 _thread.SetWaitSleepJoinState();
 
@@ -398,8 +412,6 @@ namespace System.Threading
 
             public static void Sleep(int timeoutMilliseconds, bool interruptible)
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
-
                 s_lock.VerifyIsNotLocked();
                 Debug.Assert(timeoutMilliseconds >= -1);
 
@@ -669,7 +681,7 @@ namespace System.Threading
 
                 public void RegisterWait(WaitableObject waitableObject)
                 {
-                    if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                    if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                     s_lock.VerifyIsLocked();
                     Debug.Assert(_waitInfo.Thread == Thread.CurrentThread);
@@ -694,7 +706,7 @@ namespace System.Threading
 
                 public void RegisterPrioritizedWait(WaitableObject waitableObject)
                 {
-                    if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                    if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                     s_lock.VerifyIsLocked();
                     Debug.Assert(_waitInfo.Thread == Thread.CurrentThread);
@@ -719,7 +731,7 @@ namespace System.Threading
 
                 public void UnregisterWait(WaitableObject waitableObject)
                 {
-                    if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                    if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                     s_lock.VerifyIsLocked();
                     Debug.Assert(waitableObject != null);

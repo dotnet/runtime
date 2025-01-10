@@ -392,7 +392,7 @@ namespace System.Threading
                 spinCount = maxSpinCount;
             }
 
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException(); // this should not happen, but it helps to trim the code below on ST platforms
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException(); // this should not happen, but it helps to trim the code below on ST platforms
 
             for (short spinIndex = 0; ;)
             {
@@ -483,7 +483,7 @@ namespace System.Threading
                 goto Locked;
             }
 
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException(); // this should not happen, but it helps to trim the code below on ST platforms
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException(); // this should not happen, but it helps to trim the code below on ST platforms
 
             // Lock was not acquired and a waiter was registered. All following paths need to unregister the waiter, including
             // exceptional paths.

@@ -91,7 +91,7 @@ namespace System.Threading
         {
             get
             {
-                if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+                if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
                 ThrowIfDisposed();
 

@@ -99,7 +99,7 @@ namespace System.Threading
 
         public virtual bool WaitOne(int millisecondsTimeout)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
@@ -112,7 +112,7 @@ namespace System.Threading
             object? associatedObject = null,
             NativeRuntimeEventSource.WaitHandleWaitSourceMap waitSource = NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             Debug.Assert(millisecondsTimeout >= -1);
 
@@ -300,7 +300,7 @@ namespace System.Threading
 
         private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             if (waitHandles.Length == 0)
             {
@@ -365,7 +365,7 @@ namespace System.Threading
 
         private static int WaitAnyMultiple(ReadOnlySpan<SafeWaitHandle> safeWaitHandles, int millisecondsTimeout)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             // - Callers are expected to manage the lifetimes of the safe wait handles such that they would not expire during
             //   this wait

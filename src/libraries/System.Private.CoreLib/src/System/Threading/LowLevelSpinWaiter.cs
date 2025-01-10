@@ -53,8 +53,6 @@ namespace System.Threading
 
         public static void Wait(int spinIndex, int sleep0Threshold, bool isSingleProcessor)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
-
             Debug.Assert(spinIndex >= 0);
             Debug.Assert(sleep0Threshold >= 0);
 

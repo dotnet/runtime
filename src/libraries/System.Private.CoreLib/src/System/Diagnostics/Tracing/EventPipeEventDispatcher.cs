@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tracing
 
         private void StartDispatchTask(ulong sessionID, DateTime syncTimeUtc, long syncTimeQPC, long timeQPCFrequency)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
             Debug.Assert(sessionID != 0);

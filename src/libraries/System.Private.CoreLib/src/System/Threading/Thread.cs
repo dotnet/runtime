@@ -156,14 +156,12 @@ namespace System.Threading
             Initialize();
         }
 
-#if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
+#if FEATURE_SINGLE_THREAD
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => true;
+        internal static bool IsMultiThreadedPlatform => false;
 #else
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
+        internal static bool IsMultiThreadedPlatform => true;
 #endif
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -192,7 +190,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             StartHelper? startHelper = _startHelper;
 
@@ -235,7 +233,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 
             StartHelper? startHelper = _startHelper;
 
@@ -400,7 +398,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!IsMultiThreadedPlatform || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -412,7 +410,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(!IsThreadStartSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!IsMultiThreadedPlatform || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;

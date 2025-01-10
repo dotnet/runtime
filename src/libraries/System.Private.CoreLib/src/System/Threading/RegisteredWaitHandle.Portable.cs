@@ -55,7 +55,7 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
-            if (!Thread.IsThreadStartSupported) throw new PlatformNotSupportedException();
+            if (!Thread.IsMultiThreadedPlatform) throw new PlatformNotSupportedException();
 #if TARGET_WINDOWS
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);
 #endif
