@@ -335,7 +335,6 @@ namespace System.Numerics
         /// <param name="z">The Z component.</param>
         /// <param name="w">The W component.</param>
         /// <returns>A new <see cref="Vector4" /> from the specified <see cref="Vector2" /> object and a Z and a W component.</returns>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Create(Vector2 vector, float z, float w)
         {
@@ -385,6 +384,7 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector4 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector4();
 
+        /// <summary>
         /// Computes the cross product of two vectors. For homogeneous coordinates,
         /// the product of the weights is the new weight for the resulting product.
         /// </summary>
@@ -401,12 +401,26 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Cross(Vector4 vector1, Vector4 vector2)
         {
-            return new Vector4(
-                (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
-                (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
-                (vector1.X * vector2.Y) - (vector1.Y * vector2.X),
-                (vector1.W * vector2.W)
-            );
+            //return new Vector4(
+            //    (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
+            //    (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
+            //    (vector1.X * vector2.Y) - (vector1.Y * vector2.X),
+            //    (vector1.W * vector2.W)
+            //);
+
+            Vector128<float> v1 = vector1.AsVector128();
+            Vector128<float> v2 = vector2.AsVector128();
+
+            Vector128<int> shuftleYZXW = Vector128.Create(1, 2, 0, 3);
+            Vector128<int> shuftleZXYW = Vector128.Create(2, 0, 1, 3);
+
+            Vector128<float> m1 = Vector128.Shuffle(v1, shuftleYZXW) *
+                Vector128.Shuffle(v2, shuftleZXYW);
+            Vector128<float> m2 = Vector128.Shuffle(v1, shuftleZXYW) *
+                Vector128.Shuffle(v2, shuftleYZXW);
+            m2.SetElementUnsafe(3, 0);
+
+            return (m1 - m2).AsVector4();
         }
 
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />

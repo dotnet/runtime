@@ -335,12 +335,16 @@ namespace System.Numerics
         /// <see cref="Cross"/> is the same as taking the <see cref="Dot"/> with the second vector
         /// that has been rotated 90-degrees.
         /// </remarks>
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cross(Vector2 value1, Vector2 value2)
         {
-            return (value1.X * value2.Y)
-                 - (value1.Y * value2.X);
+            //return value1.X * value2.Y - value1.Y * value2.X;
+
+            Vector64<float> v1 = Vector64.Create(value1.X, value1.Y);
+            Vector64<float> v2 = Vector64.Create(value2.Y, value2.X); // swap X, Y
+            Vector64<float> mult = v1 * v2;
+
+            return mult.GetElement(0) - mult.GetElement(1);
         }
 
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
