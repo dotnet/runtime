@@ -227,11 +227,6 @@ check_symbol_exists(
     HAVE_IOCTL)
 
 check_symbol_exists(
-    getrandom
-    sys/random.h
-    HAVE_GETRANDOM)
-
-check_symbol_exists(
     sched_getaffinity
     "sched.h"
     HAVE_SCHED_GETAFFINITY)
