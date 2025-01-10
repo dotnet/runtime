@@ -338,13 +338,10 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cross(Vector2 value1, Vector2 value2)
         {
-            //return value1.X * value2.Y - value1.Y * value2.X;
+            // Vector64 is not optimized on xarch. The emulated vector math is much worse
+            // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEBDAzgWwB8ABABgAJiBGAOgDkBXfGKASzFwG4BYAKDMq0ASgwB2GVsxoBJcW1G52XPn2IBmSgCZyAYXIBvPuWOUN1JOQBmAGwjYMuqBFy4AFADUYYDNG0A3bGsGGCo0ck9vX3IAoJhNAEojE0NeEzTwrx8oVAAeGzsMAD5oqnIAXgzI7JQaHVh7GFcY4NoADTDmkJoATXieVPTjCKzc/Ptiv20K4ehUWvqMRs7NHo7A4JXWvvIAeh3yXAB3bAAHcnbybqTBmeq823HyfAZrBwq/UoAqaM1+6/TiAB2J4vDA0ADiMAwAFFrDBmOJXKR4uQ4CDXhCobD4TBEVQ+v8AL7/f7qQQWMYOOrOXB0bCsPyNW7+dYhMLM6KshL/FKDYxAzmxNrkb7LHqowUtcWirk0Vr9NLE3iEoA===
 
-            Vector64<float> v1 = Vector64.Create(value1.X, value1.Y);
-            Vector64<float> v2 = Vector64.Create(value2.Y, value2.X); // swap X, Y
-            Vector64<float> mult = v1 * v2;
-
-            return mult.GetElement(0) - mult.GetElement(1);
+            return value1.X * value2.Y - value1.Y * value2.X;
         }
 
         /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
