@@ -378,7 +378,7 @@ void ComMTMemberInfoMap::SetupPropsForIClassX(size_t sizeOfPtr)
         }
     }
 
-    // COM+ supports properties in which the getter and setter have different signatures,
+    // CLR supports properties in which the getter and setter have different signatures,
     //  but TypeLibs do not.  Look for mismatched signatures, and break apart the properties.
     for (i=0; i<nSlots; ++i)
     {
@@ -524,8 +524,8 @@ void ComMTMemberInfoMap::SetupPropsForInterface(size_t sizeOfPtr)
     MethodDesc  *pMeth;                   // A MethodDesc.
     CQuickArray<int> rSlotMap;            // Array to map vtable slots.
     DWORD               nSlots;                                 // Number of vtable slots.
-    ULONG               ulComSlotMin    = UINT32_MAX;           // Find first COM+ slot.
-    ULONG               ulComSlotMax    = 0;                    // Find last COM+ slot.
+    ULONG               ulComSlotMin    = UINT32_MAX;           // Find first CLR slot.
+    ULONG               ulComSlotMax    = 0;                    // Find last CLR slot.
     int                 bSlotRemap      = false;                // True if slots need to be mapped, due to holes.
     HRESULT             hr              = S_OK;
 
@@ -1125,7 +1125,7 @@ void ComMTMemberInfoMap::AssignDefaultMember(
     int         *pDef=0;                // Pointer to one of the def* variables.
     LPWSTR      pName=NULL;             // Pointer to a name.
     ULONG       cbSig=0;                // Size of Cor signature.
-    ULONG       ixSig=0;                // Index into COM+ signature.
+    ULONG       ixSig=0;                // Index into signature.
     ULONG       callconv=0;             // A member's calling convention.
     ULONG       cParams=0;              // A member's parameter count.
     ULONG       retval=0;               // A default member's return type.
@@ -1250,7 +1250,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
     mdToken     tkTypeRef;              // Token for a TypeRef/TypeDef
     LPWSTR      pName;                  // Pointer to a name.
     ULONG       cbSig;                  // Size of Cor signature.
-    ULONG       ixSig;                  // Index into COM+ signature.
+    ULONG       ixSig;                  // Index into signature.
     ULONG       callconv;               // A member's calling convention.
     ULONG       cParams;                // A member's parameter count.
     MethodDesc  *pMeth;                 // A method desc.

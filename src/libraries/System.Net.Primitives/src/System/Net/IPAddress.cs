@@ -201,15 +201,12 @@ namespace System.Net
         private static ushort[] ReadUInt16NumbersFromBytes(ReadOnlySpan<byte> address)
         {
             ushort[] numbers = new ushort[NumberOfLabels];
-            if (Vector128.IsHardwareAccelerated)
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
             {
-                Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(address)).AsUInt16();
-                if (BitConverter.IsLittleEndian)
-                {
-                    // Reverse endianness of each ushort
-                    ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
-                }
-                ushorts.StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
+                Vector128<ushort> ushorts = Vector128.Create(address).AsUInt16();
+                // Reverse endianness of each ushort
+                ushorts = (ushorts << 8) | (ushorts >> 8);
+                ushorts.CopyTo(numbers);
             }
             else
             {
@@ -347,15 +344,15 @@ namespace System.Net
         private void WriteIPv6Bytes(Span<byte> destination)
         {
             ushort[]? numbers = _numbers;
-            Debug.Assert(numbers != null && numbers.Length == NumberOfLabels);
+            Debug.Assert(numbers is { Length: NumberOfLabels });
 
             if (BitConverter.IsLittleEndian)
             {
                 if (Vector128.IsHardwareAccelerated)
                 {
-                    Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
-                    ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
-                    ushorts.AsByte().StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+                    Vector128<ushort> ushorts = Vector128.Create(numbers).AsUInt16();
+                    ushorts = (ushorts << 8) | (ushorts >> 8);
+                    ushorts.AsByte().CopyTo(destination);
                 }
                 else
                 {
@@ -387,7 +384,7 @@ namespace System.Net
         {
             if (IsIPv6)
             {
-                Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+                Debug.Assert(_numbers is { Length: NumberOfLabels });
                 byte[] bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
                 WriteIPv6Bytes(bytes);
                 return bytes;
@@ -633,15 +630,7 @@ namespace System.Net
         {
             get
             {
-                if (IsIPv4)
-                {
-                    return false;
-                }
-
-                ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes(new ReadOnlySpan<ushort>(_numbers));
-                return
-                    MemoryMarshal.Read<ulong>(numbers) == 0 &&
-                    BinaryPrimitives.ReadUInt32LittleEndian(numbers.Slice(8)) == 0xFFFF0000;
+                return !IsIPv4 && _numbers.AsSpan(0, 6).SequenceEqual((ReadOnlySpan<ushort>)[0, 0, 0, 0, 0, 0xFFFF]);
             }
         }
 
@@ -695,18 +684,19 @@ namespace System.Net
             if (IsIPv6)
             {
                 // For IPv6 addresses, we must compare the full 128-bit representation and the scope IDs.
-                ReadOnlySpan<byte> thisNumbers = MemoryMarshal.AsBytes<ushort>(_numbers);
-                ReadOnlySpan<byte> comparandNumbers = MemoryMarshal.AsBytes<ushort>(comparand._numbers);
-                return
-                    MemoryMarshal.Read<ulong>(thisNumbers) == MemoryMarshal.Read<ulong>(comparandNumbers) &&
-                    MemoryMarshal.Read<ulong>(thisNumbers.Slice(sizeof(ulong))) == MemoryMarshal.Read<ulong>(comparandNumbers.Slice(sizeof(ulong))) &&
-                    PrivateScopeId == comparand.PrivateScopeId;
+                // We give JIT a hint that the arrays are always of length IPv6AddressShorts, so it
+                // can unroll the comparison. JIT probably could do it on its own, but that requires
+                // complex inter-procedural optimizations.
+                Debug.Assert(_numbers.Length == IPAddressParserStatics.IPv6AddressShorts);
+                Debug.Assert(comparand._numbers!.Length == IPAddressParserStatics.IPv6AddressShorts);
+
+                ReadOnlySpan<ushort> left = _numbers.AsSpan(0, IPAddressParserStatics.IPv6AddressShorts);
+                ReadOnlySpan<ushort> right = comparand._numbers.AsSpan(0, IPAddressParserStatics.IPv6AddressShorts);
+                return left.SequenceEqual(right) && PrivateScopeId == comparand.PrivateScopeId;
             }
-            else
-            {
-                // For IPv4 addresses, compare the integer representation.
-                return comparand.PrivateAddress == PrivateAddress;
-            }
+
+            // For IPv4 addresses, compare the integer representation.
+            return comparand.PrivateAddress == PrivateAddress;
         }
 
         public override int GetHashCode()

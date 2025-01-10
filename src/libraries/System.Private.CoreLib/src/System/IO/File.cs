@@ -174,9 +174,12 @@ namespace System.IO
         // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
         // ToUniversalTime treats this as local.
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
-            => dateTime.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-                : dateTime.ToUniversalTime();
+        {
+            if (dateTime.Kind == DateTimeKind.Local)
+                dateTime = dateTime.ToUniversalTime();
+
+            return new DateTimeOffset(dateTime.Ticks, default);
+        }
 
         public static void SetCreationTime(string path, DateTime creationTime)
             => FileSystem.SetCreationTime(Path.GetFullPath(path), creationTime, asDirectory: false);
