@@ -2424,10 +2424,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		}
 
-		// FIXME: Add support for Vector64 on arm64 https://github.com/dotnet/runtime/issues/90402
 		int size = mono_class_value_size (arg_class, NULL);
-		if (size != 16)
+		if (size != 16) {
+			// FIXME: Add support for Vector64 on arm64 https://github.com/dotnet/runtime/issues/90402
+			// also for Vector2 and Vector3 which can be encountered
 			return NULL;
+		}
 
 		MonoInst* msb_mask_vec = emit_msb_vector_mask (cfg, arg_class, arg0_type);
 		MonoInst* and_res_vec = emit_simd_ins_for_binary_op (cfg, arg_class, fsig, args, arg0_type, SN_BitwiseAnd);
@@ -2512,19 +2514,21 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int esize;
 
 		if (fsig->params [0]->type == MONO_TYPE_GENERICINST) {
 			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-			int size = mono_class_value_size (arg_class, NULL);
-			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-			elems = size / esize;
+			esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 		} else {
 			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
 			// which live on System.Numerics.Vector
 
 			arg0_type = MONO_TYPE_R4;
-			elems = 4;
+			esize = 4;
 		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+		elems = size / esize;
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
@@ -3155,19 +3159,21 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int esize;
 
 		if (fsig->params [0]->type == MONO_TYPE_GENERICINST) {
 			MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
-			int size = mono_class_value_size (arg_class, NULL);
-			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-			elems = size / esize;
+			esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 		} else {
 			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
 			// which live on System.Numerics.Vector
 
 			arg0_type = MONO_TYPE_R4;
-			elems = 4;
+			esize = 4;
 		}
+		
+		int size = mono_class_value_size (arg_class, NULL);
+		elems = size / esize;
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
@@ -6637,10 +6643,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 MonoInst*
 mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	if (!has_intrinsic_cattr (cmethod)) {
-		// We shouldn't be processing any methods which aren't marked [Intrinsic]
-		return NULL;
-	}
+	// TODO: We shouldn't be processing any methods which aren't marked [Intrinsic]
 	return emit_intrinsics (cfg, cmethod, fsig, args, emit_simd_intrinsics);
 }
 
