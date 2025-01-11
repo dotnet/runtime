@@ -45,24 +45,15 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                IntPtr handle = _handle;
-
-                // Check if the handle was never initialized or was freed.
-                if (handle == IntPtr.Zero)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
-                }
-
+                GCHandle.CheckUninitialized(_handle);
                 // Skip the type check to provide lowest overhead.
-                return Unsafe.As<T>(GCHandle.InternalGet(handle));
+                return Unsafe.As<T>(GCHandle.InternalGet(_handle));
             }
             set
             {
-                IntPtr handle = _handle;
-                GCHandle.ThrowIfInvalid(handle);
-
+                GCHandle.CheckUninitialized(_handle);
                 // Unlike GCHandle, pinning any object is allowed
-                GCHandle.InternalSet(handle, value);
+                GCHandle.InternalSet(_handle, value);
             }
         }
 
@@ -73,9 +64,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public readonly unsafe void* GetAddressOfObjectData()
         {
-            IntPtr handle = _handle;
-            GCHandle.ThrowIfInvalid(handle);
-
+            GCHandle.CheckUninitialized(_handle);
             return GCHandle.AddrOfPinnedObjectFromHandle(_handle);
         }
 
@@ -88,11 +77,7 @@ namespace System.Runtime.InteropServices
         /// The <see cref="IntPtr"/> representation of <see cref="PinnedGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
         /// </remarks>
-        public static PinnedGCHandle<T> FromIntPtr(IntPtr value)
-        {
-            GCHandle.ThrowIfInvalid(value);
-            return new PinnedGCHandle<T>(value);
-        }
+        public static PinnedGCHandle<T> FromIntPtr(IntPtr value) => new PinnedGCHandle<T>(value);
 
         /// <summary>
         /// Returns the internal integer representation of a <see cref="PinnedGCHandle{T}"/> object.

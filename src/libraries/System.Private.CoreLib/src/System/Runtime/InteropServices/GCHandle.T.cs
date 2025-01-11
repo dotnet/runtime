@@ -42,18 +42,14 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                IntPtr handle = _handle;
-                GCHandle.ThrowIfInvalid(_handle);
-
-                // Skip the type check to provide lowest overhead.
-                return Unsafe.As<T>(GCHandle.InternalGet(handle));
+                GCHandle.CheckUninitialized(_handle);
+                // Skip the type check or null check to provide lowest overhead.
+                return Unsafe.As<T>(GCHandle.InternalGet(_handle));
             }
             set
             {
-                IntPtr handle = _handle;
-                GCHandle.ThrowIfInvalid(handle);
-
-                GCHandle.InternalSet(handle, value);
+                GCHandle.CheckUninitialized(_handle);
+                GCHandle.InternalSet(_handle, value);
             }
         }
 
@@ -66,11 +62,7 @@ namespace System.Runtime.InteropServices
         /// The <see cref="IntPtr"/> representation of <see cref="GCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
         /// </remarks>
-        public static GCHandle<T> FromIntPtr(IntPtr value)
-        {
-            GCHandle.ThrowIfInvalid(value);
-            return new GCHandle<T>(value);
-        }
+        public static GCHandle<T> FromIntPtr(IntPtr value) => new GCHandle<T>(value);
 
         /// <summary>
         /// Returns the internal integer representation of a <see cref="GCHandle{T}"/> object.

@@ -48,11 +48,9 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryGetTarget([NotNullWhen(true)] out T? target)
         {
-            IntPtr handle = _handle;
-            GCHandle.ThrowIfInvalid(_handle);
-
+            GCHandle.CheckUninitialized(_handle);
             // Skip the type check to provide lowest overhead.
-            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(handle));
+            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(_handle));
             target = obj;
             return obj != null;
         }
@@ -60,10 +58,8 @@ namespace System.Runtime.InteropServices
         /// <summary>Sets the object this handle represents.</summary>
         public readonly void SetTarget(T target)
         {
-            IntPtr handle = _handle;
-            GCHandle.ThrowIfInvalid(handle);
-
-            GCHandle.InternalSet(handle, target);
+            GCHandle.CheckUninitialized(_handle);
+            GCHandle.InternalSet(_handle, target);
         }
 
         /// <summary>
@@ -75,11 +71,7 @@ namespace System.Runtime.InteropServices
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
         /// </remarks>
-        public static WeakGCHandle<T> FromIntPtr(IntPtr value)
-        {
-            GCHandle.ThrowIfInvalid(value);
-            return new WeakGCHandle<T>(value);
-        }
+        public static WeakGCHandle<T> FromIntPtr(IntPtr value) => new WeakGCHandle<T>(value);
 
         /// <summary>
         /// Returns the internal integer representation of a <see cref="WeakGCHandle{T}"/> object.

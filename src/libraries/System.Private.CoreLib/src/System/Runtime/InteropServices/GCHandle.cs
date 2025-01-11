@@ -199,5 +199,14 @@ namespace System.Runtime.InteropServices
                 ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void CheckUninitialized(IntPtr handle)
+        {
+            // Check if the handle was never initialized or was freed.
+            // Throws NRE with minimal overhead, to avoid access violation from managed code.
+            // Invalid handle is unsupported and will cause AV as expected.
+            _ = *(object*)handle;
+        }
     }
 }

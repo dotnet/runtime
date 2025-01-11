@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Ctor_Default_Generic()
         {
             var handle = new GCHandle<object>();
-            Assert.Throws<InvalidOperationException>(() => handle.Target);
+            Assert.Throws<NullReferenceException>(() => handle.Target);
             Assert.False(handle.IsAllocated);
 
             Assert.Equal(IntPtr.Zero, GCHandle<object>.ToIntPtr(handle));
@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Ctor_Default_Weak()
         {
             var handle = new WeakGCHandle<object>();
-            Assert.Throws<InvalidOperationException>(() => handle.TryGetTarget(out _));
+            Assert.Throws<NullReferenceException>(() => handle.TryGetTarget(out _));
             Assert.False(handle.IsAllocated);
 
             Assert.Equal(IntPtr.Zero, WeakGCHandle<object>.ToIntPtr(handle));
@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Ctor_Default_Pinned()
         {
             var handle = new PinnedGCHandle<object>();
-            Assert.Throws<InvalidOperationException>(() => handle.Target);
+            Assert.Throws<NullReferenceException>(() => handle.Target);
             Assert.False(handle.IsAllocated);
 
             Assert.Equal(IntPtr.Zero, PinnedGCHandle<object>.ToIntPtr(handle));
@@ -148,22 +148,30 @@ namespace System.Runtime.InteropServices.Tests
         public void FromIntPtr_Zero_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => GCHandle.FromIntPtr(IntPtr.Zero));
-            Assert.Throws<InvalidOperationException>(() => GCHandle<object>.FromIntPtr(IntPtr.Zero));
-            Assert.Throws<InvalidOperationException>(() => WeakGCHandle<object>.FromIntPtr(IntPtr.Zero));
-            Assert.Throws<InvalidOperationException>(() => PinnedGCHandle<object>.FromIntPtr(IntPtr.Zero));
         }
 
         [Fact]
-        public unsafe void AddrOfPinnedObject_NotInitialized_ThrowsInvalidOperationException()
+        public void FromIntPtr_Generic_Zero_NoCheck()
+        {
+            var handle = GCHandle<object>.FromIntPtr(IntPtr.Zero);
+            Assert.False(handle.IsAllocated);
+            var weakHandle = WeakGCHandle<object>.FromIntPtr(IntPtr.Zero);
+            Assert.False(weakHandle.IsAllocated);
+            var pinnedHandle = PinnedGCHandle<object>.FromIntPtr(IntPtr.Zero);
+            Assert.False(pinnedHandle.IsAllocated);
+        }
+
+        [Fact]
+        public unsafe void AddrOfPinnedObject_NotInitialized_ThrowsException()
         {
             var handle = new GCHandle();
             Assert.Throws<InvalidOperationException>(() => handle.AddrOfPinnedObject());
             var handleOfObject = new PinnedGCHandle<object>();
-            Assert.Throws<InvalidOperationException>(() => handleOfObject.GetAddressOfObjectData());
+            Assert.Throws<NullReferenceException>(() => handleOfObject.GetAddressOfObjectData());
             var handleOfString = new PinnedGCHandle<string>();
-            Assert.Throws<InvalidOperationException>(() => handleOfString.GetAddressOfStringData());
+            Assert.Throws<NullReferenceException>(() => handleOfString.GetAddressOfStringData());
             var handleOfArray = new PinnedGCHandle<int[]>();
-            Assert.Throws<InvalidOperationException>(() => handleOfArray.GetAddressOfArrayData());
+            Assert.Throws<NullReferenceException>(() => handleOfArray.GetAddressOfArrayData());
         }
 
         [Fact]
