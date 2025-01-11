@@ -85,7 +85,11 @@ namespace System.Runtime.InteropServices
         /// The <see cref="IntPtr"/> representation of <see cref="PinnedGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
         /// </remarks>
-        public static PinnedGCHandle<T> FromIntPtr(IntPtr value) => new PinnedGCHandle<T>(value);
+        public static PinnedGCHandle<T> FromIntPtr(IntPtr value)
+        {
+            GCHandle.ThrowIfInvalid(value);
+            return new PinnedGCHandle<T>(value);
+        }
 
         /// <summary>
         /// Returns the internal integer representation of a <see cref="PinnedGCHandle{T}"/> object.

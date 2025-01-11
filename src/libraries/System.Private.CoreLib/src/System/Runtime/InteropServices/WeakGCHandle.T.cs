@@ -75,7 +75,11 @@ namespace System.Runtime.InteropServices
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
         /// </remarks>
-        public static WeakGCHandle<T> FromIntPtr(IntPtr value) => new WeakGCHandle<T>(value);
+        public static WeakGCHandle<T> FromIntPtr(IntPtr value)
+        {
+            GCHandle.ThrowIfInvalid(value);
+            return new WeakGCHandle<T>(value);
+        }
 
         /// <summary>
         /// Returns the internal integer representation of a <see cref="WeakGCHandle{T}"/> object.
