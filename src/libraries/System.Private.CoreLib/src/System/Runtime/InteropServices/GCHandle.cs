@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices
     /// WeakTrackResurrection: Same as Weak, but stays until after object is really gone.
     /// Pinned - same as Normal, but allows the address of the actual object to be taken.
     /// </remarks>
+    /// <seealso cref="GCHandle{T}"/>
     [StructLayout(LayoutKind.Sequential)]
     public partial struct GCHandle : IEquatable<GCHandle>
     {
