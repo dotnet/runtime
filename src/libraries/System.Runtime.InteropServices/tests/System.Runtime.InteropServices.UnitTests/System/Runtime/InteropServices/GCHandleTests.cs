@@ -73,22 +73,21 @@ namespace System.Runtime.InteropServices.Tests
         {
             RunTest<object>(null);
             RunTest("String");
-            RunTest<object>(123);
             RunTest(new int[1]);
-            RunTest(new object[1], pinnable: false);
-            RunTest(new NonBlittable[1], pinnable: false);
+            RunTest(new object[1]);
+            RunTest(new NonBlittable[1]);
             RunTest<object>(new Blittable());
-            RunTest<object>(new NonBlittable(), pinnable: false);
+            RunTest<object>(new NonBlittable());
             RunTest<object>(new UnmanagedNonBlittable());
+            RunTest(new ClassWithReferences());
             RunTest(new ClassWithoutReferences());
 
-            void RunTest<T>(T value, bool pinnable = true) where T : class
+            void RunTest<T>(T value) where T : class
             {
                 ValidateGCHandle(new GCHandle<T>(value), value);
                 ValidateWeakGCHandle(new WeakGCHandle<T>(value), value);
                 ValidateWeakGCHandle(new WeakGCHandle<T>(value, trackResurrection: true), value);
-                if (pinnable)
-                    ValidatePinnedGCHandle(new PinnedGCHandle<T>(value), value);
+                ValidatePinnedGCHandle(new PinnedGCHandle<T>(value), value);
             }
         }
 
@@ -135,7 +134,6 @@ namespace System.Runtime.InteropServices.Tests
         public void Alloc_InvalidPinnedObject_ThrowsArgumentException(object value)
         {
             Assert.Throws<ArgumentException>(() => GCHandle.Alloc(value, GCHandleType.Pinned));
-            Assert.Throws<ArgumentException>(() => new PinnedGCHandle<object>(value));
         }
 
         [Theory]

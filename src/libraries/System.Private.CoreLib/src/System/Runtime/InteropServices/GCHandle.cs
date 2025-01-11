@@ -37,9 +37,9 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(type), SR.ArgumentOutOfRange_Enum);
             }
 
-            if (type == GCHandleType.Pinned)
+            if (type == GCHandleType.Pinned && !Marshal.IsPinnable(value))
             {
-                ThrowIfNotPinnable(value);
+                throw new ArgumentException(SR.ArgumentException_NotIsomorphic, nameof(value));
             }
 
             IntPtr handle = InternalAlloc(value, type);
@@ -93,9 +93,9 @@ namespace System.Runtime.InteropServices
                 IntPtr handle = _handle;
                 ThrowIfInvalid(handle);
 
-                if (IsPinned(handle))
+                if (IsPinned(handle) && !Marshal.IsPinnable(value))
                 {
-                    ThrowIfNotPinnable(value);
+                    throw new ArgumentException(SR.ArgumentException_NotIsomorphic, nameof(value));
                 }
 
                 InternalSet(GetHandleValue(handle), value);
@@ -197,16 +197,6 @@ namespace System.Runtime.InteropServices
             if (handle == 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowIfNotPinnable(object? value)
-        {
-            if (!Marshal.IsPinnable(value))
-            {
-                GC.KeepAlive(value);
-                throw new ArgumentException(SR.ArgumentException_NotIsomorphic, nameof(value));
             }
         }
     }
