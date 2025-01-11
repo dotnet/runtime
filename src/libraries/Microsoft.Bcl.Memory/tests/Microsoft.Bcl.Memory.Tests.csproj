@@ -30,10 +30,7 @@
     <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\IndexTests.cs">
       <Link>System\IndexTests.cs</Link>
     </Compile>
-  </ItemGroup>
-
-  <!-- Targetting .Net 8.0 -->
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
     <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\Text\Unicode\Utf8Tests.cs">
       <Link>System\Text\Unicode\Utf8Tests.cs</Link>
     </Compile>
