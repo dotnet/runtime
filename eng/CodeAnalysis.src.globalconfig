@@ -1734,7 +1734,7 @@ dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0059.severity = warning
 
 # IDE0060: Remove unused parameter
-dotnet_diagnostic.IDE0060.severity = warning
+dotnet_diagnostic.IDE0060.severity = none
 dotnet_code_quality_unused_parameters = non_public
 
 # IDE0061: Use expression body for local functions
@@ -1804,7 +1804,7 @@ dotnet_diagnostic.IDE0084.severity = none
 dotnet_diagnostic.IDE0090.severity = silent
 
 # IDE0100: Remove redundant equality
-dotnet_diagnostic.IDE0100.severity = warning
+dotnet_diagnostic.IDE0100.severity = none
 
 # IDE0110: Remove unnecessary discard
 dotnet_diagnostic.IDE0110.severity = warning
