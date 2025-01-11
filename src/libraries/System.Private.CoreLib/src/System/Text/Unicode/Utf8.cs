@@ -9,7 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Unicode
 {
-#if SYSTEM_PRIVATE_CORELIB
+#if SYSTEM_PRIVATE_CORELIB || MICROSOFT_BCL_MEMORY
+    /// <summary>
+    /// Provides methods for transcoding between UTF-8 and UTF-16.
+    /// </summary>
     public
 #else
     internal
@@ -200,7 +203,11 @@ namespace System.Text.Unicode
                     source = source.Slice((int)(pInputBufferRemaining - (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source))));
                     Debug.Assert(!source.IsEmpty, "Expected 'Done' if source is fully consumed.");
 
+#if !MICROSOFT_BCL_MEMORY
                     Rune.DecodeFromUtf8(source, out _, out int bytesConsumedJustNow);
+#else
+                    DecodeFromUtf8(source, out _, out int bytesConsumedJustNow);
+#endif
                     source = source.Slice(bytesConsumedJustNow);
 
                     operationStatus = OperationStatus.Done; // we patched the error - if we're about to break out of the loop this is a success case
@@ -216,6 +223,7 @@ namespace System.Text.Unicode
             }
         }
 
+#if !MICROSOFT_BCL_MEMORY
         internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
@@ -807,6 +815,7 @@ namespace System.Text.Unicode
                 return false;
             }
         }
+#endif
 
         /// <summary>
         /// Validates that the value is well-formed UTF-8.
@@ -815,5 +824,192 @@ namespace System.Text.Unicode
         /// <returns><c>true</c> if value is well-formed UTF-8, <c>false</c> otherwise.</returns>
         public static bool IsValid(ReadOnlySpan<byte> value) =>
             Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
+
+#if MICROSOFT_BCL_MEMORY
+        /// <summary>
+        /// Decodes the Rune at the beginning of the provided UTF-8 source buffer.
+        /// </summary>
+        /// <returns>
+        /// <para>
+        /// If the source buffer begins with a valid UTF-8 encoded scalar value, returns <see cref="OperationStatus.Done"/>,
+        /// and outs via <paramref name="result"/> the decoded Runeand via <paramref name="bytesConsumed"/> the
+        /// number of <see langword="byte"/>s used in the input buffer to encode the Rune.
+        /// </para>
+        /// <para>
+        /// If the source buffer is empty or contains only a partial UTF-8 subsequence, returns <see cref="OperationStatus.NeedMoreData"/>,
+        /// and outs via <paramref name="result"/> ReplacementChar and via <paramref name="bytesConsumed"/> the length of the input buffer.
+        /// </para>
+        /// <para>
+        /// If the source buffer begins with an ill-formed UTF-8 encoded scalar value, returns <see cref="OperationStatus.InvalidData"/>,
+        /// and outs via <paramref name="result"/> ReplacementChar and via <paramref name="bytesConsumed"/> the number of
+        /// <see langword="char"/>s used in the input buffer to encode the ill-formed sequence.
+        /// </para>
+        /// </returns>
+        /// <remarks>
+        /// The general calling convention is to call this method in a loop, slicing the <paramref name="source"/> buffer by
+        /// <paramref name="bytesConsumed"/> elements on each iteration of the loop. On each iteration of the loop <paramref name="result"/>
+        /// will contain the real scalar value if successfully decoded, or it will contain ReplacementChar if
+        /// the data could not be successfully decoded. This pattern provides convenient automatic U+FFFD substitution of
+        /// invalid sequences while iterating through the loop.
+        /// </remarks>
+        private static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> source, out uint result, out int bytesConsumed)
+        {
+            // This method follows the Unicode Standard's recommendation for detecting
+            // the maximal subpart of an ill-formed subsequence. See The Unicode Standard,
+            // Ch. 3.9 for more details. In summary, when reporting an invalid subsequence,
+            // it tries to consume as many code units as possible as long as those code
+            // units constitute the beginning of a longer well-formed subsequence per Table 3-7.
+
+            // Try reading source[0].
+
+            int index = 0;
+            if (source.IsEmpty)
+            {
+                goto NeedsMoreData;
+            }
+
+            uint tempValue = source[0];
+            if (UnicodeUtility.IsAsciiCodePoint(tempValue))
+            {
+                bytesConsumed = 1;
+                result = tempValue;
+                return OperationStatus.Done;
+            }
+
+            // Per Table 3-7, the beginning of a multibyte sequence must be a code unit in
+            // the range [C2..F4]. If it's outside of that range, it's either a standalone
+            // continuation byte, or it's an overlong two-byte sequence, or it's an out-of-range
+            // four-byte sequence.
+
+            // Try reading source[1].
+
+            index = 1;
+            if (!UnicodeUtility.IsInRangeInclusive(tempValue, 0xC2, 0xF4))
+            {
+                goto Invalid;
+            }
+
+            tempValue = (tempValue - 0xC2) << 6;
+
+            if (source.Length <= 1)
+            {
+                goto NeedsMoreData;
+            }
+
+            // Continuation bytes are of the form [10xxxxxx], which means that their two's
+            // complement representation is in the range [-65..-128]. This allows us to
+            // perform a single comparison to see if a byte is a continuation byte.
+
+            int thisByteSignExtended = (sbyte)source[1];
+            if (thisByteSignExtended >= -64)
+            {
+                goto Invalid;
+            }
+
+            tempValue += (uint)thisByteSignExtended;
+            tempValue += 0x80; // remove the continuation byte marker
+            tempValue += (0xC2 - 0xC0) << 6; // remove the leading byte marker
+
+            if (tempValue < 0x0800)
+            {
+                Debug.Assert(UnicodeUtility.IsInRangeInclusive(tempValue, 0x0080, 0x07FF));
+                goto Finish; // this is a valid 2-byte sequence
+            }
+
+            // This appears to be a 3- or 4-byte sequence. Since per Table 3-7 we now have
+            // enough information (from just two code units) to detect overlong or surrogate
+            // sequences, we need to perform these checks now.
+
+            if (!UnicodeUtility.IsInRangeInclusive(tempValue, ((0xE0 - 0xC0) << 6) + (0xA0 - 0x80), ((0xF4 - 0xC0) << 6) + (0x8F - 0x80)))
+            {
+                // The first two bytes were not in the range [[E0 A0]..[F4 8F]].
+                // This is an overlong 3-byte sequence or an out-of-range 4-byte sequence.
+                goto Invalid;
+            }
+
+            if (UnicodeUtility.IsInRangeInclusive(tempValue, ((0xED - 0xC0) << 6) + (0xA0 - 0x80), ((0xED - 0xC0) << 6) + (0xBF - 0x80)))
+            {
+                // This is a UTF-16 surrogate code point, which is invalid in UTF-8.
+                goto Invalid;
+            }
+
+            if (UnicodeUtility.IsInRangeInclusive(tempValue, ((0xF0 - 0xC0) << 6) + (0x80 - 0x80), ((0xF0 - 0xC0) << 6) + (0x8F - 0x80)))
+            {
+                // This is an overlong 4-byte sequence.
+                goto Invalid;
+            }
+
+            // The first two bytes were just fine. We don't need to perform any other checks
+            // on the remaining bytes other than to see that they're valid continuation bytes.
+
+            // Try reading source[2].
+
+            index = 2;
+            if (source.Length <= 2)
+            {
+                goto NeedsMoreData;
+            }
+
+            thisByteSignExtended = (sbyte)source[2];
+            if (thisByteSignExtended >= -64)
+            {
+                goto Invalid; // this byte is not a UTF-8 continuation byte
+            }
+
+            tempValue <<= 6;
+            tempValue += (uint)thisByteSignExtended;
+            tempValue += 0x80; // remove the continuation byte marker
+            tempValue -= (0xE0 - 0xC0) << 12; // remove the leading byte marker
+
+            if (tempValue <= 0xFFFF)
+            {
+                Debug.Assert(UnicodeUtility.IsInRangeInclusive(tempValue, 0x0800, 0xFFFF));
+                goto Finish; // this is a valid 3-byte sequence
+            }
+
+            // Try reading source[3].
+
+            index = 3;
+            if (source.Length <= 3)
+            {
+                goto NeedsMoreData;
+            }
+
+            thisByteSignExtended = (sbyte)source[3];
+            if (thisByteSignExtended >= -64)
+            {
+                goto Invalid; // this byte is not a UTF-8 continuation byte
+            }
+
+            tempValue <<= 6;
+            tempValue += (uint)thisByteSignExtended;
+            tempValue += 0x80; // remove the continuation byte marker
+            tempValue -= (0xF0 - 0xE0) << 18; // remove the leading byte marker
+
+            // Valid 4-byte sequence
+            //UnicodeDebug.AssertIsValidSupplementaryPlaneScalar(tempValue);
+
+        Finish:
+
+            bytesConsumed = index + 1;
+            Debug.Assert(1 <= bytesConsumed && bytesConsumed <= 4); // Valid subsequences are always length [1..4]
+            result = tempValue;
+            return OperationStatus.Done;
+
+        NeedsMoreData:
+
+            Debug.Assert(0 <= index && index <= 3); // Incomplete subsequences are always length 0..3
+            bytesConsumed = index;
+            result = (char)UnicodeUtility.ReplacementChar;
+            return OperationStatus.NeedMoreData;
+
+        Invalid:
+
+            Debug.Assert(1 <= index && index <= 3); // Invalid subsequences are always length 1..3
+            bytesConsumed = index;
+            result = (char)UnicodeUtility.ReplacementChar;
+            return OperationStatus.InvalidData;
+        }
+#endif
     }
 }

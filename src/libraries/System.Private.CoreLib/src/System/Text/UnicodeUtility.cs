@@ -17,7 +17,9 @@ namespace System.Text
         /// </summary>
         public static int GetPlane(uint codePoint)
         {
+#if !MICROSOFT_BCL_MEMORY
             UnicodeDebug.AssertIsValidCodePoint(codePoint);
+#endif
 
             return (int)(codePoint >> 16);
         }
@@ -27,8 +29,10 @@ namespace System.Text
         /// </summary>
         public static uint GetScalarFromUtf16SurrogatePair(uint highSurrogateCodePoint, uint lowSurrogateCodePoint)
         {
+#if !MICROSOFT_BCL_MEMORY
             UnicodeDebug.AssertIsHighSurrogateCodePoint(highSurrogateCodePoint);
             UnicodeDebug.AssertIsLowSurrogateCodePoint(lowSurrogateCodePoint);
+#endif
 
             // This calculation comes from the Unicode specification, Table 3-5.
             // Need to remove the D800 marker from the high surrogate and the DC00 marker from the low surrogate,
@@ -43,7 +47,9 @@ namespace System.Text
         /// </summary>
         public static int GetUtf16SequenceLength(uint value)
         {
+#if !MICROSOFT_BCL_MEMORY
             UnicodeDebug.AssertIsValidScalar(value);
+#endif
 
             value -= 0x10000;   // if value < 0x10000, high byte = 0xFF; else high byte = 0x00
             value += (2 << 24); // if value < 0x10000, high byte = 0x01; else high byte = 0x02
@@ -57,7 +63,9 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void GetUtf16SurrogatesFromSupplementaryPlaneScalar(uint value, out char highSurrogateCodePoint, out char lowSurrogateCodePoint)
         {
+#if !MICROSOFT_BCL_MEMORY
             UnicodeDebug.AssertIsValidSupplementaryPlaneScalar(value);
+#endif
 
             // This calculation comes from the Unicode specification, Table 3-5.
 
@@ -70,7 +78,9 @@ namespace System.Text
         /// </summary>
         public static int GetUtf8SequenceLength(uint value)
         {
+#if !MICROSOFT_BCL_MEMORY
             UnicodeDebug.AssertIsValidScalar(value);
+#endif
 
             // The logic below can handle all valid scalar values branchlessly.
             // It gives generally good performance across all inputs, and on x86
