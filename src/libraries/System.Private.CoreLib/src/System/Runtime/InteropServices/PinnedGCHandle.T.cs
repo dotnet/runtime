@@ -63,6 +63,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        /// <summary>
+        /// Retrieves the address of object data in a <see cref="PinnedGCHandle{T}"/>.
+        /// </summary>
+        /// <returns>The address of the pinned data object.</returns>
         [CLSCompliant(false)]
         public readonly unsafe void* GetAddressOfObjectData()
         {
