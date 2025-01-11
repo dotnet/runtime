@@ -73,9 +73,13 @@ namespace System.Runtime.InteropServices.Tests
         {
             RunTest<object>(null);
             RunTest("String");
+            RunTest<object>(123);
             RunTest(new int[1]);
             RunTest(new NonBlittable[1]);
             RunTest(new object[1]);
+            RunTest<object>(new Blittable());
+            RunTest<object>(new UnmanagedNonBlittable());
+            RunTest(new ClassWithoutReferences());
 
             void RunTest<T>(T value) where T : class
             {
@@ -129,6 +133,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Alloc_InvalidPinnedObject_ThrowsArgumentException(object value)
         {
             Assert.Throws<ArgumentException>(() => GCHandle.Alloc(value, GCHandleType.Pinned));
+            Assert.Throws<ArgumentException>(() => new PinnedGCHandle<object>(value));
         }
 
         [Theory]

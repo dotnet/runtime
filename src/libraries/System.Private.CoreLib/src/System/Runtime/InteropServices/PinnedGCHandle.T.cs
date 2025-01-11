@@ -31,6 +31,7 @@ namespace System.Runtime.InteropServices
         /// <param name="target">The object that uses the <see cref="GCHandle{T}"/>.</param>
         public PinnedGCHandle(T target)
         {
+            GCHandle.ThrowIfNotPinnable(target);
             _handle = GCHandle.InternalAlloc(target, GCHandleType.Pinned);
         }
 
@@ -58,6 +59,7 @@ namespace System.Runtime.InteropServices
             {
                 IntPtr handle = _handle;
                 GCHandle.ThrowIfInvalid(handle);
+                GCHandle.ThrowIfNotPinnable(value);
 
                 GCHandle.InternalSet(handle, value);
             }
