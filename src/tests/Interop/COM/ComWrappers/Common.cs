@@ -339,7 +339,7 @@ namespace ComWrappersTests.Common
 
     class ComWrappersHelper
     {
-        private static Guid IID_IReferenceTracker = new Guid("11d3b13a-180e-4789-a8be-7712882893e6");
+        public static readonly Guid IID_IReferenceTracker = new Guid("11d3b13a-180e-4789-a8be-7712882893e6");
 
         [Flags]
         public enum ReleaseFlags

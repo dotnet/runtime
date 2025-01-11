@@ -5,7 +5,7 @@
 //
 
 //
-// Header file for Runtime Controller classes of the COM+ Debugging Services.
+// Header file for Runtime Controller classes of the CLR Debugging Services.
 //
 //*****************************************************************************
 

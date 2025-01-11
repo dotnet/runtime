@@ -34,7 +34,7 @@ STDAPI_(LPSTREAM)   CreateMemStm(DWORD cb, BYTE** ppBuf);
 typedef DPTR(CtxEntry) PTR_CtxEntry;
 
 //==============================================================
-// An entry representing a COM+ 1.0 context or an appartment.
+// An entry representing a CLR 1.0 context or an appartment.
 class CtxEntry
 {
     // The CtxEntryCache needs to be able to see the internals
