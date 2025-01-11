@@ -9699,6 +9699,22 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* Push the result of the call on the stack */
 
                     impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+
+#ifdef DEBUG
+                    // Under SPMI, look up the array element type class handle
+                    // and layout info (for arrays of structs)
+                    //
+                    if (JitConfig.EnableExtraSuperPmiQueries())
+                    {
+                        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+                        CorInfoType elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                        var_types   elemType    = JITtype2varType(elemCorType);
+                        if (elemType == TYP_STRUCT)
+                        {
+                            typGetObjLayout(elemClsHnd);
+                        }
+                    }
+#endif
                 }
                 else
                 {
