@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
