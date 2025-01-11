@@ -28,10 +28,10 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Allocates a handle for the specified object.
         /// </summary>
-        /// <param name="value">The object that uses the <see cref="GCHandle{T}"/>.</param>
-        public PinnedGCHandle(T value)
+        /// <param name="target">The object that uses the <see cref="GCHandle{T}"/>.</param>
+        public PinnedGCHandle(T target)
         {
-            _handle = GCHandle.InternalAlloc(value, GCHandleType.Pinned);
+            _handle = GCHandle.InternalAlloc(target, GCHandleType.Pinned);
         }
 
         private PinnedGCHandle(IntPtr handle) => _handle = handle;

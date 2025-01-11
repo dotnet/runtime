@@ -29,11 +29,11 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Allocates a handle for the specified object.
         /// </summary>
-        /// <param name="value">The object that uses the <see cref="GCHandle{T}"/>.</param>
+        /// <param name="target">The object that uses the <see cref="GCHandle{T}"/>.</param>
         /// <param name="trackResurrection">Whether track the object when it's resurrected in the finalizer.</param>
-        public WeakGCHandle(T value, bool trackResurrection = false)
+        public WeakGCHandle(T target, bool trackResurrection = false)
         {
-            _handle = GCHandle.InternalAlloc(value, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            _handle = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
         }
 
         private WeakGCHandle(IntPtr handle) => _handle = handle;
@@ -64,25 +64,6 @@ namespace System.Runtime.InteropServices
             GCHandle.ThrowIfInvalid(handle);
 
             GCHandle.InternalSet(handle, target);
-        }
-
-        /// <summary>Gets or sets the object this handle represents.</summary>
-        public readonly T Target
-        {
-            get
-            {
-                IntPtr handle = _handle;
-                GCHandle.ThrowIfInvalid(_handle);
-
-                return (T)GCHandle.InternalGet(handle)!;
-            }
-            set
-            {
-                IntPtr handle = _handle;
-                GCHandle.ThrowIfInvalid(handle);
-
-                GCHandle.InternalSet(handle, value);
-            }
         }
 
         /// <summary>
