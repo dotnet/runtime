@@ -3319,7 +3319,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     bool betterToExpand = false;
 
-    // Allow some lighweight intrinsics in Tier0 which can improve throughput
+    // Allow some lightweight intrinsics in Tier0 which can improve throughput
     // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
     if (!mustExpand && opts.Tier0OptimizationEnabled())
     {

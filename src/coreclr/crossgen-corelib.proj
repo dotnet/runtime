@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
   <ItemGroup>
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2" />
+    <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
   </ItemGroup>
@@ -92,21 +92,13 @@
     <ItemGroup>
       <Crossgen2Inputs Include="@(CoreLib)" />
       <Crossgen2Inputs Include="$(MergedMibcPath)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <Crossgen2OutputPath>%(Crossgen2.RootDir)/%(Crossgen2.Directory)</Crossgen2OutputPath>
-    </PropertyGroup>
-    <ItemGroup>
-      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dll" />
-      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.so" />
-      <Crossgen2Files Include="$(Crossgen2OutputPath)/*.dylib" />
+      <Crossgen2Inputs Include="@(Crossgen2Files->Metadata('OutputPath'))" />
     </ItemGroup>
   </Target>
 
   <Target Name="InvokeCrossgen"
           DependsOnTargets="PrepareInvokeCrossgen;CreateMergedMibcFile"
-          Inputs="@(Crossgen2Inputs);@(Crossgen2Files)"
+          Inputs="@(Crossgen2Inputs)"
           Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath)"
           AfterTargets="Build">
 
@@ -117,7 +109,7 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <PropertyGroup>
-      <CrossGenDllCmd>$(DotNetCli) @(Crossgen2)</CrossGenDllCmd>
+      <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
