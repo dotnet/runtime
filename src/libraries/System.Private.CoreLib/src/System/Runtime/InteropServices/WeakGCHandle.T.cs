@@ -52,7 +52,8 @@ namespace System.Runtime.InteropServices
             IntPtr handle = _handle;
             GCHandle.ThrowIfInvalid(_handle);
 
-            var obj = (T?)GCHandle.InternalGet(handle);
+            // Skip the type check to provide maximum unsafety.
+            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(handle));
             target = obj;
             return obj != null;
         }
