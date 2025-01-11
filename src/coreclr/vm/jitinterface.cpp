@@ -8200,7 +8200,7 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
         if (!pCaller->IsNoMetadata())
         {
-            // Do not tailcall from methods that are marked as noinline (people often use no-inline
+            // Do not tailcall from methods that are marked as NoInlining or NoOptimization (people often use no-inline
             // to mean "I want to always see this method in stacktrace")
             DWORD dwImplFlags = 0;
             IfFailThrow(pCaller->GetMDImport()->GetMethodImplProps(callerToken, NULL, &dwImplFlags));
@@ -8208,7 +8208,14 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
             if (IsMiNoInlining(dwImplFlags))
             {
                 result = false;
-                szFailReason = "Caller is marked as no inline";
+                szFailReason = "Caller is marked as NoInlining";
+                goto exit;
+            }
+
+            if (IsMiNoOptimization(dwImplFlags))
+            {
+                result = false;
+                szFailReason = "Caller is marked as NoOptimization";
                 goto exit;
             }
         }
@@ -12613,8 +12620,8 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
          }
 
-         // Always emit frames for methods marked no-inline (see #define ETW_EBP_FRAMED in the JIT)
-         if (IsMiNoInlining(dwImplFlags))
+         // Always emit frames for methods marked NoInlining or NoOptimization (see #define ETW_EBP_FRAMED in the JIT)
+         if (IsMiNoInlining(dwImplFlags) || IsMiNoOptimization(dwImplFlags))
          {
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
          }
