@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
                     ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
                 }
 
-                // Skip the type check to provide maximum unsafety.
+                // Skip the type check to provide lowest overhead.
                 return Unsafe.As<T>(GCHandle.InternalGet(handle));
             }
             set
