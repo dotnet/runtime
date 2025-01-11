@@ -11,12 +11,13 @@ namespace System.Runtime.InteropServices
         // The following methods are strongly typed generic specifications only on
         // PinnedGCHandles with correct type.
 
+#nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
         /// <summary>
         /// Retrieves the address of string data in a <see cref="PinnedGCHandle{T}"/> of array.
         /// </summary>
         /// <returns>The address of the pinned array.</returns>
         [CLSCompliant(false)]
-        public static unsafe T* GetAddressOfArrayData<T>(this PinnedGCHandle<T[]?> handle)
+        public static unsafe T* GetAddressOfArrayData<T>(this PinnedGCHandle<T[]> handle)
             => (T*)handle.GetAddressOfObjectData();
 
         /// <summary>
@@ -24,7 +25,8 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>The address of the pinned <see cref="string"/>.</returns>
         [CLSCompliant(false)]
-        public static unsafe char* GetAddressOfStringData(this PinnedGCHandle<string?> handle)
+        public static unsafe char* GetAddressOfStringData(this PinnedGCHandle<string> handle)
             => (char*)handle.GetAddressOfObjectData();
+#nullable restore
     }
 }

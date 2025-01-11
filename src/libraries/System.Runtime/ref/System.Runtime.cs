@@ -14091,9 +14091,13 @@ namespace System.Runtime.InteropServices
     public static class GCHandleExtensions
     {
         [System.CLSCompliantAttribute(false)]
-        public static unsafe T* GetAddressOfArrayData<T>(this PinnedGCHandle<T[]?> handle) { throw null; }
+#nullable disable
+        public static unsafe T* GetAddressOfArrayData<T>(this System.Runtime.InteropServices.PinnedGCHandle<T[]> handle) { throw null; }
+#nullable restore
         [System.CLSCompliantAttribute(false)]
-        public static unsafe char* GetAddressOfStringData(this PinnedGCHandle<string?> handle) { throw null; }
+#nullable disable
+        public static unsafe char* GetAddressOfStringData(this System.Runtime.InteropServices.PinnedGCHandle<string> handle) { throw null; }
+#nullable restore
     }
     public enum GCHandleType
     {
