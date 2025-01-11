@@ -4686,6 +4686,19 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     // Skip over a GT_COMMA node(s), if necessary to get to the lcl.
     GenTree* lcl = op1->gtEffectiveVal();
 
+    // Try and see if we can make this cast into a cheaper zero-extending version
+    // if the input is known to be non-negative.
+    if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG))
+    {
+        bool isKnownNonZero;
+        bool isKnownNonNegative;
+        optAssertionProp_RangeProperties(assertions, lcl, &isKnownNonZero, &isKnownNonNegative);
+        if (isKnownNonNegative)
+        {
+            cast->SetUnsigned();
+        }
+    }
+
     // If we don't have a cast of a LCL_VAR then bail.
     if (!lcl->OperIs(GT_LCL_VAR))
     {
