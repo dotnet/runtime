@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
@@ -90,10 +89,11 @@ namespace System.Runtime.InteropServices
         public void Dispose()
         {
             // Free the handle if it hasn't already been freed.
-            IntPtr handle = Interlocked.Exchange(ref _handle, IntPtr.Zero);
-            if (handle != IntPtr.Zero)
+            // Unlike GCHandle.Free, no thread safety is provided.
+            if (_handle != IntPtr.Zero)
             {
-                GCHandle.InternalFree(handle);
+                GCHandle.InternalFree(_handle);
+                _handle = IntPtr.Zero;
             }
         }
     }
