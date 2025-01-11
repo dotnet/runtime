@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Determine whether this handle has been allocated or not.</summary>
         public readonly bool IsAllocated => _handle != IntPtr.Zero;
 
-        /// <summary>Gets the object this handle represents.</summary>
+        /// <summary>Gets or sets the object this handle represents.</summary>
         public readonly T Target
         {
             get
@@ -46,6 +46,13 @@ namespace System.Runtime.InteropServices
                 GCHandle.ThrowIfInvalid(_handle);
 
                 return (T)GCHandle.InternalGet(handle)!;
+            }
+            set
+            {
+                IntPtr handle = _handle;
+                GCHandle.ThrowIfInvalid(handle);
+
+                GCHandle.InternalSet(handle, value);
             }
         }
 
