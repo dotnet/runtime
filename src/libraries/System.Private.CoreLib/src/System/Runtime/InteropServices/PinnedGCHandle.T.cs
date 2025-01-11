@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
     /// <remarks>
     /// <see cref="PinnedGCHandle{T}"/> corresponds to Pinned roots.
     /// For Normal, see <see cref="GCHandle{T}"/>.
-    /// For Weak and WeakTrackResurrection, see WeakGCHandle.
+    /// For Weak and WeakTrackResurrection, see <see cref="WeakGCHandle{T}"/>.
     /// </remarks>
     /// <seealso cref="GCHandle" />
     /// <typeparam name="T">The type of the object this <see cref="GCHandle{T}"/> tracks to.</typeparam>

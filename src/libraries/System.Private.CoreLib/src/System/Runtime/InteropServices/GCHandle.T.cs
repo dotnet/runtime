@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices
     /// </summary>
     /// <remarks>
     /// <see cref="GCHandle{T}"/> corresponds to Normal roots.
-    /// For Weak and WeakTrackResurrection, see WeakGCHandle.
+    /// For Weak and WeakTrackResurrection, see <see cref="WeakGCHandle{T}"/>.
     /// For Pinned, see <see cref="PinnedGCHandle{T}"/>.
     /// </remarks>
     /// <seealso cref="GCHandle" />
