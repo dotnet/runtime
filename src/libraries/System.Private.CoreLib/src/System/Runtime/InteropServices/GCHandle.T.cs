@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
     /// <remarks>
     /// <see cref="GCHandle{T}"/> corresponds to Normal roots.
     /// For Weak and WeakTrackResurrection, see WeakGCHandle.
-    /// For Pinned, see PinnedGCHandle.
+    /// For Pinned, see <see cref="PinnedGCHandle{T}"/>.
     /// </remarks>
     /// <seealso cref="GCHandle" />
     /// <typeparam name="T">The type of the object this <see cref="GCHandle{T}"/> tracks to.</typeparam>
@@ -43,12 +43,7 @@ namespace System.Runtime.InteropServices
             get
             {
                 IntPtr handle = _handle;
-
-                // Check if the handle was never initialized or was freed.
-                if (handle == IntPtr.Zero)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
-                }
+                GCHandle.ThrowIfInvalid(_handle);
 
                 return (T)GCHandle.InternalGet(handle)!;
             }

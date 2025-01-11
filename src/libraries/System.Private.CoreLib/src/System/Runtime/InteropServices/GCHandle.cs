@@ -119,11 +119,18 @@ namespace System.Runtime.InteropServices
             }
 
             // Get the address.
+            unsafe
+            {
+                return (IntPtr)AddrOfPinnedObjectFromHandle(GetHandleValue(handle));
+            }
+        }
 
-            object? target = InternalGet(GetHandleValue(handle));
+        internal static unsafe void* AddrOfPinnedObjectFromHandle(IntPtr handle)
+        {
+            object? target = InternalGet(handle);
             if (target is null)
             {
-                return default;
+                return null;
             }
 
             unsafe
@@ -133,14 +140,14 @@ namespace System.Runtime.InteropServices
                 {
                     if (target.GetType() == typeof(string))
                     {
-                        return (IntPtr)Unsafe.AsPointer(ref Unsafe.As<string>(target).GetRawStringData());
+                        return Unsafe.AsPointer(ref Unsafe.As<string>(target).GetRawStringData());
                     }
 
                     Debug.Assert(target is Array);
-                    return (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array>(target)));
+                    return Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array>(target)));
                 }
 
-                return (IntPtr)Unsafe.AsPointer(ref target.GetRawData());
+                return Unsafe.AsPointer(ref target.GetRawData());
             }
         }
 
@@ -184,7 +191,7 @@ namespace System.Runtime.InteropServices
         private static bool IsPinned(IntPtr handle) => (handle & 1) != 0; // Check Pin flag
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ThrowIfInvalid(IntPtr handle)
+        internal static void ThrowIfInvalid(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.
             if (handle == 0)
