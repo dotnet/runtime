@@ -75,18 +75,20 @@ namespace System.Runtime.InteropServices.Tests
             RunTest("String");
             RunTest<object>(123);
             RunTest(new int[1]);
-            RunTest(new NonBlittable[1]);
-            RunTest(new object[1]);
+            RunTest(new object[1], pinnable: false);
+            RunTest(new NonBlittable[1], pinnable: false);
             RunTest<object>(new Blittable());
+            RunTest<object>(new NonBlittable(), pinnable: false);
             RunTest<object>(new UnmanagedNonBlittable());
             RunTest(new ClassWithoutReferences());
 
-            void RunTest<T>(T value) where T : class
+            void RunTest<T>(T value, bool pinnable = true) where T : class
             {
                 ValidateGCHandle(new GCHandle<T>(value), value);
                 ValidateWeakGCHandle(new WeakGCHandle<T>(value), value);
                 ValidateWeakGCHandle(new WeakGCHandle<T>(value, trackResurrection: true), value);
-                ValidatePinnedGCHandle(new PinnedGCHandle<T>(value), value);
+                if (pinnable)
+                    ValidatePinnedGCHandle(new PinnedGCHandle<T>(value), value);
             }
         }
 
@@ -186,7 +188,7 @@ namespace System.Runtime.InteropServices.Tests
                 }
             }
         }
-        
+
         [Fact]
         public unsafe void AddrOfPinnedObject_ReturnsArrayData()
         {
@@ -308,20 +310,23 @@ namespace System.Runtime.InteropServices.Tests
         private static void ValidateGCHandle<T>(GCHandle<T> handle, T target)
             where T : class
         {
-            using (handle)
+            try
             {
                 Assert.Equal(target, handle.Target);
                 Assert.True(handle.IsAllocated);
 
                 Assert.NotEqual(IntPtr.Zero, GCHandle<T>.ToIntPtr(handle));
             }
-
-            Assert.False(handle.IsAllocated);
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
         }
 
         private static void ValidateWeakGCHandle<T>(WeakGCHandle<T> handle, T target) where T : class
         {
-            using (handle)
+            try
             {
                 if (target != null)
                 {
@@ -337,13 +342,16 @@ namespace System.Runtime.InteropServices.Tests
 
                 Assert.NotEqual(IntPtr.Zero, WeakGCHandle<T>.ToIntPtr(handle));
             }
-
-            Assert.False(handle.IsAllocated);
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
         }
 
         private static unsafe void ValidatePinnedGCHandle<T>(PinnedGCHandle<T> handle, T target) where T : class
         {
-            using (handle)
+            try
             {
                 Assert.Equal(target, handle.Target);
                 Assert.True(handle.IsAllocated);
@@ -359,8 +367,11 @@ namespace System.Runtime.InteropServices.Tests
                     Assert.NotEqual(IntPtr.Zero, (IntPtr)handle.GetAddressOfObjectData());
                 }
             }
-
-            Assert.False(handle.IsAllocated);
+            finally
+            {
+                handle.Dispose();
+                Assert.False(handle.IsAllocated);
+            }
         }
 
         public struct Blittable
