@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -20,7 +22,14 @@ namespace System.Runtime.InteropServices
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
             this PinnedGCHandle<T[]> handle)
 #nullable restore
-            => (T*)handle.GetAddressOfObjectData();
+        {
+            T[]? array = handle.Target;
+            if (array is null)
+                return null;
+
+            // Unsafe.AsPointer call is safe since object is pinned.
+            return (T*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(array));
+        }
 
         /// <summary>
         /// Retrieves the address of string data in a <see cref="PinnedGCHandle{T}"/> of <see cref="string"/>.
@@ -31,6 +40,13 @@ namespace System.Runtime.InteropServices
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
             this PinnedGCHandle<string> handle)
 #nullable restore
-            => (char*)handle.GetAddressOfObjectData();
+        {
+            string? str = handle.Target;
+            if (str is null)
+                return null;
+
+            // Unsafe.AsPointer call is safe since object is pinned.
+            return (char*)Unsafe.AsPointer(ref str.GetRawStringData());
+        }
     }
 }
