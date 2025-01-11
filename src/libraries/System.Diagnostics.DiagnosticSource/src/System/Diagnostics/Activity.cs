@@ -1233,7 +1233,9 @@ namespace System.Diagnostics
                     activity._parentSpanId = parentContext.SpanId.ToString();
                 }
 
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                // Note: Don't inherit Recorded from parent as it is set below
+                // based on sampling decision
+                activity.ActivityTraceFlags = parentContext.TraceFlags & ~ActivityTraceFlags.Recorded;
                 activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }
@@ -1243,12 +1245,6 @@ namespace System.Diagnostics
             if (request == ActivitySamplingResult.AllDataAndRecorded)
             {
                 activity.ActivityTraceFlags |= ActivityTraceFlags.Recorded;
-            }
-            else
-            {
-                // Note: Recorded may be inherited from the parent so it needs
-                // to be cleared for the Activity being created when not desired
-                activity.ActivityTraceFlags &= ~ActivityTraceFlags.Recorded;
             }
 
             if (startTime != default)
