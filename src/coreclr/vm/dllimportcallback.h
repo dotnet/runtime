@@ -56,7 +56,7 @@ public:
 
     //----------------------------------------------------------
     // This initializer finishes the init started by LoadTimeInit.
-    // It does all the ML stub creation, and can throw a COM+
+    // It does all the ML stub creation, and can throw a CLR
     // exception.
     //
     // It can safely be called multiple times and by concurrent

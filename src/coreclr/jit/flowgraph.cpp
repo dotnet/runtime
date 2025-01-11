@@ -4394,6 +4394,18 @@ BasicBlock* FlowGraphNaturalLoop::GetPreheader() const
 }
 
 //------------------------------------------------------------------------
+// SetEntryEdge: Set the entry edge of a loop
+//
+// Arguments:
+//   entryEdge - The new entry edge
+//
+void FlowGraphNaturalLoop::SetEntryEdge(FlowEdge* entryEdge)
+{
+    m_entryEdges.clear();
+    m_entryEdges.push_back(entryEdge);
+}
+
+//------------------------------------------------------------------------
 // GetDepth: Get the depth of the loop.
 //
 // Returns:
@@ -6212,7 +6224,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
         //
         if (comp->bbIsTryBeg(blk))
         {
-            CloneTryInfo info(comp);
+            CloneTryInfo info(traits);
             info.Map          = map;
             info.AddEdges     = false;
             info.ProfileScale = weightScale;

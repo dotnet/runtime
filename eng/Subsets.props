@@ -121,9 +121,10 @@
 
   <PropertyGroup>
     <!-- CLR NativeAot only builds in a subset of the matrix -->
+    <_IsCommunityCrossArchitecture Condition="'$(CrossBuild)' == 'true' and ('$(TargetArchitecture)' == 'loongarch64' or '$(TargetArchitecture)' == 'riscv64')">true</_IsCommunityCrossArchitecture>
     <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
     <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'loongarch64' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
-    <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true'">true</NativeAotSupported>
+    <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true' and '$(_IsCommunityCrossArchitecture)' != 'true'">true</NativeAotSupported>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and '$(TargetsLinuxBionic)' != 'true'">true</UseNativeAotForComponents>
 
     <!-- If we're building clr.nativeaotlibs and not building the CLR runtime, compile libraries against NativeAOT CoreLib -->
@@ -420,8 +421,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
-    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(RuntimeFlavor)' != 'Mono'"/>
+    <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
@@ -434,11 +434,11 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.manifests+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)nuget\manifest-packages.proj" Category="mono" Pack="true" />
+    <ProjectToBuild Include="$(MonoProjectRoot)nuget\manifest-packages.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.packages+'))">
-    <ProjectToBuild Include="$(MonoProjectRoot)nuget\mono-packages.proj" Category="mono" Pack="true" />
+    <ProjectToBuild Include="$(MonoProjectRoot)nuget\mono-packages.proj" Category="mono" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.runtime+'))">
@@ -468,17 +468,17 @@
   <!-- Host sets -->
   <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
     <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Pack="true" Category="host" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
     <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
   </ItemGroup>
 
   <!-- Libraries sets -->
@@ -542,10 +542,17 @@
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\archives\dotnet-nethost.proj" />
-        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />
+        <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
       </ItemGroup>
       <ItemGroup>
         <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
+      </ItemGroup>
+      <ItemGroup>
+        <!--
+          When we're building in the VMR, we need to provide a crossgen2 that runs on the host machine for downstream repos to use to R2R their code.
+          In non-VMR builds, downstream repos can use the crossgen2 built for the target host SDK from another build leg, but in the VMR we need to provide one to use.
+        -->
+        <ProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono' and '$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.Host.sfxproj" Category="packs" />
       </ItemGroup>
       <ItemGroup>
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />
@@ -567,16 +574,16 @@
 
   <!-- Utility -->
   <ItemGroup Condition="$(_subset.Contains('+regeneratedownloadtable+'))">
-    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-download-table.proj" Pack="true" />
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-download-table.proj" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+regeneratethirdpartynotices+'))">
-    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-third-party-notices.proj" Pack="false" BuildInParallel="false" />
+    <ProjectToBuild Include="$(RepositoryEngineeringDir)regenerate-third-party-notices.proj" BuildInParallel="false" />
   </ItemGroup>
 
   <!-- Tasks-->
   <ItemGroup Condition="$(_subset.Contains('+tasks+'))">
-    <ProjectToBuild Include="$(RepoTasksDir)tasks.proj" Pack="false" Category="tasks" />
+    <ProjectToBuild Include="$(RepoTasksDir)tasks.proj" Category="tasks" />
   </ItemGroup>
 
   <!-- Set default configurations. -->

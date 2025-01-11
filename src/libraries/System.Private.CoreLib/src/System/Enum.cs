@@ -938,7 +938,7 @@ namespace System
                     return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
                 }
 
-                NumberFormatInfo numberFormat = CultureInfo.InvariantCulture.NumberFormat;
+                NumberFormatInfo numberFormat = NumberFormatInfo.InvariantInfo;
                 const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
 
                 Number.ParsingStatus status = Number.TryParseBinaryIntegerStyle(value, NumberStyle, numberFormat, out result);
