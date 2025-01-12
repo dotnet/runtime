@@ -1119,7 +1119,7 @@ namespace Internal.JitInterface
 
             if (method.IsNoInlining || method.IsNoOptimization)
             {
-                // Function marked as not NoInlining. NoOptimization also implies NoInlining.
+                // NoOptimization implies NoInlining.
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
             else if (method.IsAggressiveInlining)
