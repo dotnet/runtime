@@ -44,6 +44,14 @@
 #
 # ***********************************************************
 
+# EXTERN_C void JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
+# <NOTE>
+#
+# </NOTE>
+LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+  ret
+LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
 # EXTERN_C void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID, size_t profiledRsp);
 # <NOTE>
 #
