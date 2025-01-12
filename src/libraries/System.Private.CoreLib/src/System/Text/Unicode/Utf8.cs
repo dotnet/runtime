@@ -987,7 +987,7 @@ namespace System.Text.Unicode
             tempValue -= (0xF0 - 0xE0) << 18; // remove the leading byte marker
 
             // Valid 4-byte sequence
-            //UnicodeDebug.AssertIsValidSupplementaryPlaneScalar(tempValue);
+            UnicodeDebug.AssertIsValidSupplementaryPlaneScalar(tempValue);
 
         Finish:
 

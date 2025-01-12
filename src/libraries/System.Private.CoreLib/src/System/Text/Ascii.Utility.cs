@@ -13,7 +13,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace System.Text
 {
-#if !MICROSOFT_BCL_MEMORY
+#if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal
@@ -60,7 +60,7 @@ namespace System.Text
                 : AllCharsInUInt64AreAscii(value);
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static int GetIndexOfFirstNonAsciiByteInLane_AdvSimd(Vector128<byte> value, Vector128<byte> bitmask)
@@ -121,7 +121,6 @@ namespace System.Text
             else
 #endif
             {
-
                 // Handles Vector512, Vector256, Vector128, and scalar.
                 return GetIndexOfFirstNonAsciiByte_Vector(pBuffer, bufferLength);
             }

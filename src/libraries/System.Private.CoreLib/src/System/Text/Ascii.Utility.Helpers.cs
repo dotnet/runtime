@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Text
 {
-#if !MICROSOFT_BCL_MEMORY
+#if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal

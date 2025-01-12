@@ -833,7 +833,7 @@ namespace System.Text.Unicode.Tests
         }
         private Rune(uint scalarValue, bool _)
         {
-            //UnicodeDebug.AssertIsValidScalar(scalarValue);
+            UnicodeDebug.AssertIsValidScalar(scalarValue);
             _value = scalarValue;
         }
 
