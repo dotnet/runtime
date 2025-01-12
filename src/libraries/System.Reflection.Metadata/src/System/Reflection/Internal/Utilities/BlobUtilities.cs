@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Unicode;
 
 namespace System.Reflection
 {
@@ -114,148 +117,52 @@ namespace System.Reflection
 #endif
         }
 
-        public static void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)
+        public static void WriteUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int charsRead, out int bytesWritten, bool allowUnpairedSurrogates)
         {
-            Debug.Assert(byteCount >= charCount);
-            const char ReplacementCharacter = '\uFFFD';
+            int sourceLength = source.Length;
+            int destinationLength = destination.Length;
 
-            char* strEnd = charPtr + charCount;
-            fixed (byte* bufferPtr = &buffer[0])
+            while (true)
             {
-                byte* ptr = bufferPtr + start;
+                OperationStatus status = Utf8.FromUtf16(source, destination, out int consumed, out int written, replaceInvalidSequences: !allowUnpairedSurrogates, isFinalBlock: true);
+                source = source.Slice(consumed);
+                destination = destination.Slice(written);
 
-                if (byteCount == charCount)
+                if (status <= OperationStatus.DestinationTooSmall)
                 {
-                    while (charPtr < strEnd)
-                    {
-                        Debug.Assert(*charPtr <= 0x7f);
-                        *ptr++ = unchecked((byte)*charPtr++);
-                    }
-                }
-                else
-                {
-                    while (charPtr < strEnd)
-                    {
-                        char c = *charPtr++;
-
-                        if (c < 0x80)
-                        {
-                            *ptr++ = (byte)c;
-                            continue;
-                        }
-
-                        if (c < 0x800)
-                        {
-                            ptr[0] = (byte)(((c >> 6) & 0x1F) | 0xC0);
-                            ptr[1] = (byte)((c & 0x3F) | 0x80);
-                            ptr += 2;
-                            continue;
-                        }
-
-                        if (IsSurrogateChar(c))
-                        {
-                            // surrogate pair
-                            if (IsHighSurrogateChar(c) && charPtr < strEnd && IsLowSurrogateChar(*charPtr))
-                            {
-                                int highSurrogate = c;
-                                int lowSurrogate = *charPtr++;
-                                int codepoint = (((highSurrogate - 0xd800) << 10) + lowSurrogate - 0xdc00) + 0x10000;
-                                ptr[0] = (byte)(((codepoint >> 18) & 0x7) | 0xF0);
-                                ptr[1] = (byte)(((codepoint >> 12) & 0x3F) | 0x80);
-                                ptr[2] = (byte)(((codepoint >> 6) & 0x3F) | 0x80);
-                                ptr[3] = (byte)((codepoint & 0x3F) | 0x80);
-                                ptr += 4;
-                                continue;
-                            }
-
-                            // unpaired high/low surrogate
-                            if (!allowUnpairedSurrogates)
-                            {
-                                c = ReplacementCharacter;
-                            }
-                        }
-
-                        ptr[0] = (byte)(((c >> 12) & 0xF) | 0xE0);
-                        ptr[1] = (byte)(((c >> 6) & 0x3F) | 0x80);
-                        ptr[2] = (byte)((c & 0x3F) | 0x80);
-                        ptr += 3;
-                    }
-                }
-
-                Debug.Assert(ptr == bufferPtr + start + byteCount);
-                Debug.Assert(charPtr == strEnd);
-            }
-        }
-
-        internal static unsafe int GetUTF8ByteCount(string str)
-        {
-            fixed (char* ptr = str)
-            {
-                return GetUTF8ByteCount(ptr, str.Length);
-            }
-        }
-
-        internal static unsafe int GetUTF8ByteCount(char* str, int charCount)
-        {
-            return GetUTF8ByteCount(str, charCount, int.MaxValue, out _);
-        }
-
-        internal static int GetUTF8ByteCount(char* str, int charCount, int byteLimit, out char* remainder)
-        {
-            char* end = str + charCount;
-
-            char* ptr = str;
-            int byteCount = 0;
-            while (ptr < end)
-            {
-                int characterSize;
-                char c = *ptr++;
-                if (c < 0x80)
-                {
-                    characterSize = 1;
-                }
-                else if (c < 0x800)
-                {
-                    characterSize = 2;
-                }
-                else if (IsHighSurrogateChar(c) && ptr < end && IsLowSurrogateChar(*ptr))
-                {
-                    // surrogate pair:
-                    characterSize = 4;
-                    ptr++;
-                }
-                else
-                {
-                    characterSize = 3;
-                }
-
-                if (byteCount + characterSize > byteLimit)
-                {
-                    ptr -= (characterSize < 4) ? 1 : 2;
                     break;
                 }
 
-                byteCount += characterSize;
+                // NeedsMoreData is not expected because isFinalBlock is set to true.
+                Debug.Assert(status == OperationStatus.InvalidData);
+                // If we don't allow unpaired surrogates, they should have been replaced by FromUtf16.
+                Debug.Assert(allowUnpairedSurrogates);
+                char c = source[0];
+                Debug.Assert(char.IsSurrogate(c));
+                if (destination.Length < 3)
+                {
+                    break;
+                }
+                destination[0] = (byte)(((c >> 12) & 0xF) | 0xE0);
+                destination[1] = (byte)(((c >> 6) & 0x3F) | 0x80);
+                destination[2] = (byte)((c & 0x3F) | 0x80);
+                source = source.Slice(1);
+                destination = destination.Slice(3);
             }
 
-            remainder = ptr;
-            return byteCount;
+            charsRead = sourceLength - source.Length;
+            bytesWritten = destinationLength - destination.Length;
         }
 
-        internal static bool IsSurrogateChar(int c)
+#if !NET
+        internal static unsafe int GetByteCount(this Encoding encoding, ReadOnlySpan<char> str)
         {
-            return unchecked((uint)(c - 0xD800)) <= 0xDFFF - 0xD800;
+            fixed (char* ptr = &MemoryMarshal.GetReference(str))
+            {
+                return encoding.GetByteCount(ptr, str.Length);
+            }
         }
-
-        internal static bool IsHighSurrogateChar(int c)
-        {
-            return unchecked((uint)(c - 0xD800)) <= 0xDBFF - 0xD800;
-        }
-
-        internal static bool IsLowSurrogateChar(int c)
-        {
-            return unchecked((uint)(c - 0xDC00)) <= 0xDFFF - 0xDC00;
-        }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ValidateRange(int bufferLength, int start, int byteCount, string byteCountParameterName)
