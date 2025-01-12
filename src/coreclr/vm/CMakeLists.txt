@@ -855,12 +855,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
     )
 endif()
 
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/unixstubs.cpp
-    )
-endif(CLR_CMAKE_HOST_UNIX)
-
 set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp
 )
