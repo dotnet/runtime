@@ -493,14 +493,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint jalrInstr = *pCode;
 
-            // Extract the 12-bit signed immediate (bits 31:20 of the instruction).
-            long imm = (long)((jalrInstr >> 20) & 0xfff);
-
-            // Sign-extend the immediate.
-            if ((imm & 0x800) != 0)
-                imm |= 0xfffff000;
-
-            return imm;
+            // Extract and sign-extend the 12-bit signed immediate (bits 31:20 of the instruction).
+            return unchecked((int)jalrInstr) >> 20;
         }
 
         private static unsafe void PutRiscV64JALR(uint* pCode, long imm)
