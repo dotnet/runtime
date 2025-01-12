@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -19,7 +20,7 @@ namespace System.Runtime.InteropServices
     /// </remarks>
     /// <seealso cref="GCHandle" />
     /// <typeparam name="T">The type of the object this <see cref="GCHandle{T}"/> tracks to.</typeparam>
-    public struct PinnedGCHandle<T> : IDisposable
+    public struct PinnedGCHandle<T> : IEquatable<PinnedGCHandle<T>>, IDisposable
         where T : class?
     {
         // The actual integer handle value that the EE uses internally.
@@ -107,5 +108,41 @@ namespace System.Runtime.InteropServices
                 GCHandle.InternalFree(handle);
             }
         }
+
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="obj">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is PinnedGCHandle<T> handle && Equals(handle);
+
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public readonly bool Equals(PinnedGCHandle<T> other) => _handle == other._handle;
+
+        /// <summary>
+        /// Returns an identifier for the current <see cref="PinnedGCHandle{T}"/> object.
+        /// </summary>
+        /// <returns>An identifier for the current <see cref="PinnedGCHandle{T}"/> object.</returns>
+        public override readonly int GetHashCode() => _handle.GetHashCode();
+
+        /// <summary>
+        /// Returns a value indicating whether two <see cref="PinnedGCHandle{T}"/> objects are equal.
+        /// </summary>
+        /// <param name="left">A <see cref="PinnedGCHandle{T}"/> object to compare with the <paramref name="right"/> parameter.</param>
+        /// <param name="right">A <see cref="PinnedGCHandle{T}"/> object to compare with the <paramref name="left"/> parameter.</param>
+        /// <returns>
+        /// <see langword=""/> if the <paramref name="left"/> and <paramref name="right"/> parameters are equal; otherwise, <see langword="false"/>.
+        /// </returns>
+        public static bool operator ==(PinnedGCHandle<T> left, PinnedGCHandle<T> right) => left._handle == right._handle;
+
+        /// <summary>
+        /// Returns a value indicating whether two <see cref="PinnedGCHandle{T}"/> objects are not equal.
+        /// </summary>
+        /// <param name="left">A <see cref="PinnedGCHandle{T}"/> object to compare with the <paramref name="right"/> parameter.</param>
+        /// <param name="right">A <see cref="PinnedGCHandle{T}"/> object to compare with the <paramref name="left"/> parameter.</param>
+        /// <returns>
+        /// <see langword=""/> if the <paramref name="left"/> and <paramref name="right"/> parameters are not equal; otherwise, <see langword="false"/>.
+        /// </returns>
+        public static bool operator !=(PinnedGCHandle<T> left, PinnedGCHandle<T> right) => left._handle != right._handle;
     }
 }
