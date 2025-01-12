@@ -63,7 +63,7 @@ namespace System.Text.Unicode.Tests
         {
             Assert.Matches(@"^([0-9a-fA-F]{2})*$", inputHex.ToString());
 
-#if NET5_0_OR_GREATER
+#if NET
             return Convert.FromHexString(inputHex);
 #else
             byte[] result = new byte[inputHex.Length / 2];
@@ -813,7 +813,7 @@ namespace System.Text.Unicode.Tests
         }
     }
 
-#if !NETCOREAPP3_0_OR_GREATER
+#if !NET
     internal readonly struct Rune //: IComparable, IComparable<Rune>, IEquatable<Rune>
     {
         private readonly uint _value;
