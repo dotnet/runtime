@@ -1179,6 +1179,15 @@ namespace System.Reflection.Metadata.Tests
             b.WriteBytes(Enumerable.Repeat(TestValue, TestSize).ToArray().AsSpan());
             AssertIsChunked();
 
+            b = new ChunkedBlobBuilder(ChunkSize);
+            b.WriteBytes(TestValue, TestSize);
+            AssertIsChunked();
+
+            b = new ChunkedBlobBuilder(ChunkSize);
+            int written = b.TryWriteBytes(new MemoryStream(Enumerable.Repeat(TestValue, TestSize).ToArray()), TestSize);
+            Assert.Equal(TestSize, written);
+            AssertIsChunked();
+
             void AssertIsChunked()
             {
                 Assert.Equal(TestSize, b.Count);

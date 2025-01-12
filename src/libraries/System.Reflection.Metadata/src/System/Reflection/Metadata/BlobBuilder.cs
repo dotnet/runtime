@@ -763,12 +763,14 @@ namespace System.Reflection.Metadata
             AddLength(bytesToCurrent);
 
             int remaining = byteCount - bytesToCurrent;
-            if (remaining > 0)
+            while (remaining > 0)
             {
-                Expand(remaining);
+                int chunkSize = Math.Min(remaining, _maxChunkSize);
+                Expand(chunkSize);
 
-                _buffer.WriteBytes(0, value, remaining);
-                AddLength(remaining);
+                _buffer.WriteBytes(0, value, chunkSize);
+                AddLength(chunkSize);
+                remaining -= chunkSize;
             }
         }
 
@@ -836,31 +838,39 @@ namespace System.Reflection.Metadata
                 return 0;
             }
 
-            int bytesRead = 0;
+            int totalBytesRead = 0;
             int bytesToCurrent = Math.Min(FreeBytes, byteCount);
 
             if (bytesToCurrent > 0)
             {
-                bytesRead = source.TryReadAll(_buffer, Length, bytesToCurrent);
+                int bytesRead = source.TryReadAll(_buffer, Length, bytesToCurrent);
                 AddLength(bytesRead);
 
+                totalBytesRead += bytesRead;
                 if (bytesRead != bytesToCurrent)
                 {
-                    return bytesRead;
+                    return totalBytesRead;
                 }
             }
 
             int remaining = byteCount - bytesToCurrent;
-            if (remaining > 0)
+            while (remaining > 0)
             {
-                Expand(remaining);
-                bytesRead = source.TryReadAll(_buffer, 0, remaining);
+                int chunkSize = Math.Min(remaining, _maxChunkSize);
+                Expand(chunkSize);
+
+                int bytesRead = source.TryReadAll(_buffer, 0, chunkSize);
                 AddLength(bytesRead);
 
-                bytesRead += bytesToCurrent;
+                totalBytesRead += bytesRead;
+                remaining -= bytesRead;
+                if (bytesRead != chunkSize)
+                {
+                    break;
+                }
             }
 
-            return bytesRead;
+            return totalBytesRead;
         }
 
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
