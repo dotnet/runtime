@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Reflection.Internal;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -576,10 +577,10 @@ namespace System.Reflection.Metadata.Ecma335
                 int position = stringHeapStartOffset + heapBuilder.Count;
 
                 // It is important to use ordinal comparison otherwise we'll use the current culture!
-                if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !BlobUtilities.IsLowSurrogateChar(entry.Key[0]))
+                if (prev.EndsWith(entry.Key, StringComparison.Ordinal) && !char.IsLowSurrogate(entry.Key[0]))
                 {
                     // Map over the tail of prev string. Watch for null-terminator of prev string.
-                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (BlobUtilities.GetUTF8ByteCount(entry.Key) + 1);
+                    stringVirtualIndexToHeapOffsetMap[entry.Value.GetWriterVirtualIndex()] = position - (Encoding.UTF8.GetByteCount(entry.Key) + 1);
                 }
                 else
                 {
