@@ -8,8 +8,7 @@ namespace System.Linq
     public static partial class Enumerable
     {
         /// <summary>
-        /// Correlates the elements of two sequences based on matching keys; elements of the first sequence are returned regardless of whether matching elements are found in the second sequence.
-        /// The default equality comparer is used to compare keys.
+        /// Correlates the elements of two sequences based on matching keys. The default equality comparer is used to compare keys.
         /// </summary>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
@@ -111,8 +110,7 @@ namespace System.Linq
             LeftJoin(outer, inner, outerKeySelector, innerKeySelector, resultSelector, comparer: null);
 
         /// <summary>
-        /// Correlates the elements of two sequences based on matching keys; elements of the first sequence are returned regardless of whether matching elements are found in the second sequence.
-        /// The default equality comparer is used to compare keys.
+        /// Correlates the elements of two sequences based on matching keys. A specified <see cref="IEqualityComparer{T}" /> is used to compare keys.
         /// </summary>
         /// <param name="outer">The first sequence to join.</param>
         /// <param name="inner">The sequence to join to the first sequence.</param>
