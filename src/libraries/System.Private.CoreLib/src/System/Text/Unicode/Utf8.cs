@@ -203,7 +203,7 @@ namespace System.Text.Unicode
                     source = source.Slice((int)(pInputBufferRemaining - (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(source))));
                     Debug.Assert(!source.IsEmpty, "Expected 'Done' if source is fully consumed.");
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
                     Rune.DecodeFromUtf8(source, out _, out int bytesConsumedJustNow);
 #else
                     DecodeFromUtf8(source, out _, out int bytesConsumedJustNow);
@@ -223,7 +223,7 @@ namespace System.Text.Unicode
             }
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         internal static unsafe OperationStatus ToUtf16PreservingReplacement(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             // NOTE: Changes to this method should be kept in sync with ToUtf16 above.
@@ -825,7 +825,7 @@ namespace System.Text.Unicode
         public static bool IsValid(ReadOnlySpan<byte> value) =>
             Utf8Utility.GetIndexOfFirstInvalidUtf8Sequence(value, out _) < 0;
 
-#if MICROSOFT_BCL_MEMORY
+#if !NET
         /// <summary>
         /// Decodes the Rune at the beginning of the provided UTF-8 source buffer.
         /// </summary>

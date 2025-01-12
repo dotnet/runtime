@@ -27,16 +27,18 @@
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlValidator.cs" Link="System\Buffers\Text\Base64Url\Base64UrlValidator.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8.cs" Link="System\Text\Unicode\Utf8.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.cs" Link="System\Text\Unicode\Utf8Utility.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Transcoding.cs" Link="System\Text\Unicode\Utf8Utility.Transcoding.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Validation.cs" Link="System\Text\Unicode\Utf8Utility.Validation.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Helpers.cs" Link="System\Text\Unicode\Utf8Utility.Helpers.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="Polyfills\System.Numerics.BitOperations.netstandard20.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\Ascii.Utility.cs" Link="System\Text\Ascii.Utility.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\Ascii.Utility.Helpers.cs" Link="System\Text\Ascii.Utility.Helpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8.cs" Link="System\Text\Unicode\Utf8.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.cs" Link="System\Text\Unicode\Utf8Utility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Helpers.cs" Link="System\Text\Unicode\Utf8Utility.Helpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Transcoding.cs" Link="System\Text\Unicode\Utf8Utility.Transcoding.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf8Utility.Validation.cs" Link="System\Text\Unicode\Utf8Utility.Validation.cs" />
   </ItemGroup>
   
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
@@ -44,7 +46,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Range.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />

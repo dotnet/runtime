@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-#if !MICROSOFT_BCL_MEMORY
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
@@ -111,7 +111,7 @@ namespace System.Text
             // like pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (!Vector512.IsHardwareAccelerated &&
                 !Vector256.IsHardwareAccelerated &&
                 (Sse2.IsSupported || AdvSimd.IsSupported))
@@ -139,7 +139,7 @@ namespace System.Text
             // Note use of SBYTE instead of BYTE below; we're using the two's-complement
             // representation of negative integers to act as a surrogate for "is ASCII?".
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<byte>.Count)
             {
                 if (Vector512.Load(pBuffer).ExtractMostSignificantBits() == 0)
@@ -345,7 +345,7 @@ namespace System.Text
             goto Finish;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool ContainsNonAsciiByte_Sse2(uint sseMask)
         {
@@ -731,7 +731,7 @@ namespace System.Text
             // like pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (!Vector512.IsHardwareAccelerated &&
                 !Vector256.IsHardwareAccelerated &&
                 (Sse2.IsSupported || AdvSimd.IsSupported))
@@ -757,7 +757,7 @@ namespace System.Text
             Debug.Assert(bufferLength <= nuint.MaxValue / sizeof(char));
 #endif
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             // Before we drain off char-by-char, try a generic vectorized loop.
             // Only run the loop if we have at least two vectors we can pull out.
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<ushort>.Count)
@@ -950,7 +950,7 @@ namespace System.Text
             goto Finish;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         private static unsafe nuint GetIndexOfFirstNonAsciiChar_Intrinsified(char* pBuffer, nuint bufferLength /* in chars */)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
@@ -1266,7 +1266,7 @@ namespace System.Text
         {
             Debug.Assert(AllCharsInUInt64AreAscii(value));
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (Sse2.X64.IsSupported)
             {
                 // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
@@ -1346,7 +1346,7 @@ namespace System.Text
             uint utf16Data32BitsHigh = 0, utf16Data32BitsLow = 0;
             ulong utf16Data64Bits = 0;
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= 2 * (uint)Vector128<byte>.Count)
             {
                 // Since there's overhead to setting up the vectorized code path, we only want to
@@ -1519,7 +1519,7 @@ namespace System.Text
             goto Finish;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
         {
@@ -2069,7 +2069,7 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
             {
                 if (Vector512.IsHardwareAccelerated && (elementCount - currentOffset) >= (uint)Vector512<byte>.Count)
@@ -2176,11 +2176,7 @@ namespace System.Text
             {
                 while ((asciiData & 0x80000000) == 0)
                 {
-#if !MICROSOFT_BCL_MEMORY
                     asciiData = BitOperations.RotateLeft(asciiData, 8);
-#else
-                    asciiData = (asciiData << 8) | (asciiData >> (32 - 8)); ;
-#endif
                     pUtf16Buffer[currentOffset] = (char)(byte)asciiData;
                     currentOffset++;
                 }
@@ -2189,7 +2185,7 @@ namespace System.Text
             goto Finish;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void WidenAsciiToUtf1_Vector<TVectorByte, TVectorUInt16>(byte* pAsciiBuffer, char* pUtf16Buffer, ref nuint currentOffset, nuint elementCount)
             where TVectorByte : unmanaged, ISimdVector<TVectorByte, byte>
@@ -2278,7 +2274,7 @@ namespace System.Text
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             if (AdvSimd.Arm64.IsSupported)
             {
                 Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();

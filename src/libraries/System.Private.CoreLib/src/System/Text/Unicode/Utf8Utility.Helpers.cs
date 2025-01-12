@@ -115,11 +115,7 @@ namespace System.Text.Unicode
                 value += 0x0000_0040u; // = [ 110111yyyyxxxxxx 11011uuuuuzzzzyy ]
 
                 uint tempA = BinaryPrimitives.ReverseEndianness(value & 0x003F_0700u); // = [ 00000000 00000uuu 00xxxxxx 00000000 ]
-#if !MICROSOFT_BCL_MEMORY
                 tempA = BitOperations.RotateLeft(tempA, 16); // = [ 00xxxxxx 00000000 00000000 00000uuu ]
-#else
-                tempA = (tempA << 16) | (tempA >> (32 - 16)); ; // = [ 00xxxxxx 00000000 00000000 00000uuu ]
-#endif
 
                 uint tempB = (value & 0x00FCu) << 6; // = [ 00000000 00000000 00uuzzzz 00000000 ]
                 uint tempC = (value >> 6) & 0x000F_0000u; // = [ 00000000 0000yyyy 00000000 00000000 ]

@@ -6,7 +6,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-#if !MICROSOFT_BCL_MEMORY
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -600,11 +600,7 @@ namespace System.Text.Unicode
 
                         // At this point, toCheck = [ 00000000 00000000 10zzzzzz 11110www ].
 
-#if !MICROSOFT_BCL_MEMORY
                         toCheck = BitOperations.RotateRight(toCheck, 8);
-#else
-                        toCheck = (toCheck >> 8) | (toCheck << (32 - 8));
-#endif
 
                         // At this point, toCheck = [ 11110www 00000000 00000000 10zzzzzz ].
 
@@ -884,7 +880,7 @@ namespace System.Text.Unicode
             // vector is only used in those code paths, we leave it uninitialized if SSE4.1
             // is not enabled.
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
             Vector128<short> nonAsciiUtf16DataMask;
 
             if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
@@ -946,7 +942,7 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
                     if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                     {
                         // Try reading and writing 8 elements per iteration.

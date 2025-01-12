@@ -50,11 +50,7 @@ namespace System.Text
 
             if (BitConverter.IsLittleEndian)
             {
-#if !MICROSOFT_BCL_MEMORY
                 return (uint)BitOperations.TrailingZeroCount(value & UInt32HighBitsOnlyMask) >> 3;
-#else
-                return (uint)TrailingZeroCount(value & UInt32HighBitsOnlyMask) >> 3;
-#endif
             }
             else
             {
@@ -70,55 +66,22 @@ namespace System.Text
                 // expensive. Instead we'll just change how we perform the shifts.
 
                 // Read first byte
-#if !MICROSOFT_BCL_MEMORY
                 value = BitOperations.RotateLeft(value, 1);
-#else
-                value = (value << 1) | (value >> (32 - 1));
-#endif
                 uint allBytesUpToNowAreAscii = value & 1;
                 uint numAsciiBytes = allBytesUpToNowAreAscii;
 
                 // Read second byte
-#if !MICROSOFT_BCL_MEMORY
                 value = BitOperations.RotateLeft(value, 8);
-#else
-                value = (value << 8) | (value >> (32 - 8));
-#endif
                 allBytesUpToNowAreAscii &= value;
                 numAsciiBytes += allBytesUpToNowAreAscii;
 
                 // Read third byte
-#if !MICROSOFT_BCL_MEMORY
                 value = BitOperations.RotateLeft(value, 8);
-#else
-                value = (value << 8) | (value >> (32 - 8));
-#endif
                 allBytesUpToNowAreAscii &= value;
                 numAsciiBytes += allBytesUpToNowAreAscii;
 
                 return numAsciiBytes;
             }
         }
-
-#if MICROSOFT_BCL_MEMORY
-        private static ReadOnlySpan<byte> TrailingZeroCountDeBruijn => // 32
-        [
-            00, 01, 28, 02, 29, 14, 24, 03,
-            30, 22, 20, 15, 25, 17, 04, 08,
-            31, 27, 13, 23, 21, 19, 16, 07,
-            26, 12, 18, 06, 11, 05, 10, 09
-        ];
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int TrailingZeroCount(uint value)
-        {
-            // uint.MaxValue >> 27 is always in range [0 - 31] so we use Unsafe.AddByteOffset to avoid bounds check
-            return Unsafe.AddByteOffset(
-                // Using deBruijn sequence, k=2, n=5 (2^5=32) : 0b_0000_0111_0111_1100_1011_0101_0011_0001u
-                ref MemoryMarshal.GetReference(TrailingZeroCountDeBruijn),
-                // uint|long -> IntPtr cast on 32-bit platforms does expensive overflow checks not needed here
-                (IntPtr)(int)(((value & (uint)-(int)value) * 0x077CB531u) >> 27)); // Multi-cast mitigates redundant conv.u8
-        }
-#endif
     }
 }

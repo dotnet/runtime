@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if !MICROSOFT_BCL_MEMORY
+#if NET
 using System.Runtime.Intrinsics;
 #endif
 
@@ -253,7 +253,7 @@ namespace System.Text.Unicode
             return (valueA | letterMaskA) == (valueB | letterMaskB);
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         /// <summary>
         /// Returns true iff the Vector128 represents 16 ASCII UTF-8 characters in machine endianness.
         /// </summary>

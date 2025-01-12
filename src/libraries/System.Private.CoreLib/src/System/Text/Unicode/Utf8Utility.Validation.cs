@@ -5,7 +5,7 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-#if !MICROSOFT_BCL_MEMORY
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -121,7 +121,7 @@ namespace System.Text.Unicode
                         // this because we pessimistically assume we'll encounter non-ASCII data at some
                         // point in the not-too-distant future (otherwise we would've stayed entirely
                         // within the all-ASCII vectorized code at the entry to this method).
-#if !MICROSOFT_BCL_MEMORY
+#if NET
                         nuint trailingZeroCount;
                         if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                         {
@@ -147,7 +147,7 @@ namespace System.Text.Unicode
                         {
                             do
                             {
-#if !MICROSOFT_BCL_MEMORY
+#if NET
                                 if (Sse2.IsSupported)
                                 {
                                     uint mask = (uint)Sse2.MoveMask(Sse2.LoadVector128(pInputBuffer));
@@ -177,7 +177,7 @@ namespace System.Text.Unicode
 
                         continue; // need to perform a bounds check because we might be running out of data
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
                     LoopTerminatedEarlyDueToNonAsciiData:
                         // x86 can only be little endian, while ARM can be big or little endian
                         // so if we reached this label we need to check both combinations are supported
@@ -605,11 +605,7 @@ namespace System.Text.Unicode
                     // Now we want to confirm that 0x01 <= uuuuu (otherwise this is an overlong encoding)
                     // and that uuuuu <= 0x10 (otherwise this is an out-of-range encoding).
 
-#if !MICROSOFT_BCL_MEMORY
                     thisDWord = BitOperations.RotateRight(thisDWord, 8);
-#else
-                    thisDWord = (thisDWord >> 8) | (thisDWord << (32 - 8));
-#endif
 
                     // Now, thisDWord = [ 00010uuu 10000000 00000000 00uuzzzz ].
                     // The check is now a simple add / cmp / jcc combo.
@@ -751,7 +747,7 @@ namespace System.Text.Unicode
             return pInputBuffer;
         }
 
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static ulong GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)

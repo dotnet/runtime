@@ -96,7 +96,7 @@ namespace System.Text.Unicode.Tests
         // !! IMPORTANT !!
         // Don't delete this implementation, as we use it as a reference to make sure the framework's
         // transcoding logic is correct.
-#if !MICROSOFT_BCL_MEMORY
+#if NET
         public
 #else
         private
