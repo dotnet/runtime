@@ -84,10 +84,11 @@ namespace System.Runtime.InteropServices
         {
             // Free the handle if it hasn't already been freed.
             // Unlike GCHandle.Free, no thread safety is provided.
-            if (_handle != IntPtr.Zero)
+            IntPtr handle = _handle;
+            if (handle != IntPtr.Zero)
             {
-                GCHandle.InternalFree(_handle);
                 _handle = IntPtr.Zero;
+                GCHandle.InternalFree(handle);
             }
         }
     }
