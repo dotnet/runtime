@@ -263,7 +263,7 @@ namespace System.Linq
         /// generates a <see cref="MethodCallExpression" /> that represents calling
         /// <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
         /// itself as a constructed generic method.
-        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable{T}.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
         /// </para>
         /// <para>
         /// The query behavior that occurs as a result of executing an expression tree that represents calling
@@ -379,7 +379,7 @@ namespace System.Linq
         /// generates a <see cref="MethodCallExpression" /> that represents calling
         /// <see cref="Join{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
         /// itself as a constructed generic method.
-        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable{T}.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
         /// </para>
         /// <para>
         /// The query behavior that occurs as a result of executing an expression tree that represents calling
@@ -449,7 +449,6 @@ namespace System.Linq
         /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
         /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
         /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
-        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
         /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
         /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
@@ -527,7 +526,7 @@ namespace System.Linq
         /// generates a <see cref="MethodCallExpression" /> that represents calling
         /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
         /// itself as a constructed generic method.
-        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable{T}.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
         /// </para>
         /// <para>
         /// The query behavior that occurs as a result of executing an expression tree that represents calling
@@ -643,7 +642,7 @@ namespace System.Linq
         /// generates a <see cref="MethodCallExpression" /> that represents calling
         /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
         /// itself as a constructed generic method.
-        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable{T}.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
         /// </para>
         /// <para>
         /// The query behavior that occurs as a result of executing an expression tree that represents calling
@@ -879,7 +878,6 @@ namespace System.Linq
         /// <param name="outerKeySelector">A function to extract the join key from each element of the first sequence.</param>
         /// <param name="innerKeySelector">A function to extract the join key from each element of the second sequence.</param>
         /// <param name="resultSelector">A function to create a result element from two matching elements.</param>
-        /// <param name="comparer">An <see cref="IEqualityComparer{T}" /> to hash and compare keys.</param>
         /// <typeparam name="TOuter">The type of the elements of the first sequence.</typeparam>
         /// <typeparam name="TInner">The type of the elements of the second sequence.</typeparam>
         /// <typeparam name="TKey">The type of the keys returned by the key selector functions.</typeparam>
@@ -956,7 +954,7 @@ namespace System.Linq
         /// generates a <see cref="MethodCallExpression" /> that represents calling
         /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}})" />
         /// itself as a constructed generic method.
-        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable{T}.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
         /// </para>
         /// <para>
         /// The query behavior that occurs as a result of executing an expression tree that represents calling
@@ -1071,7 +1069,7 @@ namespace System.Linq
         /// generates a <see cref="MethodCallExpression" /> that represents calling
         /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" />
         /// itself as a constructed generic method.
-        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable{T}.Provider" /> property of the <paramref name="outer" /> parameter.
+        /// It then passes the <see cref="MethodCallExpression" /> to the <see cref="IQueryProvider.CreateQuery{TElement}(Expression)" /> method of the <see cref="IQueryProvider" /> represented by the <see cref="IQueryable.Provider" /> property of the <paramref name="outer" /> parameter.
         /// </para>
         /// <para>
         /// The query behavior that occurs as a result of executing an expression tree that represents calling
