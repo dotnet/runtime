@@ -24,6 +24,10 @@ namespace System.Reflection.Metadata.Tests
 
             builder = new BlobBuilder(10001);
             Assert.Equal(10001, builder.Capacity);
+
+            var buffer = new byte[1024];
+            builder = new BlobBuilderWithEvents(buffer);
+            Assert.Same(buffer, builder.Buffer);
         }
 
         [Fact]
@@ -1115,6 +1119,108 @@ namespace System.Reflection.Metadata.Tests
 
             b1.LinkPrefix(b5);
             Assert.True(b4.IsHead);
+        }
+
+        [Fact]
+        public void OnLinkingGetsCalled()
+        {
+            var b1 = new BlobBuilderWithEvents();
+            var b2 = new BlobBuilderWithEvents();
+            var b3 = new BlobBuilderWithEvents();
+            var b4 = new BlobBuilderWithEvents();
+
+            b1.WriteBytes(1, 1);
+            b2.WriteBytes(1, 1);
+            b3.WriteBytes(1, 1);
+            b4.WriteBytes(1, 1);
+
+            b1.Linking += b => Assert.Same(b2, b);
+            b2.Linking += b => Assert.Same(b1, b);
+            b1.LinkSuffix(b2);
+
+            b3.Linking += b => Assert.Same(b4, b);
+            b4.Linking += b => Assert.Same(b3, b);
+            b3.LinkPrefix(b4);
+        }
+
+        [Fact]
+        public void SetCapacityGetsCalled()
+        {
+            var b = new BlobBuilderWithEvents();
+            bool calledPreviously = false;
+            b.SettingCapacity += SettingCapacityHandler;
+
+            b.ReserveBytes(1024);
+            Assert.True(calledPreviously);
+
+            b = new BlobBuilderWithEvents();
+            calledPreviously = false;
+            b.SettingCapacity += SettingCapacityHandler;
+
+            b.Capacity = 1024;
+            Assert.True(calledPreviously);
+
+            void SettingCapacityHandler(int c)
+            {
+                Assert.Equal(1024, c);
+                Assert.False(calledPreviously);
+                calledPreviously = true;
+            }
+        }
+
+        [Fact]
+        public void Chunking()
+        {
+            const int ChunkSize = 128;
+            const byte TestValue = (byte)'a';
+            const int TestSize = 1024;
+
+            var b = new ChunkedBlobBuilder(ChunkSize);
+            b.WriteBytes(Enumerable.Repeat(TestValue, TestSize).ToArray().AsSpan());
+            AssertIsChunked();
+
+            void AssertIsChunked()
+            {
+                Assert.Equal(TestSize, b.Count);
+                foreach (var chunk in b.GetBlobs())
+                {
+                    Assert.InRange(chunk.Length, 1, ChunkSize);
+                    foreach (var x in chunk.GetBytes().AsSpan())
+                    {
+                        Assert.Equal(TestValue, x);
+                    }
+                }
+            }
+        }
+
+        private sealed class ChunkedBlobBuilder(int maxChunkSize) : BlobBuilder(new byte[maxChunkSize], maxChunkSize)
+        {
+            private readonly int _maxChunkSize = maxChunkSize;
+
+            protected override BlobBuilder AllocateChunk(int minimalSize) => new ChunkedBlobBuilder(Math.Max(minimalSize, _maxChunkSize));
+        }
+
+        private sealed class BlobBuilderWithEvents : BlobBuilder
+        {
+            public event Action<BlobBuilder> Linking;
+
+            public event Action<int> SettingCapacity;
+
+            public BlobBuilderWithEvents() { }
+
+            public BlobBuilderWithEvents(byte[] bytes, int maxChunkSize = 0) : base(bytes, maxChunkSize) { }
+
+            protected override void OnLinking(BlobBuilder builder)
+            {
+                Linking(builder);
+                base.OnLinking(builder);
+            }
+
+            protected override void SetCapacity(int capacity)
+            {
+                SettingCapacity(capacity);
+                base.SetCapacity(capacity);
+            }
         }
     }
 }
