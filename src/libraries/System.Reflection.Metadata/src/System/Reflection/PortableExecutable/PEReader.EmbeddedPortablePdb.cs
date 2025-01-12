@@ -100,7 +100,7 @@ namespace System.Reflection.PortableExecutable
                     try
                     {
 #if NET
-                        actualLength = deflate.TryReadAll(new Span<byte>(decompressed.Pointer, decompressed.Size));
+                        actualLength = deflate.ReadAtLeast(new Span<byte>(decompressed.Pointer, decompressed.Size), decompressed.Size, throwOnEndOfStream: false);
 #else
                         using var decompressedStream = new UnmanagedMemoryStream(decompressed.Pointer, decompressed.Size, decompressed.Size, FileAccess.Write);
                         deflate.CopyTo(decompressedStream);

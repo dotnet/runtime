@@ -46,11 +46,6 @@ namespace System.Reflection.Internal
             return totalBytesRead;
         }
 
-#if NET
-        internal static int TryReadAll(this Stream stream, Span<byte> buffer)
-            => stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
-#endif
-
         /// <summary>
         /// Resolve image size as either the given user-specified size or distance from current position to end-of-stream.
         /// Also performs the relevant argument validation and publicly visible caller has same argument names.
