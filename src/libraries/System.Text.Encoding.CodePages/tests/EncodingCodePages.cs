@@ -639,6 +639,24 @@ namespace System.Text.Tests
             Assert.All(name, c => Assert.True(c >= ' ' && c < '~' + 1, "Name: " + name + " contains character: " + c));
         }
 
+        [Fact]
+        public static void TestMultiBytesEncodingsSupportSurrogate()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            Encoding encoding = Encoding.GetEncoding("GB18030");
+            Assert.NotNull(encoding);
+
+            string surrogatePair = "\uD840\uDE13"; // Surrogate Pair codepoint '𠈓' \U00020213
+            byte[] expectedBytes = new byte[] { 0x95, 0x32, 0xB7, 0x37 };
+
+            Assert.Equal(expectedBytes, encoding.GetBytes(surrogatePair));
+            Assert.Equal(expectedBytes.Length, encoding.GetByteCount(surrogatePair));
+
+            Assert.Equal(surrogatePair, encoding.GetString(expectedBytes));
+            Assert.Equal(surrogatePair.Length, encoding.GetCharCount(expectedBytes));
+        }
+
         // This test is run as part of the default mappings test, since it modifies global state which that test
         // depends on.
         private static void TestRegister1252()
