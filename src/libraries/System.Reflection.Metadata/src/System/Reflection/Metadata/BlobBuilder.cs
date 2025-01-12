@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
@@ -1166,7 +1167,7 @@ namespace System.Reflection.Metadata
                 return;
             }
 
-            WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates: true, prependSize: true);
+            WriteUTF8(value.AsSpan(), allowUnpairedSurrogates: true, prependSize: true);
         }
 
         /// <summary>
@@ -1208,48 +1209,35 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(value));
             }
 
-            WriteUTF8(value, 0, value.Length, allowUnpairedSurrogates, prependSize: false);
+            WriteUTF8(value.AsSpan(), allowUnpairedSurrogates, prependSize: false);
         }
 
-        internal unsafe void WriteUTF8(string str, int start, int length, bool allowUnpairedSurrogates, bool prependSize)
+        internal unsafe void WriteUTF8(ReadOnlySpan<char> str, bool allowUnpairedSurrogates, bool prependSize)
         {
-            Debug.Assert(start >= 0);
-            Debug.Assert(length >= 0);
-            Debug.Assert(start + length <= str.Length);
-
             if (!IsHead)
             {
                 Throw.InvalidOperationBuilderAlreadyLinked();
             }
 
-            fixed (char* strPtr = str)
+            int byteCount = Encoding.UTF8.GetByteCount(str);
+            if (prependSize)
             {
-                char* currentPtr = strPtr + start;
-                char* nextPtr;
+                WriteCompressedInteger(byteCount);
+            }
 
-                // the max size of compressed int is 4B:
-                int byteLimit = FreeBytes - (prependSize ? sizeof(uint) : 0);
+            int remainingBytes = byteCount;
+            while (true)
+            {
+                BlobUtilities.WriteUtf8(str, _buffer.AsSpan(Length), out int charsConsumed, out int bytesWritten, allowUnpairedSurrogates);
+                AddLength(bytesWritten);
+                str = str.Slice(charsConsumed);
+                remainingBytes -= bytesWritten;
 
-                int bytesToCurrent = BlobUtilities.GetUTF8ByteCount(currentPtr, length, byteLimit, out nextPtr);
-                int charsToCurrent = (int)(nextPtr - currentPtr);
-                int charsToNext = length - charsToCurrent;
-                int bytesToNext = BlobUtilities.GetUTF8ByteCount(nextPtr, charsToNext);
-
-                if (prependSize)
+                if (str.IsEmpty)
                 {
-                    WriteCompressedInteger(bytesToCurrent + bytesToNext);
+                    break;
                 }
-
-                _buffer.WriteUTF8(Length, currentPtr, charsToCurrent, bytesToCurrent, allowUnpairedSurrogates);
-                AddLength(bytesToCurrent);
-
-                if (bytesToNext > 0)
-                {
-                    Expand(bytesToNext);
-
-                    _buffer.WriteUTF8(0, nextPtr, charsToNext, bytesToNext, allowUnpairedSurrogates);
-                    AddLength(bytesToNext);
-                }
+                Expand(Math.Min(_maxChunkSize, remainingBytes));
             }
         }
 

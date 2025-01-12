@@ -356,7 +356,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 int next = value.IndexOf(separator, i);
 
-                partBuilder.WriteUTF8(value, i, (next >= 0 ? next : value.Length) - i, allowUnpairedSurrogates: true, prependSize: false);
+                partBuilder.WriteUTF8(value.AsSpan(i, (next >= 0 ? next : value.Length) - i), allowUnpairedSurrogates: true, prependSize: false);
                 resultBuilder.WriteCompressedInteger(GetOrAddBlob(partBuilder).GetHeapOffset());
 
                 if (next == -1)
