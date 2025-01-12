@@ -88,6 +88,12 @@ namespace System.Reflection.PortableExecutable
             Init(ref reader, actualSize, isLoadedImage);
         }
 
+        internal PEHeaders(AbstractMemoryBlock memoryBlock, bool isLoadedImage)
+        {
+            var blobReader = memoryBlock.GetReader();
+            Init(ref blobReader, blobReader.Length, isLoadedImage);
+        }
+
         [MemberNotNull(nameof(_coffHeader), nameof(_sectionHeaders))]
         private void Init<TReader>(ref TReader reader, int actualSize, bool isLoadedImage) where TReader : IBinaryReader
         {

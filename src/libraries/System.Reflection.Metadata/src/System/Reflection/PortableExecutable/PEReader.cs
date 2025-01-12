@@ -194,7 +194,7 @@ namespace System.Reflection.PortableExecutable
                         // if the caller asked for metadata initialize the PE headers (calculates metadata offset):
                         if ((options & PEStreamOptions.PrefetchMetadata) != 0)
                         {
-                            InitializePEHeaders();
+                            _lazyPEHeaders = new PEHeaders(imageBlock, IsLoadedImage);
                         }
                     }
                     else
@@ -308,31 +308,10 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="IOException">Error reading from the stream.</exception>
         private void InitializePEHeaders()
         {
-            StreamConstraints constraints;
-            Stream stream = GetPEImage().GetStream(out constraints);
+            AbstractMemoryBlock memoryBlock = GetPEImage().GetMemoryBlock();
 
-            PEHeaders headers;
-            if (constraints.GuardOpt != null)
-            {
-                lock (constraints.GuardOpt)
-                {
-                    headers = ReadPEHeadersNoLock(stream, constraints.ImageStart, constraints.ImageSize, IsLoadedImage);
-                }
-            }
-            else
-            {
-                headers = ReadPEHeadersNoLock(stream, constraints.ImageStart, constraints.ImageSize, IsLoadedImage);
-            }
-
+            PEHeaders headers = new PEHeaders(memoryBlock, IsLoadedImage);
             Interlocked.CompareExchange(ref _lazyPEHeaders, headers, null);
-        }
-
-        /// <exception cref="IOException">Error reading from the stream.</exception>
-        private static PEHeaders ReadPEHeadersNoLock(Stream stream, long imageStartPosition, int imageSize, bool isLoadedImage)
-        {
-            Debug.Assert(imageStartPosition >= 0 && imageStartPosition <= stream.Length);
-            stream.Seek(imageStartPosition, SeekOrigin.Begin);
-            return new PEHeaders(stream, imageSize, isLoadedImage);
         }
 
         /// <summary>

@@ -6,11 +6,12 @@ using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Reflection.Metadata
 {
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
-    public unsafe struct BlobReader
+    public unsafe struct BlobReader : IBinaryReader
     {
         internal const int InvalidCompressedInteger = int.MaxValue;
 
@@ -435,6 +436,16 @@ namespace System.Reflection.Metadata
         public void ReadBytes(int byteCount, byte[] buffer, int bufferOffset)
         {
             Marshal.Copy((IntPtr)GetCurrentPointerAndAdvance(byteCount), buffer, bufferOffset, byteCount);
+        }
+
+        string IBinaryReader.ReadNullPaddedUTF8(int byteCount)
+        {
+            byte* ptr = GetCurrentPointerAndAdvance(byteCount);
+            while (byteCount > 0 && ptr[byteCount - 1] == 0)
+            {
+                byteCount--;
+            }
+            return Encoding.UTF8.GetString(ptr, byteCount);
         }
 
         internal string ReadUtf8NullTerminated()
