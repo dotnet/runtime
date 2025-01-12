@@ -5261,7 +5261,7 @@ namespace System.Diagnostics.Tracing
         internal readonly EventListener m_Listener;   // The dispatcher this entry is for
         internal bool[]? m_EventEnabled;              // For every event in a the eventSource, is it enabled?
 
-        // Only guaranteed to exist after a InsureInit()
+        // Only guaranteed to exist after a EnsureInit()
         internal EventDispatcher? m_Next;              // These form a linked list in code:EventSource.m_Dispatchers
         // Of all listeners for that eventSource.
     }

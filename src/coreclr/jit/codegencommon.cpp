@@ -255,6 +255,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
     genForceFuncletFrameType5              = false;
+    genReverseAndPairCalleeSavedRegisters  = false;
 #endif // TARGET_ARM64
 }
 
@@ -3198,20 +3199,30 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
                 return layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
             }
 
-#ifdef TARGET_ARM64
+            // For the Swift calling convention the enregistered segments do
+            // not match the memory layout, so we need to use exact store sizes
+            // for the same reason as RISCV64/LA64 below.
+            if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+            {
+                return seg.GetRegisterType();
+            }
+
+#if defined(TARGET_ARM64)
             // We round struct sizes up to TYP_I_IMPL on the stack frame so we
             // can always use the full register size here. This allows us to
             // use stp more often.
             return TYP_I_IMPL;
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            // On RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
+#elif defined(TARGET_XARCH)
+            // Round up to use smallest possible encoding
+            return genActualType(seg.GetRegisterType());
+#else
+            // On other platforms, a safer default is to use the exact size always. For example, for
+            // RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
             // field per register regardless of the field layout in memory, so the small int load/store instructions
             // must not be upsized to 4 bytes, otherwise for example:
             // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
             // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
             return seg.GetRegisterType();
-#else
-            return genActualType(seg.GetRegisterType());
 #endif
         }
         default:
@@ -4317,7 +4328,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
 #if defined(SWIFT_SUPPORT) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 //-----------------------------------------------------------------------------
-// genHomeSwiftStructParameters: Move the incoming segment to the local stack frame.
+// genHomeSwiftStructParameters: Move the incoming stack segment to the local stack frame.
 //
 // Arguments:
 //    lclNum - Number of local variable to home
@@ -4380,14 +4391,11 @@ void CodeGen::genHomeStackSegment(unsigned                 lclNum,
 #ifdef SWIFT_SUPPORT
 
 //-----------------------------------------------------------------------------
-// genHomeSwiftStructParameters:
-//    Reassemble Swift struct parameters if necessary.
+// genHomeSwiftStructStackParameters:
+//    Reassemble Swift struct parameters from the segments that were passed on
+//    stack.
 //
-// Arguments:
-//    handleStack - If true, reassemble the segments that were passed on the stack.
-//                  If false, reassemble the segments that were passed in registers.
-//
-void CodeGen::genHomeSwiftStructParameters(bool handleStack)
+void CodeGen::genHomeSwiftStructStackParameters()
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
@@ -4402,33 +4410,13 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
             continue;
         }
 
-        JITDUMP("Homing Swift parameter V%02u: ", lclNum);
+        JITDUMP("Homing Swift parameter stack segments for V%02u: ", lclNum);
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
         DBEXEC(VERBOSE, abiInfo.Dump());
 
         for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
-            if (seg.IsPassedOnStack() != handleStack)
-            {
-                continue;
-            }
-
-            if (seg.IsPassedInRegister())
-            {
-                RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? &floatRegState : &intRegState;
-                regMaskTP regs     = seg.GetRegisterMask();
-
-                if ((regState->rsCalleeRegArgMaskLiveIn & regs) != RBM_NONE)
-                {
-                    var_types storeType = seg.GetRegisterType();
-                    assert(storeType != TYP_UNDEF);
-                    GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), seg.GetRegister(), lclNum,
-                                              seg.Offset);
-
-                    regState->rsCalleeRegArgMaskLiveIn &= ~regs;
-                }
-            }
-            else
+            if (seg.IsPassedOnStack())
             {
                 // We can use REG_SCRATCH as a temporary register here as we ensured that during LSRA build.
                 genHomeStackSegment(lclNum, seg, REG_SCRATCH, nullptr);
@@ -4824,6 +4812,29 @@ void CodeGen::genFinalizeFrame()
         regSet.rsSetRegsModified(regSet.rsMaskResvd);
     }
 #endif // TARGET_ARM
+
+#ifdef TARGET_ARM64
+    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform)
+    {
+        JITDUMP("Setting genReverseAndPairCalleeSavedRegisters = true");
+
+        genReverseAndPairCalleeSavedRegisters = true;
+
+        // Make sure we push the registers in pairs if possible. If we only allocate a contiguous
+        // block of registers this should add at most one integer and at most one floating point
+        // register to the list. The stack has to be 16-byte aligned, so in worst case it results
+        // in allocating 16 bytes more space on stack if odd number of integer and odd number of
+        // FP registers were occupied. Same number of instructions will be generated, just the
+        // STR instructions are replaced with STP (store pair).
+        regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
+        regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
+                                 ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
+        if (maskPairRegs != RBM_NONE)
+        {
+            regSet.rsSetRegsModified(maskPairRegs);
+        }
+    }
+#endif
 
 #ifdef DEBUG
     if (verbose)
@@ -5691,30 +5702,12 @@ void CodeGen::genFnProlog()
 #ifdef SWIFT_SUPPORT
     if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
     {
-        if ((compiler->lvaSwiftSelfArg != BAD_VAR_NUM) &&
-            ((intRegState.rsCalleeRegArgMaskLiveIn & RBM_SWIFT_SELF) != 0) &&
-            compiler->lvaGetDesc(compiler->lvaSwiftSelfArg)->lvOnFrame)
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
-            intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
-        }
-
-        if ((compiler->lvaSwiftIndirectResultArg != BAD_VAR_NUM) &&
-            ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0) &&
-            compiler->lvaGetDesc(compiler->lvaSwiftIndirectResultArg)->lvOnFrame)
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-                                      theFixedRetBuffReg(CorInfoCallConvExtension::Swift),
-                                      compiler->lvaSwiftIndirectResultArg, 0);
-            intRegState.rsCalleeRegArgMaskLiveIn &= ~theFixedRetBuffMask(CorInfoCallConvExtension::Swift);
-        }
-
+        // The error arg is not actually a parameter in the ABI, so no reason to
+        // consider it to be live
         if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)
         {
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_ERROR;
         }
-
-        genHomeSwiftStructParameters(/* handleStack */ false);
     }
 #endif
 
