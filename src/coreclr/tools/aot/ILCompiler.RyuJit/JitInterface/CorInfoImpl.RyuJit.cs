@@ -831,9 +831,9 @@ namespace Internal.JitInterface
                     result = false;
                 }
 
-                if (caller.IsNoInlining)
+                if (caller.IsNoInlining || caller.IsNoOptimization)
                 {
-                    // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                    // Do not tailcall from methods that are marked as NoInlining or NoOptimization (people often use no-inline
                     // to mean "I want to always see this method in stacktrace")
                     result = false;
                 }
