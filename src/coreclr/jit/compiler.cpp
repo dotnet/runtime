@@ -2295,7 +2295,10 @@ void Compiler::compSetProcessor()
         if (canUseEvexEncoding())
         {
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
+        }
+        if (canUseApxEncoding())
+        {
+            codeGen->GetEmitter()->SetUseRex2Encoding(true);
         }
     }
 #endif // TARGET_XARCH
@@ -4222,6 +4225,65 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 #endif // TARGET_ARMARCH || TARGET_RISCV64
 
 //------------------------------------------------------------------------
+// FindParameterRegisterLocalMappingByRegister:
+//   Try to find a mapping that maps a particular parameter register to an
+//   incoming defined local.
+//
+// Returns:
+//   The mapping, or nullptr if no mapping was found for this register.
+//
+const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMappingByRegister(regNumber reg)
+{
+    if (m_paramRegLocalMappings == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    {
+        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
+        if (mapping.RegisterSegment->GetRegister() == reg)
+        {
+            return &mapping;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// FindParameterRegisterLocalMappingByLocal:
+//   Try to find a mapping that maps a particular local from an incoming
+//   parameter register.
+//
+// Parameters:
+//   lclNum - The local to find a mapping for
+//   offset - The offset that the mapping maps to in the local
+//
+// Returns:
+//   The mapping, or nullptr if no mapping was found for this local.
+//
+const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum,
+                                                                                        unsigned offset)
+{
+    if (m_paramRegLocalMappings == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    {
+        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
+        if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
+        {
+            return &mapping;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
 //   for this method
 //
@@ -4649,11 +4711,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
     // Do some flow-related optimizations
     //
     if (opts.OptimizationEnabled())
@@ -4721,6 +4778,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
 #ifdef DEBUG
     // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
@@ -5003,6 +5065,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             // Iterate if requested, resetting annotations first.
             if (opts.optRepeatIteration == opts.optRepeatCount)
             {
+                // If we're done optimizing, just remove the PHIs
+                //
+                fgResetForSsa(/* deepClean */ false);
                 break;
             }
 
@@ -5165,6 +5230,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 fgDoReversePostOrderLayout();
                 fgMoveColdBlocks();
                 fgSearchImprovedLayout();
+                fgInvalidateDfsTree();
 
                 if (compHndBBtabCount != 0)
                 {
@@ -5846,7 +5912,7 @@ void Compiler::ResetOptAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
-    fgResetForSsa();
+    fgResetForSsa(/* deepClean */ true);
     vnStore                    = nullptr;
     m_blockToEHPreds           = nullptr;
     m_dominancePreds           = nullptr;

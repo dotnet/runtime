@@ -308,7 +308,7 @@ namespace System
 #endif
         public extern String(ReadOnlySpan<char> value);
 
-        private static unsafe string Ctor(ReadOnlySpan<char> value)
+        private static string Ctor(ReadOnlySpan<char> value)
         {
             if (value.Length == 0)
                 return Empty;
@@ -394,7 +394,7 @@ namespace System
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
-        public static unsafe string Copy(string str)
+        public static string Copy(string str)
         {
             ArgumentNullException.ThrowIfNull(str);
 
@@ -413,7 +413,7 @@ namespace System
         // sourceIndex + count - 1 to the character array buffer, beginning
         // at destinationIndex.
         //
-        public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             ArgumentNullException.ThrowIfNull(destination);
 

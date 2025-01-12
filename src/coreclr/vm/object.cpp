@@ -3,7 +3,7 @@
 //
 // OBJECT.CPP
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 #include "common.h"
@@ -162,7 +162,13 @@ BOOL Object::ValidateObjectWithPossibleAV()
     CANNOT_HAVE_CONTRACT;
     SUPPORTS_DAC;
 
-    return GetGCSafeMethodTable()->ValidateWithPossibleAV();
+    PTR_MethodTable table = GetGCSafeMethodTable();
+    if (table == NULL)
+    {
+        return FALSE;
+    }
+
+    return table->ValidateWithPossibleAV();
 }
 
 

@@ -179,7 +179,7 @@ class CCeeGen : public ICeeGenInternal {
   protected:
     short m_textIdx;            // m_sections[] index for the .text section
     short m_metaIdx;            // m_sections[] index for metadata (.text, or .cormeta for obj files)
-    short m_corHdrIdx;          // m_sections[] index for the COM+ header (.text0)
+    short m_corHdrIdx;          // m_sections[] index for the CLR header (.text0)
     short m_stringIdx;          // m_sections[] index for strings (.text, or .rdata for EnC)
     short m_ilIdx;              // m_sections[] index for IL (.text)
 
@@ -223,10 +223,6 @@ class CCeeGen : public ICeeGenInternal {
     STDMETHODIMP EmitString (
         _In_ LPWSTR lpString,               // [IN] String to emit
         ULONG *RVA);
-
-    STDMETHODIMP GetString (
-        ULONG RVA,
-        __inout LPWSTR *lpString);
 
     STDMETHODIMP AllocateMethodBuffer (
         ULONG cchBuffer,                    // [IN] Length of string to emit

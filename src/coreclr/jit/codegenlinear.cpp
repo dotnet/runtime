@@ -388,7 +388,7 @@ void CodeGen::genCodeForBBlist()
         // codegen related to doing this, so it cannot be done in the prolog.
         if (block->IsFirst() && compiler->lvaHasAnySwiftStackParamToReassemble())
         {
-            genHomeSwiftStructParameters(/* handleStack */ true);
+            genHomeSwiftStructStackParameters();
         }
 #endif
 
@@ -2697,6 +2697,10 @@ void CodeGen::genEmitterUnitTests()
     if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
+    }
+    if (unitTestSectionAll || (strstr(unitTestSection, "apx") != nullptr))
+    {
+        genAmd64EmitterUnitTestsApx();
     }
 
 #elif defined(TARGET_ARM64)

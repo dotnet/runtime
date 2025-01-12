@@ -31,7 +31,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.js.map", false },
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
-               { "dotnet.globalization.js", true },
                { "dotnet.native.wasm", true },
                { "dotnet.native.worker.mjs", true },
                { "dotnet.runtime.js", true },
@@ -50,10 +49,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (assertOptions.BuildOptions.RuntimeType is RuntimeVariant.MultiThreaded)
         {
             res.Add("dotnet.native.worker.mjs");
-        }
-        if (assertOptions.BuildOptions.GlobalizationMode is GlobalizationMode.Hybrid)
-        {
-            res.Add("dotnet.globalization.js");
         }
 
         if (!assertOptions.BuildOptions.IsPublish)
@@ -131,10 +126,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         {
             nativeFilesToCheck.Add("dotnet.native.worker.mjs");
         }
-        if (assertOptions.BuildOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-        {
-            nativeFilesToCheck.Add("dotnet.globalization.js");
-        }
 
         foreach (string nativeFilename in nativeFilesToCheck)
         {
@@ -171,7 +162,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
         AssertBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
     }
-    
+
     public BuildPaths GetBuildPaths(Configuration configuration, bool forPublish)
     {
         Assert.NotNull(ProjectDir);
@@ -179,12 +170,12 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         string objDir = Path.Combine(ProjectDir, "obj", configStr, _defaultTargetFramework);
         string binDir = Path.Combine(ProjectDir, "bin", configStr, _defaultTargetFramework);
         string binFrameworkDir = GetBinFrameworkDir(configuration, forPublish, _defaultTargetFramework);
-        
+
         string objWasmDir = Path.Combine(objDir, "wasm", forPublish ? "for-publish" : "for-build");
         // for build: we should take from runtime pack?
         return new BuildPaths(objWasmDir, objDir, binDir, binFrameworkDir);
     }
-    
+
     public override string GetBinFrameworkDir(Configuration config, bool forPublish, string framework, string? projectDir = null)
     {
         EnsureProjectDirIsSet();

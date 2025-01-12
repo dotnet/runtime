@@ -2029,7 +2029,7 @@ void LinearScan::insertZeroInitRefPositions()
     while (iter.NextElem(&varIndex))
     {
         LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-        if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+        if (!varDsc->lvIsParam && !varDsc->lvIsParamRegTarget && isCandidateVar(varDsc))
         {
             JITDUMP("V%02u was live in to first block:", compiler->lvaTrackedIndexToLclNum(varIndex));
             Interval* interval = getIntervalForLocalVar(varIndex);
@@ -2090,110 +2090,6 @@ void LinearScan::insertZeroInitRefPositions()
                     }
                 }
             }
-        }
-    }
-}
-
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-//------------------------------------------------------------------------
-// UpdateRegStateForStructArg:
-//    Sets the register state for an argument of type STRUCT.
-//    This is shared between with AMD64's SystemV systems and LoongArch64-ABI.
-//
-// Arguments:
-//    argDsc - the LclVarDsc for the argument of interest
-//
-// Notes:
-//     See Compiler::raUpdateRegStateForArg(RegState *regState, LclVarDsc *argDsc) in regalloc.cpp
-//         for how state for argument is updated for unix non-structs and Windows AMD64 structs.
-//
-void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
-{
-    assert(varTypeIsStruct(argDsc));
-    RegState* intRegState   = &compiler->codeGen->intRegState;
-    RegState* floatRegState = &compiler->codeGen->floatRegState;
-
-    if ((argDsc->GetArgReg() != REG_STK) && (argDsc->GetArgReg() != REG_NA))
-    {
-        if ((genRegMask(argDsc->GetArgReg()) & RBM_ALLFLOAT) != RBM_NONE)
-        {
-            assert((genRegMask(argDsc->GetArgReg()) & RBM_FLTARG_REGS) != RBM_NONE);
-            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
-        }
-        else
-        {
-            assert((genRegMask(argDsc->GetArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
-        }
-    }
-
-    if ((argDsc->GetOtherArgReg() != REG_STK) && (argDsc->GetOtherArgReg() != REG_NA))
-    {
-        if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
-        {
-            assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
-            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
-        }
-        else
-        {
-            assert((genRegMask(argDsc->GetOtherArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
-        }
-    }
-}
-
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
-//------------------------------------------------------------------------
-// updateRegStateForArg: Updates rsCalleeRegArgMaskLiveIn for the appropriate
-//    regState (either compiler->intRegState or compiler->floatRegState),
-//    with the lvArgReg on "argDsc"
-//
-// Arguments:
-//    argDsc - the argument for which the state is to be updated.
-//
-// Return Value: None
-//
-// Assumptions:
-//    The argument is live on entry to the function
-//    (or is untracked and therefore assumed live)
-//
-void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
-{
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For SystemV-AMD64 and LoongArch64 calls the argDsc
-    // can have 2 registers (for structs.). Handle them here.
-    if (varTypeIsStruct(argDsc))
-    {
-        UpdateRegStateForStructArg(argDsc);
-    }
-    else
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    {
-        RegState* intRegState   = &compiler->codeGen->intRegState;
-        RegState* floatRegState = &compiler->codeGen->floatRegState;
-        bool      isFloat       = emitter::isFloatReg(argDsc->GetArgReg());
-
-        if (argDsc->lvIsHfaRegArg())
-        {
-            isFloat = true;
-        }
-
-        if (isFloat)
-        {
-            JITDUMP("Float arg V%02u in reg %s\n", compiler->lvaGetLclNum(argDsc), getRegName(argDsc->GetArgReg()));
-            compiler->raUpdateRegStateForArg(floatRegState, argDsc);
-        }
-        else
-        {
-            JITDUMP("Int arg V%02u in reg %s\n", compiler->lvaGetLclNum(argDsc), getRegName(argDsc->GetArgReg()));
-#if FEATURE_MULTIREG_ARGS
-            if (argDsc->GetOtherArgReg() != REG_NA)
-            {
-                JITDUMP("(second half) in reg %s\n", getRegName(argDsc->GetOtherArgReg()));
-            }
-#endif // FEATURE_MULTIREG_ARGS
-            compiler->raUpdateRegStateForArg(intRegState, argDsc);
         }
     }
 }
@@ -2279,36 +2175,44 @@ void LinearScan::buildIntervals()
     regsInUseThisLocation                   = RBM_NONE;
     regsInUseNextLocation                   = RBM_NONE;
 
-#ifdef SWIFT_SUPPORT
-    if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
+    // Compute live incoming parameter registers. The liveness is based on the
+    // locals we are expecting to store the registers into in the prolog.
+    for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
+        const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+        for (const ABIPassingSegment& seg : abiInfo.Segments())
         {
-            LclVarDsc* argDsc = compiler->lvaGetDesc(lclNum);
-
-            if ((argDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
+            if (!seg.IsPassedInRegister())
             {
                 continue;
             }
 
-            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
-            for (const ABIPassingSegment& seg : abiInfo.Segments())
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
+
+            unsigned mappedLclNum = mapping != nullptr ? mapping->LclNum : lclNum;
+            JITDUMP("Arg V%02u in reg %s\n", mappedLclNum, getRegName(seg.GetRegister()));
+            LclVarDsc* argDsc = compiler->lvaGetDesc(mappedLclNum);
+            if (argDsc->lvTracked && !compiler->compJmpOpUsed && (argDsc->lvRefCnt() == 0) &&
+                !compiler->opts.compDbgCode)
             {
-                if (seg.IsPassedInRegister())
-                {
-                    RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
-                    regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
-                }
+                // Not live
+                continue;
             }
+
+            RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
+            regState->rsCalleeRegArgMaskLiveIn |= seg.GetRegisterMask();
         }
     }
-#endif
 
+    // Now build initial definitions for all parameters, preferring their ABI
+    // register if passed in one.
     for (unsigned int varIndex = 0; varIndex < compiler->lvaTrackedCount; varIndex++)
     {
-        LclVarDsc* argDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+        unsigned   lclNum = compiler->lvaTrackedIndexToLclNum(varIndex);
+        LclVarDsc* lclDsc = compiler->lvaGetDesc(lclNum);
 
-        if (!argDsc->lvIsParam)
+        if (!isCandidateVar(lclDsc))
         {
             continue;
         }
@@ -2319,70 +2223,53 @@ void LinearScan::buildIntervals()
         // Use lvRefCnt instead of checking bbLiveIn because if it's volatile we
         // won't have done dataflow on it, but it needs to be marked as live-in so
         // it will get saved in the prolog.
-        if (!compiler->compJmpOpUsed && argDsc->lvRefCnt() == 0 && !compiler->opts.compDbgCode)
+        if (!compiler->compJmpOpUsed && (lclDsc->lvRefCnt() == 0) && !compiler->opts.compDbgCode)
         {
             continue;
         }
 
-        if (argDsc->lvIsRegArg)
+        regNumber paramReg = REG_NA;
+        if (lclDsc->lvIsParamRegTarget)
         {
-            updateRegStateForArg(argDsc);
+            // Prefer the first ABI register.
+            const ParameterRegisterLocalMapping* mapping =
+                compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
+            assert(mapping != nullptr);
+            paramReg = mapping->RegisterSegment->GetRegister();
         }
-
-        if (isCandidateVar(argDsc))
+        else if (lclDsc->lvIsParam)
         {
-            buildInitialParamDef(argDsc, argDsc->lvIsRegArg ? argDsc->GetArgReg() : REG_NA);
-        }
-        else if (argDsc->lvPromoted)
-        {
-            for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
-                 fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
+            if (lclDsc->lvIsStructField)
             {
-                const LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
-                if (fieldVarDsc->lvLRACandidate)
+                // All fields passed in registers should be assigned via the
+                // lvIsParamRegTarget mechanism, so this must be a stack
+                // argument.
+                assert(!compiler->lvaGetParameterABIInfo(lclDsc->lvParentLcl).HasAnyRegisterSegment());
+
+                // Fall through with paramReg == REG_NA
+            }
+            else
+            {
+                // Enregisterable parameter, may or may not be a stack arg.
+                // Prefer the first register if there is one.
+                const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
+                for (const ABIPassingSegment& seg : abiInfo.Segments())
                 {
-                    assert(fieldVarDsc->lvTracked);
-                    buildInitialParamDef(fieldVarDsc, REG_NA);
+                    if (seg.IsPassedInRegister())
+                    {
+                        paramReg = seg.GetRegister();
+                        break;
+                    }
                 }
             }
         }
         else
         {
-            // We can overwrite the register (i.e. codegen saves it on entry)
-            assert(argDsc->lvRefCnt() == 0 || !argDsc->lvIsRegArg || argDsc->lvDoNotEnregister ||
-                   !argDsc->lvLRACandidate || (varTypeIsFloating(argDsc->TypeGet()) && compiler->opts.compDbgCode));
+            // Not a parameter or target of a parameter register
+            continue;
         }
-    }
 
-    // Now set up the reg state for the non-tracked args
-    // (We do this here because we want to generate the ParamDef RefPositions in tracked
-    // order, so that loop doesn't hit the non-tracked args)
-
-    for (unsigned argNum = 0; argNum < compiler->info.compArgsCount; argNum++)
-    {
-        LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
-
-        if (argDsc->lvPromoted)
-        {
-            for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
-                 fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
-            {
-                LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
-                noway_assert(fieldVarDsc->lvIsParam);
-                if (!fieldVarDsc->lvTracked && fieldVarDsc->lvIsRegArg)
-                {
-                    updateRegStateForArg(fieldVarDsc);
-                }
-            }
-        }
-        else
-        {
-            noway_assert(argDsc->lvIsParam);
-            if (!argDsc->lvTracked && argDsc->lvIsRegArg)
-            {
-                updateRegStateForArg(argDsc);
-            }
-        }
+        buildInitialParamDef(lclDsc, paramReg);
     }
 
     // If there is a secret stub param, it is also live in

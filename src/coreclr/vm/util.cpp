@@ -45,7 +45,7 @@ thread_local size_t t_CantStopCount;
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses CLR exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
