@@ -115,12 +115,6 @@ namespace System.Reflection.Internal
             }
         }
 
-        public override Stream GetStream(out StreamConstraints constraints)
-        {
-            constraints = new StreamConstraints(_streamGuard, _imageStart, _imageSize);
-            return _stream;
-        }
-
         /// <exception cref="IOException">IO error while mapping memory or not enough memory to create the mapping.</exception>
         private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, [NotNullWhen(true)] out MemoryMappedFileBlock? block)
         {
