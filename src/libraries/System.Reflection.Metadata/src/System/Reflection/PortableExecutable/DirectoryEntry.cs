@@ -14,10 +14,9 @@ namespace System.Reflection.PortableExecutable
             Size = size;
         }
 
-        internal DirectoryEntry(ref PEBinaryReader reader)
+        internal static DirectoryEntry Create<TReader>(ref TReader reader) where TReader : IBinaryReader
         {
-            RelativeVirtualAddress = reader.ReadInt32();
-            Size = reader.ReadInt32();
+            return new DirectoryEntry(reader.ReadInt32(), reader.ReadInt32());
         }
     }
 }

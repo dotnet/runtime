@@ -13,49 +13,49 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Identifies the format of the image file.
         /// </summary>
-        public PEMagic Magic { get; }
+        public PEMagic Magic { get; private set; }
 
         /// <summary>
         /// The linker major version number.
         /// </summary>
-        public byte MajorLinkerVersion { get; }
+        public byte MajorLinkerVersion { get; private set; }
 
         /// <summary>
         /// The linker minor version number.
         /// </summary>
-        public byte MinorLinkerVersion { get; }
+        public byte MinorLinkerVersion { get; private set; }
 
         /// <summary>
         /// The size of the code (text) section, or the sum of all code sections if there are multiple sections.
         /// </summary>
-        public int SizeOfCode { get; }
+        public int SizeOfCode { get; private set; }
 
         /// <summary>
         /// The size of the initialized data section, or the sum of all such sections if there are multiple data sections.
         /// </summary>
-        public int SizeOfInitializedData { get; }
+        public int SizeOfInitializedData { get; private set; }
 
         /// <summary>
         /// The size of the uninitialized data section (BSS), or the sum of all such sections if there are multiple BSS sections.
         /// </summary>
-        public int SizeOfUninitializedData { get; }
+        public int SizeOfUninitializedData { get; private set; }
 
         /// <summary>
         /// The address of the entry point relative to the image base when the PE file is loaded into memory.
         /// For program images, this is the starting address. For device drivers, this is the address of the initialization function.
         /// An entry point is optional for DLLs. When no entry point is present, this field must be zero.
         /// </summary>
-        public int AddressOfEntryPoint { get; }
+        public int AddressOfEntryPoint { get; private set; }
 
         /// <summary>
         /// The address that is relative to the image base of the beginning-of-code section when it is loaded into memory.
         /// </summary>
-        public int BaseOfCode { get; }
+        public int BaseOfCode { get; private set; }
 
         /// <summary>
         /// The address that is relative to the image base of the beginning-of-data section when it is loaded into memory.
         /// </summary>
-        public int BaseOfData { get; }
+        public int BaseOfData { get; private set; }
 
         #endregion
 
@@ -65,13 +65,13 @@ namespace System.Reflection.PortableExecutable
         /// The preferred address of the first byte of image when loaded into memory;
         /// must be a multiple of 64K.
         /// </summary>
-        public ulong ImageBase { get; }
+        public ulong ImageBase { get; private set; }
 
         /// <summary>
         /// The alignment (in bytes) of sections when they are loaded into memory. It must be greater than or equal to <see cref="FileAlignment"/>.
         /// The default is the page size for the architecture.
         /// </summary>
-        public int SectionAlignment { get; }
+        public int SectionAlignment { get; private set; }
 
         /// <summary>
         /// The alignment factor (in bytes) that is used to align the raw data of sections in the image file.
@@ -79,87 +79,87 @@ namespace System.Reflection.PortableExecutable
         /// If the <see cref="SectionAlignment"/> is less than the architecture's page size,
         /// then <see cref="FileAlignment"/> must match <see cref="SectionAlignment"/>.
         /// </summary>
-        public int FileAlignment { get; }
+        public int FileAlignment { get; private set; }
 
         /// <summary>
         /// The major version number of the required operating system.
         /// </summary>
-        public ushort MajorOperatingSystemVersion { get; }
+        public ushort MajorOperatingSystemVersion { get; private set; }
 
         /// <summary>
         /// The minor version number of the required operating system.
         /// </summary>
-        public ushort MinorOperatingSystemVersion { get; }
+        public ushort MinorOperatingSystemVersion { get; private set; }
 
         /// <summary>
         /// The major version number of the image.
         /// </summary>
-        public ushort MajorImageVersion { get; }
+        public ushort MajorImageVersion { get; private set; }
 
         /// <summary>
         /// The minor version number of the image.
         /// </summary>
-        public ushort MinorImageVersion { get; }
+        public ushort MinorImageVersion { get; private set; }
 
         /// <summary>
         /// The major version number of the subsystem.
         /// </summary>
-        public ushort MajorSubsystemVersion { get; }
+        public ushort MajorSubsystemVersion { get; private set; }
 
         /// <summary>
         /// The minor version number of the subsystem.
         /// </summary>
-        public ushort MinorSubsystemVersion { get; }
+        public ushort MinorSubsystemVersion { get; private set; }
 
         /// <summary>
         /// The size (in bytes) of the image, including all headers, as the image is loaded in memory.
         /// It must be a multiple of <see cref="SectionAlignment"/>.
         /// </summary>
-        public int SizeOfImage { get; }
+        public int SizeOfImage { get; private set; }
 
         /// <summary>
         /// The combined size of an MS DOS stub, PE header, and section headers rounded up to a multiple of FileAlignment.
         /// </summary>
-        public int SizeOfHeaders { get; }
+        public int SizeOfHeaders { get; private set; }
 
         /// <summary>
         /// The image file checksum.
         /// </summary>
-        public uint CheckSum { get; }
+        public uint CheckSum { get; private set; }
 
         /// <summary>
         /// The subsystem that is required to run this image.
         /// </summary>
-        public Subsystem Subsystem { get; }
+        public Subsystem Subsystem { get; private set; }
 
-        public DllCharacteristics DllCharacteristics { get; }
+        public DllCharacteristics DllCharacteristics { get; private set; }
 
         /// <summary>
         /// The size of the stack to reserve. Only <see cref="SizeOfStackCommit"/> is committed;
         /// the rest is made available one page at a time until the reserve size is reached.
         /// </summary>
-        public ulong SizeOfStackReserve { get; }
+        public ulong SizeOfStackReserve { get; private set; }
 
         /// <summary>
         /// The size of the stack to commit.
         /// </summary>
-        public ulong SizeOfStackCommit { get; }
+        public ulong SizeOfStackCommit { get; private set; }
 
         /// <summary>
         /// The size of the local heap space to reserve. Only <see cref="SizeOfHeapCommit"/> is committed;
         /// the rest is made available one page at a time until the reserve size is reached.
         /// </summary>
-        public ulong SizeOfHeapReserve { get; }
+        public ulong SizeOfHeapReserve { get; private set; }
 
         /// <summary>
         /// The size of the local heap space to commit.
         /// </summary>
-        public ulong SizeOfHeapCommit { get; }
+        public ulong SizeOfHeapCommit { get; private set; }
 
         /// <summary>
         /// The number of data-directory entries in the remainder of the <see cref="PEHeader"/>. Each describes a location and size.
         /// </summary>
-        public int NumberOfRvaAndSizes { get; }
+        public int NumberOfRvaAndSizes { get; private set; }
 
         #endregion
 
@@ -168,22 +168,22 @@ namespace System.Reflection.PortableExecutable
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_EXPORT.
         /// </remarks>
-        public DirectoryEntry ExportTableDirectory { get; }
+        public DirectoryEntry ExportTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_IMPORT.
         /// </remarks>
-        public DirectoryEntry ImportTableDirectory { get; }
+        public DirectoryEntry ImportTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_RESOURCE.
         /// </remarks>
-        public DirectoryEntry ResourceTableDirectory { get; }
+        public DirectoryEntry ResourceTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_EXCEPTION.
         /// </remarks>
-        public DirectoryEntry ExceptionTableDirectory { get; }
+        public DirectoryEntry ExceptionTableDirectory { get; private set; }
 
         /// <summary>
         /// The Certificate Table entry points to a table of attribute certificates.
@@ -194,57 +194,57 @@ namespace System.Reflection.PortableExecutable
         ///
         /// Aka IMAGE_DIRECTORY_ENTRY_SECURITY.
         /// </remarks>
-        public DirectoryEntry CertificateTableDirectory { get; }
+        public DirectoryEntry CertificateTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_BASERELOC.
         /// </remarks>
-        public DirectoryEntry BaseRelocationTableDirectory { get; }
+        public DirectoryEntry BaseRelocationTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_DEBUG.
         /// </remarks>
-        public DirectoryEntry DebugTableDirectory { get; }
+        public DirectoryEntry DebugTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_COPYRIGHT or IMAGE_DIRECTORY_ENTRY_ARCHITECTURE.
         /// </remarks>
-        public DirectoryEntry CopyrightTableDirectory { get; }
+        public DirectoryEntry CopyrightTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_GLOBALPTR.
         /// </remarks>
-        public DirectoryEntry GlobalPointerTableDirectory { get; }
+        public DirectoryEntry GlobalPointerTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_TLS.
         /// </remarks>
-        public DirectoryEntry ThreadLocalStorageTableDirectory { get; }
+        public DirectoryEntry ThreadLocalStorageTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG.
         /// </remarks>
-        public DirectoryEntry LoadConfigTableDirectory { get; }
+        public DirectoryEntry LoadConfigTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT.
         /// </remarks>
-        public DirectoryEntry BoundImportTableDirectory { get; }
+        public DirectoryEntry BoundImportTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_IAT.
         /// </remarks>
-        public DirectoryEntry ImportAddressTableDirectory { get; }
+        public DirectoryEntry ImportAddressTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT.
         /// </remarks>
-        public DirectoryEntry DelayImportTableDirectory { get; }
+        public DirectoryEntry DelayImportTableDirectory { get; private set; }
 
         /// <remarks>
         /// Aka IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR.
         /// </remarks>
-        public DirectoryEntry CorHeaderTableDirectory { get; }
+        public DirectoryEntry CorHeaderTableDirectory { get; private set; }
 
         #endregion
 
@@ -281,7 +281,7 @@ namespace System.Reflection.PortableExecutable
             sizeof(int) +                                // NumberOfRvaAndSizes
             16 * sizeof(long);                           // directory entries
 
-        internal PEHeader(ref PEBinaryReader reader)
+        private void Init<TReader>(ref TReader reader) where TReader : IBinaryReader
         {
             PEMagic magic = (PEMagic)reader.ReadUInt16();
             if (magic != PEMagic.PE32 && magic != PEMagic.PE32Plus)
@@ -357,24 +357,33 @@ namespace System.Reflection.PortableExecutable
             NumberOfRvaAndSizes = reader.ReadInt32();
 
             // directory entries:
-            ExportTableDirectory = new DirectoryEntry(ref reader);
-            ImportTableDirectory = new DirectoryEntry(ref reader);
-            ResourceTableDirectory = new DirectoryEntry(ref reader);
-            ExceptionTableDirectory = new DirectoryEntry(ref reader);
-            CertificateTableDirectory = new DirectoryEntry(ref reader);
-            BaseRelocationTableDirectory = new DirectoryEntry(ref reader);
-            DebugTableDirectory = new DirectoryEntry(ref reader);
-            CopyrightTableDirectory = new DirectoryEntry(ref reader);
-            GlobalPointerTableDirectory = new DirectoryEntry(ref reader);
-            ThreadLocalStorageTableDirectory = new DirectoryEntry(ref reader);
-            LoadConfigTableDirectory = new DirectoryEntry(ref reader);
-            BoundImportTableDirectory = new DirectoryEntry(ref reader);
-            ImportAddressTableDirectory = new DirectoryEntry(ref reader);
-            DelayImportTableDirectory = new DirectoryEntry(ref reader);
-            CorHeaderTableDirectory = new DirectoryEntry(ref reader);
+            ExportTableDirectory = DirectoryEntry.Create(ref reader);
+            ImportTableDirectory = DirectoryEntry.Create(ref reader);
+            ResourceTableDirectory = DirectoryEntry.Create(ref reader);
+            ExceptionTableDirectory = DirectoryEntry.Create(ref reader);
+            CertificateTableDirectory = DirectoryEntry.Create(ref reader);
+            BaseRelocationTableDirectory = DirectoryEntry.Create(ref reader);
+            DebugTableDirectory = DirectoryEntry.Create(ref reader);
+            CopyrightTableDirectory = DirectoryEntry.Create(ref reader);
+            GlobalPointerTableDirectory = DirectoryEntry.Create(ref reader);
+            ThreadLocalStorageTableDirectory = DirectoryEntry.Create(ref reader);
+            LoadConfigTableDirectory = DirectoryEntry.Create(ref reader);
+            BoundImportTableDirectory = DirectoryEntry.Create(ref reader);
+            ImportAddressTableDirectory = DirectoryEntry.Create(ref reader);
+            DelayImportTableDirectory = DirectoryEntry.Create(ref reader);
+            CorHeaderTableDirectory = DirectoryEntry.Create(ref reader);
 
             // ReservedDirectory (should be 0, 0)
-            new DirectoryEntry(ref reader);
+            DirectoryEntry.Create(ref reader);
+        }
+
+        private PEHeader() { }
+
+        internal static PEHeader Create<TReader>(ref TReader reader) where TReader : IBinaryReader
+        {
+            var header = new PEHeader();
+            header.Init(ref reader);
+            return header;
         }
     }
 }

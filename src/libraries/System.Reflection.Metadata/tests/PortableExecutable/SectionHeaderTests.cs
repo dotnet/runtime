@@ -46,7 +46,7 @@ namespace System.Reflection.PortableExecutable.Tests
             stream.Position = 0;
             var reader = new PEBinaryReader(stream, (int) stream.Length);
 
-            var header = new SectionHeader(ref reader);
+            var header = SectionHeader.Create(ref reader);
 
             Assert.Equal(name, header.Name);
             Assert.Equal(virtualSize, header.VirtualSize);

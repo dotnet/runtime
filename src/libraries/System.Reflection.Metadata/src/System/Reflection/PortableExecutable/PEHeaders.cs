@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
@@ -14,17 +15,17 @@ namespace System.Reflection.PortableExecutable
     /// </summary>
     public sealed class PEHeaders
     {
-        private readonly CoffHeader _coffHeader;
-        private readonly PEHeader? _peHeader;
-        private readonly ImmutableArray<SectionHeader> _sectionHeaders;
-        private readonly CorHeader? _corHeader;
-        private readonly bool _isLoadedImage;
+        private CoffHeader _coffHeader;
+        private PEHeader? _peHeader;
+        private ImmutableArray<SectionHeader> _sectionHeaders;
+        private CorHeader? _corHeader;
+        private bool _isLoadedImage;
 
-        private readonly int _metadataStartOffset = -1;
-        private readonly int _metadataSize;
-        private readonly int _coffHeaderStartOffset = -1;
-        private readonly int _corHeaderStartOffset = -1;
-        private readonly int _peHeaderStartOffset = -1;
+        private int _metadataStartOffset = -1;
+        private int _metadataSize;
+        private int _coffHeaderStartOffset = -1;
+        private int _corHeaderStartOffset = -1;
+        private int _peHeaderStartOffset = -1;
 
         internal const ushort DosSignature = 0x5A4D;     // 'M' 'Z'
         internal const int PESignatureOffsetLocation = 0x3C;
@@ -82,33 +83,36 @@ namespace System.Reflection.PortableExecutable
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
 
-            _isLoadedImage = isLoadedImage;
-
             int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
             var reader = new PEBinaryReader(peStream, actualSize);
+            Init(ref reader, actualSize, isLoadedImage);
+        }
 
-            bool isCoffOnly;
-            SkipDosHeader(ref reader, out isCoffOnly);
+        [MemberNotNull(nameof(_coffHeader), nameof(_sectionHeaders))]
+        private void Init<TReader>(ref TReader reader, int actualSize, bool isLoadedImage) where TReader : IBinaryReader
+        {
+            _isLoadedImage = isLoadedImage;
+
+            SkipDosHeader(ref reader, out bool isCoffOnly);
 
             _coffHeaderStartOffset = reader.CurrentOffset;
-            _coffHeader = new CoffHeader(ref reader);
+            _coffHeader = CoffHeader.Create(ref reader);
 
             if (!isCoffOnly)
             {
                 _peHeaderStartOffset = reader.CurrentOffset;
-                _peHeader = new PEHeader(ref reader);
+                _peHeader = PEHeader.Create(ref reader);
             }
 
-            _sectionHeaders = this.ReadSectionHeaders(ref reader);
+            _sectionHeaders = ReadSectionHeaders(ref reader);
 
             if (!isCoffOnly)
             {
-                int offset;
-                if (TryCalculateCorHeaderOffset(out offset))
+                if (TryCalculateCorHeaderOffset(out int offset))
                 {
                     _corHeaderStartOffset = offset;
                     reader.Seek(offset);
-                    _corHeader = new CorHeader(ref reader);
+                    _corHeader = CorHeader.Create(ref reader);
                 }
             }
 
@@ -246,7 +250,7 @@ namespace System.Reflection.PortableExecutable
             return true;
         }
 
-        private static void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
+        private static void SkipDosHeader<TReader>(ref TReader reader, out bool isCOFFOnly) where TReader : IBinaryReader
         {
             // Look for DOS Signature "MZ"
             ushort dosSig = reader.ReadUInt16();
@@ -290,7 +294,7 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader)
+        private ImmutableArray<SectionHeader> ReadSectionHeaders<TReader>(ref TReader reader) where TReader : IBinaryReader
         {
             int numberOfSections = _coffHeader.NumberOfSections;
             if (numberOfSections < 0)
@@ -302,7 +306,7 @@ namespace System.Reflection.PortableExecutable
 
             for (int i = 0; i < numberOfSections; i++)
             {
-                builder.Add(new SectionHeader(ref reader));
+                builder.Add(SectionHeader.Create(ref reader));
             }
 
             return builder.MoveToImmutable();
