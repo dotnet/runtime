@@ -1627,7 +1627,11 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         int reg2 = ((int)addr & 1) + 10;
         addr     = addr ^ 1;
 
-        assert(isValidSimm32(addr - (ssize_t)dst));
+        if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            assert(isValidSimm32(addr - (ssize_t)dst));
+        }
+
         assert((addr & 1) == 0);
 
         dst += 4;
@@ -1642,7 +1646,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
 #endif
         emitOutput_Instr(dst, 0x00000067 | (REG_DEFAULT_HELPER_CALL_TARGET << 15) | reg2 << 7);
 
-        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
+        emitRecordRelocation(dst - 4, (BYTE*)addr, IMAGE_REL_RISCV64_JALR);
     }
     else
     {

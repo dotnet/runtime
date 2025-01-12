@@ -489,6 +489,41 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetRiscV64PC(pCode) == imm32);
         }
 
+        private static unsafe long GetRiscV64JALR(uint* pCode)
+        {
+            uint jalrInstr = *pCode;
+
+            // Extract the 12-bit signed immediate (bits 31:20 of the instruction).
+            long imm = (long)((jalrInstr >> 20) & 0xfff);
+
+            // Sign-extend the immediate.
+            if ((imm & 0x800) != 0)
+                imm |= 0xfffff000;
+
+            return imm;
+        }
+
+        private static unsafe void PutRiscV64JALR(uint* pCode, long imm)
+        {
+            // Verify that we got a valid offset within the 12-bit signed immediate range.
+            Debug.Assert(imm >= -0x800 && imm < 0x800);
+
+            uint jalrInstr = *pCode;
+
+            Debug.Assert((jalrInstr & 0x7f) == 0x17);  // JALR opcode
+
+            // Extract the lower 12 bits of the immediate.
+            uint imm12 = (uint)(imm & 0xfff);
+
+            // Assemble the JALR instruction with the immediate.
+            jalrInstr &= ~0xfff00000;
+            jalrInstr |= (imm12 << 20);
+
+            *pCode = jalrInstr;
+
+            Debug.Assert(GetRiscV64JALR(pCode) == imm);
+        }
+
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
             RelocType = relocType;
@@ -548,6 +583,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
                     PutRiscV64PC((uint*)location, value);
+                    break;
+                case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
+                    PutRiscV64JALR((uint*)location, value);
                     break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -616,6 +654,8 @@ namespace ILCompiler.DependencyAnalysis
                     return (long)GetLoongArch64JIR((uint*)location);
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
                     return (long)GetRiscV64PC((uint*)location);
+                case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
+                    return (long)GetRiscV64JALR((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
