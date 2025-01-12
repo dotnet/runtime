@@ -1627,7 +1627,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         int reg2 = ((int)addr & 1) + 10;
         addr     = addr ^ 1;
 
-        if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (!emitComp->opts.compReloc)
         {
             assert(isValidSimm32(addr - (ssize_t)dst));
         }
