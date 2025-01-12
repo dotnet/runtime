@@ -4694,7 +4694,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
 
     // Try and see if we can make this cast into a cheaper zero-extending version
     // if the input is known to be non-negative.
-    if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG))
+    if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG) && (TARGET_POINTER_SIZE == 8))
     {
         bool isKnownNonZero;
         bool isKnownNonNegative;
