@@ -42,14 +42,16 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                GCHandle.CheckUninitialized(_handle);
-                // Skip the type check or null check to provide lowest overhead.
-                return Unsafe.As<T>(GCHandle.InternalGet(_handle));
+                IntPtr handle = _handle;
+                GCHandle.CheckUninitialized(handle);
+                // Skip the type check to provide lowest overhead.
+                return Unsafe.As<T>(GCHandle.InternalGet(handle));
             }
             set
             {
-                GCHandle.CheckUninitialized(_handle);
-                GCHandle.InternalSet(_handle, value);
+                IntPtr handle = _handle;
+                GCHandle.CheckUninitialized(handle);
+                GCHandle.InternalSet(handle, value);
             }
         }
 

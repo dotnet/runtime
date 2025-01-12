@@ -45,15 +45,17 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                GCHandle.CheckUninitialized(_handle);
+                IntPtr handle = _handle;
+                GCHandle.CheckUninitialized(handle);
                 // Skip the type check to provide lowest overhead.
-                return Unsafe.As<T>(GCHandle.InternalGet(_handle));
+                return Unsafe.As<T>(GCHandle.InternalGet(handle));
             }
             set
             {
-                GCHandle.CheckUninitialized(_handle);
+                IntPtr handle = _handle;
+                GCHandle.CheckUninitialized(handle);
                 // Unlike GCHandle, pinning any object is allowed
-                GCHandle.InternalSet(_handle, value);
+                GCHandle.InternalSet(handle, value);
             }
         }
 
@@ -64,8 +66,9 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public readonly unsafe void* GetAddressOfObjectData()
         {
-            GCHandle.CheckUninitialized(_handle);
-            return GCHandle.AddrOfPinnedObjectFromHandle(_handle);
+            IntPtr handle = _handle;
+            GCHandle.CheckUninitialized(handle);
+            return GCHandle.AddrOfPinnedObjectFromHandle(handle);
         }
 
         /// <summary>

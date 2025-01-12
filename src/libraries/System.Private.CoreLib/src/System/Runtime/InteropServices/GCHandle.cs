@@ -206,7 +206,17 @@ namespace System.Runtime.InteropServices
             // Check if the handle was never initialized or was freed.
             // Throws NRE with minimal overhead, to avoid access violation from managed code.
             // Invalid handle is unsupported and will cause AV as expected.
+#if MONO
+            // Mono doesn't handle reading null pointer as NRE.
+            // Throw a NRE manually.
+            if (handle == 0)
+            {
+                throw new NullReferenceException();
+            }
+#else
+            // The read will be combined with the read in InternalGet under Release.
             _ = *(object*)handle;
+#endif
         }
     }
 }

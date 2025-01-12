@@ -48,9 +48,10 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryGetTarget([NotNullWhen(true)] out T? target)
         {
-            GCHandle.CheckUninitialized(_handle);
+            IntPtr handle = _handle;
+            GCHandle.CheckUninitialized(handle);
             // Skip the type check to provide lowest overhead.
-            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(_handle));
+            T? obj = Unsafe.As<T?>(GCHandle.InternalGet(handle));
             target = obj;
             return obj != null;
         }
@@ -58,8 +59,9 @@ namespace System.Runtime.InteropServices
         /// <summary>Sets the object this handle represents.</summary>
         public readonly void SetTarget(T target)
         {
-            GCHandle.CheckUninitialized(_handle);
-            GCHandle.InternalSet(_handle, target);
+            IntPtr handle = _handle;
+            GCHandle.CheckUninitialized(handle);
+            GCHandle.InternalSet(handle, target);
         }
 
         /// <summary>
