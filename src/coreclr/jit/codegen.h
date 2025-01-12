@@ -271,7 +271,7 @@ protected:
 #endif
 
     void genHomeStackSegment(unsigned lclNum, const ABIPassingSegment& seg, regNumber initReg, bool* pInitRegZeroed);
-    void genHomeSwiftStructParameters(bool handleStack);
+    void genHomeSwiftStructStackParameters();
     void genHomeStackPartOfSplitParameter(regNumber initReg, bool* initRegStillZeroed);
 
     void genCheckUseBlockInit();
@@ -659,6 +659,7 @@ protected:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
     bool         genForceFuncletFrameType5;
+    bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------

@@ -26,7 +26,7 @@ public class Test110987
         ILGenerator ilGenerator = myMethod.GetILGenerator();
         ilGenerator.Emit(OpCodes.Ret);
         typeBuilder.CreateType();
-        MemoryStream ms = new MemoryStream()
+        MemoryStream ms = new MemoryStream();
         ab.Save(ms);
 
         ms.Position = 0;

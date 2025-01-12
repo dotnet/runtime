@@ -60,6 +60,7 @@ namespace ILCompiler.ObjectWriter
                 TargetArchitecture.ARM => EM_ARM,
                 TargetArchitecture.ARM64 => EM_AARCH64,
                 TargetArchitecture.LoongArch64 => EM_LOONGARCH,
+                TargetArchitecture.RiscV64 => EM_RISCV,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
             _useInlineRelocationAddends = _machine is EM_386 or EM_ARM;
@@ -362,6 +363,9 @@ namespace ILCompiler.ObjectWriter
                 case EM_LOONGARCH:
                     EmitRelocationsLoongArch64(sectionIndex, relocationList);
                     break;
+                case EM_RISCV:
+                    EmitRelocationsRiscV64(sectionIndex, relocationList);
+                    break;
                 default:
                     Debug.Fail("Unsupported architecture");
                     break;
@@ -523,6 +527,43 @@ namespace ILCompiler.ObjectWriter
                     relocationStream.Write(relocationEntry);
 
                     if (symbolicRelocation.Type is IMAGE_REL_BASED_LOONGARCH64_PC)
+                    {
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
+                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                        relocationStream.Write(relocationEntry);
+                    }
+                }
+            }
+        }
+
+        private void EmitRelocationsRiscV64(int sectionIndex, List<SymbolicRelocation> relocationList)
+        {
+            if (relocationList.Count > 0)
+            {
+                Span<byte> relocationEntry = stackalloc byte[24];
+                var relocationStream = new MemoryStream(24 * relocationList.Count);
+                _sections[sectionIndex].RelocationStream = relocationStream;
+
+                foreach (SymbolicRelocation symbolicRelocation in relocationList)
+                {
+                    uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+                    uint type = symbolicRelocation.Type switch
+                    {
+                        IMAGE_REL_BASED_DIR64 => R_RISCV_64,
+                        IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
+                        IMAGE_REL_BASED_RELPTR32 => R_RISCV_RELATIVE,
+                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_PCREL_HI20,
+                        IMAGE_REL_BASED_RISCV64_JALR => R_RISCV_CALL32,
+                        _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
+                    };
+
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset);
+                    BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                    BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    relocationStream.Write(relocationEntry);
+
+                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PC)
                     {
                         BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
                         BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type + 1);
@@ -805,6 +846,9 @@ namespace ILCompiler.ObjectWriter
                 {
                     EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
                     EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
+                    // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
+                    // it should be 0x0005u EF_RISCV_RVC (0x0001) | EF_RISCV_FLOAT_ABI_DOUBLE (0x0006)
+                    EM_RISCV => 0x0004u, // EF_RISCV_FLOAT_ABI_DOUBLE (double precision floating-point ABI).
                     _ => 0u
                 },
             };

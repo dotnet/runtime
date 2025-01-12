@@ -8366,6 +8366,12 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
+    public static partial class ReadOnlyCollection
+    {
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> CreateCollection<T>(params System.ReadOnlySpan<T> values) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> CreateSet<T>(params System.ReadOnlySpan<T> values) { throw null; }
+    }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateCollection")]
     public partial class ReadOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
@@ -8471,6 +8477,7 @@ namespace System.Collections.ObjectModel
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         }
     }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateSet")]
     public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
@@ -10762,17 +10769,17 @@ namespace System.IO
         public static readonly new System.IO.StreamReader Null;
         public StreamReader(System.IO.Stream stream) { }
         public StreamReader(System.IO.Stream stream, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.IO.FileStreamOptions options) { }
-        public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
+        public StreamReader(string path, System.Text.Encoding? encoding) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }

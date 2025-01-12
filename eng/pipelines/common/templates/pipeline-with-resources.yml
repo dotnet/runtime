@@ -102,6 +102,11 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 
+      linux_loongarch64:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-loongarch64
+        env:
+          ROOTFS_DIR: /crossrootfs/loongarch64
+
       debian-12-gcc14-amd64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc14-amd64
 

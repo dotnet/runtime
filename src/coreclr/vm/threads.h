@@ -6,7 +6,7 @@
 
 //
 //
-// Currently represents a logical and physical COM+ thread. Later, these concepts will be separated.
+// Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
 //
 
 //
@@ -2812,8 +2812,8 @@ private:
 
 private:
     // Stores the most recently thrown exception. We need to have a handle in case a GC occurs before
-    // we catch so we don't lose the object. Having a static allows others to catch outside of COM+ w/o leaking
-    // a handler and allows rethrow outside of COM+ too.
+    // we catch so we don't lose the object. Having a static allows others to catch outside of CLR w/o leaking
+    // a handler and allows rethrow outside of CLR too.
     // Differs from m_pThrowable in that it doesn't stack on nested exceptions.
     OBJECTHANDLE m_LastThrownObjectHandle;      // Unsafe to use directly.  Use accessors instead.
 
