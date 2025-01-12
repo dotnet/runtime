@@ -341,6 +341,8 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
     // Prespill all argument regs on to stack in case of Arm when under profiler.
+    // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
+    // these registers, and is called very early.
     if (compIsProfilerHookNeeded())
     {
         codeGen->regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
