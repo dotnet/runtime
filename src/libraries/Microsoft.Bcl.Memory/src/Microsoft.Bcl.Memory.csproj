@@ -46,7 +46,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Range.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
