@@ -16,9 +16,7 @@ namespace System.Reflection
     /// <seealso cref="PortableExecutable.PEBinaryReader"/>
     internal interface IBinaryReader
     {
-        public int CurrentOffset { get; }
-
-        public void Seek(int offset);
+        public int Offset { get; set; }
 
         public byte ReadByte();
 
