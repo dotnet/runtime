@@ -38,7 +38,7 @@ namespace System.Linq
         ///     public Person Owner { get; set; }
         /// }
         ///
-        /// public static void LeftJoin()
+        /// public static void RightJoin()
         /// {
         ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
         ///     Person terry = new Person { Name = "Adams, Terry" };
@@ -141,7 +141,7 @@ namespace System.Linq
         ///     public Person Owner { get; set; }
         /// }
         ///
-        /// public static void LeftJoin()
+        /// public static void RightJoin()
         /// {
         ///     Person magnus = new Person { Name = "Hedlund, Magnus" };
         ///     Person terry = new Person { Name = "Adams, Terry" };
