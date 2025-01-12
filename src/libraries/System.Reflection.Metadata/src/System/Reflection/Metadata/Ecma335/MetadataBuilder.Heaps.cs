@@ -57,14 +57,11 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentException"><paramref name="guidHeapStartOffset"/> is not a multiple of size of GUID.</exception>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public MetadataBuilder(
-            int userStringHeapStartOffset = 0,
-            int stringHeapStartOffset = 0,
-            int blobHeapStartOffset = 0,
-            int guidHeapStartOffset = 0)
-            : this(userStringHeapStartOffset, stringHeapStartOffset, blobHeapStartOffset, guidHeapStartOffset, null)
-        {
-
-        }
+            int userStringHeapStartOffset,
+            int stringHeapStartOffset,
+            int blobHeapStartOffset,
+            int guidHeapStartOffset)
+            : this(userStringHeapStartOffset, stringHeapStartOffset, blobHeapStartOffset, guidHeapStartOffset, null) { }
 
         /// <summary>
         /// Creates a builder for metadata tables and heaps.
