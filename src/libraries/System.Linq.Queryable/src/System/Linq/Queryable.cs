@@ -458,7 +458,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
         /// <example>
         /// <para>
-        /// The following code example demonstrates how to use <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner?, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// The following code example demonstrates how to use <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
         /// </para>
         /// <code>
         /// class Person
@@ -574,7 +574,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
         /// <example>
         /// <para>
-        /// The following code example demonstrates how to use <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner?, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// The following code example demonstrates how to use <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
         /// </para>
         /// <code>
         /// class Person
@@ -888,7 +888,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
         /// <example>
         /// <para>
-        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner?, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
         /// </para>
         /// <code>
         /// class Person
@@ -1003,7 +1003,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
         /// <example>
         /// <para>
-        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner?, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
+        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IQueryable{TOuter}, IEnumerable{TInner}, Expression{Func{TOuter, TKey}}, Expression{Func{TInner, TKey}}, Expression{Func{TOuter, TInner, TResult}}, IEqualityComparer{TKey})" /> to perform an inner join of two sequences based on a common key.
         /// </para>
         /// <code>
         /// class Person

@@ -94,7 +94,7 @@ namespace System.Linq
         /// </para>
         /// <para>
         /// A join refers to the operation of correlating the elements of two sources of information based on a common key.
-        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner?, TResult})" />
+        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult})" />
         /// brings the two information sources and the keys by which they are matched together in one method call.
         /// </para>
         /// <para>
@@ -102,9 +102,9 @@ namespace System.Linq
         /// 'Inner' means that only elements that have a match in the other sequence are included in the results.
         /// An 'equijoin' is a join in which the keys are compared for equality.
         /// An left outer join can be performed using the
-        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner?, TResult})" /> method,
+        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult})" /> method,
         /// and a right outer join can be performed using the
-        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter?, TInner, TResult})" /> method,
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult})" /> method,
         /// For more information, see <see href="/dotnet/csharp/linq/standard-query-operators/join-operations">Join operations</see>.
         /// </para>
         /// </remarks>
@@ -199,7 +199,7 @@ namespace System.Linq
         /// </para>
         /// <para>
         /// A join refers to the operation of correlating the elements of two sources of information based on a common key.
-        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner?, TResult}, IEqualityComparer{TKey})" />
+        /// <see cref="Join{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" />
         /// brings the two information sources and the keys by which they are matched together in one method call.
         /// </para>
         /// <para>
@@ -207,9 +207,9 @@ namespace System.Linq
         /// 'Inner' means that only elements that have a match in the other sequence are included in the results.
         /// An 'equijoin' is a join in which the keys are compared for equality.
         /// An left outer join can be performed using the
-        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner?, TResult}, IEqualityComparer{TKey})" /> method,
+        /// <see cref="LeftJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" /> method,
         /// and a right outer join can be performed using the
-        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter?, TInner, TResult}, IEqualityComparer{TKey})" /> method,
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" /> method,
         /// For more information, see <see href="/dotnet/csharp/linq/standard-query-operators/join-operations">Join operations</see>.
         /// </para>
         /// </remarks>

@@ -24,7 +24,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
         /// <example>
         /// <para>
-        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter?, TInner, TResult})" /> to perform aa left outer join of two sequences based on a common key.
+        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult})" /> to perform aa left outer join of two sequences based on a common key.
         /// </para>
         /// <code>
         /// class Person
@@ -94,11 +94,11 @@ namespace System.Linq
         /// </para>
         /// <para>
         /// A join refers to the operation of correlating the elements of two sources of information based on a common key.
-        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter?, TInner, TResult})" />
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult})" />
         /// brings the two information sources and the keys by which they are matched together in one method call.
         /// </para>
         /// <para>
-        /// In relational database terms, the <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner?, TResult})" /> method implements an outer right equijoin.
+        /// In relational database terms, the <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult})" /> method implements an outer right equijoin.
         /// 'Outer right' means that elements of the second sequence are returned regardless of whether matching elements are found in the other sequence.
         /// An 'equijoin' is a join in which the keys are compared for equality.
         /// An inner join - where only elements that have a match in the other sequence are included in the results - can be performed using the
@@ -127,7 +127,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="outer" /> or <paramref name="inner" /> or <paramref name="outerKeySelector" /> or <paramref name="innerKeySelector" /> or <paramref name="resultSelector" /> is <see langword="null" />.</exception>
         /// <example>
         /// <para>
-        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter?, TInner, TResult}, IEqualityComparer{TKey})" /> to perform aa left outer join of two sequences based on a common key.
+        /// The following code example demonstrates how to use <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" /> to perform aa left outer join of two sequences based on a common key.
         /// </para>
         /// <code>
         /// class Person
@@ -197,11 +197,11 @@ namespace System.Linq
         /// </para>
         /// <para>
         /// A join refers to the operation of correlating the elements of two sources of information based on a common key.
-        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter?, TInner, TResult}, IEqualityComparer{TKey})" />
+        /// <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" />
         /// brings the two information sources and the keys by which they are matched together in one method call.
         /// </para>
         /// <para>
-        /// In relational database terms, the <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner?, TResult}, IEqualityComparer{TKey})" /> method implements an outer right equijoin.
+        /// In relational database terms, the <see cref="RightJoin{TOuter, TInner, TKey, TResult}(IEnumerable{TOuter}, IEnumerable{TInner}, Func{TOuter, TKey}, Func{TInner, TKey}, Func{TOuter, TInner, TResult}, IEqualityComparer{TKey})" /> method implements an outer right equijoin.
         /// 'Outer right' means that elements of the second sequence are returned regardless of whether matching elements are found in the other sequence.
         /// An 'equijoin' is a join in which the keys are compared for equality.
         /// An inner join - where only elements that have a match in the other sequence are included in the results - can be performed using the
