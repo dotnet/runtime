@@ -451,13 +451,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<char> destination)
         {
-            bool retVal = false;
-            if ((uint)Length <= (uint)destination.Length)
+            if ((uint)Length > (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
-                retVal = true;
+                return false;
             }
-            return retVal;
+
+            Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
+            return true;
         }
 
         // Returns the entire string as an array of characters.
