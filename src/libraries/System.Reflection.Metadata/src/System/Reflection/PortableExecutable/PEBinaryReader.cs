@@ -40,7 +40,7 @@ namespace System.Reflection.PortableExecutable
         public void Seek(int offset)
         {
             CheckBounds(_startOffset, offset);
-            _reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+            _reader.BaseStream.Seek(_startOffset + offset, SeekOrigin.Begin);
         }
 
         public byte[] ReadBytes(int count)

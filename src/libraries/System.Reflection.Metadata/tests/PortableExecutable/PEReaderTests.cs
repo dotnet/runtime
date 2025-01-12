@@ -87,7 +87,6 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/17088")]
         public void SubStream()
         {
             var stream = new MemoryStream();
