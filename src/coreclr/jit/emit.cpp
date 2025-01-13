@@ -10402,10 +10402,14 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            static_assert((RBM_CALLEE_GCTRASH_WRITEBARRIER & RBM_WRITE_BARRIER_DST) == 0, "");
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
             break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
+            static_assert((RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF &
+                           (RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF)) == 0,
+                          "");
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
