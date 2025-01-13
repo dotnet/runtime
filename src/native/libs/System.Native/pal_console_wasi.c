@@ -118,5 +118,5 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
     return true;
 }
 
-void SystemNative_UninitializeTerminalAndSignalHandling(void)
+void SystemNative_UninitializeTerminal(void)
 { }

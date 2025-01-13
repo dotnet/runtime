@@ -16,7 +16,6 @@ internal static partial class Interop
         internal static partial void SetKeypadXmit(SafeFileHandle terminalHandle, string terminfoString);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_UninitializeTerminal")]
-        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial void UninitializeTerminal();
     }
 }
