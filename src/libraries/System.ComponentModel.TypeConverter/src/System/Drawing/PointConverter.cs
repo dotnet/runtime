@@ -63,16 +63,14 @@ namespace System.Drawing
                 {
                     culture ??= CultureInfo.CurrentCulture;
 
-                    string sep = culture.TextInfo.ListSeparator + " ";
+                    string sep = culture.TextInfo.ListSeparator;
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
 
                     // Note: ConvertFromString will raise exception if value cannot be converted.
-                    string?[] args =
-                    [
-                        intConverter.ConvertToString(context, culture, pt.X),
-                        intConverter.ConvertToString(context, culture, pt.Y)
-                    ];
-                    return string.Join(sep, args);
+                    string? x = intConverter.ConvertToString(context, culture, pt.X);
+                    string? y = intConverter.ConvertToString(context, culture, pt.Y);
+
+                    return $"{x}{sep} {y}";
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {

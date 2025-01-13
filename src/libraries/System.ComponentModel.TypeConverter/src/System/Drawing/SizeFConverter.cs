@@ -63,14 +63,12 @@ namespace System.Drawing
                 {
                     culture ??= CultureInfo.CurrentCulture;
 
-                    string sep = culture.TextInfo.ListSeparator + " ";
+                    string sep = culture.TextInfo.ListSeparator;
                     TypeConverter floatConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(float));
-                    string?[] args =
-                    [
-                        floatConverter.ConvertToString(context, culture, size.Width),
-                        floatConverter.ConvertToString(context, culture, size.Height)
-                    ];
-                    return string.Join(sep, args);
+                    string? width = floatConverter.ConvertToString(context, culture, size.Width);
+                    string? height = floatConverter.ConvertToString(context, culture, size.Height);
+
+                    return $"{width}{sep} {height}";
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
