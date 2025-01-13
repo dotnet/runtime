@@ -13,27 +13,26 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
-        /// Assuming that the writer is currently in a valid state, this returns true if a JSON value is not allowed at the current position.
-        /// Note that every JsonTokenType is less than 16 (0b0001_0000) except string segment (which is 0b0010_0000), so for these tokens only the
-        /// low nibble needs to be checked. There are 3 cases to consider:
+        /// Assuming that the writer is currently in a valid state, this returns true if a JSON value is allowed at the current position.
         /// <list type="bullet">
         /// <item>
-        /// The writer is in an array (<see cref="_enclosingContainer"/> = 0b0001_0000): The only invalid previous token is a string segment.
-        /// <see cref="_enclosingContainer"/> ^ 0b0001_0000 is 0, so the entire expression is <see cref="_tokenType"/> > 0b0001_0000, which is true iff the previous token is a string segment.
+        /// If <see cref="_enclosingContainer"/> is an array then writing a value is always allowed.
         /// </item>
         /// <item>
-        /// The writer is at the root level (<see cref="_enclosingContainer"/> = 0). The only valid previous token is none. <see cref="_enclosingContainer"/> ^ 0b0001_0000 = 0b0001_0000,
-        /// so the entire expression is 0b0001_0000 ^ <see cref="_tokenType"/> > 0b0001_0000. For string segment this is true, and for all other tokens we just need to check the low
-        /// nibble. 0000 ^ wxyz = 0 iff wxyz = 0000, which is JsonTokenType.None. For every other token, the inequality is true.
+        /// If <see cref="_enclosingContainer"/> is an object then writing a value is allowed only if <see cref="_tokenType"/> is a property name.
+        /// Because we designed <see cref="EnclosingContainerType.Object"/> == <see cref="JsonTokenType.PropertyName"/>, we can just check for equality.
         /// </item>
         /// <item>
-        /// The writer is in an object (<see cref="_enclosingContainer"/> = 0b0000_0101). The only valid previous token is a property. <see cref="_enclosingContainer"/> ^ 0b0001_0000 = 0b0001_0101,
-        /// so the entire expression is 0b0001_0101 ^ <see cref="_tokenType"/> > 0b0001_0000. For string segment this inequality is true. For every other token, we just need
-        /// to check the low nibble. 0101 ^ wxyz = 0 iff wxyz = 0101, which is JsonTokenType.PropertyName. For every other token, the inequality is true.
+        /// If <see cref="_enclosingContainer"/> is none (the root level) then writing a value is allowed only if <see cref="_tokenType"/> is None (only
+        /// one value may be written at the root). This case is identical to the previous case.
+        /// </item>
+        /// <item>
+        /// If <see cref="_enclosingContainer"/> is a partial value, then it will never be a valid <see cref="_tokenType"/> by construction.
         /// </item>
         /// </list>
+        /// This method performs better without short circuiting (this often gets inlined so using simple branch free code seems to have some benefits).
         /// </summary>
-        private bool CannotWriteValue => (0b0001_0000 ^ (byte)_enclosingContainer ^ (byte)_tokenType) > 0b0001_0000;
+        private bool CanWriteValue => _enclosingContainer == EnclosingContainerType.Array | (byte)_enclosingContainer == (byte)_tokenType;
 
         private bool HasPartialCodePoint => PartialCodePointLength != 0;
 
@@ -49,7 +48,7 @@ namespace System.Text.Json
 
         private void ValidateNotWithinUnfinalizedString()
         {
-            if (_tokenType == StringSegmentSentinel)
+            if (_enclosingContainer == EnclosingContainerType.PartialValue)
             {
                 ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
             }
@@ -60,7 +59,7 @@ namespace System.Text.Json
 
         private void ValidateWritingValue()
         {
-            if (CannotWriteValue)
+            if (!CanWriteValue)
             {
                 OnValidateWritingValueFailed();
             }
@@ -72,7 +71,7 @@ namespace System.Text.Json
         {
             Debug.Assert(!_options.SkipValidation);
 
-            if (_tokenType == StringSegmentSentinel)
+            if (_enclosingContainer == EnclosingContainerType.PartialValue)
             {
                 ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
             }

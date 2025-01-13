@@ -110,13 +110,13 @@ namespace System.Text.Json
             }
             else
             {
-                inObject = PopFromArray();
+                inObject = PeekInArray();
             }
             return inObject;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool PopFromArray()
+        private readonly bool PeekInArray()
         {
             int index = _currentDepth - AllocationFreeMaxDepth - 1;
             Debug.Assert(_array != null);
@@ -128,6 +128,8 @@ namespace System.Text.Json
 
             return (_array[elementIndex] & (1 << extraBits)) != 0;
         }
+
+        public readonly bool Peek() => _currentDepth <= AllocationFreeMaxDepth ? (_allocationFreeContainer & 1) != 0 : PeekInArray();
 
         private void DoubleArray(int minSize)
         {

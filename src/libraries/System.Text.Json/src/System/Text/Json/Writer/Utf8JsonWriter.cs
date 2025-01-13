@@ -36,9 +36,6 @@ namespace System.Text.Json
         private const int DefaultGrowthSize = 4096;
         private const int InitialGrowthSize = 256;
 
-        // A special value for JsonTokenType that lets the writer keep track of string segments.
-        private const JsonTokenType StringSegmentSentinel = (JsonTokenType)0b0010_0000;
-
         // Masks and flags for the length and encoding of the partial code point
         private const byte PartialCodePointLengthMask =         0b000_000_11;
         private const byte PartialCodePointEncodingMask =       0b000_111_00;
@@ -657,7 +654,7 @@ namespace System.Text.Json
         private void ValidateStart()
         {
             // Note that Start[Array|Object] indicates the start of a value, so the same check can be used.
-            if (CannotWriteValue)
+            if (!CanWriteValue)
             {
                 OnValidateStartFailed();
             }
@@ -668,7 +665,7 @@ namespace System.Text.Json
         private void OnValidateStartFailed()
         {
             // Make sure a new object or array is not attempted within an unfinalized string.
-            if (_tokenType == StringSegmentSentinel)
+            if (_enclosingContainer == EnclosingContainerType.PartialValue)
             {
                 ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
             }
@@ -1097,14 +1094,13 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ValidateEnd(byte token)
         {
-            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName || _tokenType == StringSegmentSentinel)
+            if (_tokenType == JsonTokenType.PropertyName)
                 ThrowInvalidOperationException_MismatchedObjectArray(token);
 
             if (token == JsonConstants.CloseBracket)
             {
                 if (_enclosingContainer != EnclosingContainerType.Array)
                 {
-                    Debug.Assert(_tokenType != JsonTokenType.None);
                     ThrowInvalidOperationException_MismatchedObjectArray(token);
                 }
             }
@@ -1297,7 +1293,7 @@ namespace System.Text.Json
             None = 0b0000_0000,
 
             /// <summary>
-            /// JSON object. Note that this is the same value as JsonTokenType.PropertyName. See <see cref="CannotWriteValue"/> for more details.
+            /// JSON object. Note that this is the same value as JsonTokenType.PropertyName. See <see cref="CanWriteValue"/> for more details.
             /// </summary>
             Object = 0b0000_0101,
 
@@ -1305,6 +1301,11 @@ namespace System.Text.Json
             /// JSON array
             /// </summary>
             Array = 0b0001_0000,
+
+            /// <summary>
+            /// Partial value (currently only string value segment)
+            /// </summary>
+            PartialValue = 0b0010_0000,
         }
     }
 }

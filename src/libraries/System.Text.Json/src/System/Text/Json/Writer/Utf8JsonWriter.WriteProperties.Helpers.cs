@@ -37,7 +37,7 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
-                if (_enclosingContainer != EnclosingContainerType.Object || _tokenType == JsonTokenType.PropertyName || _tokenType == StringSegmentSentinel)
+                if (_enclosingContainer != EnclosingContainerType.Object || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
                     OnValidateWritingPropertyFailed();
@@ -50,7 +50,7 @@ namespace System.Text.Json
         {
             if (!_options.SkipValidation)
             {
-                if (_enclosingContainer != EnclosingContainerType.Object || _tokenType == JsonTokenType.PropertyName || _tokenType == StringSegmentSentinel)
+                if (_enclosingContainer != EnclosingContainerType.Object || _tokenType == JsonTokenType.PropertyName)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
                     OnValidateWritingPropertyFailed();
@@ -63,13 +63,13 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void OnValidateWritingPropertyFailed()
         {
-            if (_enclosingContainer != EnclosingContainerType.Object || _tokenType == JsonTokenType.PropertyName)
+            if (_enclosingContainer == EnclosingContainerType.PartialValue)
             {
-                ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray);
+                ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
             }
 
-            Debug.Assert(_tokenType == StringSegmentSentinel);
-            ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
+            Debug.Assert(_enclosingContainer != EnclosingContainerType.Object || _tokenType == JsonTokenType.PropertyName);
+            ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray);
         }
 
         private void WritePropertyNameMinimized(ReadOnlySpan<byte> escapedPropertyName, byte token)
