@@ -63,13 +63,31 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Retrieves the address of object data in a <see cref="PinnedGCHandle{T}"/>.
         /// </summary>
-        /// <returns>The address of the pinned data object.</returns>
+        /// <returns>
+        /// The address of first instance field of the pinned object,
+        /// or <see langword="null"/> if the handle doesn't point to any object.
+        /// </returns>
+        /// <remarks>
+        /// <para>
+        /// This method is intended to be used with types other than array or <see cref="string"/>.
+        /// For array or <see cref="string"/>, use <see cref="GCHandleExtensions.GetAddressOfArrayData{T}(PinnedGCHandle{T[]})"/>
+        /// or <see cref="GCHandleExtensions.GetAddressOfStringData(PinnedGCHandle{string})"/> instead.
+        /// </para>
+        /// <para>
+        /// This method should only be used for blittable types. The layout of non-blittable types is undefined for interop.
+        /// </para>
+        /// </remarks>
         [CLSCompliant(false)]
         public readonly unsafe void* GetAddressOfObjectData()
         {
-            IntPtr handle = _handle;
-            GCHandle.CheckUninitialized(handle);
-            return GCHandle.AddrOfPinnedObjectFromHandle(handle);
+            object? target = Target;
+            if (target is null)
+            {
+                return null;
+            }
+
+            // Unsafe.AsPointer is safe since object is pinned.
+            return Unsafe.AsPointer(ref target.GetRawData());
         }
 
         /// <summary>

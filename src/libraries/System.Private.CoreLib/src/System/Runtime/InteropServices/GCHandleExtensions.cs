@@ -14,9 +14,13 @@ namespace System.Runtime.InteropServices
         // PinnedGCHandles with correct type.
 
         /// <summary>
-        /// Retrieves the address of string data in a <see cref="PinnedGCHandle{T}"/> of array.
+        /// Retrieves the address of array data in <paramref name="handle"/>.
         /// </summary>
-        /// <returns>The address of the pinned array.</returns>
+        /// <param name="handle">The handle to retrieve pointer from.</param>
+        /// <returns>
+        /// The address of 0th array element the pinned array,
+        /// or <see langword="null"/> if the handle doesn't point to any object.
+        /// </returns>
         [CLSCompliant(false)]
         public static unsafe T* GetAddressOfArrayData<T>(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
@@ -32,9 +36,13 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Retrieves the address of string data in a <see cref="PinnedGCHandle{T}"/> of <see cref="string"/>.
+        /// Retrieves the address string data in <paramref name="handle"/>.
         /// </summary>
-        /// <returns>The address of the pinned <see cref="string"/>.</returns>
+        /// <param name="handle">The handle to retrieve pointer from.</param>
+        /// <returns>
+        /// The address of 0th character of the pinned <see cref="string"/>,
+        /// or <see langword="null"/> if the handle doesn't point to any object.
+        /// </returns>
         [CLSCompliant(false)]
         public static unsafe char* GetAddressOfStringData(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>

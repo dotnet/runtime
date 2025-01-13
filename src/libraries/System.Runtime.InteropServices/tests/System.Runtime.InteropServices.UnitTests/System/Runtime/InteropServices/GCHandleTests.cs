@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.Tests
                 {
                     Assert.Equal((IntPtr)ptr, handle.AddrOfPinnedObject());
                     using var handleOfString = new PinnedGCHandle<string>(str);
-                    Assert.Equal((IntPtr)ptr, (IntPtr)handleOfString.GetAddressOfObjectData());
+                    Assert.NotEqual((IntPtr)ptr, (IntPtr)handleOfString.GetAddressOfObjectData());
                     Assert.Equal((IntPtr)ptr, (IntPtr)handleOfString.GetAddressOfStringData());
                 }
                 finally
@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.Tests
                 {
                     Assert.Equal((IntPtr)ptr, handle.AddrOfPinnedObject());
                     using var handleOfArray = new PinnedGCHandle<int[]>(array);
-                    Assert.Equal((IntPtr)ptr, (IntPtr)handleOfArray.GetAddressOfObjectData());
+                    Assert.NotEqual((IntPtr)ptr, (IntPtr)handleOfArray.GetAddressOfObjectData());
                     Assert.Equal((IntPtr)ptr, (IntPtr)handleOfArray.GetAddressOfArrayData());
                 }
                 finally

@@ -119,18 +119,11 @@ namespace System.Runtime.InteropServices
             }
 
             // Get the address.
-            unsafe
-            {
-                return (IntPtr)AddrOfPinnedObjectFromHandle(GetHandleValue(handle));
-            }
-        }
 
-        internal static unsafe void* AddrOfPinnedObjectFromHandle(IntPtr handle)
-        {
-            object? target = InternalGet(handle);
+            object? target = InternalGet(GetHandleValue(handle));
             if (target is null)
             {
-                return null;
+                return default;
             }
 
             unsafe
@@ -140,14 +133,14 @@ namespace System.Runtime.InteropServices
                 {
                     if (target.GetType() == typeof(string))
                     {
-                        return Unsafe.AsPointer(ref Unsafe.As<string>(target).GetRawStringData());
+                        return (IntPtr)Unsafe.AsPointer(ref Unsafe.As<string>(target).GetRawStringData());
                     }
 
                     Debug.Assert(target is Array);
-                    return Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array>(target)));
+                    return (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<Array>(target)));
                 }
 
-                return Unsafe.AsPointer(ref target.GetRawData());
+                return (IntPtr)Unsafe.AsPointer(ref target.GetRawData());
             }
         }
 
