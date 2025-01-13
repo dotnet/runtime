@@ -2403,13 +2403,28 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_ExtractMostSignificantBits: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+
+		if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
+			// which live on System.Numerics.Vector
+
+			arg0_type = MONO_TYPE_R4;
+		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
+		}
 #ifdef TARGET_WASM
 		if (type_enum_is_float (arg0_type))
 			return NULL;
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		MonoClass* arg_class;
 		if (type_enum_is_float (arg0_type)) {
 			MonoClass* cast_class;
 			if (arg0_type == MONO_TYPE_R4) {
@@ -2424,10 +2439,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		}
 
-		int size = mono_class_value_size (arg_class, NULL);
+		size = mono_class_value_size (arg_class, NULL);
+
 		if (size != 16) {
 			// FIXME: Add support for Vector64 on arm64 https://github.com/dotnet/runtime/issues/90402
-			// also for Vector2 and Vector3 which can be encountered
 			return NULL;
 		}
 
@@ -2529,6 +2544,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		int size = mono_class_value_size (arg_class, NULL);
 		elems = size / esize;
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
+		}
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
@@ -3142,6 +3162,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_ToScalar: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+
+		if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			// This exists to handle the static extension methods for Vector2/3/4, Quaternion, and Plane
+			// which live on System.Numerics.Vector
+
+			arg0_type = MONO_TYPE_R4;
+		}
+
+		int size = mono_class_value_size (arg_class, NULL);
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
+		}
+
 		int extract_op = type_to_extract_op (arg0_type);
 		return emit_simd_ins_for_sig (cfg, klass, extract_op, 0, arg0_type, fsig, args);
 	}
@@ -3171,9 +3208,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			arg0_type = MONO_TYPE_R4;
 			esize = 4;
 		}
-		
+
 		int size = mono_class_value_size (arg_class, NULL);
 		elems = size / esize;
+
+		if (size != 16) {
+			// FIXME: Add support for Vector2/3
+			return NULL;
+		}
 
 		if (args [1]->opcode == OP_ICONST) {
 			// If the index is provably a constant, we can generate vastly better code.
