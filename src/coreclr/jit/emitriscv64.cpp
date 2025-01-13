@@ -141,10 +141,59 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
-    return (ins <= INS_remuw) && (ins >= INS_mov) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
-                   (CodeGenInterface::instInfo[ins] & ST) == 0
-               ? true
-               : false;
+    if (ins == INS_nop || ins == INS_j) // pseudos with 'zero' destination register
+        return false;
+
+    if (ins == INS_lea)
+        return true;
+
+    code_t code = emitInsCode(ins);
+    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
+    code_t majorOpcode = (code >> 2) & 0b11111;
+    assert((majorOpcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
+    switch (majorOpcode)
+    {
+        // Opcodes with no destination register or a floating-point destination register
+        case 0b00001: // LOAD-FP
+        case 0b01000: // STORE
+        case 0b01001: // STORE-FP
+        case 0b00011: // MISC-MEM
+        case 0b10000: // MADD
+        case 0b10001: // MSUB
+        case 0b10010: // NMSUB
+        case 0b10011: // NMADD
+        case 0b11000: // BRANCH
+        case 0b11100: // SYSTEM
+            return false;
+
+        case 0b10100: // OP-FP
+        {
+            // Lowest 2 bits of funct7 distinguish single, double, half, and quad floats; we don't care
+            code_t funct7 = code >> (25 + 2);
+            switch (funct7)
+            {
+                case 0b10100: // comparisons: feq, flt, fle
+                case 0b11100: // fmv to integer or fclass
+                case 0b11000: // fcvt to integer
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        case 0b00010: // custom-0
+        case 0b01010: // custom-1
+        case 0b10101: // OP-V
+        case 0b10110: // custom-2/rv128
+        case 0b11110: // custom-3/rv128
+        case 0b11010: // reserved
+        case 0b11101: // reserved
+            assert(!"unsupported major opcode");
+            FALLTHROUGH;
+
+        default: // all other opcodes write to a general purpose destination register
+            return true;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -200,9 +249,10 @@ inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
     };
     // clang-format on
 
+    assert(ins < ArrLen(insCode));
     code = insCode[ins];
 
-    assert((code != BAD_CODE));
+    assert(code != BAD_CODE);
 
     return code;
 }

@@ -381,7 +381,7 @@ namespace System.Text.Json
                 byte[] newDatabase = new byte[length];
                 _data.AsSpan(startIndex, length).CopyTo(newDatabase);
 
-                Span<int> newDbInts = MemoryMarshal.Cast<byte, int>(newDatabase);
+                Span<int> newDbInts = MemoryMarshal.Cast<byte, int>(newDatabase.AsSpan());
                 int locationOffset = newDbInts[0];
 
                 // Need to nudge one forward to account for the hidden quote on the string.

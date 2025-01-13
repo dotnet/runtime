@@ -171,7 +171,7 @@ namespace LibraryImportGenerator.UnitTests
                     public nint ToUnmanaged() => default;
                     public void Free() {}
                     public Span<T> GetUnmanagedValuesDestination() => default;
-                
+
                     public ReadOnlySpan<nint> GetManagedValuesSource()
                     {
                         throw new NotImplementedException();
@@ -602,7 +602,6 @@ namespace LibraryImportGenerator.UnitTests
                     public void Free() {}
                     public ReadOnlySpan<byte> GetManagedValuesSource() => default;
                     public Span<T> GetUnmanagedValuesDestination() => default;
-
                     public static int BufferSize
                     {
                         get

@@ -19,7 +19,11 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1340", control.Type);
 
-            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 1 } : new byte[] { 48, 3, 2, 1, 1 };
+#if NETFRAMEWORK
+            var expected = new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 1 };
+#else
+            var expected = new byte[] { 48, 3, 2, 1, 1 };
+#endif
             Assert.Equal(expected, control.GetValue());
         }
 
@@ -32,7 +36,11 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.True(control.ServerSide);
             Assert.Equal("1.2.840.113556.1.4.1340", control.Type);
 
-            var expected = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) ? new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 } : new byte[] { 48, 3, 2, 1, 2 };
+#if NETFRAMEWORK
+            var expected = new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 2 };
+#else
+            var expected = new byte[] { 48, 3, 2, 1, 2 };
+#endif
             Assert.Equal(expected, control.GetValue());
         }
 
