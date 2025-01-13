@@ -20,7 +20,6 @@ Wasm.Build.Tests.Blazor.IcuShardingTests
 Wasm.Build.Tests.Blazor.SignalRClientTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
-Wasm.Build.Tests.HybridGlobalizationTests
 Wasm.Build.Tests.IcuShardingTests
 Wasm.Build.Tests.IcuShardingTests2
 Wasm.Build.Tests.IcuTests
