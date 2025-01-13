@@ -67,6 +67,7 @@
 # https://github.com/github/linguist/issues/1626#issuecomment-401442069
 # this only affects the repo's language statistics
 *.h linguist-language=C
+src/mono/wasm/build/** linguist-generated=false
 
 # CLR specific
 src/coreclr/pal/tests/palsuite/paltestlist.txt text eol=lf
