@@ -68,14 +68,16 @@ namespace System.Text
             return AddChar(ch, 1);
         }
 
-
         internal unsafe bool AddChar(char ch1, char ch2, int numBytes)
         {
+            if (_chars is null)
+            {
+                _charCountResult += 2;
+                return true;
+            }
+
             // Need room for 2 chars
-            // It is possible for `_chars` to be null, and in such cases, `_charEnd` will also be null.
-            // Performing `_charEnd - 1` will result in an underflow, but this is acceptable because the operation is intended to count characters without storing them in any buffer,
-            // and we want to avoid throwing an exception in this scenario.
-            if (_chars >= _charEnd - 1)
+            if (_charEnd - _chars < 2)
             {
                 // Throw maybe
                 _bytes -= numBytes;                                        // Didn't encode these bytes
