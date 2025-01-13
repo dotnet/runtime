@@ -1110,13 +1110,11 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 #endif
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
 
-#if !defined(HOST_ARM64)
         // StompWriteBarrierResize does not necessarily bash g_ephemeral_low
-        // usages, so we must do so here. This is particularly true on x86,
+        // usages, so we must do so here. This is particularly true on x86/Arm64,
         // where StompWriteBarrierResize will not bash g_ephemeral_low when
         // called with the parameters (true, false), as it is above.
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(true);
-#endif
         break;
 
     case WriteBarrierOp::SwitchToWriteWatch:

@@ -651,6 +651,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/AsmHelpers.asm
         ${ARCH_SOURCES_DIR}/CallDescrWorkerARM64.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
@@ -705,6 +706,7 @@ else(CLR_CMAKE_TARGET_WIN32)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkerarm64.S
+            ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.S
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
@@ -750,6 +752,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         exceptionhandling.cpp
         gcinfodecoder.cpp
         jitinterfacegen.cpp
+        writebarriermanager.cpp
     )
 
     set(VM_HEADERS_WKS_ARCH
@@ -816,6 +819,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
         gcinfodecoder.cpp
+        writebarriermanager.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)

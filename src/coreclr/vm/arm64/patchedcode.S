@@ -241,29 +241,41 @@ WRITE_BARRIER_END JIT_WriteBarrier
 WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
 LOCAL_LABEL(wbs_begin):
 LOCAL_LABEL(wbs_card_table):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardTable
     .quad 0
 LOCAL_LABEL(wbs_card_bundle_table):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_CardBundleTable
     .quad 0
 LOCAL_LABEL(wbs_sw_ww_table):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_WriteWatchTable
     .quad 0
 LOCAL_LABEL(wbs_ephemeral_low):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_Lower
     .quad 0
 LOCAL_LABEL(wbs_ephemeral_high):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_Upper
     .quad 0
 LOCAL_LABEL(wbs_lowest_address):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_LowestAddress
     .quad 0
 LOCAL_LABEL(wbs_highest_address):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_HighestAddress
     .quad 0
 LOCAL_LABEL(wbs_region_to_generation_table):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionToGeneration
     .quad 0
 LOCAL_LABEL(wbs_region_shr):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_RegionShr
     .word 0
 LOCAL_LABEL(wbs_region_use_bitwise_write_barrier):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_UseBitwiseWriteBarrier
     .word 0
 #ifdef WRITE_BARRIER_CHECK
 LOCAL_LABEL(wbs_GCShadow):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadow
     .quad 0
 LOCAL_LABEL(wbs_GCShadowEnd):
+PATCH_LABEL JIT_WriteBarrier_Patch_Label_GCShadowEnd
     .quad 0
 #endif
 WRITE_BARRIER_END JIT_WriteBarrier_Table

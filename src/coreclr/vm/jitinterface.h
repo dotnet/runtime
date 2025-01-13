@@ -242,7 +242,7 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
 
-#ifdef TARGET_AMD64
+// #ifdef TARGET_AMD64
 
 
 class WriteBarrierManager
@@ -286,7 +286,8 @@ protected:
     size_t GetSpecificWriteBarrierSize(WriteBarrierType writeBarrier);
     PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
     PCODE  GetCurrentWriteBarrierCode();
-    int ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
+    int    ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
+    void   UpdatePatchLocations();
     bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, bool bUseBitwiseWriteBarrier, WriteBarrierType* pNewWriteBarrierType);
 
 private:
@@ -302,9 +303,20 @@ private:
     PBYTE   m_pRegionToGenTableImmediate;   //         |          |     | WRITE_WATCH | REGION
     PBYTE   m_pRegionShrDest;               //         |          |     | WRITE_WATCH | REGION
     PBYTE   m_pRegionShrSrc;                //         |          |     | WRITE_WATCH | RETION
+
+#if defined(TARGET_ARM64)
+    PBYTE   m_pRegionUseBitwiseWriteBarrier;
+    PBYTE   m_lowestAddress;
+    PBYTE   m_highestAddress;
+#if defined(WRITE_BARRIER_CHECK)
+    PBYTE   m_pGCShadow;
+    PBYTE   m_pGCShadowEnd;
+#endif // WRITE_BARRIER_CHECK
+#endif // TARGET_AMD64
+
 };
 
-#endif // TARGET_AMD64
+// #endif // TARGET_AMD64
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 

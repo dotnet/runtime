@@ -14,6 +14,7 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
+extern WriteBarrierManager g_WriteBarrierManager;
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -860,37 +861,14 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 #endif // FEATURE_COMINTEROP
 
 #if !defined(DACCESS_COMPILE)
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
-
-extern "C" void STDCALL JIT_PatchedCodeStart();
-extern "C" void STDCALL JIT_PatchedCodeLast();
-
-static void UpdateWriteBarrierState()
-{
-    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-    ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
-    if (IsWriteBarrierCopyEnabled())
-    {
-        writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
-    }
-
-    // Skip ephemeral checks for regionless server GC
-    bool skipEphemeralCheck = false;
-    if (GCHeapUtilities::IsServerHeap() && g_region_to_generation_table == nullptr)
-    {
-        skipEphemeralCheck = true;
-    }
-
-    JIT_UpdateWriteBarrierState(skipEphemeralCheck, writeBarrierCodeStartRW - writeBarrierCodeStart);
-}
 
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
+
+    g_WriteBarrierManager.Initialize();
 
     // Allocation helpers, faster but non-logging
     if (!((TrackAllocationsEnabled()) ||
@@ -911,13 +889,8 @@ void InitJITHelpers1()
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }
     }
-
-    UpdateWriteBarrierState();
 }
 
-
-#else
-void UpdateWriteBarrierState() {}
 #endif // !defined(DACCESS_COMPILE)
 
 #ifdef TARGET_WINDOWS
@@ -1075,36 +1048,57 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void FlushWriteBarrierInstructionCache()
+void WriteBarrierManager::Validate()
 {
-    // this wouldn't be called in arm64, just to comply with gchelpers.h
+  // Nothing to do
 }
 
+void WriteBarrierManager::UpdatePatchLocations()
+{
+  // Nothing to do
+}
+
+// This function bashes the super fast amd64 version of the JIT_WriteBarrier
+// helper.  It should be called by the GC whenever the ephermeral region
+// bounds get changed, but still remain on the top of the GC Heap.
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    UpdateWriteBarrierState();
-    return SWB_PASS;
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
 }
 
+// This function bashes the super fast amd64 versions of the JIT_WriteBarrier
+// helpers.  It should be called by the GC whenever the ephermeral region gets moved
+// from being at the top of the GC Heap, and/or when the cards table gets moved.
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    UpdateWriteBarrierState();
-    return SWB_PASS;
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+}
+
+void FlushWriteBarrierInstructionCache()
+{
+    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    UpdateWriteBarrierState();
-    return SWB_PASS;
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
 }
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    UpdateWriteBarrierState();
-    return SWB_PASS;
+    WRAPPER_NO_CONTRACT;
+
+    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
