@@ -45,4 +45,24 @@ internal static class Assert
             throw new Exception($"Expected={expected[diffIndex]} Actual={actual[diffIndex]} at index {diffIndex}");
         }
     }
+
+    public static TException Throws<TException, TState>(Action<TState> action, TState state)
+        where TException : Exception
+        where TState : allows ref struct
+    {
+        try
+        {
+            action(state);
+        }
+        catch (TException ex)
+        {
+            return ex;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Expected exception of type {typeof(TException).Name} but got {ex.GetType().Name}");
+        }
+
+        throw new Exception($"Expected exception of type {typeof(TException).Name} but no exception was thrown");
+    }
 }

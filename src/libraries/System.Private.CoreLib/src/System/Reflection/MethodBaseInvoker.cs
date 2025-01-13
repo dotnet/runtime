@@ -62,7 +62,7 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeWithOneArg(
+        internal object? InvokeWithOneArg(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -108,7 +108,7 @@ namespace System.Reflection
             return ret;
         }
 
-        internal unsafe object? InvokeWithFewArgs(
+        internal object? InvokeWithFewArgs(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,

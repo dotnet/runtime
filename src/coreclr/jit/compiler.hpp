@@ -1354,6 +1354,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
+    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -2807,6 +2808,16 @@ inline
     {
         *pBaseReg = REG_SPBASE;
     }
+#elif defined(TARGET_ARM64)
+    if (FPbased && !codeGen->isFramePointerRequired() && varOffset < 0 && !opts.IsOSR() &&
+        lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT && codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        int spVarOffset = varOffset + codeGen->genSPtoFPdelta();
+        JITDUMP("lvaFrameAddress optimization for V%02u: [FP-%d] -> [SP+%d]\n", varNum, -varOffset, spVarOffset);
+        FPbased   = false;
+        varOffset = spVarOffset;
+    }
+    *pFPbased = FPbased;
 #else
     *pFPbased = FPbased;
 #endif

@@ -66,6 +66,7 @@
     <Compile Include="System\Linq\Iterator.cs" />
     <Compile Include="System\Linq\Join.cs" />
     <Compile Include="System\Linq\Last.cs" />
+    <Compile Include="System\Linq\LeftJoin.cs" />
     <Compile Include="System\Linq\Lookup.cs" />
     <Compile Include="System\Linq\Max.cs" />
     <Compile Include="System\Linq\MaxMin.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="System\Linq\Range.cs" />
     <Compile Include="System\Linq\Repeat.cs" />
     <Compile Include="System\Linq\Reverse.cs" />
+    <Compile Include="System\Linq\RightJoin.cs" />
     <Compile Include="System\Linq\SegmentedArrayBuilder.cs" />
     <Compile Include="System\Linq\Select.cs" />
     <Compile Include="System\Linq\SelectMany.cs" />
