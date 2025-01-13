@@ -275,9 +275,8 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt32((uint)BitArithmetic.Align(Header.ComputeSizeOfPEHeaders(sections.Length), Header.FileAlignment));
 
             // Checksum:
-            // Shall be zero for strong name signing.
+            // Shall be zero for strong name signing, already zeroed by ReserveBytes.
             _lazyChecksum = builder.ReserveBytes(sizeof(uint));
-            new BlobWriter(_lazyChecksum).WriteUInt32(0);
 
             builder.WriteUInt16((ushort)Header.Subsystem);
             builder.WriteUInt16((ushort)Header.DllCharacteristics);

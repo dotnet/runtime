@@ -716,6 +716,7 @@ namespace System.Reflection.Metadata
             }
 
             int start = ReserveBytesImpl(byteCount);
+            Array.Clear(_buffer, start, byteCount);
             return new Blob(_buffer, start, byteCount);
         }
 
