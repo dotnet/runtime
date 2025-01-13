@@ -504,7 +504,7 @@ namespace System.StubHelpers
 
     internal sealed class HandleMarshaler
     {
-        internal static unsafe IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
+        internal static IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (Unsafe.IsNullRef(ref cleanupWorkList))
             {
@@ -516,12 +516,12 @@ namespace System.StubHelpers
             return StubHelpers.AddToCleanupList(ref cleanupWorkList, handle);
         }
 
-        internal static unsafe void ThrowSafeHandleFieldChanged()
+        internal static void ThrowSafeHandleFieldChanged()
         {
             throw new NotSupportedException(SR.Interop_Marshal_CannotCreateSafeHandleField);
         }
 
-        internal static unsafe void ThrowCriticalHandleFieldChanged()
+        internal static void ThrowCriticalHandleFieldChanged()
         {
             throw new NotSupportedException(SR.Interop_Marshal_CannotCreateCriticalHandleField);
         }
@@ -797,22 +797,24 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
-        internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
             if (pManagedHome is null)
             {
+                *pNativeHome = IntPtr.Zero;
                 return;
             }
 
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
         }
 
-        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
             if (*pNativeHome == IntPtr.Zero)
             {
+                pManagedHome = null;
                 return;
             }
 

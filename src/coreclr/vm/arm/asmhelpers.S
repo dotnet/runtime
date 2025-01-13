@@ -778,7 +778,6 @@ DelayLoad_MethodCall:
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     bx r12
 
     NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT

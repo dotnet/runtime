@@ -174,10 +174,6 @@ public:
     void dmpGetJitFlags(DWORD key, DD value);
     DWORD repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
-    void recGetJitTimeLogFilename(LPCWSTR tempFileName);
-    void dmpGetJitTimeLogFilename(DWORD key, DWORD value);
-    LPCWSTR repGetJitTimeLogFilename();
-
     void recCanInline(CORINFO_METHOD_HANDLE callerHnd,
                       CORINFO_METHOD_HANDLE calleeHnd,
                       CorInfoInline         response,
@@ -459,6 +455,15 @@ public:
     void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
     void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
     CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
+
+    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, 
+                                 CORINFO_METHOD_HANDLE methodHandle,
+                                 CORINFO_CLASS_HANDLE classHandle,
+                                 CORINFO_METHOD_HANDLE result);
+    void dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value);
+    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, 
+                                                  CORINFO_METHOD_HANDLE* methodHandle, 
+                                                  CORINFO_CLASS_HANDLE* classHandle);
 
     void recGetDefaultComparerClass(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
     void dmpGetDefaultComparerClass(DWORDLONG key, DWORDLONG value);
@@ -809,6 +814,10 @@ public:
     void dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
+    void recGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index, CORINFO_CLASS_HANDLE result);
+    void dmpGetMethodInstantiationArgument(DLD key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, unsigned index);
+
     void recPrint(
         const char* name,
         LightWeightMap<DWORDLONG, Agnostic_PrintResult>*& map,
@@ -886,13 +895,13 @@ public:
     void dmpGetArrayOrStringLength(DWORDLONG key, DWORD value);
     int repGetArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd);
 
-    void recGetIntConfigValue(const WCHAR* name, int defaultValue, int result);
+    void recGetIntConfigValue(const char* name, int defaultValue, int result);
     void dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int value);
-    int repGetIntConfigValue(const WCHAR* name, int defaultValue);
+    int repGetIntConfigValue(const char* name, int defaultValue);
 
-    void recGetStringConfigValue(const WCHAR* name, const WCHAR* result);
+    void recGetStringConfigValue(const char* name, const char* result);
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
-    const WCHAR* repGetStringConfigValue(const WCHAR* name);
+    const char* repGetStringConfigValue(const char* name);
 
     void recGetSpecialCopyHelper(CORINFO_CLASS_HANDLE type, CORINFO_METHOD_HANDLE helper);
     void dmpGetSpecialCopyHelper(DWORDLONG key, DWORDLONG value);
@@ -1034,7 +1043,7 @@ enum mcPackets
     Packet_GetHelperFtn = 63,
     //Packet_GetInlinedCallFrameVptr = 65,
     Packet_GetArrayIntrinsicID = 66,
-    Packet_GetJitTimeLogFilename = 67,
+    //Packet_GetJitTimeLogFilename = 67,
     Packet_GetJustMyCodeHandle = 68,
     Packet_GetLocationOfThisType = 69,
     Packet_GetMethodAttribs = 70,
@@ -1192,6 +1201,8 @@ enum mcPackets
     Packet_GetSpecialCopyHelper = 224,
     Packet_GetClassAssemblyName = 225,
     Packet_GetSZArrayHelperEnumeratorClass = 226,
+    Packet_GetMethodInstantiationArgument = 227,
+    Packet_GetInstantiatedEntry = 228,
 };
 
 void SetDebugDumpVariables();

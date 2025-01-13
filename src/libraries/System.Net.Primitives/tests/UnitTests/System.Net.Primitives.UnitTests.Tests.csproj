@@ -15,6 +15,7 @@
     <DefaultReferenceExclusion Include="System.Net.Primitives" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CookieExceptionTest.cs" />
     <Compile Include="CookieInternalTest.cs" />
     <Compile Include="CookieContainerTest.cs" />
     <Compile Include="..\..\src\System\Net\CookieCollection.cs"
@@ -87,8 +88,10 @@
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs"
              Link="ProductionCode\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"
-             Link="ProductionCode\Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceLuidToIndex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs"
+             Link="Common\Interop\Windows\IpHlpApi\Interop.ConvertInterfaceNameToLuid.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>

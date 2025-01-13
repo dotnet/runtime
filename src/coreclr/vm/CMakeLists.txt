@@ -50,6 +50,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     bundle.cpp
     castcache.cpp
     callcounting.cpp
+    cdacplatformmetadata.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
@@ -301,7 +302,6 @@ set(VM_SOURCES_WKS
     comdynamic.cpp
     commodule.cpp
     comsynchronizable.cpp
-    comthreadpool.cpp
     comutilnative.cpp
     comwaithandle.cpp
     coreassemblyspec.cpp
@@ -333,7 +333,6 @@ set(VM_SOURCES_WKS
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
-    interpreter.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -401,7 +400,6 @@ set(VM_HEADERS_WKS
     comdynamic.h
     commodule.h
     comsynchronizable.h
-    comthreadpool.h
     comutilnative.h
     comwaithandle.h
     customattribute.h
@@ -432,8 +430,6 @@ set(VM_HEADERS_WKS
     interopconverter.h
     interoputil.h
     interoputil.inl
-    interpreter.h
-    interpreter.hpp
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
@@ -858,12 +854,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         gcinfodecoder.cpp
     )
 endif()
-
-if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/unixstubs.cpp
-    )
-endif(CLR_CMAKE_HOST_UNIX)
 
 set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp

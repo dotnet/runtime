@@ -3411,7 +3411,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 //------------------------------------------------------------------------
 // LowerTailCallViaJitHelper: lower a call via the tailcall JIT helper. Morph
 // has already inserted tailcall helper special arguments. This function inserts
-// actual data for some placeholders. This function is only used on x86.
+// actual data for some placeholders. This function is only used on Windows x86.
 //
 // Lower
 //      tail.call(<function args>, int numberOfOldStackArgs, int dummyNumberOfNewStackArgs, int flags, void* dummyArg)
@@ -5856,9 +5856,6 @@ void Lowering::InsertPInvokeMethodProlog()
 
     JITDUMP("======= Inserting PInvoke method prolog\n");
 
-    // The first BB must be a scratch BB in order for us to be able to safely insert the P/Invoke prolog.
-    assert(comp->fgFirstBBisScratch());
-
     LIR::Range& firstBlockRange = LIR::AsRange(comp->fgFirstBB);
 
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
@@ -6977,14 +6974,26 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             // Fold (x + c1) + c2
             while (op1->OperIs(GT_ADD) && op2->IsIntegralConst() && op1->gtGetOp2()->IsIntegralConst() &&
-                   !node->gtOverflow() && !op1->gtOverflow() && !op2->AsIntConCommon()->ImmedValNeedsReloc(comp) &&
-                   !op1->gtGetOp2()->AsIntConCommon()->ImmedValNeedsReloc(comp))
+                   !node->gtOverflow() && !op1->gtOverflow())
             {
+                GenTreeIntConCommon* cns1 = op1->gtGetOp2()->AsIntConCommon();
+                GenTreeIntConCommon* cns2 = op2->AsIntConCommon();
+
+                if (cns1->ImmedValNeedsReloc(comp) || cns2->ImmedValNeedsReloc(comp))
+                {
+                    break;
+                }
+
+                if (varTypeIsGC(cns1) || (cns1->TypeGet() != cns2->TypeGet()))
+                {
+                    break;
+                }
+
                 JITDUMP("Folding (x + c1) + c2. Before:\n");
                 DISPTREERANGE(BlockRange(), node);
 
-                int64_t c1 = op1->gtGetOp2()->AsIntConCommon()->IntegralValue();
-                int64_t c2 = op2->AsIntConCommon()->IntegralValue();
+                int64_t c1 = cns1->IntegralValue();
+                int64_t c2 = cns2->IntegralValue();
 
                 int64_t result;
                 if (genTypeSize(node) == sizeof(int64_t))
@@ -6996,10 +7005,10 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                     result = static_cast<int32_t>(c1) + static_cast<int32_t>(c2);
                 }
 
-                op2->AsIntConCommon()->SetIntegralValue(result);
+                cns2->SetIntegralValue(result);
                 node->gtOp1 = op1->gtGetOp1();
 
-                BlockRange().Remove(op1->gtGetOp2());
+                BlockRange().Remove(cns1);
                 BlockRange().Remove(op1);
 
                 op1 = node->gtGetOp1();
@@ -7841,6 +7850,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7873,9 +7887,7 @@ PhaseStatus Lowering::DoPhase()
 
         comp->fgLocalVarLiveness();
         // local var liveness can delete code, which may create empty blocks
-        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
-                                                /* doAggressiveCompaction */ false);
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
         if (modified)
         {
@@ -7893,6 +7905,84 @@ PhaseStatus Lowering::DoPhase()
     comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Lowering::MapParameterRegisterLocals:
+//   Create mappings between parameter registers and locals corresponding to
+//   them.
+//
+void Lowering::MapParameterRegisterLocals()
+{
+    comp->m_paramRegLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(comp->getAllocator(CMK_ABI));
+
+    // Create initial mappings for promotions.
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        {
+            // If not promoted, then we do not need to create any mappings.
+            // If dependently promoted then the fields are never enregistered
+            // by LSRA, so no reason to try to create any mappings.
+            continue;
+        }
+
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            // If the parameter is not passed in any registers, then there are
+            // no mappings to create.
+            continue;
+        }
+
+        // Currently we do not support promotion of split parameters, so we
+        // should not see any split parameters here.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+
+        for (int i = 0; i < lclDsc->lvFieldCnt; i++)
+        {
+            unsigned   fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
+
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
+                {
+                    // This register does not map to this field (ends before the field starts)
+                    continue;
+                }
+
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                {
+                    // This register does not map to this field (starts after the field ends)
+                    continue;
+                }
+
+                comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
+            }
+
+            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+            assert(!fieldLclDsc->lvIsParamRegTarget);
+            fieldLclDsc->lvIsParamRegTarget = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("%d parameter register to local mappings\n", comp->m_paramRegLocalMappings->Height());
+        for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
+            printf("  ");
+            mapping.RegisterSegment->Dump();
+            printf(" -> V%02u\n", mapping.LclNum);
+        }
+    }
+#endif
 }
 
 #ifdef DEBUG
@@ -8747,19 +8837,17 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         BlockRange().Remove(dataPlaceholder);
     }
 
-// Wrap with memory barriers on weak memory models
-// if the block store was volatile
-#ifndef TARGET_XARCH
+    // Wrap with memory barriers if the block store was volatile
+    // Note: on XARCH these half-barriers only have optimization inhibiting effects, and do not emit anything
     if (isVolatile)
     {
-        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
-        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
+        GenTree* firstBarrier  = comp->gtNewMemoryBarrier(BARRIER_STORE_ONLY);
+        GenTree* secondBarrier = comp->gtNewMemoryBarrier(BARRIER_LOAD_ONLY);
         BlockRange().InsertBefore(call, firstBarrier);
         BlockRange().InsertAfter(call, secondBarrier);
         LowerNode(firstBarrier);
         LowerNode(secondBarrier);
     }
-#endif
 }
 
 //------------------------------------------------------------------------

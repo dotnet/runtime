@@ -1354,6 +1354,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtLIRFlags = 0;
 #ifdef DEBUG
     gtDebugFlags = GTF_DEBUG_NONE;
+    gtMorphCount = 0;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
     ClearAssertion();
@@ -2807,6 +2808,16 @@ inline
     {
         *pBaseReg = REG_SPBASE;
     }
+#elif defined(TARGET_ARM64)
+    if (FPbased && !codeGen->isFramePointerRequired() && varOffset < 0 && !opts.IsOSR() &&
+        lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT && codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        int spVarOffset = varOffset + codeGen->genSPtoFPdelta();
+        JITDUMP("lvaFrameAddress optimization for V%02u: [FP-%d] -> [SP+%d]\n", varNum, -varOffset, spVarOffset);
+        FPbased   = false;
+        varOffset = spVarOffset;
+    }
+    *pFPbased = FPbased;
 #else
     *pFPbased = FPbased;
 #endif
@@ -3602,7 +3613,7 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
 #elif defined(TARGET_RISCV64)
-    return regNum - REG_FLTARG_0;
+    return regNum - REG_FA0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
@@ -3934,7 +3945,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
 
         (helper >= CORINFO_HELP_GET_GCSTATIC_BASE &&
-         helper <= CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
+         helper <= CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT)
 #ifdef FEATURE_READYTORUN
         || helper == CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE || helper == CORINFO_HELP_READYTORUN_GCSTATIC_BASE ||
         helper == CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE || helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE ||
@@ -4365,8 +4376,12 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
@@ -5121,60 +5136,6 @@ template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 {
     return VisitLoopBlocksReversePostOrder(func);
-}
-
-//------------------------------------------------------------------------------
-// FlowGraphNaturalLoop::VisitLoopBlocksLexical: Visit the loop's blocks in
-// lexical order.
-//
-// Type parameters:
-//   TFunc - Callback functor type
-//
-// Arguments:
-//   func - Callback functor that takes a BasicBlock* and returns a
-//   BasicBlockVisit.
-//
-// Returns:
-//    BasicBlockVisit that indicated whether the visit was aborted by the
-//    callback or whether all blocks were visited.
-//
-template <typename TFunc>
-BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
-{
-    BasicBlock* top           = m_header;
-    unsigned    numLoopBlocks = 0;
-    VisitLoopBlocks([&](BasicBlock* block) {
-        if (block->bbNum < top->bbNum)
-        {
-            top = block;
-        }
-
-        numLoopBlocks++;
-        return BasicBlockVisit::Continue;
-    });
-
-    INDEBUG(BasicBlock* prev = nullptr);
-    BasicBlock* cur = top;
-    while (numLoopBlocks > 0)
-    {
-        // If we run out of blocks the blocks aren't sequential.
-        assert(cur != nullptr);
-
-        if (ContainsBlock(cur))
-        {
-            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
-
-            if (func(cur) == BasicBlockVisit::Abort)
-                return BasicBlockVisit::Abort;
-
-            INDEBUG(prev = cur);
-            numLoopBlocks--;
-        }
-
-        cur = cur->Next();
-    }
-
-    return BasicBlockVisit::Continue;
 }
 
 //------------------------------------------------------------------------------

@@ -21,10 +21,7 @@
 #include "array.h"
 #include "ecall.h"
 #include "virtualcallstub.h"
-
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif
+#include "../debug/ee/debugger.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
@@ -821,37 +818,20 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     {
         SString namespaceOrClassName, methodName, methodSignature;
 
-        // Methods that may be interpreted defer this notification until it is certain
-        // we are jitting and not interpreting in CompileMethodWithEtwWrapper.
-        // Some further refactoring could consolidate the notification to always
-        // occur at the point the interpreter does it, but it might even better
-        // to fix the issues that cause us to avoid generating jit notifications
-        // for interpreted methods in the first place. The interpreter does generate
-        // a small stub of native code but no native-IL mapping.
-#ifndef FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
-#endif
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
 
-        // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-        if (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL)
-#endif
-        {
-            // Fire an ETW event to mark the end of JIT'ing
-            ETW::MethodLog::MethodJitted(this,
-                &namespaceOrClassName,
-                &methodName,
-                &methodSignature,
-                pCode,
-                pConfig);
-        }
-
+        ETW::MethodLog::MethodJitted(this,
+            &namespaceOrClassName,
+            &methodName,
+            &methodSignature,
+            pCode,
+            pConfig);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -896,28 +876,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_INTERPRETER
-    bool isJittedMethod = (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL);
-#endif
-
-    // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
 #ifdef FEATURE_PERFMAP
-        // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+    // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+    PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
 #endif
-    }
 
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
-        // The notification will only occur if someone has registered for this method.
-        DACNotifyCompilationFinished(this, pCode);
-    }
+    // The notification will only occur if someone has registered for this method.
+    DACNotifyCompilationFinished(this, pCode);
 
     return pCode;
 }
@@ -1497,7 +1462,7 @@ namespace
 
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
-            state.IgnoreCustomModifiers = false;
+            state.IgnoreCustomModifiers = true;
             if (!DoesFieldMatchUnsafeAccessorDeclaration(cxt, pField, state))
                 continue;
 
@@ -2112,11 +2077,11 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
     // Any code build stages that do just in time configuration should
     // be configured now
 #ifdef FEATURE_REJIT
-    if (m_ilCodeVersion.GetRejitState() != ILCodeVersion::kStateActive)
+    if (m_ilCodeVersion.GetRejitState() != RejitFlags::kStateActive)
     {
         ReJitManager::ConfigureILCodeVersion(m_ilCodeVersion);
     }
-    _ASSERTE(m_ilCodeVersion.GetRejitState() == ILCodeVersion::kStateActive);
+    _ASSERTE(m_ilCodeVersion.GetRejitState() == RejitFlags::kStateActive);
 #endif
 
     return S_OK;
@@ -3392,7 +3357,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
-
+    if (g_externalMethodFixupTraceActiveCount > 0)
+    {
+        g_pDebugger->ExternalMethodFixupNextStep(pCode);
+    }
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -3492,6 +3460,14 @@ static PCODE getHelperForSharedStatic(Module * pModule, CORCOMPILE_FIXUP_BLOB_KI
 
     switch(helpFunc)
     {
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
+        {
+            pMT->EnsureTlsIndexAllocated();
+            pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo()->NonGCTlsIndex.GetIndexOffset();
+            break;
+        }
+
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:

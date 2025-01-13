@@ -5756,8 +5756,11 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
  * Returns null, if the optimization cannot be performed.
  */
 static MonoMethod*
-try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoClass *klass)
+try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoType *param_type)
 {
+	g_assert(param_type);
+	MonoClass *klass = mono_class_from_mono_type_internal (param_type);
+
 	// TODO: relax the _is_def requirement?
 	if (cfg->compile_aot || cfg->compile_llvm || !klass || !mono_class_is_def (klass))
 		return NULL;
@@ -6259,6 +6262,9 @@ method_make_alwaysthrow_typeloadfailure (MonoCompile* cfg, MonoClass* klass)
 	mono_link_bblock (cfg, bb, cfg->bb_exit);
 
 	cfg->disable_inline = TRUE;
+
+	for (guint i = 0; i < cfg->header->num_clauses; i++)
+		cfg->clause_is_dead [i] = TRUE;
 }
 
 typedef union _MonoOpcodeParameter {
@@ -7255,7 +7261,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			*sp++ = ins;
 			/*if (!m_method_is_icall (method)) */{
-				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types [n]->data.klass);
+				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types [n]);
 				if (callvirt_target)
 					cmethod_override = callvirt_target;
 			}
@@ -12108,13 +12114,12 @@ mono_ldptr:
 			break;
 		case MONO_CEE_INITOBJ:
 			klass = mini_get_class (method, token, generic_context);
+			--sp;
 			if (CLASS_HAS_FAILURE (klass)) {
 				HANDLE_TYPELOAD_ERROR (cfg, klass);
 				inline_costs += 10;
 				break; // reached only in AOT
 			}
-
-			--sp;
 
 			if (mini_class_is_reference (klass))
 				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, sp [0]->dreg, 0, 0);

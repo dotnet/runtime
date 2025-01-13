@@ -40,7 +40,6 @@ nativeStringResourceTable_mscorrc
 #PAL_CloseProcessMemory
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
-#PAL_Random
 #PAL__wcstoui64
 #PAL_wcstoul
 #PAL_wcstod
@@ -78,9 +77,6 @@ nativeStringResourceTable_mscorrc
 #DeleteCriticalSection
 #DuplicateHandle
 #EnterCriticalSection
-#FindClose
-#FindFirstFileW
-#FindNextFileW
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
@@ -147,3 +143,5 @@ nativeStringResourceTable_mscorrc
 #WaitForSingleObjectEx
 #WideCharToMultiByte
 #WriteFile
+
+#GUID_NULL

@@ -8,7 +8,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
     <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
@@ -59,6 +58,7 @@
   <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\ReachabilityInstrumentationSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SharedCodeHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Reflection.cs" />
@@ -425,7 +425,6 @@
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
-    <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
     <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
@@ -570,6 +569,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <CompilerVisibleProperty Include="InformationalVersion" />
   </ItemGroup>
 
   <!-- Setup eventing file generation -->

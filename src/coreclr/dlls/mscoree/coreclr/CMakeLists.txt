@@ -140,7 +140,6 @@ else()
         coreclrpal
         ${END_WHOLE_ARCHIVE}
         mscorrc
-        palrt
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 
@@ -187,7 +186,6 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
 if (CLR_CMAKE_TARGET_OSX)
-    include(CMakeFindFrameworks)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
 

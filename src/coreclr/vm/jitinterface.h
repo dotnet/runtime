@@ -146,16 +146,16 @@ EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker, Object *obj);
 EXTERN_C FCDECL_MONHELPER(JIT_MonExitWorker_Portable, Object *obj);
 
 #ifndef JIT_GetGCStaticBase
-#define JIT_GetGCStaticBase JIT_GetGCStaticBase_Portable
+#define JIT_GetGCStaticBase NULL
+#else
+EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase, MethodTable *pMT);
-EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Portable, MethodTable *pMT);
 
 #ifndef JIT_GetNonGCStaticBase
-#define JIT_GetNonGCStaticBase JIT_GetNonGCStaticBase_Portable
+#define JIT_GetNonGCStaticBase NULL
+#else
+EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase, MethodTable *pMT);
-EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Portable, MethodTable *pMT);
 
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable
@@ -170,16 +170,16 @@ EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBaseNoCtor_Portable, MethodTable *pMT);
 
 #ifndef JIT_GetDynamicGCStaticBase
-#define JIT_GetDynamicGCStaticBase JIT_GetDynamicGCStaticBase_Portable
-#endif
+#define JIT_GetDynamicGCStaticBase NULL
+#else
 EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo);
+#endif
 
 #ifndef JIT_GetDynamicNonGCStaticBase
-#define JIT_GetDynamicNonGCStaticBase JIT_GetDynamicNonGCStaticBase_Portable
-#endif
+#define JIT_GetDynamicNonGCStaticBase NULL
+#else
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase, DynamicStaticsInfo* pStaticsInfo);
-EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBase_Portable, DynamicStaticsInfo* pStaticsInfo);
+#endif
 
 #ifndef JIT_GetDynamicGCStaticBaseNoCtor
 #define JIT_GetDynamicGCStaticBaseNoCtor JIT_GetDynamicGCStaticBaseNoCtor_Portable
@@ -230,15 +230,10 @@ extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
 
-extern "C" FCDECL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj);
-extern "C" FCDECL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType);
-extern "C" FCDECL3(void, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Object* obj);
-
-// ARM64 JIT_WriteBarrier uses speciall ABI and thus is not callable directly
+// ARM64 JIT_WriteBarrier uses special ABI and thus is not callable directly
 // Copied write barriers must be called at a different location
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
+
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
 
 #ifdef TARGET_AMD64
@@ -357,24 +352,19 @@ extern "C"
 {
 #ifndef FEATURE_EH_FUNCLETS
     void STDCALL JIT_EndCatch();               // JIThelp.asm/JIThelp.s
-#endif // TARGET_X86
+#endif // FEATURE_EH_FUNCLETS
 
     void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM)
-
-    FCDECL2VA(void, JIT_TailCall, PCODE copyArgs, PCODE target);
-
-#else // TARGET_AMD64 || TARGET_ARM
-
+#if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     void STDCALL JIT_TailCall();                    // JIThelp.asm
-
-#endif // TARGET_AMD64 || TARGET_ARM
+#endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+    // TODO: implement stack probing for other architectures https://github.com/dotnet/runtime/issues/13519
     void STDCALL JIT_StackProbe();
-#endif // TARGET_ARM64
+#endif // !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 };
 
 /*********************************************************************/
@@ -510,16 +500,6 @@ public:
     void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
 private:
-    // Shrinking these buffers drastically reduces the amount of stack space
-    // required for each instance of the interpreter, and thereby reduces SOs.
-#ifdef FEATURE_INTERPRETER
-#define CLS_STRING_SIZE 8  // force heap allocation
-#define CLS_BUFFER_SIZE SBUFFER_PADDED_SIZE(8)
-#else
-#define CLS_STRING_SIZE MAX_CLASSNAME_LENGTH
-#define CLS_BUFFER_SIZE MAX_CLASSNAME_LENGTH
-#endif
-
 #ifdef _DEBUG
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
     InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
@@ -1028,6 +1008,8 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
 VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
+bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
@@ -1048,7 +1030,6 @@ FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
-BOOL ObjIsInstanceOfCore(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
 #ifdef HOST_64BIT
 class InlinedCallFrame;
