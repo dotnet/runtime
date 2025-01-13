@@ -213,7 +213,6 @@
     <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TrackerObjectManager.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ObjectiveCMarshal.NativeAot.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
     <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.NativeAot.cs" />
@@ -583,11 +582,7 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles"
-          Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)"
-          Outputs="@(EventingSourceFile)"
-          DependsOnTargets="FindPython"
-          BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generared.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>
