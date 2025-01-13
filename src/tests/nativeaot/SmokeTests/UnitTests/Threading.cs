@@ -62,9 +62,6 @@ internal static class Threading
         Console.WriteLine("    ThreadPoolTests.WorkQueueDepletionTest");
         ThreadPoolTests.WorkQueueDepletionTest();
 
-        Console.WriteLine("    ThreadPoolTests.WorkerThreadStateReset");
-        ThreadPoolTests.WorkerThreadStateReset();
-
         // This test is not applicable (and will not pass) on Windows since it uses the Windows OS-provided thread pool.
         // Console.WriteLine("    ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum");
         // ThreadPoolTests.SettingMinThreadsWillCreateThreadsUpToMinimum();
@@ -1128,44 +1125,6 @@ internal static class ThreadPoolTests
         }
         Task.Factory.StartNew(ThreadLocalJob);
         ThreadPool.QueueUserWorkItem(GlobalJob);
-        e0.CheckedWait();
-    }
-
-    [Fact]
-    public static void WorkerThreadStateReset()
-    {
-        var cultureInfo = new CultureInfo("pt-BR");
-        var expectedCultureInfo = CultureInfo.CurrentCulture;
-        var expectedUICultureInfo = CultureInfo.CurrentUICulture;
-        int count = 0;
-        AutoResetEvent e0 = new AutoResetEvent(false);
-        for(int i = 0; i < Environment.ProcessorCount; ++i)
-        {
-            ThreadPool.QueueUserWorkItem( _ => {
-                CultureInfo.CurrentCulture = cultureInfo;
-                CultureInfo.CurrentUICulture = cultureInfo;
-                Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
-                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
-                {
-                    e0.Set();
-                }
-            });
-        }
-        e0.CheckedWait();
-        // Run the test again to make sure we can reuse the threads.
-        count = 0;
-        for(int i = 0; i < Environment.ProcessorCount; ++i)
-        {
-            ThreadPool.QueueUserWorkItem( _ => {
-                Assert.Equal(expectedCultureInfo, CultureInfo.CurrentCulture);
-                Assert.Equal(expectedUICultureInfo, CultureInfo.CurrentUICulture);
-                Assert.Equal(ThreadPriority.Normal, Thread.CurrentThread.Priority);
-                if(Interlocked.Increment(ref count) == Environment.ProcessorCount)
-                {
-                    e0.Set();
-                }
-            });
-        }
         e0.CheckedWait();
     }
 

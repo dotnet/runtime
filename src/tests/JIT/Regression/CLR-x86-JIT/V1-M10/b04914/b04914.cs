@@ -11,12 +11,11 @@ namespace DefaultNamespace
     {
         internal virtual void runTest()
         {
-            CultureInfo en = new CultureInfo("en-US");
-            Double d = Convert.ToDouble("1.0E19", en.NumberFormat);
-            Console.WriteLine("Expected value==" + d.ToString("E", en.NumberFormat));
+            Double d = Convert.ToDouble("1.0E19", NumberFormatInfo.InvariantInfo);
+            Console.WriteLine("Expected value==" + d.ToString("E", NumberFormatInfo.InvariantInfo));
             UInt64 l = (UInt64)d;
-            Console.WriteLine("Returned value==" + l.ToString("E", en.NumberFormat));
-            if (d.ToString("E", en.NumberFormat).Equals(l.ToString("E", en.NumberFormat)))
+            Console.WriteLine("Returned value==" + l.ToString("E", NumberFormatInfo.InvariantInfo));
+            if (d.ToString("E", NumberFormatInfo.InvariantInfo).Equals(l.ToString("E", NumberFormatInfo.InvariantInfo)))
                 Console.WriteLine("Test passed");
             else
                 Console.WriteLine("Test FAiLED");
