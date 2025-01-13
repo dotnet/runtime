@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices
         private static bool IsPinned(IntPtr handle) => (handle & 1) != 0; // Check Pin flag
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowIfInvalid(IntPtr handle)
+        private static void ThrowIfInvalid(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.
             if (handle == 0)
@@ -204,7 +204,7 @@ namespace System.Runtime.InteropServices
         internal static unsafe void CheckUninitialized(IntPtr handle)
         {
             // Check if the handle was never initialized or was freed.
-            // Throws NRE with minimal overhead, to avoid access violation from managed code.
+            // Throws NRE with minimal overhead, to avoid access violation from unmanaged code.
             // Invalid handle is unsupported and will cause AV as expected.
 #if MONO
             // Mono doesn't handle reading null pointer as NRE.
