@@ -87,7 +87,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe bool CreateThread(GCHandle thisThreadHandle)
+        private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             // Create the Stop event before starting the thread to make sure
             // it is ready to be signaled at thread shutdown time.
