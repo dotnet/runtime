@@ -73,13 +73,7 @@ namespace System.Reflection.Internal
             try
             {
                 stream.Seek(start, SeekOrigin.Begin);
-
-                int bytesRead = 0;
-
-                if ((bytesRead = stream.Read(block.Pointer, size)) != size)
-                {
-                    stream.CopyTo(block.Pointer + bytesRead, size - bytesRead);
-                }
+                stream.ReadExactly(block.Pointer, size);
 
                 fault = false;
             }
