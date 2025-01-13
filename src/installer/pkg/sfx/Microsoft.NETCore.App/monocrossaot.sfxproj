@@ -8,6 +8,7 @@
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iossimulator-x64;iossimulator-arm64;ios-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))">$(MonoAotTargets);maccatalyst-x64;maccatalyst-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+wasi+'))">$(MonoAotTargets);wasi-wasm</MonoAotTargets>
+    <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
   </PropertyGroup>
 
   <ItemGroup>
