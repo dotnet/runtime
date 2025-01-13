@@ -7,9 +7,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly ASSEMBLY_NAME { }
-.assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary {}
+.assembly extern xunit.core {}
 .namespace JitTest_compat_i4_u
 {
   .class public auto ansi beforefieldinit Test
