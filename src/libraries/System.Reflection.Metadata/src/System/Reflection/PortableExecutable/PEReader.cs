@@ -205,7 +205,7 @@ namespace System.Reflection.PortableExecutable
 
                         if (_lazyPEHeaders.MetadataStartOffset != -1)
                         {
-                            _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
+                            _lazyMetadataBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, start + _lazyPEHeaders.MetadataStartOffset, _lazyPEHeaders.MetadataSize);
                         }
                     }
                     // We read all we need, the stream is going to be closed.
