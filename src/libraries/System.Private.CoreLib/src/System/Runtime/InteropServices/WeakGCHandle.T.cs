@@ -13,9 +13,12 @@ namespace System.Runtime.InteropServices
     /// The object is allowed to be collected and handle contents will be zeroed.
     /// </summary>
     /// <remarks>
-    /// <see cref="WeakGCHandle{T}"/> corresponds to Weak or WeakTrackResurrection roots.
-    /// For Normal, see <see cref="GCHandle{T}"/>.
-    /// For Pinned, see <see cref="PinnedGCHandle{T}"/>.
+    /// <para>This type corresponds to <see cref="GCHandleType.Weak"/> or <see cref="GCHandleType.WeakTrackResurrection"/>.</para>
+    /// <para>
+    /// This type is unsafe if used incorrectly. Incorrect usage like mismanagement
+    /// of lifetime, providing invalid handle value or concurrent disposal can result
+    /// into hard to diagnose crashes or data corruptions.
+    /// </para>
     /// </remarks>
     /// <seealso cref="GCHandle" />
     /// <typeparam name="T">The type of the object this <see cref="GCHandle{T}"/> tracks to.</typeparam>
@@ -70,8 +73,11 @@ namespace System.Runtime.InteropServices
         /// <param name="value">An <see cref="IntPtr"/> handle to a managed object to create a <see cref="WeakGCHandle{T}"/> object from.</param>
         /// <returns>A new <see cref="WeakGCHandle{T}"/> object that corresponds to the value parameter.</returns>
         /// <remarks>
+        /// <para>This method doesn't validate of provided handle value. The caller must ensure the validity of the handle.</para>
+        /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
+        /// </para>
         /// </remarks>
         public static WeakGCHandle<T> FromIntPtr(IntPtr value) => new WeakGCHandle<T>(value);
 
@@ -86,9 +92,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static IntPtr ToIntPtr(WeakGCHandle<T> value) => value._handle;
 
-        /// <summary>
-        /// Releases this <see cref="WeakGCHandle{T}"/>.
-        /// </summary>
+        /// <summary>Releases this <see cref="WeakGCHandle{T}"/>.</summary>
+        /// <remarks>This method is not thread safe.</remarks>
         public void Dispose()
         {
             // Free the handle if it hasn't already been freed.
@@ -101,20 +106,16 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
-        /// <param name="obj">An instance to compare with this instance.</param>
-        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        /// <inheritdoc/>
         public override readonly bool Equals([NotNullWhen(true)] object? obj) => obj is WeakGCHandle<T> handle && Equals(handle);
 
-        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
-        /// <param name="other">An instance to compare with this instance.</param>
-        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        /// <inheritdoc cref="IEquatable{T}.Equals(T)"/>
         public readonly bool Equals(WeakGCHandle<T> other) => _handle == other._handle;
 
         /// <summary>
-        /// Returns an identifier for the current <see cref="WeakGCHandle{T}"/> object.
+        /// Returns the hash code for the current instance.
         /// </summary>
-        /// <returns>An identifier for the current <see cref="WeakGCHandle{T}"/> object.</returns>
+        /// <returns>A hash code for the current instance.</returns>
         public override readonly int GetHashCode() => _handle.GetHashCode();
     }
 }

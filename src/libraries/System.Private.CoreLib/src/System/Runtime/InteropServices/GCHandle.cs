@@ -22,6 +22,8 @@ namespace System.Runtime.InteropServices
     /// Pinned - same as Normal, but allows the address of the actual object to be taken.
     /// </remarks>
     /// <seealso cref="GCHandle{T}"/>
+    /// <seealso cref="PinnedGCHandle{T}"/>
+    /// <seealso cref="WeakGCHandle{T}"/>
     [StructLayout(LayoutKind.Sequential)]
     public partial struct GCHandle : IEquatable<GCHandle>
     {
