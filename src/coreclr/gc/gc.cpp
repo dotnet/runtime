@@ -17139,11 +17139,8 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
     oom_info.loh_p = fgm_result.loh_p;
 
     add_to_oom_history_per_heap();
-    fgm_result.fgm = fgm_no_failure;
 
 #ifdef FEATURE_EVENT_TRACE
-
-    // Include just the memory_load. 
     uint32_t memory_load = 0;
     uint64_t available_physical = 0;
     uint64_t available_page_file = 0;
@@ -17151,16 +17148,16 @@ void gc_heap::handle_oom (oom_reason reason, size_t alloc_size,
 
     GCEventFireOOMDetails_V1 (
         (uint64_t)oom_info.gc_index,
-        (uint8_t)(*oom_info.allocated),
-        (uint8_t)(*oom_info.reserved),
         (uint64_t)oom_info.alloc_size,
         (uint8_t)oom_info.reason,
         (uint8_t)oom_info.fgm,
         (uint64_t)oom_info.size,
         (uint8_t)oom_info.loh_p,
-        (uint32_t)memory_load);
-
+        (uint32_t)memory_load,
+        (uint64_t)(available_page_file / (1024 * 1024)));
 #endif //FEATURE_EVENT_TRACE
+
+    fgm_result.fgm = fgm_no_failure;
 
     // Break early - before the more_space_lock is release so no other threads
     // could have allocated on the same heap when OOM happened.
@@ -19620,6 +19617,7 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
                 alloc_heap = balance_heaps_uoh_hard_limit_retry (acontext, size, alloc_generation_number);
                 if (alloc_heap == nullptr || (retry_count++ == UOH_ALLOCATION_RETRY_MAX_COUNT))
                 {
+                    alloc_heap->handle_oom (oom_loh, size, 0, 0);
                     return false;
                 }
             }
