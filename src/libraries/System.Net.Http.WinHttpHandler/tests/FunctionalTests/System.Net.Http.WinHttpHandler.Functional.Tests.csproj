@@ -14,6 +14,8 @@
     <Compile Include="ServerCertificateTest.cs" />
     <Compile Include="WinHttpHandlerTest.cs" />
     <Compile Include="XunitTestAssemblyAttributes.cs" />
+    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs"
+             Link="Common\System\IO\StreamExtensions.netstandard.cs" />
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs"
              Link="Common\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs"
@@ -40,8 +42,6 @@
              Link="Common\System\Net\VerboseTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestWebProxies.cs"
              Link="Common\System\Net\TestWebProxies.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\StreamArrayExtensions.cs"
-             Link="Common\System\Net\StreamArrayExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ByteAtATimeContent.cs"
              Link="Common\System\Net\Http\ByteAtATimeContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ChannelBindingAwareContent.cs"

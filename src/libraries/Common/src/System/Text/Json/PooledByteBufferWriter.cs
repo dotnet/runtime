@@ -76,11 +76,7 @@ namespace System.Text.Json
         public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
         {
             Debug.Assert(_stream is not null);
-#if NET
             await _stream.WriteAsync(WrittenMemory, cancellationToken).ConfigureAwait(false);
-#else
-            await _stream.WriteAsync(_buffer.DangerousGetUnderlyingBuffer(), _buffer.ActiveStartOffset, _buffer.ActiveLength, cancellationToken).ConfigureAwait(false);
-#endif
             Clear();
 
             return new FlushResult(isCanceled: false, isCompleted: false);
