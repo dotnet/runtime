@@ -82,8 +82,9 @@ namespace ILCompiler
                 return false;
             }
 
-            if (callee.IsNoInlining)
+            if (callee.IsNoInlining || callee.IsNoOptimization)
             {
+                // NoOptimization implies NoInlining
                 return false;
             }
 

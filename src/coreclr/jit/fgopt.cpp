@@ -6108,6 +6108,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
         }
     } while (change);
 
+    // OSR entry blocks will frequently have a profile imbalance as original method execution was hijacked at them.
+    // Mark the profile as inconsistent if we might have propagated the OSR entry weight.
+    if (modified && opts.IsOSR())
+    {
+        JITDUMP("fgUpdateFlowGraph: Inconsistent OSR entry weight may have been propagated. Data %s consistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
 #ifdef DEBUG
     if (!isPhase)
     {
