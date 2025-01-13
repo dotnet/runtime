@@ -9,6 +9,7 @@ namespace System.Reflection.PortableExecutable
     public sealed class PEHeader
     {
         #region Standard fields
+        // Unlike the other header classes, there are too many properties here to make them init-only.
 
         /// <summary>
         /// Identifies the format of the image file.

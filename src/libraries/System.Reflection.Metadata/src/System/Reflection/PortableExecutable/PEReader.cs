@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.Internal;
 using System.Reflection.Metadata;
@@ -298,7 +299,6 @@ namespace System.Reflection.PortableExecutable
                 if (_lazyPEHeaders == null)
                 {
                     InitializePEHeaders();
-                    Debug.Assert(_lazyPEHeaders != null);
                 }
 
                 return _lazyPEHeaders;
@@ -306,6 +306,7 @@ namespace System.Reflection.PortableExecutable
         }
 
         /// <exception cref="IOException">Error reading from the stream.</exception>
+        [MemberNotNull(nameof(_lazyPEHeaders))]
         private void InitializePEHeaders()
         {
             AbstractMemoryBlock memoryBlock = GetPEImage().GetMemoryBlock();
