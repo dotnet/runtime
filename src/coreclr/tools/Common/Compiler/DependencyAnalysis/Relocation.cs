@@ -497,25 +497,35 @@ namespace ILCompiler.DependencyAnalysis
             return unchecked((int)jalrInstr) >> 20;
         }
 
-        private static unsafe void PutRiscV64JALR(uint* pCode, long imm)
+        private static unsafe void PutRiscV64JALR(uint* pCode, long imm32)
         {
-            // Verify that we got a valid offset within the 12-bit signed immediate range.
-            Debug.Assert(imm >= -0x800 && imm < 0x800);
+            // Verify that we got a valid offset within 32-bit signed range.
+            Debug.Assert((imm32 >= -0x80000000) && (imm32 < 0x80000000));
 
-            uint jalrInstr = *pCode;
+            uint pcInstr = *pCode;
 
-            Debug.Assert((jalrInstr & 0x7f) == 0x17);  // JALR opcode
+            // Validate that the first instruction is AUIPC
+            Debug.Assert((pcInstr & 0x7f) == 0x17);
 
-            // Extract the lower 12 bits of the immediate.
-            uint imm12 = (uint)(imm & 0xfff);
+            // Break the immediate into high and low parts
+            long immHi20 = (imm32 + 0x800) >> 12;
+            long immLo12 = imm32 & 0xfff;
 
-            // Assemble the JALR instruction with the immediate.
-            jalrInstr &= ~0xfff00000;
-            jalrInstr |= (imm12 << 20);
+            // Assemble the AUIPC instruction with the upper 20 bits of imm32.
+            pcInstr |= (uint)((immHi20 & 0xfffff) << 12);
+            *pCode = pcInstr;
 
-            *pCode = jalrInstr;
+            pcInstr = *(pCode + 1);
 
-            Debug.Assert(GetRiscV64JALR(pCode) == imm);
+            // Validate that the second instruction is JALR
+            Debug.Assert((pcInstr & 0x7f) == 0x67);
+
+            // Assemble the JALR instruction with the lower 12 bits of imm32.
+            pcInstr |= (uint)((immLo12 & 0xfff) << 20);
+            *(pCode + 1) = pcInstr;
+
+            // Debug validation to ensure reconstruction is correct.
+            Debug.Assert(GetRiscV64JALR(pCode) == imm32);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
