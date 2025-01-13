@@ -3702,17 +3702,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/PrimitiveABI/**">
             <Issue>https://github.com/dotnet/runtime/issues/92129</Issue>
         </ExcludeList>
-
-        <!-- TODO: Add tracking issue -->
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34587/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Arrays/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/poisoning/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/reabstraction/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/**" />
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">
