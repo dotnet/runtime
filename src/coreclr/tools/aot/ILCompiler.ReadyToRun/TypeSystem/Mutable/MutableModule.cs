@@ -211,7 +211,6 @@ namespace Internal.TypeSystem.Ecma
 
                         byte[] metadataArrayTemp = _currentBinaryEmitter.EmitToMetadataBlob();
                         byte[] metadataArray = GC.AllocateArray<byte>(metadataArrayTemp.Length, pinned: true);
-                        System.Runtime.InteropServices.GCHandle.Alloc(metadataArray, System.Runtime.InteropServices.GCHandleType.Pinned);
                         Array.Copy(metadataArrayTemp, metadataArray, metadataArray.Length);
                         _readers.Add(metadataArray);
                         unsafe
