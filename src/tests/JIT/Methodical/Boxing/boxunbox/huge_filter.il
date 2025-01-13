@@ -189,19 +189,19 @@
           01 00 00 00
       )
       // [ActiveIssue("https://github.com/dotnet/runtimelab/issues/", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
-      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string,
-                                                                                            class [System.Runtime]System.Type,
-                                                                                            string[]) = (01 00 2F 68 74 74 70 73 3A 2F 2F 67 69 74 68 75
-                                                                                                        62 2E 63 6F 6D 2F 64 6F 74 6E 65 74 2F 72 75 6E
-                                                                                                        74 69 6D 65 6C 61 62 2F 69 73 73 75 65 73 2F 61
-                                                                                                        54 65 73 74 4C 69 62 72 61 72 79 2E 50 6C 61 74
-                                                                                                        66 6F 72 6D 44 65 74 65 63 74 69 6F 6E 2C 20 54
-                                                                                                        65 73 74 4C 69 62 72 61 72 79 2C 20 56 65 72 73
-                                                                                                        69 6F 6E 3D 30 2E 30 2E 30 2E 30 2C 20 43 75 6C
-                                                                                                        74 75 72 65 3D 6E 65 75 74 72 61 6C 2C 20 50 75
-                                                                                                        62 6C 69 63 4B 65 79 54 6F 6B 65 6E 3D 6E 75 6C
-                                                                                                        6C 01 00 00 00 24 49 73 41 70 70 6C 65 4D 6F 62
-                                                                                                        69 6C 65 00 00 00 )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = (
+                  01 00 30 68 74 74 70 73 3a 2f 2f 67 69 74 68 75
+                  62 2e 63 6f 6d 2f 64 6f 74 6e 65 74 2f 72 75 6e
+                  74 69 6d 65 6c 61 62 2f 69 73 73 75 65 73 2f 54
+                  4f 44 4f 61 54 65 73 74 4c 69 62 72 61 72 79 2e
+                  50 6c 61 74 66 6f 72 6d 44 65 74 65 63 74 69 6f
+                  6e 2c 20 54 65 73 74 4c 69 62 72 61 72 79 2c 20
+                  56 65 72 73 69 6f 6e 3d 30 2e 30 2e 30 2e 30 2c
+                  20 43 75 6c 74 75 72 65 3d 6e 65 75 74 72 61 6c
+                  2c 20 50 75 62 6c 69 63 4b 65 79 54 6f 6b 65 6e
+                  3d 6e 75 6c 6c 01 00 00 00 0d 49 73 41 70 70 6c
+                  65 4d 6f 62 69 6c 65 00 00
+              )
       .entrypoint
       .maxstack  1
       .locals (int32 V_0)
