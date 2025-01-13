@@ -15075,6 +15075,11 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW;
     }
 
+    if (pThread->m_hasPendingActivation)
+    {
+        return CORDBG_E_ILLEGAL_AT_APC_CALLBACK;
+    }
+
     bool fInException = pEvalInfo->evalDuringException;
 
     // The thread has to be at a GC safe place for now, just in case the func eval causes a collection. Processing an
