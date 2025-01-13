@@ -1853,9 +1853,9 @@
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c26">
-	<SymbolicName>CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW</SymbolicName>
-	<Message>"The operation is illegal because of a stack overflow."</Message>
-	<Comment> the operation is illegal because of a stackoverflow. </Comment>
+	<SymbolicName>CORDBG_E_ILLEGAL_IN_OPTIMIZED_CODE</SymbolicName>
+	<Message>"The operation failed because the thread is in optimized code."</Message>
+	<Comment> The operation failed because the thread is in optimized code. </Comment>
 </HRESULT>
 
 <HRESULT NumericValue="0x80131c27">
