@@ -519,6 +519,7 @@ namespace System.Text.Tests
             Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))));
 
             TestRegister1252();
+            TestMultiBytesEncodingsSupportSurrogate();
         }
 
         private static void ValidateDefaultEncodings()
@@ -639,8 +640,7 @@ namespace System.Text.Tests
             Assert.All(name, c => Assert.True(c >= ' ' && c < '~' + 1, "Name: " + name + " contains character: " + c));
         }
 
-        [Fact]
-        public static void TestMultiBytesEncodingsSupportSurrogate()
+        private static void TestMultiBytesEncodingsSupportSurrogate()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
