@@ -5136,10 +5136,8 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     const unsigned srcPos = ordinals[srcBlk->bbPostorderNum];
     const unsigned dstPos = ordinals[dstBlk->bbPostorderNum];
 
-    // Don't consider edges from outside the hot range.
-    // If 'srcBlk' has an ordinal of zero and it isn't the first block,
-    // it's not tracked by 'ordinals', so it's not in the hot section.
-    if ((srcPos == 0) && !srcBlk->IsFirst())
+    // Don't consider edges to or from outside the hot range (i.e. ordinal doesn't match 'blockOrder' position).
+    if ((srcBlk != blockOrder[srcPos]) || (dstBlk != blockOrder[dstPos]))
     {
         return;
     }
@@ -5507,6 +5505,14 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         {
             ordinals[blockOrder[i]->bbPostorderNum] = i;
         }
+
+#ifdef DEBUG
+        // Verify 'ordinals' is up-to-date
+        for (unsigned i = 0; i < numCandidateBlocks; i++)
+        {
+            assert(ordinals[blockOrder[i]->bbPostorderNum] == i);
+        }
+#endif // DEBUG
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbPostorderNum] + 1) == ordinals[dstBlk->bbPostorderNum]);
