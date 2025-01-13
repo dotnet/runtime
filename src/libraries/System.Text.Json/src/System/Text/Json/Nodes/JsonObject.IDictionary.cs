@@ -35,7 +35,7 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        ///   Adds an element with the provided name and value to the <see cref="JsonObject"/>, if a property named <paramref name="propertyName"/> doesn't already exist..
+        ///   Adds an element with the provided name and value to the <see cref="JsonObject"/>, if a property named <paramref name="propertyName"/> doesn't already exist.
         /// </summary>
         /// <param name="propertyName">The property name of the element to add.</param>
         /// <param name="value">The value of the element to add.</param>
@@ -62,12 +62,16 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
+#if NET10_0_OR_GREATER
             var success = Dictionary.TryAdd(propertyName, value, out index);
+#else
+            var success = Dictionary.TryAdd(propertyName, value);
+            index = Dictionary.IndexOf(propertyName);
+#endif
             if (success)
             {
                 value?.AssignParent(this);
             }
-
             return success;
         }
 

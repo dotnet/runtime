@@ -145,7 +145,12 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
+#if NET10_0_OR_GREATER
             return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
+#else
+            index = Dictionary.IndexOf(propertyName);
+            return Dictionary.TryGetValue(propertyName, out jsonNode);
+#endif
         }
 
         /// <inheritdoc/>
