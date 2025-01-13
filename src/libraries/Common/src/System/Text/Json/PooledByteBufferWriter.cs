@@ -70,7 +70,7 @@ namespace System.Text.Json
 #if NET
         internal void WriteToStream(Stream destination) => destination.Write(_buffer.ActiveSpan);
 #else
-        internal void WriteToStream(Stream destination) => destination.Write(_buffer.DangerousGetUnderlyingBuffer(), _buffer.ActiveStartOffset, _buffer.ActiveLength);
+        internal void WriteToStream(Stream destination) => destination.Write(_buffer.ActiveMemory);
 #endif
 
         public override async ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
