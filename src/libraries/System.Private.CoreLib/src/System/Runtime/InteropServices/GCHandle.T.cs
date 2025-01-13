@@ -108,25 +108,5 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>An identifier for the current <see cref="GCHandle{T}"/> object.</returns>
         public override readonly int GetHashCode() => _handle.GetHashCode();
-
-        /// <summary>
-        /// Returns a value indicating whether two <see cref="GCHandle{T}"/> objects are equal.
-        /// </summary>
-        /// <param name="left">A <see cref="GCHandle{T}"/> object to compare with the <paramref name="right"/> parameter.</param>
-        /// <param name="right">A <see cref="GCHandle{T}"/> object to compare with the <paramref name="left"/> parameter.</param>
-        /// <returns>
-        /// <see langword=""/> if the <paramref name="left"/> and <paramref name="right"/> parameters are equal; otherwise, <see langword="false"/>.
-        /// </returns>
-        public static bool operator ==(GCHandle<T> left, GCHandle<T> right) => left._handle == right._handle;
-
-        /// <summary>
-        /// Returns a value indicating whether two <see cref="GCHandle{T}"/> objects are not equal.
-        /// </summary>
-        /// <param name="left">A <see cref="GCHandle{T}"/> object to compare with the <paramref name="right"/> parameter.</param>
-        /// <param name="right">A <see cref="GCHandle{T}"/> object to compare with the <paramref name="left"/> parameter.</param>
-        /// <returns>
-        /// <see langword=""/> if the <paramref name="left"/> and <paramref name="right"/> parameters are not equal; otherwise, <see langword="false"/>.
-        /// </returns>
-        public static bool operator !=(GCHandle<T> left, GCHandle<T> right) => left._handle != right._handle;
     }
 }

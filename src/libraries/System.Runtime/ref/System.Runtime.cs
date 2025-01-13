@@ -14088,8 +14088,6 @@ namespace System.Runtime.InteropServices
         public override readonly int GetHashCode() { throw null; }
         public GCHandle(T target) { }
         public readonly bool IsAllocated { get { throw null; } }
-        public static bool operator ==(System.Runtime.InteropServices.GCHandle<T> left, System.Runtime.InteropServices.GCHandle<T> right) { throw null; }
-        public static bool operator !=(System.Runtime.InteropServices.GCHandle<T> left, System.Runtime.InteropServices.GCHandle<T> right) { throw null; }
         public readonly T Target { get { throw null; } set { } }
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle<T> value) { throw null; }
     }
@@ -14189,8 +14187,6 @@ namespace System.Runtime.InteropServices
         public readonly unsafe void* GetAddressOfObjectData() { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly bool IsAllocated { get { throw null; } }
-        public static bool operator ==(System.Runtime.InteropServices.PinnedGCHandle<T> left, System.Runtime.InteropServices.PinnedGCHandle<T> right) { throw null; }
-        public static bool operator !=(System.Runtime.InteropServices.PinnedGCHandle<T> left, System.Runtime.InteropServices.PinnedGCHandle<T> right) { throw null; }
         public PinnedGCHandle(T target) { }
         public T Target { readonly get { throw null; } set { } }
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.PinnedGCHandle<T> value) { throw null; }
@@ -14327,8 +14323,6 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.WeakGCHandle<T> FromIntPtr(System.IntPtr value) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public readonly bool IsAllocated { get { throw null; } }
-        public static bool operator ==(System.Runtime.InteropServices.WeakGCHandle<T> left, System.Runtime.InteropServices.WeakGCHandle<T> right) { throw null; }
-        public static bool operator !=(System.Runtime.InteropServices.WeakGCHandle<T> left, System.Runtime.InteropServices.WeakGCHandle<T> right) { throw null; }
         public readonly void SetTarget(T target) { }
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.WeakGCHandle<T> value) { throw null; }
         public readonly bool TryGetTarget([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? target) { throw null; }

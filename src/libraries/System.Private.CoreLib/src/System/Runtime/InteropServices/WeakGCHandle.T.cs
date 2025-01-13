@@ -116,25 +116,5 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <returns>An identifier for the current <see cref="WeakGCHandle{T}"/> object.</returns>
         public override readonly int GetHashCode() => _handle.GetHashCode();
-
-        /// <summary>
-        /// Returns a value indicating whether two <see cref="WeakGCHandle{T}"/> objects are equal.
-        /// </summary>
-        /// <param name="left">A <see cref="WeakGCHandle{T}"/> object to compare with the <paramref name="right"/> parameter.</param>
-        /// <param name="right">A <see cref="WeakGCHandle{T}"/> object to compare with the <paramref name="left"/> parameter.</param>
-        /// <returns>
-        /// <see langword=""/> if the <paramref name="left"/> and <paramref name="right"/> parameters are equal; otherwise, <see langword="false"/>.
-        /// </returns>
-        public static bool operator ==(WeakGCHandle<T> left, WeakGCHandle<T> right) => left._handle == right._handle;
-
-        /// <summary>
-        /// Returns a value indicating whether two <see cref="WeakGCHandle{T}"/> objects are not equal.
-        /// </summary>
-        /// <param name="left">A <see cref="WeakGCHandle{T}"/> object to compare with the <paramref name="right"/> parameter.</param>
-        /// <param name="right">A <see cref="WeakGCHandle{T}"/> object to compare with the <paramref name="left"/> parameter.</param>
-        /// <returns>
-        /// <see langword=""/> if the <paramref name="left"/> and <paramref name="right"/> parameters are not equal; otherwise, <see langword="false"/>.
-        /// </returns>
-        public static bool operator !=(WeakGCHandle<T> left, WeakGCHandle<T> right) => left._handle != right._handle;
     }
 }
