@@ -1481,7 +1481,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         code |= BBIT_IN_BYTE_EVEX_PREFIX;
 
-        // enable ymm embeddd rounding
+        // enable ymm embedded rounding
         if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
         {
             code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
@@ -19662,7 +19662,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        /* TBD handle perf for AVX10.2 instructions*/
+        // TODO-XArch-AVX10.2: handle perf for AVX10.2 instructions
         case INS_vminmaxsd:
         case INS_vminmaxss:
         case INS_vminmaxpd:
