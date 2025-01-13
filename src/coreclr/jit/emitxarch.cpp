@@ -2192,7 +2192,7 @@ emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
 
 bool isPrefix(BYTE b)
 {
-    // assert(b != 0);    // Caller should check this
+    /* Any (b == 0) case should be checked by caller and not get here*/
     assert(b != 0x67); // We don't use the address size prefix
     assert(b != 0x65); // The GS segment override prefix is emitted separately
     assert(b != 0x64); // The FS segment override prefix is emitted separately
