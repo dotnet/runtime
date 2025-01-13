@@ -31,7 +31,7 @@ namespace System
 
         private static uint DayNumberFromDateTime(DateTime dt) => (uint)((ulong)dt.Ticks / TimeSpan.TicksPerDay);
 
-        internal DateTime GetEquivalentDateTime() => DateTime.UnsafeCreate(_dayNumber * TimeSpan.TicksPerDay);
+        internal DateTime GetEquivalentDateTime() => DateTime.CreateUnchecked(_dayNumber * TimeSpan.TicksPerDay);
 
         private DateOnly(uint dayNumber)
         {
@@ -214,7 +214,7 @@ namespace System
         /// </summary>
         /// <param name="time">The time of the day.</param>
         /// <returns>The DateTime instance composed of the date of the current DateOnly instance and the time specified by the input time.</returns>
-        public DateTime ToDateTime(TimeOnly time) => DateTime.UnsafeCreate(_dayNumber * TimeSpan.TicksPerDay + time.Ticks);
+        public DateTime ToDateTime(TimeOnly time) => DateTime.CreateUnchecked(_dayNumber * TimeSpan.TicksPerDay + time.Ticks);
 
         /// <summary>
         /// Returns a DateTime instance with the specified input kind that is set to the date of this DateOnly instance and the time of specified input time.

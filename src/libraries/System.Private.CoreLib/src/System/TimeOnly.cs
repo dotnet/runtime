@@ -98,22 +98,22 @@ namespace System
         /// <summary>
         /// Gets the minute component of the time represented by this instance.
         /// </summary>
-        public int Minute => (int)((uint)(_ticks / TimeSpan.TicksPerMinute) % 60);
+        public int Minute => (int)((uint)(_ticks / TimeSpan.TicksPerMinute) % (uint)TimeSpan.MinutesPerHour);
 
         /// <summary>
         /// Gets the second component of the time represented by this instance.
         /// </summary>
-        public int Second => (int)((uint)(_ticks / TimeSpan.TicksPerSecond) % 60);
+        public int Second => (int)((uint)(_ticks / TimeSpan.TicksPerSecond) % (uint)TimeSpan.SecondsPerMinute);
 
         /// <summary>
         /// Gets the millisecond component of the time represented by this instance.
         /// </summary>
-        public int Millisecond => (int)((uint)(_ticks / TimeSpan.TicksPerMillisecond) % 1000);
+        public int Millisecond => (int)((uint)(_ticks / TimeSpan.TicksPerMillisecond) % (uint)TimeSpan.MillisecondsPerSecond);
 
         /// <summary>
         /// Gets the microsecond component of the time represented by this instance.
         /// </summary>
-        public int Microsecond => (int)(_ticks / TimeSpan.TicksPerMicrosecond % 1000);
+        public int Microsecond => (int)(_ticks / TimeSpan.TicksPerMicrosecond % (uint)TimeSpan.MicrosecondsPerMillisecond);
 
         /// <summary>
         /// Gets the nanosecond component of the time represented by this instance.
@@ -279,6 +279,7 @@ namespace System
         public static TimeSpan operator -(TimeOnly t1, TimeOnly t2)
         {
             long diff = (long)(t1._ticks - t2._ticks);
+            // If the result is negative, add 24h to make it positive again using the sign bit.
             return new TimeSpan(diff + ((diff >> 63) & TimeSpan.TicksPerDay));
         }
 
@@ -382,7 +383,7 @@ namespace System
         /// <returns>A TimeSpan object spanning to the time specified in the current TimeOnly object.</returns>
         public TimeSpan ToTimeSpan() => new TimeSpan((long)_ticks);
 
-        internal DateTime ToDateTime() => DateTime.UnsafeCreate((long)_ticks);
+        internal DateTime ToDateTime() => DateTime.CreateUnchecked((long)_ticks);
 
         /// <summary>
         /// Compares the value of this instance to a specified TimeOnly value and indicates whether this instance is earlier than, the same as, or later than the specified TimeOnly value.
