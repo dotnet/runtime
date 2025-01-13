@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -36,7 +37,7 @@ namespace System.Text.Json
         private const int InitialGrowthSize = 256;
 
         // A special value for JsonTokenType that lets the writer keep track of string segments.
-        private const JsonTokenType StringSegmentSentinel = (JsonTokenType)255;
+        private const JsonTokenType StringSegmentSentinel = (JsonTokenType)0b0010_0000;
 
         // Masks and flags for the length and encoding of the partial code point
         private const byte PartialCodePointLengthMask =         0b000_000_11;
@@ -51,7 +52,7 @@ namespace System.Text.Json
 
         private Memory<byte> _memory;
 
-        private bool _inObject;
+        private EnclosingContainerType _enclosingContainer;
         private bool _commentAfterNoneOrPropertyName;
         private JsonTokenType _tokenType;
         private BitStack _bitStack;
@@ -383,7 +384,7 @@ namespace System.Text.Json
             BytesCommitted = default;
             _memory = default;
 
-            _inObject = default;
+            _enclosingContainer = default;
             _tokenType = default;
             _commentAfterNoneOrPropertyName = default;
             _currentDepth = default;
@@ -601,7 +602,7 @@ namespace System.Text.Json
         private void WriteStart(byte token)
         {
             if (CurrentDepth >= _options.MaxDepth)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, _options.MaxDepth, token: default, tokenType: default);
+                ThrowInvalidOperationException_DepthTooLarge();
 
             if (_options.IndentedOrNotSkipValidation)
             {
@@ -655,27 +656,38 @@ namespace System.Text.Json
 
         private void ValidateStart()
         {
-            // Make sure a new object or array is not attempted within an unfinalized string.
-            ValidateNotWithinUnfinalizedString();
-
-            if (_inObject)
+            // Note that Start[Array|Object] indicates the start of a value, so the same check can be used.
+            if (CannotWriteValue)
             {
-                if (_tokenType != JsonTokenType.PropertyName)
-                {
-                    Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
-                }
+                OnValidateStartFailed();
+            }
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void OnValidateStartFailed()
+        {
+            // Make sure a new object or array is not attempted within an unfinalized string.
+            if (_tokenType == StringSegmentSentinel)
+            {
+                ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
+            }
+
+            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
+            Debug.Assert(!HasPartialCodePoint);
+
+            if (_enclosingContainer == EnclosingContainerType.Object)
+            {
+                Debug.Assert(_tokenType != JsonTokenType.PropertyName);
+                Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
+                ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty);
             }
             else
             {
                 Debug.Assert(_tokenType != JsonTokenType.PropertyName);
                 Debug.Assert(_tokenType != JsonTokenType.StartObject);
-
-                // It is more likely for CurrentDepth to not equal 0 when writing valid JSON, so check that first to rely on short-circuiting and return quickly.
-                if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
-                {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
-                }
+                Debug.Assert(CurrentDepth == 0 && _tokenType != JsonTokenType.None);
+                ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose);
             }
         }
 
@@ -1081,33 +1093,33 @@ namespace System.Text.Json
             }
         }
 
+        // Performance degrades significantly in some scenarios when inlining is allowed.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void ValidateEnd(byte token)
         {
-            // Make sure an object is not ended within an unfinalized string.
-            ValidateNotWithinUnfinalizedString();
-
-            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName || _tokenType == StringSegmentSentinel)
+                ThrowInvalidOperationException_MismatchedObjectArray(token);
 
             if (token == JsonConstants.CloseBracket)
             {
-                if (_inObject)
+                if (_enclosingContainer != EnclosingContainerType.Array)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.None);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+                    ThrowInvalidOperationException_MismatchedObjectArray(token);
                 }
             }
             else
             {
                 Debug.Assert(token == JsonConstants.CloseBrace);
 
-                if (!_inObject)
+                if (_enclosingContainer != EnclosingContainerType.Object)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+                    ThrowInvalidOperationException_MismatchedObjectArray(token);
                 }
             }
 
-            _inObject = _bitStack.Pop();
+            EnclosingContainerType container = _bitStack.Pop() ? EnclosingContainerType.Object : EnclosingContainerType.Array;
+            _enclosingContainer = _bitStack.CurrentDepth == 0 ? EnclosingContainerType.None : container;
         }
 
         private void WriteEndIndented(byte token)
@@ -1173,13 +1185,13 @@ namespace System.Text.Json
             if (token == JsonConstants.OpenBracket)
             {
                 _bitStack.PushFalse();
-                _inObject = false;
+                _enclosingContainer = EnclosingContainerType.Array;
             }
             else
             {
                 Debug.Assert(token == JsonConstants.OpenBrace);
                 _bitStack.PushTrue();
-                _inObject = true;
+                _enclosingContainer = EnclosingContainerType.Object;
             }
         }
 
@@ -1255,7 +1267,44 @@ namespace System.Text.Json
             _currentDepth |= 1 << 31;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
+        private void ThrowInvalidOperationException(ExceptionResource resource)
+            => ThrowHelper.ThrowInvalidOperationException(resource, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
+        private void ThrowInvalidOperationException_MismatchedObjectArray(byte token)
+            => ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
+        private void ThrowInvalidOperationException_DepthTooLarge()
+            => ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, _options.MaxDepth, token: default, tokenType: default);
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"BytesCommitted = {BytesCommitted} BytesPending = {BytesPending} CurrentDepth = {CurrentDepth}";
+
+        /// <summary>
+        /// The type of container that is enclosing the current position. The underlying values have been chosen
+        /// to allow validation to be done using bitwise operations and must be kept in sync with JsonTokenType.
+        /// </summary>
+        private enum EnclosingContainerType : byte
+        {
+            /// <summary>
+            /// Root
+            /// </summary>
+            None = 0b0000_0000,
+
+            /// <summary>
+            /// JSON object. Note that this is the same value as JsonTokenType.PropertyName. See <see cref="CannotWriteValue"/> for more details.
+            /// </summary>
+            Object = 0b0000_0101,
+
+            /// <summary>
+            /// JSON array
+            /// </summary>
+            Array = 0b0001_0000,
+        }
     }
 }
