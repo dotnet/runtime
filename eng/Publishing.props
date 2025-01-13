@@ -140,7 +140,7 @@
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"
              Properties="IsShipping=false;
                          Crossgen2SdkOverridePropsPath=;
@@ -165,7 +165,7 @@
           BeforeTargets="PublishToAzureDevOpsArtifacts"
           Condition="'$(_ShouldGenerateProductVersionFiles)' == 'true'">
     <!-- Retrieve the runtime pack product version. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"
              Properties="Crossgen2SdkOverridePropsPath=;
                          Crossgen2SdkOverrideTargetsPath=">
