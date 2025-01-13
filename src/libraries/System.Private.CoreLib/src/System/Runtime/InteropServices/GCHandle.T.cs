@@ -42,6 +42,7 @@ namespace System.Runtime.InteropServices
         public readonly bool IsAllocated => _handle != IntPtr.Zero;
 
         /// <summary>Gets or sets the object this handle represents.</summary>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         public readonly T Target
         {
             get

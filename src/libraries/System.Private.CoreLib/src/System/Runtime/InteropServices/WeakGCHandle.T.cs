@@ -48,6 +48,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <param name="target">When this method returns, contains the target object, if it is available.</param>
         /// <returns><see langword="true"/> if the target was retrieved; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool TryGetTarget([NotNullWhen(true)] out T? target)
         {
@@ -60,6 +61,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>Sets the object this handle represents.</summary>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         public readonly void SetTarget(T target)
         {
             IntPtr handle = _handle;

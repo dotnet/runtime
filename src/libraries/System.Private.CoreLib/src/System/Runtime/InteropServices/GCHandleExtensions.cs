@@ -21,6 +21,7 @@ namespace System.Runtime.InteropServices
         /// The address of 0th array element the pinned array,
         /// or <see langword="null"/> if the handle doesn't point to any object.
         /// </returns>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         [CLSCompliant(false)]
         public static unsafe T* GetAddressOfArrayData<T>(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>
@@ -43,6 +44,7 @@ namespace System.Runtime.InteropServices
         /// The address of 0th character of the pinned <see cref="string"/>,
         /// or <see langword="null"/> if the handle doesn't point to any object.
         /// </returns>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         [CLSCompliant(false)]
         public static unsafe char* GetAddressOfStringData(
 #nullable disable // Nullable oblivious because no covariance between PinnedGCHandle<T> and PinnedGCHandle<T?>

@@ -45,6 +45,7 @@ namespace System.Runtime.InteropServices
         public readonly bool IsAllocated => _handle != IntPtr.Zero;
 
         /// <summary>Gets or sets the object this handle represents.</summary>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         public readonly T Target
         {
             get
@@ -80,6 +81,7 @@ namespace System.Runtime.InteropServices
         /// This method should only be used for blittable types. The layout of non-blittable types is undefined for interop.
         /// </para>
         /// </remarks>
+        /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
         [CLSCompliant(false)]
         public readonly unsafe void* GetAddressOfObjectData()
         {
