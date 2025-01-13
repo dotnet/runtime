@@ -26,7 +26,7 @@ namespace System.Drawing
         {
             if (value is string strValue)
             {
-                string text = strValue.Trim();
+                ReadOnlySpan<char> text = strValue.AsSpan().Trim();
                 if (text.Length == 0)
                 {
                     return null;
@@ -37,10 +37,10 @@ namespace System.Drawing
 
                 string sep = culture.TextInfo.ListSeparator;
                 Span<Range> ranges = stackalloc Range[3];
-                int rangesCount = text.AsSpan().Split(ranges, sep);
+                int rangesCount = text.Split(ranges, sep);
                 if (rangesCount != 2)
                 {
-                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text, $"x{sep} y"));
+                    throw new ArgumentException(SR.Format(SR.TextParseFailedFormat, text.ToString(), $"x{sep} y"));
                 }
 
                 TypeConverter converter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
