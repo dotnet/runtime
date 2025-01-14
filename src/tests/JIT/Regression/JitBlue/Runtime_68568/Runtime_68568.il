@@ -23,7 +23,7 @@
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = { }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnMonoAttribute::.ctor(string) = {
-        string('Tests coreclr's handling of switches on natively sized integers')
+        string('Tests coreclr handling of switches on natively sized integers')
     }
     .entrypoint
     // Code size       79 (0x4f)
