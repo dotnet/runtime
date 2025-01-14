@@ -15,6 +15,9 @@
     <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
               Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
               Visibility="Vertical" />
+    <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSDKRuntimeIdentifier).Microsoft.DotNet.ILCompiler.*.nupkg"
+              Visibility="Vertical" />
   </ItemGroup>
 
   <!--
