@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutDirName Condition="'$(TargetCrossRid)' != ''">monocrossaot-pack.$(TargetCrossRid)</OutDirName>
     <OutDirName Condition="'$(TargetCrossRid)' == ''">monocrossaot-pack.restore</OutDirName>
-    <RestoreOutputPath>$([System.IO.Path]::GetFullPath('$(ArtifactsObjDir)$monocrossaot-pack.restore\'))</RestoreOutputPath>
+    <RestoreOutputPath>$([System.IO.Path]::GetFullPath('$(ArtifactsObjDir)monocrossaot-pack.restore\'))</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
