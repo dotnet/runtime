@@ -1,86 +1,127 @@
 parameters:
-  - name: perfBranch
-    type: string
-    default: main
-  - name: crossgenEnabled
-    displayName: Crossgen Enabled
-    type: boolean
-    default: true
-  - name: crossgen
-    displayname: Crossgen Configs
-    type: object
-    default:
-      configs:
-        - windows_x64
-        - windows_x86
-  - name: viperJitOptRepeat
-    type: object
-    default:
-      enabled: true
-      configs:
-        - windows_x64
-        - linux_x64
-  - name: viperMicro
-    type: object
-    default:
-      enabled: true
-      configs:
-        - windows_x64
-        - linux_x64
-  - name: owlMicro
-    type: object
-    default:
-      enabled: true
-      configs:
-        - windows_x64
-        - linux_x64
-  - name: tigerNoR2R
-    type: object
-    default:
-      enabled: true
-      configs:
-        - windows_x64
-        - linux_x64
-  - name: tigerNoPGO
-    type: object
-    default:
-      enabled: true
-      configs:
-        - windows_x64
-        - linux_x64
-  - name: tigerMicro
-    type: object
-    default:
-      enabled: true
-      configs:
-        - windows_x64
-        - linux_x64
-        - windown_x86
-        - linux_musl_x64
-  - name: tigerMonoAOT
-    type: object
-    default:
-      enabled: true
-      configs:
-        - linux_x64
-  - name: tigerMonoInterpreter
-    type: object
-    default:
-      enabled: true
-      configs:
-        - linux_x64
-  - name: tigerMono
-    type: object
-    default:
-      enabled: true
-      configs:
-        - linux_x64
-  - name: androidMono
-    type: object
-    default:
-      enabled: true
-      configs:
-        - android_arm64
+- name: perfBranch
+  displayName: Performance Repo Branch
+  type: string
+  default: 'main'
+- name: crossgenEnabled
+  displayName: Crossgen Enabled
+  type: boolean
+  default: true
+- name: crossgen
+  displayName: Crossgen Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - windows_x86
+- name: viperJitOptRepeatEnabled
+  displayName: Viper Jit Opt Repeat Enabled
+  type: boolean
+  default: true
+- name: viperJitOptRepeat
+  displayName: Viper Jit Opt Repeat Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - linux_x64
+- name: viperMicroEnabled
+  displayName: Viper Micro Enabled
+  type: boolean
+  default: true
+- name: viperMicro
+  displayName: Viper Micro Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - linux_x64
+- name: owlMicroEnabled
+  displayName: Owl Micro Enabled
+  type: boolean
+  default: true
+- name: owlMicro
+  displayName: Owl Micro Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - linux_x64
+- name: tigerNoR2REnabled
+  displayName: Tiger No R2R Enabled
+  type: boolean
+  default: true
+- name: tigerNoR2R
+  displayName: Tiger No R2R Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - linux_x64
+- name: tigerNoPGOEnabled
+  displayName: Tiger No PGO Enabled
+  type: boolean
+  default: true
+- name: tigerNoPGO
+  displayName: Tiger No PGO Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - linux_x64
+- name: tigerMicroEnabled
+  displayName: Tiger Micro Enabled
+  type: boolean
+  default: true
+- name: tigerMicro
+  displayName: Tiger Micro Configs
+  type: object
+  default:
+    configs:
+      - windows_x64
+      - linux_x64
+      - windown_x86
+      - linux_musl_x64
+- name: tigerMonoAOTEnabled
+  displayName: Tiger Mono AOT Enabled
+  type: boolean
+  default: true
+- name: tigerMonoAOT
+  displayName: Tiger Mono AOT Configs
+  type: object
+  default:
+    configs:
+      - linux_x64
+- name: tigerMonoInterpreterEnabled
+  displayName: Tiger Mono Interpreter Enabled
+  type: boolean
+  default: true
+- name: tigerMonoInterpreter
+  displayName: Tiger Mono Interpreter Configs
+  type: object
+  default:
+    configs:
+      - linux_x64
+- name: tigerMonoEnabled
+  displayName: Tiger Mono Enabled
+  type: boolean
+  default: true
+- name: tigerMono
+  displayName: Tiger Mono Configs
+  type: object
+  default:
+    configs:
+      - linux_x64
+- name: androidMonoEnabled
+  displayName: Android Mono Enabled
+  type: boolean
+  default: true
+- name: androidMono
+  displayName: Android Mono Configs
+  type: object
+  default:
+    configs:
+      - android_arm64
 
 jobs:
 
