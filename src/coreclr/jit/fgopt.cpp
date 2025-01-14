@@ -4828,7 +4828,7 @@ void Compiler::fgMoveColdBlocks()
         }
     };
 
-    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
+    BasicBlock* lastMainBB = fgLastBBInMainFunction();
     if (lastMainBB->IsFirst())
     {
         return;
@@ -4855,35 +4855,41 @@ void Compiler::fgMoveColdBlocks()
 
     // We have moved all cold main blocks before lastMainBB to after lastMainBB.
     // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
+    // But first, we can't move just the tail of a call-finally pair,
+    // so point lastMainBB to the pair's head, if necessary.
     //
-    if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
+    if (lastMainBB->isBBCallFinallyPairTail())
     {
-        BasicBlock* const lastHotBB     = lastMainBB->Prev();
+        lastMainBB = lastMainBB->Prev();
+    }
+
+    BasicBlock* lastHotBB = nullptr;
+    if (lastMainBB->isBBWeightCold(this))
+    {
+        // lastMainBB is cold, so the block behind it (if there is one) is the last hot block
+        //
+        lastHotBB = lastMainBB->Prev();
+
+        // Move lastMainBB
+        //
         BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
         if (lastMainBB != newLastMainBB)
         {
             moveBlock(lastMainBB, newLastMainBB);
         }
-
-        if (lastHotBB == nullptr)
-        {
-            // The whole method is cold, so there isn't any point in defining a cold section for layout purposes
-            //
-            assert(fgFirstBB->isBBWeightCold(this));
-        }
-        else
-        {
-            // Save beginning of cold section for later
-            //
-            fgFirstColdBlock = lastHotBB->Next();
-        }
     }
     else
     {
-        // Save beginning of cold section for later
+        // lastMainBB isn't cold, so it (or its call-finally pair tail) the last hot block
         //
-        fgFirstColdBlock = lastMainBB->Next();
+        lastHotBB = lastMainBB->isBBCallFinallyPair() ? lastMainBB->Next() : lastMainBB;
     }
+
+    // Save the beginning of the cold section for later.
+    // If lastHotBB is null, there isn't a hot section,
+    // so there's no point in differentiating between sections for layout purposes.
+    //
+    fgFirstColdBlock = (lastHotBB == nullptr) ? nullptr : lastHotBB->Next();
 }
 
 //-----------------------------------------------------------------------------
@@ -5240,12 +5246,7 @@ void Compiler::ThreeOptLayout::Run()
     // Reset cold section pointer, in case we decide to do hot/cold splitting later
     compiler->fgFirstColdBlock = nullptr;
 
-    // Get an upper bound on the number of hot blocks without walking the whole block list.
-    // This is computed using the number of blocks reachable by normal flow,
-    // plus some extra room for the entry blocks of unreachable try regions left in-place.
-    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount() + compiler->compHndBBtabCount;
-
-    // We better have an end block for the hot section, and it better not be splitting a call-finally pair
+    // We better have an end block for the hot section, and it better not be the start of a call-finally pair.
     assert(finalBlock != nullptr);
     assert(!finalBlock->isBBCallFinallyPair());
 
@@ -5255,6 +5256,11 @@ void Compiler::ThreeOptLayout::Run()
         JITDUMP("Not enough blocks to partition anything. Skipping 3-opt.\n");
         return;
     }
+
+    // Get an upper bound on the number of hot blocks without walking the whole block list.
+    // This is computed using the number of blocks reachable by normal flow,
+    // plus some extra room for the entry blocks of unreachable try regions left in-place.
+    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount() + compiler->compHndBBtabCount;
 
     assert(numBlocksUpperBound != 0);
     blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
