@@ -516,7 +516,8 @@ namespace ILCompiler.ObjectWriter
                         IMAGE_REL_BASED_DIR64 => R_LARCH_64,
                         IMAGE_REL_BASED_HIGHLOW => R_LARCH_32,
                         IMAGE_REL_BASED_RELPTR32 => R_LARCH_32_PCREL,
-                        IMAGE_REL_BASED_RISCV64_PC or IMAGE_REL_BASED_RISCV64_JALR => R_RISCV_64_HI20,
+                        IMAGE_REL_BASED_LOONGARCH64_PC => R_LARCH_PCALA_HI20,
+                        IMAGE_REL_BASED_LOONGARCH64_JIR => R_LARCH_CALL36,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -552,8 +553,7 @@ namespace ILCompiler.ObjectWriter
                         IMAGE_REL_BASED_DIR64 => R_RISCV_64,
                         IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
                         IMAGE_REL_BASED_RELPTR32 => R_RISCV_64_LO12,
-                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_PCREL_HI20,
-                        IMAGE_REL_BASED_RISCV64_JALR => R_RISCV_CALL32,
+                        IMAGE_REL_BASED_RISCV64_PC or IMAGE_REL_BASED_RISCV64_JALR => R_RISCV_64_HI20,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -847,7 +847,7 @@ namespace ILCompiler.ObjectWriter
                     EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
                     // TODO: update once RISC-V runtime supports "C" extension (compressed instructions)
                     // it should be 0x0005u EF_RISCV_RVC (0x0001) | EF_RISCV_FLOAT_ABI_DOUBLE (0x0006)
-                    EM_RISCV => 0x0004u, // EF_RISCV_FLOAT_ABI_DOUBLE (double precision floating-point ABI).
+                    EM_RISCV => 0x0005u, // EF_RISCV_FLOAT_ABI_DOUBLE (double precision floating-point ABI).
                     _ => 0u
                 },
             };
