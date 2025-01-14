@@ -5110,7 +5110,16 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     bool hasStructParam = false;
     for (unsigned varNum = 0; varNum < lvaCount; varNum++)
     {
-        LclVarDsc* varDsc = lvaGetDesc(varNum);
+        LclVarDsc* const varDsc = lvaGetDesc(varNum);
+
+        // Ignore any local that is unreferenced.
+        //
+        const unsigned totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+
+        if (totalAppearances == 0)
+        {
+            continue;
+        }
 
         // If the method is marked as an explicit tail call we will skip the
         // following three hazard checks.
