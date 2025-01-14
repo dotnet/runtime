@@ -95,7 +95,7 @@ static bool InitDLL(HANDLE hPalInstance)
     //
     // Initialize interface dispatch.
     //
-    if (!InitializeInterfaceDispatch())
+    if (!InterfaceDispatch_Initialize())
         return false;
 #endif
 

@@ -5,6 +5,7 @@ set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     rhassert.cpp
     ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
+    CachedInterfaceDispatchAot.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
