@@ -826,6 +826,10 @@
     <Target>T:System.Runtime.CompilerServices.StaticClassConstructionContext</Target>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.TypeSystem.LockFreeReaderHashtableOfPointers`2</Target>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Reflection.MethodBase.GetParametersAsSpan</Target>
   </Suppression>

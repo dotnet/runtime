@@ -603,7 +603,7 @@ namespace System.Reflection.Emit
             _pdbBuilder.AddDocument(
                 name: _pdbBuilder.GetOrAddDocumentName(url),
                 hashAlgorithm: hashAlgorithm == default ? default : _pdbBuilder.GetOrAddGuid(hashAlgorithm),
-                hash: hash == null ? default : _metadataBuilder.GetOrAddBlob(hash),
+                hash: hash == null ? default : _pdbBuilder.GetOrAddBlob(hash),
                 language: language == default ? default : _pdbBuilder.GetOrAddGuid(language));
 
         private void FillMemberReferences(ILGeneratorImpl il)
