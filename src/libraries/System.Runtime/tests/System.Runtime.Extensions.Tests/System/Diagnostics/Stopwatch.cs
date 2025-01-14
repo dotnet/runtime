@@ -163,7 +163,14 @@ namespace System.Diagnostics.Tests
 
         private static void Sleep(int milliseconds)
         {
-            s_sleepEvent.WaitOne(milliseconds);
+            if (PlatformDetection.IsThreadingSupported)
+            {
+                s_sleepEvent.WaitOne(milliseconds);
+            }
+            else
+            {
+                Thred.Sleep(milliseconds);
+            }
         }
     }
 }

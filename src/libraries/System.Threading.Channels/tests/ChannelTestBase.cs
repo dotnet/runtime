@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Threading.Channels.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public abstract partial class ChannelTestBase : TestBase
     {
         protected Channel<int> CreateChannel() => CreateChannel<int>();
