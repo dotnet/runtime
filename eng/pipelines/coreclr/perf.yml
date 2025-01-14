@@ -136,3 +136,14 @@ extends:
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
         parameters:
           perfBranch: ${{ parameters.perfBranch }}
+          crossgen: ${{ parameters.crossgen }}
+          viperJitOptRepeat: ${{ parameters.viperJitOptRepeat }}
+          viperMicro: ${{ parameters.viperMicro }}
+          owlMicro: ${{ parameters.owlMicro }}
+          tigerNoR2R: ${{ parameters.tigerNoR2R }}
+          tigerNoPGO: ${{ parameters.tigerNoPGO }}
+          tigerMicro: ${{ parameters.tigerMicro }}
+          tigerMonoAOT: ${{ parameters.tigerMonoAOT }}
+          tigerMonoInterpreter: ${{ parameters.tigerMonoInterpreter }}
+          tigerMono: ${{ parameters.tigerMono }}
+          androidMono: ${{ parameters.androidMono }}
