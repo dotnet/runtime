@@ -413,7 +413,7 @@ public:
     virtual void MulticastTraceNextStep(DELEGATEREF pbDel, INT32 count) = 0;
     virtual void ExternalMethodFixupNextStep(PCODE address) = 0;
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-    virtual void SingleStepToExitApcCall(Thread* pThread) = 0;
+    virtual void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext) = 0;
 #endif // FEATURE_SPECIAL_USER_MODE_APC        
 #endif //DACCESS_COMPILE
 };

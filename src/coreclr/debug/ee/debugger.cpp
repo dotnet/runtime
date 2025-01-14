@@ -16806,11 +16806,12 @@ void Debugger::ExternalMethodFixupNextStep(PCODE address)
     DebuggerController::DispatchExternalMethodFixup(address);
 }
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-void Debugger::SingleStepToExitApcCall(Thread* pThread)
+void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
 {
     pThread->SetThreadState(Thread::TS_SSToExitApcCall);
+    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
     DebuggerController::EnableSingleStep(pThread);
-    pThread->ReleaseFromSuspension(Thread::TS_DebugSuspendPending);
+    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
 }
 #endif //FEATURE_SPECIAL_USER_MODE_APC
 #endif //DACCESS_COMPILE

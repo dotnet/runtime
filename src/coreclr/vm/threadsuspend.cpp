@@ -4225,14 +4225,6 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
             continue;
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
-        if (thread->m_hasPendingActivation && CORDebuggerAttached() 
-            && (thread->m_State & Thread::TS_SyncSuspended)
-            && !(thread->m_State & Thread::TS_SSToExitApcCall)
-            && !(thread->m_State & Thread::TS_SSToExitApcCallDone))
-        {
-            g_pDebugInterface->SingleStepToExitApcCall(thread);
-            continue;
-        }
         if (thread->m_State & Thread::TS_SSToExitApcCallDone)
         {
             thread->ResetThreadState(Thread::TS_SSToExitApcCallDone);
@@ -5777,6 +5769,58 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
     return isActivationSafePoint;
 }
 
+// This function is called when thread suspension is pending for debugger if APC is enabled.
+// As it's not allowed to change the IP while paused in an APC Callback for security reasons 
+// if CET is enabled, the goal of this function is to enable single step in the paused thread
+// and then pause using single step exception after exit the APC callback
+// this will allow the debugger to setIp to execute FuncEvalHijack.
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void HandleSuspensionForInterruptedThreadForDebugger(CONTEXT *interruptedContext)
+{
+    struct AutoClearPendingThreadActivation
+    {
+        ~AutoClearPendingThreadActivation()
+        {
+            GetThread()->m_hasPendingActivation = false;
+        }
+    } autoClearPendingThreadActivation;
+
+    Thread *pThread = GetThread();
+
+    if (pThread->PreemptiveGCDisabled() != TRUE)
+        return;
+
+    PCODE ip = GetIP(interruptedContext);
+
+    // This function can only be called when the interrupted thread is in
+    // an activation safe point.
+    _ASSERTE(CheckActivationSafePoint(ip));
+
+    Thread::WorkingOnThreadContextHolder workingOnThreadContext(pThread);
+    if (!workingOnThreadContext.Acquired())
+        return;
+
+#if defined(DEBUGGING_SUPPORTED) && defined(TARGET_WINDOWS)
+    // If we are running under the control of a managed debugger that may have placed breakpoints in the code stream,
+    // then there is a special case that we need to check. See the comments in debugger.cpp for more information.
+    if (CORDebuggerAttached() && g_pDebugInterface->IsThreadContextInvalid(pThread, interruptedContext))
+        return;
+#endif // DEBUGGING_SUPPORTED && TARGET_WINDOWS
+
+    EECodeInfo codeInfo(ip);
+    if (!codeInfo.IsValid())
+        return;
+
+    DWORD addrOffset = codeInfo.GetRelOffset();
+
+    ICodeManager *pEECM = codeInfo.GetCodeManager();
+    _ASSERTE(pEECM != NULL);
+
+    printf("olha o context no HandleSuspensionForInterruptedThreadForDebugger - %p\n", interruptedContext);
+    g_pDebugInterface->SingleStepToExitApcCall(pThread, interruptedContext);
+}
+#endif
+
 // This function is called when thread suspension is pending. It tries to ensure that the current
 // thread is taken to a GC-safe place as quickly as possible. It does this by doing
 // one of the following:
@@ -5928,8 +5972,12 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
 
     switch (reason)
     {
-        case ActivationReason::SuspendForGC:
         case ActivationReason::SuspendForDebugger:
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+            HandleSuspensionForInterruptedThreadForDebugger(pContext);
+            break;
+#endif
+        case ActivationReason::SuspendForGC:
         case ActivationReason::ThreadAbort:
             HandleSuspensionForInterruptedThread(pContext);
             break;

@@ -484,7 +484,9 @@ class Thread
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
-
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    friend void HandleSuspensionForInterruptedThreadForDebugger(CONTEXT *interruptedContext);
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
