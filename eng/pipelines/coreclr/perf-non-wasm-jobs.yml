@@ -232,7 +232,7 @@ jobs:
         hybridGlobalization: True
         perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.androidMono.enabled, true) }}:
+  - ${{ if eq(parameters.androidMonoEnabled, true) }}:
     # run android scenarios
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -250,7 +250,7 @@ jobs:
           logicalmachine: 'perfpixel4a'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.tigerMono.enabled, true) }}:
+  - ${{ if eq(parameters.tigerMonoEnabled, true) }}:
     # run mono microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -269,7 +269,7 @@ jobs:
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.tigerMonoInterpreter.enabled, true) }}:
+  - ${{ if eq(parameters.tigerMonoInterpreterEnabled, true) }}:
     # run mono interpreter perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -289,7 +289,7 @@ jobs:
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.tigerMonoAOT.enabled, true) }}:
+  - ${{ if eq(parameters.tigerMonoAOTEnabled, true) }}:
     # run mono aot microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -309,7 +309,7 @@ jobs:
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.tigerMicro.enabled, true) }}:
+  - ${{ if eq(parameters.tigerMicroEnabled, true) }}:
     # run coreclr perftiger microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -326,7 +326,7 @@ jobs:
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.tigerNoPGO.enabled, true) }}:
+  - ${{ if eq(parameters.tigerNoPGOEnabled, true) }}:
     # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -344,7 +344,7 @@ jobs:
           pgoRunType: nodynamicpgo
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.tigerNoR2R.enabled, true) }}:
+  - ${{ if eq(parameters.tigerNoR2REnabled, true) }}:
     # run coreclr perftiger microbenchmarks no R2R perf jobs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -362,7 +362,7 @@ jobs:
           r2rRunType: nor2r
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.owlMicro.enabled, true) }}:
+  - ${{ if eq(parameters.owlMicroEnabled, true) }}:
     # run coreclr perfowl microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -379,7 +379,7 @@ jobs:
           logicalmachine: 'perfowl'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.viperMicro.enabled, true) }}:
+  - ${{ if eq(parameters.viperMicroEnabled, true) }}:
     # run coreclr perfviper microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -396,7 +396,7 @@ jobs:
           logicalmachine: 'perfviper'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.viperJitOptRepeat.enabled, true) }}:
+  - ${{ if eq(parameters.viperJitOptRepeatEnabled, true) }}:
     # run coreclr perfviper microbenchmarks perf jitoptrepeat jobs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -414,7 +414,7 @@ jobs:
           experimentName: 'jitoptrepeat'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - ${{ if eq(parameters.crossgen.enabled, true) }}:
+  - ${{ if eq(parameters.crossgenEnabled, true) }}:
     # run coreclr crossgen perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
