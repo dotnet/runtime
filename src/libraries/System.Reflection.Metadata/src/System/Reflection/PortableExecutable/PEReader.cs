@@ -195,7 +195,7 @@ namespace System.Reflection.PortableExecutable
                         // if the caller asked for metadata initialize the PE headers (calculates metadata offset):
                         if ((options & PEStreamOptions.PrefetchMetadata) != 0)
                         {
-                            _lazyPEHeaders = new PEHeaders(imageBlock, IsLoadedImage);
+                            _lazyPEHeaders = new PEHeaders(imageBlock.GetStream(), imageBlock.Size, IsLoadedImage);
                         }
                     }
                     else
@@ -309,9 +309,27 @@ namespace System.Reflection.PortableExecutable
         [MemberNotNull(nameof(_lazyPEHeaders))]
         private void InitializePEHeaders()
         {
-            AbstractMemoryBlock memoryBlock = GetPEImage().GetMemoryBlock();
+            MemoryBlockProvider peImage = GetPEImage();
 
-            PEHeaders headers = new PEHeaders(memoryBlock, IsLoadedImage);
+            PEHeaders headers;
+            // If the PE image is backed by a stream, use that to read the headers.
+            if (peImage.TryGetUnderlyingStream(out Stream? stream, out long imageStart, out int imageSize, out object? streamGuard))
+            {
+                lock (streamGuard)
+                {
+                    Debug.Assert(imageStart >= 0 && imageStart <= stream.Length);
+                    stream.Seek(imageStart, SeekOrigin.Begin);
+                    headers = new PEHeaders(stream, imageSize, IsLoadedImage);
+                }
+            }
+            // Otherwise, get the memory block and wrap it in a stream.
+            else
+            {
+                // No need to acquire any lock here; GetStream() creates a new stream.
+                AbstractMemoryBlock memoryBlock = peImage.GetMemoryBlock();
+                headers = new PEHeaders(memoryBlock.GetStream(), memoryBlock.Size, IsLoadedImage);
+            }
+
             Interlocked.CompareExchange(ref _lazyPEHeaders, headers, null);
         }
 

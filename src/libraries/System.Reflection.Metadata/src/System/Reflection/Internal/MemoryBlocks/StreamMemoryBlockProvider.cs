@@ -28,7 +28,7 @@ namespace System.Reflection.Internal
         private readonly object _streamGuard;
 
         private readonly bool _leaveOpen;
-        private bool _useMemoryMap;
+        private readonly bool _useMemoryMap;
 
         private readonly long _imageStart;
         private readonly int _imageSize;
@@ -86,6 +86,15 @@ namespace System.Reflection.Internal
             }
 
             return block;
+        }
+
+        public override bool TryGetUnderlyingStream([NotNullWhen(true)] out Stream? stream, out long imageStart, out int imageSize, [NotNullWhen(true)] out object? streamGuard)
+        {
+            stream = _stream;
+            imageStart = _imageStart;
+            imageSize = _imageSize;
+            streamGuard = _streamGuard;
+            return true;
         }
 
         /// <exception cref="IOException">Error while reading from the stream.</exception>
