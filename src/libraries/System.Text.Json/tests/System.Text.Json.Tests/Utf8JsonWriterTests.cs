@@ -272,17 +272,17 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(newStr.AsSpan(), writerOptions, output =>
+                        SplitStringDataHelper(newStr.AsSpan(), writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? (i + 1) : -1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf16);
+                        }, StringValueEncodingType.Utf16);
 
-                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                        SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? (i + 1) : -1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf8);
+                        }, StringValueEncodingType.Utf8);
                     }
                 }
 
@@ -303,17 +303,17 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(changed, writerOptions, output =>
+                        SplitStringDataHelper(changed, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? 1 : -1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf16);
+                        }, StringValueEncodingType.Utf16);
 
-                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                        SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(requiresEscaping ? 1 : -1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf8);
+                        }, StringValueEncodingType.Utf8);
                     }
                 }
             }
@@ -427,15 +427,15 @@ namespace System.Text.Json.Tests
 
                 if (dataLength < 10)
                 {
-                    SplitCodePointsHelper(str, writerOptions, output =>
+                    SplitStringDataHelper(str, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    }, EncodingType.Utf16);
+                    }, StringValueEncodingType.Utf16);
 
-                    SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                    SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    }, EncodingType.Utf8);
+                    }, StringValueEncodingType.Utf8);
                 }
 
                 for (int i = 0; i < dataLength; i++)
@@ -455,19 +455,19 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(source.AsSpan(), writerOptions, output =>
+                        SplitStringDataHelper(source.AsSpan(), writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             // Each CJK character expands to 3 utf-8 bytes.
                             Assert.Equal(requiresEscaping ? ((i * 3) + 1) : -1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf16);
+                        }, StringValueEncodingType.Utf16);
 
-                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                        SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             // Each CJK character expands to 3 utf-8 bytes.
                             Assert.Equal(requiresEscaping ? ((i * 3) + 1) : -1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf8);
+                        }, StringValueEncodingType.Utf8);
                     }
                 }
             }
@@ -538,15 +538,15 @@ namespace System.Text.Json.Tests
 
                 if (dataLength < 10)
                 {
-                    SplitCodePointsHelper(str, writerOptions, output =>
+                    SplitStringDataHelper(str, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    }, EncodingType.Utf16);
+                    }, StringValueEncodingType.Utf16);
 
-                    SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                    SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                     {
                         Assert.Equal(-1, output.WrittenSpan.IndexOf((byte)'\\'));
-                    }, EncodingType.Utf8);
+                    }, StringValueEncodingType.Utf8);
                 }
 
                 for (int i = 0; i < dataLength - 1; i++)
@@ -567,17 +567,17 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(changed, writerOptions, output =>
+                        SplitStringDataHelper(changed, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(i + 1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf16);
+                        }, StringValueEncodingType.Utf16);
 
-                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                        SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(i + 1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf8);
+                        }, StringValueEncodingType.Utf8);
                     }
                 }
 
@@ -603,17 +603,17 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(changed, writerOptions, output =>
+                        SplitStringDataHelper(changed, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf16);
+                        }, StringValueEncodingType.Utf16);
 
-                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                        SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                         {
                             escapedIndex = output.WrittenSpan.IndexOf((byte)'\\');
                             Assert.Equal(1, escapedIndex);  // Account for the start quote
-                        }, EncodingType.Utf8);
+                        }, StringValueEncodingType.Utf8);
                     }
                 }
             }
@@ -667,15 +667,15 @@ namespace System.Text.Json.Tests
 
                     if (dataLength < 10)
                     {
-                        SplitCodePointsHelper(changed, writerOptions, output =>
+                        SplitStringDataHelper(changed, writerOptions, output =>
                         {
                             Assert.True(BeginsWithReplacementCharacter(output.WrittenSpan.Slice(i + 1))); // +1 to account for starting quote
-                        }, EncodingType.Utf16);
+                        }, StringValueEncodingType.Utf16);
 
-                        SplitCodePointsHelper(sourceUtf8, writerOptions, output =>
+                        SplitStringDataHelper(sourceUtf8, writerOptions, output =>
                         {
                             Assert.True(BeginsWithReplacementCharacter(output.WrittenSpan.Slice(i + 1))); // +1 to account for starting quote
-                        }, EncodingType.Utf8);
+                        }, StringValueEncodingType.Utf8);
                     }
                 }
             }
