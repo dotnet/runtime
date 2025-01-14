@@ -470,7 +470,7 @@ namespace ILCompiler.DependencyAnalysis
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
-            Debug.Assert((int)imm32 == imm32);
+            Debug.Assert((imm32 >= (long)-0x80000000 - 0x800) && (imm32 < (long)0x80000000 - 0x800));
 
             int doff = (int)(imm32 & 0xfff);
             uint auipcInstr = *pCode;
@@ -487,45 +487,6 @@ namespace ILCompiler.DependencyAnalysis
             *(pCode + 1) = nextInstr;
 
             Debug.Assert(GetRiscV64PC(pCode) == imm32);
-        }
-
-        private static unsafe long GetRiscV64JALR(uint* pCode)
-        {
-            uint jalrInstr = *pCode;
-
-            // Extract and sign-extend the 12-bit signed immediate (bits 31:20 of the instruction).
-            return unchecked((int)jalrInstr) >> 20;
-        }
-
-        private static unsafe void PutRiscV64JALR(uint* pCode, long imm32)
-        {
-            // Verify that we got a valid offset within 32-bit signed range.
-            Debug.Assert((imm32 >= -0x80000000) && (imm32 < 0x80000000));
-
-            uint pcInstr = *pCode;
-
-            // Validate that the first instruction is AUIPC
-            Debug.Assert((pcInstr & 0x7f) == 0x17);
-
-            // Break the immediate into high and low parts
-            long immHi20 = (imm32 + 0x800) >> 12;
-            long immLo12 = imm32 & 0xfff;
-
-            // Assemble the AUIPC instruction with the upper 20 bits of imm32.
-            pcInstr |= (uint)((immHi20 & 0xfffff) << 12);
-            *pCode = pcInstr;
-
-            pcInstr = *(pCode + 1);
-
-            // Validate that the second instruction is JALR
-            Debug.Assert((pcInstr & 0x7f) == 0x67);
-
-            // Assemble the JALR instruction with the lower 12 bits of imm32.
-            pcInstr |= (uint)((immLo12 & 0xfff) << 20);
-            *(pCode + 1) = pcInstr;
-
-            // Debug validation to ensure reconstruction is correct.
-            Debug.Assert(GetRiscV64JALR(pCode) == imm32);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
@@ -586,10 +547,8 @@ namespace ILCompiler.DependencyAnalysis
                     PutLoongArch64JIR((uint*)location, value);
                     break;
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                    PutRiscV64PC((uint*)location, value);
-                    break;
                 case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
-                    PutRiscV64JALR((uint*)location, value);
+                    PutRiscV64PC((uint*)location, value);
                     break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -657,9 +616,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     return (long)GetLoongArch64JIR((uint*)location);
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                    return (long)GetRiscV64PC((uint*)location);
                 case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
-                    return (long)GetRiscV64JALR((uint*)location);
+                    return (long)GetRiscV64PC((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
