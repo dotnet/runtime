@@ -103,18 +103,16 @@ namespace System.Net.Test.Common
             public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), new Version(2, 0));
 
-            public static IEnumerable<RemoteServer> GetRemoteServers()
-            {
-                return new RemoteServer[]
+            public static IEnumerable<RemoteServer> RemoteServers =>
+                new RemoteServer[]
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                     // RemoteHttp11Server,
                     RemoteSecureHttp11Server,
                     RemoteHttp2Server
                 };
-            }
 
-            public static readonly IEnumerable<object[]> RemoteServersMemberData = GetRemoteServers().Select(s => new object[] { s });
+            public static readonly IEnumerable<object[]> RemoteServersMemberData = RemoteServers.Select(s => new object[] { s });
 
             public sealed class RemoteServer
             {
