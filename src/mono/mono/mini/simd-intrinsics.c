@@ -2434,7 +2434,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				arg0_type = MONO_TYPE_I8;
 				cast_class = mono_defaults.int64_class;
 			}
-			arg_class = create_class_instance ("System.Runtime.Intrinsics", m_class_get_name (klass), m_class_get_byval_arg (cast_class));
+
+			const char *klass_name = m_class_get_name (klass);
+
+			if (!strcmp (klass_name, "Vector4")) {
+				klass_name = "Vector128`1";
+			}
+			arg_class = create_class_instance ("System.Runtime.Intrinsics", klass_name, m_class_get_byval_arg (cast_class));
 		} else {
 			arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		}
