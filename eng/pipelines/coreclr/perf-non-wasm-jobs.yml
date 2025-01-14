@@ -2,6 +2,10 @@ parameters:
   - name: perfBranch
     type: string
     default: main
+  - name: crossgenEnabled
+    displayName: Crossgen Enabled
+    type: boolean
+    default: true
   - name: crossgen
     type: object
     default:
