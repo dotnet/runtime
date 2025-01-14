@@ -256,7 +256,7 @@ namespace System.Net
         public static int HostToNetworkOrder(int host) { throw null; }
         public static long HostToNetworkOrder(long host) { throw null; }
         public static bool IsLoopback(System.Net.IPAddress address) { throw null; }
-        public static bool IsValid(System.ReadOnlySpan<byte> utf8Text) { throw null; }
+        public static bool IsValidUtf8(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> ipSpan) { throw null; }
         public System.Net.IPAddress MapToIPv4() { throw null; }
         public System.Net.IPAddress MapToIPv6() { throw null; }

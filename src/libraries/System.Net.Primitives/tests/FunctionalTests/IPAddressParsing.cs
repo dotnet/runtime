@@ -641,7 +641,7 @@ namespace System.Net.Primitives.Functional.Tests
         private static void TestIsValid(string address, bool expectedValid)
         {
             Assert.Equal(expectedValid, IPAddress.IsValid(address));
-            Assert.Equal(expectedValid, IPAddress.IsValid(Encoding.UTF8.GetBytes(address)));
+            Assert.Equal(expectedValid, IPAddress.IsValidUtf8(Encoding.UTF8.GetBytes(address)));
         }
     }
 }

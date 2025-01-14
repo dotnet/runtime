@@ -20,7 +20,7 @@ namespace DotnetFuzzing.Fuzzers
             using var poisonedBytes = PooledBoundedMemory<byte>.Rent(bytes, PoisonPagePlacement.After);
             using var poisonedChars = PooledBoundedMemory<char>.Rent(MemoryMarshal.Cast<byte, char>(bytes), PoisonPagePlacement.After);
 
-            if (IPAddress.IsValid(poisonedBytes.Span))
+            if (IPAddress.IsValidUtf8(poisonedBytes.Span))
             {
                 TestValidInput(bytes: poisonedBytes.Span);
             }
