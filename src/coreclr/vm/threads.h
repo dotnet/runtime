@@ -481,12 +481,9 @@ class Thread
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
-    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    friend void HandleSuspensionForInterruptedThreadForDebugger(CONTEXT *interruptedContext);
-#endif // FEATURE_SPECIAL_USER_MODE_APC
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
