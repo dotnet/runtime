@@ -3443,20 +3443,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType))
+#if defined(TARGET_X86)
+            if ((simdBaseType == TYP_LONG) || (simdBaseType == TYP_DOUBLE))
             {
-                // byte and sbyte would require more work to support
-                break;
-            }
-
-            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX) && !impStackTop(0).val->IsCnsIntOrI())
                 {
-                    // long, ulong, and double would require more work to support
+                    // If vpsraq is available, we can use that. We can also trivially emulate arithmetic shift by const
+                    // amount. Otherwise, more work is required for long types, so we fall back to managed for now.
                     break;
                 }
             }
+#endif // TARGET_X86
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
