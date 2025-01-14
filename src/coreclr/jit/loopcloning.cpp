@@ -2070,6 +2070,21 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
     BasicBlock* newPred = bottom;
 
+    // Ensure the slow loop preheader ends up in the same EH region
+    // as the preheader.
+    //
+    while (!BasicBlock::sameEHRegion(newPred, preheader))
+    {
+        BasicBlock* const next = newPred->Next();
+        if (next == nullptr)
+        {
+            // Insert at end. We will handle this case of
+            // EH region mismatch below.
+            break;
+        }
+        newPred = next;
+    }
+
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
     // The slow preheader will unconditionally branch to the slow loop header.
