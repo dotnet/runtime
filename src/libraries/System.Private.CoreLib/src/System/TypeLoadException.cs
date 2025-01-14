@@ -29,6 +29,13 @@ namespace System
             HResult = HResults.COR_E_TYPELOAD;
         }
 
+        internal TypeLoadException(string message, string typeName)
+            : base(message)
+        {
+            HResult = HResults.COR_E_TYPELOAD;
+            _className = typeName;
+        }
+
         public override string Message
         {
             get
