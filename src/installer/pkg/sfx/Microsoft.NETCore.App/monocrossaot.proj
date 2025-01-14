@@ -11,21 +11,13 @@
     <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
   </PropertyGroup>
 
-  <ItemGroup>
-    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" Build="false" />
+  <!-- Only restore the target sfxproj once to avoid any parallel restore issues. -->
+  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' == ''">
+    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" Properties="TargetCrossRid=%(Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+    <ProjectReference Include="@(MonoAotTargetRids->'$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj')" />
   </ItemGroup>
 
-  <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
-    <MSBuild Targets="BuildMonoCrossTarget"
-             Projects="$(MSBuildThisFileFullPath)"
-             BuildInParallel="true"
-             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
-  </Target>
-
-  <Target Name="BuildMonoCrossTarget">
-    <MSBuild Targets="GenerateNuspec"
-             Projects="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-             Properties="TargetCrossRid=$(MonoAotTargetRid)" />
-  </Target>
+  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" />
+  </ItemGroup>
 </Project>
