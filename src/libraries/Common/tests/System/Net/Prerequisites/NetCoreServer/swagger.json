@@ -11,9 +11,6 @@
   "servers": [
     {
       "url": "https://corefx-net-http11.azurewebsites.net/"
-    },
-    {
-      "url": "https://corefx-net-http2.azurewebsites.net/"
     }
   ],
   "paths": {
