@@ -37,7 +37,7 @@ namespace System.Reflection.Internal
         }
 
         /// <summary>
-        /// Tries to get the <see cref="Stream"/> backing the <see cref="MemoryBlockProvider"/>, if there is one.
+        /// Gets the <see cref="Stream"/> backing the <see cref="MemoryBlockProvider"/>, if there is one.
         /// </summary>
         /// <remarks>
         /// It is the caller's responsibility to use <paramref name="stream"/> only

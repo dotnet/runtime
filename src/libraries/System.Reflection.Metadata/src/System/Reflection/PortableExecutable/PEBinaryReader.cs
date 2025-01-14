@@ -17,7 +17,7 @@ namespace System.Reflection.PortableExecutable
     ///
     /// Only methods that are needed to read PE headers are implemented.
     /// </summary>
-    internal readonly struct PEBinaryReader : IBinaryReader
+    internal readonly struct PEBinaryReader
     {
         private readonly long _startOffset;
         private readonly long _maxOffset;
@@ -84,6 +84,14 @@ namespace System.Reflection.PortableExecutable
             return _reader.ReadUInt64();
         }
 
+        /// <summary>
+        /// Reads a fixed-length byte block as a null-padded UTF-8 encoded string.
+        /// The padding is not included in the returned string.
+        ///
+        /// Note that it is legal for UTF-8 strings to contain NUL; if NUL occurs
+        /// between non-NUL codepoints, it is not considered to be padding and
+        /// is included in the result.
+        /// </summary>
         public string ReadNullPaddedUTF8(int byteCount)
         {
             byte[] bytes = ReadBytes(byteCount);

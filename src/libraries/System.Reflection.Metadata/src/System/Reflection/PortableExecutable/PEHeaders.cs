@@ -15,17 +15,17 @@ namespace System.Reflection.PortableExecutable
     /// </summary>
     public sealed class PEHeaders
     {
-        private CoffHeader _coffHeader;
-        private PEHeader? _peHeader;
-        private ImmutableArray<SectionHeader> _sectionHeaders;
-        private CorHeader? _corHeader;
-        private bool _isLoadedImage;
+        private readonly CoffHeader _coffHeader;
+        private readonly PEHeader? _peHeader;
+        private readonly ImmutableArray<SectionHeader> _sectionHeaders;
+        private readonly CorHeader? _corHeader;
+        private readonly bool _isLoadedImage;
 
-        private int _metadataStartOffset = -1;
-        private int _metadataSize;
-        private int _coffHeaderStartOffset = -1;
-        private int _corHeaderStartOffset = -1;
-        private int _peHeaderStartOffset = -1;
+        private readonly int _metadataStartOffset = -1;
+        private readonly int _metadataSize;
+        private readonly int _coffHeaderStartOffset = -1;
+        private readonly int _corHeaderStartOffset = -1;
+        private readonly int _peHeaderStartOffset = -1;
 
         internal const ushort DosSignature = 0x5A4D;     // 'M' 'Z'
         internal const int PESignatureOffsetLocation = 0x3C;
@@ -83,31 +83,20 @@ namespace System.Reflection.PortableExecutable
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
             }
 
+            _isLoadedImage = isLoadedImage;
+
             int actualSize = StreamExtensions.GetAndValidateSize(peStream, size, nameof(peStream));
             var reader = new PEBinaryReader(peStream, actualSize);
-            Init(ref reader, actualSize, isLoadedImage);
-        }
-
-        internal PEHeaders(AbstractMemoryBlock memoryBlock, bool isLoadedImage)
-        {
-            var blobReader = memoryBlock.GetReader();
-            Init(ref blobReader, blobReader.Length, isLoadedImage);
-        }
-
-        [MemberNotNull(nameof(_coffHeader), nameof(_sectionHeaders))]
-        private void Init<TReader>(ref TReader reader, int actualSize, bool isLoadedImage) where TReader : IBinaryReader
-        {
-            _isLoadedImage = isLoadedImage;
 
             SkipDosHeader(ref reader, out bool isCoffOnly);
 
             _coffHeaderStartOffset = reader.Offset;
-            _coffHeader = CoffHeader.Create(ref reader);
+            _coffHeader = new CoffHeader(ref reader);
 
             if (!isCoffOnly)
             {
                 _peHeaderStartOffset = reader.Offset;
-                _peHeader = PEHeader.Create(ref reader);
+                _peHeader = new PEHeader(ref reader);
             }
 
             _sectionHeaders = ReadSectionHeaders(ref reader);
@@ -118,7 +107,7 @@ namespace System.Reflection.PortableExecutable
                 {
                     _corHeaderStartOffset = offset;
                     reader.Offset = offset;
-                    _corHeader = CorHeader.Create(ref reader);
+                    _corHeader = new CorHeader(ref reader);
                 }
             }
 
@@ -256,7 +245,7 @@ namespace System.Reflection.PortableExecutable
             return true;
         }
 
-        private static void SkipDosHeader<TReader>(ref TReader reader, out bool isCOFFOnly) where TReader : IBinaryReader
+        private static void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
         {
             // Look for DOS Signature "MZ"
             ushort dosSig = reader.ReadUInt16();
@@ -300,7 +289,7 @@ namespace System.Reflection.PortableExecutable
             }
         }
 
-        private ImmutableArray<SectionHeader> ReadSectionHeaders<TReader>(ref TReader reader) where TReader : IBinaryReader
+        private ImmutableArray<SectionHeader> ReadSectionHeaders(ref PEBinaryReader reader)
         {
             int numberOfSections = _coffHeader.NumberOfSections;
             if (numberOfSections < 0)
@@ -312,7 +301,7 @@ namespace System.Reflection.PortableExecutable
 
             for (int i = 0; i < numberOfSections; i++)
             {
-                builder.Add(SectionHeader.Create(ref reader));
+                builder.Add(new SectionHeader(ref reader));
             }
 
             return builder.MoveToImmutable();
