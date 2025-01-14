@@ -231,7 +231,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Convenience enumeration to track the encoding of the partial code point. This must be kept in sync with the PartialStringData*Encoding flags.
+        /// Convenience enumeration to track the encoding of the partial string data. This must be kept in sync with the PartialStringData*Encoding flags.
         /// </summary>
         internal enum SegmentEncoding : byte
         {

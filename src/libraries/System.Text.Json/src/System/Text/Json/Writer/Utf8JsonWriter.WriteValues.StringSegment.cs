@@ -399,7 +399,7 @@ namespace System.Text.Json
                 ValidateEncodingDidNotChange(SegmentEncoding.Base64);
             }
 
-            // The steps to write a string segment are to complete the previous partial code point
+            // The steps to write a string segment are to complete the previous partial string data
             // and escape either of which might not be required so there is a fast path for each of these steps.
             if (HasPartialStringData)
             {
@@ -431,7 +431,7 @@ namespace System.Text.Json
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(partialStringDataBuffer, bytes, combinedBuffer));
             if (combinedBuffer.Length is 3)
             {
-                // Divide up the code point bytes into its own buffer and the remainder of the input buffer.
+                // Divide up the partial bytes into its own buffer and the remainder of the input buffer.
                 bytes = bytes.Slice(3 - partialStringDataBuffer.Length);
                 partialStringDataBuffer = combinedBuffer.Slice(0, 3);
             }
@@ -444,7 +444,7 @@ namespace System.Text.Json
                 partialStringDataBuffer = [];
             }
 
-            // It doesn't matter if we pass true or false for isFinalSegment since we are guaranteed to not have a partial code point
+            // It doesn't matter if we pass true or false for isFinalSegment since we are guaranteed to not have partial data
             // here (it is either empty or completed using the combined buffer above).
             WriteBase64StringSegmentData(partialStringDataBuffer, false);
 
@@ -477,6 +477,8 @@ namespace System.Text.Json
 
             Span<byte> output = _memory.Span;
 
+            // For non-final segments, the input is sliced to be a multiple of 3 bytes above which guarantees
+            // that the base64 encoding will never end with padding since 3x input bytes turn into exactly 4x base64 bytes.
             Base64EncodeAndWrite(bytes, output);
         }
 
