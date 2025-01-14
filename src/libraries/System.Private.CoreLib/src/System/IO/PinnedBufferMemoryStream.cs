@@ -12,18 +12,19 @@ namespace System.IO
     internal sealed unsafe class PinnedBufferMemoryStream : UnmanagedMemoryStream
     {
         private readonly byte[] _array;
-        private PinnedGCHandle<byte[]> _pinningHandle;
+        private GCHandle _pinningHandle;
 
         internal PinnedBufferMemoryStream(byte[] array)
         {
             Debug.Assert(array != null, "Array can't be null");
 
             _array = array;
-            _pinningHandle = new PinnedGCHandle<byte[]>(array);
+            _pinningHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
             // Now the byte[] is pinned for the lifetime of this instance.
             // But I also need to get a pointer to that block of memory...
             int len = array.Length;
-            Initialize(_pinningHandle.GetAddressOfArrayData(), len, len, FileAccess.Read);
+            fixed (byte* ptr = &MemoryMarshal.GetReference((Span<byte>)array))
+                Initialize(ptr, len, len, FileAccess.Read);
         }
 
 #if !RESOURCES_EXTENSIONS
@@ -39,7 +40,10 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            _pinningHandle.Dispose();
+            if (_pinningHandle.IsAllocated)
+            {
+                _pinningHandle.Free();
+            }
 
             base.Dispose(disposing);
         }
