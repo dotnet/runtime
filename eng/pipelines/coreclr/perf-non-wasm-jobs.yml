@@ -9,6 +9,74 @@ parameters:
       configs:
         - windows_x64
         - windows_x86
+  - name: viperJitOptRepeat
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: viperMicro
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: owlMicro
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: tigerNoR2R
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: tigerNoPGO
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+  - name: tigerMicro
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - linux_x64
+        - windown_x86
+        - linux_musl_x64
+  - name: tigerMonoAOT
+    type: object
+    default:
+      enabled: true
+      configs:
+        - linux_x64
+  - name: tigerMonoInterpreter
+    type: object
+    default:
+      enabled: true
+      configs:
+        - linux_x64
+  - name: tigerMono
+    type: object
+    default:
+      enabled: true
+      configs:
+        - linux_x64
+  - name: androidMono
+    type: object
+    default:
+      enabled: true
+      configs:
+        - android_arm64
 
 jobs:
 
@@ -113,242 +181,199 @@ jobs:
     parameters:
       hybridGlobalization: True
       perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.androidMono.enabled }}
+    # run android scenarios
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: mono
+        platforms:
+          - windows_x64
+        jobParameters:
+          testGroup: perf
+          runtimeType: AndroidMono
+          projectFile: $(Build.SourcesDirectory)/eng/testing/performance/android_scenarios.proj
+          runKind: android_scenarios
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+          logicalmachine: 'perfpixel4a'
+          perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.tigerMono.enabled }}
+    # run mono microbenchmarks perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: mono
+        platforms:
+        - linux_x64
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          runtimeType: mono
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro_mono
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.tigerMonoInterpreter.enabled }}
+    # run mono interpreter perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: mono
+        platforms:
+        - linux_x64
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          runtimeType: mono
+          codeGenType: 'Interpreter'
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro_mono
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.tigerMonoAOT.enabled }}
+    # run mono aot microbenchmarks perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+        buildConfig: release
+        runtimeFlavor: aot
+        platforms:
+        - linux_x64
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          runtimeType: mono
+          codeGenType: 'AOT'
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro_mono
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.tigerMicro.enabled }}
+    # run coreclr perftiger microbenchmarks perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.tigerMicro.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.tigerNoPGO.enabled }}
+    # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.tigerNoPGO.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          pgoRunType: nodynamicpgo
+          perfBranch: ${{ parameters.perfBranch }}
 
-  # run android scenarios
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-        - windows_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: AndroidMono
-        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/android_scenarios.proj
-        runKind: android_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfpixel4a'
-        perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.tigerNoR2R.enabled }}
+    # run coreclr perftiger microbenchmarks no R2R perf jobs
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.tigerNoR2R.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perftiger'
+          r2rRunType: nor2r
+          perfBranch: ${{ parameters.perfBranch }}
 
-  # run mono microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro_mono
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.owlMicro.enabled }}
+    # run coreclr perfowl microbenchmarks perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.owlMicro.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perfowl'
+          perfBranch: ${{ parameters.perfBranch }}
 
-  # run mono interpreter perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        codeGenType: 'Interpreter'
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro_mono
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.viperMicro.enabled }}
+    # run coreclr perfviper microbenchmarks perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.viperMicro.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perfviper'
+          perfBranch: ${{ parameters.perfBranch }}
 
-  # run mono aot microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
-      buildConfig: release
-      runtimeFlavor: aot
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        codeGenType: 'AOT'
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro_mono
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.viperJitOptRepeat.enabled }}
+    # run coreclr perfviper microbenchmarks perf jitoptrepeat jobs
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.viperJitOptRepeat.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
+          runKind: micro
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+          logicalmachine: 'perfviper'
+          experimentName: 'jitoptrepeat'
+          perfBranch: ${{ parameters.perfBranch }}
 
-  # run coreclr perftiger microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      - windows_x86
-      - linux_musl_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        perfBranch: ${{ parameters.perfBranch }}
-
-  # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        pgoRunType: nodynamicpgo
-        perfBranch: ${{ parameters.perfBranch }}
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        pgoRunType: nodynamicpgo
-        perfBranch: ${{ parameters.perfBranch }}
-
-  # run coreclr perftiger microbenchmarks no R2R perf jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        r2rRunType: nor2r
-        perfBranch: ${{ parameters.perfBranch }}
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        r2rRunType: nor2r
-        perfBranch: ${{ parameters.perfBranch }}
-
-  # run coreclr perfowl microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfowl'
-        perfBranch: ${{ parameters.perfBranch }}
-
-  # run coreclr perfviper microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfviper'
-        perfBranch: ${{ parameters.perfBranch }}
-
-  # run coreclr perfviper microbenchmarks perf jitoptrepeat jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfviper'
-        experimentName: 'jitoptrepeat'
-        perfBranch: ${{ parameters.perfBranch }}
-
-  # run coreclr crossgen perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_x64
-      - windows_x86
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
-        runKind: crossgen_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perftiger_crossgen'
-        perfBranch: ${{ parameters.perfBranch }}
+  - $ {{ if parameters.crossgen.enabled }}
+    # run coreclr crossgen perf job
+    - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+        buildConfig: release
+        runtimeFlavor: coreclr
+        platforms: ${{ parameters.crossgen.configs }}
+        jobParameters:
+          testGroup: perf
+          liveLibrariesBuildConfig: Release
+          projectFile: $(Build.SourcesDirectory)/eng/testing/performance/crossgen_perf.proj
+          runKind: crossgen_scenarios
+          runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+          logicalmachine: 'perftiger_crossgen'
+          perfBranch: ${{ parameters.perfBranch }}
 
   # build mono runtime packs
   - template: /eng/pipelines/common/platform-matrix.yml
