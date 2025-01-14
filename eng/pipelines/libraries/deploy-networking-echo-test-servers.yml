@@ -1,5 +1,3 @@
-# This pipeline is a basic starter for using 1ESPipelineTemplates to build in a VM.
-# Refer to our onboarding documentation at https://aka.ms/1espt for more details and support channels.
 trigger: none
 
 resources:
