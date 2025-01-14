@@ -140,6 +140,7 @@ extends:
         parameters:
           perfBranch: ${{ parameters.perfBranch }}
           crossgen: ${{ parameters.crossgen }}
+          crossgenEnabled: ${{ parameters.crossgenEnabled }}
           viperJitOptRepeat: ${{ parameters.viperJitOptRepeat }}
           viperMicro: ${{ parameters.viperMicro }}
           owlMicro: ${{ parameters.owlMicro }}
