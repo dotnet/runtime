@@ -4878,7 +4878,8 @@ void Compiler::fgMoveColdBlocks()
 // Returns:
 //   True if 'right' should be considered before 'left', and false otherwise
 //
-/* static */ bool Compiler::ThreeOptLayout::EdgeCmp(const FlowEdge* left, const FlowEdge* right)
+template <bool hasEH>
+/* static */ bool Compiler::ThreeOptLayout<hasEH>::EdgeCmp(const FlowEdge* left, const FlowEdge* right)
 {
     assert(left != right);
     const weight_t leftWeight  = left->getLikelyWeight();
@@ -4907,7 +4908,8 @@ void Compiler::fgMoveColdBlocks()
 // Parameters:
 //   comp - The Compiler instance
 //
-Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
+template <bool hasEH>
+Compiler::ThreeOptLayout<hasEH>::ThreeOptLayout(Compiler* comp)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
     , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBcount]{})
@@ -4930,7 +4932,8 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
 // Returns:
 //   The region's layout cost
 //
-weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned endPos)
+template <bool hasEH>
+weight_t Compiler::ThreeOptLayout<hasEH>::GetLayoutCost(unsigned startPos, unsigned endPos)
 {
     assert(startPos <= endPos);
     assert(endPos < numCandidateBlocks);
@@ -4957,7 +4960,8 @@ weight_t Compiler::ThreeOptLayout::GetLayoutCost(unsigned startPos, unsigned end
 // Returns:
 //   The cost
 //
-weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
+template <bool hasEH>
+weight_t Compiler::ThreeOptLayout<hasEH>::GetCost(BasicBlock* block, BasicBlock* next)
 {
     assert(block != nullptr);
     assert(next != nullptr);
@@ -4990,7 +4994,8 @@ weight_t Compiler::ThreeOptLayout::GetCost(BasicBlock* block, BasicBlock* next)
 //   The difference in cost between the current and proposed layouts.
 //   A negative delta indicates the proposed layout is an improvement.
 //
-weight_t Compiler::ThreeOptLayout::GetPartitionCostDelta(
+template <bool hasEH>
+weight_t Compiler::ThreeOptLayout<hasEH>::GetPartitionCostDelta(
     unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
 {
     BasicBlock* const s2Block     = blockOrder[s2Start];
@@ -5046,7 +5051,8 @@ weight_t Compiler::ThreeOptLayout::GetPartitionCostDelta(
 //
 //   If 's3End' and 's4End' are the same, the fourth partition doesn't exist.
 //
-void Compiler::ThreeOptLayout::SwapPartitions(
+template <bool hasEH>
+void Compiler::ThreeOptLayout<hasEH>::SwapPartitions(
     unsigned s1Start, unsigned s2Start, unsigned s3Start, unsigned s3End, unsigned s4End)
 {
     INDEBUG(const weight_t currLayoutCost = GetLayoutCost(s1Start, s4End));
@@ -5093,7 +5099,8 @@ void Compiler::ThreeOptLayout::SwapPartitions(
 // Parameters:
 //   edge - The branch to consider creating fallthrough for
 //
-void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
+template <bool hasEH>
+void Compiler::ThreeOptLayout<hasEH>::ConsiderEdge(FlowEdge* edge)
 {
     assert(edge != nullptr);
 
@@ -5111,26 +5118,29 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     assert(compiler->m_dfsTree->Contains(srcBlk));
     assert(compiler->m_dfsTree->Contains(dstBlk));
 
-    // Ignore cross-region branches
-    if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
+    if (hasEH)
     {
-        return;
-    }
+        // Ignore cross-region branches
+        if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
+        {
+            return;
+        }
 
-    // Don't waste time reordering within handler regions.
-    // Note that if a finally region is sufficiently hot,
-    // we should have cloned it into the main method body already.
-    if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
-    {
-        return;
-    }
+        // Don't waste time reordering within handler regions.
+        // Note that if a finally region is sufficiently hot,
+        // we should have cloned it into the main method body already.
+        if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
+        {
+            return;
+        }
 
-    // For backward jumps, we will consider partitioning before 'srcBlk'.
-    // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
-    // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
-    if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
-    {
-        return;
+        // For backward jumps, we will consider partitioning before 'srcBlk'.
+        // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
+        // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
+        if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
+        {
+            return;
+        }
     }
 
     const unsigned srcPos = ordinals[srcBlk->bbPostorderNum];
@@ -5168,7 +5178,8 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
 // Parameters:
 //   blockPos - The index into 'blockOrder' of the source block
 //
-void Compiler::ThreeOptLayout::AddNonFallthroughSuccs(unsigned blockPos)
+template <bool hasEH>
+void Compiler::ThreeOptLayout<hasEH>::AddNonFallthroughSuccs(unsigned blockPos)
 {
     assert(blockPos < numCandidateBlocks);
     BasicBlock* const block = blockOrder[blockPos];
@@ -5190,7 +5201,8 @@ void Compiler::ThreeOptLayout::AddNonFallthroughSuccs(unsigned blockPos)
 // Parameters:
 //   blockPos - The index into 'blockOrder' of the target block
 //
-void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
+template <bool hasEH>
+void Compiler::ThreeOptLayout<hasEH>::AddNonFallthroughPreds(unsigned blockPos)
 {
     assert(blockPos < numCandidateBlocks);
     BasicBlock* const block = blockOrder[blockPos];
@@ -5210,7 +5222,8 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 // we're interested in reordering.
 // We skip reordering handler regions for now, as these are assumed to be cold.
 //
-void Compiler::ThreeOptLayout::Run()
+template <bool hasEH>
+void Compiler::ThreeOptLayout<hasEH>::Run()
 {
     // Walk backwards through the main method body, looking for the last hot block.
     // Since we moved all cold blocks to the end of the method already,
@@ -5269,39 +5282,46 @@ void Compiler::ThreeOptLayout::Run()
         assert(ordinals[block->bbPostorderNum] == 0);
         ordinals[block->bbPostorderNum] = numCandidateBlocks++;
 
-        // While walking the span of blocks to reorder,
-        // remember where each try region ends within this span.
-        // We'll use this information to run 3-opt per region.
-        EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
-        if (HBtab != nullptr)
+        if (hasEH)
         {
-            HBtab->ebdTryLast = block;
+            // While walking the span of blocks to reorder,
+            // remember where each try region ends within this span.
+            // We'll use this information to run 3-opt per region.
+            EHblkDsc* const HBtab = compiler->ehGetBlockTryDsc(block);
+            if (HBtab != nullptr)
+            {
+                HBtab->ebdTryLast = block;
+            }
         }
     }
 
-    // Reorder try regions first
     bool modified = false;
-    for (EHblkDsc* const HBtab : EHClauses(compiler))
+
+    if (hasEH)
     {
-        // If multiple region indices map to the same region,
-        // make sure we reorder its blocks only once
-        BasicBlock* const tryBeg = HBtab->ebdTryBeg;
-        if (tryBeg->getTryIndex() != currEHRegion++)
+        // Reorder try regions first
+        for (EHblkDsc* const HBtab : EHClauses(compiler))
         {
-            continue;
-        }
+            // If multiple region indices map to the same region,
+            // make sure we reorder its blocks only once
+            BasicBlock* const tryBeg = HBtab->ebdTryBeg;
+            if (tryBeg->getTryIndex() != currEHRegion++)
+            {
+                continue;
+            }
 
-        // Ignore try regions unreachable via normal flow
-        if (!compiler->m_dfsTree->Contains(tryBeg))
-        {
-            continue;
-        }
+            // Ignore try regions unreachable via normal flow
+            if (!compiler->m_dfsTree->Contains(tryBeg))
+            {
+                continue;
+            }
 
-        // Only reorder try regions within the candidate span of blocks.
-        if ((ordinals[tryBeg->bbPostorderNum] != 0) || tryBeg->IsFirst())
-        {
-            JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
-            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
+            // Only reorder try regions within the candidate span of blocks.
+            if ((ordinals[tryBeg->bbPostorderNum] != 0) || tryBeg->IsFirst())
+            {
+                JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
+                modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
+            }
         }
     }
 
@@ -5320,7 +5340,7 @@ void Compiler::ThreeOptLayout::Run()
             // Only reorder within EH regions to maintain contiguity.
             // TODO: Allow moving blocks in different regions when 'next' is the region entry.
             // This would allow us to move entire regions up/down because of the contiguity requirement.
-            if (!block->NextIs(next) && BasicBlock::sameEHRegion(block, next))
+            if (!block->NextIs(next) && (!hasEH || BasicBlock::sameEHRegion(block, next)))
             {
                 compiler->fgUnlinkBlock(next);
                 compiler->fgInsertBBafter(block, next);
@@ -5347,7 +5367,8 @@ void Compiler::ThreeOptLayout::Run()
 //   and try to create fallthrough on each edge via partition swaps, starting with the hottest edges.
 //   For each swap, repopulate the priority queue with edges along the modified cut points.
 //
-bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned endPos)
+template <bool hasEH>
+bool Compiler::ThreeOptLayout<hasEH>::RunGreedyThreeOptPass(unsigned startPos, unsigned endPos)
 {
     assert(cutPoints.Empty());
     assert(startPos < endPos);
@@ -5463,16 +5484,19 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                 BasicBlock* const s3Block     = blockOrder[position];
                 BasicBlock* const s3BlockPrev = blockOrder[position - 1];
 
-                // Don't consider any cut points that would break up call-finally pairs
-                if (s3Block->KindIs(BBJ_CALLFINALLYRET))
+                if (hasEH)
                 {
-                    continue;
-                }
+                    // Don't consider any cut points that would break up call-finally pairs
+                    if (s3Block->KindIs(BBJ_CALLFINALLYRET))
+                    {
+                        continue;
+                    }
 
-                // Don't consider any cut points that would move try/handler entries
-                if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
-                {
-                    continue;
+                    // Don't consider any cut points that would move try/handler entries
+                    if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
+                    {
+                        continue;
+                    }
                 }
 
                 // Compute the cost delta of this partition
@@ -5541,7 +5565,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 // Returns:
 //   True if we reordered anything, false otherwise
 //
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+template <bool hasEH>
+bool Compiler::ThreeOptLayout<hasEH>::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
 {
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
@@ -5595,8 +5620,16 @@ void Compiler::fgSearchImprovedLayout()
     }
 #endif // DEBUG
 
-    ThreeOptLayout layoutRunner(this);
-    layoutRunner.Run();
+    if (compHndBBtabCount == 0)
+    {
+        ThreeOptLayout</* hasEH */ false> layoutRunner(this);
+        layoutRunner.Run();
+    }
+    else
+    {
+        ThreeOptLayout</* hasEH */ true> layoutRunner(this);
+        layoutRunner.Run();
+    }
 }
 
 //-------------------------------------------------------------
