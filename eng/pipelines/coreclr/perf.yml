@@ -122,6 +122,18 @@ parameters:
   default:
     configs:
       - android_arm64
+- name: monoWasmEnabled
+  displayName: Mono WASM Enabled
+  type: boolean
+  default: true
+- name: monoWasmAOTEnabled
+  displayName: Mono WASM AOT Enabled
+  type: boolean
+  default: true
+- name: monoWasmBlazorEnabled
+  displayName: Mono WASM Blazor Enabled
+  type: boolean
+  default: true
 
 trigger:
   batch: true

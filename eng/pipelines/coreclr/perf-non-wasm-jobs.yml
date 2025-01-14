@@ -122,6 +122,10 @@ parameters:
   default:
     configs:
       - android_arm64
+- name: iOSMonoAOTEnabled
+  displayName: iOS Mono/AOT Enabled
+  type: boolean
+  default: true
 
 jobs:
 
@@ -221,11 +225,12 @@ jobs:
             artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
             displayName: Build Assets
 
-  # Build and run iOS Mono and NativeAOT scenarios
-  - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
-    parameters:
-      hybridGlobalization: True
-      perfBranch: ${{ parameters.perfBranch }}
+  - ${{ if eq(parameters.iOSMonoAOTEnabled, true) }}:
+    # Build and run iOS Mono and NativeAOT scenarios
+    - template: /eng/pipelines/coreclr/templates/build-and-run-perf-ios-scenarios.yml
+      parameters:
+        hybridGlobalization: True
+        perfBranch: ${{ parameters.perfBranch }}
 
   - ${{ if eq(parameters.androidMono.enabled, true) }}:
     # run android scenarios
