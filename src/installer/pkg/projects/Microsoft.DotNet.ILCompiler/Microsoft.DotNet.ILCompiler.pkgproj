@@ -17,7 +17,6 @@
     <IncludeRuntimeJson Condition="'$(DotNetBuildSourceOnly)' == 'true'">false</IncludeRuntimeJson>
     <!-- Set 'ExcludeLineupReference' to avoid package dependencies due to disabling 'runtime.json'. -->
     <ExcludeLineupReference Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ExcludeLineupReference>
-    <IsShipping Condition="'$(PackHostILCompiler)' == 'true'">false</IsShipping>
   </PropertyGroup>
 
   <Target Name="AddBuildIntegrationFiles"
