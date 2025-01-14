@@ -706,15 +706,31 @@ namespace System.Security.Cryptography.Pkcs
 
             if (!verifySignatureOnly)
             {
-                using X509Chain chain = new X509Chain();
-                chain.ChainPolicy.ExtraStore.AddRange(extraStore);
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+                X509Chain chain = null;
 
-                if (!chain.Build(certificate))
+                try
                 {
-                    X509ChainStatus status = chain.ChainStatus.FirstOrDefault();
-                    throw new CryptographicException(SR.Cryptography_Cms_TrustFailure, status.StatusInformation);
+                    chain = new X509Chain();
+                    chain.ChainPolicy.ExtraStore.AddRange(extraStore);
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                    if (!chain.Build(certificate))
+                    {
+                        X509ChainStatus status = chain.ChainStatus.FirstOrDefault();
+                        throw new CryptographicException(SR.Cryptography_Cms_TrustFailure, status.StatusInformation);
+                    }
+                }
+                finally 
+                {
+                    if (chain != null) 
+                    {
+                        for (int i = 0; i < chain.ChainElements.Count; i++)
+                        {
+                            chain.ChainElements[i].Certificate.Dispose();
+                        }
+                        chain.Dispose();
+                    }
                 }
 
                 // .NET Framework checks for either of these
