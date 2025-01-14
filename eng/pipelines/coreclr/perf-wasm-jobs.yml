@@ -2,13 +2,6 @@
 #
 
 parameters:
-  runProfile: 'non-v8'
-  compare: false
-  onlySanityCheck: false
-  downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
-  collectHelixLogsScript: ''
-  perfBranch: 'main'
-  
   - name: monoWasmEnabled
     displayName: Mono WASM Enabled
     type: boolean
@@ -21,6 +14,13 @@ parameters:
     displayName: Mono WASM Blazor Enabled
     type: boolean
     default: true
+
+  runProfile: 'non-v8'
+  compare: false
+  onlySanityCheck: false
+  downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
+  collectHelixLogsScript: ''
+  perfBranch: 'main'
   
 
 jobs:
