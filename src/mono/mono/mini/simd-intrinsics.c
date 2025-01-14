@@ -2484,7 +2484,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					return NULL;
 
 				type = type_enum_is_unsigned (arg0_type) ? MONO_TYPE_U1 : MONO_TYPE_I1;
-				MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+				arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 
 				guint64 shuffle_mask[2];
 				shuffle_mask[0] = 0x0F0D0B0907050301; // Place odd bytes in the lower half of vector
