@@ -1,7 +1,7 @@
 parameters:
   - name: perfBranch
-   type: string
-   default: main
+    type: string
+    default: main
   - name: crossgen
     type: object
     default:
