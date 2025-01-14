@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <_MonoCrossAOTTargetOS Condition="'$(MonoCrossAOTTargetOS)' != ''">+$(MonoCrossAOTTargetOS.ToLowerInvariant())+</_MonoCrossAOTTargetOS>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))">$(MonoAotTargets);android-x64;android-arm64;android-x86;android-arm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))">$(MonoAotTargets);browser-wasm</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))">$(MonoAotTargets);tvossimulator-x64;tvossimulator-arm64;tvos-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iossimulator-x64;iossimulator-arm64;ios-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))">$(MonoAotTargets);maccatalyst-x64;maccatalyst-arm64</MonoAotTargets>
+    <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+wasi+'))">$(MonoAotTargets);wasi-wasm</MonoAotTargets>
+    <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
+  </PropertyGroup>
+
+  <!-- Only restore the target sfxproj once to avoid any parallel restore issues. -->
+  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' == ''">
+    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" Properties="TargetCrossRid=%(Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
+    <ProjectReference Include="@(MonoAotTargetRids->'$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" />
+  </ItemGroup>
+</Project>

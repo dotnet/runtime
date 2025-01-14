@@ -62,8 +62,6 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
-int mono_wasm_enable_gc = 1;
-
 /* Missing from public headers */
 char *mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
 void mono_icall_table_init (void);

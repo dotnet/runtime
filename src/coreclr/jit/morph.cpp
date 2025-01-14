@@ -5366,55 +5366,27 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     //
     if (compCurBB->KindIs(BBJ_ALWAYS))
     {
+        BasicBlock* const curBlock    = compCurBB;
+        BasicBlock* const targetBlock = curBlock->GetTarget();
+
         // Flow no longer reaches the target from here.
         //
-        fgRemoveRefPred(compCurBB->GetTargetEdge());
+        fgRemoveRefPred(curBlock->GetTargetEdge());
 
-        // Adjust profile weights of the successor blocks.
+        // Adjust profile weights of the successor block.
         //
         // Note if this is a tail call to loop, further updates
         // are needed once we install the loop edge.
         //
-        BasicBlock* curBlock = compCurBB;
-        if (curBlock->hasProfileWeight())
+        if (curBlock->hasProfileWeight() && targetBlock->hasProfileWeight())
         {
-            weight_t    weightLoss = curBlock->bbWeight;
-            BasicBlock* nextBlock  = curBlock->GetTarget();
+            targetBlock->decreaseBBProfileWeight(curBlock->bbWeight);
 
-            while (nextBlock->hasProfileWeight())
+            if (targetBlock->NumSucc() > 0)
             {
-                // Since we have linear flow we can update the next block weight.
-                //
-                weight_t const nextWeight    = nextBlock->bbWeight;
-                weight_t const newNextWeight = nextWeight - weightLoss;
-
-                // If the math would result in a negative weight then there's
-                // no local repair we can do; just leave things inconsistent.
-                //
-                if (newNextWeight >= 0)
-                {
-                    // Note if we'd already morphed the IR in nextblock we might
-                    // have done something profile sensitive that we should arguably reconsider.
-                    //
-                    JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
-                            nextWeight, newNextWeight);
-
-                    nextBlock->setBBProfileWeight(newNextWeight);
-                }
-                else
-                {
-                    JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
-                            " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
-                            nextBlock->bbNum, nextWeight, compCurBB->bbNum, weightLoss);
-                }
-
-                if (!nextBlock->KindIs(BBJ_ALWAYS))
-                {
-                    break;
-                }
-
-                curBlock  = nextBlock;
-                nextBlock = curBlock->GetTarget();
+                JITDUMP("Flow removal out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                        curBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
         }
     }
@@ -6319,7 +6291,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
     //
-    // For x86, the tailcall helper is defined as:
+    // For Windows x86, the tailcall helper is defined as:
     //
     //      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void*
     //      callTarget)
@@ -6755,12 +6727,12 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     fgRemoveStmt(block, lastStmt);
 
     // Set the loop edge.
+    BasicBlock* entryBB;
     if (opts.IsOSR())
     {
         // Todo: this may not look like a viable loop header.
         // Might need the moral equivalent of an init BB.
-        FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        entryBB = fgEntryBB;
     }
     else
     {
@@ -6769,9 +6741,19 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // TODO-Cleanup: We should really be expanding tailcalls into loops
         // much earlier than this, at a place where we do not need to have
         // hacky workarounds to figure out what the actual IL entry block is.
-        BasicBlock*     firstILBB = fgGetFirstILBlock();
-        FlowEdge* const newEdge   = fgAddRefPred(firstILBB, block);
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        entryBB = fgGetFirstILBlock();
+    }
+
+    FlowEdge* const newEdge = fgAddRefPred(entryBB, block);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+
+    // Update profile
+    if (block->hasProfileWeight() && entryBB->hasProfileWeight())
+    {
+        entryBB->increaseBBProfileWeight(block->bbWeight);
+        JITDUMP("Flow into entry BB " FMT_BB " increased. Data %s inconsistent.\n", entryBB->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // Finish hooking things up.
@@ -12658,63 +12640,23 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 fgRemoveStmt(block, lastStmt);
                 result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
-            // block is a BBJ_COND that we are folding the conditional for.
-            // bTaken is the path that will always be taken from block.
-            // bNotTaken is the path that will never be taken from block.
-            //
-            BasicBlock* bTaken;
-            BasicBlock* bNotTaken;
-            FlowEdge*   edgeTaken;
+
+            FlowEdge *retainedEdge, *removedEdge;
 
             if (cond->AsIntCon()->gtIconVal != 0)
             {
-                // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
-                bTaken    = block->GetTrueTarget();
-                bNotTaken = block->GetFalseTarget();
-
-                // Remove 'block' from the predecessor list of 'bNotTaken' */
-                fgRemoveRefPred(block->GetFalseEdge());
-
-                edgeTaken = block->GetTrueEdge();
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, edgeTaken);
+                retainedEdge = block->GetTrueEdge();
+                removedEdge  = block->GetFalseEdge();
             }
             else
             {
-                // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
-                bTaken    = block->GetFalseTarget();
-                bNotTaken = block->GetTrueTarget();
-
-                // Remove 'block' from the predecessor list of 'bNotTaken' */
-                fgRemoveRefPred(block->GetTrueEdge());
-
-                edgeTaken = block->GetFalseEdge();
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                retainedEdge = block->GetFalseEdge();
+                removedEdge  = block->GetTrueEdge();
             }
 
-            // We examine the taken edge (block -> bTaken)
-            // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
-            // else if bTaken has valid profile weight and block does not we try to adjust block's weight
-            // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
-            //
-            if (block->hasProfileWeight())
-            {
-                if (!bTaken->hasProfileWeight())
-                {
-                    if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
-                    {
-                        // Update the weight of bTaken
-                        bTaken->inheritWeight(block);
-                    }
-                }
-            }
-            else if (bTaken->hasProfileWeight())
-            {
-                if (bTaken->countOfInEdges() == 1)
-                {
-                    // Update the weight of block
-                    block->inheritWeight(bTaken);
-                }
-            }
+            fgRemoveRefPred(removedEdge);
+            block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+            fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
 
 #ifdef DEBUG
             if (verbose)
@@ -12781,16 +12723,24 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t     switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-            bool       foundVal  = false;
+            size_t     switchVal           = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned   jumpCnt             = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** jumpTab             = block->GetSwitchTargets()->bbsDstTab;
+            bool       foundVal            = false;
+            bool       profileInconsistent = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
                 FlowEdge* curEdge = *jumpTab;
 
                 assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
+
+                BasicBlock* const targetBlock = curEdge->getDestinationBlock();
+                if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
+                {
+                    targetBlock->decreaseBBProfileWeight(curEdge->getLikelyWeight());
+                    profileInconsistent |= (targetBlock->NumSucc() > 0);
+                }
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
@@ -12799,12 +12749,25 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
                     foundVal = true;
+
+                    if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
+                    {
+                        targetBlock->increaseBBProfileWeight(block->bbWeight);
+                        profileInconsistent |= (targetBlock->NumSucc() > 0);
+                    }
                 }
                 else
                 {
                     // Remove 'curEdge'
                     fgRemoveRefPred(curEdge);
                 }
+            }
+
+            if (profileInconsistent)
+            {
+                JITDUMP("Flow change out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
 
             assert(foundVal);
@@ -13448,6 +13411,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     //
     fgGlobalMorph = true;
 
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentBeforeMorph = 1;
+    }
+
     if (opts.OptimizationEnabled())
     {
         // Local assertion prop is enabled if we are optimizing.
@@ -13545,6 +13513,25 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgEntryBB->bbRefs--;
         fgEntryBBExtraRefs = 0;
 
+        // The original method entry will now be checked for profile consistency.
+        // If the entry has inconsistent incoming weight, flag the profile as inconsistent.
+        //
+        if (fgEntryBB->hasProfileWeight())
+        {
+            weight_t incomingWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : fgEntryBB->PredEdges())
+            {
+                incomingWeight += predEdge->getLikelyWeight();
+            }
+
+            if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
+            {
+                JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
+            }
+        }
+
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
@@ -13583,6 +13570,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     // We may have converted a tailcall into a loop, in which case the first BB
     // may no longer be canonical.
     fgCanonicalizeFirstBB();
+
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentAfterMorph = 1;
+    }
 
     INDEBUG(fgPostGlobalMorphChecks();)
 
@@ -14303,6 +14295,15 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
+    // Update flowgraph
+    fgRedirectTargetEdge(block, condBlock);
+    condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
+    elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
+
+    // Propagate flow from block into condBlock.
+    // Leave flow out of remainderBlock intact, as it will post-dominate block.
+    condBlock->inheritWeight(block);
+
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
     if (!block->HasFlag(BBF_INTERNAL))
@@ -14315,27 +14316,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     block->RemoveFlags(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlags(propagateFlagsToRemainder | propagateFlagsToAll);
-
-    condBlock->inheritWeight(block);
-
-    // Make sure remainderBlock gets exactly the same weight as block after split
-    assert(condBlock->bbWeight == remainderBlock->bbWeight);
-
-    assert(block->KindIs(BBJ_ALWAYS));
-    fgRedirectTargetEdge(block, condBlock);
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
-        condBlock->SetTargetEdge(newEdge);
-    }
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
-        elseBlock->SetTargetEdge(newEdge);
-    }
-
-    assert(condBlock->JumpsToNext());
-    assert(elseBlock->JumpsToNext());
 
     condBlock->SetFlags(propagateFlagsToAll);
     elseBlock->SetFlags(propagateFlagsToAll);
@@ -14351,6 +14331,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +--->--------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14364,13 +14345,12 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
-        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
-        thenBlock->SetTargetEdge(newEdge);
+        thenBlock->SetTargetEdge(fgAddRefPred(remainderBlock, thenBlock));
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
-        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
-        condBlock->SetCond(thenEdge, elseEdge);
+        FlowEdge* const thenEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(elseEdge, thenEdge);
         thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
         elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
         thenEdge->setLikelihood(thenLikelihood / 100.0);
@@ -14384,6 +14364,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->-------------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();

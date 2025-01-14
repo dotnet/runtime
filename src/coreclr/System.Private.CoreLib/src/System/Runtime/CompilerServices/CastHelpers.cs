@@ -489,7 +489,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        private static unsafe void ArrayTypeCheck(object obj, Array array)
+        private static void ArrayTypeCheck(object obj, Array array)
         {
             Debug.Assert(obj != null);
 
@@ -507,7 +507,7 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe void ArrayTypeCheck_Helper(object obj, void* elementType)
+        private static void ArrayTypeCheck_Helper(object obj, void* elementType)
         {
             Debug.Assert(obj != null);
 
