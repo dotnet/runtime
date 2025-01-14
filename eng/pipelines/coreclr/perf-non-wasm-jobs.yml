@@ -1,5 +1,12 @@
 parameters:
   perfBranch: 'main'
+  - name: crossgen
+    type: object
+    default:
+      enabled: true
+      configs:
+        - windows_x64
+        - windows_x86
 
 jobs:
 
