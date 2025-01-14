@@ -4224,6 +4224,25 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
         if ((thread->m_State & TS_DebugWillSync) == 0)
             continue;
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        if (thread->m_hasPendingActivation && CORDebuggerAttached() 
+            && !(thread->m_State & Thread::TS_SSToExitApcCall)
+            && !(thread->m_State & Thread::TS_SSToExitApcCallDone))
+        {
+            g_pDebugInterface->SingleStepToExitApcCall(thread);
+            continue;
+        }
+        if (thread->m_State & Thread::TS_SSToExitApcCallDone)
+        {
+            thread->ResetThreadState(Thread::TS_SSToExitApcCallDone);
+            goto Label_MarkThreadAsSynced;
+        }
+        if (thread->m_State & Thread::TS_SSToExitApcCall)
+        {
+            continue;
+        }
+#endif
+
         if (!UseContextBasedThreadRedirection())
         {
             // On platforms that do not support safe thread suspension we either
@@ -5337,6 +5356,19 @@ BOOL Thread::HandledJITCase()
 #endif // FEATURE_HIJACK
 
 // Some simple helpers to keep track of the threads we are waiting for
+void Thread::MarkForSuspensionAndWait(ULONG bit)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    m_DebugSuspendEvent.Reset();
+    InterlockedOr((LONG*)&m_State, bit);
+    ThreadStore::IncrementTrapReturningThreads();
+    m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+}
+
 void Thread::MarkForSuspension(ULONG bit)
 {
     CONTRACTL {
@@ -5759,7 +5791,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
 //       address to take the thread to the appropriate stub (based on the return
 //       type of the method) which will then handle preparing the thread for GC.
 //
-void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool callPulseGC)
+void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 {
     struct AutoClearPendingThreadActivation
     {
@@ -5809,10 +5841,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool call
 
         frame.Push(pThread);
 
-        if (callPulseGC)
-        {
-            pThread->PulseGCMode();
-        }
+        pThread->PulseGCMode();
 
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -5901,7 +5930,7 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
         case ActivationReason::SuspendForGC:
         case ActivationReason::SuspendForDebugger:
         case ActivationReason::ThreadAbort:
-            HandleSuspensionForInterruptedThread(pContext, reason != ActivationReason::SuspendForDebugger);
+            HandleSuspensionForInterruptedThread(pContext);
             break;
 
         default:
