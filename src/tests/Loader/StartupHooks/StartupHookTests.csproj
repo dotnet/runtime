@@ -10,6 +10,7 @@
     <Compile Include="StartupHookTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="Hooks\Basic.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
