@@ -157,7 +157,8 @@ enum failure_get_memory
     fgm_commit_segment_beg = 2,
     fgm_commit_eph_segment = 3,
     fgm_grow_table = 4,
-    fgm_commit_table = 5
+    fgm_commit_table = 5,
+    fgm_commit_heap = 6
 };
 
 // A record of the last OOM that occurred in the GC, with some
