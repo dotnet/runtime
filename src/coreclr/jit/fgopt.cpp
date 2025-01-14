@@ -1355,7 +1355,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         //
         if (bDest->hasProfileWeight())
         {
-            bDest->setBBProfileWeight(max(0.0, bDest->bbWeight - removedWeight));
+            bDest->decreaseBBProfileWeight(removedWeight);
         }
 
         return true;
@@ -1620,7 +1620,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             if (bDest->hasProfileWeight())
             {
                 weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
-                bDest->setBBProfileWeight(max(0.0, bDest->bbWeight - branchThroughWeight));
+                bDest->decreaseBBProfileWeight(branchThroughWeight);
             }
 
             // Update the switch jump table
@@ -6633,7 +6633,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 // crossJumpTarget, so the profile update can be done locally.
                 if (crossJumpTarget->hasProfileWeight())
                 {
-                    crossJumpTarget->setBBProfileWeight(crossJumpTarget->bbWeight + predBlock->bbWeight);
+                    crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
                 }
             }
 
@@ -6779,12 +6779,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         madeChanges |= fgHeadMerge(block, early);
     }
-
-    // If we altered flow, reset fgModified. Given where we sit in the
-    // phase list, flow-dependent side data hasn't been built yet, so
-    // nothing needs invalidation.
-    //
-    fgModified = false;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
