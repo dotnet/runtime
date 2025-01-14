@@ -496,8 +496,8 @@ namespace System.Memory.Tests.Span
             }
 
             var index = chars.Count;
-            chars.Add(' ');
             chars.AddRange(chars.ToArray());
+            chars.Insert(index, ' ');
             var span = CollectionsMarshal.AsSpan(chars);
 
             for (int i = 0; i <= char.MaxValue; i++)
@@ -521,8 +521,8 @@ namespace System.Memory.Tests.Span
             }
 
             var index = chars.Count;
-            chars.Add(' ');
             chars.AddRange(chars.ToArray());
+            chars.Insert(index, ' ');
             var span = CollectionsMarshal.AsSpan(chars);
 
             for (int i = 0; i <= char.MaxValue; i++)
@@ -561,9 +561,9 @@ namespace System.Memory.Tests.Span
             }
 
             var index = chars.Count;
-            chars.Add(' ');
-            chars.Add(' ');
             chars.AddRange(chars.ToArray());
+            chars.Insert(index, ' ');
+            chars.Insert(index, ' ');
             var span = CollectionsMarshal.AsSpan(chars);
 
             for (int i = 0; i <= char.MaxValue; i++)
@@ -603,9 +603,9 @@ namespace System.Memory.Tests.Span
             }
 
             var index = chars.Count;
-            chars.Add(' ');
-            chars.Add(' ');
             chars.AddRange(chars.ToArray());
+            chars.Insert(index, ' ');
+            chars.Insert(index, ' ');
             var span = CollectionsMarshal.AsSpan(chars);
 
             for (int i = 0; i <= char.MaxValue; i++)
@@ -645,9 +645,9 @@ namespace System.Memory.Tests.Span
             }
 
             var index = chars.Count;
-            chars.Add(' ');
-            chars.Add(' ');
             chars.AddRange(chars.ToArray());
+            chars.Insert(index, ' ');
+            chars.Insert(index, ' ');
             var span = CollectionsMarshal.AsSpan(chars);
 
             for (int i = 0; i <= char.MaxValue; i++)
@@ -687,9 +687,9 @@ namespace System.Memory.Tests.Span
             }
 
             var index = chars.Count;
-            chars.Add(' ');
-            chars.Add(' ');
             chars.AddRange(chars.ToArray());
+            chars.Insert(index, ' ');
+            chars.Insert(index, ' ');
             var span = CollectionsMarshal.AsSpan(chars);
 
             for (int i = 0; i <= char.MaxValue; i++)
