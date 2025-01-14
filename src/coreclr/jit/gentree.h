@@ -4567,6 +4567,7 @@ enum class WellKnownArg : unsigned
     SwiftError,
     SwiftSelf,
     X86TailCallSpecialArg,
+    StackArrayLocal,
 };
 
 #ifdef DEBUG
@@ -5743,7 +5744,6 @@ struct GenTreeCall final : public GenTree
         void*                gtStubCallStubAddr;   // GTF_CALL_VIRT_STUB - these are never inlined
         CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
         IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
-        unsigned             gtNewArrStackLcl; // GTF_CALL_M_STACK_ARRAY - local used for stack allocated array storage
     };
 
     union

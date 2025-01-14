@@ -2812,10 +2812,12 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         return false;
     }
 
-    const unsigned lclNum = call->gtNewArrStackLcl;
+    CallArg* const             stackLocalAddressArg  = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
+    GenTreeLclVarCommon* const stackLocalAddressNode = stackLocalAddressArg->GetNode()->AsLclVarCommon();
+    const unsigned             lclNum                = stackLocalAddressNode->GetLclNum();
 
-    JITDUMP("Expanding new array helper for stack allocated array [%06d] in " FMT_BB ":\n", dspTreeID(call),
-            block->bbNum);
+    JITDUMP("Expanding new array helper for stack allocated array V%20u [%06d] in " FMT_BB ":\n", dspTreeID(call),
+            lclNum, block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
 
@@ -2852,8 +2854,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
 
     // Replace call with &lclNum.
     //
-    GenTreeLclVarCommon* const lclNode = gtNewLclAddrNode(lclNum, 0);
-    *callUse                           = lclNode;
+    *callUse = stackLocalAddressNode;
     DEBUG_DESTROY_NODE(call);
 
     gtUpdateStmtSideEffects(stmt);

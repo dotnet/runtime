@@ -13178,6 +13178,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "swift self";
         case WellKnownArg::X86TailCallSpecialArg:
             return "tail call";
+        case WellKnownArg::StackArrayLocal:
+            return "stack array local";
         default:
             return nullptr;
     }

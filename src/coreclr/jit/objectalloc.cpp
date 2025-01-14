@@ -766,10 +766,12 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     lclDsc->lvStructDoubleAlign = alignTo8;
 #endif
 
-    // Mark the newarr call as being "on stack", and associate the local
+    // Mark the newarr call as being "on stack", and add the address
+    // of the stack local as an argument
     //
+    GenTree* const stackLocalAddr = comp->gtNewLclAddrNode(lclNum, 0);
+    newArr->gtArgs.PushBack(comp, NewCallArg::Primitive(stackLocalAddr).WellKnown(WellKnownArg::StackArrayLocal));
     newArr->gtCallMoreFlags |= GTF_CALL_M_STACK_ARRAY;
-    newArr->gtNewArrStackLcl = lclNum;
 
     // Retype the call result as an unmanaged pointer
     //
