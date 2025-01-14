@@ -15,12 +15,28 @@ parameters:
     type: boolean
     default: true
 
-  - runProfile: 'non-v8'
-  - compare: false
-  - onlySanityCheck: false
-  - downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
-  - collectHelixLogsScript: ''
-  - perfBranch: 'main'
+  - name: runProfile
+    type: string
+    default: 'non-v8'
+  - name: compare
+    type: boolean
+    default: false
+  - name: onlySanityCheck
+    type: boolean
+    default: false
+  - name: downloadSpecificBuild # { buildId, pipeline, branchName, project }
+    type: object
+    default:
+      buildId: ''
+      pipeline: ''
+      branchName: ''
+      project: ''
+  - name: collectHelixLogsScript
+    type: string
+    default: ''
+  - name: perfBranch
+    type: string
+    default: 'main'
   
 
 jobs:
