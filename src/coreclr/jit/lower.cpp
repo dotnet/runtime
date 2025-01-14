@@ -3411,7 +3411,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 //------------------------------------------------------------------------
 // LowerTailCallViaJitHelper: lower a call via the tailcall JIT helper. Morph
 // has already inserted tailcall helper special arguments. This function inserts
-// actual data for some placeholders. This function is only used on x86.
+// actual data for some placeholders. This function is only used on Windows x86.
 //
 // Lower
 //      tail.call(<function args>, int numberOfOldStackArgs, int dummyNumberOfNewStackArgs, int flags, void* dummyArg)

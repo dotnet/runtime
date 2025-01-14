@@ -4073,6 +4073,13 @@ void Compiler::lvaSortByRefCount()
         }
 #endif
 
+        // No benefit in tracking the PSPSym (if any)
+        //
+        if (lclNum == lvaPSPSym)
+        {
+            varDsc->lvTracked = 0;
+        }
+
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".
         //
@@ -4746,18 +4753,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     }
 
 #endif // FEATURE_EH_WINDOWS_X86
-
-    // PSPSym is not used by the NativeAOT ABI
-    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        if (UsesFunclets() && ehNeedsPSPSym())
-        {
-            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
-            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
-            lclPSPSym->lvType    = TYP_I_IMPL;
-            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-        }
-    }
 
 #ifdef JIT32_GCENCODER
     // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
