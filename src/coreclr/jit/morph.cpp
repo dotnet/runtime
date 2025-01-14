@@ -13513,6 +13513,25 @@ PhaseStatus Compiler::fgMorphBlocks()
         fgEntryBB->bbRefs--;
         fgEntryBBExtraRefs = 0;
 
+        // The original method entry will now be checked for profile consistency.
+        // If the entry has inconsistent incoming weight, flag the profile as inconsistent.
+        //
+        if (fgEntryBB->hasProfileWeight())
+        {
+            weight_t incomingWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : fgEntryBB->PredEdges())
+            {
+                incomingWeight += predEdge->getLikelyWeight();
+            }
+
+            if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
+            {
+                JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
+            }
+        }
+
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
