@@ -3,17 +3,13 @@
 
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <PlatformPackageType>RuntimePack</PlatformPackageType>
+    <PlatformPackageType>ToolPack</PlatformPackageType>
     <SharedFrameworkName>Microsoft.NETCore.App.MonoCrossAOT</SharedFrameworkName>
     <OverridePackageId>Microsoft.NETCore.App.Runtime.AOT.$(RuntimeIdentifier).Cross.$(TargetCrossRid)</OverridePackageId>
-    <SharedFrameworkHostFileNameOverride>monocrossaot</SharedFrameworkHostFileNameOverride>
     <RuntimeIdentifiers>linux-x64;linux-arm64;linux-musl-x64;linux-musl-arm64;osx-x64;osx-arm64;win-x64;win-arm64</RuntimeIdentifiers>
     <GenerateInstallers>false</GenerateInstallers>
-    <PublishReadyToRun>false</PublishReadyToRun>
-    <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
-    <AotCompilerFileName>mono-aot-cross</AotCompilerFileName>
-    <AotCompilerFileName Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(AotCompilerFileName).exe</AotCompilerFileName>
+    <AotCompilerFileName>mono-aot-cross$(ExeSuffix)</AotCompilerFileName>
     <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
   </PropertyGroup>
 
