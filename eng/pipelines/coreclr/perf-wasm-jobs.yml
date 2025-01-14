@@ -158,7 +158,7 @@ jobs:
 
   #run mono wasm aot microbenchmarks perf job
   # Disabled for runtime-wasm-perf on PRs due to https://github.com/dotnet/runtime/issues/95101
-  - ${{if and(not(in(variables['Build.DefinitionName'], 'runtime-wasm-perf')), eq(parameters.monoAOTEnabled, true)) }}:
+  - ${{if and(not(in(variables['Build.DefinitionName'], 'runtime-wasm-perf')), eq(parameters.monoWasmAOTEnabled, true)) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
