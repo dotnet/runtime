@@ -55,12 +55,24 @@ extends:
                   pathToZipFile: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
 
               - task: AzureRmWebAppDeployment@4
-                displayName: Deploy to staging slot
+                displayName: Deploy to corefx-net-http11
                 inputs:
                   ConnectionType: "AzureRM"
                   azureSubscription: .NET Libraries Network Testing
                   appType: "webApp"
                   WebAppName: "corefx-net-http11"
+                  deployToSlotOrASE: true
+                  ResourceGroupName: "Production-WestUS"
+                  SlotName: "staging"
+                  package: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
+
+              - task: AzureRmWebAppDeployment@4
+                displayName: Deploy to corefx-net-http2-staging
+                inputs:
+                  ConnectionType: "AzureRM"
+                  azureSubscription: .NET Libraries Network Testing
+                  appType: "webApp"
+                  WebAppName: "corefx-net-http2"
                   deployToSlotOrASE: true
                   ResourceGroupName: "Production-WestUS"
                   SlotName: "staging"
