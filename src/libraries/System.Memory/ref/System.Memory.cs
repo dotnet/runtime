@@ -277,6 +277,7 @@ namespace System
         public static bool ContainsAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static bool ContainsAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static bool ContainsAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static void CopyTo<T>(this T[]? source, System.Memory<T> destination) { }
         public static void CopyTo<T>(this T[]? source, System.Span<T> destination) { }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
@@ -331,6 +332,7 @@ namespace System
         public static int IndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int IndexOfAnyExceptWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int IndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
@@ -340,6 +342,7 @@ namespace System
         public static int IndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int IndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int IndexOfAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static bool IsWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOf(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static int LastIndexOfAny<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
@@ -372,6 +375,7 @@ namespace System
         public static int LastIndexOfAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int LastIndexOfAnyExceptWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static int LastIndexOf<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
@@ -381,6 +385,7 @@ namespace System
         public static int LastIndexOfAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static int LastIndexOfAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -18,6 +19,27 @@ namespace System.Buffers
     /// </remarks>
     public static class SearchValues
     {
+        private static SearchValues<char>? _whiteSpaces;
+
+        internal static SearchValues<char> WhiteSpaces
+        {
+            get
+            {
+                if (_whiteSpaces is null)
+                {
+                    List<char> whiteSpaces = [];
+                    for (int i = 0; i <= char.MaxValue; i++)
+                    {
+                        if (char.IsWhiteSpace((char)i))
+                            whiteSpaces.Add((char)i);
+                    }
+                    _whiteSpaces = Create(CollectionsMarshal.AsSpan(whiteSpaces));
+                }
+
+                return _whiteSpaces;
+            }
+        }
+
         /// <summary>
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>

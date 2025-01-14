@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -14,15 +15,8 @@ namespace System
         /// <summary>
         /// Indicates whether the specified span contains only white-space characters.
         /// </summary>
-        public static bool IsWhiteSpace(this ReadOnlySpan<char> span)
-        {
-            for (int i = 0; i < span.Length; i++)
-            {
-                if (!char.IsWhiteSpace(span[i]))
-                    return false;
-            }
-            return true;
-        }
+        public static bool IsWhiteSpace(this ReadOnlySpan<char> span) =>
+            SearchValues.WhiteSpaces.IndexOfAnyExcept(span) < 0;
 
         /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
@@ -34,6 +28,16 @@ namespace System
         {
             return IndexOf(span, value, comparisonType) >= 0;
         }
+
+        /// <summary>
+        /// Returns a value indicating whether the specified span contains <see cref="char.IsWhiteSpace(char)">any
+        /// white-space characters</see>, and returns <see langword="true"/> if found. If not found, returns
+        /// <see langword="false"/>.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool ContainsAnyWhiteSpace(this ReadOnlySpan<char> span) =>
+            SearchValues.WhiteSpaces.IndexOfAny(span) >= 0;
 
         /// <summary>
         /// Determines whether this <paramref name="span"/> and the specified <paramref name="other"/> span have the same characters
@@ -150,6 +154,22 @@ namespace System
         }
 
         /// <summary>
+        /// Reports the zero-based index of the first occurrence of <see cref="char.IsWhiteSpace(char)">any white-space
+        /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int IndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
+            SearchValues.WhiteSpaces.IndexOfAny(span);
+
+        /// <summary>
+        /// Reports the zero-based index of the first occurrence of <see cref="char.IsWhiteSpace(char)">any
+        /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int IndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
+            SearchValues.WhiteSpaces.IndexOfAnyExcept(span);
+
+        /// <summary>
         /// Reports the zero-based index of the last occurrence of the specified <paramref name="value"/> in the current <paramref name="span"/>.
         /// </summary>
         /// <param name="span">The source span.</param>
@@ -183,6 +203,22 @@ namespace System
                     return Ordinal.LastIndexOfOrdinalIgnoreCase(span, value);
             }
         }
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of <see cref="char.IsWhiteSpace(char)">any white-space
+        /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int LastIndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
+            SearchValues.WhiteSpaces.LastIndexOfAny(span);
+
+        /// <summary>
+        /// Reports the zero-based index of the last occurrence of <see cref="char.IsWhiteSpace(char)">any
+        /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
+        /// </summary>
+        /// <param name="span">The source span.</param>
+        public static int LastIndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
+            SearchValues.WhiteSpaces.LastIndexOfAnyExcept(span);
 
         /// <summary>
         /// Copies the characters from the source span into the destination, converting each character to lowercase,
