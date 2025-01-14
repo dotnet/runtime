@@ -4858,11 +4858,31 @@ void Compiler::fgMoveColdBlocks()
     //
     if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
     {
+        BasicBlock* const lastHotBB     = lastMainBB->Prev();
         BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
         if (lastMainBB != newLastMainBB)
         {
             moveBlock(lastMainBB, newLastMainBB);
         }
+
+        if (lastHotBB == nullptr)
+        {
+            // The whole method is cold, so there isn't any point in defining a cold section for layout purposes
+            //
+            assert(fgFirstBB->isBBWeightCold(this));
+        }
+        else
+        {
+            // Save beginning of cold section for later
+            //
+            fgFirstColdBlock = lastHotBB->Next();
+        }
+    }
+    else
+    {
+        // Save beginning of cold section for later
+        //
+        fgFirstColdBlock = lastMainBB->Next();
     }
 }
 
@@ -5210,33 +5230,30 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 //
 void Compiler::ThreeOptLayout::Run()
 {
-    // Walk backwards through the main method body, looking for the last hot block.
     // Since we moved all cold blocks to the end of the method already,
-    // we should have a span of hot blocks to consider reordering at the beginning of the method.
-    // While doing this, try to get as tight an upper bound for the number of hot blocks as possible.
-    // For methods without funclet regions, 'numBlocksUpperBound' is exact.
-    // Otherwise, it's off by the number of handler blocks.
-    BasicBlock* finalBlock;
-    unsigned    numBlocksUpperBound = compiler->fgBBcount;
-    for (finalBlock = compiler->fgLastBBInMainFunction();
-         !finalBlock->IsFirst() && finalBlock->isBBWeightCold(compiler); finalBlock = finalBlock->Prev())
-    {
-        numBlocksUpperBound--;
-    }
+    // we should have a span of hot blocks to consider reordering at the beginning of the method
+    // (unless none of the blocks are cold relative to the rest of the method,
+    // in which case we will reorder the whole main method body).
+    BasicBlock* const finalBlock = (compiler->fgFirstColdBlock != nullptr) ? compiler->fgFirstColdBlock->Prev()
+                                                                           : compiler->fgLastBBInMainFunction();
+
+    // Reset cold section pointer, in case we decide to do hot/cold splitting later
+    compiler->fgFirstColdBlock = nullptr;
+
+    // Get an upper bound on the number of hot blocks without walking the whole block list.
+    // This is computed using the number of blocks reachable by normal flow,
+    // plus some extra room for the entry blocks of unreachable try regions left in-place.
+    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount() + compiler->compHndBBtabCount;
+
+    // We better have an end block for the hot section, and it better not be splitting a call-finally pair
+    assert(finalBlock != nullptr);
+    assert(!finalBlock->isBBCallFinallyPair());
 
     // For methods with fewer than three candidate blocks, we cannot partition anything
     if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
     {
         JITDUMP("Not enough blocks to partition anything. Skipping 3-opt.\n");
         return;
-    }
-
-    // If only the first block of a call-finally pair is hot, include the whole pair in the hot section anyway.
-    // This ensures the call-finally pair won't be split up when swapping partitions.
-    if (finalBlock->isBBCallFinallyPair())
-    {
-        finalBlock = finalBlock->Next();
-        numBlocksUpperBound++;
     }
 
     assert(numBlocksUpperBound != 0);
@@ -5505,14 +5522,6 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         {
             ordinals[blockOrder[i]->bbPostorderNum] = i;
         }
-
-#ifdef DEBUG
-        // Verify 'ordinals' is up-to-date
-        for (unsigned i = 0; i < numCandidateBlocks; i++)
-        {
-            assert(ordinals[blockOrder[i]->bbPostorderNum] == i);
-        }
-#endif // DEBUG
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
         assert((ordinals[srcBlk->bbPostorderNum] + 1) == ordinals[dstBlk->bbPostorderNum]);
