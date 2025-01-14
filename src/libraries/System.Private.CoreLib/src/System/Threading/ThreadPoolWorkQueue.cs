@@ -1307,13 +1307,13 @@ namespace System.Threading
 
         public int Count => _workItems.Count;
 
-        public void Enqueue(Event workItem)
+        public void Enqueue(IOCompletionPollerEvent workItem)
         {
             BatchEnqueue(workItem);
             CompleteBatchEnqueue();
         }
 
-        public void BatchEnqueue(Event workItem) => _workItems.Enqueue(workItem);
+        public void BatchEnqueue(IOCompletionPollerEvent workItem) => _workItems.Enqueue(workItem);
         public void CompleteBatchEnqueue()
         {
             // Only enqueue a work item if the stage is NotScheduled.
