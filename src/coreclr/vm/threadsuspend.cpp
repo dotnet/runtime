@@ -4226,6 +4226,7 @@ bool Thread::SysSweepThreadsForDebug(bool forceSync)
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
         if (thread->m_hasPendingActivation && CORDebuggerAttached() 
+            && (thread->m_State & Thread::TS_SyncSuspended)
             && !(thread->m_State & Thread::TS_SSToExitApcCall)
             && !(thread->m_State & Thread::TS_SSToExitApcCallDone))
         {
