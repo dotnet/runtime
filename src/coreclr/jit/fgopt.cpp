@@ -5258,34 +5258,26 @@ void Compiler::ThreeOptLayout::Run()
     }
 
     // Get an upper bound on the number of hot blocks without walking the whole block list.
-    // This is computed using the number of blocks reachable by normal flow,
-    // plus some extra room for the entry blocks of unreachable try regions left in-place.
-    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount() + compiler->compHndBBtabCount;
-
+    // We will only consider blocks reachable via normal flow.
+    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount();
     assert(numBlocksUpperBound != 0);
-    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
-    tempOrder  = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
+    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound * 2];
+    tempOrder  = (blockOrder + numBlocksUpperBound);
 
     // Initialize the current block order.
     // Note that we default-initialized 'ordinals' with zeros.
     // Block reordering shouldn't change the method's entry point,
     // so if a block has an ordinal of zero and it's not 'fgFirstBB',
-    // the block wasn't visited below, so it's not in the range of candidate blocks.
-    unsigned nextPostorderNum = compiler->m_dfsTree->GetPostOrderCount();
+    // the block wasn't visited below, meaning it's not in the range of candidate blocks.
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
-        assert(numCandidateBlocks < numBlocksUpperBound);
-        blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
-
-        // Unreachable blocks should have been pushed out of the candidate set of blocks.
-        // However, the entries of unreachable EH regions are left in-place to facilitate reestablishing contiguity,
-        // so it is possible for us to encounter unreachable blocks.
-        // When we do, assign them postorder numbers that can be used as keys into 'ordinals'.
         if (!compiler->m_dfsTree->Contains(block))
         {
-            assert(nextPostorderNum < compiler->fgBBcount);
-            block->bbPostorderNum = nextPostorderNum++;
+            continue;
         }
+
+        assert(numCandidateBlocks < numBlocksUpperBound);
+        blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
 
         assert(ordinals[block->bbPostorderNum] == 0);
         ordinals[block->bbPostorderNum] = numCandidateBlocks++;
