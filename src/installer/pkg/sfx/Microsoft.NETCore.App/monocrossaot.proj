@@ -12,9 +12,12 @@
   </PropertyGroup>
 
   <!-- Only restore the target sfxproj once to avoid any parallel restore issues. -->
-  <ItemGroup>
+  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' == ''">
     <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" Properties="TargetCrossRid=%(Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
     <ProjectReference Include="@(MonoAotTargetRids->'$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj')" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MSBuildRestoreSessionId)' != ''">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" />
   </ItemGroup>
 
 </Project>
