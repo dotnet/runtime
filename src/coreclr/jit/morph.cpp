@@ -6291,7 +6291,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
     //
-    // For x86, the tailcall helper is defined as:
+    // For Windows x86, the tailcall helper is defined as:
     //
     //      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void*
     //      callTarget)
@@ -13512,6 +13512,25 @@ PhaseStatus Compiler::fgMorphBlocks()
         assert(fgEntryBB->bbRefs >= 1);
         fgEntryBB->bbRefs--;
         fgEntryBBExtraRefs = 0;
+
+        // The original method entry will now be checked for profile consistency.
+        // If the entry has inconsistent incoming weight, flag the profile as inconsistent.
+        //
+        if (fgEntryBB->hasProfileWeight())
+        {
+            weight_t incomingWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : fgEntryBB->PredEdges())
+            {
+                incomingWeight += predEdge->getLikelyWeight();
+            }
+
+            if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
+            {
+                JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
+            }
+        }
 
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
