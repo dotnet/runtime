@@ -7,6 +7,7 @@ parameters:
     type: boolean
     default: true
   - name: crossgen
+    displayname: Crossgen Configs
     type: object
     default:
       configs:
