@@ -181,7 +181,8 @@ jobs:
     parameters:
       hybridGlobalization: True
       perfBranch: ${{ parameters.perfBranch }}
-  - $ {{ if parameters.androidMono.enabled }}
+
+  - $ {{ if parameters.androidMono.enabled }}:
     # run android scenarios
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -198,7 +199,8 @@ jobs:
           runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
           logicalmachine: 'perfpixel4a'
           perfBranch: ${{ parameters.perfBranch }}
-  - $ {{ if parameters.tigerMono.enabled }}
+
+  - $ {{ if parameters.tigerMono.enabled }}:
     # run mono microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -216,7 +218,8 @@ jobs:
           runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
-  - $ {{ if parameters.tigerMonoInterpreter.enabled }}
+
+  - $ {{ if parameters.tigerMonoInterpreter.enabled }}:
     # run mono interpreter perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -235,7 +238,8 @@ jobs:
           runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
-  - $ {{ if parameters.tigerMonoAOT.enabled }}
+
+  - $ {{ if parameters.tigerMonoAOT.enabled }}:
     # run mono aot microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -254,7 +258,8 @@ jobs:
           runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
-  - $ {{ if parameters.tigerMicro.enabled }}
+
+  - $ {{ if parameters.tigerMicro.enabled }}:
     # run coreclr perftiger microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -270,7 +275,8 @@ jobs:
           runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
           logicalmachine: 'perftiger'
           perfBranch: ${{ parameters.perfBranch }}
-  - $ {{ if parameters.tigerNoPGO.enabled }}
+
+  - $ {{ if parameters.tigerNoPGO.enabled }}:
     # run coreclr perftiger microbenchmarks no dynamic pgo perf jobs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -288,7 +294,7 @@ jobs:
           pgoRunType: nodynamicpgo
           perfBranch: ${{ parameters.perfBranch }}
 
-  - $ {{ if parameters.tigerNoR2R.enabled }}
+  - $ {{ if parameters.tigerNoR2R.enabled }}:
     # run coreclr perftiger microbenchmarks no R2R perf jobs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -306,7 +312,7 @@ jobs:
           r2rRunType: nor2r
           perfBranch: ${{ parameters.perfBranch }}
 
-  - $ {{ if parameters.owlMicro.enabled }}
+  - $ {{ if parameters.owlMicro.enabled }}:
     # run coreclr perfowl microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -323,7 +329,7 @@ jobs:
           logicalmachine: 'perfowl'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - $ {{ if parameters.viperMicro.enabled }}
+  - $ {{ if parameters.viperMicro.enabled }}:
     # run coreclr perfviper microbenchmarks perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -340,7 +346,7 @@ jobs:
           logicalmachine: 'perfviper'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - $ {{ if parameters.viperJitOptRepeat.enabled }}
+  - $ {{ if parameters.viperJitOptRepeat.enabled }}:
     # run coreclr perfviper microbenchmarks perf jitoptrepeat jobs
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -358,7 +364,7 @@ jobs:
           experimentName: 'jitoptrepeat'
           perfBranch: ${{ parameters.perfBranch }}
 
-  - $ {{ if parameters.crossgen.enabled }}
+  - $ {{ if parameters.crossgen.enabled }}:
     # run coreclr crossgen perf job
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
