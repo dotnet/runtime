@@ -24,15 +24,6 @@ namespace System.Net.Test.Common
 
             public static object[][] GetEchoServers()
             {
-                if (PlatformDetection.IsFirefox)
-                {
-                    // https://github.com/dotnet/runtime/issues/101115
-                    return new object[][] {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                        // new object[] { RemoteEchoServer },
-
-                    };
-                }
                 return new object[][] {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                     // new object[] { RemoteEchoServer },
@@ -42,14 +33,6 @@ namespace System.Net.Test.Common
 
             public static object[][] GetEchoHeadersServers()
             {
-                if (PlatformDetection.IsFirefox)
-                {
-                    // https://github.com/dotnet/runtime/issues/101115
-                    return new object[][] {
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                        // new object[] { RemoteEchoHeadersServer },
-                    };
-                }
                 return new object[][] {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                     // new object[] { RemoteEchoHeadersServer },

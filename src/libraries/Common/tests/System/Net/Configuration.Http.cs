@@ -60,13 +60,6 @@ namespace System.Net.Test.Common
             public static readonly Uri Http2RemoteEchoServer = new Uri("https://" + Http2Host + "/" + EchoHandler);
             public static Uri[] GetEchoServerList()
             {
-                if (PlatformDetection.IsFirefox)
-                {
-                    // https://github.com/dotnet/runtime/issues/101115
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                    // return [RemoteEchoServer];
-                    return [];
-                }
                 return [
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                     // RemoteEchoServer,
@@ -112,13 +105,6 @@ namespace System.Net.Test.Common
 
             public static IEnumerable<RemoteServer> GetRemoteServers()
             {
-                if (PlatformDetection.IsFirefox)
-                {
-                    // https://github.com/dotnet/runtime/issues/101115
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                    // return new RemoteServer[] { RemoteHttp11Server };
-                    return [];
-                }
                 return new RemoteServer[]
                 {
                     // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
@@ -128,7 +114,7 @@ namespace System.Net.Test.Common
                 };
             }
 
-            public static readonly IEnumerable<object[]> RemoteServersMemberData = RemoteServers.Select(s => new object[] { s });
+            public static readonly IEnumerable<object[]> RemoteServersMemberData = GetRemoteServers().Select(s => new object[] { s });
 
             public sealed class RemoteServer
             {
