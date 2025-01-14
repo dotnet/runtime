@@ -122,6 +122,10 @@ parameters:
   default:
     configs:
       - android_arm64
+- name: iOSMonoAOTEnabled
+  displayName: iOS Mono/AOT Enabled
+  type: boolean
+  default: true
 - name: monoWasmEnabled
   displayName: Mono WASM Enabled
   type: boolean
@@ -184,6 +188,9 @@ extends:
         parameters:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           perfBranch: ${{ parameters.perfBranch }}
+          monoWasmEnabled: ${{ parameters.monoWasmEnabled }}
+          monoWasmAOTEnabled: ${{ parameters.monoWasmAOTEnabled }}
+          monoWasmBlazorEnabled: ${{ parameters.monoWasmBlazorEnabled }}
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
           ${{ if ne(variables['System.TeamProject'], 'public') }}:
@@ -195,12 +202,23 @@ extends:
           crossgen: ${{ parameters.crossgen }}
           crossgenEnabled: ${{ parameters.crossgenEnabled }}
           viperJitOptRepeat: ${{ parameters.viperJitOptRepeat }}
+          viperJitOptRepeatEnabled: ${{ parameters.viperJitOptRepeatEnabled }}
           viperMicro: ${{ parameters.viperMicro }}
+          viperMicroEnabled: ${{ parameters.viperMicroEnabled }}
           owlMicro: ${{ parameters.owlMicro }}
+          owlMicroEnabled: ${{ parameters.owlMicroEnabled }}
           tigerNoR2R: ${{ parameters.tigerNoR2R }}
+          tigerNoR2REnabled: ${{ parameters.tigerNoR2REnabled }}
           tigerNoPGO: ${{ parameters.tigerNoPGO }}
+          tigerNoPGOEnabled: ${{ parameters.tigerNoPGOEnabled }}
           tigerMicro: ${{ parameters.tigerMicro }}
+          tigerMicroEnabled: ${{ parameters.tigerMicroEnabled }}
           tigerMonoAOT: ${{ parameters.tigerMonoAOT }}
+          tigerMonoAOTEnabled: ${{ parameters.tigerMonoAOTEnabled }}
           tigerMonoInterpreter: ${{ parameters.tigerMonoInterpreter }}
+          tigerMonoInterpreterEnabled: ${{ parameters.tigerMonoInterpreterEnabled }}
           tigerMono: ${{ parameters.tigerMono }}
+          tigerMonoEnabled: ${{ parameters.tigerMonoEnabled }}
           androidMono: ${{ parameters.androidMono }}
+          androidMonoEnabled: ${{ parameters.androidMonoEnabled }}
+          iOSMonoAOTEnabled: ${{ parameters.iOSMonoAOTEnabled }}
