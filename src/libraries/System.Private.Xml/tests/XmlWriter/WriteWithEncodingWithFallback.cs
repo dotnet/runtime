@@ -100,7 +100,7 @@ namespace System.Xml.XmlWriterTests
         }
 
         [Fact]
-        public static void AsyncXmlWriterConvertsInvalidCharacterToEntity()
+        public static async Task AsyncXmlWriterConvertsInvalidCharacterToEntity()
         {
             MemoryStream ms = new MemoryStream();
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -114,9 +114,9 @@ namespace System.Xml.XmlWriterTests
 
             using (XmlWriter writer = XmlWriter.Create(ms, settings))
             {
-                writer.WriteStartDocumentAsync().Wait();
-                writer.WriteElementStringAsync(null, "test", null, problematicString).Wait();
-                writer.FlushAsync().Wait();
+                await writer.WriteStartDocumentAsync();
+                await writer.WriteElementStringAsync(null, "test", null, problematicString);
+                await writer.FlushAsync();
             }
 
             ms.Position = 0;
@@ -128,7 +128,7 @@ namespace System.Xml.XmlWriterTests
         }
 
         [Fact]
-        public static void AsyncEncodingFallbackFailsWhenInvalidCharacterInTagName()
+        public static async Task AsyncEncodingFallbackFailsWhenInvalidCharacterInTagName()
         {
             MemoryStream ms = new MemoryStream();
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -141,11 +141,11 @@ namespace System.Xml.XmlWriterTests
 
             using (XmlWriter writer = XmlWriter.Create(ms, settings))
             {
-                writer.WriteStartDocumentAsync().Wait();
+                await writer.WriteStartDocumentAsync();
                 Exception exception = Assert.Throws<System.AggregateException>(() =>
                     {
-                        writer.WriteElementStringAsync(null, problematicString, null, "test").Wait();
-                        writer.FlushAsync().Wait();
+                        await writer.WriteElementStringAsync(null, problematicString, null, "test");
+                        await writer.FlushAsync();
                     });
 
                 Assert.Equal(typeof(System.Text.EncoderFallbackException), exception.InnerException.GetType());
@@ -153,7 +153,7 @@ namespace System.Xml.XmlWriterTests
         }
 
         [Fact]
-        public static void AsyncXmlWriterConvertsSurrogatePairToEntity()
+        public static async Task AsyncXmlWriterConvertsSurrogatePairToEntity()
         {
             MemoryStream ms = new MemoryStream();
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -167,9 +167,9 @@ namespace System.Xml.XmlWriterTests
 
             using (XmlWriter writer = XmlWriter.Create(ms, settings))
             {
-                writer.WriteStartDocumentAsync().Wait();
-                writer.WriteElementStringAsync(null, "test", null, problematicString).Wait();
-                writer.FlushAsync().Wait();
+                await writer.WriteStartDocumentAsync();
+                await writer.WriteElementStringAsync(null, "test", null, problematicString);
+                await writer.FlushAsync();
             }
 
             ms.Position = 0;

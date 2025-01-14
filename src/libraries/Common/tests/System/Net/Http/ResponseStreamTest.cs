@@ -200,7 +200,10 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
 
                 // Verify that the task completed.
-                Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
+                if (PlatformDetection.IsThreadingSupported)
+                {
+                    Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
+                }
                 Assert.True(task.IsCompleted, "Task was not yet completed");
 
                 // Verify that the task completed successfully or is canceled.
