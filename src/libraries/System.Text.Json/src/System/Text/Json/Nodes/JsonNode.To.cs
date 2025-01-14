@@ -25,7 +25,9 @@ namespace System.Text.Json.Nodes
             Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(writerOptions, defaultBufferSize, out PooledByteBufferWriter output);
             try
             {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                 WriteTo(writer, options);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
                 writer.Flush();
                 return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
             }
@@ -58,7 +60,9 @@ namespace System.Text.Json.Nodes
             Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(new JsonWriterOptions { Indented = true }, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
             try
             {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                 WriteTo(writer);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
                 writer.Flush();
                 return JsonHelpers.Utf8GetString(output.WrittenMemory.Span);
             }
@@ -76,6 +80,7 @@ namespace System.Text.Json.Nodes
         ///   The <paramref name="writer"/> parameter is <see langword="null"/>.
         /// </exception>
         /// <param name="options">Options to control the serialization behavior.</param>
+        [Obsolete(Obsoletions.JsonNodeWriteToMessage, DiagnosticId = Obsoletions.JsonNodeWriteToDiagId)]
         public abstract void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
     }
 }

@@ -26,6 +26,8 @@ namespace System.Text.Json.Nodes
         private protected override JsonValueKind GetValueKindCore() => _valueKind ??= ComputeValueKind();
         internal override JsonNode DeepCloneCore() => JsonSerializer.SerializeToNode(Value, _jsonTypeInfo)!;
 
+
+        [Obsolete(Obsoletions.JsonNodeWriteToMessage, DiagnosticId = Obsoletions.JsonNodeWriteToDiagId)]
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             if (writer is null)
@@ -52,7 +54,9 @@ namespace System.Text.Json.Nodes
             Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(options: default, JsonSerializerOptions.BufferSizeDefault, out PooledByteBufferWriter output);
             try
             {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                 WriteTo(writer);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
                 writer.Flush();
                 Utf8JsonReader reader = new(output.WrittenMemory.Span);
                 bool success = reader.Read();

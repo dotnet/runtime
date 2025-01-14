@@ -17,7 +17,9 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
             value.WriteTo(writer, options);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
         }
 
         public override JsonValue? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

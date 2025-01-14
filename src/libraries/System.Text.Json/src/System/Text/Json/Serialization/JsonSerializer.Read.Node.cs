@@ -165,7 +165,9 @@ namespace System.Text.Json
                 }
                 else
                 {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                     node.WriteTo(writer, options);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
                 }
             }
 
@@ -186,7 +188,9 @@ namespace System.Text.Json
                 }
                 else
                 {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                     node.WriteTo(writer, options);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
                 }
             }
 

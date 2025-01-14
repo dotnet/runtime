@@ -141,7 +141,9 @@ namespace System.Text.Json.Nodes
 
                 try
                 {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                     node.WriteTo(writer);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
                     writer.Flush();
                     Utf8JsonReader reader = new(output.WrittenMemory.Span);
                     backingDocument = JsonDocument.ParseValue(ref reader);

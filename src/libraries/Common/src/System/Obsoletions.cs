@@ -190,6 +190,9 @@ namespace System
         internal const string SystemEventsEventsThreadShutdownMessage = "SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead.";
         internal const string SystemEventsEventsThreadShutdownDiagId = "SYSLIB0059";
 
+        internal const string JsonNodeWriteToMessage = "JsonNode.WriteTo are obsolete. Use JsonSerializer.Serialize{Async} instead.";
+        internal const string JsonNodeWriteToDiagId = "SYSLIB0060";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }
