@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Represents an strongly-typed opaque, GC handle to a managed object.
+    /// Represents a strongly-typed opaque, GC handle to a managed object.
     /// A GC handle is used when an object reference must be reachable from
     /// unmanaged memory.
     /// The object is pinned at fixed location in GC heap and allows its
@@ -18,11 +18,11 @@ namespace System.Runtime.InteropServices
     /// <para>
     /// This type is unsafe if used incorrectly. Incorrect usage like mismanagement
     /// of lifetime, providing invalid handle value or concurrent disposal can result
-    /// into hard to diagnose crashes or data corruptions.
+    /// in hard to diagnose crashes or data corruptions.
     /// </para>
     /// </remarks>
     /// <seealso cref="GCHandle" />
-    /// <typeparam name="T">The type of the object this <see cref="GCHandle{T}"/> tracks to.</typeparam>
+    /// <typeparam name="T">The type of the object this <see cref="PinnedGCHandle{T}"/> tracks to.</typeparam>
     public struct PinnedGCHandle<T> : IEquatable<PinnedGCHandle<T>>, IDisposable
         where T : class?
     {
@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Allocates a handle for the specified object.
         /// </summary>
-        /// <param name="target">The object that uses the <see cref="GCHandle{T}"/>.</param>
+        /// <param name="target">The object that uses the <see cref="PinnedGCHandle{T}"/>.</param>
         public PinnedGCHandle(T target)
         {
             // Unlike GCHandle, pinning any object is allowed
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">An <see cref="IntPtr"/> handle to a managed object to create a <see cref="PinnedGCHandle{T}"/> object from.</param>
         /// <returns>A new <see cref="PinnedGCHandle{T}"/> object that corresponds to the value parameter.</returns>
         /// <remarks>
-        /// <para>This method doesn't validate of provided handle value. The caller must ensure the validity of the handle.</para>
+        /// <para>This method doesn't validate the provided handle value. The caller must ensure the validity of the handle.</para>
         /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="PinnedGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.

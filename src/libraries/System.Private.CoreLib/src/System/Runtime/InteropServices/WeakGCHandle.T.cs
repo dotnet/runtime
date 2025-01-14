@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Represents an strongly-typed opaque, GC handle to a managed object.
+    /// Represents a strongly-typed opaque, GC handle to a managed object.
     /// A GC handle is used when an object reference must be reachable from
     /// unmanaged memory.
     /// The object is allowed to be collected and handle contents will be zeroed.
@@ -17,11 +17,11 @@ namespace System.Runtime.InteropServices
     /// <para>
     /// This type is unsafe if used incorrectly. Incorrect usage like mismanagement
     /// of lifetime, providing invalid handle value or concurrent disposal can result
-    /// into hard to diagnose crashes or data corruptions.
+    /// in hard to diagnose crashes or data corruptions.
     /// </para>
     /// </remarks>
     /// <seealso cref="GCHandle" />
-    /// <typeparam name="T">The type of the object this <see cref="GCHandle{T}"/> tracks to.</typeparam>
+    /// <typeparam name="T">The type of the object this <see cref="WeakGCHandle{T}"/> tracks to.</typeparam>
     public struct WeakGCHandle<T> : IEquatable<WeakGCHandle<T>>, IDisposable
         where T : class?
     {
@@ -31,8 +31,8 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Allocates a handle for the specified object.
         /// </summary>
-        /// <param name="target">The object that uses the <see cref="GCHandle{T}"/>.</param>
-        /// <param name="trackResurrection">Whether track the object when it's resurrected in the finalizer.</param>
+        /// <param name="target">The object that uses the <see cref="WeakGCHandle{T}"/>.</param>
+        /// <param name="trackResurrection">Whether to track the object when it's resurrected in the finalizer.</param>
         public WeakGCHandle(T target, bool trackResurrection = false)
         {
             _handle = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">An <see cref="IntPtr"/> handle to a managed object to create a <see cref="WeakGCHandle{T}"/> object from.</param>
         /// <returns>A new <see cref="WeakGCHandle{T}"/> object that corresponds to the value parameter.</returns>
         /// <remarks>
-        /// <para>This method doesn't validate of provided handle value. The caller must ensure the validity of the handle.</para>
+        /// <para>This method doesn't validate the provided handle value. The caller must ensure the validity of the handle.</para>
         /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="WeakGCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.

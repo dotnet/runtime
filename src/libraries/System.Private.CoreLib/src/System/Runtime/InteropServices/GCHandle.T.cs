@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Represents an strongly-typed opaque, GC handle to a managed object.
+    /// Represents a strongly-typed opaque, GC handle to a managed object.
     /// A GC handle is used when an object reference must be reachable from
     /// unmanaged memory.
     /// </summary>
@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices
     /// <para>
     /// This type is unsafe if used incorrectly. Incorrect usage like mismanagement
     /// of lifetime, providing invalid handle value or concurrent disposal can result
-    /// into hard to diagnose crashes or data corruptions.
+    /// in hard to diagnose crashes or data corruptions.
     /// </para>
     /// </remarks>
     /// <seealso cref="GCHandle" />
@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">An <see cref="IntPtr"/> handle to a managed object to create a <see cref="GCHandle{T}"/> object from.</param>
         /// <returns>A new <see cref="GCHandle{T}"/> object that corresponds to the value parameter.</returns>
         /// <remarks>
-        /// <para>This method doesn't validate of provided handle value. The caller must ensure the validity of the handle.</para>
+        /// <para>This method doesn't validate the provided handle value. The caller must ensure the validity of the handle.</para>
         /// <para>
         /// The <see cref="IntPtr"/> representation of <see cref="GCHandle{T}"/> is not
         /// interchangable with <see cref="GCHandle"/>.
