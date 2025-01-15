@@ -8,7 +8,6 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Resources;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -16,10 +15,10 @@ namespace System.Reflection.Emit.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public class AssemblySaveResourceTests
     {
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(new byte[] { 1 }, "01")]
-        [InlineData(new byte[] { 1, 2 }, "01-02")] // Verify blob alignment padding by adding a byte.
-        public void ManagedResources(byte[] byteValue, string byteValueExpected)
+        [Theory]
+        [InlineData(new byte[] { 1 })]
+        [InlineData(new byte[] { 1, 2 })] // Verify blob alignment padding by adding a byte.
+        public void ManagedResources(byte[] byteValue)
         {
             PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssemblyWithResource"), typeof(object).Assembly);
             ab.DefineDynamicModule("MyModule");
@@ -56,15 +55,12 @@ namespace System.Reflection.Emit.Tests
             // Serialize() pads after the blob to align at ManagedTextSection.ManagedResourcesDataAlignment bytes.
             Assert.Equal(resourceBlobSize, resourceBlob.Count);
 
-            // Create a temporary assembly.
-            string tempFilePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".dll");
-            using TempFile file = new TempFile(tempFilePath, blob.ToArray());
-
             // To verify the resources work with runtime APIs, load the assembly into the process instead of
             // the normal testing approach of using MetadataLoadContext.
-            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (tempFilePath, byteValue, byteValueExpected) =>
+            TestAssemblyLoadContext testAssemblyLoadContext = new();
+            try
             {
-                Assembly readAssembly = Assembly.LoadFile(tempFilePath);
+                Assembly readAssembly = testAssemblyLoadContext.LoadFromStream(new MemoryStream(blob.ToArray()));
 
                 // Use ResourceReader to read the resources.
                 using Stream readStream = readAssembly.GetManifestResourceStream("MyResource.resources")!;
@@ -75,22 +71,27 @@ namespace System.Reflection.Emit.Tests
                 ResourceManager rm = new ResourceManager("MyResource", readAssembly);
                 ResourceSet resourceSet = rm.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: false);
                 Verify(resourceSet.GetEnumerator());
+            }
+            finally
+            {
+                testAssemblyLoadContext.Unload();
+            }
 
-                void Verify(IDictionaryEnumerator resources)
-                {
-                    Assert.True(resources.MoveNext());
-                    DictionaryEntry resource = (DictionaryEntry)resources.Current;
-                    Assert.Equal("ByteResource", resource.Key);
-                    Assert.Equal(byteValueExpected, byteValue);
+            void Verify(IDictionaryEnumerator resources)
+            {
+                Assert.True(resources.MoveNext());
+                DictionaryEntry resource = (DictionaryEntry)resources.Current;
+                Assert.Equal("ByteResource", resource.Key);
+                Assert.Equal(byteValue, resource.Value);
 
-                    Assert.True(resources.MoveNext());
-                    resource = (DictionaryEntry)resources.Current;
-                    Assert.Equal("StringResource", resource.Key);
-                    Assert.Equal("Value", resource.Value);
+                Assert.True(resources.MoveNext());
+                resource = (DictionaryEntry)resources.Current;
+                Assert.Equal("StringResource", resource.Key);
+                Assert.Equal("Value", resource.Value);
 
-                    Assert.False(resources.MoveNext());
-                }
-            }, tempFilePath, BitConverter.ToString(byteValue), byteValueExpected);
+                Assert.False(resources.MoveNext());
+            }
         }
     }
 }
+

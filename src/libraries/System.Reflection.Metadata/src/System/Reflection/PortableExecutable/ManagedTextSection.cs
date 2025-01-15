@@ -156,7 +156,6 @@ namespace System.Reflection.PortableExecutable
                 BitArithmetic.Align(ResourceDataSize, ManagedResourcesDataAlignment) +
                 StrongNameSignatureSize;
 
-            Debug.Assert(offset % MetadataSizes.StreamAlignment == 0);
             return offset;
         }
 
