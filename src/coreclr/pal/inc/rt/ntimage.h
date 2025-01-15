@@ -1024,8 +1024,7 @@ typedef IMAGE_RELOCATION UNALIGNED *PIMAGE_RELOCATION;
 //
 // RISCV64 relocation types
 //
-#define IMAGE_REL_RISCV64_PC            0x0002
-#define IMAGE_REL_RISCV64_JALR          0x0004
+#define IMAGE_REL_RISCV64_PC            0x0003
 
 //
 // CEF relocation types.

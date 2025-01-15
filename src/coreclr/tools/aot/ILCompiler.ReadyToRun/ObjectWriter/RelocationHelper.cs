@@ -239,12 +239,6 @@ namespace ILCompiler.PEWriter
                         delta = targetRVA - sourceRVA;
                         break;
                     }
-                case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
-                    {
-                        relocationLength = 8;
-                        delta = targetRVA - sourceRVA;
-                        break;
-                    }
 
                 default:
                     throw new NotSupportedException();
@@ -263,8 +257,7 @@ namespace ILCompiler.PEWriter
                              (relocationType == RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A) ||
                              (relocationType == RelocType.IMAGE_REL_BASED_LOONGARCH64_PC) ||
                              (relocationType == RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR) ||
-                             (relocationType == RelocType.IMAGE_REL_BASED_RISCV64_PC) ||
-                             (relocationType == RelocType.IMAGE_REL_BASED_RISCV64_JALR)
+                             (relocationType == RelocType.IMAGE_REL_BASED_RISCV64_PC)
                              ) && (value != 0))
                         {
                             throw new NotSupportedException();
