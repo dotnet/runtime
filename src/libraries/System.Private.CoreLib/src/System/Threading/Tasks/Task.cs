@@ -1792,7 +1792,7 @@ namespace System.Threading.Tasks
         {
             //
             // WARNING: The Task/Task<TResult>/TaskCompletionSource classes
-            // have all been carefully crafted to insure that GetExceptions()
+            // have all been carefully crafted to ensure that GetExceptions()
             // is never called while AddException() is being called.  There
             // are locks taken on m_contingentProperties in several places:
             //
@@ -1804,7 +1804,7 @@ namespace System.Threading.Tasks
             //    is allowed to complete its operation before Task.Exception_get()
             //    can access GetExceptions().
             //
-            // -- Task.ThrowIfExceptional(): The lock insures that Wait() will
+            // -- Task.ThrowIfExceptional(): The lock ensures that Wait() will
             //    not attempt to call GetExceptions() while Task<TResult>.TrySetException()
             //    is in the process of calling AddException().
             //
@@ -5937,6 +5937,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
+            int? count = null;
             if (tasks is ICollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
@@ -5949,19 +5950,23 @@ namespace System.Threading.Tasks
                     return WhenAll(CollectionsMarshal.AsSpan(taskList));
                 }
 
-                taskArray = new Task[taskCollection.Count];
-                taskCollection.CopyTo(taskArray, 0);
-                return WhenAll((ReadOnlySpan<Task>)taskArray);
+                count = taskCollection.Count;
             }
-            else
+
+            // Buffer the tasks into a temporary span. Small sets of tasks are common,
+            // so for <= 8 we stack allocate.
+            ValueListBuilder<Task> builder = count is > 8 ?
+                new ValueListBuilder<Task>(count.Value) :
+                new ValueListBuilder<Task>([null, null, null, null, null, null, null, null]);
+            foreach (Task task in tasks)
             {
-                var taskList = new List<Task>();
-                foreach (Task task in tasks)
-                {
-                    taskList.Add(task);
-                }
-                return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                builder.Append(task);
             }
+
+            Task t = WhenAll(builder.AsSpan());
+
+            builder.Dispose();
+            return t;
         }
 
         /// <summary>

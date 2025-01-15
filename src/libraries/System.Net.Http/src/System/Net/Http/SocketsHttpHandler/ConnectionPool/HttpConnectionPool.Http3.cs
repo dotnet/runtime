@@ -75,52 +75,60 @@ namespace System.Net.Http
             // Loop in case we get a 421 and need to send the request to a different authority.
             while (true)
             {
-                if (!TryGetHttp3Authority(request, out HttpAuthority? authority, out Exception? reasonException))
+                HttpConnectionWaiter<Http3Connection?>? http3ConnectionWaiter = null;
+                try
                 {
-                    if (reasonException is null)
+                    if (!TryGetHttp3Authority(request, out HttpAuthority? authority, out Exception? reasonException))
+                    {
+                        if (reasonException is null)
+                        {
+                            return null;
+                        }
+                        ThrowGetVersionException(request, 3, reasonException);
+                    }
+
+                    long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
+                    Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
+
+                    if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out http3ConnectionWaiter))
+                    {
+                        try
+                        {
+                            connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
+                            waitForConnectionActivity?.Stop();
+                            throw;
+                        }
+                    }
+
+                    // Request cannot be sent over H/3 connection, try downgrade or report failure.
+                    // Note that if there's an H/3 suitable origin authority but is unavailable or blocked via Alt-Svc, exception is thrown instead.
+                    if (connection is null)
                     {
                         return null;
                     }
-                    ThrowGetVersionException(request, 3, reasonException);
-                }
 
-                long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
-                Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
+                    HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
 
-                if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out HttpConnectionWaiter<Http3Connection?>? http3ConnectionWaiter))
-                {
-                    try
+                    // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
+                    // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
+                    // In this case, we blocklist the authority and retry the request at the origin.
+                    if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
                     {
-                        connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                        response.Dispose();
+                        BlocklistAuthority(connection.Authority);
+                        continue;
                     }
-                    catch (Exception ex)
-                    {
-                        ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
-                        waitForConnectionActivity?.Stop();
-                        throw;
-                    }
-                }
 
-                // Request cannot be sent over H/3 connection, try downgrade or report failure.
-                // Note that if there's an H/3 suitable origin authority but is unavailable or blocked via Alt-Svc, exception is thrown instead.
-                if (connection is null)
+                    return response;
+                }
+                finally
                 {
-                    return null;
+                    http3ConnectionWaiter?.SetTimeoutToPendingConnectionAttempt(this, cancellationToken.IsCancellationRequested);
                 }
-
-                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
-
-                // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
-                // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
-                // In this case, we blocklist the authority and retry the request at the origin.
-                if (response.StatusCode == HttpStatusCode.MisdirectedRequest && connection.Authority != _originAuthority)
-                {
-                    response.Dispose();
-                    BlocklistAuthority(connection.Authority);
-                    continue;
-                }
-
-                return response;
             }
         }
 
@@ -253,8 +261,7 @@ namespace System.Net.Http
             HttpAuthority? authority = null;
             HttpConnectionWaiter<Http3Connection?> waiter = queueItem.Waiter;
 
-            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
-            waiter.ConnectionCancellationTokenSource = cts;
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             Activity? connectionSetupActivity = null;
             try
             {

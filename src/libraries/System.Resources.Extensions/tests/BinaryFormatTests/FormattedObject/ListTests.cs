@@ -19,7 +19,8 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
         VerifyArrayList((ClassRecord)format[format.RootRecord.Id]);
 
-        Assert.True(format[((ClassRecord)format.RootRecord).GetArrayRecord("_items").Id] is SZArrayRecord<object>);
+        Assert.True(format[((ClassRecord)format.RootRecord).GetArrayRecord("_items").Id] is SZArrayRecord<SerializationRecord>);
+        Assert.Equal(SerializationRecordType.ArraySingleObject, format[((ClassRecord)format.RootRecord).GetArrayRecord("_items").Id].RecordType);
     }
 
     private static void VerifyArrayList(ClassRecord systemClass)
@@ -28,7 +29,8 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
         Assert.Equal(typeof(ArrayList).FullName, systemClass.TypeName.FullName);
         Assert.Equal(["_items", "_size", "_version"], systemClass.MemberNames);
-        Assert.True(systemClass.GetSerializationRecord("_items") is SZArrayRecord<object>);
+        Assert.True(systemClass.GetSerializationRecord("_items") is SZArrayRecord<SerializationRecord>);
+        Assert.Equal(SerializationRecordType.ArraySingleObject, systemClass.GetSerializationRecord("_items").RecordType);
     }
 
     [Theory]
@@ -43,9 +45,9 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
         ClassRecord listRecord = (ClassRecord)format[format.RootRecord.Id];
         VerifyArrayList(listRecord);
 
-        SZArrayRecord<object> array = (SZArrayRecord<object>)format[listRecord.GetArrayRecord("_items").Id];
+        SZArrayRecord<SerializationRecord> array = (SZArrayRecord<SerializationRecord>)format[listRecord.GetArrayRecord("_items").Id];
 
-        Assert.Equal(new[] { value }, array.GetArray().Take(listRecord.GetInt32("_size")));
+        Assert.Equal(value, ((PrimitiveTypeRecord)array.GetArray().Take(listRecord.GetInt32("_size")).Single()).Value);
     }
 
     [Fact]
@@ -59,8 +61,8 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
         ClassRecord listRecord = (ClassRecord)format[format.RootRecord.Id];
         VerifyArrayList(listRecord);
 
-        SZArrayRecord<object> array = (SZArrayRecord<object>)format[listRecord.GetArrayRecord("_items").Id];
-        Assert.Equal(new object[] { "JarJar" }, array.GetArray().Take(listRecord.GetInt32("_size")));
+        SZArrayRecord<SerializationRecord> array = (SZArrayRecord<SerializationRecord>)format[listRecord.GetArrayRecord("_items").Id];
+        Assert.Equal("JarJar", ((PrimitiveTypeRecord<string>)array.GetArray().Take(listRecord.GetInt32("_size")).Single()).Value);
     }
 
     public static TheoryData<object> ArrayList_Primitive_Data => new()

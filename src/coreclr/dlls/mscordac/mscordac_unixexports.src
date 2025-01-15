@@ -77,9 +77,6 @@ nativeStringResourceTable_mscorrc
 #DeleteCriticalSection
 #DuplicateHandle
 #EnterCriticalSection
-#FindClose
-#FindFirstFileW
-#FindNextFileW
 #FlushFileBuffers
 #FlushInstructionCache
 #FormatMessageW
