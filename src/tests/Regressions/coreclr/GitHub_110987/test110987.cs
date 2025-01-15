@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Loader;
 using Xunit;
+using TestLibrary;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
 {
@@ -16,7 +17,7 @@ class TestAssemblyLoadContext : AssemblyLoadContext
 
 public class Test110987
 {
-    [Fact]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.IsReflectionEmitSupported))]
     public static void TestDynamicMethodALC()
     {
         // Create a simple type
