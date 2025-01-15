@@ -121,10 +121,13 @@ namespace ILCompiler
                 Debug.Assert(InstructionSet.X64_VectorT256 == InstructionSet.X86_VectorT256);
                 Debug.Assert(InstructionSet.X64_VectorT512 == InstructionSet.X86_VectorT512);
 
-                // TODO-XArch: Add support for 512-bit Vector<T>
-                Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT512));
-
-                if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256))
+                if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT512))
+                {
+                    Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT128));
+                    Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256));
+                    return SimdVectorLength.Vector512Bit;
+                }
+                else if (IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT256))
                 {
                     Debug.Assert(!IsInstructionSetOptimisticallySupported(InstructionSet.X64_VectorT128));
                     return SimdVectorLength.Vector256Bit;
@@ -437,15 +440,15 @@ namespace ILCompiler
                     Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 
-                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2))
+                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F) && (maxVectorTBitWidth >= 512))
                     {
-                        if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
-                        {
-                            supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
-                            supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
-                        }
-
-                        // TODO-XArch: Add support for 512-bit Vector<T>
+                        supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
+                        supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
+                    }
+                    else if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX2) && (maxVectorTBitWidth is 0 or >= 256))
+                    {
+                        supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
+                        supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT256);
                     }
                     break;
                 }

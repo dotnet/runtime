@@ -328,9 +328,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<long> value)
         {
-            if (Avx2.IsSupported)
+            if (Vector<double>.Count == Vector512<double>.Count)
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (Vector<double>.Count == Vector256<double>.Count)
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
@@ -348,9 +351,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<ulong> value)
         {
-            if (Avx2.IsSupported)
+            if (Vector<double>.Count == Vector512<double>.Count)
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (Vector<double>.Count == Vector256<double>.Count)
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
@@ -453,9 +459,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> ConvertToSingle(Vector<uint> value)
         {
-            if (Avx2.IsSupported)
+            if (Vector<float>.Count == Vector512<float>.Count)
             {
-                Debug.Assert(Vector<float>.Count == Vector256<float>.Count);
+                return Vector512.ConvertToSingle(value.AsVector512()).AsVector();
+            }
+            else if (Vector<float>.Count == Vector256<float>.Count)
+            {
                 return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
             }
             else
