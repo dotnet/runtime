@@ -5296,29 +5296,4 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
 }
 #endif
 
-//------------------------------------------------------------------------
-// IsMovInstruction: Determines whether a give instruction is a move instruction
-//
-// Arguments:
-//    ins       -- The instruction being checked
-//
-bool emitter::IsMovInstruction(instruction ins)
-{
-    switch (ins)
-    {
-        case INS_mov:
-        case INS_fsgnj_s:
-        case INS_fsgnj_d:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-    return false;
-}
-
 #endif // defined(TARGET_RISCV64)
