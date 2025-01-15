@@ -4,7 +4,7 @@ parameters:
   monoAot: false
 
 jobs:
-  - ${{ if parameters.mono }}:
+  - ${{ if eq(parameters.mono, true) }}:
     # build mono
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -28,7 +28,7 @@ jobs:
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
               displayName: Build Assets
 
-  - ${{ if parameters.coreclr }}:
+  - ${{ if eq(parameters.coreclr, true) }}:
     # build coreclr and libraries
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
@@ -52,7 +52,7 @@ jobs:
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
               displayName: Build Assets
 
-  - ${{ if parameters.monoAot }}:
+  - ${{ if eq(parameters.monoAot, true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
       parameters:
         jobTemplate: /eng/pipelines/common/global-build-job.yml
