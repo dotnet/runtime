@@ -15,6 +15,7 @@ namespace System
         /// <summary>
         /// Indicates whether the specified span contains only white-space characters.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsWhiteSpace(this ReadOnlySpan<char> span) =>
             !SearchValues.WhiteSpaces.ContainsAnyExcept(span);
 
@@ -158,6 +159,7 @@ namespace System
         /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             SearchValues.WhiteSpaces.IndexOfAny(span);
 
@@ -166,6 +168,7 @@ namespace System
         /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
             SearchValues.WhiteSpaces.IndexOfAnyExcept(span);
 
@@ -209,6 +212,7 @@ namespace System
         /// characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyWhiteSpace(this ReadOnlySpan<char> span) =>
             SearchValues.WhiteSpaces.LastIndexOfAny(span);
 
@@ -217,6 +221,7 @@ namespace System
         /// non-white-space characters</see> in the current <paramref name="span"/>, or -1 if not founded.
         /// </summary>
         /// <param name="span">The source span.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int LastIndexOfAnyExceptWhiteSpace(this ReadOnlySpan<char> span) =>
             SearchValues.WhiteSpaces.LastIndexOfAnyExcept(span);
 
