@@ -1207,6 +1207,9 @@ class SuperPMICollect:
                         if line.startswith("--exportsfile:"):
                             arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--exportsfile:"):]))
                             return f"--exportsfile:{arg_path}"
+                        elif line.startswith("--sourcelink:"):
+                            arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--sourcelink:"):]))
+                            return f"--sourcelink:{arg_path}"
                         elif line.startswith("--descriptor:"):
                             arg_path = os.path.join(test_directory, os.path.basename(line[len("--descriptor:"):]))
                             return f"--descriptor:{arg_path}"
