@@ -3541,8 +3541,7 @@ public static partial class DataContractSerializerTests
         TestObjectInObjectContainerWithSimpleResolver(genericBase2, $@"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data z:Id=""i1"" i:type=""a:SerializationTestTypes.GenericBase2`2[[SerializationTestTypes.KT1Base, {assemblyName}],[SerializationTestTypes.NonDCPerson, {assemblyName}]]***"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.GenericBase2`2[[SerializationTestTypes.KT1Base, {assemblyName}],[SerializationTestTypes.NonDCPerson, {assemblyName}]]***""><genericData1 z:Id=""i2""><BData z:Id=""i3"" i:type=""b:SerializationTestTypes.KT1Derived***"" xmlns:b=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.KT1Derived***""><BData i:nil=""true""/><DData>TestData</DData></BData></genericData1><genericData2><Age>20</Age><Name>jeff</Name></genericData2></_data><_data2 z:Ref=""i1"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""/></ObjectContainer>");
     }
 
-
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_DataSet()
     {
 

@@ -2127,7 +2127,7 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
 
     MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    retMethodInfo.Set(pMD->GetStubMethodInfo());
+    retMethodInfo.Set(pMD->AllocateStubMethodInfo());
 
     END_QCALL;
 }

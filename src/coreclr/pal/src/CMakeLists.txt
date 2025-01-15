@@ -142,7 +142,6 @@ set(SOURCES
   file/directory.cpp
   file/file.cpp
   file/filetime.cpp
-  file/find.cpp
   file/path.cpp
   handlemgr/handleapi.cpp
   handlemgr/handlemgr.cpp

@@ -11594,6 +11594,14 @@ mono_ldptr:
 			*sp++ = ins;
 			break;
 		}
+		case MONO_CEE_MONO_LDVIRTFTN_DELEGATE: {
+			CHECK_STACK (2);
+			sp -= 2;
+
+			ins = mono_emit_jit_icall (cfg, mono_get_addr_compiled_method, sp);
+			*sp++ = ins;
+			break;
+		}
 		case MONO_CEE_MONO_CALLI_EXTRA_ARG: {
 			MonoInst *addr;
 			MonoInst *arg;
