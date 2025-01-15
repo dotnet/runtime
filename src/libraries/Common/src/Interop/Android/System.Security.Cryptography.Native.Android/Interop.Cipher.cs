@@ -150,14 +150,9 @@ internal static partial class Interop
             out int bytesWritten,
             out bool authTagMismatch)
         {
-            if (output.IsEmpty)
-            {
-                // We can't pass null down to the native shim, so create a valid pointer if we have an empty span.
-                byte dummy = 0;
-                return EvpAeadCipherFinalEx(ctx, &dummy, out bytesWritten, out authTagMismatch);
-            }
-
-            fixed (byte* pOutput = output)
+            // We can't pass null down to the native shim, so create a valid pointer if we have an empty span,
+            // thus, we use MemoryMarshal.GetNonNullPinnableReference
+            fixed (byte* pOutput = &MemoryMarshal.GetNonNullPinnableReference(output))
             {
                 return EvpAeadCipherFinalEx(ctx, pOutput, out bytesWritten, out authTagMismatch);
             }

@@ -114,7 +114,8 @@ namespace System.Security.Cryptography
             }
 
             // Windows produces a 48-byte output, so that's what we do, too.
-            byte[] ret = new byte[48];
+            const int OutputSize = 48;
+            byte[] ret = new byte[OutputSize];
 
             byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, null);
             Debug.Assert(secretAgreement != null);
@@ -147,8 +148,8 @@ namespace System.Security.Cryptography
                         Md5Size,
                         ret);
 
-                    Debug.Assert(ret.Length == 48);
-                    Span<byte> part2 = stackalloc byte[48];
+                    Debug.Assert(ret.Length == OutputSize);
+                    Span<byte> part2 = stackalloc byte[OutputSize];
 
                     PHash(
                         HashAlgorithmName.SHA1,

@@ -335,23 +335,16 @@ namespace System
                     if (string.IsNullOrEmpty(name) ||
                         (cacheType == CacheType.Constructor && name[0] != '.' && name[0] != '*'))
                     {
-                        list = GetListByName(null, 0, null, 0, listType, cacheType);
+                        list = GetListByName(string.Empty, Span<byte>.Empty, listType, cacheType);
                     }
                     else
                     {
-                        int cNameLen = name.Length;
-                        fixed (char* pName = name)
-                        {
-                            int cUtf8Name = Encoding.UTF8.GetByteCount(pName, cNameLen);
-                            // allocating on the stack is faster than allocating on the GC heap
-                            // but we surely don't want to cause a stack overflow
-                            // no one should be looking for a member whose name is longer than 1024
-                            Span<byte> utf8Name = (uint)cUtf8Name > MAXNAMELEN ? new byte[cUtf8Name] : stackalloc byte[cUtf8Name];
-                            fixed (byte* pUtf8Name = utf8Name)
-                            {
-                                list = GetListByName(pName, cNameLen, pUtf8Name, cUtf8Name, listType, cacheType);
-                            }
-                        }
+                        int cUtf8Name = Encoding.UTF8.GetByteCount(name);
+                        // allocating on the stack is faster than allocating on the GC heap
+                        // but we surely don't want to cause a stack overflow
+                        // no one should be looking for a member whose name is longer than 1024
+                        Span<byte> utf8Name = (uint)cUtf8Name > MAXNAMELEN ? new byte[cUtf8Name] : stackalloc byte[cUtf8Name];
+                        list = GetListByName(name, utf8Name, listType, cacheType);
                     }
 
                     Insert(ref list, name, listType);
@@ -359,43 +352,45 @@ namespace System
                     return list;
                 }
 
-                private unsafe T[] GetListByName(char* pName, int cNameLen, byte* pUtf8Name, int cUtf8Name, MemberListType listType, CacheType cacheType)
+                private unsafe T[] GetListByName(string name, Span<byte> utf8Name, MemberListType listType, CacheType cacheType)
                 {
-                    if (cNameLen != 0)
-                        Encoding.UTF8.GetBytes(pName, cNameLen, pUtf8Name, cUtf8Name);
+                    if (name.Length != 0)
+                        Encoding.UTF8.GetBytes(name, utf8Name);
 
-                    Filter filter = new Filter(pUtf8Name, cUtf8Name, listType);
-                    object list = null!;
-
-                    switch (cacheType)
+                    fixed (byte* pUtf8Name = utf8Name)
                     {
-                        case CacheType.Method:
-                            list = PopulateMethods(filter);
-                            break;
-                        case CacheType.Field:
-                            list = PopulateFields(filter);
-                            break;
-                        case CacheType.Constructor:
-                            list = PopulateConstructors(filter);
-                            break;
-                        case CacheType.Property:
-                            list = PopulateProperties(filter);
-                            break;
-                        case CacheType.Event:
-                            list = PopulateEvents(filter);
-                            break;
-                        case CacheType.NestedType:
-                            list = PopulateNestedClasses(filter);
-                            break;
-                        case CacheType.Interface:
-                            list = PopulateInterfaces(filter);
-                            break;
-                        default:
-                            Debug.Fail("Invalid CacheType");
-                            break;
-                    }
+                        Filter filter = new Filter(pUtf8Name, utf8Name.Length, listType);
+                        object list = null!;
 
-                    return (T[])list;
+                        switch (cacheType)
+                        {
+                            case CacheType.Method:
+                                list = PopulateMethods(filter);
+                                break;
+                            case CacheType.Field:
+                                list = PopulateFields(filter);
+                                break;
+                            case CacheType.Constructor:
+                                list = PopulateConstructors(filter);
+                                break;
+                            case CacheType.Property:
+                                list = PopulateProperties(filter);
+                                break;
+                            case CacheType.Event:
+                                list = PopulateEvents(filter);
+                                break;
+                            case CacheType.NestedType:
+                                list = PopulateNestedClasses(filter);
+                                break;
+                            case CacheType.Interface:
+                                list = PopulateInterfaces(filter);
+                                break;
+                            default:
+                                Debug.Fail("Invalid CacheType");
+                                break;
+                        }
+                        return (T[])list;
+                    }
                 }
 
                 // May replace the list with a new one if certain cache
@@ -642,6 +637,8 @@ namespace System
 
                         int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
+                        // We don't expect too many virtual methods on a type, but let's be safe
+                        // and switch to heap allocation if we have more than 512 (arbitrary limit).
                         Span<bool> overrides = (uint)numVirtuals > 512 ? new bool[numVirtuals] : stackalloc bool[numVirtuals];
                         overrides.Clear();
 
