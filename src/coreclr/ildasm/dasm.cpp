@@ -1414,7 +1414,7 @@ mdToken ResolveReflectionNotation(BYTE* dataPtr,
             if(mAsmRefs)
             {
                 mdToken tkResScope = 0;
-                mdToken tk=TokenFromRid(mdtAssemblyRef,1), tkmax=TokenFromRid(mdtAssemblyRef,mAsmRefs);
+                mdToken tk=TokenFromRid(1, mdtAssemblyRef), tkmax=TokenFromRid(mAsmRefs, mdtAssemblyRef);
                 LPCSTR szAsmRefName;
                 // these are dummies
                 const void* pPKT, *pHash;

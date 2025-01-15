@@ -3461,7 +3461,7 @@ VOID ClassLoader::AddAvailableClassHaveLock(
     if (SUCCEEDED(pMDImport->GetNestedClassProps(classdef, &enclosing))) {
         // nested type
 
-        if (enclosing == TokenFromRid(mdtTypeDef, 1))
+        if (enclosing == COR_GLOBAL_PARENT_TOKEN)
         {
             // Types nested in the <module> class can't be found by lookup.
             return;
