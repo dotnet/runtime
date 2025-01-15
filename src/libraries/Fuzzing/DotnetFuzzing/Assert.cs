@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace DotnetFuzzing;
 
 internal static class Assert
@@ -18,6 +20,12 @@ internal static class Assert
             throw new Exception($"Expected={expected} Actual={actual}");
     }
 
+    public static void True([DoesNotReturnIf(false)] bool actual) =>
+        Equal(true, actual);
+
+    public static void False([DoesNotReturnIf(true)] bool actual) =>
+        Equal(false, actual);
+
     public static void NotNull<T>(T value)
     {
         if (value == null)
@@ -26,7 +34,7 @@ internal static class Assert
         }
 
         static void ThrowNull() =>
-            throw new Exception("Value is  null");
+            throw new Exception("Value is null");
     }
 
     public static void SequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)

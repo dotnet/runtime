@@ -438,6 +438,27 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux LoongArch64
+
+- ${{ if containsValue(parameters.platforms, 'linux_loongarch64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: loongarch64
+      targetRid: linux-loongarch64
+      platform: linux_loongarch64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: linux_loongarch64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # WASI WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'wasi_wasm') }}:

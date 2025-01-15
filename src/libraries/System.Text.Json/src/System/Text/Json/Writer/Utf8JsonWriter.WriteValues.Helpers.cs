@@ -12,9 +12,9 @@ namespace System.Text.Json
 {
     public sealed partial class Utf8JsonWriter
     {
-        private bool HasPartialCodePoint => PartialCodePointLength != 0;
+        private bool HasPartialStringData => PartialStringDataLength != 0;
 
-        private void ClearPartialCodePoint() => PartialCodePointLength = 0;
+        private void ClearPartialStringData() => PartialStringDataLength = 0;
 
         private void ValidateEncodingDidNotChange(SegmentEncoding currentSegmentEncoding)
         {
@@ -32,7 +32,7 @@ namespace System.Text.Json
             }
 
             Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
-            Debug.Assert(!HasPartialCodePoint);
+            Debug.Assert(!HasPartialStringData);
         }
 
         private void ValidateWritingValue()
