@@ -58,15 +58,12 @@ namespace System.Net.Test.Common
             public static readonly Uri RemoteEchoServer = new Uri("http://" + Host + "/" + EchoHandler);
             public static readonly Uri SecureRemoteEchoServer = new Uri("https://" + SecureHost + "/" + EchoHandler);
             public static readonly Uri Http2RemoteEchoServer = new Uri("https://" + Http2Host + "/" + EchoHandler);
-            public static Uri[] GetEchoServerList()
-            {
-                return [
-                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
-                    // RemoteEchoServer,
-                    SecureRemoteEchoServer,
-                    Http2RemoteEchoServer
-                ];
-            }
+            public static Uri[] EchoServerList => [
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
+                // RemoteEchoServer,
+                SecureRemoteEchoServer,
+                Http2RemoteEchoServer
+            ];
 
             public static readonly Uri RemoteVerifyUploadServer = new Uri("http://" + Host + "/" + VerifyUploadHandler);
             public static readonly Uri SecureRemoteVerifyUploadServer = new Uri("https://" + SecureHost + "/" + VerifyUploadHandler);
@@ -80,7 +77,7 @@ namespace System.Net.Test.Common
             public static readonly Uri Http2RemoteGZipServer = new Uri("https://" + Http2Host + "/" + GZipHandler);
             public static Uri RemoteLoopServer => new Uri("ws://" + RemoteLoopHost + "/" + RemoteLoopHandler);
 
-            public static readonly object[][] EchoServers = GetEchoServerList().Select(x => new object[] { x }).ToArray();
+            public static readonly object[][] EchoServers = EchoServerList.Select(x => new object[] { x }).ToArray();
             public static readonly object[][] VerifyUploadServers = {
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/110578)]
                 // new object[] { RemoteVerifyUploadServer },
