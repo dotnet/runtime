@@ -566,7 +566,7 @@
         </When>
         <When Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true'">
           <ItemGroup Condition="'$(MonoCrossAOTTargetOS)' != ''">
-            <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Category="packs" />
+            <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.proj" Category="packs" />
           </ItemGroup>
         </When>
         <Otherwise>
@@ -591,7 +591,7 @@
             <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
             <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
             <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
-            <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" />
+            <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.proj" />
           </ItemGroup>
           <ItemGroup>
             <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
