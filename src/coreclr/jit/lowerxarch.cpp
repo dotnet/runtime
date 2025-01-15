@@ -1336,7 +1336,7 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
     for (size_t i = 1; i <= 3; i++)
     {
         GenTree* arg = node->Op(i);
-        if (arg->OperIsHWIntrinsic() && (arg->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe))
+        if (arg->OperIsHWIntrinsic(NI_Vector128_CreateScalarUnsafe))
         {
             GenTree*& argOp = arg->AsHWIntrinsic()->Op(1);
             if (argOp->OperIs(GT_NEG))
