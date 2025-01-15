@@ -2237,13 +2237,13 @@ void JIT_PInvokeEndRarePath()
     Thread *thread = GetThread();
 
     // We execute RareDisablePreemptiveGC manually before checking any abort conditions
-    // as that operation may run the allocator, etc, and we need to be have have handled any suspensions requested
+    // as that operation may run the allocator, etc, and we need to have handled any suspensions requested
     // by the GC before we reach that point.
     thread->RareDisablePreemptiveGC();
 
     if (thread->IsAbortRequested())
     {
-        // This function is acalled after a pinvoke finishes, in the rare case that either a GC
+        // This function is called after a pinvoke finishes, in the rare case that either a GC
         // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
         // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
         // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
