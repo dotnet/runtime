@@ -3,7 +3,7 @@
 //
 // OBJECT.CPP
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 #include "common.h"
