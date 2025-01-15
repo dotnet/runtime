@@ -1,27 +1,5 @@
-<Project>
-  <!--
-    This one project file represents all of the cross-os targeting Mono AOT Compilers.
-    Unlike Crossgen2 or ILCompiler, the Mono AOT Compiler is target-specific.
-    As a result, we end up building this project for each "target cross RID" with
-    the current "RuntimeIdentifier" as the host RID.
-    NuGet doesn't handle restoring the same project with different global properties,
-    so we always restore at most one (usually RIDless) instance of this project
-    and point all variables that need to depend on results of Restore to the restore output
-    in that project.
-  -->
-  <PropertyGroup>
-    <OutDirName Condition="'$(TargetCrossRid)' != ''">monocrossaot-pack.$(TargetCrossRid)</OutDirName>
-    <OutDirName Condition="'$(TargetCrossRid)' == '' or '$(MSBuildRestoreSessionId)' != ''">monocrossaot-pack.restore</OutDirName>
-  </PropertyGroup>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-
-  <PropertyGroup>
-    <RestoreOutputPath>$([System.IO.Path]::GetFullPath('$(ArtifactsObjDir)monocrossaot-pack.restore\'))</RestoreOutputPath>
-    <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
-    <MSBuildProjectExtensionsPath>$(RestoreOutputPath)</MSBuildProjectExtensionsPath>
-  </PropertyGroup>
-
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PlatformPackageType>ToolPack</PlatformPackageType>
@@ -76,7 +54,4 @@
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
     <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath). MonoAotCrossDir=$(MonoAotCrossDir)" />
   </Target>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>
