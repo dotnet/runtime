@@ -63,7 +63,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void OnValidateWritingPropertyFailed()
         {
-            if (_enclosingContainer == EnclosingContainerType.PartialValue)
+            if (IsWritingPartialString)
             {
                 ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
             }

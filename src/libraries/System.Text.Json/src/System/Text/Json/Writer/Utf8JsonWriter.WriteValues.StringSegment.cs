@@ -28,24 +28,15 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            if (_enclosingContainer == EnclosingContainerType.PartialValue)
+            if (!_options.SkipValidation)
             {
-                ValidateEncodingDidNotChange(SegmentEncoding.Utf16);
+                ValidateWritingSegment(EnclosingContainerType.PartialUtf16String);
             }
-            else
+
+            if (_enclosingContainer != EnclosingContainerType.PartialUtf16String)
             {
-                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
-                Debug.Assert(!HasPartialStringData);
-
-                if (!_options.SkipValidation)
-                {
-                    ValidateWritingValue();
-                }
-
                 WriteStringSegmentPrologue();
-
-                PreviousSegmentEncoding = SegmentEncoding.Utf16;
-                _enclosingContainer = EnclosingContainerType.PartialValue;
+                _enclosingContainer = EnclosingContainerType.PartialUtf16String;
             }
 
             // The steps to write a string segment are to complete the previous partial code point
@@ -64,7 +55,6 @@ namespace System.Text.Json
                 WriteStringSegmentEpilogue();
 
                 SetFlagToAddListSeparatorBeforeNextItem();
-                PreviousSegmentEncoding = SegmentEncoding.None;
                 EnclosingContainerType container = _bitStack.Peek() ? EnclosingContainerType.Object : EnclosingContainerType.Array;
                 _enclosingContainer = _bitStack.CurrentDepth == 0 ? EnclosingContainerType.None : container;
                 _tokenType = JsonTokenType.String;
@@ -74,7 +64,7 @@ namespace System.Text.Json
         private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
-            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf16);
+            Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialUtf16String);
 
             scoped ReadOnlySpan<char> partialStringDataBuffer = PartialUtf16StringData;
 
@@ -206,24 +196,15 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            if (_enclosingContainer == EnclosingContainerType.PartialValue)
+            if (!_options.SkipValidation)
             {
-                ValidateEncodingDidNotChange(SegmentEncoding.Utf8);
+                ValidateWritingSegment(EnclosingContainerType.PartialUtf8String);
             }
-            else
+
+            if (_enclosingContainer != EnclosingContainerType.PartialUtf8String)
             {
-                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
-                Debug.Assert(!HasPartialStringData);
-
-                if (!_options.SkipValidation)
-                {
-                    ValidateWritingValue();
-                }
-
                 WriteStringSegmentPrologue();
-
-                PreviousSegmentEncoding = SegmentEncoding.Utf8;
-                _enclosingContainer = EnclosingContainerType.PartialValue;
+                _enclosingContainer = EnclosingContainerType.PartialUtf8String;
             }
 
             // The steps to write a string segment are to complete the previous partial code point
@@ -242,7 +223,6 @@ namespace System.Text.Json
                 WriteStringSegmentEpilogue();
 
                 SetFlagToAddListSeparatorBeforeNextItem();
-                PreviousSegmentEncoding = SegmentEncoding.None;
                 EnclosingContainerType container = _bitStack.Peek() ? EnclosingContainerType.Object : EnclosingContainerType.Array;
                 _enclosingContainer = _bitStack.CurrentDepth == 0 ? EnclosingContainerType.None : container;
                 _tokenType = JsonTokenType.String;
@@ -252,7 +232,7 @@ namespace System.Text.Json
         private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
-            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf8);
+            Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialUtf8String);
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialUtf8StringData;
 
@@ -383,24 +363,15 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_ValueTooLarge(value.Length);
             }
 
-            if (_tokenType != Utf8JsonWriter.StringSegmentSentinel)
+            if (!_options.SkipValidation)
             {
-                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
-                Debug.Assert(!HasPartialStringData);
-
-                if (!_options.SkipValidation)
-                {
-                    ValidateWritingValue();
-                }
-
-                WriteStringSegmentPrologue();
-
-                PreviousSegmentEncoding = SegmentEncoding.Base64;
-                _tokenType = Utf8JsonWriter.StringSegmentSentinel;
+                ValidateWritingSegment(EnclosingContainerType.PartialBase64String);
             }
-            else
+
+            if (_enclosingContainer != EnclosingContainerType.PartialBase64String)
             {
-                ValidateEncodingDidNotChange(SegmentEncoding.Base64);
+                WriteStringSegmentPrologue();
+                _enclosingContainer = EnclosingContainerType.PartialBase64String;
             }
 
             // The steps to write a string segment are to complete the previous partial string data
@@ -419,7 +390,8 @@ namespace System.Text.Json
                 WriteStringSegmentEpilogue();
 
                 SetFlagToAddListSeparatorBeforeNextItem();
-                PreviousSegmentEncoding = SegmentEncoding.None;
+                EnclosingContainerType container = _bitStack.Peek() ? EnclosingContainerType.Object : EnclosingContainerType.Array;
+                _enclosingContainer = _bitStack.CurrentDepth == 0 ? EnclosingContainerType.None : container;
                 _tokenType = JsonTokenType.String;
             }
         }
@@ -427,7 +399,7 @@ namespace System.Text.Json
         private void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
-            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Base64);
+            Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialBase64String);
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialBase64StringData;
 

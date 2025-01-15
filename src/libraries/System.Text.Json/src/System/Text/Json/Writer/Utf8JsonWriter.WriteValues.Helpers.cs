@@ -34,28 +34,9 @@ namespace System.Text.Json
         /// </summary>
         private bool CanWriteValue => _enclosingContainer == EnclosingContainerType.Array | (byte)_enclosingContainer == (byte)_tokenType;
 
-        private bool HasPartialStringData => PartialStringDataLength != 0;
+        private bool HasPartialStringData => _partialStringDataLength != 0;
 
-        private void ClearPartialStringData() => PartialStringDataLength = 0;
-
-        private void ValidateEncodingDidNotChange(SegmentEncoding currentSegmentEncoding)
-        {
-            if (PreviousSegmentEncoding != currentSegmentEncoding)
-            {
-                ThrowHelper.ThrowInvalidOperationException_CannotMixEncodings(PreviousSegmentEncoding, currentSegmentEncoding);
-            }
-        }
-
-        private void ValidateNotWithinUnfinalizedString()
-        {
-            if (_enclosingContainer == EnclosingContainerType.PartialValue)
-            {
-                ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
-            }
-
-            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
-            Debug.Assert(!HasPartialStringData);
-        }
+        private void ClearPartialStringData() => _partialStringDataLength = 0;
 
         private void ValidateWritingValue()
         {
@@ -71,13 +52,12 @@ namespace System.Text.Json
         {
             Debug.Assert(!_options.SkipValidation);
 
-            if (_enclosingContainer == EnclosingContainerType.PartialValue)
+            if (IsWritingPartialString)
             {
                 ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
             }
 
-            Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.None);
-            Debug.Assert(!HasPartialCodePoint);
+            Debug.Assert(!HasPartialStringData);
 
             if (_enclosingContainer == EnclosingContainerType.Object)
             {
@@ -91,6 +71,54 @@ namespace System.Text.Json
                 Debug.Assert(CurrentDepth == 0 && _tokenType != JsonTokenType.None);
                 ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitiveOrClose);
             }
+        }
+
+        private void ValidateWritingSegment(EnclosingContainerType currentSegmentEncoding)
+        {
+            // A string segment can be written if either:
+            // 1) The writer is currently in a partial string of the same type. In this case the new segment
+            // will continue the partial string.
+            // - or -
+            // 2) The writer can write a value at the current position, in which case a new string can be started.
+            if (_enclosingContainer != currentSegmentEncoding && !CanWriteValue)
+            {
+                OnValidateWritingSegmentFailed(currentSegmentEncoding);
+            }
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void OnValidateWritingSegmentFailed(EnclosingContainerType currentSegmentEncoding)
+        {
+            if (IsWritingPartialString)
+            {
+                ThrowHelper.ThrowInvalidOperationException_CannotMixEncodings(_enclosingContainer, currentSegmentEncoding);
+            }
+
+            Debug.Assert(!HasPartialStringData);
+
+            if (_enclosingContainer == EnclosingContainerType.Object)
+            {
+                Debug.Assert(_tokenType != JsonTokenType.PropertyName);
+                Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
+                ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject);
+            }
+            else
+            {
+                Debug.Assert(_tokenType != JsonTokenType.PropertyName);
+                Debug.Assert(CurrentDepth == 0 && _tokenType != JsonTokenType.None);
+                ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitiveOrClose);
+            }
+        }
+
+        private void ValidateNotWithinUnfinalizedString()
+        {
+            if (IsWritingPartialString)
+            {
+                ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
+            }
+
+            Debug.Assert(!HasPartialStringData);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
