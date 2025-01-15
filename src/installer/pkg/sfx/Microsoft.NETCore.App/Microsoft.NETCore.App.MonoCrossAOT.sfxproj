@@ -4,6 +4,7 @@
     <OutDirName Condition="'$(TargetCrossRid)' == '' or '$(MSBuildRestoreSessionId)' != ''">monocrossaot-pack.restore</OutDirName>
     <RestoreOutputPath>$([System.IO.Path]::GetFullPath('$(ArtifactsObjDir)monocrossaot-pack.restore\'))</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
+    <MSBuildProjectExtensionsPath>$(RestoreOutputPath)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
