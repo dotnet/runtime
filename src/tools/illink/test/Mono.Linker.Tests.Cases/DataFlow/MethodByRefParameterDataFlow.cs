@@ -488,9 +488,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				throw new NotImplementedException ();
 			}
 
-			[ExpectedWarning ("IL2094",
-				"Mono.Linker.Tests.Cases.DataFlow.MethodByRefParameterDataFlow.InheritsFromType.InvokeMember(String, BindingFlags, Binder, Object, Object[], ParameterModifier[], CultureInfo, String[])",
-				"System.Type.InvokeMember(String, BindingFlags, Binder, Object, Object[], ParameterModifier[], CultureInfo, String[])", Tool.Trimmer | Tool.Analyzer, "This will match once we update to a .NET 10 SDK")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields | DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			public override object InvokeMember (string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
 			{

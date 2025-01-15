@@ -2106,7 +2106,7 @@ namespace System
                 }
 
                 if (HasElementType)
-                    return GetElementType().ContainsGenericParameters;
+                    return GetElementType()!.ContainsGenericParameters;
 
                 if (IsFunctionPointer)
                 {

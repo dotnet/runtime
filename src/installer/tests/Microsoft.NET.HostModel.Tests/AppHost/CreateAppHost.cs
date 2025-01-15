@@ -485,12 +485,23 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        private static readonly byte[] s_placeholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        private static readonly byte[] s_apphostPlaceholderData = AppBinaryPathPlaceholderSearchValue.Concat(DotNetSearchPlaceholderValue).ToArray();
+        private static readonly byte[] s_singleFileApphostPlaceholderData = {
+            // 8 bytes represent the bundle header-offset
+            // Zero for non-bundle apphosts (default).
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
+            0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
+            0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
+            0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
+            0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
+        };
+
         /// <summary>
         /// Prepares a mock executable file with the AppHost placeholder embedded in it.
         /// This file will not run, but can be used to test HostWriter and signing process.
         /// </summary>
-        public static string PrepareMockMachAppHostFile(string directory)
+        public static string PrepareMockMachAppHostFile(string directory, bool singleFile = false)
         {
             string fileName = "MockAppHost.mach.o";
             string outputFilePath = Path.Combine(directory, fileName);
@@ -501,7 +512,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 // Add the placeholder - it just needs to exist somewhere in the image
                 // We'll put it at 4096 bytes into the file - this should be in the middle of the __TEXT segment
                 managedSignFile.Position = 4096;
-                managedSignFile.Write(s_placeholderData);
+                managedSignFile.Write(singleFile ? s_singleFileApphostPlaceholderData : s_apphostPlaceholderData);
             }
             return outputFilePath;
         }
