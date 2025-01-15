@@ -5,6 +5,9 @@ parameters:
 - name: runScheduledJobs
   type: boolean
   default: false
+- name: onlySanityCheck
+  type: boolean
+  default: false
 
 trigger:
   batch: true
@@ -50,7 +53,7 @@ extends:
     - stage: Build
       jobs:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        - template: /eng/performance/templates/runtime-perf-slow-jobs.yml@performance
+        - template: /eng/pipelines/runtime-perf-slow-jobs.yml@performance
           parameters:
             ${{ if or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs) }}:
               runScheduledJobs: true
@@ -58,3 +61,6 @@ extends:
               runPrivateJobs: true
             runtimeRepoAlias: self
             performanceRepoAlias: performance
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true

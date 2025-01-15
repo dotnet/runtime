@@ -1,3 +1,8 @@
+parameters:
+  - name: onlySanityCheck
+    type: boolean
+    default: false
+
 trigger:
   batch: true
   branches:
@@ -50,7 +55,7 @@ extends:
     - stage: Build
       jobs:
 
-      - template: /eng/performance/templates/runtime-wasm-perf-jobs.yml@performance
+      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
@@ -58,9 +63,15 @@ extends:
             runProfile: 'v8'
           runtimeRepoAlias: self
           performanceRepoAlias: performance
+          jobParameters:
+            ${{ if parameters.onlySanityCheck }}:
+              onlySanityCheck: true
 
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
-        - template: /eng/performance/templates/runtime-perf-jobs.yml@performance
+        - template: /eng/pipelines/runtime-perf-jobs.yml@performance
           parameters:
             runtimeRepoAlias: self
             performanceRepoAlias: performance
+            jobParameters:
+              ${{ if parameters.onlySanityCheck }}:
+                onlySanityCheck: true

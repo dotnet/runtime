@@ -32,7 +32,7 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - template: /eng/performance/templates/runtime-wasm-perf-jobs.yml@performance
+      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
         parameters:
           runtimeRepoAlias: self
           performanceRepoAlias: performance
