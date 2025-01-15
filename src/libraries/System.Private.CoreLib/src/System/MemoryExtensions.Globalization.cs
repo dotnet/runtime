@@ -16,7 +16,7 @@ namespace System
         /// Indicates whether the specified span contains only white-space characters.
         /// </summary>
         public static bool IsWhiteSpace(this ReadOnlySpan<char> span) =>
-            SearchValues.WhiteSpaces.IndexOfAnyExcept(span) < 0;
+            !SearchValues.WhiteSpaces.ContainsAnyExcept(span);
 
         /// <summary>
         /// Returns a value indicating whether the specified <paramref name="value"/> occurs within the <paramref name="span"/>.
@@ -37,7 +37,7 @@ namespace System
         /// <param name="span">The source span.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ContainsAnyWhiteSpace(this ReadOnlySpan<char> span) =>
-            SearchValues.WhiteSpaces.IndexOfAny(span) >= 0;
+            SearchValues.WhiteSpaces.ContainsAny(span);
 
         /// <summary>
         /// Determines whether this <paramref name="span"/> and the specified <paramref name="other"/> span have the same characters
