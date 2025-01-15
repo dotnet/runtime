@@ -41,6 +41,7 @@ class ObjectAllocator final : public Phase
     BitVec              m_DefinitelyStackPointingPointers;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
+    unsigned int        m_StackAllocMaxSize;
 
     //===============================================================================
     // Methods
@@ -84,8 +85,6 @@ private:
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
-
-    static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 
 //===============================================================================
@@ -101,6 +100,8 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
     m_ConnGraphAdjacencyMatrix        = nullptr;
+
+    m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
 }
 
 //------------------------------------------------------------------------
@@ -227,7 +228,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         return false;
     }
 
-    if (classSize > s_StackAllocMaxSize)
+    if (classSize > m_StackAllocMaxSize)
     {
         *reason = "[too large]";
         return false;

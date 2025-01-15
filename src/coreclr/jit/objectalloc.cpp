@@ -730,6 +730,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     const bool         shortLifetime = false;
     const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
     const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
+    LclVarDsc* const   lclDsc        = comp->lvaGetDesc(lclNum);
 
     if (alignTo8)
     {
@@ -737,11 +738,11 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     }
 
     comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(blockSize), /* unsafeValueClsCheck */ false);
+    lclDsc->lvStackAllocatedObject = true;
 
     // Initialize the object memory if necessary.
-    bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
-    bool             bbIsReturn = block->KindIs(BBJ_RETURN);
-    LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
+    bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool bbIsReturn = block->KindIs(BBJ_RETURN);
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
@@ -815,10 +816,10 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
     comp->lvaSetStruct(lclNum, clsHnd, /* unsafeValueClsCheck */ false);
 
     // Initialize the object memory if necessary.
-    bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
-    bool             bbIsReturn = block->KindIs(BBJ_RETURN);
-    LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
-    lclDsc->lvStackAllocatedBox = isValueClass;
+    bool             bbInALoop     = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool             bbIsReturn    = block->KindIs(BBJ_RETURN);
+    LclVarDsc* const lclDsc        = comp->lvaGetDesc(lclNum);
+    lclDsc->lvStackAllocatedObject = true;
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------

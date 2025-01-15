@@ -2846,8 +2846,8 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
         mt = gtNewIconHandleNode((size_t)arrayHnd, GTF_ICON_CLASS_HDL);
     }
 
-    GenTree* const       mtStore  = gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, mt);
-    Statement* const     mtStmt   = gtNewStmt(mtStore);
+    GenTree* const   mtStore = gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, mt);
+    Statement* const mtStmt  = gtNewStmt(mtStore);
 
     fgInsertStmtBefore(block, newStmt, mtStmt);
     gtSetStmtInfo(mtStmt);

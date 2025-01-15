@@ -5142,6 +5142,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
                 }
+                else if (varDsc->IsStackAllocatedObject())
+                {
+                    // Stack allocated objects currently cannot be passed to callees
+                    // so won't be live at tail call sites.
+                }
 #if FEATURE_FIXED_OUT_ARGS
                 else if (varNum == lvaOutgoingArgSpaceVar)
                 {
