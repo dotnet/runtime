@@ -32,10 +32,13 @@ extends:
     stages:
     - stage: Build
       jobs:
-      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+      - template: /eng/performance/templates/runtime-wasm-perf-jobs.yml@performance
         parameters:
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
           runProfile: 'v8'
-          onlySanityCheck: true
+          jobParameters:
+            onlySanityCheck: true
           #downloadSpecificBuild:
             #buildId: '1878694'
             #pipeline: 'perf-wasm'

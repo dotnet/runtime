@@ -50,13 +50,17 @@ extends:
     - stage: Build
       jobs:
 
-      - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+      - template: /eng/performance/templates/runtime-wasm-perf-jobs.yml@performance
         parameters:
           #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
           #  runProfile: 'non-v8'
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             runProfile: 'v8'
+          runtimeRepoAlias: self
+          performanceRepoAlias: performance
 
-      - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
-        # parameters:
-          # perfBranch: 'main' # this is used only when building the BDN app and it must be a branch of the public github repository
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+        - template: /eng/performance/templates/runtime-perf-jobs.yml@performance
+          parameters:
+            runtimeRepoAlias: self
+            performanceRepoAlias: performance
