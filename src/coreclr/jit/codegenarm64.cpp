@@ -845,19 +845,12 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 
     for (int i = 0; i < regStack.Height(); ++i)
     {
-        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Top(i) : regStack.Bottom(i);
+        RegPair regPair = regStack.Bottom(i);
         if (regPair.reg2 != REG_NA)
         {
             // We can use a STP instruction.
-            if (genReverseAndPairCalleeSavedRegisters)
-            {
-                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr);
-            }
-            else
-            {
-                genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
-                                     nullptr);
-            }
+            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
+                                 nullptr);
 
             spOffset += 2 * slotSize;
         }
@@ -933,9 +926,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskTP maskSaveRegsFrame = regsToSaveMask & (RBM_FP | RBM_LR);
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat & ~maskSaveRegsFrame;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
@@ -947,13 +939,6 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     if (maskSaveRegsInt != RBM_NONE)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
-        spDelta = 0;
-        lowestCalleeSavedOffset += genCountBits(maskSaveRegsInt) * FPSAVE_REGSIZE_BYTES;
-    }
-
-    if (maskSaveRegsFrame != RBM_NONE)
-    {
-        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -985,20 +970,13 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
             stackDelta = spDelta;
         }
 
-        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Bottom(i) : regStack.Top(i);
+        RegPair regPair = regStack.Top(i);
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;
 
-            if (genReverseAndPairCalleeSavedRegisters)
-            {
-                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false, REG_IP1, nullptr);
-            }
-            else
-            {
-                genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
-                                        REG_IP1, nullptr);
-            }
+            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_IP1,
+                                    nullptr);
         }
         else
         {
@@ -1065,18 +1043,10 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskTP maskRestoreRegsFrame = regsToRestoreMask & (RBM_FP | RBM_LR);
     regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat & ~maskRestoreRegsFrame;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
 
     // Restore in the opposite order of saving.
-
-    if (maskRestoreRegsFrame != RBM_NONE)
-    {
-        int spFrameDelta = (maskRestoreRegsFloat != RBM_NONE || maskRestoreRegsInt != RBM_NONE) ? 0 : spDelta;
-        spOffset -= 2 * REGSIZE_BYTES;
-        genEpilogRestoreRegPair(REG_FP, REG_LR, spOffset, spFrameDelta, false, REG_IP1, nullptr);
-    }
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
