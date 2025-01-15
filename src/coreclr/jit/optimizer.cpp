@@ -2905,6 +2905,14 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 
     optSetWeightForPreheaderOrExit(loop, preheader);
 
+    if (preheader->hasProfileWeight() && preheader->hasEHBoundaryIn())
+    {
+        JITDUMP("optCreatePreheader: " FMT_BB
+                " is not reachable via normal flow, so skip checking its entry weight. Data %s inconsistent.\n",
+                preheader->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
     return true;
 }
 
