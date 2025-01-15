@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
+<Project>
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PlatformPackageType>ToolPack</PlatformPackageType>
