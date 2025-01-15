@@ -725,6 +725,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         chain.ChainElements[i].Certificate.Dispose();
                     }
+
                     chain.Dispose();
                 }
 
