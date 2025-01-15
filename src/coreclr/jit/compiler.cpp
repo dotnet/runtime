@@ -4854,11 +4854,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
-        // Drop back to just checking profile likelihoods.
-        //
-        activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-        activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
         // Scale block weights and mark run rarely blocks.
         //
         DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
