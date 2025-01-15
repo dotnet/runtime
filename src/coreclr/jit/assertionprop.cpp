@@ -2620,6 +2620,13 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
     var_types valType     = valArg->GetSignatureType();
     unsigned  lengthScale = genTypeSize(valType);
 
+    if (lengthScale == 1)
+    {
+        // Lower expands it slightly better.
+        JITDUMP("...value's type is byte - leave it for lower to expand.\n");
+        return nullptr;
+    }
+
     if (varTypeIsStruct(valType) || varTypeIsGC(valType))
     {
         JITDUMP("...value's type is not supported - bail out.\n");
