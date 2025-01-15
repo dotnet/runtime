@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// common.h - precompiled headers include for the COM+ Execution Engine
+// common.h - precompiled headers include for the CLR Execution Engine
 //
 
 //
@@ -72,6 +72,10 @@
 #include <assert.h>
 
 #include <olectl.h>
+
+#ifdef HOST_AMD64
+#include <xmmintrin.h>
+#endif
 
 using std::max;
 using std::min;
@@ -348,6 +352,14 @@ void* GetClrModuleBase();
 // use this when you want to memcpy something that contains GC refs
 void memmoveGCRefs(void *dest, const void *src, size_t len);
 
+// Struct often used as a parameter to callbacks.
+typedef struct
+{
+    promote_func*  f;
+    ScanContext*   sc;
+    CrawlFrame *   cf;
+    SetSHash<Object**, PtrSetSHashTraits<Object**> > *pScannedSlots;
+} GCCONTEXT;
 
 #if defined(_DEBUG)
 

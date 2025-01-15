@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Implementation of <see cref="IPostConfigureOptions{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions">Options type being configured.</typeparam>
+    /// <typeparam name="TOptions">The options type being configured.</typeparam>
     public class PostConfigureOptions<TOptions> : IPostConfigureOptions<TOptions> where TOptions : class
     {
         /// <summary>
@@ -23,12 +23,12 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The initialization action.
+        /// Gets the initialization action.
         /// </summary>
         public Action<TOptions>? Action { get; }
 
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Options
         where TDep : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="PostConfigureOptions{TOptions, TDep}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency">A dependency.</param>
@@ -72,12 +72,12 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep>? Action { get; }
 
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.Options
         where TDep2 : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="PostConfigureOptions{TOptions, TDep1, TDep2}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency">A dependency.</param>
@@ -136,22 +136,22 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
@@ -172,7 +172,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Options
         where TDep3 : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="PostConfigureOptions{TOptions, TDep1, TDep2, TDep3}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency">A dependency.</param>
@@ -209,27 +209,27 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
         /// <summary>
-        /// The third dependency.
+        /// Gets the third dependency.
         /// </summary>
         public TDep3 Dependency3 { get; }
 
@@ -250,7 +250,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.Options
         where TDep4 : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="PostConfigureOptions{TOptions, TDep1, TDep2, TDep3, TDep4}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency1">A dependency.</param>
@@ -291,32 +291,32 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3, TDep4>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
         /// <summary>
-        /// The third dependency.
+        /// Gets the third dependency.
         /// </summary>
         public TDep3 Dependency3 { get; }
 
         /// <summary>
-        /// The fourth dependency.
+        /// Gets the fourth dependency.
         /// </summary>
         public TDep4 Dependency4 { get; }
 
@@ -337,7 +337,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
@@ -361,7 +361,7 @@ namespace Microsoft.Extensions.Options
         where TDep5 : class
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of <see cref="PostConfigureOptions{TOptions, TDep1, TDep2, TDep3, TDep4, TDep5}"/>.
         /// </summary>
         /// <param name="name">The name of the options.</param>
         /// <param name="dependency1">A dependency.</param>
@@ -382,37 +382,37 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The options name.
+        /// Gets the options name.
         /// </summary>
         public string? Name { get; }
 
         /// <summary>
-        /// The configuration action.
+        /// Gets the configuration action.
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? Action { get; }
 
         /// <summary>
-        /// The first dependency.
+        /// Gets the first dependency.
         /// </summary>
         public TDep1 Dependency1 { get; }
 
         /// <summary>
-        /// The second dependency.
+        /// Gets the second dependency.
         /// </summary>
         public TDep2 Dependency2 { get; }
 
         /// <summary>
-        /// The third dependency.
+        /// Gets the third dependency.
         /// </summary>
         public TDep3 Dependency3 { get; }
 
         /// <summary>
-        /// The fourth dependency.
+        /// Gets the fourth dependency.
         /// </summary>
         public TDep4 Dependency4 { get; }
 
         /// <summary>
-        /// The fifth dependency.
+        /// Gets the fifth dependency.
         /// </summary>
         public TDep5 Dependency5 { get; }
 
@@ -433,7 +433,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Invoked to configure a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
+        /// Configures a <typeparamref name="TOptions"/> instance using the <see cref="Options.DefaultName"/>.
         /// </summary>
         /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);

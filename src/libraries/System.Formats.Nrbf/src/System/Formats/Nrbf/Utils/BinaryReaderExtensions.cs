@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -30,6 +31,11 @@ internal static class BinaryReaderExtensions
 
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
+        // To simplify the behavior and security review of the BinaryArrayRecord type, we
+        // do not support reading non-zero-offset arrays. If this should change in the
+        // future, the NrbfDecoder.DecodeBinaryArrayRecord method and supporting infrastructure
+        // will need re-review.
+
         byte arrayType = reader.ReadByte();
         // Rectangular is the last defined value.
         if (arrayType > (byte)BinaryArrayType.Rectangular)
@@ -95,6 +101,11 @@ internal static class BinaryReaderExtensions
     // BinaryFormatter serializes decimals as strings and we can't BinaryReader.ReadDecimal.
     internal static decimal ParseDecimal(this BinaryReader reader)
     {
+        // The spec (MS NRBF 2.1.1.6, https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/10b218f5-9b2b-4947-b4b7-07725a2c8127)
+        // says that the length of LengthPrefixedString must be of optimal size (using as few bytes as possible).
+        // BinaryReader.ReadString does not enforce that and we are OK with that,
+        // as it takes care of handling multiple edge cases and we don't want to re-implement it.
+
         string text = reader.ReadString();
         if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal result))
         {
@@ -130,6 +141,9 @@ internal static class BinaryReaderExtensions
 
         if (result.Length != count)
         {
+            // We might hit EOF before fully reading the requested
+            // number of chars. This means that ReadChars(count) could return a char[] with
+            // *fewer* than 'count' elements.
             ThrowHelper.ThrowEndOfStreamException();
         }
 
@@ -200,6 +214,8 @@ internal static class BinaryReaderExtensions
 
     internal static bool? IsDataAvailable(this BinaryReader reader, long requiredBytes)
     {
+        Debug.Assert(requiredBytes >= 0);
+
         if (!reader.BaseStream.CanSeek)
         {
             return null;

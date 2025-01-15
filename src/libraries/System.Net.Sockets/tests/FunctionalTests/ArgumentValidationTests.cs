@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class ArgumentValidation
     {
         // This type is used to test Socket.Select's argument validation.

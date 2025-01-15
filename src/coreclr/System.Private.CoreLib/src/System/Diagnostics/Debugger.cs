@@ -58,18 +58,17 @@ namespace System.Diagnostics
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool LaunchInternal();
 
-        // Returns whether or not a debugger is attached to the process.
-        //
-        public static extern bool IsAttached
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        // Returns whether or not a managed debugger is attached to the process.
+        public static bool IsAttached => IsManagedDebuggerAttached() != 0;
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsManagedDebuggerAttached")]
+        [SuppressGCTransition]
+        private static partial int IsManagedDebuggerAttached();
 
         // Constants representing the importance level of messages to be logged.
         //
         // An attached debugger can enable or disable which messages will
-        // actually be reported to the user through the COM+ debugger
+        // actually be reported to the user through the debugger
         // services API.  This info is communicated to the runtime so only
         // desired events are actually reported to the debugger.
         //
@@ -85,14 +84,22 @@ namespace System.Diagnostics
         private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
-        //
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsLogging();
+        public static bool IsLogging() => IsLoggingInternal() != 0;
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_IsLoggingHelper")]
+        [SuppressGCTransition]
+        private static partial int IsLoggingInternal();
 
         // Posts a custom notification for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
         private static partial void CustomNotification(ObjectHandleOnStack data);
+
+        // implementation of CORINFO_HELP_USER_BREAKPOINT
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static void UserBreakpoint() => Break();
     }
 }

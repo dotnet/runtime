@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -265,6 +266,20 @@ namespace System.Globalization.Tests
             CultureInfo [] cultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures);
 
             AssertExtensions.Throws<ArgumentException>("culture", () => new RegionInfo(4096));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows8x))]
+        public void BuiltInRegionListTest()
+        {
+            // Ensure we can create all region info objects from the built-in list
+            Dictionary<string, string> regionNames = (Dictionary<string, string>)Type.GetType("System.Globalization.CultureData, System.Private.CoreLib").GetProperty("RegionNames", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+
+            foreach (var kvp in regionNames)
+            {
+                RegionInfo ri1 = new RegionInfo(kvp.Key);
+                RegionInfo ri2 = new RegionInfo(kvp.Value == "" ? kvp.Key : kvp.Value); // invariant culture
+                Assert.Equal(ri1.Name, ri2.Name);
+            }
         }
     }
 }

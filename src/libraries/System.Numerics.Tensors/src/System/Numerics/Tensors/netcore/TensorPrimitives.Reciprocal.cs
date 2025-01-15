@@ -47,7 +47,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="DivideByZeroException"><typeparamref name="T"/> is an integer type and an element in <paramref name="x"/> is equal to zero.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / <paramref name="x" />[i]</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / T.Sqrt(<paramref name="x" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void ReciprocalSqrt<T>(ReadOnlySpan<T> x, Span<T> destination)
@@ -62,7 +62,7 @@ namespace System.Numerics.Tensors
         /// <exception cref="DivideByZeroException"><typeparamref name="T"/> is an integer type and an element in <paramref name="x"/> is equal to zero.</exception>
         /// <remarks>
         /// <para>
-        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / <paramref name="x" />[i]</c>.
+        /// This method effectively computes <c><paramref name="destination" />[i] = 1 / T.Sqrt(<paramref name="x" />[i])</c>.
         /// </para>
         /// </remarks>
         public static void ReciprocalSqrtEstimate<T>(ReadOnlySpan<T> x, Span<T> destination)

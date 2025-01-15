@@ -1,21 +1,9 @@
 <Project>
   <PropertyGroup>
-    <!--
-      Windows arm/arm64 jobs don't have MSIs to sign. Keep it simple: allow not finding any matches
-      here and rely on overall signing validation.
-
-      During post build signing, there are no packages to sign during SignFinalPackages.
-    -->
-    <AllowEmptySignList>true</AllowEmptySignList>
+    <EnableDefaultArtifacts Condition="'$(DotNetBuild)' != 'true'">false</EnableDefaultArtifacts>
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Replace the default items to sign with the specific set we want. This allows the build to call
-      Arcade's Sign.proj multiple times for different sets of files as the build progresses.
-    -->
-    <ItemsToSign Remove="@(ItemsToSign)" />
-
     <!-- apphost and comhost template files are not signed, by design. -->
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
 
@@ -37,13 +25,15 @@
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
 
-    <!-- Exclude symbol packages from have a NuGet signature. These are never pushed to NuGet.org or
-         other feeds (in fact, that have identical identity to their non-symbol variant) -->
-    <DownloadedSymbolPackages Include="$(DownloadDirectory)**\*.symbols.nupkg" />
-    <DownloadedSymbolPackagesWithoutPaths Include="@(DownloadedSymbolPackages->'%(Filename)%(Extension)')" />
-    <FileSignInfo Include="@(DownloadedSymbolPackagesWithoutPaths->Distinct())" CertificateName="None" />
-
     <FileExtensionSignInfo Include=".msi" CertificateName="MicrosoftDotNet500" />
+
+    <!-- 
+      Removal is temporarily needed as we integrate support for these extensions into SignTool.
+      Should be cleaned up after https://github.com/dotnet/arcade/issues/14432,
+      https://github.com/dotnet/arcade/issues/14433, and 
+      https://github.com/dotnet/arcade/issues/14435 are completed.
+     -->
+    <FileExtensionSignInfo Remove=".deb;.rpm;.pkg" />
     <FileExtensionSignInfo Include=".pkg" CertificateName="8003" />
     <FileExtensionSignInfo Include=".deb;.rpm" CertificateName="LinuxSign" />
   </ItemGroup>
@@ -55,14 +45,30 @@
     <FileSignInfo Update="@(FileSignInfo->WithMetadataValue('CertificateName','Microsoft400'))" CertificateName="MicrosoftDotNet500" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PrepareArtifacts)' == 'true'">
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.msi" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.exe" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.nupkg" />
-    <ItemsToSignWithPaths Include="$(DownloadDirectory)**\*.zip" />
-
-    <ItemsToSignWithoutPaths Include="@(ItemsToSignWithPaths->'%(Filename)%(Extension)')" />
-    <ItemsToSignPostBuild Include="@(ItemsToSignWithoutPaths->Distinct())" Condition="'$(PostBuildSign)' == 'true'" />
-    <ItemsToSign Include="@(ItemsToSignWithPaths->Distinct())" Condition="'$(PostBuildSign)' != 'true'" />
+  <!-- In build signing and publishing without a join point -->
+  <ItemGroup Condition="'$(DotNetBuild)' == 'true'">
+    <Artifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
+                       $(ArtifactsPackagesDir)**\*.zip;
+                       $(ArtifactsPackagesDir)**\*.deb;
+                       $(ArtifactsPackagesDir)**\*.rpm;
+                       $(ArtifactsPackagesDir)**\*.pkg;
+                       $(ArtifactsPackagesDir)**\*.exe;
+                       $(ArtifactsPackagesDir)**\*.msi"
+              Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
+              IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
+      <!-- Exclude wixpack.zip files from checksum generation -->
+      <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
+    </Artifact>
   </ItemGroup>
+
+  <!-- Only the following artifacts should be signed.
+       Set SkipPublish=true as those artifacts are added again in Publishing.props. -->
+  <ItemGroup Condition="'$(DotNetBuild)' != 'true'">
+    <Artifact Include="$(DownloadDirectory)**\*.msi;
+                       $(DownloadDirectory)**\*.exe;
+                       $(DownloadDirectory)**\*.nupkg;
+                       $(DownloadDirectory)**\*.zip"
+              SkipPublish="true" />
+  </ItemGroup>
+
 </Project>

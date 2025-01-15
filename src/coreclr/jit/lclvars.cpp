@@ -341,6 +341,8 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
     // Prespill all argument regs on to stack in case of Arm when under profiler.
+    // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
+    // these registers, and is called very early.
     if (compIsProfilerHookNeeded())
     {
         codeGen->regSet.rsMaskPreSpillRegArg |= RBM_ARG_REGS;
@@ -1021,6 +1023,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
                     else if (cSlotsToEnregister > 1)
                     {
@@ -1042,6 +1046,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(firstAllocatedRegArgNum + 1, TYP_I_IMPL, info.compCallConv));
+
+                        varDsc->lvIsMultiRegArg = true;
                     }
 
                     assert(cSlots <= 2);
@@ -1741,9 +1747,8 @@ void Compiler::lvaClassifyParameterABI()
                 }
             }
 
-            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
             {
-                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -2110,13 +2115,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructVar(unsigned lclNum)
 {
     if (CanPromoteStructVar(lclNum))
     {
-#if 0
-            // Often-useful debugging code: if you've narrowed down a struct-promotion problem to a single
-            // method, this allows you to select a subset of the vars to promote (by 1-based ordinal number).
-            static int structPromoVarNum = 0;
-            structPromoVarNum++;
-            if (atoi(getenv("structpromovarnumlo")) <= structPromoVarNum && structPromoVarNum <= atoi(getenv("structpromovarnumhi")))
-#endif // 0
         if (ShouldPromoteStructVar(lclNum))
         {
             PromoteStructVar(lclNum);
@@ -4077,6 +4075,13 @@ void Compiler::lvaSortByRefCount()
         }
 #endif
 
+        // No benefit in tracking the PSPSym (if any)
+        //
+        if (lclNum == lvaPSPSym)
+        {
+            varDsc->lvTracked = 0;
+        }
+
         //  Are we not optimizing and we have exception handlers?
         //   if so mark all args and locals "do not enregister".
         //
@@ -4750,18 +4755,6 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     }
 
 #endif // FEATURE_EH_WINDOWS_X86
-
-    // PSPSym is not used by the NativeAOT ABI
-    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        if (UsesFunclets() && ehNeedsPSPSym())
-        {
-            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
-            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
-            lclPSPSym->lvType    = TYP_I_IMPL;
-            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-        }
-    }
 
 #ifdef JIT32_GCENCODER
     // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
@@ -5959,9 +5952,8 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 {
     const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
 
-    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    for (const ABIPassingSegment& segment : abiInfo.Segments())
     {
-        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)

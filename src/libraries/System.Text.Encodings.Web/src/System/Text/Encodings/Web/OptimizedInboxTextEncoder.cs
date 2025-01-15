@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -123,7 +124,7 @@ namespace System.Text.Encodings.Web
 
             while (true)
             {
-                if (!SpanUtility.IsValidIndex(source, srcIdx))
+                if ((uint)source.Length <= (uint)srcIdx)
                 {
                     break; // EOF
                 }
@@ -134,7 +135,7 @@ namespace System.Text.Encodings.Web
                     goto NotAscii; // forward jump predicted not taken
                 }
 
-                if (!SpanUtility.IsValidIndex(destination, dstIdx))
+                if ((uint)destination.Length <= (uint)dstIdx)
                 {
                     goto DestTooSmall; // forward jump predicted not taken
                 }
@@ -154,7 +155,7 @@ namespace System.Text.Encodings.Web
                 int dstIdxTemp = dstIdx + 1;
                 do
                 {
-                    if (!SpanUtility.IsValidIndex(destination, dstIdxTemp))
+                    if ((uint)destination.Length <= (uint)dstIdxTemp)
                     {
                         goto DestTooSmall; // forward jump predicted not taken
                     }
@@ -171,7 +172,7 @@ namespace System.Text.Encodings.Web
                 if (!Rune.TryCreate(thisChar, out Rune scalarValue))
                 {
                     int srcIdxTemp = srcIdx + 1;
-                    if (SpanUtility.IsValidIndex(source, srcIdxTemp))
+                    if ((uint)source.Length > (uint)srcIdxTemp)
                     {
                         if (Rune.TryCreate(thisChar, source[srcIdxTemp], out scalarValue))
                         {
@@ -242,7 +243,7 @@ namespace System.Text.Encodings.Web
 
             while (true)
             {
-                if (!SpanUtility.IsValidIndex(source, srcIdx))
+                if ((uint)source.Length <= (uint)srcIdx)
                 {
                     break; // EOF
                 }
@@ -258,7 +259,7 @@ namespace System.Text.Encodings.Web
                 // to 6 bytes of output, so we'll only bump dstIdx by the number of useful bytes we
                 // wrote.
 
-                if (SpanUtility.TryWriteUInt64LittleEndian(destination, dstIdx, preescapedEntry))
+                if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination.Slice(dstIdx), preescapedEntry))
                 {
                     dstIdx += (int)(preescapedEntry >> 56); // predicted taken
                     srcIdx++;
@@ -271,7 +272,7 @@ namespace System.Text.Encodings.Web
                 int dstIdxTemp = dstIdx;
                 do
                 {
-                    if (!SpanUtility.IsValidIndex(destination, dstIdxTemp))
+                    if ((uint)destination.Length <= (uint)dstIdxTemp)
                     {
                         goto DestTooSmall; // forward jump predicted not taken
                     }
@@ -370,7 +371,7 @@ namespace System.Text.Encodings.Web
                     }
                 }
 
-                if (!SpanUtility.IsValidIndex(data, asciiBytesSkipped))
+                if ((uint)data.Length <= (uint)asciiBytesSkipped)
                 {
                     Debug.Assert(asciiBytesSkipped == data.Length);
                     return -1; // all data consumed

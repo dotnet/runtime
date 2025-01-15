@@ -141,7 +141,7 @@
                              NuGetPackageVersion="$(ProductVersion)" />
     </ItemGroup>
   </Target>
-  
+
   <!-- Use local app host pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalAppHostPack"
           Condition="'$(UseLocalAppHostPack)' == 'true'"
@@ -165,18 +165,6 @@
     <ItemGroup>
       <RuntimeFramework Version="$(ProductVersion)"
                         Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-    </ItemGroup>
-  </Target>
-
-  <!-- Update the resolved crossgen2 tool to use the app with the same .NET host as the build instead of the built apphost. -->
-  <Target Name="UpdateLocalCrossgen2Tool"
-          Condition="'$(UseLocalCrossgen2Pack)' == 'true'"
-          AfterTargets="ResolveReadyToRunCompilers">
-    <ItemGroup>
-      <OriginalCrossgen2Tool Include="@(Crossgen2Tool)" Crossgen2Dll="$([System.IO.Path]::ChangeExtension('%(Identity)', '.dll'))" />
-      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
-      <Crossgen2Tool Include="@(OriginalCrossgen2Tool->'%(Crossgen2Dll)')"
-                     DotNetHostPath="$(DotNetTool)" />
     </ItemGroup>
   </Target>
 </Project>

@@ -105,29 +105,13 @@ run-tests-%:
 	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm/Wasm.Build.Tests/ /t:Test /bl:$(LOG_PATH)/Wasm.Build.Tests.binlog /p:Configuration=$(CONFIG) $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 build-runtime-tests:
 	$(TOP)/src/tests/build.sh -mono os browser wasm $(CONFIG) $(MSBUILD_ARGS)
-
-build-debugger-tests-helix:
-	$(DOTNET) build -restore -bl:$(LOG_PATH)/Wasm.Debugger.Tests.binlog \
-	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
-	$(TOP)/src/mono/browser/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
-	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
-
-submit-debugger-tests-helix: build-debugger-tests-helix
-	EMSDK_PATH=$(EMSDK_PATH) BUILD_REASON=wasm-test SYSTEM_TEAMPROJECT=public BUILD_REPOSITORY_NAME=dotnet/runtime BUILD_SOURCEBRANCH=main \
-		$(TOP)/eng/common/msbuild.sh --ci -restore $(TOP)/src/libraries/sendtohelix.proj \
-		/p:TestRunNamePrefixSuffix=WasmDebugger /p:HelixBuild=`date "+%Y%m%d.%H%M"` /p:Creator=`whoami` \
-		/bl:$(LOG_PATH)/SendToHelix.binlog -p:HelixTargetQueue=$(HELIX_TARGET_QUEUE) \
-		/p:RuntimeFlavor=mono /p:TargetRuntimeIdentifier= /p:MonoForceInterpreter= /p:TestScope=innerloop \
-		/p:_Scenarios=wasmdebuggertests \
-		$(_MSBUILD_WASM_BUILD_ARGS) \
-		$(MSBUILD_ARGS)
 
 submit-wbt-helix:
 	PATH="$(JSVU):$(PATH)" \
