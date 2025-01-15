@@ -780,6 +780,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "SwiftSelf";
         case WellKnownArg::X86TailCallSpecialArg:
             return "X86TailCallSpecialArg";
+        case WellKnownArg::StackArrayLocal:
+            return "StackArrayLocal";
     }
 
     return "N/A";
