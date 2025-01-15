@@ -719,9 +719,9 @@ namespace System.Security.Cryptography
         private async Task CopyToAsyncInternal(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // Use ArrayPool<byte>.Shared instead of CryptoPool because the array is passed out.
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            byte[]? rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             // Pin the array for security.
-            using PinnedGCHandle<byte[]> pinHandle = new PinnedGCHandle<byte[]>(rentedBuffer);
+            GCHandle pinHandle = GCHandle.Alloc(rentedBuffer, GCHandleType.Pinned);
             try
             {
                 int bytesRead;
@@ -734,6 +734,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(rentedBuffer.AsSpan(0, bufferSize));
+                pinHandle.Free();
             }
             ArrayPool<byte>.Shared.Return(rentedBuffer);
         }
