@@ -7,9 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Represents a strongly-typed opaque, GC handle to a managed object.
-    /// A GC handle is used when an object reference must be reachable from
-    /// unmanaged memory.
+    /// Represents a strongly-typed GC handle to a managed object.
     /// The object is pinned at fixed location in GC heap and allows its
     /// address to be taken.
     /// </summary>

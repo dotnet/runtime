@@ -7,10 +7,8 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Represents a strongly-typed opaque, GC handle to a managed object.
-    /// A GC handle is used when an object reference must be reachable from
-    /// unmanaged memory.
-    /// The object is allowed to be collected and handle contents will be zeroed.
+    /// Represents a strongly-typed GC handle to a managed object.
+    /// The object is allowed to be collected. When the object is collected, handle target is set to null.
     /// </summary>
     /// <remarks>
     /// <para>This type corresponds to <see cref="GCHandleType.Weak"/> or <see cref="GCHandleType.WeakTrackResurrection"/>.</para>
