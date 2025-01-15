@@ -12,12 +12,15 @@
   <PropertyGroup>
     <OutDirName Condition="'$(TargetCrossRid)' != ''">monocrossaot-pack.$(TargetCrossRid)</OutDirName>
     <OutDirName Condition="'$(TargetCrossRid)' == '' or '$(MSBuildRestoreSessionId)' != ''">monocrossaot-pack.restore</OutDirName>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
+
+  <PropertyGroup>
     <RestoreOutputPath>$([System.IO.Path]::GetFullPath('$(ArtifactsObjDir)monocrossaot-pack.restore\'))</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
     <MSBuildProjectExtensionsPath>$(RestoreOutputPath)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
