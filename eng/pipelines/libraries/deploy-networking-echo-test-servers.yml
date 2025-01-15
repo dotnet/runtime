@@ -53,7 +53,7 @@ extends:
                   pathToZipFile: 'artifacts\bin\NetCoreServer\Release\$(TargetFramework)\publish.zip'
 
               - task: AzureRmWebAppDeployment@4
-                displayName: Deploy to corefx-net-http11
+                displayName: Deploy to corefx-net-http11-staging
                 inputs:
                   ConnectionType: "AzureRM"
                   azureSubscription: .NET Libraries Network Testing
