@@ -7644,7 +7644,9 @@ GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 
 GenTreeIntCon* Compiler::gtNewNull()
 {
-    return gtNewIconNode(0, TYP_REF);
+    GenTreeIntCon* tree = gtNewIconNode(0, TYP_REF);
+    tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
+    return tree;
 }
 
 GenTreeIntCon* Compiler::gtNewTrue()
@@ -14434,6 +14436,23 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         // must have x be a relational operator. As such, we cannot currently
         // fold such cases and need to preserve the tree as is.
         return tree;
+    }
+
+    // For "obj ==/!= null" we can fold the comparison to true/false if VM tells us that the object cannot
+    // be non-null. Example: "obj == null" -> true if obj's type is FooCls and FooCls is an abstract class
+    // without subclasses.
+    //
+    // IsTargetAbi check is not necessary here, but it improves TP for runtimes where this optimization is
+    // not possible anyway.
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (val == 0) && op->TypeIs(TYP_REF) && tree->OperIs(GT_EQ, GT_NE))
+    {
+        bool                 isExact, isNonNull;
+        CORINFO_CLASS_HANDLE opCls = gtGetClassHandle(op, &isExact, &isNonNull);
+        if ((opCls != NO_CLASS_HANDLE) && (info.compCompHnd->getExactClasses(opCls, 0, nullptr) == 0))
+        {
+            op = gtWrapWithSideEffects(NewMorphedIntConNode(tree->OperIs(GT_EQ) ? 1 : 0), op, GTF_ALL_EFFECT);
+            goto DONE_FOLD;
+        }
     }
 
     switch (oper)
