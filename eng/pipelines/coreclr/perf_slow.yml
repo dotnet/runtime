@@ -50,11 +50,11 @@ extends:
     - stage: Build
       jobs:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        - template: /eng/performance/templates/runtime-perf-jobs.yml@performance
+        - template: /eng/performance/templates/runtime-perf-slow-jobs.yml@performance
           parameters:
             ${{ if or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs) }}:
               runScheduledJobs: true
-            ${{ or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs) }}:
+            ${{ if or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs) }}:
               runPrivateJobs: true
             runtimeRepoAlias: self
             performanceRepoAlias: performance
