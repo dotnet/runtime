@@ -113,6 +113,16 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        public void Dumb()
+        {
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                IPInterfaceProperties ipProperties = nic.GetIPProperties();
+                Assert.Empty(ipProperties.DnsAddresses);
+            }
+        }
+
+        [Fact]
         public async Task IPInfoTest_AccessAllIPv4Properties_NoErrors()
         {
             await Task.Run(() =>
