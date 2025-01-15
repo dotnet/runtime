@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <OutDirName Condition="'$(TargetCrossRid)' != ''">monocrossaot-pack.$(TargetCrossRid)</OutDirName>
-    <OutDirName Condition="'$(TargetCrossRid)' == ''">monocrossaot-pack.restore</OutDirName>
+    <OutDirName Condition="'$(TargetCrossRid)' == '' or '$(MSBuildRestoreSessionId)' != ''">monocrossaot-pack.restore</OutDirName>
     <RestoreOutputPath>$([System.IO.Path]::GetFullPath('$(ArtifactsObjDir)monocrossaot-pack.restore\'))</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
