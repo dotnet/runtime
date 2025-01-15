@@ -892,11 +892,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 #endif // FEATURE_COMINTEROP
 
 
-void JIT_TailCall()
-{
-    _ASSERTE(!"LOONGARCH64:NYI");
-}
-
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
@@ -949,15 +944,6 @@ void InitJITHelpers1()
 void UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE)
 
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    DWORD64 stackSlot = pDispatcherContext->EstablisherFrame + REDIRECTSTUB_SP_OFFSET_CONTEXT;
-    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
-    return *ppContext;
-}
-
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -968,13 +954,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
-FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (FaultingExceptionFrame*)((TADDR)pDispatcherContext->ContextRecord->S0);
-}
-
 
 BOOL
 AdjustContextForVirtualStub(
