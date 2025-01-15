@@ -307,13 +307,9 @@ bool Frame::HasValidVTablePtr(Frame * pFrame)
 #ifndef DACCESS_COMPILE
     TADDR vptr = pFrame->GetVTablePtr();
     //
-    // Helper MethodFrame,GCFrame,DebuggerSecurityCodeMarkFrame are the most
-    // common frame types, explicitly check for them.
+    // Explicitly check for the most common frames.
     //
     if (vptr == HelperMethodFrame::GetMethodFrameVPtr())
-        return true;
-
-    if (vptr == DebuggerSecurityCodeMarkFrame::GetMethodFrameVPtr())
         return true;
 
     //

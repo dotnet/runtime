@@ -382,7 +382,7 @@ public:
         // Invoke a method. Arguments are packaged up in right->left order
         // which each array element corresponding to one argument.
         //
-        // Can throw a COM+ exception.
+        // Can throw a CLR exception.
         //
         // All the appropriate "virtual" semantics (include thunking like context
         // proxies) occurs inside Call.

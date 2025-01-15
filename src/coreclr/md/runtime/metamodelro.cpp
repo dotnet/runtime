@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //*****************************************************************************
-// MetaModelRO.cpp -- Read-only implementation of compressed COM+ metadata.
+// MetaModelRO.cpp -- Read-only implementation of compressed CLR metadata.
 //
 
 //

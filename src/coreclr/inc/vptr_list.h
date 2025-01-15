@@ -48,7 +48,6 @@ VPTR_CLASS(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
 
 VPTR_CLASS(DebuggerClassInitMarkFrame)
-VPTR_CLASS(DebuggerSecurityCodeMarkFrame)
 VPTR_CLASS(DebuggerExitFrame)
 VPTR_CLASS(DebuggerU2MCatchHandlerFrame)
 VPTR_CLASS(FaultingExceptionFrame)
