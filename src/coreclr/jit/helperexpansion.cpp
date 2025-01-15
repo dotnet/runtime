@@ -2833,7 +2833,19 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     // Initialize the array method table pointer.
     //
     CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
-    GenTree* const       mt       = gtNewIconEmbClsHndNode(arrayHnd);
+
+    // Hack to reduce SPMI failures
+    GenTree* mt = nullptr;
+
+    if (opts.IsReadyToRun())
+    {
+        mt = gtNewIconEmbClsHndNode(arrayHnd);
+    }
+    else
+    {
+        mt = gtNewIconHandleNode((size_t)arrayHnd, GTF_ICON_CLASS_HDL);
+    }
+
     GenTree* const       mtStore  = gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, mt);
     Statement* const     mtStmt   = gtNewStmt(mtStore);
 
