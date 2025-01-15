@@ -2394,7 +2394,7 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     // Now expand the clone block set to include any try regions that need cloning.
     //
     unsigned                    numberOfTryRegionsToClone = 0;
-    CloneTryInfo                cloneInfo(comp);
+    CloneTryInfo                cloneInfo(traits);
     jitstd::vector<BasicBlock*> tryBlocks(alloc);
     cloneInfo.BlocksToClone = &tryBlocks;
 
@@ -2526,7 +2526,8 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
 
         if (comp->bbIsTryBeg(block))
         {
-            CloneTryInfo cloneTryInfo(comp);
+            BitVecTraits traits(comp->compBasicBlockID, comp);
+            CloneTryInfo cloneTryInfo(traits);
             cloneTryInfo.Map                       = &map;
             cloneTryInfo.AddEdges                  = false;
             cloneTryInfo.ProfileScale              = info->m_profileScale;

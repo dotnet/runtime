@@ -16,7 +16,7 @@ foreach (int i in o) { }
 ```
 and for other collection types, there are various patterns (enumerator structs) that the C# compiler can rely on avoid the overhead of enumerator creation and interface calls. So for instance enumerating over a `List<int>` is also fairly efficient.
 
-But when either type `O` or `E` is unknown, enumeration can involve a fair amount of overhead&mdash;an object allocation for `e` and two interface calls per produced element `t`. 
+But when either type `O` or `E` is unknown, enumeration can involve a fair amount of overhead&mdash;an object allocation for `e` and two interface calls per produced element `t`.
 
 We call this overhead the "abstraction penalty."
 
@@ -36,7 +36,7 @@ public class ArrayDeAbstraction
         foreach (int i in s_ro_array) sum += i;
         return sum;
     }
-    
+
     [Benchmark]
     public int foreach_static_readonly_array_via_interface()
     {
@@ -126,7 +126,7 @@ Based on this PGO data, the JIT first translates the above into something like t
         tt = o.GetEnumerator;
     }
     e = tt;
-    // -------------- End GDV "diamond" 
+    // -------------- End GDV "diamond"
 
     try
     {
@@ -192,7 +192,7 @@ into
 ```
 And that, coupled with the devirtualization and inlining of `o.GetEnumerator`, lets the JIT resolve the lower GDVs, as the inline body reveals the exact type for `E` as well. (Footnote 5).
 
-You would think the resolution of the lower GDVs, and the inlines of the relatively simple `MoveNext`, `GetCurrent`, and (the do-nothing) `Dispose` methods would enable the JIT to know everything about how the enumerator object is used, and in particular, see that that object cannot "escape" (that is, if newly allocated, it need not live past the end of the method). 
+You would think the resolution of the lower GDVs, and the inlines of the relatively simple `MoveNext`, `GetCurrent`, and (the do-nothing) `Dispose` methods would enable the JIT to know everything about how the enumerator object is used, and in particular, see that that object cannot "escape" (that is, if newly allocated, it need not live past the end of the method).
 
 But here we run into a phase ordering problem. It takes a little while for the JIT to propagate these types around, and escape analysis runs fairly early, and so it turns out without some help the JIT learns too late what type of enumerator it has, so the lower GDVs are still there when escape analysis runs, and the JIT has to honor the fact that at that point it still thinks those GDVs can fail, and so invoke an unknown `MoveNext` method, which might cause the enumerator to escape.
 
@@ -200,7 +200,7 @@ All that is a long winded way of saying that while the JIT eventually is able to
 
 #### Challenge 2: Slow Type Propagation
 
-While inelegant, there is some prior art for giving the JIT a boost in such cases, at least for some key types. We can annotate the type as `[Intrinsic]` and have the JIT consult an oracle when it sees this annotation, asking the runtime if it happens to know what type of enumerator will be produced. 
+While inelegant, there is some prior art for giving the JIT a boost in such cases, at least for some key types. We can annotate the type as `[Intrinsic]` and have the JIT consult an oracle when it sees this annotation, asking the runtime if it happens to know what type of enumerator will be produced.
 
 [dotnet/runtime#108153](https://github.com/dotnet/runtime/pull/108153) added this annotation and the necessary oracular support in the JIT and runtime.
 
@@ -225,7 +225,7 @@ Here `Empty` is a static field in a generic class. The examples we have been dis
 
 Now with `GetEnumerator` inlined the JIT can see almost everything about how the enumerator is produced when the collection type is an array. This plus turns out to be enough to unblock stack allocation of the enumerator in the `...readonly_array_via_interface` example. But it's still not sufficient to allow "promotion" of the object fields (aka scalar replacement)&mdash;for full optimization the JIT must be able to treat the fields of the enumerator as if they were local variables.
 
-#### Challenge 4: Empty Array Enumeration 
+#### Challenge 4: Empty Array Enumeration
 
 The generic static `Empty` is there because there is a special case optimization in the BCL for empty arrays. Since enumeration of an empty array does not require mutable state, an immutable static enumerator object can be used instead of allocating a new object. So although the JIT knows the exact type of `e` it does not know (in general) which object instance is being used. This ambiguity blocks promotion.
 
@@ -256,7 +256,7 @@ With all that the "simple" case `...readonly_array_via_interface` is now a good 
 | Method                                                       | Mean       | Ratio | Allocated |
 |------------------------------------------------------------- |-----------:|------:|----------:|
 | foreach_static_readonly_array                                |   153.4 ns |  1.00 |         - |
-| foreach_static_readonly_array_via_interface (.NET 10)        |  295.7 ns  | 1.93 |          - |    
+| foreach_static_readonly_array_via_interface (.NET 10)        |  295.7 ns  | 1.93 |          - |
 | foreach_static_readonly_array_via_interface (.NET 9)         |   781.2 ns |  5.09 |      32 B |
 | foreach_static_readonly_array_via_interface (.NET 9, no PGO) | 2,304.5 ns | 15.03 |      32 B |
 
@@ -288,7 +288,7 @@ Now let's turn our attention back to the more complex case, where the only way t
 | Method                                                       | Mean       | Ratio | Allocated |
 |------------------------------------------------------------- |-----------:|------:|----------:|
 | foreach_static_readonly_array                                |   153.4 ns |  1.00 |         - |
-| foreach_opaque_array_via_interface (.NET 10)                 | 680.4 ns | 4.44 |      32 B |  
+| foreach_opaque_array_via_interface (.NET 10)                 | 680.4 ns | 4.44 |      32 B |
 | foreach_opaque_array_via_interface (.NET 9)                  |   843.2 ns |  5.50 |      32 B |
 | foreach_opaque_array_via_interface (.NET 9 ,no PGO)         | 2,076.4 ns | 13.54 |      32 B |
 
@@ -381,7 +381,7 @@ Since `ac` escapes, the `new E()` must be a heap allocation.
 If you look closely at the simplified example, `new E()` cannot actually escape, because if that path of the upper GDV is taken, then the `e.MoveNext()` on the failing side of the lower GDV cannot happen. Establishing that requires  conditional escape analysis.
 
 To model conditional escape, the JIT first identifies allocation sites like
-`ac = new E()` that happen on the successful side of GDV diamonds, where a reference to the allocated object can become the GDV result, and finds the local that is the holds the result of that GDV (here it is `e`). For each such `E, e` pair the JIT creates a new pseudo-variable `P` that will connect up references to `e` or copies thereof that happen under a failed GDV guard that tests the type of `e` against `E`. 
+`ac = new E()` that happen on the successful side of GDV diamonds, where a reference to the allocated object can become the GDV result, and finds the local that is the holds the result of that GDV (here it is `e`). For each such `E, e` pair the JIT creates a new pseudo-variable `P` that will connect up references to `e` or copies thereof that happen under a failed GDV guard that tests the type of `e` against `E`.
 
 So it creates a mapping `(e, E) -> P`.
 
@@ -418,7 +418,7 @@ Cloning a try region turns out to be fairly involved; in addition to the `try` r
 
 Support for cloning a try was added in [runtime/dotnet#110020](https://github.com/dotnet/runtime/pull/110020).
 
-The plan is to use this as part of a larger region-based cloning effort. 
+The plan is to use this as part of a larger region-based cloning effort.
 
 There are other considerations to handle here too. A method may have multiple instances of conditional escape for different objects. If the cloning regions for these overlap, then the problem is more complicated. Our plan for now is only allow cloning in cases where there is no overlap. (Footnote 10)
 
@@ -446,7 +446,7 @@ To help ensure stack allocation this we extend the cloning to also re-write all 
 
 #### Challenge 12: Multi-Guess GDV
 
-The JIT is also able to expand an GDV into multiple guesses. This is not (yet) the default, but it would be ideal if it was compatible with conditional escape analysis. Under multi guess-GDV we may see a conditional escape protected by two or more failing guards, and more than one one conditional enumerator allocation under a successful (and perhaps some failing) upper GDV guards. 
+The JIT is also able to expand an GDV into multiple guesses. This is not (yet) the default, but it would be ideal if it was compatible with conditional escape analysis. Under multi guess-GDV we may see a conditional escape protected by two or more failing guards, and more than one one conditional enumerator allocation under a successful (and perhaps some failing) upper GDV guards.
 
 Generalizing what we have above to handle this case seems fairly straightforward, provided we are willing to create one clone region per distinct GDV guard type.
 
@@ -567,9 +567,9 @@ Why is list enumeration relatively more costly? Lets's look at the implementatio
 
     }
 ```
-A couple of things stand out here: 
-* There is some extra state (the `_version` field and related checks) to try and guard against modification of the list while enumeration is active. We didn't see that for arrays because the array length can't be modified after the array is created, but the number of list elements can vary. 
-* The enumerator does not cache the underlying array instance, so `MoveNext()` has to first fetch the list from the enumerator, then fetch the array from the list, then fetch the element from the array. This is a three-level dependent chain of memory accesses. (Footnote 13) 
+A couple of things stand out here:
+* There is some extra state (the `_version` field and related checks) to try and guard against modification of the list while enumeration is active. We didn't see that for arrays because the array length can't be modified after the array is created, but the number of list elements can vary.
+* The enumerator does not cache the underlying array instance, so `MoveNext()` has to first fetch the list from the enumerator, then fetch the array from the list, then fetch the element from the array. This is a three-level dependent chain of memory accesses. (Footnote 13)
 * This is a `struct` enumerator, not a `class` enumerator. This is a common pattern to avoid allocation in cases where enumeration is not quite as simple as arrays and the language compiler knows the collection type. And indeed in the base case there is no heap allocation. But not so in the other cases.
 * The `GetEnumerator` implementation also has a variant of the empty-collection optimization; interestingly enough it delegates the empty case to the static empty array enumerator, so `GetEnumerator` does not return an object of definite type. (Footnote 14)
 * There is effectively a double bounds-check, as first the enumerator checks against the size of the list, and then the array checks against the length of the array.
@@ -791,7 +791,7 @@ Note if the collection `o` is empty then it is possible that `e` not be mutable 
 
 (16) We could (and likely should)  try to handle both, but we need to be thoughtful about how much cloning this entails. A naive version would end up creating 4 copies of the inner foreach, likely we don't want to have the version where we have the fast outer path and slow inner path, unless saving a heap allocation ends up being super-valuable.
 
-(17) Inlining methods with EH is on the .NET 10 roadmap, and perhaps this is one case to use as motivation. 
+(17) Inlining methods with EH is on the .NET 10 roadmap, and perhaps this is one case to use as motivation.
 
 More broadly, we should consider having the inliner aggressively inline if a call site can be passed a locally allocated object. Here it is tricky because the connection between object allocation and call is indirect, and we don't do data flow during inlining. Now, if we did escape analysis before inlining, we could perhaps target the methods that cause the allocations to escape, but we'd then need to update / redo the analysis for each inline so we can handle the transitive cases... (this is where some kind of up-front hinting would be very useful, so the JIT would know which inlines could end up preventing escape).
 
