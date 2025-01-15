@@ -82,8 +82,8 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 
     beq  t0, zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  a5, zero, 0
-    addi  a6, zero, -1
+    li  a5, 0
+    li  a6, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
     lla  a7, g_lowest_address
@@ -253,7 +253,7 @@ LOCAL_LABEL(ShadowUpdateDisabled):
     lb  t0, 0(t6)
     bne  t0, zero, LOCAL_LABEL(CheckCardTable)
 
-    ori  t0, zero, 0xFF
+    li  t0, 0xFF
     sb  t0, 0(t6)
 
 LOCAL_LABEL(CheckCardTable):
@@ -277,7 +277,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     srli  t0, t3, 11
     add  t4, t6, t0
     lbu  t1, 0(t4)
-    ori  t0, zero, 0xFF
+    li   t0, 0xFF
     beq  t1, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
@@ -290,7 +290,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     add  t4, t6, t0
 
     lbu  t6, 0(t4)
-    ori  t0, zero, 0xFF
+    li   t0, 0xFF
     beq  t6, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
