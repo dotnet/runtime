@@ -4550,7 +4550,6 @@ void emitter::emitDispInsName(
     NO_WAY("illegal ins within emitDisInsName!");
 }
 
-
 void emitter::emitDispInsInstrNum(const instrDesc* id) const
 {
 #ifdef DEBUG
