@@ -2702,6 +2702,21 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
         fgRemoveRefPred(nullcheckBb->GetTrueEdge());
         nullcheckBb->SetKindAndTargetEdge(BBJ_ALWAYS, nullcheckBb->GetFalseEdge());
+
+        // Locally repair profile
+        if (nullcheckBb->hasProfileWeight())
+        {
+            for (BasicBlock* const block : Blocks(nullcheckBb->Next(), lastBb))
+            {
+                weight_t incomingWeight = BB_ZERO_WEIGHT;
+                for (FlowEdge* const predEdge : block->PredEdges())
+                {
+                    incomingWeight += predEdge->getLikelyWeight();
+                }
+
+                block->setBBProfileWeight(incomingWeight);
+            }
+        }
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable

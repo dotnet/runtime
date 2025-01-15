@@ -4871,11 +4871,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
@@ -5133,6 +5128,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Create any throw helper blocks that might be needed
     //
     DoPhase(this, PHASE_CREATE_THROW_HELPERS, &Compiler::fgCreateThrowHelperBlocks);
+
+    // Drop back to just checking profile likelihoods.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     if (opts.OptimizationEnabled())
     {

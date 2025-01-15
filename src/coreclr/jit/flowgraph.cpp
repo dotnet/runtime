@@ -178,7 +178,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     addrTrap = info.compCompHnd->getAddrOfCaptureThreadGlobal(&pAddrOfCaptureThreadGlobal);
 
     // If the trap and address of thread global are null, make the call.
-    if (addrTrap == nullptr && pAddrOfCaptureThreadGlobal == nullptr)
+    if ((addrTrap == nullptr) && (pAddrOfCaptureThreadGlobal == nullptr))
     {
         pollType = GCPOLL_CALL;
     }
