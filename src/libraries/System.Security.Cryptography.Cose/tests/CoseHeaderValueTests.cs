@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Cose.Tests
             Span<byte> buffer = new byte[content.Length];
             int length = headerValue.GetValueAsBytes(buffer);
             Assert.Equal(content.Length, length);
-            AssertExtensions.SequenceEqual(content, buffer);
+            AssertExtensions.SequenceEqual(content.AsSpan(), buffer);
         }
 
         [Theory]
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
                 for (int i = 0; i < expectedLength; i+= content.Length)
                 {
-                    AssertExtensions.SequenceEqual(content, buffer.Slice(i, content.Length));
+                    AssertExtensions.SequenceEqual(content.AsSpan(), buffer.Slice(i, content.Length));
                 }
             }
         }
@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             Span<byte> buffer = new byte[content.Length];
             int length = headerValue.GetValueAsBytes(buffer);
-            AssertExtensions.SequenceEqual(content, buffer);
+            AssertExtensions.SequenceEqual(content.AsSpan(), buffer);
             Assert.Equal(content.Length, length);
         }
 

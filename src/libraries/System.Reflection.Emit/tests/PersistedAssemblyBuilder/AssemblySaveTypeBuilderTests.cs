@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -124,11 +126,15 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        private static TypeBuilder CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder)
+        private static ModuleBuilder CreateAssembly(out PersistedAssemblyBuilder assemblyBuilder)
         {
             assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(s_assemblyName);
-            return assemblyBuilder.DefineDynamicModule("MyModule")
-                .DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
+            return assemblyBuilder.DefineDynamicModule("MyModule");
+        }
+
+        private static TypeBuilder CreateAssemblyAndDefineType(out PersistedAssemblyBuilder assemblyBuilder)
+        {
+            return CreateAssembly(out assemblyBuilder).DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
         }
 
         [Fact]
@@ -202,6 +208,83 @@ namespace System.Reflection.Emit.Tests
                     Assert.True(testMethod.ContainsGenericParameters);
                     AssertGenericParameters(typeParams, genericTypeParams);
                 }
+            }
+        }
+
+        private class GenericClassWithGenericField<T>
+        {
+#pragma warning disable CS0649
+            public T F;
+#pragma warning restore CS0649
+        }
+
+        private class GenericClassWithNonGenericField<T>
+        {
+#pragma warning disable CS0649
+            public int F;
+#pragma warning restore CS0649
+        }
+
+        public static IEnumerable<object[]> GenericTypesWithField()
+        {
+            yield return new object[] { typeof(GenericClassWithGenericField<int>), true };
+            yield return new object[] { typeof(GenericClassWithNonGenericField<bool>), false };
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericTypesWithField))]
+        public void SaveGenericField(Type declaringType, bool shouldFieldBeGeneric)
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                ModuleBuilder mb = CreateAssembly(out PersistedAssemblyBuilder assemblyBuilder);
+                TypeBuilder tb = mb.DefineType("C", TypeAttributes.Class);
+                MethodBuilder method = tb.DefineMethod("TestMethod", MethodAttributes.Public, returnType: typeof(int), parameterTypes: null);
+                ILGenerator il = method.GetILGenerator();
+                il.Emit(OpCodes.Newobj, declaringType.GetConstructor([]));
+                il.Emit(OpCodes.Ldfld, declaringType.GetField("F"));
+                il.Emit(OpCodes.Ret);
+                Type createdType = tb.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                using (FileStream stream = File.OpenRead(file.Path))
+                {
+                    using (PEReader peReader = new PEReader(stream))
+                    {
+                        bool found = false;
+                        MetadataReader metadataReader = peReader.GetMetadataReader();
+                        foreach (MemberReferenceHandle memberRefHandle in metadataReader.MemberReferences)
+                        {
+                            MemberReference memberRef = metadataReader.GetMemberReference(memberRefHandle);
+                            if (memberRef.GetKind() == MemberReferenceKind.Field)
+                            {
+                                Assert.False(found);
+                                found = true;
+
+                                Assert.Equal("F", metadataReader.GetString(memberRef.Name));
+
+                                // A reference to a generic field should point to the open generic field, and not the resolved generic type.
+                                Assert.Equal(shouldFieldBeGeneric, IsGenericField(metadataReader.GetBlobReader(memberRef.Signature)));
+                            }
+                        }
+
+                        Assert.True(found);
+                    }
+                }
+            }
+
+            static bool IsGenericField(BlobReader signatureReader)
+            {
+                while (signatureReader.RemainingBytes > 0)
+                {
+                    SignatureTypeCode typeCode = signatureReader.ReadSignatureTypeCode();
+                    if (typeCode == SignatureTypeCode.GenericTypeParameter)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 

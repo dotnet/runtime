@@ -330,6 +330,8 @@ collect_parser.add_argument("--skip_collect_mc_files", action="store_true", help
 
 replay_common_parser = argparse.ArgumentParser(add_help=False)
 
+# NOTE: When adding arguments here, also make sure that they are set when collect does its replay:
+# see the "collect" case in setup_args.
 replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
@@ -1952,7 +1954,7 @@ def aggregate_diff_metrics(details_file):
     # Project out these fields for the saved diffs, to use for further
     # processing. Saving everything into memory is costly on memory when there
     # are a large number of diffs.
-    diffs_fields = ["Context", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
+    diffs_fields = ["Context", "Method full name", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
     for row in read_csv(details_file):
@@ -2723,12 +2725,40 @@ class SuperPMIReplayAsmDiffs:
 
             display_subset("Smallest {} zero sized diffs:", smallest_zero_size_contexts)
 
-            by_diff_size_pct_examples = [diff for diff in by_diff_size_pct if abs(int(diff['Diff ActualCodeBytes']) - int(diff['Base ActualCodeBytes'])) < 50]
-            if len(by_diff_size_pct_examples) == 0:
-                by_diff_size_pct_examples = by_diff_size_pct
+            # Prefer to show small diffs over large percentage wise diffs; sort by this additionally.
+            # sorted is stable, so for multiple small diffs this will keep them in order of percentage wise improvement/regression.
+            def is_small_diff(row):
+                if abs(int(row['Diff ActualCodeBytes']) - int(row['Base ActualCodeBytes'])) < 50:
+                    return 0
 
-            example_improvements = by_diff_size_pct_examples[:3]
-            example_regressions = by_diff_size_pct_examples[3:][-3:]
+                return 1
+
+            by_small_then_improvement = sorted(by_diff_size_pct, key=is_small_diff)
+            by_small_then_regression = sorted(reversed(by_diff_size_pct), key=is_small_diff)
+
+            def pick_examples(diffs, picked_contexts):
+                seen = set()
+                def try_add_seen(row):
+                    len_before = len(seen)
+                    seen.add(row["Method full name"])
+                    return len_before < len(seen)
+
+                result = []
+                for row in diffs:
+                    if row["Context"] in picked_contexts or not try_add_seen(row):
+                        continue
+
+                    result.append(row)
+                    if len(result) >= 3:
+                        break
+
+                return result
+
+            example_improvements = pick_examples(by_small_then_improvement, set())
+
+            example_improvement_contexts = set(row["Context"] for row in example_improvements)
+            example_regressions = pick_examples(by_small_then_regression, example_improvement_contexts)
+
             contexts = smallest_contexts + top_improvements + top_regressions + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
             examples = example_improvements + example_regressions
 
@@ -4758,6 +4788,11 @@ def setup_args(args):
                             "produce_repro",  # The replay code checks this, so make sure it's set
                             lambda unused: True,
                             "Unable to set produce_repro")
+
+        coreclr_args.verify(args,
+                            "details",  # The replay code checks this, so make sure it's set
+                            lambda unused: True,
+                            "Unable to set details")
 
         coreclr_args.verify(args,
                             "collection_command",

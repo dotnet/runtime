@@ -198,6 +198,17 @@ internal partial class MockDescriptors
         ]
     };
 
+    private static readonly TypeFields GCCoverageInfoFields = new TypeFields()
+    {
+        DataType = DataType.GCCoverageInfo,
+        Fields =
+        [
+            // Add DummyField to ensure the offset of SavedCode is not added to the TargetPointer.Null
+            new("DummyField", DataType.pointer),
+            new("SavedCode", DataType.pointer),
+        ]
+    };
+
     internal static Dictionary<DataType, Target.TypeInfo> GetTypesForTypeFields(TargetTestHelpers helpers, TypeFields[] typeFields)
     {
         Dictionary<DataType, Target.TypeInfo> types = new();
