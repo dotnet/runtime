@@ -582,7 +582,11 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles"
+          Inputs="@(EventingGenerationScript);@(EventManifestFile);@(EventingInclusionList)"
+          Outputs="@(EventingSourceFile)"
+          DependsOnTargets="FindPython"
+          BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Generared.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>
