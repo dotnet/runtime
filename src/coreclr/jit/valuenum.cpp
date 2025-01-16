@@ -15181,6 +15181,13 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
         return m_pComp->info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
     }
 
+    if (func == VNF_InitVal)
+    {
+        unsigned lclNum = CoercedConstantValue<unsigned>(funcApp.m_args[0]);
+        *pIsExact = m_pComp->lvaTable[lclNum].lvClassIsExact;
+        return m_pComp->lvaTable[lclNum].lvClassHnd;
+    }
+
     return NO_CLASS_HANDLE;
 }
 
