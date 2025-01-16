@@ -869,8 +869,18 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     // Update profile
     if (m_b1->hasProfileWeight())
     {
-        m_b1->GetTrueTarget()->setBBProfileWeight(m_b1->GetTrueEdge()->getLikelyWeight());
-        m_b1->GetFalseTarget()->setBBProfileWeight(m_b1->GetFalseEdge()->getLikelyWeight());
+        BasicBlock* const trueTarget  = m_b1->GetTrueTarget();
+        BasicBlock* const falseTarget = m_b1->GetFalseTarget();
+        trueTarget->setBBProfileWeight(m_b1->GetTrueEdge()->getLikelyWeight());
+        falseTarget->setBBProfileWeight(m_b1->GetFalseEdge()->getLikelyWeight());
+
+        if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
+        {
+            JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
+                    "'s successors. Data %s inconsistent.\n",
+                    m_b1->bbNum, m_comp->fgPgoConsistent ? "is now" : "was already");
+            m_comp->fgPgoConsistent = false;
+        }
     }
 
     Statement* const stmt = m_b1->lastStmt();
@@ -1359,8 +1369,18 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
                 block->setBBProfileWeight(incomingWeight);
             };
 
-            setIncomingWeight(origB1TrueEdge->getDestinationBlock());
-            setIncomingWeight(newB1FalseEdge->getDestinationBlock());
+            BasicBlock* const trueTarget  = origB1TrueEdge->getDestinationBlock();
+            BasicBlock* const falseTarget = newB1FalseEdge->getDestinationBlock();
+            setIncomingWeight(trueTarget);
+            setIncomingWeight(falseTarget);
+
+            if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
+            {
+                JITDUMP("optOptimizeRangeTests: Profile needs to be propagated through " FMT_BB
+                        "'s successors. Data %s inconsistent.\n",
+                        m_b1->bbNum, m_comp->fgPgoConsistent ? "is now" : "was already");
+                m_comp->fgPgoConsistent = false;
+            }
         }
     }
 
