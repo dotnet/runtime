@@ -1,6 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
-
+<Project>
   <PropertyGroup>
     <SkipValidatePackage>true</SkipValidatePackage>
     <PlatformPackageType>ToolPack</PlatformPackageType>
@@ -11,6 +9,7 @@
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     <AotCompilerFileName>mono-aot-cross$(ExeSuffix)</AotCompilerFileName>
     <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
+    <PackageReadmeFilePath>../PACKAGE.md</PackageReadmeFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -55,5 +54,4 @@
     <Error Condition="'$(TargetCrossRid)' == ''" Text="TargetCrossRid not set" />
     <Error Condition="!Exists('$(AotCompilerPath)$(AotCompilerFileName)')" Text="Cross compiler not found in $(AotCompilerPath). MonoAotCrossDir=$(MonoAotCrossDir)" />
   </Target>
-
 </Project>

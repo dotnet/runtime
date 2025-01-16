@@ -12,9 +12,12 @@
     -->
     <PublishAot Condition="$(NETCoreSdkPortableRuntimeIdentifier.StartsWith('win-'))">true</PublishAot>
     <PublishSingleFile Condition="'$(PublishAot)' != 'true'">true</PublishSingleFile>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CrossBuild)' != 'true' or ('$(StageOneBuild)' != 'true' and '$(StageTwoBuild)' != 'true')">
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
   <Import Project="ILCompiler.props" />
 </Project>

@@ -3501,7 +3501,7 @@ namespace System.Numerics.Tensors
             {
                 outputs[i] = Tensor.Unsqueeze(tensors[i], dimension);
             }
-            return ref Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
+            return ref Tensor.ConcatenateOnDimension<T>(dimension, outputs, destination);
         }
         #endregion
 
