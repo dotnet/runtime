@@ -2433,7 +2433,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
         if (canonicalBlock->hasProfileWeight())
         {
-            canonicalBlock->setBBProfileWeight(canonicalBlock->bbWeight + removedWeight);
+            canonicalBlock->increaseBBProfileWeight(removedWeight);
             modifiedProfile = true;
 
             // Don't bother updating flow into nonCanonicalBlock, since it is now unreachable
@@ -2458,12 +2458,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
     assert(numCandidates < optNoReturnCallCount);
     optNoReturnCallCount -= numCandidates;
 
-    // If we altered flow, reset fgModified. Given where we sit in the
-    // phase list, flow-dependent side data hasn't been built yet, so
-    // nothing needs invalidation.
-    //
-    assert(fgModified);
-    fgModified = false;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 

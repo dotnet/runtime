@@ -859,11 +859,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 }
 #endif // FEATURE_COMINTEROP
 
-void JIT_TailCall()
-{
-    _ASSERTE(!"ARM64:NYI");
-}
-
 #if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
@@ -917,6 +912,7 @@ void InitJITHelpers1()
 void UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE)
 
+#ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -925,6 +921,7 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispa
     PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
     return *ppContext;
 }
+#endif // TARGET_WINDOWS
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 {
@@ -936,13 +933,14 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
+#ifdef TARGET_WINDOWS
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
 
     return (FaultingExceptionFrame*)((TADDR)pDispatcherContext->ContextRecord->X19);
 }
-
+#endif // TARGET_WINDOWS
 
 BOOL
 AdjustContextForVirtualStub(
