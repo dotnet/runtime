@@ -1681,7 +1681,18 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                     const unsigned pseudoLocal = NewPseudoLocal();
                     assert(pseudoLocal != BAD_VAR_NUM);
                     bool added = m_EnumeratorLocalToPseudoLocalMap.AddOrUpdate(enumeratorLocal, pseudoLocal);
-                    assert(added);
+
+                    if (!added)
+                    {
+                        // Seems like we have multiple GDVs that can define this local.
+                        // Carry on for now, but later we may see these collide
+                        // and end up not cloning any of them.
+                        //
+                        // Since we are walking in RPO we may also be able to see that
+                        // they are properly disjoint and things will work out just fine.
+                        //
+                        JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
+                    }
 
                     // We will query this info if we see CALL(enumeratorLocal)
                     // during subsequent analysis, to verify that access is
