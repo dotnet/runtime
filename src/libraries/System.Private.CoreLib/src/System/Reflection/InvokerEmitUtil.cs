@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    internal static class InvokerEmitUtil
+    internal static unsafe class InvokerEmitUtil
     {
         // If changed, update native stack walking code that also uses "InvokeStub_" to ignore reflection frames.
         private const string InvokeStubPrefix = "InvokeStub_";

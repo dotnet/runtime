@@ -20,7 +20,7 @@ namespace System.Reflection
     /// <remarks>
     /// This class is known by the runtime in order to ignore reflection frames during stack walks.
     /// </remarks>
-    internal sealed partial class MethodBaseInvoker
+    internal sealed unsafe partial class MethodBaseInvoker
     {
         internal const int MaxStackAllocArgCount = 4;
 
@@ -115,7 +115,7 @@ namespace System.Reflection
             throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
-        internal unsafe object? InvokeWithNoArgs(object? obj, BindingFlags invokeAttr)
+        internal object? InvokeWithNoArgs(object? obj, BindingFlags invokeAttr)
         {
             Debug.Assert(_parameterTypes.Length == 0);
 
@@ -323,7 +323,7 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokeWith4RefArgs(
+        internal object? InvokeWith4RefArgs(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
