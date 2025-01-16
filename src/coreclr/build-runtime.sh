@@ -58,6 +58,11 @@ handle_arguments_local() {
             __SubDir="$2"
             __ShiftArgs=1
             ;;
+        
+        runtimeflavor|-runtimeflavor)
+            __RuntimeFlavor="$2"
+            __ShiftArgs=1
+            ;;
 
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
@@ -180,7 +185,7 @@ fi
 
 eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
-build_native "$__HostOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
+build_native "$__HostOS" "$__HostArch" "$__RuntimeFlavor" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
 # Build complete
 

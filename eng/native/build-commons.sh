@@ -54,11 +54,12 @@ build_native()
 
     targetOS="$1"
     hostArch="$2"
-    cmakeDir="$3"
-    intermediatesDir="$4"
-    target="$5"
-    cmakeArgs="$6"
-    message="$7"
+    runtimeFlavor="$3"
+    cmakeDir="$4"
+    intermediatesDir="$5"
+    target="$6"
+    cmakeArgs="$7"
+    message="$8"
 
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
