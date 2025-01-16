@@ -101,7 +101,7 @@ if(CLR_CMAKE_HOST_UNIX)
       add_linker_flag(-Wl,-z,notext)
     endif()
 
-    if(NOT FEATURE_NATIVEAOT_ONLY)
+    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
       add_subdirectory(pal)
       add_subdirectory(hosts)
     endif()
@@ -114,7 +114,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT FEATURE_NATIVEAOT_ONLY)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
@@ -129,7 +129,7 @@ add_subdirectory(${CLR_SRC_NATIVE_DIR}/containers containers)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/eventpipe eventpipe)
 add_subdirectory(${CLR_SRC_NATIVE_DIR}/minipal shared_minipal)
 
-if(NOT FEATURE_NATIVEAOT_ONLY)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(debug/debug-pal)
 endif()
 
@@ -246,7 +246,7 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if(NOT FEATURE_NATIVEAOT_ONLY)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_subdirectory(utilcode)
   add_subdirectory(inc)
 
@@ -269,7 +269,7 @@ if(NOT FEATURE_NATIVEAOT_ONLY)
   if(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(hosts)
   endif(CLR_CMAKE_HOST_WIN32)
-endif(NOT FEATURE_NATIVEAOT_ONLY)
+endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
 
 #----------------------------------------------------
 # Cross target Component install configuration
