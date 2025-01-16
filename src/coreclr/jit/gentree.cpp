@@ -7644,9 +7644,7 @@ GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 
 GenTreeIntCon* Compiler::gtNewNull()
 {
-    GenTreeIntCon* tree = gtNewIconNode(0, TYP_REF);
-    tree->gtVNPair.SetBoth(ValueNumStore::VNForNull());
-    return tree;
+    return gtNewIconNode(0, TYP_REF);
 }
 
 GenTreeIntCon* Compiler::gtNewTrue()
@@ -14438,23 +14436,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         return tree;
     }
 
-    // For "obj ==/!= null" we can fold the comparison to true/false if VM tells us that the object cannot
-    // be non-null. Example: "obj == null" -> true if obj's type is FooCls and FooCls is an abstract class
-    // without subclasses.
-    //
-    // IsTargetAbi check is not necessary here, but it improves TP for runtimes where this optimization is
-    // not possible anyway.
-    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && (val == 0) && op->TypeIs(TYP_REF) && tree->OperIs(GT_EQ, GT_NE))
-    {
-        bool                 isExact, isNonNull;
-        CORINFO_CLASS_HANDLE opCls = gtGetClassHandle(op, &isExact, &isNonNull);
-        if ((opCls != NO_CLASS_HANDLE) && (info.compCompHnd->getExactClasses(opCls, 0, nullptr) == 0))
-        {
-            op = gtWrapWithSideEffects(NewMorphedIntConNode(tree->OperIs(GT_EQ) ? 1 : 0), op, GTF_ALL_EFFECT);
-            goto DONE_FOLD;
-        }
-    }
-
     switch (oper)
     {
         case GT_LE:
@@ -14504,6 +14485,23 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         case GT_EQ:
         case GT_NE:
         {
+            // For "obj ==/!= null" we can fold the comparison to true/false if VM tells us that the object cannot
+            // be non-null. Example: "obj == null" -> true if obj's type is FooCls and FooCls is an abstract class
+            // without subclasses.
+            //
+            // IsTargetAbi check is not necessary here, but it improves TP for runtimes where this optimization is
+            // not possible anyway.
+            if ((val == 0) && op->TypeIs(TYP_REF) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                bool                 isExact, isNonNull;
+                CORINFO_CLASS_HANDLE opCls = gtGetClassHandle(op, &isExact, &isNonNull);
+                if ((opCls != NO_CLASS_HANDLE) && (info.compCompHnd->getExactClasses(opCls, 0, nullptr) == 0))
+                {
+                    op = gtWrapWithSideEffects(NewMorphedIntConNode(tree->OperIs(GT_EQ) ? 1 : 0), op, GTF_ALL_EFFECT);
+                    goto DONE_FOLD;
+                }
+            }
+
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
