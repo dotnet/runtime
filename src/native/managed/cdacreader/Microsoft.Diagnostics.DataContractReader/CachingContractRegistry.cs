@@ -37,6 +37,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IPlatformMetadata)] = new PlatformMetadataFactory(),
             [typeof(IPrecodeStubs)] = new PrecodeStubsFactory(),
             [typeof(IReJIT)] = new ReJITFactory(),
+            [typeof(IStackWalk)] = new StackWalkFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -53,6 +54,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
     public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     public override IReJIT ReJIT => GetContract<IReJIT>();
+    public override IStackWalk StackWalk => GetContract<IStackWalk>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {

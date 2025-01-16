@@ -8,15 +8,40 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 internal sealed class Frame : IData<Frame>
 {
-    private static readonly List<string> SupportedFrameTypes = [
-        "InlinedCallFrame",
-        "HelperMethodFrame",
-        "HelperMethodFrame_1OBJ",
-        "HelperMethodFrame_2OBJ",
-        "HelperMethodFrame_3OBJ",
-        "HelperMethodFrame_PROTECTOBJ",
-        "DebuggerU2MCatchHandlerFrame",
-        "DynamicHelperFrame",
+    private static readonly List<DataType> SupportedFrameTypes = [
+        DataType.InlinedCallFrame,
+        DataType.HelperMethodFrame,
+        DataType.HelperMethodFrame_1OBJ,
+        DataType.HelperMethodFrame_2OBJ,
+        DataType.HelperMethodFrame_3OBJ,
+        DataType.HelperMethodFrame_PROTECTOBJ,
+
+        DataType.ResumableFrame,
+        DataType.RedirectedTHreadFrame,
+        DataType.FaultingExceptionFrame,
+        DataType.SoftwareExceptionFrame,
+        DataType.FuncEvalFrame,
+        DataType.UnmanagedToManagedFrame,
+        DataType.ComMethodFrame,
+        DataType.CLRToCOMMethodFrame,
+        DataType.ComPrestubMethodFrame,
+        DataType.PInvokeCalliFrame,
+        DataType.HijackFrame,
+        DataType.PrestubMethodFrame,
+        DataType.CallCountingHelperFrame,
+        DataType.StubDispatchFrame,
+        DataType.ExternalMethodFrame,
+        DataType.DynamicHelperFrame,
+        DataType.InterpreterFrame,
+        DataType.ProtectByRefsFrame,
+        DataType.ProtectValueClassFrame,
+        DataType.DebuggerClassInitMarkFrame,
+        DataType.DebuggerSecurityCodeMarkFrame,
+        DataType.DebuggerExitFrame,
+        DataType.DebuggerU2MCatchHandlerFrame,
+        DataType.TailCallFrame,
+        DataType.ExceptionFilterFrame,
+        DataType.AssumeByrefFromJITStack,
     ];
 
     static Frame IData<Frame>.Create(Target target, TargetPointer address)
@@ -24,6 +49,7 @@ internal sealed class Frame : IData<Frame>
 
     public Frame(Target target, TargetPointer address)
     {
+        Address = address;
         Target.TypeInfo type = target.GetTypeInfo(DataType.Frame);
         Next = target.ReadPointer(address + (ulong)type.Fields[nameof(Next)].Offset);
         Type = FindType(target, address);
@@ -33,18 +59,28 @@ internal sealed class Frame : IData<Frame>
     {
         TargetPointer instanceVptr = target.ReadPointer(address);
 
-        foreach (string frameTypeName in SupportedFrameTypes)
+        foreach (DataType frameType in SupportedFrameTypes)
         {
-            TargetPointer typeVptr = target.ReadGlobalPointer(frameTypeName + "VPtr");
+            TargetPointer typeVptr;
+            try
+            {
+                // not all Frames are in all builds, so we need to catch the exception
+                typeVptr = target.ReadGlobalPointer(frameType.ToString() + "VPtr");
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
             if (instanceVptr == typeVptr)
             {
-                return Enum.TryParse(frameTypeName, out DataType type) ? type : DataType.Unknown;
+                return frameType;
             }
         }
 
         return DataType.Unknown;
     }
 
+    public TargetPointer Address { get; init; }
     public TargetPointer Next { get; init; }
     public DataType Type { get; init; }
 }

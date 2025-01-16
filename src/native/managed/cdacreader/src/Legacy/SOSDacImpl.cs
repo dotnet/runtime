@@ -195,16 +195,6 @@ internal sealed unsafe partial class SOSDacImpl
             return HResults.E_INVALIDARG;
         }
 
-        try
-        {
-            ThreadStoreData tsdata = _target.Contracts.Thread.GetThreadStoreData();
-            _target.Contracts.Thread.GetThreadContext(tsdata.FirstThread);
-        }
-        catch
-        {
-            Console.WriteLine("uh oh");
-        }
-
         int hr = HResults.S_OK;
         try
         {
@@ -579,7 +569,18 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, ppMD) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodDescPtrFromIP(ulong ip, ulong* ppMD)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromIP(ip, ppMD) : HResults.E_NOTIMPL;
+    {
+        try
+        {
+            _target.Contracts.StackWalk.TestEntry();
+        }
+        catch
+        {
+            Console.WriteLine("uh oh");
+        }
+
+        return _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromIP(ip, ppMD) : HResults.E_NOTIMPL;
+    }
     int ISOSDacInterface.GetMethodDescTransparencyData(ulong methodDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescTransparencyData(methodDesc, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodTableData(ulong mt, DacpMethodTableData* data)

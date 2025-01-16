@@ -48,7 +48,6 @@ internal interface IThread : IContract
     public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     public virtual ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     public virtual ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
-    public virtual int GetThreadContext(TargetPointer thread) => throw new NotImplementedException();
 }
 
 internal readonly struct Thread : IThread

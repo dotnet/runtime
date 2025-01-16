@@ -94,6 +94,8 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             return true;
         }
 
+        public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetPointer imageBase, TargetCodePointer jittedCodeAddress) => ~0ul;
+
         private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
         {
             if (r2rInfo.DelayLoadMethodCallThunks == TargetPointer.Null)
