@@ -572,15 +572,27 @@
         <Otherwise>
           <PropertyGroup>
             <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(CoreCLRSupported)' == 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildCoreCLRRuntimePack>
-            <_BuildCoreCLRRuntimePack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildMonoRuntimePack>
-            <_BuildMonoRuntimePack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildNativeAOTRuntimePack Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</_BuildNativeAOTRuntimePack>
-            <_BuildNativeAOTRuntimePack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildHostPack>
-            <_BuildHostPack Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildHostPack>
             <_BuildBundle Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
-            <_BuildBundle Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildBundle>
+          </PropertyGroup>
+
+          <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
+            <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
+          </PropertyGroup>
+
+          <!-- In source build, mono is only supported as primary runtime flavor, and when Mono is the primary runtime flavor, CoreCLR is not supported. -->
+          <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' == 'true'">
+            <_BuildCoreCLRRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'CoreCLR'">true</_BuildCoreCLRRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'Mono'">true</_BuildMonoRuntimePack>
+          </PropertyGroup>
+
+          <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true'">
+            <_BuildNativeAOTRuntimePack Condition="'$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
+            <_BuildHostPack Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildHostPack>
+            <_BuildBundle Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildBundle>
           </PropertyGroup>
 
           <ItemGroup>
@@ -591,7 +603,7 @@
             <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
             <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
             <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
-            <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.proj" />
+            <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != '' and '$(DotNetBuildSourceOnly)' == ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.proj" />
           </ItemGroup>
           <ItemGroup>
             <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
