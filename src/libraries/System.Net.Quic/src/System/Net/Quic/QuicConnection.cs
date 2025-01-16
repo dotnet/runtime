@@ -423,7 +423,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals.
             // IDN mapping is handled by MsQuic.
-            string sni = (TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
+            string sni = (IPAddress.IsValid(options.ClientAuthenticationOptions.TargetHost) ? null : options.ClientAuthenticationOptions.TargetHost) ?? host ?? string.Empty;
 
             IntPtr targetHostPtr = Marshal.StringToCoTaskMemUTF8(sni);
             try
@@ -458,7 +458,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _streamCapacityCallback = options.StreamCapacityCallback;
 
             // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
-            if (TargetHostNameHelper.IsValidAddress(targetHost))
+            if (IPAddress.IsValid(targetHost))
             {
                 targetHost = string.Empty;
             }

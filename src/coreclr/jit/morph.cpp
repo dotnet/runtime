@@ -5119,11 +5119,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         //
         if (isImplicitOrStressTailCall)
         {
-            if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
-            {
-                failTailCall("Local address taken", varNum);
-                return nullptr;
-            }
             if (varDsc->IsAddressExposed())
             {
                 if (lvaIsImplicitByRefLocal(varNum))
