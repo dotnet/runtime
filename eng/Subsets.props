@@ -313,9 +313,9 @@
     <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
-    <_BuildHostIlTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)' and $([MSBuild]::IsOsPlatform(Windows))">true</_BuildHostIlTools>
+    <BuildHostIlTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostIlTools>
     <_CrossToolProperties Condition="'$(_BuildCrossComponents)' == 'true'">$(_CrossToolProperties);ClrCrossComponentsSubset=true</_CrossToolProperties>
-    <_CrossToolProperties Condition="'$(_BuildHostIlTools)' == 'true'">$(_CrossToolProperties);ClrILToolsSubset=true</_CrossToolProperties>
+    <_CrossToolProperties Condition="'$(BuildHostIlTools)' == 'true'">$(_CrossToolProperties);ClrILToolsSubset=true</_CrossToolProperties>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_BuildAnyCrossArch)' == 'true' and '$(_CrossToolProperties)' != ''">

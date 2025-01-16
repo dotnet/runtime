@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup Condition="'$(BuildHostIlTools)' == 'true'">
+    <BuildHostTargetingPackage>true</BuildHostTargetingPackage>
+  </PropertyGroup>
   <ItemGroup>
     <!-- identity project, runtime specific projects are included by props above -->
     <Project Include="$(MSBuildProjectName).pkgproj" />
