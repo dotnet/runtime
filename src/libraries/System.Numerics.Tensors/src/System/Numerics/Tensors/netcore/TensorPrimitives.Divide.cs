@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -73,7 +74,7 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => typeof(T) == typeof(float)
                                             || typeof(T) == typeof(double)
 #if NET10_0_OR_GREATER
-                                            || (Avx512BW.IsSupported && typeof(T) == typeof(int));
+                                            || ((Avx512F.IsSupported || Avx.IsSupported) && typeof(T) == typeof(int));
 #else
                 ;
 #endif
@@ -85,17 +86,18 @@ namespace System.Numerics.Tensors
                 {
                     return x / y;
                 }
-                Vector128<int> denominator_zero = Avx2.CompareEqual(y.AsInt32(), Vector128<int>.Zero);
 
+                Debug.Assert(Avx.IsSupported && typeof(T) == typeof(int));
+                Vector128<int> denominator_zero = Sse2.CompareEqual(y.AsInt32(), Vector128<int>.Zero);
                 if (denominator_zero != Vector128<int>.Zero)
                 {
                     throw new DivideByZeroException();
                 }
 
-                Vector256<double> num_pd = Avx512F.ConvertToVector256Double(x.AsInt32());
-                Vector256<double> den_pd = Avx512F.ConvertToVector256Double(y.AsInt32());
-                Vector256<double> div_pd = Avx512F.Divide(num_pd, den_pd);
-                Vector128<int> div_epi32 = Avx512F.ConvertToVector128Int32WithTruncation(div_pd);
+                Vector256<double> num_pd = Avx.ConvertToVector256Double(x.AsInt32());
+                Vector256<double> den_pd = Avx.ConvertToVector256Double(y.AsInt32());
+                Vector256<double> div_pd = Avx.Divide(num_pd, den_pd);
+                Vector128<int> div_epi32 = Avx.ConvertToVector128Int32WithTruncation(div_pd);
                 return div_epi32.As<int, T>();
 #else
                 return x / y;
@@ -109,8 +111,13 @@ namespace System.Numerics.Tensors
                     return x / y;
                 }
 
-                Vector256<int> denominator_zero = Avx2.CompareEqual(y.AsInt32(), Vector256<int>.Zero);
+                Debug.Assert(typeof(T) == typeof(int));
+                if (!Avx512F.IsSupported)
+                {
+                    return Vector256.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
+                }
 
+                Vector256<int> denominator_zero = Avx2.CompareEqual(y.AsInt32(), Vector256<int>.Zero);
                 if (denominator_zero != Vector256<int>.Zero)
                 {
                     throw new DivideByZeroException();
@@ -133,6 +140,7 @@ namespace System.Numerics.Tensors
                 {
                     return x / y;
                 }
+                Debug.Assert(typeof(T) == typeof(int));
                 return Vector512.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
 #else
                 return x / y;
