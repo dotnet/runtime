@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -70,11 +71,73 @@ namespace System.Numerics.Tensors
         internal readonly struct DivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float)
-                                            || typeof(T) == typeof(double);
+                                            || typeof(T) == typeof(double)
+#if NET10_0_OR_GREATER
+                                            || (Avx512BW.IsSupported && typeof(T) == typeof(int));
+#else
+                ;
+#endif
             public static T Invoke(T x, T y) => x / y;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x / y;
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            {
+#if NET10_0_OR_GREATER
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    return x / y;
+                }
+                Vector128<int> denominator_zero = Avx2.CompareEqual(y.AsInt32(), Vector128<int>.Zero);
+
+                if (denominator_zero != Vector128<int>.Zero)
+                {
+                    throw new DivideByZeroException();
+                }
+
+                Vector256<double> num_pd = Avx512F.ConvertToVector256Double(x.AsInt32());
+                Vector256<double> den_pd = Avx512F.ConvertToVector256Double(y.AsInt32());
+                Vector256<double> div_pd = Avx512F.Divide(num_pd, den_pd);
+                Vector128<int> div_epi32 = Avx512F.ConvertToVector128Int32WithTruncation(div_pd);
+                return div_epi32.As<int, T>();
+#else
+                return x / y;
+#endif
+            }
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
+            {
+#if NET10_0_OR_GREATER
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    return x / y;
+                }
+
+                Vector256<int> denominator_zero = Avx2.CompareEqual(y.AsInt32(), Vector256<int>.Zero);
+
+                if (denominator_zero != Vector256<int>.Zero)
+                {
+                    throw new DivideByZeroException();
+                }
+
+                Vector512<double> num_pd = Avx512F.ConvertToVector512Double(x.AsInt32());
+                Vector512<double> den_pd = Avx512F.ConvertToVector512Double(y.AsInt32());
+                Vector512<double> div_pd = Avx512F.Divide(num_pd, den_pd);
+                Vector256<int> div_epi32 = Avx512F.ConvertToVector256Int32(div_pd, FloatRoundingMode.ToZero);
+                return div_epi32.As<int, T>();
+#else
+                return x / y;
+#endif
+
+            }
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
+            {
+#if NET10_0_OR_GREATER
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                {
+                    return x / y;
+                }
+                return Vector512.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
+#else
+                return x / y;
+#endif
+            }
         }
     }
 }
