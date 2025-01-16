@@ -2074,7 +2074,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
                 SString szName(W("DebuggerStressStartup"));
                 SString szDescription(W("MDA used for debugger-stress scenario. This is fired to trigger a jit-attach")
                     W("to allow us to attach a debugger to any managed app that starts up.")
-                    W("This MDA is only fired when the 'DbgAttachOnStartup' COM+ knob/reg-key is set on checked builds."));
+                    W("This MDA is only fired when the 'DbgAttachOnStartup' CLR knob/reg-key is set on checked builds."));
                 SString szXML(W("<xml>See the description</xml>"));
 
                 SendMDANotification(
@@ -5423,7 +5423,7 @@ bool Debugger::IsJMCMethod(Module* pModule, mdMethodDef tkMethod)
 /******************************************************************************
  * Called by Runtime when on a 1st chance Native Exception.
  * This is likely when we hit a breakpoint / single-step.
- * This is called for all native exceptions (except COM+) on managed threads,
+ * This is called for all native exceptions (except CLR) on managed threads,
  * regardless of whether the debugger is attached.
  ******************************************************************************/
 bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
@@ -12251,7 +12251,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
         // call back in to anything so set it all here to match the original IL and debug codegen flags
         ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
         ilCodeVersion.SetJitFlags(COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS | COR_PRF_CODEGEN_DEBUG_INFO);
-        ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+        ilCodeVersion.SetRejitState(RejitFlags::kStateActive);
         ilCodeVersion.SetEnableReJITCallback(false);
     }
 

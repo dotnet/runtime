@@ -8,7 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 internal partial class MockDescriptors
 {
@@ -38,7 +38,7 @@ internal partial class MockDescriptors
         internal TargetPointer TestStringMethodTableAddress { get; private set; }
 
         internal Dictionary<DataType, Target.TypeInfo> Types { get; }
-        internal (string Name, ulong Value, string? Type)[] Globals { get; }
+        internal (string Name, ulong Value)[] Globals { get; }
 
         public Object(RuntimeTypeSystem rtsBuilder)
             : this(rtsBuilder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -57,12 +57,12 @@ internal partial class MockDescriptors
             AddGlobalPointers();
             Globals = rtsBuilder.Globals.Concat(
             [
-                (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask, "uint8"),
-                (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress, null),
-                (nameof(Constants.Globals.ArrayBoundsZero), TestArrayBoundsZeroGlobalAddress, null),
-                (nameof(Constants.Globals.SyncTableEntries), TestSyncTableEntriesGlobalAddress, null),
-                (nameof(Constants.Globals.ObjectHeaderSize), Builder.TargetTestHelpers.ObjHeaderSize, "uint32"),
-                (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset, "uint16"),
+                (nameof(Constants.Globals.ObjectToMethodTableUnmask), TestObjectToMethodTableUnmask),
+                (nameof(Constants.Globals.StringMethodTable), TestStringMethodTableGlobalAddress),
+                (nameof(Constants.Globals.ArrayBoundsZero), TestArrayBoundsZeroGlobalAddress),
+                (nameof(Constants.Globals.SyncTableEntries), TestSyncTableEntriesGlobalAddress),
+                (nameof(Constants.Globals.ObjectHeaderSize), Builder.TargetTestHelpers.ObjHeaderSize),
+                (nameof(Constants.Globals.SyncBlockValueToObjectOffset), TestSyncBlockValueToObjectOffset),
             ]).ToArray();
         }
 

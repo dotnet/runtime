@@ -6,6 +6,6 @@
 
 int print_line(int x)
 {
-    printf("print_line: %d\n", x);
+    printf("TestOutput -> print_line: %d\n", x);
     return 42 + x;
 }

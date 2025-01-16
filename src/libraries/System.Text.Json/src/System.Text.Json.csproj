@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -21,6 +21,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
@@ -160,6 +161,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
     <Compile Include="System\Text\Json\StackHelper.cs" />
     <Compile Include="System\Text\Json\ValueQueue.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.StringSegment.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
@@ -308,7 +310,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Date.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterHelper.Escaping.cs" />
     <Compile Include="System\Text\Json\Writer\JsonWriterOptions.cs" />
-    <Compile Include="System\Text\Json\Writer\SequenceValidity.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Bytes.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTime.cs" />
@@ -340,6 +341,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -365,31 +367,37 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs" Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\Generic\OrderedDictionary.cs" Link="Common\System\Collections\Generic\OrderedDictionary.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.Collections\src\System\Collections\ThrowHelper.cs" Link="Common\System\Collections\ThrowHelper.cs" />
-    
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
-  </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '7.0'))">
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\Int128Converter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\FeatureSwitchDefinitionAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Value\HalfConverter.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.net8.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\HalfConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\Int128Converter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt128Converter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.netstandard.cs" />
+  </ItemGroup>
+
+  <!-- Polyfills for working with Unicode -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Text\Rune.cs" Link="System\Text\Rune.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs" Link="System\Text\UnicodeDebug.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs" Link="System\Text\UnicodeUtility.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Text\Unicode\Utf16Utility.cs" Link="System\Text\Unicode\Utf16Utility.cs" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
@@ -416,11 +424,11 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />

@@ -4903,7 +4903,6 @@ static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool*
  *      1. GetCostEx() to the execution complexity estimate
  *      2. GetCostSz() to the code size estimate
  *      3. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
- *      4. DEBUG-only: clears GTF_DEBUG_NODE_MORPHED.
  */
 
 #ifdef _PREFAST_
@@ -7630,6 +7629,14 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
+GenTreeIntCon* Compiler::gtNewIconNodeWithVN(Compiler* comp, ssize_t value, var_types type)
+{
+    assert(genActualType(type) == type);
+    GenTreeIntCon* cns = new (this, GT_CNS_INT) GenTreeIntCon(type, value);
+    comp->fgUpdateConstTreeValueNumber(cns);
+    return cns;
+}
+
 GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeq* fieldSeq)
 {
     return new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset), fieldSeq);
@@ -7929,12 +7936,26 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 
     switch (type)
     {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return gtNewIconNode(0xFF);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return gtNewIconNode(0xFFFF);
+        }
+
         case TYP_INT:
+        case TYP_UINT:
         {
             return gtNewIconNode(-1);
         }
 
         case TYP_LONG:
+        case TYP_ULONG:
         {
             return gtNewLconNode(-1);
         }
@@ -14380,10 +14401,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     // Helper function that creates a new IntCon node and morphs it, if required
     auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
-        if (fgGlobalMorph)
-        {
-            INDEBUG(icon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
+        icon->SetMorphed(this);
         return icon;
     };
 
@@ -14394,18 +14412,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         assert(varTypeIsUnsigned(castToType));
 
         GenTreeCast* cast = gtNewCastNode(TYP_INT, op1, false, castToType);
-        if (fgGlobalMorph)
-        {
-            fgMorphTreeDone(cast);
-        }
+        cast->SetMorphed(this);
+        fgMorphTreeDone(cast);
 
         if (type == TYP_LONG)
         {
             cast = gtNewCastNode(TYP_LONG, cast, true, TYP_LONG);
-            if (fgGlobalMorph)
-            {
-                fgMorphTreeDone(cast);
-            }
+            cast->SetMorphed(this);
+            fgMorphTreeDone(cast);
         }
 
         return cast;
@@ -14672,14 +14686,7 @@ DONE_FOLD:
     DISPTREE(tree);
     JITDUMP("Transformed into:\n");
     DISPTREE(op);
-
-    if (fgGlobalMorph)
-    {
-        // We can sometimes produce a comma over the constant if the original op
-        // had a side effect, so just ensure we set the flag (which will be already
-        // set for the operands otherwise).
-        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    }
+    op->SetMorphed(this);
     return op;
 }
 
@@ -14734,10 +14741,9 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
     // Helper function that creates a new IntCon node and morphs it, if required
     auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
-        if (fgGlobalMorph)
-        {
-            INDEBUG(icon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
+
+        icon->SetMorphed(this);
+
         return icon;
     };
 
@@ -14899,14 +14905,8 @@ DONE_FOLD:
     DISPTREE(tree);
     JITDUMP("Transformed into:\n");
     DISPTREE(op);
+    op->SetMorphed(this);
 
-    if (fgGlobalMorph)
-    {
-        // We can sometimes produce a comma over the constant if the original op
-        // had a side effect, so just ensure we set the flag (which will be already
-        // set for the operands otherwise).
-        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    }
     return op;
 }
 
@@ -15427,6 +15427,11 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
         Statement*     thisStoreStmt = thisOp->AsBox()->gtCopyStmtWhenInlinedBoxValue;
         thisStoreStmt->SetRootNode(thisStore);
         thisValOpt = gtNewLclvNode(thisTmp, type);
+
+        // If this is invoked during global morph we are adding code to a remote tree
+        // Despite this being a store, we can't meaningfully add assertions
+        //
+        thisStore->SetMorphed(this);
     }
 
     if (flagVal->IsIntegralConst())
@@ -15444,6 +15449,11 @@ GenTree* Compiler::gtOptimizeEnumHasFlag(GenTree* thisOp, GenTree* flagOp)
         flagStoreStmt->SetRootNode(flagStore);
         flagValOpt     = gtNewLclvNode(flagTmp, type);
         flagValOptCopy = gtNewLclvNode(flagTmp, type);
+
+        // If this is invoked during global morph we are adding code to a remote tree
+        // Despite this being a store, we can't meaningfully add assertions
+        //
+        flagStore->SetMorphed(this);
     }
 
     // Turn the call into (thisValTmp & flagTmp) == flagTmp.
@@ -17310,6 +17320,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
             comma->gtVNPair =
                 vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(sideEffectsSource->gtVNPair));
         }
+        comma->SetMorphed(this);
         return comma;
     }
     return tree;
@@ -17428,16 +17439,7 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             }
 
             GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
-
-#ifdef DEBUG
-            if (m_compiler->fgGlobalMorph)
-            {
-                // Either both should be morphed or neither should be.
-                assert((m_result->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) ==
-                       (node->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
-                comma->gtDebugFlags |= node->gtDebugFlags & GTF_DEBUG_NODE_MORPHED;
-            }
-#endif
+            comma->SetMorphed(m_compiler);
 
             // Both should have valuenumbers defined for both or for neither
             // one (unless we are remorphing, in which case a prior transform
@@ -17844,13 +17846,14 @@ ExceptionSetFlags Compiler::gtCollectExceptions(GenTree* tree)
 // of number of sub nodes.
 //
 // Arguments:
-//     tree  - The tree to check
-//     limit - The limit in terms of number of nodes
+//     tree       - The tree to check
+//     limit      - The limit in terms of number of nodes
+//     complexity - [out, optional] the actual node count (if not greater than limit)
 //
 // Return Value:
-//     True if there are mode sub nodes in tree; otherwise false.
+//     True if there are more than limit nodes in tree; otherwise false.
 //
-bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
+bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit, unsigned* complexity)
 {
     struct ComplexityVisitor : GenTreeVisitor<ComplexityVisitor>
     {
@@ -17875,13 +17878,26 @@ bool Compiler::gtComplexityExceeds(GenTree* tree, unsigned limit)
             return WALK_CONTINUE;
         }
 
+        unsigned NumNodes()
+        {
+            return m_numNodes;
+        }
+
     private:
         unsigned m_limit;
         unsigned m_numNodes = 0;
     };
 
     ComplexityVisitor visitor(this, limit);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+
+    fgWalkResult result = visitor.WalkTree(&tree, nullptr);
+
+    if (complexity != nullptr)
+    {
+        *complexity = visitor.NumNodes();
+    }
+
+    return (result == WALK_ABORT);
 }
 
 bool GenTree::IsPhiNode()
@@ -20385,6 +20401,7 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_SSE3_LoadAndDuplicateToVector128:
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector128:
@@ -20402,6 +20419,8 @@ bool GenTree::isContainableHWIntrinsic() const
             return false;
         }
     }
+#elif defined(TARGET_ARM64)
+    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
 #else
     return false;
 #endif // TARGET_XARCH
@@ -20541,11 +20560,30 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 // EVEX form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrisic node lowering instruction has an EVEX form
+// true if the intrinsic node lowering instruction has an EVEX form
 //
-bool GenTree::isEvexCompatibleHWIntrinsic() const
+bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
-    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId());
+#if defined(TARGET_XARCH)
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
+
+        switch (intrinsicId)
+        {
+            case NI_PCLMULQDQ_CarrylessMultiply:
+            {
+                return comp->compOpportunisticallyDependsOn(InstructionSet_PCLMULQDQ_V256);
+            }
+
+            default:
+            {
+                return HWIntrinsicInfo::HasEvexSemantics(intrinsicId);
+            }
+        }
+    }
+#endif
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -20553,15 +20591,15 @@ bool GenTree::isEvexCompatibleHWIntrinsic() const
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrisic node lowering instruction has an EVEX embedded masking
+// true if the intrinsic node lowering instruction has an EVEX embedded masking
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
     if (OperIsHWIntrinsic())
     {
+        NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 #if defined(TARGET_XARCH)
-        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
-        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
+        var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
         switch (intrinsicId)
         {
@@ -20581,8 +20619,8 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
             }
         }
 #elif defined(TARGET_ARM64)
-        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
-               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+        return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId);
 #endif
     }
     return false;
@@ -20873,8 +20911,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
             unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
 
-            GenTree* nonConstantByteShiftCountOp = NULL;
-
             if (op2->IsCnsIntOrI())
             {
                 op2->AsIntCon()->gtIconVal &= shiftCountMask;
@@ -21038,16 +21074,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(
         }
 
 #if defined(TARGET_XARCH)
-        case GT_RSZ:
         case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
         {
-            // We don't have actual instructions for shifting bytes, so we'll emulate them
-            // by shifting 32-bit values and masking off the bits that should be zeroed.
+            // This emulates byte shift instructions, which don't exist in x86 SIMD,
+            // plus arithmetic shift of qwords, which did not exist before AVX-512.
 
-            assert(varTypeIsByte(simdBaseType));
+            assert(varTypeIsByte(simdBaseType) || (varTypeIsLong(simdBaseType) && (op == GT_RSH)));
 
-            intrinsic =
-                GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, op, op1, op2ForLookup, TYP_INT, simdSize, false);
+            // We will emulate arithmetic shift by using logical shift and then masking in the sign bits.
+            genTreeOps instrOp = op == GT_RSH ? GT_RSZ : op;
+            intrinsic          = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(this, instrOp, op1, op2ForLookup,
+                                                                              genActualType(simdBaseType), simdSize, false);
             assert(intrinsic != NI_Illegal);
 
             GenTree* maskAmountOp;
@@ -21055,22 +21094,53 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (op2->IsCnsIntOrI())
             {
                 ssize_t shiftCount = op2->AsIntCon()->gtIconVal;
-                ssize_t mask       = op == GT_RSZ ? (255 >> shiftCount) : ((255 << shiftCount) & 0xFF);
-
-                maskAmountOp = gtNewIconNode(mask, type);
+                if (varTypeIsByte(simdBaseType))
+                {
+                    ssize_t mask = op == GT_LSH ? ((0xFF << shiftCount) & 0xFF) : (0xFF >> shiftCount);
+                    maskAmountOp = gtNewIconNode(mask, type);
+                }
+                else
+                {
+                    int64_t mask = static_cast<int64_t>(0xFFFFFFFFFFFFFFFFULL >> shiftCount);
+                    maskAmountOp = gtNewLconNode(mask);
+                }
             }
             else
             {
                 assert(op2->OperIsHWIntrinsic(NI_Vector128_CreateScalar));
 
-                GenTree* nonConstantByteShiftCountOp = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
-                maskAmountOp = gtNewOperNode(op, TYP_INT, gtNewIconNode(255), nonConstantByteShiftCountOp);
+                GenTree* shiftCountDup = fgMakeMultiUse(&op2->AsHWIntrinsic()->Op(1));
+                if (op == GT_RSH)
+                {
+                    // For arithmetic shift, we will be using ConditionalSelect to mask in the sign bits, which means
+                    // the mask will be evaluated before the shift. We swap the copied operand with the shift amount
+                    // operand here in order to preserve correct evaluation order for the masked shift count.
+                    std::swap(shiftCountDup, op2->AsHWIntrinsic()->Op(1));
+                }
+
+                maskAmountOp = gtNewOperNode(instrOp, genActualType(simdBaseType), gtNewAllBitsSetConNode(simdBaseType),
+                                             shiftCountDup);
             }
 
-            GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);
-            GenTree* maskOp  = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
+            if (op == GT_RSH)
+            {
+                GenTree* op1Dup = fgMakeMultiUse(&op1);
+                GenTree* signOp =
+                    gtNewSimdCmpOpNode(GT_GT, type, gtNewZeroConNode(type), op1Dup, simdBaseJitType, simdSize);
 
-            return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
+                CorInfoType shiftType = varTypeIsSmall(simdBaseType) ? CORINFO_TYPE_INT : simdBaseJitType;
+                GenTree*    shiftOp   = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, shiftType, simdSize);
+                GenTree*    maskOp    = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
+
+                return gtNewSimdCndSelNode(type, maskOp, shiftOp, signOp, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                GenTree* shiftOp = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, CORINFO_TYPE_INT, simdSize);
+                GenTree* maskOp  = gtNewSimdCreateBroadcastNode(type, maskAmountOp, simdBaseJitType, simdSize);
+
+                return gtNewSimdBinOpNode(GT_AND, type, shiftOp, maskOp, simdBaseJitType, simdSize);
+            }
         }
 #endif // TARGET_XARCH
 
@@ -21467,6 +21537,7 @@ GenTree* Compiler::gtNewSimdCvtMaskToVectorNode(var_types   type,
 {
     assert(varTypeIsMask(op1));
     assert(varTypeIsSIMD(type));
+    compMaskConvertUsed = true;
 
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(type, op1, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
@@ -21859,6 +21930,7 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 {
     assert(varTypeIsMask(type));
     assert(varTypeIsSIMD(op1));
+    compMaskConvertUsed = true;
 
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
@@ -27418,7 +27490,55 @@ bool GenTree::OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const
 {
     if (OperIsHWIntrinsic())
     {
-        return AsHWIntrinsic()->GetHWIntrinsicId() == intrinsicId;
+        return AsHWIntrinsic()->OperIsHWIntrinsic(intrinsicId);
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsConvertMaskToVector: Is this a ConvertMaskToVector hwintrinsic
+//
+// Return Value:
+//    true if the node is a ConvertMaskToVector hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsConvertMaskToVector() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsConvertMaskToVector();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsConvertVectorToMask: Is this a ConvertVectorToMask hwintrinsic
+//
+// Return Value:
+//    true if the node is a ConvertVectorToMask hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsConvertVectorToMask() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsConvertVectorToMask();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// OperIsVectorConditionalSelect: Is this a vector ConditionalSelect hwintrinsic
+//
+// Return Value:
+//    true if the node is a vector ConditionalSelect hwintrinsic
+//    otherwise; false
+//
+bool GenTree::OperIsVectorConditionalSelect() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->OperIsVectorConditionalSelect();
     }
     return false;
 }
@@ -27555,8 +27675,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 case NI_SSE41_ConvertToVector128Int64:
                 case NI_AVX2_BroadcastScalarToVector128:
                 case NI_AVX2_BroadcastScalarToVector256:
-                case NI_AVX512F_BroadcastScalarToVector512:
-                case NI_AVX512BW_BroadcastScalarToVector512:
                 case NI_AVX2_ConvertToVector256Int16:
                 case NI_AVX2_ConvertToVector256Int32:
                 case NI_AVX2_ConvertToVector256Int64:
@@ -27825,6 +27943,7 @@ bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
         case NI_AVX2_BroadcastScalarToVector256:
         case NI_AVX_BroadcastScalarToVector128:
         case NI_AVX_BroadcastScalarToVector256:
+        case NI_SSE3_LoadAndDuplicateToVector128:
         case NI_SSE3_MoveAndDuplicate:
         case NI_AVX512F_BroadcastScalarToVector512:
             return true;
@@ -28194,8 +28313,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
-           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetRegByIndex(1) == op2->GetRegByIndex(1)) &&
-           OperandsAreEqual(op1, op2);
+           (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && OperandsAreEqual(op1, op2);
 }
 
 void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
@@ -30738,7 +30856,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {
-        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or F0
+        resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
     }
     else
     {
@@ -30752,7 +30870,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
         else
         {
             assert(varTypeUsesFloatReg(regType));
-            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
+            resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
 
@@ -31207,8 +31325,17 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
         }
     }
 
-    // TODO-Casts: extend IntegralRange to handle constants
-    return IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative();
+    if (IntegralRange::ForNode(const_cast<GenTree*>(this), comp).IsNonNegative())
+    {
+        return true;
+    }
+
+    if ((comp->vnStore != nullptr) && comp->vnStore->IsVNNeverNegative(gtVNPair.GetConservative()))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -31306,8 +31433,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 #if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    assert(tree->OperIsHWIntrinsic());
-
     if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
@@ -31331,12 +31456,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
 
         vecCon->gtSimdVal = simdVal;
-
-        if (fgGlobalMorph)
-        {
-            INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        }
-
+        vecCon->SetMorphed(this);
         fgUpdateConstTreeValueNumber(vecCon);
         return vecCon;
     }
@@ -31398,11 +31518,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
                     DEBUG_DESTROY_NODE(op, tree);
-
-                    if (fgGlobalMorph)
-                    {
-                        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-                    }
+                    vectorNode->SetMorphed(this);
                     return vectorNode;
                 }
             }
@@ -32587,17 +32703,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
     if (resultNode != tree)
     {
-        if (fgGlobalMorph)
+        resultNode->SetMorphed(this);
+        if (resultNode->OperIs(GT_COMMA))
         {
-            // We can sometimes produce a comma over the constant if the original op
-            // had a side effect or even a new constant node, so just ensure we set
-            // the flag (which will be already set for the operands otherwise).
-            INDEBUG(resultNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            if (resultNode->OperIs(GT_COMMA))
-            {
-                INDEBUG(resultNode->AsOp()->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            }
+            resultNode->AsOp()->gtGetOp2()->SetMorphed(this);
         }
 
         if (resultNode->OperIsConst())
@@ -32724,3 +32833,65 @@ bool Compiler::gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
 
     return false;
 }
+
+#if defined(DEBUG)
+//------------------------------------------------------------------------
+// SetMorphed: mark a node as having been morphed
+//
+// Arguments:
+//   compiler - compiler instance
+//   doChildren - recursive mark child nodes
+//
+// Notes:
+//   Does nothing outside of global morph.
+//
+//   Useful for morph post-order expansions / optimizations.
+//
+//   Use care when invoking this on an assignment (or when doChildren is true,
+//   on trees containing assignments) as those usually will also require
+//   local assertion updates.
+//
+void GenTree::SetMorphed(Compiler* compiler, bool doChildren /* = false */)
+{
+    if (!compiler->fgGlobalMorph)
+    {
+        return;
+    }
+
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        Visitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+            if (!node->WasMorphed())
+            {
+                node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+                node->gtMorphCount++;
+            }
+            return Compiler::WALK_CONTINUE;
+        }
+    };
+
+    if (doChildren)
+    {
+        Visitor  v(compiler);
+        GenTree* node = this;
+        v.WalkTree(&node, nullptr);
+    }
+    else if (!WasMorphed())
+    {
+        gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+        gtMorphCount++;
+    }
+}
+#endif

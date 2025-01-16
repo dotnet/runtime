@@ -1,4 +1,7 @@
 <Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
   <ItemGroup>
     <!-- reference MSBuild directly to avoid bringing in it's package closure.  These all represent assemblies available to tasks and provided by MSBuild -->
     <PackageDownloadAndReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
@@ -16,7 +19,11 @@
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" ExcludeAssets="Runtime" PrivateAssets="All" />
   </ItemGroup>
 
+  <!-- Suppress System.Text.Json/8.0.4 advisory as desktop msbuild doesn't yet provide binding redirects for the non-vulnerable version (8.0.5). -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8g4q-xg66-9fp4" />
+  </ItemGroup>
+
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
 
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

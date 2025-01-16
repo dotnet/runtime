@@ -23,14 +23,15 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             info = null;
             // EEJitManager::JitCodeToMethodInfo
             if (rangeSection.IsRangeList)
-            {
                 return false;
-            }
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
             TargetPointer start = FindMethodCode(rangeSection, jittedCodeAddress);
             if (start == TargetPointer.Null)
-            {
                 return false;
-            }
+
             Debug.Assert(start.Value <= jittedCodeAddress.Value);
             TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - start.Value);
             // See EEJitManager::GetCodeHeaderFromStartAddress in vm/codeman.h
@@ -42,25 +43,21 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             }
             TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
             Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            info = new CodeBlock(start.Value, codeHeaderOffset, relativeOffset, realCodeHeader, rangeSection.Data!.JitManager);
+            info = new CodeBlock(start.Value, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             // EEJitManager::FindMethodCode
-            if (rangeSection.Data == null)
-            {
-                throw new InvalidOperationException();
-            }
+            Debug.Assert(rangeSection.Data != null);
+
             if (!rangeSection.IsCodeHeap)
-            {
                 throw new InvalidOperationException("RangeSection is not a code heap");
-            }
+
             TargetPointer heapListAddress = rangeSection.Data.HeapList;
             Data.CodeHeapListNode heapListNode = Target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(heapListAddress);
             return _nibbleMap.FindMethodCode(heapListNode, jittedCodeAddress);
         }
-
     }
 }

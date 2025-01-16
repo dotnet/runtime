@@ -50,10 +50,6 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
 #endif
@@ -7928,7 +7924,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
             CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
-            if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+            if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
             {
                 result = INLINE_FAIL;
                 szFailReason = "ReJIT methods cannot be inlined.";
@@ -8131,7 +8127,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                 CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
                 CodeVersionManager::LockHolder codeVersioningLockHolder;
                 ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
-                if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+                if (ilVersion.GetRejitState() != RejitFlags::kStateActive || !ilVersion.HasDefaultIL())
                 {
                     shouldCallReJIT = TRUE;
                     modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
@@ -8204,7 +8200,7 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
         if (!pCaller->IsNoMetadata())
         {
-            // Do not tailcall from methods that are marked as noinline (people often use no-inline
+            // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
             // to mean "I want to always see this method in stacktrace")
             DWORD dwImplFlags = 0;
             IfFailThrow(pCaller->GetMDImport()->GetMethodImplProps(callerToken, NULL, &dwImplFlags));
@@ -8212,9 +8208,12 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
             if (IsMiNoInlining(dwImplFlags))
             {
                 result = false;
-                szFailReason = "Caller is marked as no inline";
+                szFailReason = "Caller is marked as NoInlining";
                 goto exit;
             }
+
+            // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+            // to emit fast tail calls if optimizations are disabled.
         }
 
         // Methods with StackCrawlMark depend on finding their caller on the stack.
@@ -10210,26 +10209,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
-const char16_t * CEEInfo::getJitTimeLogFilename()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    LPCWSTR result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-    result = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitTimeLogFile);
-    EE_TO_JIT_TRANSITION();
-
-    return (const char16_t *)result;
-}
-
-
-
-    // Return details about EE internal data structures
+// Return details about EE internal data structures
 uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
 {
     CONTRACTL {
@@ -10965,12 +10945,6 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
-
-#ifdef FEATURE_INTERPRETER
-    // TODO: the InterpterCEEInfo doesn't support features about W^X.
-    // see also #53173
-    if (m_pCodeHeap == nullptr) return;
-#endif
 
     WriteCodeBytes();
 
@@ -12507,34 +12481,6 @@ void CEEJitInfo::getEHinfo(
     EE_TO_JIT_TRANSITION();
 }
 
-
-
-
-#ifdef FEATURE_INTERPRETER
-static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
-                                                      CEEInfo *comp,
-                                                      struct CORINFO_METHOD_INFO *info,
-                                                      unsigned flags,
-                                                      BYTE **nativeEntry,
-                                                      uint32_t *nativeSizeOfCode)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-    SString namespaceOrClassName, methodName, methodSignature;
-    // Fire an ETW event to mark the beginning of JIT'ing
-    ETW::MethodLog::MethodJitting(reinterpret_cast<MethodDesc*>(info->ftn), NULL, &namespaceOrClassName, &methodName, &methodSignature);
-
-    CorJitResult ret = jitMgr->m_jit->compileMethod(comp, info, flags, nativeEntry, nativeSizeOfCode);
-
-    // Logically, it would seem that the end-of-JITting ETW even should go here, but it must come after the native code has been
-    // set for the given method desc, which happens in a caller.
-
-    return ret;
-}
-#endif // FEATURE_INTERPRETER
-
 //
 // Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE.
 //
@@ -12574,52 +12520,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #endif // defined(ALLOW_SXS_JIT)
     comp->setJitFlags(jitFlags);
 
-#ifdef FEATURE_INTERPRETER
-    static ConfigDWORD s_InterpreterFallback;
-    static ConfigDWORD s_ForceInterpreter;
-
-    bool isInterpreterStub   = false;
-    bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
-    bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
-
-    if (interpreterFallback == false)
-    {
-        // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
-        // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) &&
-            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
-        {
-            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
-            {
-                isInterpreterStub = true;
-            }
-        }
-    }
-
-    if (FAILED(ret) && jitMgr->m_jit)
-    {
-        ret = CompileMethodWithEtwWrapper(jitMgr,
-                                          comp,
-                                          info,
-                                          CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
-                                          nativeEntry,
-                                          nativeSizeOfCode);
-    }
-
-    if (interpreterFallback == true)
-    {
-        // If we're doing an "import_only" compilation, it's for verification, so don't interpret.
-        // (We assume that importation is completely architecture-independent, or at least nearly so.)
-        if (FAILED(ret) &&
-            (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
-        {
-            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
-            {
-                isInterpreterStub = true;
-            }
-        }
-    }
-#else
     if (FAILED(ret))
     {
         ret = jitMgr->m_jit->compileMethod( comp,
@@ -12628,7 +12528,6 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
                                             nativeEntry,
                                             nativeSizeOfCode);
     }
-#endif // FEATURE_INTERPRETER
 
     // Cleanup any internal data structures allocated
     // such as IL code after a successful JIT compile
@@ -12639,21 +12538,12 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     {
         ((CEEJitInfo*)comp)->CompressDebugInfo();
 
-#ifdef FEATURE_INTERPRETER
-        // We do this cleanup in the prestub, where we know whether the method
-        // has been interpreted.
-#else
         comp->MethodCompileComplete(info->ftn);
-#endif // FEATURE_INTERPRETER
     }
 
 
 #if defined(FEATURE_GDBJIT)
     bool isJittedEntry = SUCCEEDED(ret) && *nativeEntry != NULL;
-
-#ifdef FEATURE_INTERPRETER
-    isJittedEntry &= !isInterpreterStub;
-#endif // FEATURE_INTERPRETER
 
     if (isJittedEntry)
     {
@@ -12726,8 +12616,8 @@ CorJitResult invokeCompileMethod(EEJitManager *jitMgr,
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
          }
 
-         // Always emit frames for methods marked no-inline (see #define ETW_EBP_FRAMED in the JIT)
-         if (IsMiNoInlining(dwImplFlags))
+         // Always emit frames for methods marked NoInlining or NoOptimization (see #define ETW_EBP_FRAMED in the JIT)
+         if (IsMiNoInlining(dwImplFlags) || IsMiNoOptimization(dwImplFlags))
          {
              flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FRAMED);
          }
@@ -12939,7 +12829,7 @@ BOOL g_fAllowRel32 = TRUE;
 // The reason that this is named UnsafeJitFunction is that this helper
 // method is not thread safe!  When multiple threads get in here for
 // the same pMD, ALL of them MUST return the SAME value.
-// To insure that this happens you must call MakeJitWorker.
+// To ensure that this happens you must call MakeJitWorker.
 // It creates a DeadlockAware list of methods being jitted and prevents us
 // from trying to jit the same method more that once.
 //

@@ -269,6 +269,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_R4            0x00000800
 #define PTFF_SAVE_R5            0x00001000
 #define PTFF_SAVE_ALL_PRESERVED 0x000001FF // NOTE: r23-r31
+#define PTFF_THREAD_HIJACK_HI   0x00000002 // upper 32 bits of the PTFF_THREAD_HIJACK
 
 #define DEFAULT_FRAME_SAVE_FLAGS (PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP)
 
@@ -309,7 +310,7 @@ C_FUNC(\Name):
 .endm
 
 // Bit position for the flags above, to be used with bstrpick.d+beq/bne instructions
-#define PTFF_THREAD_ABORT_BIT 35
+#define PTFF_THREAD_ABORT_BIT 31
 
 //
 // CONSTANTS -- INTEGER

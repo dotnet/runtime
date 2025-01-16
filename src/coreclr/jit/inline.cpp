@@ -1765,7 +1765,7 @@ bool InlineStrategy::IsInliningDisabled()
 #if defined(DEBUG)
 
     static ConfigMethodRange range;
-    const WCHAR*             noInlineRange = JitConfig.JitNoInlineRange();
+    const char*              noInlineRange = JitConfig.JitNoInlineRange();
 
     if (noInlineRange == nullptr)
     {
@@ -1776,9 +1776,9 @@ bool InlineStrategy::IsInliningDisabled()
     // number of spaces in our config string to see if there are
     // more. Number of ranges we need is 2x that value.
     unsigned entryCount = 1;
-    for (const WCHAR* p = noInlineRange; *p != 0; p++)
+    for (const char* p = noInlineRange; *p != 0; p++)
     {
-        if (*p == L' ')
+        if (*p == ' ')
         {
             entryCount++;
         }

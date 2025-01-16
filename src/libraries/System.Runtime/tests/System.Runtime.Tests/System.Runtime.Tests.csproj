@@ -28,6 +28,10 @@
     <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+    <OverrideDefaultValueAndDesignerHostSupport>true</OverrideDefaultValueAndDesignerHostSupport>
+  </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
