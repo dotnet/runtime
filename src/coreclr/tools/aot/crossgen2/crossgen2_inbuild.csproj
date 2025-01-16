@@ -12,6 +12,14 @@
     -->
     <PublishAot Condition="$(NETCoreSdkPortableRuntimeIdentifier.StartsWith('win-'))">true</PublishAot>
     <PublishSingleFile Condition="'$(PublishAot)' != 'true'">true</PublishSingleFile>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(CrossBuild)' == 'true' and '$(StageOneBuild)' != 'true' and '$(StageTwoBuild)' != 'true'">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
+  </PropertyGroup>
+
   <Import Project="crossgen2.props" />
+
 </Project>
