@@ -4141,11 +4141,17 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             if (!isBoxedStatic && (lclTyp == TYP_REF) && ((access & CORINFO_ACCESS_GET) != 0) &&
                 ((*pIndirFlags & GTF_IND_VOLATILE) == 0))
             {
-                bool isSpeculative = true;
-                if ((info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative) !=
-                     NO_CLASS_HANDLE))
+                bool                 isSpeculative = true;
+                CORINFO_CLASS_HANDLE classHandle =
+                    info.compCompHnd->getStaticFieldCurrentClass(pResolvedToken->hField, &isSpeculative);
+                if (classHandle != NO_CLASS_HANDLE)
                 {
                     isStaticReadOnlyInitedRef = !isSpeculative;
+                    unsigned attribs          = info.compCompHnd->getClassAttribs(classHandle);
+                    if ((attribs & CORINFO_FLG_DELEGATE) != 0)
+                    {
+                        indirFlags |= GTF_IND_DELEGATE;
+                    }
                 }
             }
 #endif // TARGET_64BIT
@@ -12531,7 +12537,9 @@ void Compiler::impFixPredLists()
 //
 bool Compiler::impIsInvariant(const GenTree* tree)
 {
-    return tree->OperIsConst() || impIsAddressInLocal(tree) || tree->OperIs(GT_FTN_ADDR);
+    return tree->OperIsConst() || impIsAddressInLocal(tree) || tree->OperIs(GT_FTN_ADDR) ||
+           (tree->OperIs(GT_IND) && tree->AsIndir()->IsInvariantLoad() &&
+            ((tree->AsIndir()->gtFlags & (GTF_SIDE_EFFECT | GTF_IND_DELEGATE)) == GTF_IND_DELEGATE));
 }
 
 //------------------------------------------------------------------------
