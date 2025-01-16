@@ -482,6 +482,11 @@ HRESULT CeeFileGenWriter::getFileTimeStamp(DWORD *pTimeStamp)
     return getPEWriter().getFileTimeStamp(pTimeStamp);
 } // HRESULT CeeFileGenWriter::getFileTimeStamp()
 
+void CeeFileGenWriter::setFileHeaderTimeStamp(DWORD timeStamp)
+{
+    return getPEWriter().setFileHeaderTimeStamp(timeStamp);
+} // void CeeFileGenWriter::setFileHeaderTimeStamp()
+
 HRESULT CeeFileGenWriter::setAddrReloc(UCHAR *instrAddr, DWORD value)
 {
     *(DWORD *)instrAddr = VAL32(value);

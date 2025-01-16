@@ -77,6 +77,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->

@@ -1510,6 +1510,11 @@ HRESULT PEWriter::getFileTimeStamp(DWORD *pTimeStamp)
     return S_OK;
 }
 
+void PEWriter::setFileHeaderTimeStamp(DWORD timeStamp)
+{
+    m_ntHeaders->FileHeader.TimeDateStamp = timeStamp;
+}
+
 DWORD PEWriter::getImageBase32()
 {
     _ASSERTE(isPE32());
