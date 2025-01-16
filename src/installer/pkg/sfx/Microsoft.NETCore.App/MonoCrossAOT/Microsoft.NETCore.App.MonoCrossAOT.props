@@ -9,6 +9,7 @@
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     <AotCompilerFileName>mono-aot-cross$(ExeSuffix)</AotCompilerFileName>
     <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
+    <PackageReadmeFilePath>../PACKAGE.md</PackageReadmeFilePath>
   </PropertyGroup>
 
   <ItemGroup>
