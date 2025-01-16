@@ -7,7 +7,7 @@ using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
-    public static unsafe partial class Vector
+    public static partial class Vector
     {
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>

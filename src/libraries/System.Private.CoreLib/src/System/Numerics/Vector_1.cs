@@ -28,7 +28,7 @@ namespace System.Numerics
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(VectorDebugView<>))]
-    public readonly unsafe struct Vector<T> : ISimdVector<Vector<T>, T>, IFormattable
+    public readonly struct Vector<T> : ISimdVector<Vector<T>, T>, IFormattable
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
         internal readonly ulong _00;
@@ -134,7 +134,7 @@ namespace System.Numerics
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public static int Count
+        public static unsafe int Count
         {
             [Intrinsic]
             get
@@ -979,15 +979,15 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.Load(T* source) => Vector.Load(source);
+        static unsafe Vector<T> ISimdVector<Vector<T>, T>.Load(T* source) => Vector.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
         [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.LoadAligned(T* source) => Vector.LoadAligned(source);
+        static unsafe Vector<T> ISimdVector<Vector<T>, T>.LoadAligned(T* source) => Vector.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.LoadAlignedNonTemporal(T* source) => Vector.LoadAlignedNonTemporal(source);
+        static unsafe Vector<T> ISimdVector<Vector<T>, T>.LoadAlignedNonTemporal(T* source) => Vector.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         [Intrinsic]
@@ -1079,15 +1079,15 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         [Intrinsic]
-        static void ISimdVector<Vector<T>, T>.Store(Vector<T> source, T* destination) => source.Store(destination);
+        static unsafe void ISimdVector<Vector<T>, T>.Store(Vector<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
         [Intrinsic]
-        static void ISimdVector<Vector<T>, T>.StoreAligned(Vector<T> source, T* destination) => source.StoreAligned(destination);
+        static unsafe void ISimdVector<Vector<T>, T>.StoreAligned(Vector<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         [Intrinsic]
-        static void ISimdVector<Vector<T>, T>.StoreAlignedNonTemporal(Vector<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
+        static unsafe void ISimdVector<Vector<T>, T>.StoreAlignedNonTemporal(Vector<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         [Intrinsic]
@@ -1132,7 +1132,7 @@ namespace System.Numerics
 
         static bool ISimdVector<Vector<T>, T>.Any(Vector<T> vector, T value) => Vector.EqualsAny(vector, Vector.Create(value));
 
-        static int ISimdVector<Vector<T>, T>.IndexOfLastMatch(Vector<T> vector)
+        static unsafe int ISimdVector<Vector<T>, T>.IndexOfLastMatch(Vector<T> vector)
         {
             if (sizeof(Vector<T>) == 64)
             {

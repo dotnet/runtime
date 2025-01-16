@@ -29,7 +29,7 @@ namespace System.Runtime.Intrinsics
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector128DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector128.Size)]
-    public readonly unsafe struct Vector128<T> : ISimdVector<Vector128<T>, T>
+    public readonly struct Vector128<T> : ISimdVector<Vector128<T>, T>
     {
         internal readonly Vector64<T> _lower;
         internal readonly Vector64<T> _upper;
@@ -44,7 +44,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector128{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        public static int Count
+        public static unsafe int Count
         {
             [Intrinsic]
             get
@@ -630,15 +630,15 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.Load(T* source) => Vector128.Load(source);
+        static unsafe Vector128<T> ISimdVector<Vector128<T>, T>.Load(T* source) => Vector128.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
         [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.LoadAligned(T* source) => Vector128.LoadAligned(source);
+        static unsafe Vector128<T> ISimdVector<Vector128<T>, T>.LoadAligned(T* source) => Vector128.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.LoadAlignedNonTemporal(T* source) => Vector128.LoadAlignedNonTemporal(source);
+        static unsafe Vector128<T> ISimdVector<Vector128<T>, T>.LoadAlignedNonTemporal(T* source) => Vector128.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         [Intrinsic]
@@ -730,15 +730,15 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         [Intrinsic]
-        static void ISimdVector<Vector128<T>, T>.Store(Vector128<T> source, T* destination) => source.Store(destination);
+        static unsafe void ISimdVector<Vector128<T>, T>.Store(Vector128<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
         [Intrinsic]
-        static void ISimdVector<Vector128<T>, T>.StoreAligned(Vector128<T> source, T* destination) => source.StoreAligned(destination);
+        static unsafe void ISimdVector<Vector128<T>, T>.StoreAligned(Vector128<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         [Intrinsic]
-        static void ISimdVector<Vector128<T>, T>.StoreAlignedNonTemporal(Vector128<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
+        static unsafe void ISimdVector<Vector128<T>, T>.StoreAlignedNonTemporal(Vector128<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         [Intrinsic]
