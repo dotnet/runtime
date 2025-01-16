@@ -532,3 +532,6 @@ End
 Crst PerfMap
     AcquiredAfter CodeVersioning AssemblyList
 End
+
+Crst InterfaceDispatchGlobalLists
+End

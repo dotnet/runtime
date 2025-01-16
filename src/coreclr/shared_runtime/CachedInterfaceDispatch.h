@@ -49,7 +49,8 @@ struct InterfaceDispatchCache
 bool InterfaceDispatch_Initialize();
 PCODE InterfaceDispatch_UpdateDispatchCellCache(InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo);
 void InterfaceDispatch_ReclaimUnusedInterfaceDispatchCaches();
-PCODE InterfaceDispatch_SearchDispatchCellCache(InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
+
+inline PCODE InterfaceDispatch_SearchDispatchCellCache(InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
 {
     // This function must be implemented in native code so that we do not take a GC while walking the cache
     InterfaceDispatchCache * pCache = (InterfaceDispatchCache*)pCell->GetCache();

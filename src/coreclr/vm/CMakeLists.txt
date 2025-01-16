@@ -1,10 +1,13 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(SHARED_RUNTIME_DIR ../shared_runtime)
+
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
 include_directories(${CLR_SRC_NATIVE_DIR})
+include_directories(${SHARED_RUNTIME_DIR})
 
 # needed when zLib compression is used
 include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
@@ -40,6 +43,8 @@ if(FEATURE_PERFTRACING)
     set(CORECLR_USEREVENTS_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/userevents)
     include_directories(${CORECLR_USEREVENTS_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
+
+add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
@@ -285,6 +290,8 @@ set(GC_HEADERS_DAC
 
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
+    ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
+    CachedInterfaceDispatchCoreclr.cpp
     appdomainnative.cpp
     assemblynative.cpp
     assemblyspec.cpp
@@ -659,6 +666,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     )
 endif()
 
+    set(ASM_SUFFIX asm)
 else(CLR_CMAKE_TARGET_WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -723,8 +731,13 @@ else(CLR_CMAKE_TARGET_WIN32)
         )
     endif()
 
+    set(ASM_SUFFIX S)
 endif(CLR_CMAKE_TARGET_WIN32)
 
+set(VM_SOURCES_WKS_ARCH_ASM
+    ${VM_SOURCES_WKS_ARCH_ASM}
+    ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
+)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH

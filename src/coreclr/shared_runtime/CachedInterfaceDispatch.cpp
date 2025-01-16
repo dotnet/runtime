@@ -243,10 +243,9 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
 {
     if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
     {
-        ASSERT(pNewCellInfo->VTableOffset < InterfaceDispatchCell::IDC_MaxVTableOffsetPlusOne);
         *ppStub = (void *)&RhpVTableOffsetDispatch;
-        ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->VTableOffset));
-        return pNewCellInfo->VTableOffset;
+        ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->GetVTableOffset()));
+        return pNewCellInfo->GetVTableOffset();
     }
 
     ASSERT((cCacheEntries >= 1) && (cCacheEntries <= CID_MAX_CACHE_SIZE));

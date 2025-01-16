@@ -15,6 +15,8 @@
 
 #include "common.h"
 #include "array.h"
+#include "CachedInterfaceDispatchPal.h"
+#include "CachedInterfaceDispatch.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -1262,6 +1264,126 @@ ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCa
 }
 #endif // CHAIN_LOOKUP
 
+PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(protectedObj != NULL);
+        PRECONDITION(*protectedObj != NULL);
+        PRECONDITION(IsProtectedByGCFrame(protectedObj));
+    } CONTRACTL_END;
+
+    MethodTable* objectType = (*protectedObj)->GetMethodTable();
+    CONSISTENCY_CHECK(CheckPointer(objectType));
+
+    PCODE target = (PCODE)NULL;
+    BOOL patch = VirtualCallStubManager::Resolver(objectType, token, protectedObj, &target, TRUE /* throwOnConflict */);
+
+#if defined(_DEBUG)
+    if (!objectType->IsComObjectType()
+        && !objectType->IsIDynamicInterfaceCastable())
+    {
+        CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
+    }
+#endif // _DEBUG
+
+    if (patch)
+    {
+        DispatchCellInfo cellInfo = ((InterfaceDispatchCell*)pCallSite->GetIndirectCell())->GetDispatchCellInfo();
+        InterfaceDispatch_UpdateDispatchCellCache((InterfaceDispatchCell*)pCallSite->GetIndirectCell(), target, objectType, &cellInfo);
+    }
+
+    return target;
+}
+
+/* Resolve to a method and return its address or NULL if there is none 
+   Our return value is the target address that control should continue to.  Our caller will
+   enter the target address as if a direct call with the original stack frame had been made from
+   the actual call site.  Hence our strategy is to either return a target address
+   of the actual method implementation, or the prestub if we cannot find the actual implementation.
+   If we are returning a real method address, we may patch the original cell site to point to different
+   stub. Note, if we encounter a method that hasn't been jitted
+   yet, we will return the prestub, which should cause it to be jitted and we will
+   be able to build the dispatching stub on a later call thru the call site.  If we encounter
+   any other kind of problem, rather than throwing an exception, we will also return the
+   prestub, unless we are unable to find the method at all, in which case we return NULL.
+   */
+extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
+                        InterfaceDispatchCell* indirectionCell)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(CheckPointer(pTransitionBlock));
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
+    StubDispatchFrame * pSDFrame = &frame;
+
+    PCODE returnAddress = pSDFrame->GetUnadjustedReturnAddress();
+
+    StubCallSite callSite((TADDR)indirectionCell, returnAddress);
+
+    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
+    _ASSERTE(protectedObj != NULL);
+    OBJECTREF pObj = *protectedObj;
+
+    PCODE target = (PCODE)NULL;
+
+    if (pObj == NULL) {
+        pSDFrame->SetForNullReferenceException();
+        pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        COMPlusThrow(kNullReferenceException);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        _ASSERTE(!"Throw returned");
+    }
+
+    pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
+    pSDFrame->SetFunction(indirectionCell->m_pMD);
+
+    pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    // For Virtual Delegates the m_siteAddr is a field of a managed object
+    // Thus we have to report it as an interior pointer,
+    // so that it is updated during a gc
+    GCPROTECT_BEGININTERIOR( *(callSite.GetIndirectCellAddress()) );
+
+    GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
+
+    target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, indirectionCell->m_token);
+
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
+
+    GCPROTECT_END();
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    pSDFrame->Pop(CURRENT_THREAD);
+
+    return target;
+}
 /* Resolve to a method and return its address or NULL if there is none.
    Our return value is the target address that control should continue to.  Our caller will
    enter the target address as if a direct call with the original stack frame had been made from

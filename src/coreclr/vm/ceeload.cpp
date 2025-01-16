@@ -42,6 +42,9 @@
 #include "threads.h"
 #include "nativeimage.h"
 
+#include "CachedInterfaceDispatchPal.h"
+#include "CachedInterfaceDispatch.h"
+
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
 #include "comcallablewrapper.h"

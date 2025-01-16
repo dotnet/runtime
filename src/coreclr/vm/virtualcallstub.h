@@ -387,6 +387,12 @@ private:
                                           size_t token,
                                           void *target);
 
+
+    // This can be used to find a target without needing the ability to throw
+    static BOOL TraceResolver(Object *pObj, DispatchToken token, TraceDestination *trace);
+
+public:
+
     //Given a dispatch token, an object and a method table, determine the
     //target address to go to.  The return value (BOOL) states whether this address
     //is cacheable or not.
@@ -396,10 +402,6 @@ private:
                          PCODE         * ppTarget,
                          BOOL          throwOnConflict);
 
-    // This can be used to find a target without needing the ability to throw
-    static BOOL TraceResolver(Object *pObj, DispatchToken token, TraceDestination *trace);
-
-public:
     // Return the MethodDesc corresponding to this token.
     static MethodDesc *GetRepresentativeMethodDescFromToken(DispatchToken token, MethodTable *pMT);
     static MethodDesc *GetInterfaceMethodDescFromToken(DispatchToken token);
