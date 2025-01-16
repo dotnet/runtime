@@ -1355,7 +1355,7 @@ namespace System.Threading
 
         void IThreadPoolWorkItem.Execute()
         {
-            Event workItem;
+            IOCompletionPollerEvent workItem;
             while (true)
             {
                 Debug.Assert(_queueProcessingStage == QueueProcessingStage.Scheduled);
