@@ -869,7 +869,9 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 
 #if defined(TARGET_AMD64)
     // Handle saturation logic for X64
-    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType))
+    // Let InstructionSet_AVX10v2 pass through since it can handle the saturation
+    if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType) && !varTypeIsSmall(dstType) &&
+        !comp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
     {
         // We should have filtered out float -> long conversion and
         // converted it to float -> double -> long conversion.
@@ -886,10 +888,8 @@ GenTree* Lowering::LowerCast(GenTree* tree)
         bool isV512Supported = false;
         /*The code below is to introduce saturating conversions on X86/X64.
         The C# equivalence of the code is given below -->
-
                 // Replace QNaN and SNaN with Zero
                 op1 = Avx512F.Fixup(op1, op1, Vector128.Create<long>(0x88), 0);
-
                 // Convert from double to long, replacing any values that were greater than or equal to MaxValue
         with MaxValue
                 // Values that were less than or equal to MinValue will already be MinValue
