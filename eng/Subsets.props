@@ -55,6 +55,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Make sure CoreCLR runtime packaging is not triggered when we are explicitly dealing with a mono runtime build. -->
+    <CoreCLRSupported Condition="'$(CoreCLRSupported)' != '' and '$(PrimaryRuntimeFlavor)' == 'Mono'">false</CoreCLRSupported>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
