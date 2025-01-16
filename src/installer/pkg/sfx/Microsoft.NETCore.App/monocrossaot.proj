@@ -8,23 +8,17 @@
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))">$(MonoAotTargets);iossimulator-x64;iossimulator-arm64;ios-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))">$(MonoAotTargets);maccatalyst-x64;maccatalyst-arm64</MonoAotTargets>
     <MonoAotTargets Condition="$(_MonoCrossAOTTargetOS.contains('+wasi+'))">$(MonoAotTargets);wasi-wasm</MonoAotTargets>
+    <SkipInstallersPackageReference>true</SkipInstallersPackageReference>
   </PropertyGroup>
 
   <ItemGroup>
-    <MonoAotTargetRids Include="$(MonoAotTargets.Split(';'))" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj" Build="false" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+android+'))" Include="android-x64;android-arm64;android-x86;android-arm" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+browser+'))" Include="browser-wasm" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+tvos+'))" Include="tvossimulator-x64;tvossimulator-arm64;tvos-arm64" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+ios+'))" Include="iossimulator-x64;iossimulator-arm64;ios-arm64" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+maccatalyst+'))" Include="maccatalyst-x64;maccatalyst-arm64" />
+    <MonoAotTargetRids Condition="$(_MonoCrossAOTTargetOS.contains('+wasi+'))" Include="wasi-wasm" />
+    <ProjectReference Include="@(MonoAotTargetRids->'$(MSBuildThisFileDirectory)/MonoCrossAOT/Microsoft.NETCore.App.MonoCrossAOT.%(Identity).sfxproj')" Properties="RealRuntimeBinDir=$(RuntimeBinDir)" />
   </ItemGroup>
 
-  <Target Name="BuildMonoCrossAllTargets" AfterTargets="Build">
-    <MSBuild Targets="BuildMonoCrossTarget"
-             Projects="$(MSBuildThisFileFullPath)"
-             BuildInParallel="true"
-             Properties="MonoAotTargetRid=%(MonoAotTargetRids.Identity);RealRuntimeBinDir=$(RuntimeBinDir)" />
-  </Target>
-
-  <Target Name="BuildMonoCrossTarget">
-    <MSBuild Targets="GenerateNuspec"
-             Projects="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.MonoCrossAOT.sfxproj"
-             Properties="TargetCrossRid=$(MonoAotTargetRid)" />
-  </Target>
 </Project>
