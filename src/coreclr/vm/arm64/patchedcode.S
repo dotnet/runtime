@@ -142,26 +142,70 @@ LOCAL_LABEL(ShadowUpdateEnd):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
     ldr  x12, LOCAL_LABEL(wbs_sw_ww_table)
-    cbz  x12, LOCAL_LABEL(CheckCardTable)
+    cbz  x12, LOCAL_LABEL(CheckCardTableBounds)
     add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
     ldrb w17, [x12]
-    cbnz x17, LOCAL_LABEL(CheckCardTable)
+    cbnz x17, LOCAL_LABEL(CheckCardTableBounds)
     mov  w17, #0xFF
     strb w17, [x12]
 #endif
 
-LOCAL_LABEL(CheckCardTable):
-    // Branch to Exit if the reference is not in the Gen0 heap
+LOCAL_LABEL(CheckCardTableBounds):
+    // Branch to Exit if the reference is not in the heap
     ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
     ldr  x17, LOCAL_LABEL(wbs_ephemeral_high)
     cmp  x15, x12
     ccmp x15, x17, #0x2, hs
     bhs  LOCAL_LABEL(Exit)
 
+    // Region Checks
+
+    // Check if using regions
+    ldr  x17, LOCAL_LABEL(wbs_region_to_generation_table)
+    cbz  x17, LOCAL_LABEL(CheckCardTable)
+
+    // Calculate region locations
+    ldr  w12, LOCAL_LABEL(wbs_region_shr)
+    lsr  x15, x15, x12
+    add  x15, x15, x17 // x15 = (RHS >> wbs_region_shr) + wbs_region_to_generation_table
+    lsr  x12, x14, x12
+    add  x12, x12, x17 // x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
+
+    // Check whether the region we're storing into is gen 0 - nothing to do in this case
+    ldrb w15, [x15]
+    cbz  w15, LOCAL_LABEL(Exit)
+
+    // Check this is going from old to young
+    ldrb w12, [x12]
+    cmp  w12, w17
+    bhs  LOCAL_LABEL(Exit)
+
+    // Bitwise write barriers only
+    ldr  w17, LOCAL_LABEL(wbs_region_use_bitwise_write_barrier)
+    cbz  w17, LOCAL_LABEL(CheckCardTable)
+
+    // Check if we need to update the card table
+    lsr x17, x14, 8
+    and x17, x17, 7
+    movz w15, 1
+    lsl w17, w15, w17  // w17 = 1 << (LHS >> 8 && 7)
+    ldr  x12, LOCAL_LABEL(wbs_card_table)
+    add  x15, x12, x14, lsr #11
+    ldrb w12, [x15]  // w12 = [(RHS >> 11) + g_card_table]
+    cmp  w12, w17
+    bne  LOCAL_LABEL(Exit)
+
+    // Update the card table
+    strb w17, [x15]
+    b  LOCAL_LABEL(CheckCardBundleTable)
+
+    // End of Region Checks
+
+LOCAL_LABEL(CheckCardTable):
     // Check if we need to update the card table
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
-    ldrb w12, [x15]
+    ldrb w12, [x15]  // w12 = [(RHS >> 11) + g_card_table]
     cmp  x12, 0xFF
     beq  LOCAL_LABEL(Exit)
 
@@ -169,6 +213,7 @@ LOCAL_LABEL(CheckCardTable):
     mov  x12, 0xFF
     strb w12, [x15]
 
+LOCAL_LABEL(CheckCardBundleTable):
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     // Check if we need to update the card bundle table
     ldr  x12, LOCAL_LABEL(wbs_card_bundle_table)
@@ -208,6 +253,12 @@ LOCAL_LABEL(wbs_lowest_address):
     .quad 0
 LOCAL_LABEL(wbs_highest_address):
     .quad 0
+LOCAL_LABEL(wbs_region_to_generation_table):
+    .quad 0
+LOCAL_LABEL(wbs_region_shr):
+    .word 0
+LOCAL_LABEL(wbs_region_use_bitwise_write_barrier):
+    .word 0
 #ifdef WRITE_BARRIER_CHECK
 LOCAL_LABEL(wbs_GCShadow):
     .quad 0
