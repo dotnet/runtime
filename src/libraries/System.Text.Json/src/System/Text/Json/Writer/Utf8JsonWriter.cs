@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.ComponentModel;
 
 namespace System.Text.Json
 {
@@ -38,12 +37,13 @@ namespace System.Text.Json
         // A special value for JsonTokenType that lets the writer keep track of string segments.
         private const JsonTokenType StringSegmentSentinel = (JsonTokenType)255;
 
-        // Masks and flags for the length and encoding of the partial code point
-        private const byte PartialCodePointLengthMask =         0b000_000_11;
-        private const byte PartialCodePointEncodingMask =       0b000_111_00;
+        // Masks and flags for the length and encoding of the partial string data.
+        private const byte PartialStringDataLengthMask =            0b000_000_11;
+        private const byte PartialStringDataEncodingMask =          0b000_111_00;
 
-        private const byte PartialCodePointUtf8EncodingFlag =   0b000_001_00;
-        private const byte PartialCodePointUtf16EncodingFlag =  0b000_010_00;
+        private const byte PartialStringDataUtf8EncodingFlag =      0b000_001_00;
+        private const byte PartialStringDataUtf16EncodingFlag =     0b000_010_00;
+        private const byte PartialStringDataBase64EncodingFlag =    0b000_100_00;
 
         private IBufferWriter<byte>? _output;
         private Stream? _stream;
@@ -57,15 +57,15 @@ namespace System.Text.Json
         private BitStack _bitStack;
 
         /// <summary>
-        /// This 3-byte array stores the partial code point leftover when writing a string value
+        /// This 3-byte array stores the partial string data leftover when writing a string value
         /// segment that is split across multiple segment write calls.
         /// </summary>
 #if !NET
-        private byte[]? _partialCodePoint;
-        private Span<byte> PartialCodePointRaw => _partialCodePoint ??= new byte[3];
+        private byte[]? _partialStringData;
+        private Span<byte> PartialStringDataRaw => _partialStringData ??= new byte[3];
 #else
-        private Inline3ByteArray _partialCodePoint;
-        private Span<byte> PartialCodePointRaw => _partialCodePoint;
+        private Inline3ByteArray _partialStringData;
+        private Span<byte> PartialStringDataRaw => _partialStringData;
 
         [InlineArray(3)]
         private struct Inline3ByteArray
@@ -75,11 +75,11 @@ namespace System.Text.Json
 #endif
 
         /// <summary>
-        /// Stores the length and encoding of the partial code point. Outside of segment writes, this value is 0.
+        /// Stores the length and encoding of the partial string data. Outside of segment writes, this value is 0.
         /// Across segment writes, this value is always non-zero even if the length is 0, to indicate the encoding of the segment.
         /// This allows detection of encoding changes across segment writes.
         /// </summary>
-        private byte _partialCodePointFlags;
+        private byte _partialStringDataFlags;
 
         // The highest order bit of _currentDepth is used to discern whether we are writing the first item in a list or not.
         // if (_currentDepth >> 31) == 1, add a list separator before writing the item
@@ -128,68 +128,96 @@ namespace System.Text.Json
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
 
         /// <summary>
-        /// Length of the partial code point.
+        /// Length of the partial string data.
         /// </summary>
-        private byte PartialCodePointLength
+        private byte PartialStringDataLength
         {
-            get => (byte)(_partialCodePointFlags & PartialCodePointLengthMask);
-            set => _partialCodePointFlags = (byte)((_partialCodePointFlags & ~PartialCodePointLengthMask) | (byte)value);
+            get => (byte)(_partialStringDataFlags & PartialStringDataLengthMask);
+            set => _partialStringDataFlags = (byte)((_partialStringDataFlags & ~PartialStringDataLengthMask) | value);
         }
 
         /// <summary>
         /// The partial UTF-8 code point.
         /// </summary>
-        private ReadOnlySpan<byte> PartialUtf8CodePoint
+        private ReadOnlySpan<byte> PartialUtf8StringData
         {
             get
             {
                 Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf8);
 
-                ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
-                Debug.Assert(partialCodePointBytes.Length == 3);
+                ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
+                Debug.Assert(partialStringDataBytes.Length == 3);
 
-                byte length = PartialCodePointLength;
+                byte length = PartialStringDataLength;
                 Debug.Assert(length < 4);
 
-                return partialCodePointBytes.Slice(0, length);
+                return partialStringDataBytes.Slice(0, length);
             }
 
             set
             {
                 Debug.Assert(value.Length <= 3);
 
-                Span<byte> partialCodePointBytes = PartialCodePointRaw;
+                Span<byte> partialStringDataBytes = PartialStringDataRaw;
 
-                value.CopyTo(partialCodePointBytes);
-                PartialCodePointLength = (byte)value.Length;
+                value.CopyTo(partialStringDataBytes);
+                PartialStringDataLength = (byte)value.Length;
             }
         }
 
         /// <summary>
         /// The partial UTF-16 code point.
         /// </summary>
-        private ReadOnlySpan<char> PartialUtf16CodePoint
+        private ReadOnlySpan<char> PartialUtf16StringData
         {
             get
             {
                 Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf16);
 
-                ReadOnlySpan<byte> partialCodePointBytes = PartialCodePointRaw;
-                Debug.Assert(partialCodePointBytes.Length == 3);
+                ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
+                Debug.Assert(partialStringDataBytes.Length == 3);
 
-                byte length = PartialCodePointLength;
+                byte length = PartialStringDataLength;
                 Debug.Assert(length is 2 or 0);
 
-                return MemoryMarshal.Cast<byte, char>(partialCodePointBytes.Slice(0, length));
+                return MemoryMarshal.Cast<byte, char>(partialStringDataBytes.Slice(0, length));
             }
             set
             {
                 Debug.Assert(value.Length <= 1);
 
-                Span<byte> partialCodePointBytes = PartialCodePointRaw;
+                Span<byte> partialStringDataBytes = PartialStringDataRaw;
 
-                value.CopyTo(MemoryMarshal.Cast<byte, char>(partialCodePointBytes));
-                PartialCodePointLength = (byte)(2 * value.Length);
+                value.CopyTo(MemoryMarshal.Cast<byte, char>(partialStringDataBytes));
+                PartialStringDataLength = (byte)(2 * value.Length);
+            }
+        }
+
+        /// <summary>
+        /// The partial base64 data.
+        /// </summary>
+        private ReadOnlySpan<byte> PartialBase64StringData
+        {
+            get
+            {
+                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Base64);
+
+                ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
+                Debug.Assert(partialStringDataBytes.Length == 3);
+
+                byte length = PartialStringDataLength;
+                Debug.Assert(length < 3);
+
+                return partialStringDataBytes.Slice(0, length);
+            }
+            set
+            {
+                Debug.Assert(value.Length < 3);
+
+                Span<byte> partialStringDataBytes = PartialStringDataRaw;
+
+                value.CopyTo(partialStringDataBytes);
+                PartialStringDataLength = (byte)value.Length;
             }
         }
 
@@ -198,18 +226,19 @@ namespace System.Text.Json
         /// </summary>
         private SegmentEncoding PreviousSegmentEncoding
         {
-            get => (SegmentEncoding)(_partialCodePointFlags & PartialCodePointEncodingMask);
-            set => _partialCodePointFlags = (byte)((_partialCodePointFlags & ~PartialCodePointEncodingMask) | (byte)value);
+            get => (SegmentEncoding)(_partialStringDataFlags & PartialStringDataEncodingMask);
+            set => _partialStringDataFlags = (byte)((_partialStringDataFlags & ~PartialStringDataEncodingMask) | (byte)value);
         }
 
         /// <summary>
-        /// Convenience enumeration to track the encoding of the partial code point. This must be kept in sync with the PartialCodePoint*Encoding flags.
+        /// Convenience enumeration to track the encoding of the partial string data. This must be kept in sync with the PartialStringData*Encoding flags.
         /// </summary>
         internal enum SegmentEncoding : byte
         {
             None = 0,
-            Utf8 = PartialCodePointUtf8EncodingFlag,
-            Utf16 = PartialCodePointUtf16EncodingFlag,
+            Utf8 = PartialStringDataUtf8EncodingFlag,
+            Utf16 = PartialStringDataUtf16EncodingFlag,
+            Base64 = PartialStringDataBase64EncodingFlag,
         }
 
         private Utf8JsonWriter()
@@ -390,8 +419,8 @@ namespace System.Text.Json
 
             _bitStack = default;
 
-            _partialCodePoint = default;
-            _partialCodePointFlags = default;
+            _partialStringData = default;
+            _partialStringDataFlags = default;
         }
 
         private void CheckNotDisposed()
@@ -433,12 +462,7 @@ namespace System.Text.Json
 #if NET
                     _stream.Write(_arrayBufferWriter.WrittenSpan);
 #else
-                    Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
-                    bool result = MemoryMarshal.TryGetArray(_arrayBufferWriter.WrittenMemory, out ArraySegment<byte> underlyingBuffer);
-                    Debug.Assert(result);
-                    Debug.Assert(underlyingBuffer.Offset == 0);
-                    Debug.Assert(_arrayBufferWriter.WrittenCount == underlyingBuffer.Count);
-                    _stream.Write(underlyingBuffer.Array, underlyingBuffer.Offset, underlyingBuffer.Count);
+                    _stream.Write(_arrayBufferWriter.WrittenMemory);
 #endif
 
                     BytesCommitted += _arrayBufferWriter.WrittenCount;
@@ -544,16 +568,7 @@ namespace System.Text.Json
                     _arrayBufferWriter.Advance(BytesPending);
                     BytesPending = 0;
 
-#if NET
                     await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
-#else
-                    Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
-                    bool result = MemoryMarshal.TryGetArray(_arrayBufferWriter.WrittenMemory, out ArraySegment<byte> underlyingBuffer);
-                    Debug.Assert(result);
-                    Debug.Assert(underlyingBuffer.Offset == 0);
-                    Debug.Assert(_arrayBufferWriter.WrittenCount == underlyingBuffer.Count);
-                    await _stream.WriteAsync(underlyingBuffer.Array, underlyingBuffer.Offset, underlyingBuffer.Count, cancellationToken).ConfigureAwait(false);
-#endif
 
                     BytesCommitted += _arrayBufferWriter.WrittenCount;
                     _arrayBufferWriter.Clear();

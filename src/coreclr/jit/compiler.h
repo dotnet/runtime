@@ -6276,7 +6276,6 @@ public:
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
-        unsigned* ordinals;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
@@ -8091,6 +8090,7 @@ public:
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
