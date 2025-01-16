@@ -168,7 +168,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-        if (length < 0 || !FitsIn<int>(length))
+        if ((length < 0) || (length > CORINFO_Array_MaxLength))
         {
             *reason = "[invalid array length]";
             return false;
@@ -178,14 +178,31 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
         var_types            type       = JITtype2varType(corType);
         ClassLayout*         elemLayout = type == TYP_STRUCT ? comp->typGetObjLayout(elemClsHnd) : nullptr;
+
         if (varTypeIsGC(type) || ((elemLayout != nullptr) && elemLayout->HasGCPtr()))
         {
             *reason = "[array contains gc refs]";
             return false;
         }
 
-        unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
-        classSize = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data) + elemSize * static_cast<unsigned>(length);
+        const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
+
+        if (CheckedOps::MulOverflows(elemSize, static_cast<unsigned>(length), CheckedOps::Unsigned))
+        {
+            *reason = "[overflow array length]";
+            return false;
+        }
+
+        const unsigned payloadSize = elemSize * static_cast<unsigned>(length);
+        const unsigned headerSize  = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
+
+        if (CheckedOps::AddOverflows(headerSize, payloadSize, CheckedOps::Unsigned))
+        {
+            *reason = "[overflow array length]";
+            return false;
+        }
+
+        classSize = headerSize + payloadSize;
     }
     else if (allocType == OAT_NEWOBJ)
     {
