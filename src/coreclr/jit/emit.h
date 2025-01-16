@@ -471,6 +471,7 @@ public:
         SetUseVEXEncoding(false);
         SetUseEvexEncoding(false);
         SetUseRex2Encoding(false);
+        SetUsePromotedEVEXEncoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;
@@ -793,7 +794,16 @@ protected:
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
         // For embedded rounding, EVEX.L'L semantic changes to indicate the rounding mode.
         // Multiple bits in _idEvexbContext are used to inform emitter to specially handle the EVEX.L'L bits.
-        unsigned _idEvexbContext : 2;
+        unsigned _idCustom5 : 1;
+        unsigned _idCustom6 : 1;
+
+#define _idEvexbContext                                                                                                \
+    (_idCustom6 << 1) | _idCustom5  /* Evex.b: embedded broadcast, embedded rounding, embedded SAE                     \
+                                     */
+#define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
+#define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+#define _idEvexDFV       (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
+
 #endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -1009,6 +1019,7 @@ protected:
                 regNumber _idReg3 : REGNUM_BITS;
                 regNumber _idReg4 : REGNUM_BITS;
             };
+
 #elif defined(TARGET_LOONGARCH64)
             struct
             {
@@ -1657,38 +1668,17 @@ protected:
 #ifdef TARGET_XARCH
         bool idIsEvexbContextSet() const
         {
-            return _idEvexbContext != 0;
+            return idGetEvexbContext() != 0;
         }
 
         void idSetEvexbContext(insOpts instOptions)
         {
             assert(!idIsEvexbContextSet());
+            assert(idGetEvexbContext() == 0);
+            unsigned value = static_cast<unsigned>(instOptions & INS_OPTS_EVEX_b_MASK);
 
-            switch (instOptions & INS_OPTS_EVEX_b_MASK)
-            {
-                case INS_OPTS_EVEX_eb_er_rd:
-                {
-                    _idEvexbContext = 1;
-                    break;
-                }
-
-                case INS_OPTS_EVEX_er_ru:
-                {
-                    _idEvexbContext = 2;
-                    break;
-                }
-
-                case INS_OPTS_EVEX_er_rz:
-                {
-                    _idEvexbContext = 3;
-                    break;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
+            _idCustom5 = ((value >> 0) & 1);
+            _idCustom6 = ((value >> 1) & 1);
         }
 
         unsigned idGetEvexbContext() const
@@ -1727,6 +1717,43 @@ protected:
         {
             assert(!idIsEvexZContextSet());
             _idEvexZContext = 1;
+        }
+
+        bool idIsEvexNdContextSet() const
+        {
+            return _idEvexNdContext != 0;
+        }
+
+        void idSetEvexNdContext()
+        {
+            assert(!idIsEvexNdContextSet());
+            _idEvexNdContext = 1;
+        }
+
+        bool idIsEvexNfContextSet() const
+        {
+            return _idEvexNfContext != 0;
+        }
+
+        void idSetEvexNfContext()
+        {
+            assert(!idIsEvexNfContextSet());
+            _idEvexNfContext = 1;
+        }
+
+        unsigned idGetEvexDFV() const
+        {
+            return _idEvexDFV;
+        }
+
+        void idSetEvexDFV(insOpts instOptions)
+        {
+            unsigned value = static_cast<unsigned>((instOptions & INS_OPTS_EVEX_dfv_MASK) >> 8);
+
+            _idCustom1 = ((value >> 0) & 1);
+            _idCustom2 = ((value >> 1) & 1);
+            _idCustom3 = ((value >> 2) & 1);
+            _idCustom4 = ((value >> 3) & 1);
         }
 #endif
 
@@ -2531,7 +2558,12 @@ private:
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
+
+#if defined(TARGET_XARCH)
+    regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src, regNumber targetReg = REG_NA);
+#else
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
+#endif
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
     void      emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem);
     void      emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem);
