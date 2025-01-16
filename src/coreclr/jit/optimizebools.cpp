@@ -1072,8 +1072,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->GetTrueEdge());
-    m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, m_b1->GetFalseEdge());
+    FlowEdge* const removedEdge  = m_b1->GetTrueEdge();
+    FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
+    m_comp->fgRemoveRefPred(removedEdge);
+    m_b1->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+
+    // Repair profile.
+    m_comp->fgRepairProfileCondToUncond(m_b1, retainedEdge, removedEdge);
 
     // Fixup flags.
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
