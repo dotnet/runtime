@@ -169,7 +169,7 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Thred.Sleep(milliseconds);
+                Thread.Sleep(milliseconds);
             }
         }
     }
