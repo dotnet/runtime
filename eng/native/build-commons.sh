@@ -54,11 +54,12 @@ build_native()
 
     targetOS="$1"
     hostArch="$2"
-    cmakeDir="$3"
-    intermediatesDir="$4"
-    target="$5"
-    cmakeArgs="$6"
-    message="$7"
+    runtimeFlavor="$3"
+    cmakeDir="$4"
+    intermediatesDir="$5"
+    target="$6"
+    cmakeArgs="$7"
+    message="$8"
 
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
@@ -80,10 +81,15 @@ build_native()
 
     if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         # Keep in sync with $(AndroidApiLevelMin) in Directory.Build.props in the repository rooot
-        local ANDROID_API_LEVEL=29
+        local ANDROID_API_LEVEL=21
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
+        fi
+
+        # API level 29 is the first to not have emulated TLS. CoreCLR lacks support for it, so we have to set API level 29 for now.
+        if [[ "$runtimeFlavor" == CoreCLR ]]; then
+            ANDROID_API_LEVEL=29
         fi
 
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"

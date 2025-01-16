@@ -28,6 +28,11 @@ handle_arguments() {
         staticliblink|-staticliblink)
             __StaticLibLink=1
             ;;
+        
+        runtimeflavor|-runtimeflavor)
+            __runtimeFlavor="$2"
+            __ShiftArgs=1
+            ;;
 
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
@@ -174,4 +179,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__TargetOS" "$__TargetArch" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"
+build_native "$__TargetOS" "$__TargetArch" "$__runtimeFlavor" "$__nativeroot" "$__IntermediatesDir" "install" "$__CMakeArgs" "native libraries component"
