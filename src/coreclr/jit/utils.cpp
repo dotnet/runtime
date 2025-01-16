@@ -282,14 +282,22 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-#ifdef FEATURE_MASKED_HW_INTRINSICS
+/*#ifdef FEATURE_MASKED_HW_INTRINSICS
+#if defined(TARGET_AMD64)
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST_STATIC)) ||
+#else
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+#endif
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
            ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
 #else
+#if defined(TARGET_AMD64)
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST_STATIC)) ||
+#else
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+#endif
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
-#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif */// FEATURE_MASKED_HW_INTRINSICS
 
     if (strlen(sep) > 0)
     {
@@ -431,8 +439,12 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
     const char* sep = "";
 
     printf("[");
-
+#if defined(TARGET_AMD64)
+    sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST_STATIC);
+#else
     sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
+#endif
+
     sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);

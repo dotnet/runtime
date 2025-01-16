@@ -188,6 +188,7 @@ void CodeGenInterface::CopyRegisterInfo()
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
     rbmAllInt         = compiler->rbmAllInt;
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
+    regIntLast        = compiler->regIntLast;
 #endif // TARGET_AMD64
 
     rbmAllMask        = compiler->rbmAllMask;

@@ -3393,6 +3393,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmAllInt         = RBM_ALLINT_INIT;
     rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH_INIT;
     cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
+    regIntLast = REG_R15;
 
     if (canUseEvexEncoding())
     {
@@ -3406,6 +3407,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
+        regIntLast = REG_R23;
     }
 #endif // TARGET_AMD64
 
