@@ -42,7 +42,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             return true;
         }
 
-        public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetPointer imageBase, TargetCodePointer jittedCodeAddress)
+        public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
             // TODO: This only works with funclets enabled. See runtime definition of RealCodeHeader for more info.
             if (rangeSection.IsRangeList)
@@ -71,6 +71,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
                 throw new InvalidOperationException("Unable to get NumUnwindInfos");
             }
 
+            ulong imageBase = rangeSection.Data.RangeBegin;
 
             for (ulong i = 0; i < numUnwindInfos; i++)
             {

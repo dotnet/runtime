@@ -94,7 +94,33 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
             return true;
         }
 
-        public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetPointer imageBase, TargetCodePointer jittedCodeAddress) => ~0ul;
+        public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        {
+            // ReadyToRunJitManager::JitCodeToMethodInfo
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            Debug.Assert(rangeSection.Data.R2RModule != TargetPointer.Null);
+
+            Data.Module r2rModule = Target.ProcessedData.GetOrAdd<Data.Module>(rangeSection.Data.R2RModule);
+            Debug.Assert(r2rModule.ReadyToRunInfo != TargetPointer.Null);
+            Data.ReadyToRunInfo r2rInfo = Target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(r2rModule.ReadyToRunInfo);
+
+            // Check if address is in a thunk
+            if (IsStubCodeBlockThunk(rangeSection.Data, r2rInfo, jittedCodeAddress))
+                return TargetPointer.Null;
+
+            // Find the relative address that we are looking for
+            TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetPointer imageBase = rangeSection.Data.RangeBegin;
+            TargetPointer relativeAddr = addr - imageBase;
+
+            uint index;
+            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(r2rInfo.RuntimeFunctions, r2rInfo.NumRuntimeFunctions, relativeAddr, out index))
+                return TargetPointer.Null;
+
+            return _runtimeFunctions.GetRuntimeFunctionAddress(r2rInfo.RuntimeFunctions, index);
+        }
 
         private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
         {

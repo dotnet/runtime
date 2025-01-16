@@ -69,9 +69,14 @@ internal sealed class RuntimeFunctionLookup
         }
     }
 
+    public TargetPointer GetRuntimeFunctionAddress(TargetPointer runtimeFunctions, uint index)
+    {
+        return runtimeFunctions + (index * _runtimeFunctionSize);
+    }
+
     public Data.RuntimeFunction GetRuntimeFunction(TargetPointer runtimeFunctions, uint index)
     {
-        TargetPointer addr = runtimeFunctions + (ulong)(index * _runtimeFunctionSize);
+        TargetPointer addr = GetRuntimeFunctionAddress(runtimeFunctions, index);
         return _target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(addr);
     }
 }

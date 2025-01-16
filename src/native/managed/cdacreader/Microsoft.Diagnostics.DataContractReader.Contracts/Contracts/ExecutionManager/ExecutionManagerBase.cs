@@ -65,7 +65,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
         }
 
         public abstract bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info);
-        public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetPointer imageBase, TargetCodePointer jittedCodeAddress);
+        public abstract TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress);
     }
 
     private sealed class RangeSection
@@ -203,6 +203,6 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
 
         JitManager jitManager = GetJitManager(range.Data);
 
-        return jitManager.GetUnwindInfo(range, ((IExecutionManager)this).GetModuleBaseAddress(codeInfoHandle), ip);
+        return jitManager.GetUnwindInfo(range, ip);
     }
 }
