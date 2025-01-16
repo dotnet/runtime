@@ -22,6 +22,7 @@
     <Compile Include="Fuzzers\Base64Fuzzer.cs" />
     <Compile Include="Fuzzers\Base64UrlFuzzer.cs" />
     <Compile Include="Fuzzers\HttpHeadersFuzzer.cs" />
+    <Compile Include="Fuzzers\IPAddressFuzzer.cs" />
     <Compile Include="Fuzzers\JsonDocumentFuzzer.cs" />
     <Compile Include="Fuzzers\NrbfDecoderFuzzer.cs" />
     <Compile Include="Fuzzers\SearchValuesByteCharFuzzer.cs" />
