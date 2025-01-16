@@ -1648,7 +1648,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SIMD64:
                 {
                     // Vector<T> is larger, so we should treat this as a call to the appropriate narrowing intrinsic
-                    intrinsic = simdSize == TYP_SIMD32 ? NI_Vector256_GetLower : NI_Vector512_GetLower128;
+                    intrinsic = simdSize == YMM_REGSIZE_BYTES ? NI_Vector256_GetLower : NI_Vector512_GetLower128;
 
                     return impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(&emptyEntryPoint), simdBaseJitType,
                                                retType, simdSize, mustExpand);
