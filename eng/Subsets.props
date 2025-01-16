@@ -307,11 +307,19 @@
     Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them.
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
-  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')) or $(_subset.Contains('+clr.crossarchtools+'))) and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != '')">
+  <PropertyGroup>
+    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
+    <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
+    <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
+    <_BuildHostIlTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</_BuildHostIlTools>
+    <_CrossToolProperties Condition="'$(_BuildCrossComponents)' == 'true'">$(_CrossToolProperties);ClrCrossComponentsSubset=true</_CrossToolProperties>
+    <_CrossToolProperties Condition="'$(_BuildHostIlTools)' == 'true'">$(_CrossToolProperties);ClrILToolsSubset=true</_CrossToolProperties>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_BuildAnyCrossArch)' == 'true' and '$(_CrossToolProperties)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
+      AdditionalProperties="%(AdditionalProperties);$(_CrossToolProperties);
                             HostArchitecture=$(BuildArchitecture);
                             HostCrossOS=$(HostOS);
                             PgoInstrument=false;
