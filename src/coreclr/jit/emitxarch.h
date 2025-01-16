@@ -10,11 +10,7 @@
 public:
 inline static bool isGeneralRegister(regNumber reg)
 {
-#ifdef TARGET_AMD64
-    return (reg <= REG_INT_LAST_STATIC);
-#else
     return (reg <= REG_INT_LAST);
-#endif
 }
 
 inline static bool isFloatReg(regNumber reg)
