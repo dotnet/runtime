@@ -58,6 +58,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Make sure CoreCLR runtime packaging is not triggered when we are explicitly dealing with a mono runtime build. -->
+    <CoreCLRSupported Condition="'$(CoreCLRSupported)' != '' and '$(PrimaryRuntimeFlavor)' == 'Mono'">false</CoreCLRSupported>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr+mono+libs+host+packs</DefaultSubsets>
