@@ -2243,6 +2243,19 @@ namespace Internal.JitInterface
 
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
+            // Interface optimization may be able to remove MethodTable of interfaces if they were never actually
+            // used to call/cast. Since getExactClasses can be called for things like "is a location of this
+            // type ever going to be non-null", we need to make sure the ability to optimize the interface MethodTable away
+            // doesn't lead to saying "this will always be null".
+            if (type.IsInterface)
+            {
+                if (_compilation.CanInterfaceOrCanonicalFormOfItBeImplementedByConstructedMethodTable(type)
+                    || (type != canonType && _compilation.CanInterfaceBeImplementedByConstructedMethodTable(canonType)))
+                {
+                    return false;
+                }
+            }
+
             // If we don't have a constructed MethodTable for the exact type or for its template,
             // this type or any of its subclasses can never be instantiated.
             return !_compilation.CanReferenceConstructedTypeOrCanonicalFormOfType(type)
