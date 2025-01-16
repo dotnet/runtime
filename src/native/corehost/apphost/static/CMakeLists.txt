@@ -46,9 +46,7 @@ set(HEADERS
     ../../fxr_resolver.h
 )
 
-# TODO: Android uses a separate System.Security.Cryptography lib that does not have 
-# the exported functions the singlefilehost expects. 
-# Figure out how that's going to work and turn this back on.
+# TODO: https://github.com/dotnet/runtime/issues/111491
 if (NOT CLR_CMAKE_TARGET_ANDROID)
     add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 endif()
