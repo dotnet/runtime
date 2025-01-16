@@ -275,6 +275,13 @@ SingleTypeRegSet LinearScan::lowSIMDRegs()
 #endif
 }
 
+//------------------------------------------------------------------------
+// lowGPRRegs(): Return the set of GPR registers associated with non APX
+// encoding only, i.e., remove the eGPR registers from the available
+// set.
+//
+// Return Value:
+// Register mask of non APX GPR registers.
 SingleTypeRegSet LinearScan::lowGPRRegs()
 {
 #if defined(TARGET_AMD64)
@@ -545,8 +552,9 @@ static const regMaskTP LsraLimitUpperSimdSet =
     (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
      RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
 static const regMaskTP LsraLimitExtGprSet =
-    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_R24 | RBM_R25 | RBM_R26 |
-     RBM_R27 | RBM_R28 | RBM_R29 | RBM_R30 | RBM_R31 | RBM_ETW_FRAMED_EBP);
+    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 /* | RBM_R24 | RBM_R25 | RBM_R26 |
+      RBM_R27 | RBM_R28 | RBM_R29 | RBM_R30 | RBM_R31*/
+     | RBM_ETW_FRAMED_EBP);
 #elif defined(TARGET_ARM)
 // On ARM, we may need two registers to set up the target register for a virtual call, so we need
 // to have at least the maximum number of arg registers, plus 2.
@@ -12417,9 +12425,6 @@ void LinearScan::verifyResolutionMove(GenTree* resolutionMove, LsraLocation curr
 LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 {
     this->linearScan = linearScan;
-#if defined(TARGET_AMD64)
-    rbmAllInt = linearScan->compiler->get_RBM_ALLINT();
-#endif // TARGET_AMD64
 
 #ifdef DEBUG
     mappingTable = new ScoreMappingTable(linearScan->compiler->getAllocator(CMK_LSRA));

@@ -3814,7 +3814,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 #endif // TARGET_XARCH
     int srcCount = 0;
     if (op1 != nullptr)
-    {        
+    {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
         if (op1->isContainedIndir() &&
@@ -3824,12 +3824,10 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
             srcCount += BuildOperandUses(op1, lowGPRRegs());
         }
         else
+#endif
         {
             srcCount += BuildOperandUses(op1, candidates);
         }
-#else
-        srcCount += BuildOperandUses(op1, candidates);
-#endif
     }
     if (op2 != nullptr)
     {
@@ -3898,14 +3896,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
 
     GenTree* op1 = storeLoc->gtGetOp1();
-    /* if (op1->isContained() && op1->OperIs(GT_BITCAST))
-    {
-        printf("\n Deepak BuildStoreLocDef ENTER: (int)varTypeUsesFloatReg(op1) = %d \n",
-               (int)varTypeUsesFloatReg(op1));
-
-        JitTls::GetCompiler()->gtDispTree(storeLoc, nullptr, nullptr, true);
-        printf("\n Deepak BuildStoreLocDef DONE: \n");
-    }*/
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);

@@ -1939,8 +1939,8 @@ private:
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree* tree, bool isGPR = false);
-    inline bool DoesThisUseGPR(GenTree* op);
+    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree* tree, SingleTypeRegSet candidates, bool isGPR = false);
+    inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
