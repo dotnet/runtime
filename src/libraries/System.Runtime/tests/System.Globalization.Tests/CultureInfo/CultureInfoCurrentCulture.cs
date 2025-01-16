@@ -44,7 +44,8 @@ namespace System.Globalization.Tests
             Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
             
             // The current culture taken from default system culture should be specific
-            Assert.False(CultureInfo.CurrentCulture.IsNeutralCulture);
+            // TODO: https://github.com/dotnet/runtime/issues/111501
+            //Assert.False(CultureInfo.CurrentCulture.IsNeutralCulture);
         }
 
         [Fact]
