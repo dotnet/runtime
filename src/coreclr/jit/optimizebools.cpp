@@ -866,6 +866,13 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     m_comp->fgRemoveRefPred(oldFalseEdge);
     m_comp->fgRemoveBlock(m_b2, true);
 
+    // Update profile
+    if (m_b1->hasProfileWeight())
+    {
+        m_b1->GetTrueTarget()->setBBProfileWeight(m_b1->GetTrueEdge()->getLikelyWeight());
+        m_b1->GetFalseTarget()->setBBProfileWeight(m_b1->GetFalseEdge()->getLikelyWeight());
+    }
+
     Statement* const stmt = m_b1->lastStmt();
     m_comp->gtSetStmtInfo(stmt);
     m_comp->fgSetStmtSeq(stmt);
@@ -1338,6 +1345,23 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Fix B1 false edge likelihood
         //
         newB1FalseEdge->setLikelihood(1.0 - newB1TrueLikelihood);
+
+        // Update profile
+        if (m_b1->hasProfileWeight())
+        {
+            auto setIncomingWeight = [](BasicBlock* block) {
+                weight_t incomingWeight = BB_ZERO_WEIGHT;
+                for (FlowEdge* const predEdge : block->PredEdges())
+                {
+                    incomingWeight += predEdge->getLikelyWeight();
+                }
+
+                block->setBBProfileWeight(incomingWeight);
+            };
+
+            setIncomingWeight(origB1TrueEdge->getDestinationBlock());
+            setIncomingWeight(newB1FalseEdge->getDestinationBlock());
+        }
     }
 
     // Get rid of the second block
