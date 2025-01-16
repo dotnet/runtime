@@ -116,7 +116,7 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+if(NOT FEATURE_NATIVEAOT_ONLY)
   add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 endif()
 
