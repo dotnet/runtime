@@ -1883,6 +1883,30 @@ bool emitter::HasMaskReg(const instrDesc* id) const
     return false;
 }
 
+//------------------------------------------------------------------------
+// AbsRegNumber: Returns the register value to be used for encoding.
+// JIT internally represents registers using regnumber 0 - (REG_STK-1).
+// For encoding, we need to separate out GPR, SIMD and K registers.
+//
+// Arguments:
+// reg -- The register being encoded.
+//
+// Return Value:
+// The register value to be used for encoding.
+regNumber AbsRegNumber(regNumber reg)
+{
+    assert(reg < REG_STK);
+    if ((reg >= XMMBASE) && (reg < KBASE))
+    {
+        reg = (regNumber)(reg - XMMBASE);
+    }
+    else if (reg >= KBASE)
+    {
+        reg = (regNumber)(reg - KBASE);
+    }
+    return reg;
+}
+
 // Returns true if using this register will require a REX.* prefix.
 // Since XMM registers overlap with YMM registers, this routine
 // can also be used to know whether a YMM register if the
@@ -1890,7 +1914,7 @@ bool emitter::HasMaskReg(const instrDesc* id) const
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
+    return ((reg >= REG_R8) && (reg <= REG_R23)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -1908,7 +1932,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
         return false;
     }
 
-    if ((reg >= REG_R16) && (reg <= REG_31))
+    if (isHighGPReg(reg))
     {
         // TODO-XArch-APX: Once eEVEX is supported, this should be 'if APX anabled machine'
         assert(UseRex2Encoding());
@@ -1984,14 +2008,14 @@ bool IsXMMReg(regNumber reg)
 unsigned HighAwareRegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
-    return (unsigned)(reg & 0xF);
+    return (unsigned)(AbsRegNumber(reg) & 0xF);
 }
 
 // Returns bits to be encoded in instruction for the given register.
 unsigned RegEncoding(regNumber reg)
 {
     static_assert((REG_XMM0 & 0x7) == 0, "bad XMMBASE");
-    return (unsigned)(reg & 0x7);
+    return (unsigned)(AbsRegNumber(reg) & 0x7);
 }
 
 // Utility routines that abstract the logic of adding REX.W, REX.R, REX.X, REX.B and REX prefixes
@@ -3614,11 +3638,11 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         {
             *code = AddRexXPrefix(id, *code); // EVEX.X
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexBPrefix(id, *code); // REX.B
         }
-        if (reg >= REG_R16 && reg <= REG_R31)
+        if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
             assert(TakesRex2Prefix(id));
@@ -3663,11 +3687,11 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
         {
             *code = AddEvexRPrimePrefix(*code); // EVEX.R'
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexRPrefix(id, *code); // REX.R
         }
-        if (reg >= REG_R16 && reg <= REG_R31)
+        if (IsExtendedGPReg(reg))
         {
             // seperate the encoding for REX2.R3/R4, REX2.R3 will be handled in `AddRexRPrefix`.
             assert(TakesRex2Prefix(id));
@@ -3774,11 +3798,11 @@ inline unsigned emitter::insEncodeRegSIB(const instrDesc* id, regNumber reg, cod
         {
             *code = AddEvexVPrimePrefix(*code); // EVEX.X
         }
-        if (reg & 0x8)
+        if (AbsRegNumber(reg) & 0x8)
         {
             *code = AddRexXPrefix(id, *code); // REX.X
         }
-        if (reg >= REG_R16 && reg <= REG_R31)
+        if (IsExtendedGPReg(reg))
         {
             // seperate the encoding for REX2.X3/X4, REX2.X3 will be handled in `AddRexXPrefix`.
             assert(TakesRex2Prefix(id));
@@ -4437,7 +4461,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12 || base == REG_R20 || base == REG_R28;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20 /*|| base == REG_R28*/;
 #else
     return base == REG_ESP;
 #endif
@@ -4446,7 +4470,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13 || base == REG_R21 || base == REG_R29;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21 /*|| base == REG_R29*/;
 #else
     return base == REG_EBP;
 #endif
@@ -5956,8 +5980,8 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     UNATIVE_OFFSET sz;
-    instrDesc*     id = emitNewInstrSmall(attr);
-    insFormat fmt = emitInsModeFormat(ins, IF_RRD);
+    instrDesc*     id  = emitNewInstrSmall(attr);
+    insFormat      fmt = emitInsModeFormat(ins, IF_RRD);
 
     id->idIns(ins);
     id->idInsFmt(fmt);

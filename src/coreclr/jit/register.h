@@ -62,15 +62,6 @@ REGDEF(R20,    20, 0x00100000, "r20"   )
 REGDEF(R21,    21, 0x00200000, "r21"   )
 REGDEF(R22,    22, 0x00400000, "r22"   )
 REGDEF(R23,    23, 0x00800000, "r23"   )
-REGDEF(R24,    24, 0x01000000, "r24"   )
-REGDEF(R25,    25, 0x02000000, "r25"   )
-REGDEF(R26,    26, 0x04000000, "r26"   )
-REGDEF(R27,    27, 0x08000000, "r27"   )
-REGDEF(R28,    28, 0x10000000, "r28"   )
-REGDEF(R29,    29, 0x20000000, "r29"   )
-REGDEF(R30,    30, 0x40000000, "r30"   )
-REGDEF(R31,    31, 0x80000000, "r31"   )
-
 
 REGALIAS(EAX, RAX)
 REGALIAS(ECX, RCX)
@@ -84,11 +75,11 @@ REGALIAS(EDI, RDI)
 #endif // !defined(TARGET_X86)
 
 #ifdef TARGET_AMD64
-#define XMMBASE 32
-#define XMMMASK(x) ((int64_t)(1) << ((x)+XMMBASE))
+#define XMMBASE 24
+#define XMMMASK(x) (1ULL << ((x)+XMMBASE))
 
-#define KBASE 64
-#define KMASK(x) ((int64_t)(1) << ((x)))
+#define KBASE 56
+#define KMASK(x) (1ULL << ((x)+KBASE))
 
 #else // !TARGET_AMD64
 #define XMMBASE 8

@@ -10017,6 +10017,15 @@ public:
     //
     bool canUseApxEncoding() const
     {
+        if (JitConfig.EnableAPX() == 0)
+        {
+            return false;
+        }
+
+        if (DoJitStressRex2Encoding())
+        {
+            return true;
+        }
         return compOpportunisticallyDependsOn(InstructionSet_APX);
     }
 
@@ -10065,7 +10074,7 @@ private:
     bool DoJitStressRex2Encoding() const
     {
 #ifdef DEBUG
-        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        if (JitConfig.JitStressRex2Encoding() || compOpportunisticallyDependsOn(InstructionSet_APX))
         {
             // we should make sure EVEX is also stressed when REX2 is stressed, as we will need to guarantee EGPR
             // functionality is properly turned on for every instructions when REX2 is stress.
@@ -10314,8 +10323,7 @@ public:
             // RBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
 #if defined(TARGET_AMD64)
             static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH_STATIC_ALL &
-                                  regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
-                                 RBM_NONE);
+                                  regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RBM_NONE);
 #else
             static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
                                  RBM_NONE);

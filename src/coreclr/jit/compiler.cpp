@@ -3401,7 +3401,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
 
-    if (canUseApxEncodings())
+    if (canUseApxEncoding())
     {
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
