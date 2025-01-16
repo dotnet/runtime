@@ -3552,10 +3552,13 @@ void emitter::emitDispInsName(
     const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
-    assert((opcode & 0x3) == 0x3);
+    assert((opcode & 0x3) == 0x3); // only 32-bit encodings supported
 
     emitDispInsAddr(insAdr);
     emitDispInsOffs(insOffset, doffs);
+
+    if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
+        printf("  %08X    ", code);
 
     printf("      ");
 
@@ -4547,33 +4550,6 @@ void emitter::emitDispInsName(
     NO_WAY("illegal ins within emitDisInsName!");
 }
 
-/*****************************************************************************
- *
- *  Display (optionally) the instruction encoding in hex
- */
-
-void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
-{
-    if (!emitComp->opts.disCodeBytes)
-    {
-        return;
-    }
-
-    // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable)
-    {
-        if (sz == 4)
-        {
-            printf("  %08X    ", (*((code_t*)code)));
-        }
-        else
-        {
-            assert(sz == 0);
-            printf("              ");
-        }
-    }
-}
-
 void emitter::emitDispInsInstrNum(const instrDesc* id) const
 {
 #ifdef DEBUG
@@ -5318,30 +5294,5 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
     return rn;
 }
 #endif
-
-//------------------------------------------------------------------------
-// IsMovInstruction: Determines whether a give instruction is a move instruction
-//
-// Arguments:
-//    ins       -- The instruction being checked
-//
-bool emitter::IsMovInstruction(instruction ins)
-{
-    switch (ins)
-    {
-        case INS_mov:
-        case INS_fsgnj_s:
-        case INS_fsgnj_d:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-    return false;
-}
 
 #endif // defined(TARGET_RISCV64)

@@ -1641,7 +1641,17 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
+        public static Half Clamp(Half value, Half min, Half max) => (Half)float.Clamp((float)value, (float)min, (float)max);
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static Half ClampNative(Half value, Half min, Half max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Half CopySign(Half value, Half sign)
@@ -1657,7 +1667,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
+        public static Half Max(Half x, Half y) => (Half)float.Max((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        public static Half MaxNative(Half x, Half y) => (x > y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         public static Half MaxNumber(Half x, Half y)
@@ -1682,7 +1695,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static Half Min(Half x, Half y) => (Half)MathF.Min((float)x, (float)y);
+        public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        public static Half MinNative(Half x, Half y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         public static Half MinNumber(Half x, Half y)

@@ -3,7 +3,7 @@
 //
 // OBJECT.H
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 // See code:EEStartup#TableOfContents for overview
@@ -26,10 +26,10 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 /*
  #ObjectModel
- * COM+ Internal Object Model
+ * CLR Internal Object Model
  *
  *
- * Object              - This is the common base part to all COM+ objects
+ * Object              - This is the common base part to all CLR objects
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
@@ -512,7 +512,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 #include <pshpack4.h>
 
 
-// There are two basic kinds of array layouts in COM+
+// There are two basic kinds of array layouts in CLR
 //      ELEMENT_TYPE_ARRAY  - a multidimensional array with lower bounds on the dims
 //      ELMENNT_TYPE_SZARRAY - A zero based single dimensional array
 //
