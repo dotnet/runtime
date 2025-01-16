@@ -23,7 +23,7 @@ internal static partial class Interop
     {
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
-        private const string OpenSslDebugEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG";
+        internal const string OpenSslDebugEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
 
         private sealed class SafeSslContextCache : SafeHandleCache<SslContextCacheKey, SafeSslContextHandle> { }
@@ -61,9 +61,6 @@ internal static partial class Interop
                 return hash.ToHashCode();
             }
         }
-#pragma warning disable CA1823
-        private static readonly bool MemoryDebug = GetMemoryDebug();
-#pragma warning restore CA1823
 
         #region internal methods
         internal static SafeChannelBindingHandle? QueryChannelBinding(SafeSslHandle context, ChannelBindingKind bindingType)
@@ -100,23 +97,6 @@ internal static partial class Interop
             }
 
             return cacheSize;
-        }
-
-        private static bool GetMemoryDebug()
-        {
-            string? value = Environment.GetEnvironmentVariable(OpenSslDebugEnvironmentVariable);
-            if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
-            {
-                Interop.Crypto.GetOpenSslAllocationCount();
-                Interop.Crypto.GetOpenSslAllocatedMemory();
-#if DEBUG
-                Interop.Crypto.EnableTracking();
-                Interop.Crypto.GetIncrementalAllocations();
-                Interop.Crypto.DisableTracking();
-#endif
-            }
-
-            return enabled == 1;
         }
 
         // This is helper function to adjust requested protocols based on CipherSuitePolicy and system capability.

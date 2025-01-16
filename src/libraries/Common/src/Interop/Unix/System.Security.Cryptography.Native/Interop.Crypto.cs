@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -184,7 +185,27 @@ internal static partial class Interop
             GetMemoryUse(ref used, ref count);
             return count;
         }
-#if DEBUG
+
+#pragma warning disable CA1823
+        private static readonly bool MemoryDebug = GetMemoryDebug();
+#pragma warning restore CA1823
+
+        private static bool GetMemoryDebug()
+        {
+            Console.WriteLine($"Checking for {Interop.OpenSsl.OpenSslDebugEnvironmentVariable} environment variable");
+            string? value = Environment.GetEnvironmentVariable(Interop.OpenSsl.OpenSslDebugEnvironmentVariable);
+            if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
+            {
+                Interop.Crypto.GetOpenSslAllocationCount();
+                Interop.Crypto.GetOpenSslAllocatedMemory();
+                Interop.Crypto.EnableTracking();
+                Interop.Crypto.GetIncrementalAllocations();
+                Interop.Crypto.DisableTracking();
+            }
+
+            return enabled == 1;
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetMemoryTracking")]
         private static unsafe partial int SetMemoryTracking(delegate* unmanaged<MemoryOperation, UIntPtr, UIntPtr, int, char*, int, void> trackingCallback);
 
@@ -236,6 +257,7 @@ internal static partial class Interop
 
         public static unsafe void EnableTracking()
         {
+            System.Console.WriteLine("EnableTracking");
             _allocations ??= new ConcurrentDictionary<UIntPtr, UIntPtr>();
             _allocations!.Clear();
             SetMemoryTracking(&MemoryTrackinCallback);
@@ -243,6 +265,7 @@ internal static partial class Interop
 
         public static unsafe void DisableTracking()
         {
+            System.Console.WriteLine("DisableTracking");
             SetMemoryTracking(null);
             _allocations!.Clear();
         }
@@ -265,6 +288,5 @@ internal static partial class Interop
 
             return allocations;
         }
-#endif
     }
 }
