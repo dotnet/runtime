@@ -144,7 +144,7 @@ namespace System.Reflection
             }
         }
 
-        internal unsafe object? InvokePropertySetter(
+        internal object? InvokePropertySetter(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -173,7 +173,7 @@ namespace System.Reflection
         }
 
         // Slower path that removes the stack allocs from the caller.
-        private unsafe object? InvokePropertySetter(object? obj, object? arg)
+        private object? InvokePropertySetter(object? obj, object? arg)
         {
             Debug.Assert(UseInterpretedPath);
             Debug.Assert(_strategy == InvokerStrategy.Ref4);
@@ -188,7 +188,7 @@ namespace System.Reflection
             return ((InvokeFunc_RefArgs) _invokeFunc) (obj, _functionPointer, pByRefFixedStorage);
         }
 
-        internal unsafe object? InvokeWith1Arg(
+        internal object? InvokeWith1Arg(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -227,7 +227,7 @@ namespace System.Reflection
             return obj;
         }
 
-        internal unsafe object? InvokeWith4Args(
+        internal object? InvokeWith4Args(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -269,7 +269,7 @@ namespace System.Reflection
             return obj;
         }
 
-        internal unsafe object? InvokeWithSpanArgs(
+        internal object? InvokeWithSpanArgs(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,
@@ -387,7 +387,7 @@ namespace System.Reflection
             return ret;
         }
 
-        internal unsafe object? InvokeWithManyRefArgs(
+        internal object? InvokeWithManyRefArgs(
             object? obj,
             BindingFlags invokeAttr,
             Binder? binder,

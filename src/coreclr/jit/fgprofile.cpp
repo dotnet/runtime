@@ -2964,21 +2964,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgSetProfileWeight: set profile weight for a block
-//
-// Arguments:
-//   block -- block in question
-//   profileWeight -- raw profile weight (not accounting for inlining)
-//
-// Notes:
-//   Does inlinee scaling.
-//
-void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
-{
-    block->setBBProfileWeight(profileWeight);
-}
-
-//------------------------------------------------------------------------
 // fgIncorporateBlockCounts: read block count based profile data
 //   and set block weights
 //
@@ -3006,7 +2991,7 @@ bool Compiler::fgIncorporateBlockCounts()
 
         if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
         {
-            fgSetProfileWeight(block, profileWeight);
+            block->setBBProfileWeight(profileWeight);
         }
     }
 
@@ -3784,7 +3769,7 @@ void EfficientEdgeCountReconstructor::Propagate()
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
-        m_comp->fgSetProfileWeight(block, info->m_weight);
+        block->setBBProfileWeight(info->m_weight);
 
         const unsigned nSucc = block->NumSucc(m_comp);
         if (nSucc == 0)
@@ -5117,7 +5102,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
     if (target->hasProfileWeight())
     {
-        target->setBBProfileWeight(target->bbWeight + weight);
+        target->increaseBBProfileWeight(weight);
     }
     else
     {
@@ -5134,7 +5119,8 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
         // If profile weights are consistent, expect at worst a slight underflow.
         //
-        if (fgPgoConsistent && (alternateNewWeight < 0.0))
+        const bool checkProfileConsistency = hasFlag(activePhaseChecks, PhaseChecks::CHECK_PROFILE);
+        if (checkProfileConsistency && fgPgoConsistent && (alternateNewWeight < 0.0))
         {
             assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
         }

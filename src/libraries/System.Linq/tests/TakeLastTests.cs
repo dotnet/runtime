@@ -56,7 +56,7 @@ namespace System.Linq.Tests
                 current: () => index, // Yield from 1 up to the limit, inclusive.
                 dispose: () => index ^= int.MinValue);
 
-            IEnumerator<int> iterator = source.TakeLast(count).GetEnumerator();
+            using IEnumerator<int> iterator = source.TakeLast(count).GetEnumerator();
             Assert.Equal(0, index); // Nothing should be done before MoveNext is called.
 
             for (int i = 1; i <= count; i++)

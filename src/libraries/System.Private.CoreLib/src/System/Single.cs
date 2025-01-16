@@ -175,7 +175,7 @@ namespace System
         /// <summary>Determines whether the specified value is infinite.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsInfinity(float f)
+        public static bool IsInfinity(float f)
         {
             uint bits = BitConverter.SingleToUInt32Bits(f);
             return (bits & ~SignMask) == PositiveInfinityBits;
@@ -184,7 +184,7 @@ namespace System
         /// <summary>Determines whether the specified value is NaN.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNaN(float f)
+        public static bool IsNaN(float f)
         {
             // A NaN will never equal itself so this is an
             // easy and efficient way to check for NaN.
@@ -205,7 +205,7 @@ namespace System
         /// <summary>Determines whether the specified value is negative.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNegative(float f)
+        public static bool IsNegative(float f)
         {
             return BitConverter.SingleToInt32Bits(f) < 0;
         }
@@ -213,7 +213,7 @@ namespace System
         /// <summary>Determines whether the specified value is negative infinity.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNegativeInfinity(float f)
+        public static bool IsNegativeInfinity(float f)
         {
             return f == NegativeInfinity;
         }
@@ -222,7 +222,7 @@ namespace System
         /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsNormal(float f)
+        public static bool IsNormal(float f)
         {
             uint bits = BitConverter.SingleToUInt32Bits(f);
             return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
@@ -231,7 +231,7 @@ namespace System
         /// <summary>Determines whether the specified value is positive infinity.</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsPositiveInfinity(float f)
+        public static bool IsPositiveInfinity(float f)
         {
             return f == PositiveInfinity;
         }
@@ -240,7 +240,7 @@ namespace System
         /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool IsSubnormal(float f)
+        public static bool IsSubnormal(float f)
         {
             uint bits = BitConverter.SingleToUInt32Bits(f);
             return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;

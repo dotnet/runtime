@@ -16,9 +16,9 @@ namespace System.Reflection
         internal delegate object? InvokeFunc_Obj1Arg(object? obj, IntPtr functionPointer, object? arg1);
         internal delegate object? InvokeFunc_Obj4Args(object? obj, IntPtr functionPointer, object? arg1, object? arg2, object? arg3, object? arg4);
         internal delegate object? InvokeFunc_ObjSpanArgs(object? obj, IntPtr functionPointer, Span<object?> arguments);
-        internal unsafe delegate object? InvokeFunc_RefArgs(object? obj, IntPtr functionPointer, IntPtr* refArguments);
+        internal delegate object? InvokeFunc_RefArgs(object? obj, IntPtr functionPointer, IntPtr* refArguments);
 
-        public static unsafe InvokeFunc_Obj0Args CreateInvokeDelegateForObj0Args(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static InvokeFunc_Obj0Args CreateInvokeDelegateForObj0Args(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr)]);
             ILGenerator il = dm.GetILGenerator();
@@ -29,7 +29,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj0Args)dm.CreateDelegate(typeof(InvokeFunc_Obj0Args), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj1Arg CreateInvokeDelegateForObj1Arg(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static InvokeFunc_Obj1Arg CreateInvokeDelegateForObj1Arg(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
@@ -45,7 +45,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj1Arg)dm.CreateDelegate(typeof(InvokeFunc_Obj1Arg), target: null);
         }
 
-        public static unsafe InvokeFunc_Obj4Args CreateInvokeDelegateForObj4Args(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static InvokeFunc_Obj4Args CreateInvokeDelegateForObj4Args(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(object), typeof(object), typeof(object), typeof(object)]);
             ILGenerator il = dm.GetILGenerator();
@@ -78,7 +78,7 @@ namespace System.Reflection
             return (InvokeFunc_Obj4Args)dm.CreateDelegate(typeof(InvokeFunc_Obj4Args), target: null);
         }
 
-        public static unsafe InvokeFunc_ObjSpanArgs CreateInvokeDelegateForObjSpanArgs(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static InvokeFunc_ObjSpanArgs CreateInvokeDelegateForObjSpanArgs(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(Span<object>)]);
             ILGenerator il = dm.GetILGenerator();
@@ -103,7 +103,7 @@ namespace System.Reflection
             return (InvokeFunc_ObjSpanArgs)dm.CreateDelegate(typeof(InvokeFunc_ObjSpanArgs), target: null);
         }
 
-        public static unsafe InvokeFunc_RefArgs CreateInvokeDelegateForRefArgs(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
+        public static InvokeFunc_RefArgs CreateInvokeDelegateForRefArgs(MethodBase? method, bool callCtorAsMethod, in InvokeSignatureInfoKey signatureInfo, bool backwardsCompat)
         {
             DynamicMethod dm = CreateDynamicMethod(method, signatureInfo, [typeof(object), typeof(IntPtr), typeof(IntPtr*)]);
             ILGenerator il = dm.GetILGenerator();
