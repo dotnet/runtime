@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices
         /// or <see cref="GCHandleExtensions.GetAddressOfStringData(PinnedGCHandle{string})"/> instead.
         /// </para>
         /// <para>
-        /// This method should only be used for blittable types. The layout of non-blittable types is undefined for interop.
+        /// This method should only be used for blittable types.
         /// </para>
         /// </remarks>
         /// <exception cref="NullReferenceException">If the handle is not initialized or already disposed.</exception>
