@@ -74,77 +74,62 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => typeof(T) == typeof(float)
                                             || typeof(T) == typeof(double)
 #if NET10_0_OR_GREATER
-                                            || ((Avx512F.IsSupported || Avx.IsSupported) && typeof(T) == typeof(int));
-#else
-                ;
+                                            || (Avx.IsSupported && typeof(T) == typeof(int))
 #endif
+                ;
             public static T Invoke(T x, T y) => x / y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
 #if NET10_0_OR_GREATER
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (typeof(T) == typeof(int))
                 {
-                    return x / y;
-                }
+                    if (Vector128.EqualsAny<int>(y.AsInt32(), Vector128<int>.Zero))
+                    {
+                        throw new DivideByZeroException();
+                    }
 
-                Debug.Assert(Avx.IsSupported && typeof(T) == typeof(int));
-                Vector128<int> denominator_zero = Sse2.CompareEqual(y.AsInt32(), Vector128<int>.Zero);
-                if (denominator_zero != Vector128<int>.Zero)
-                {
-                    throw new DivideByZeroException();
+                    Vector256<double> num_pd = Avx.ConvertToVector256Double(x.AsInt32());
+                    Vector256<double> den_pd = Avx.ConvertToVector256Double(y.AsInt32());
+                    Vector256<double> div_pd = Avx.Divide(num_pd, den_pd);
+                    Vector128<int> div_epi32 = Avx.ConvertToVector128Int32WithTruncation(div_pd);
+                    return div_epi32.As<int, T>();
                 }
-
-                Vector256<double> num_pd = Avx.ConvertToVector256Double(x.AsInt32());
-                Vector256<double> den_pd = Avx.ConvertToVector256Double(y.AsInt32());
-                Vector256<double> div_pd = Avx.Divide(num_pd, den_pd);
-                Vector128<int> div_epi32 = Avx.ConvertToVector128Int32WithTruncation(div_pd);
-                return div_epi32.As<int, T>();
-#else
-                return x / y;
 #endif
+                return x / y;
             }
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
 #if NET10_0_OR_GREATER
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (typeof(T) == typeof(int))
                 {
-                    return x / y;
-                }
+                    if (Vector256.EqualsAny<int>(y.AsInt32(), Vector256<int>.Zero))
+                    {
+                        throw new DivideByZeroException();
+                    }
 
-                Debug.Assert(typeof(T) == typeof(int));
-                if (!Avx512F.IsSupported)
-                {
-                    return Vector256.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
-                }
+                    if (!Avx512F.IsSupported)
+                    {
+                        return Vector256.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
+                    }
 
-                Vector256<int> denominator_zero = Avx2.CompareEqual(y.AsInt32(), Vector256<int>.Zero);
-                if (denominator_zero != Vector256<int>.Zero)
-                {
-                    throw new DivideByZeroException();
+                    Vector512<double> num_pd = Avx512F.ConvertToVector512Double(x.AsInt32());
+                    Vector512<double> den_pd = Avx512F.ConvertToVector512Double(y.AsInt32());
+                    Vector512<double> div_pd = Avx512F.Divide(num_pd, den_pd);
+                    Vector256<int> div_epi32 = Avx512F.ConvertToVector256Int32(div_pd, FloatRoundingMode.ToZero);
+                    return div_epi32.As<int, T>();
                 }
-
-                Vector512<double> num_pd = Avx512F.ConvertToVector512Double(x.AsInt32());
-                Vector512<double> den_pd = Avx512F.ConvertToVector512Double(y.AsInt32());
-                Vector512<double> div_pd = Avx512F.Divide(num_pd, den_pd);
-                Vector256<int> div_epi32 = Avx512F.ConvertToVector256Int32(div_pd, FloatRoundingMode.ToZero);
-                return div_epi32.As<int, T>();
-#else
-                return x / y;
 #endif
-
+                return x / y;
             }
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
 #if NET10_0_OR_GREATER
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (typeof(T) == typeof(int))
                 {
-                    return x / y;
+                    return Vector512.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
                 }
-                Debug.Assert(typeof(T) == typeof(int));
-                return Vector512.Create(Invoke(x.GetLower(), y.GetLower()), Invoke(x.GetUpper(), y.GetUpper()));
-#else
-                return x / y;
 #endif
+                return x / y;
             }
         }
     }
