@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <PropertyGroup Condition="'$(BuildHostIlTools)' == 'true'">
+  <PropertyGroup Condition="'$(BuildHostILTools)' == 'true'">
     <BuildHostTargetingPackage>true</BuildHostTargetingPackage>
   </PropertyGroup>
   <ItemGroup>
