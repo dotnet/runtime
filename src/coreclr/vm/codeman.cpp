@@ -253,7 +253,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 
         ULONG size = (ULONG) ((rangeEnd - rangeStart) / 128) + 1;
 
-        // To insure the test the growing logic in debug code make the size much smaller.
+        // To ensure the test the growing logic in debug code make the size much smaller.
         INDEBUG(size = size / 4 + 1);
         unwindInfo = (PTR_UnwindInfoTable)new UnwindInfoTable(rangeStart, rangeEnd, size);
         unwindInfo->Register();
@@ -433,7 +433,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
 {
     STANDARD_VM_CONTRACT;
     {
-        // CodeHeapIterator holds the m_CodeHeapCritSec, which insures code heaps don't get deallocated while being walked
+        // CodeHeapIterator holds the m_CodeHeapCritSec, which ensures code heaps don't get deallocated while being walked
         EEJitManager::CodeHeapIterator heapIterator(NULL);
 
         // Currently m_CodeHeapCritSec is given the CRST_UNSAFE_ANYMODE flag which allows it to be taken in a GC_NOTRIGGER
@@ -1408,6 +1408,13 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Gfni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableGFNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_GFNI);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V256);
+        CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
         ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
     {
@@ -1415,11 +1422,7 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-
-            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
-            }
+            CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
         }
     }
 
@@ -1428,10 +1431,7 @@ void EEJitManager::SetCpuInfo()
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
         {
             CPUCompileFlags.Set(InstructionSet_AVX10v2);
-            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
-            {
-                CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
-            }
+            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
         }
     }
 
@@ -4978,7 +4978,7 @@ void ExecutionManager::Unload(LoaderAllocator *pLoaderAllocator)
 // (This is also true on ARM64, but it not true for x86)
 //
 // For these architectures, in JITed code and in the prestub, we encode direct calls
-// using the preferred call instruction and we also try to insure that the Jitted
+// using the preferred call instruction and we also try to ensure that the Jitted
 // code is within the 32-bit pc-rel range of clr.dll to allow direct JIT helper calls.
 //
 // When the call target is too far away to encode using the preferred call instruction.

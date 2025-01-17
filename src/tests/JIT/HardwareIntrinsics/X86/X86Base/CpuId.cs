@@ -108,6 +108,8 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
+            bool isSse41HierarchyDisabled = isHierarchyDisabled;
+
             if (IsBitIncorrect(ecx, 20, typeof(Sse42), Sse42.IsSupported, "SSE42", ref isHierarchyDisabled))
             {
                 testResult = Fail;
@@ -280,6 +282,27 @@ namespace XarchHardwareIntrinsicTest._CpuId
             isHierarchyDisabled = isX86BaseDisabled;
 
             if (IsBitIncorrect(edx, 14, typeof(X86Serialize), X86Serialize.IsSupported, "SERIALIZE", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isSse41HierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni), Gfni.IsSupported, "GFNI", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvxHierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V256), Gfni.V256.IsSupported, "GFNI", ref isHierarchyDisabled))
+            {
+                testResult = Fail;
+            }
+
+            isHierarchyDisabled = isAvx512HierarchyDisabled;
+
+            if (IsBitIncorrect(ecx, 8, typeof(Gfni.V512), Gfni.V512.IsSupported, "GFNI", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }

@@ -630,7 +630,7 @@ namespace System
                 return false;
             if (pEEType->IsNullable)
                 pEEType = pEEType->NullableType;
-            return RuntimeImports.IsInstanceOf(pEEType, o) != null;
+            return TypeCast.IsInstanceOfAny(pEEType, o) != null;
         }
 
         //
@@ -760,7 +760,7 @@ namespace System
         public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member)
             => GetRuntimeTypeInfo().GetMemberWithSameMetadataDefinitionAs(member);
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
             => GetRuntimeTypeInfo().InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
 

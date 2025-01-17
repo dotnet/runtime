@@ -77,6 +77,10 @@ namespace IntelHardwareIntrinsicTest.General
                 Convert.ToBoolean(typeof(AvxVnni.X64).GetMethod(issupported).Invoke(null, null)) != AvxVnni.X64.IsSupported ||
                 Convert.ToBoolean(typeof(Fma).GetMethod(issupported).Invoke(null, null)) != Fma.IsSupported ||
                 Convert.ToBoolean(typeof(Fma.X64).GetMethod(issupported).Invoke(null, null)) != Fma.X64.IsSupported ||
+                Convert.ToBoolean(typeof(Gfni).GetMethod(issupported).Invoke(null, null)) != Gfni.IsSupported ||
+                Convert.ToBoolean(typeof(Gfni.V256).GetMethod(issupported).Invoke(null, null)) != Gfni.V256.IsSupported ||
+                Convert.ToBoolean(typeof(Gfni.V512).GetMethod(issupported).Invoke(null, null)) != Gfni.V512.IsSupported ||
+                Convert.ToBoolean(typeof(Gfni.X64).GetMethod(issupported).Invoke(null, null)) != Gfni.X64.IsSupported ||
                 Convert.ToBoolean(typeof(Pclmulqdq).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.IsSupported ||
                 Convert.ToBoolean(typeof(Pclmulqdq.V256).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.V256.IsSupported ||
                 Convert.ToBoolean(typeof(Pclmulqdq.V512).GetMethod(issupported).Invoke(null, null)) != Pclmulqdq.V512.IsSupported ||

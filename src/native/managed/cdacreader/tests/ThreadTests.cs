@@ -1,14 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-using MockThread = MockDescriptors.Thread;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class ThreadTests
 {
+    private static Target CreateTarget(MockDescriptors.Thread thread)
+    {
+        MockTarget.Architecture arch = thread.Builder.TargetTestHelpers.Arch;
+        var target = new TestPlaceholderTarget(arch, thread.Builder.GetReadContext().ReadFromTarget, thread.Types, thread.Globals);
+        target.SetContracts(Mock.Of<ContractRegistry>(
+            c => c.Thread == ((IContractFactory<IThread>)new ThreadFactory()).CreateContract(target, 1)));
+        return target;
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetThreadStoreData(MockTarget.Architecture arch)
@@ -16,11 +26,7 @@ public unsafe class ThreadTests
         // Set up the target
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
-        MockThread thread = new(builder);
-        builder = builder
-            .SetContracts([nameof(Contracts.Thread)])
-            .SetTypes(thread.Types)
-            .SetGlobals(thread.Globals);
+        MockDescriptors.Thread thread = new(builder);
 
         int threadCount = 15;
         int unstartedCount = 1;
@@ -36,20 +42,19 @@ public unsafe class ThreadTests
             pendingCount,
             deadCount);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        Target target = CreateTarget(thread);
 
         // Validate the expected thread counts
-        Contracts.IThread contract = target.Contracts.Thread;
+        IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
-        Contracts.ThreadStoreCounts counts = contract.GetThreadCounts();
+        ThreadStoreCounts counts = contract.GetThreadCounts();
         Assert.Equal(unstartedCount, counts.UnstartedThreadCount);
         Assert.Equal(backgroundCount, counts.BackgroundThreadCount);
         Assert.Equal(pendingCount, counts.PendingThreadCount);
         Assert.Equal(deadCount, counts.DeadThreadCount);
 
-        Contracts.ThreadStoreData data = contract.GetThreadStoreData();
+        ThreadStoreData data = contract.GetThreadStoreData();
         Assert.Equal(threadCount, data.ThreadCount);
         Assert.Equal(thread.FinalizerThreadAddress, data.FinalizerThread);
         Assert.Equal(thread.GCThreadAddress, data.GCThread);
@@ -62,11 +67,7 @@ public unsafe class ThreadTests
         // Set up the target
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
-        MockThread thread = new(builder);
-        builder = builder
-            .SetContracts([nameof(Contracts.Thread)])
-            .SetTypes(thread.Types)
-            .SetGlobals(thread.Globals);
+        MockDescriptors.Thread thread = new(builder);
 
         uint id = 1;
         TargetNUInt osId = new TargetNUInt(1234);
@@ -74,14 +75,13 @@ public unsafe class ThreadTests
         // Add thread
         TargetPointer addr = thread.AddThread(id, osId);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        Target target = CreateTarget(thread);
 
         // Validate the expected thread counts
-        Contracts.IThread contract = target.Contracts.Thread;
+        IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
-        Contracts.ThreadData data= contract.GetThreadData(addr);
+        ThreadData data= contract.GetThreadData(addr);
         Assert.Equal(id, data.Id);
         Assert.Equal(osId, data.OSId);
     }
@@ -93,11 +93,7 @@ public unsafe class ThreadTests
         // Set up the target
         TargetTestHelpers helpers = new(arch);
         MockMemorySpace.Builder builder = new(helpers);
-        MockThread thread = new(builder);
-        builder = builder
-            .SetContracts([nameof(Contracts.Thread)])
-            .SetTypes(thread.Types)
-            .SetGlobals(thread.Globals);
+        MockDescriptors.Thread thread = new(builder);
 
         // Add threads
         uint expectedCount = 10;
@@ -107,11 +103,10 @@ public unsafe class ThreadTests
             thread.AddThread(i, new TargetNUInt(i + osIdStart));
         }
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
-        Assert.True(success);
+        Target target = CreateTarget(thread);
 
         // Validate the expected thread counts
-        Contracts.IThread contract = target.Contracts.Thread;
+        IThread contract = target.Contracts.Thread;
         Assert.NotNull(contract);
 
         TargetPointer currentThread = contract.GetThreadStoreData().FirstThread;
@@ -119,7 +114,7 @@ public unsafe class ThreadTests
         while (currentThread != TargetPointer.Null)
         {
             count++;
-            Contracts.ThreadData threadData = contract.GetThreadData(currentThread);
+            ThreadData threadData = contract.GetThreadData(currentThread);
             Assert.Equal(count, threadData.Id);
             Assert.Equal(count + osIdStart, threadData.OSId.Value);
             currentThread = threadData.NextThread;

@@ -193,6 +193,7 @@ namespace System.CommandLine
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("serialize");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
 
                 // If AVX was enabled, we can opportunistically enable instruction sets which use the VEX encodings
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
@@ -210,6 +211,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
                 }
 
                 Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
@@ -230,6 +232,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2_v512");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)

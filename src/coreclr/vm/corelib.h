@@ -109,6 +109,7 @@ DEFINE_METHOD(ARG_ITERATOR,         CTOR2,                  .ctor,              
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 
 DEFINE_CLASS(ARRAY,                 System,                 Array)
+DEFINE_METHOD(ARRAY,                CREATEINSTANCEMDARRAY,  CreateInstanceMDArray,      SM_IntPtr_UInt_VoidPtr_RetObj)
 
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
@@ -130,11 +131,14 @@ DEFINE_FIELD_U(m_fullname,                 AssemblyBaseObject,     m_fullname)
 DEFINE_FIELD_U(m_syncRoot,                 AssemblyBaseObject,     m_pSyncRoot)
 DEFINE_FIELD_U(m_assembly,                 AssemblyBaseObject,     m_pAssembly)
 DEFINE_CLASS(ASSEMBLY,              Reflection,             RuntimeAssembly)
-
+#ifdef FOR_ILLINK
+DEFINE_METHOD(ASSEMBLY,             CTOR,                   .ctor,                      IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(ASYNCCALLBACK,         System,                 AsyncCallback)
 DEFINE_CLASS(ATTRIBUTE,             System,                 Attribute)
 
+DEFINE_CLASS_U(System,              Signature,          SignatureNative)
 
 DEFINE_CLASS(BINDER,                Reflection,             Binder)
 
@@ -152,6 +156,9 @@ DEFINE_METHOD(CLASS,                GET_METHODS,            GetMethods,         
 DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,               IM_Str_BindingFlags_Binder_Obj_ArrObj_ArrParameterModifier_CultureInfo_ArrStr_RetObj)
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(CLASS,                CTOR,                   .ctor,                      IM_RetVoid)
+#endif // FOR_ILLINK
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
@@ -177,7 +184,7 @@ DEFINE_METHOD(COM_OBJECT,           RELEASE_ALL_DATA,       ReleaseAllData,     
 DEFINE_METHOD(COM_OBJECT,           GET_EVENT_PROVIDER,     GetEventProvider,           IM_Class_RetObj)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(COM_OBJECT,           CTOR,                   .ctor,                      IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(LICENSE_INTEROP_PROXY,  InternalInteropServices, LicenseInteropProxy)
 DEFINE_METHOD(LICENSE_INTEROP_PROXY, CREATE,                  Create,                  SM_RetObj)
@@ -209,6 +216,7 @@ DEFINE_CLASS_U(System,                 RuntimeMethodInfoStub,     ReflectMethodO
 DEFINE_FIELD_U(m_value,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(STUBMETHODINFO,      System,                 RuntimeMethodInfoStub)
 DEFINE_FIELD(STUBMETHODINFO,      HANDLE,                 m_value)
+DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
@@ -333,11 +341,16 @@ DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,              
 DEFINE_CLASS(TYPE_HANDLE,           System,                 RuntimeTypeHandle)
 DEFINE_CLASS(RT_TYPE_HANDLE,        System,                 RuntimeTypeHandle)
 DEFINE_METHOD(RT_TYPE_HANDLE,       PVOID_CTOR,             .ctor,                      IM_RuntimeType_RetVoid)
+DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLE,GetRuntimeTypeFromHandle,  SM_IntPtr_RetRuntimeType)
+DEFINE_METHOD(RT_TYPE_HANDLE,       GETRUNTIMETYPEFROMHANDLEMAYBENULL,GetRuntimeTypeFromHandleMaybeNull,  SM_IntPtr_RetRuntimeType)
 DEFINE_METHOD(RT_TYPE_HANDLE,       TO_INTPTR,              ToIntPtr,                   SM_RuntimeTypeHandle_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(RT_TYPE_HANDLE,       ALLOCATECOMOBJECT,      AllocateComObject,          SM_VoidPtr_RetObj)
 #endif
 DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
+
+// DEFINE_CLASS(TYPED_REFERENCE,  System,           TypedReference)
+DEFINE_METHOD(TYPED_REFERENCE, GETREFANY,        GetRefAny,                   NoSig)
 
 DEFINE_CLASS(TYPE_NAME_RESOLVER,    Reflection,             TypeNameResolver)
 DEFINE_METHOD(TYPE_NAME_RESOLVER,   GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType)
@@ -350,14 +363,17 @@ DEFINE_FIELD(RT_FIELD_INFO,         HANDLE,                 m_fieldHandle)
 DEFINE_CLASS_U(System,              RuntimeFieldInfoStub,   ReflectFieldObject)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
-#if FOR_ILLINK
+DEFINE_METHOD(STUBFIELDINFO,        FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
+#ifdef FOR_ILLINK
 DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(FIELD,                 Reflection,             RuntimeFieldInfo)
 
 DEFINE_CLASS(FIELD_HANDLE,          System,                 RuntimeFieldHandle)
 DEFINE_FIELD(FIELD_HANDLE,          M_FIELD,                m_ptr)
+DEFINE_METHOD(FIELD_HANDLE,         GETFIELDADDR,           GetFieldAddr,       SM_Obj_VoidPtr_RetVoidPtr)
+DEFINE_METHOD(FIELD_HANDLE,         GETSTATICFIELDADDR,     GetStaticFieldAddr, SM_VoidPtr_RetVoidPtr)
 
 DEFINE_CLASS(I_RT_FIELD_INFO,       System,                 IRuntimeFieldInfo)
 
@@ -489,18 +505,18 @@ DEFINE_FIELD_U(_handlerLength,         RuntimeExceptionHandlingClause,        _h
 DEFINE_FIELD_U(_catchMetadataToken,    RuntimeExceptionHandlingClause,        _catchToken)
 DEFINE_FIELD_U(_filterOffset,          RuntimeExceptionHandlingClause,        _filterOffset)
 DEFINE_CLASS(RUNTIME_EH_CLAUSE,             Reflection,             RuntimeExceptionHandlingClause)
-#if FOR_ILLINK
+#ifdef FOR_ILLINK
 DEFINE_METHOD(RUNTIME_EH_CLAUSE,            CTOR,                   .ctor,              IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(Reflection,             RuntimeLocalVariableInfo,        RuntimeLocalVariableInfo)
 DEFINE_FIELD_U(_type,                  RuntimeLocalVariableInfo,        _type)
 DEFINE_FIELD_U(_localIndex,            RuntimeLocalVariableInfo,        _localIndex)
 DEFINE_FIELD_U(_isPinned,              RuntimeLocalVariableInfo,        _isPinned)
 DEFINE_CLASS(RUNTIME_LOCAL_VARIABLE_INFO,   Reflection,             RuntimeLocalVariableInfo)
-#if FOR_ILLINK
+#ifdef FOR_ILLINK
 DEFINE_METHOD(RUNTIME_LOCAL_VARIABLE_INFO,  CTOR,                   .ctor,              IM_RetVoid)
-#endif
+#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodBody,           RuntimeMethodBody)
 DEFINE_FIELD_U(_IL,                    RuntimeMethodBody,         _IL)
@@ -510,7 +526,11 @@ DEFINE_FIELD_U(_methodBase,               RuntimeMethodBody,         _methodBase
 DEFINE_FIELD_U(_localSignatureMetadataToken, RuntimeMethodBody,      _localVarSigToken)
 DEFINE_FIELD_U(_maxStackSize,             RuntimeMethodBody,         _maxStackSize)
 DEFINE_FIELD_U(_initLocals,               RuntimeMethodBody,         _initLocals)
-DEFINE_CLASS(RUNTIME_METHOD_BODY,           Reflection,             RuntimeMethodBody)
+
+DEFINE_CLASS(RUNTIME_METHOD_BODY,   Reflection, RuntimeMethodBody)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(RUNTIME_METHOD_BODY,  CTOR,   .ctor,  IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(METHOD_INFO,           Reflection,             MethodInfo)
 
@@ -652,6 +672,9 @@ DEFINE_METHOD(THROWHELPERS,    THROWNULLREFEXCEPTION,               ThrowNullRef
 DEFINE_METHOD(THROWHELPERS,    THROWVERIFICATIONEXCEPTION,          ThrowVerificationException, SM_Int_RetVoid)
 DEFINE_METHOD(THROWHELPERS,    THROWAMBIGUOUSRESOLUTIONEXCEPTION,   ThrowAmbiguousResolutionException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
 DEFINE_METHOD(THROWHELPERS,    THROWENTRYPOINTNOTFOUNDEXCEPTION,    ThrowEntryPointNotFoundException, SM_PtrVoid_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWMETHODACCESSEXCEPTION,          ThrowMethodAccessException, SM_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWFIELDACCESSEXCEPTION,           ThrowFieldAccessException,  SM_PtrVoid_PtrVoid_RetVoid)
+DEFINE_METHOD(THROWHELPERS,    THROWCLASSACCESSEXCEPTION,           ThrowClassAccessException,  SM_PtrVoid_PtrVoid_RetVoid)
 
 DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
@@ -844,6 +867,8 @@ DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
+DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
+
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)
 DEFINE_METHOD(AUTORELEASEPOOL,      CREATEAUTORELEASEPOOL,  CreateAutoreleasePool,  SM_RetVoid)
@@ -908,7 +933,7 @@ DEFINE_CLASS(WEAKREFERENCE,         System,                 WeakReference)
 DEFINE_CLASS(WEAKREFERENCEGENERIC,  System,                 WeakReference`1)
 
 DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
-DEFINE_METHOD(DEBUGGER,             BREAK,                  Break,                  SM_RetVoid)
+DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
@@ -1169,10 +1194,12 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTANY,       ChkCastAny,                  SM_Ptr
 DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
 DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
-DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
+DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       NoSig)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
 DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
+DEFINE_METHOD(CASTHELPERS, UNBOX_NULLABLE,   Unbox_Nullable,              NoSig)
+DEFINE_METHOD(CASTHELPERS, UNBOX_TYPETEST,   Unbox_TypeTest,              NoSig)
 
 DEFINE_CLASS(VIRTUALDISPATCHHELPERS, CompilerServices, VirtualDispatchHelpers)
 DEFINE_METHOD(VIRTUALDISPATCHHELPERS, VIRTUALFUNCTIONPOINTER, VirtualFunctionPointer, NoSig)
