@@ -291,13 +291,13 @@ internal static partial class Interop
             _allocations!.Clear();
         }
 
-        public static unsafe Tuple<UIntPtr, int, string>[] GetIncrementalAllocations()
+        public static unsafe (UIntPtr, int, string)[] GetIncrementalAllocations()
         {
             ConcurrentDictionary<UIntPtr, UIntPtr>? allocations = _allocations;
 
             if (allocations == null || allocations.IsEmpty)
             {
-                return Array.Empty<Tuple<UIntPtr, int, string>>();
+                return Array.Empty<(UIntPtr, int, string)>();
             }
 
             try
@@ -309,7 +309,7 @@ internal static partial class Interop
                 {
                     (UIntPtr ptr, _) = kvp;
                     ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
-                    return new Tuple<UIntPtr, int, string>(ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
+                    return (ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
                 }).ToArray();
             }
             finally
