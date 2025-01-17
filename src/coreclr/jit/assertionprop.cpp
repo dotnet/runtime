@@ -4116,6 +4116,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
 //    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
 //    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//    4) UMOD with GTF_UMOD_UINT16_OPERANDS if both operands are proven to be in uint16 range
 //
 // Arguments:
 //    assertions - set of live assertions
@@ -4145,17 +4146,26 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         changed = true;
     }
 
-    if (op2IsNotZero)
+    if (((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) == 0) && op2IsNotZero)
     {
         JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         changed = true;
     }
 
-    if (op1IsNotNegative || op2IsNotNegative)
+    if (((tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW) == 0) && (op1IsNotNegative || op2IsNotNegative))
     {
         JITDUMP("DIV/MOD is proven to never overflow...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+        changed = true;
+    }
+
+    if (((tree->gtFlags & GTF_UMOD_UINT16_OPERANDS) == 0) && tree->OperIs(GT_UMOD) && op2->IsCnsIntOrI() &&
+        op2->AsIntCon()->IconValue() <= UINT16_MAX &&
+        IntegralRange::ForNode(op1, this).GetUpperBound() <= SymbolicIntegerValue::UShortMax)
+    {
+        JITDUMP("Both operands for UMOD are in uint16 range...\n")
+        tree->gtFlags |= GTF_UMOD_UINT16_OPERANDS;
         changed = true;
     }
 

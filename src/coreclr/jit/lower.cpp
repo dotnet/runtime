@@ -7182,9 +7182,57 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         }
     }
 
+    assert(divisorValue >= 3);
+
+    if (comp->opts.MinOpts())
+    {
+        return false;
+    }
+
+    // Replace (uint16 % uint16) with a cheaper variant of FastMod, specialized for 16-bit operands.
+    if ((divMod->gtFlags & GTF_UMOD_UINT16_OPERANDS) != 0)
+    {
+        assert(!isDiv);
+        assert(divisorValue > 0 && divisorValue <= UINT16_MAX);
+
+        // uint multiplier = uint.MaxValue / divisor + 1;
+        // ulong result = ((ulong)(dividend * multiplier) * divisor) >> 32;
+        // return (int)result;
+
+        // multiplier = uint.MaxValue / divisor + 1
+        GenTree* multiplier = comp->gtNewIconNode((UINT32_MAX / divisorValue) + 1, TYP_INT);
+
+        // (dividend * multiplier)
+        GenTree* mul1 = comp->gtNewOperNode(GT_MUL, TYP_INT, dividend, multiplier);
+        mul1->SetUnsigned();
+
+        // (ulong)(dividend * multiplier)
+        GenTree* cast = comp->gtNewCastNode(TYP_LONG, mul1, true, TYP_LONG);
+
+        // ((ulong)(dividend * multiplier) * divisor)
+        GenTree* mul2 = comp->gtNewOperNode(GT_MUL, TYP_LONG, cast, divisor);
+        mul2->SetUnsigned();
+
+        // ((ulong)(dividend * multiplier) * divisor) >> 32
+        GenTree* shiftAmount = comp->gtNewIconNode(32, TYP_INT);
+        GenTree* shift       = comp->gtNewOperNode(GT_RSZ, TYP_LONG, mul2, shiftAmount);
+
+        BlockRange().InsertBefore(divMod, multiplier, mul1, cast, shiftAmount);
+        BlockRange().InsertBefore(divMod, mul2, shift);
+
+        // (int)result
+        divMod->ChangeOper(GT_CAST);
+        divMod->AsCast()->gtCastType = TYP_INT;
+        divMod->gtOp1                = shift;
+        divMod->gtOp2                = nullptr;
+        divMod->SetUnsigned();
+        ContainCheckRange(multiplier, divMod);
+        return true;
+    }
+
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (!comp->opts.MinOpts() && (divisorValue >= 3))
+    if (divisorValue >= 3)
     {
         size_t magic;
         bool   increment;
