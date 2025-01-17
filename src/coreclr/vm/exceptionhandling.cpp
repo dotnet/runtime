@@ -8199,9 +8199,10 @@ extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* 
         {
             result = FALSE;
         }
-
+#ifdef HOST_WINDOWS
         // When processing longjmp, only finally clauses are considered.
         if ((pExInfo->m_pLongJmpBuf == NULL) || (flags & COR_ILEXCEPTION_CLAUSE_FINALLY) || (flags & COR_ILEXCEPTION_CLAUSE_FAULT))
+#endif // HOST_WINDOWS
         {
             break;
         }
