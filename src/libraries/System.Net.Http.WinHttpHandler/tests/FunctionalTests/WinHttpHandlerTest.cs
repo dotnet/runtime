@@ -46,8 +46,9 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             }
         }
 
-        [Fact]
-        public void SendAsync_ServerCertificateValidationCallback_CalledOnce()
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version22000OrGreater))]
+        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce()
         {
             int callbackCount = 0;
             var handler = new WinHttpHandler()
@@ -64,8 +65,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 {
                     var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer).Result;
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    var responseContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                    _output.WriteLine(responseContent);
+                    _ = await response.Content.ReadAsStringAsync();
                 }
                 Assert.Equal(1, callbackCount);
             }
