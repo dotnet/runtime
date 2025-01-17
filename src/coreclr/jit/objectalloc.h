@@ -187,22 +187,17 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
         const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
 
-        if (CheckedOps::MulOverflows(elemSize, static_cast<unsigned>(length), CheckedOps::Unsigned))
+        ClrSafeInt<unsigned> totalSize(elemSize);
+        totalSize *= static_cast<unsigned>(length);
+        totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
+
+        if (totalSize.IsOverflow())
         {
             *reason = "[overflow array length]";
             return false;
         }
 
-        const unsigned payloadSize = elemSize * static_cast<unsigned>(length);
-        const unsigned headerSize  = static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
-
-        if (CheckedOps::AddOverflows(headerSize, payloadSize, CheckedOps::Unsigned))
-        {
-            *reason = "[overflow array length]";
-            return false;
-        }
-
-        classSize = headerSize + payloadSize;
+        classSize = totalSize.Value();
     }
     else if (allocType == OAT_NEWOBJ)
     {
