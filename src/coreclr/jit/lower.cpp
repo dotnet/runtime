@@ -7189,6 +7189,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         return false;
     }
 
+#if defined(TARGET_64BIT)
     // Replace (uint16 % uint16) with a cheaper variant of FastMod, specialized for 16-bit operands.
     if ((divMod->gtFlags & GTF_UMOD_UINT16_OPERANDS) != 0)
     {
@@ -7229,6 +7230,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         ContainCheckRange(multiplier, divMod);
         return true;
     }
+#endif
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
