@@ -1284,40 +1284,42 @@ namespace System.Text.Json
         internal enum EnclosingContainerType : byte
         {
             /// <summary>
-            /// Root level.
+            /// Root level. The choice of <see cref="JsonTokenType.None"/> allows fast validation by equality comparison when writing values
+            /// since a value can be written at the root level only if there was no previous token.
             /// </summary>
             None = JsonTokenType.None,
 
             /// <summary>
-            /// JSON object.
+            /// JSON object. The choice of <see cref="JsonTokenType.PropertyName"/> allows fast validation by equality comparison when writing values
+            /// since a value can be written inside a JSON object only if the previous token is a property name.
             /// </summary>
             Object = JsonTokenType.PropertyName,
 
             /// <summary>
-            /// JSON array. This is chosen large enough to not conflict with any <see cref="JsonTokenType"/> value.
+            /// JSON array. Chosen so that its lower nibble is 0 to ensure it does not conflict with <see cref="JsonTokenType"/> numeric values that currently are less than 16.
             /// </summary>
-            Array =                 0b000_1_0000,
+            Array = 0x10,
 
             /// <summary>
             /// Partial UTF-8 string. This is a container if viewed as an array of "utf-8 string segment"-typed values. This array can only be one level deep
             /// so <see cref="_bitStack"/> does not need to store its state.
             /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
             /// </summary>
-            Utf8StringSequence =    0b001_0_0000,
+            Utf8StringSequence = 0x20,
 
             /// <summary>
             /// Partial UTF-16 string. This is a container if viewed as an array of "utf-16 string segment"-typed values. This array can only be one level deep
             /// so <see cref="_bitStack"/> does not need to store its state.
             /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
             /// </summary>
-            Utf16StringSequence =   0b010_0_0000,
+            Utf16StringSequence = 0x30,
 
             /// <summary>
             /// Partial Base64 string. This is a container if viewed as an array of "base64 string segment"-typed values. This array can only be one level deep
             /// so <see cref="_bitStack"/> does not need to store its state.
             /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
             /// </summary>
-            Base64StringSequence =  0b011_0_0000,
+            Base64StringSequence = 0x40,
         }
     }
 }
