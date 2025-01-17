@@ -242,7 +242,7 @@ internal static partial class Interop
         private static ReaderWriterLockSlim? _allocationsLock;
 
         [UnmanagedCallersOnly]
-        private static unsafe void MemoryTrackinCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
+        private static unsafe void MemoryTrackingCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
         {
             ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
 
@@ -282,7 +282,7 @@ internal static partial class Interop
             _allocationsLock ??= new ReaderWriterLockSlim();
             _allocations ??= new ConcurrentDictionary<UIntPtr, UIntPtr>();
             _allocations!.Clear();
-            SetMemoryTracking(&MemoryTrackinCallback);
+            SetMemoryTracking(&MemoryTrackingCallback);
         }
 
         public static unsafe void DisableTracking()
