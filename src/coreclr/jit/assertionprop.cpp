@@ -4164,6 +4164,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         FitsIn<uint16_t>(op2->AsIntCon()->IconValue()) &&
         IntegralRange::ForNode(op1, this).GetUpperBound() <= SymbolicIntegerValue::UShortMax)
     {
+        assert(IntegralRange::ForNode(op1, this).GetLowerBound() >= SymbolicIntegerValue::Zero);
         JITDUMP("Both operands for UMOD are in uint16 range...\n")
         tree->gtFlags |= GTF_UMOD_UINT16_OPERANDS;
         changed = true;
