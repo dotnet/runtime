@@ -576,7 +576,6 @@
             <_BuildNativeAOTRuntimePack Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</_BuildNativeAOTRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildHostPack>
             <_BuildBundle Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
-            <BuildHostTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
           </PropertyGroup>
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
