@@ -2549,6 +2549,8 @@ public:
             uint16_t*             value
             ) = 0;
 
+    virtual bool getGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr) = 0;
+
     //------------------------------------------------------------------------------
     // getObjectType: obtains type handle for given object
     //

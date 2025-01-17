@@ -505,6 +505,13 @@ bool interceptor_ICJI::getStringChar(
     return original_ICorJitInfo->getStringChar(strObj, index, value);
 }
 
+bool interceptor_ICJI::getGcHeapBoundaries(
+          void** pLowerAddr,
+          void** pHighestAddr)
+{
+    return original_ICorJitInfo->getGcHeapBoundaries(pLowerAddr, pHighestAddr);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
           CORINFO_OBJECT_HANDLE objPtr)
 {

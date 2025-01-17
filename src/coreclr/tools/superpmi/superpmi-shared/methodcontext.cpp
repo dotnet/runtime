@@ -2216,6 +2216,20 @@ bool MethodContext::repGetStringChar(CORINFO_OBJECT_HANDLE strObj, int index, ui
     return (bool)value.A;
 }
 
+void MethodContext::recGetGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr, bool result)
+{
+    // TODO:
+}
+void MethodContext::dmpGetGcHeapBoundaries(DLDL key, DWORD value)
+{
+    // TODO:
+}
+bool MethodContext::repGetGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr)
+{
+    // TODO:
+    return false;
+}
+
 void MethodContext::recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result)
 {
     if (GetObjectType == nullptr)

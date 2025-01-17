@@ -34,8 +34,13 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 // Return Value:
 //    Number of the local that replaces the tree
 //
-static unsigned SplitAtTreeAndReplaceItWithLocal(
-    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* tree, BasicBlock** topBlock, BasicBlock** bottomBlock)
+static unsigned SplitAtTreeAndReplaceItWithLocal(Compiler*    comp,
+                                                 BasicBlock*  block,
+                                                 Statement*   stmt,
+                                                 GenTree*     tree,
+                                                 BasicBlock** topBlock,
+                                                 BasicBlock** bottomBlock,
+                                                 bool         replaceWithNothing = false)
 {
     BasicBlock* prevBb       = block;
     GenTree**   callUse      = nullptr;
@@ -52,12 +57,21 @@ static unsigned SplitAtTreeAndReplaceItWithLocal(
         newFirstStmt = newFirstStmt->GetNextStmt();
     }
 
-    // Grab a temp to store the result.
-    const unsigned tmpNum         = comp->lvaGrabTemp(true DEBUGARG("replacement local"));
-    comp->lvaTable[tmpNum].lvType = tree->TypeGet();
+    unsigned tmpNum;
+    if (replaceWithNothing)
+    {
+        tmpNum   = BAD_VAR_NUM;
+        *callUse = comp->gtNewNothingNode();
+    }
+    else
+    {
+        // Grab a temp to store the result.
+        tmpNum                        = comp->lvaGrabTemp(true DEBUGARG("replacement local"));
+        comp->lvaTable[tmpNum].lvType = tree->TypeGet();
 
-    // Replace the original call with that temp
-    *callUse = comp->gtNewLclvNode(tmpNum, tree->TypeGet());
+        // Replace the original call with that temp
+        *callUse = comp->gtNewLclvNode(tmpNum, tree->TypeGet());
+    }
 
     comp->fgMorphStmtBlockOps(block, stmt);
     comp->gtUpdateStmtSideEffects(stmt);
@@ -1887,6 +1901,134 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
+    return true;
+}
+
+PhaseStatus Compiler::fgWriteBarrierExpansion()
+{
+    if (opts.OptimizationDisabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->isRunRarely())
+        {
+            // It's just an optimization - don't waste time on rarely executed blocks
+            continue;
+        }
+
+        while (true)
+        {
+        AGAIN:
+            for (Statement* const stmt : block->NonPhiStatements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    if (fgWriteBarrierExpansionForStore(&block, stmt, tree))
+                    {
+                        result = PhaseStatus::MODIFIED_EVERYTHING;
+                        goto AGAIN;
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
+    {
+        fgInvalidateDfsTree();
+    }
+
+    return result;
+}
+
+bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* stmt, GenTree* store)
+{
+    if (!store->OperIs(GT_STORE_BLK, GT_STOREIND))
+    {
+        return false;
+    }
+
+    if ((store->gtFlags & (GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP)) != 0)
+    {
+        // We already know the target is on the heap or not on the heap
+        return false;
+    }
+
+    auto storeAddr = store->AsIndir()->Addr();
+    if ((storeAddr->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        // TODO
+        return false;
+    }
+
+    void* lowerBoundAddr;
+    void* upperBoundAddr;
+    if (!info.compCompHnd->getGcHeapBoundaries(&lowerBoundAddr, &upperBoundAddr))
+    {
+        // We can't determine the heap boundaries
+        return false;
+    }
+
+    BasicBlock* block     = *pBlock;
+    DebugInfo   debugInfo = stmt->GetDebugInfo();
+
+    BasicBlock* firstBb;
+    BasicBlock* lastBb;
+    SplitAtTreeAndReplaceItWithLocal(this, block, stmt, store, &firstBb, &lastBb, true);
+
+    // const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
+    auto lowerBoundAddrIndir = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)lowerBoundAddr, GTF_ICON_GLOBAL_PTR, false);
+    auto upperBoundAddrIndir = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)upperBoundAddr, GTF_ICON_GLOBAL_PTR, false);
+
+    GenTree*    lowAddrCheckOp = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(storeAddr), lowerBoundAddrIndir);
+    BasicBlock* lowAddrCheckBb =
+        fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, lowAddrCheckOp), debugInfo, true);
+
+    GenTree*    highAddrCheckOp = gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(storeAddr), upperBoundAddrIndir);
+    BasicBlock* highAddrCheckBb =
+        fgNewBBFromTreeAfter(BBJ_COND, lowAddrCheckBb, gtNewOperNode(GT_JTRUE, TYP_VOID, highAddrCheckOp), debugInfo,
+                             true);
+
+    auto heapStore = gtCloneExpr(store);
+    heapStore->gtFlags |= GTF_IND_TGT_HEAP;
+
+    auto stackStore = gtCloneExpr(store);
+    stackStore->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+
+    BasicBlock* heapPathBb  = fgNewBBFromTreeAfter(BBJ_ALWAYS, highAddrCheckBb, heapStore, debugInfo, true);
+    BasicBlock* stackPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, heapPathBb, stackStore, debugInfo, true);
+    fgRedirectTargetEdge(firstBb, lowAddrCheckBb);
+
+    FlowEdge* const lowAddrCheckTrueEdge   = fgAddRefPred(stackPathBb, lowAddrCheckBb);
+    FlowEdge* const lowAddrCheckFalseEdge  = fgAddRefPred(highAddrCheckBb, lowAddrCheckBb);
+    FlowEdge* const highAddrCheckTrueEdge  = fgAddRefPred(stackPathBb, highAddrCheckBb);
+    FlowEdge* const highAddrCheckFalseEdge = fgAddRefPred(heapPathBb, highAddrCheckBb);
+    FlowEdge* const heapPathEdge           = fgAddRefPred(lastBb, heapPathBb);
+    FlowEdge* const stackPathEdge          = fgAddRefPred(lastBb, stackPathBb);
+
+    lowAddrCheckBb->SetTrueEdge(lowAddrCheckTrueEdge);
+    lowAddrCheckBb->SetFalseEdge(lowAddrCheckFalseEdge);
+    highAddrCheckBb->SetTrueEdge(highAddrCheckTrueEdge);
+    highAddrCheckBb->SetFalseEdge(highAddrCheckFalseEdge);
+    heapPathBb->SetTargetEdge(heapPathEdge);
+    stackPathBb->SetTargetEdge(stackPathEdge);
+
+    lowAddrCheckBb->inheritWeightPercentage(firstBb, 50);
+    highAddrCheckBb->inheritWeightPercentage(lowAddrCheckBb, 50);
+    heapPathBb->inheritWeightPercentage(highAddrCheckBb, 50);
+    stackPathBb->inheritWeightPercentage(highAddrCheckBb, 50);
+
+    lowAddrCheckTrueEdge->setLikelihood(0.5);
+    lowAddrCheckFalseEdge->setLikelihood(0.5);
+    highAddrCheckTrueEdge->setLikelihood(0.5);
+    highAddrCheckFalseEdge->setLikelihood(0.5);
+    heapPathEdge->setLikelihood(1.0);
+    stackPathEdge->setLikelihood(1.0);
     return true;
 }
 

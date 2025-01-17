@@ -790,6 +790,14 @@ bool interceptor_ICJI::getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, ui
     return temp;
 }
 
+bool interceptor_ICJI::getGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr)
+{
+    mc->cr->AddCall("getGcHeapBoundaries");
+    bool temp = original_ICorJitInfo->getGcHeapBoundaries(pLowerAddr, pHighestAddr);
+    mc->recGetGcHeapBoundaries(pLowerAddr, pHighestAddr, temp);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(CORINFO_OBJECT_HANDLE typeObj)
 {
     mc->cr->AddCall("getObjectType");

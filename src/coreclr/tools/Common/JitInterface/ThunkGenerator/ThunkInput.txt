@@ -235,6 +235,7 @@ FUNCTIONS
     CORINFO_OBJECT_HANDLE getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     bool isObjectImmutable(CORINFO_OBJECT_HANDLE objPtr)
     bool getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value);
+    bool getGcHeapBoundaries(void **pLowerAddr, void **pHighestAddr);
     CORINFO_CLASS_HANDLE getObjectType(CORINFO_OBJECT_HANDLE objPtr)
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP *pLookup)
     void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP *pLookup)

@@ -664,6 +664,12 @@ bool MyICJI::getStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* va
     return result;
 }
 
+bool MyICJI::getGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr)
+{
+    jitInstance->mc->cr->AddCall("getGcHeapBoundaries");
+    return jitInstance->mc->repGetGcHeapBoundaries(pLowerAddr, pHighestAddr);
+}
+
 CORINFO_CLASS_HANDLE MyICJI::getObjectType(CORINFO_OBJECT_HANDLE objPtr)
 {
     jitInstance->mc->cr->AddCall("getObjectType");

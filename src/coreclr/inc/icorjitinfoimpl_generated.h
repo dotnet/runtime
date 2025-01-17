@@ -301,6 +301,10 @@ bool getStringChar(
           int index,
           uint16_t* value) override;
 
+bool getGcHeapBoundaries(
+          void** pLowerAddr,
+          void** pHighestAddr) override;
+
 CORINFO_CLASS_HANDLE getObjectType(
           CORINFO_OBJECT_HANDLE objPtr) override;
 

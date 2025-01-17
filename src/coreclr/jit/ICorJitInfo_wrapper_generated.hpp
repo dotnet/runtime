@@ -703,6 +703,16 @@ bool WrapICorJitInfo::getStringChar(
     return temp;
 }
 
+bool WrapICorJitInfo::getGcHeapBoundaries(
+          void** pLowerAddr,
+          void** pHighestAddr)
+{
+    API_ENTER(getGcHeapBoundaries);
+    bool temp = wrapHnd->getGcHeapBoundaries(pLowerAddr, pHighestAddr);
+    API_LEAVE(getGcHeapBoundaries);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
           CORINFO_OBJECT_HANDLE objPtr)
 {

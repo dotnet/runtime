@@ -302,6 +302,10 @@ public:
     void dmpGetStringChar(DLD key, DD value);
     bool repGetStringChar(CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* charValue);
 
+    void recGetGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr, bool result);
+    void dmpGetGcHeapBoundaries(DLDL key, DWORD value);
+    bool repGetGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr);
+
     void recGetObjectType(CORINFO_OBJECT_HANDLE objPtr, CORINFO_CLASS_HANDLE result);
     void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetObjectType(CORINFO_OBJECT_HANDLE objPtr);
@@ -1203,6 +1207,7 @@ enum mcPackets
     Packet_GetSZArrayHelperEnumeratorClass = 226,
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
+    Packet_GetGcHeapBoundaries = 229,
 };
 
 void SetDebugDumpVariables();

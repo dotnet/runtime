@@ -5145,6 +5145,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
 
+        // Expand WB
+        DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgWriteBarrierExpansion);
+
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);

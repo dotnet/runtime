@@ -6113,6 +6113,9 @@ public:
     PhaseStatus fgLateCastExpansion();
     bool fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgWriteBarrierExpansion();
+    bool fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* stmt, GenTree* store);
+
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 

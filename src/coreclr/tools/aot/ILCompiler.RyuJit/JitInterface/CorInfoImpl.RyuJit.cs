@@ -2428,6 +2428,13 @@ namespace Internal.JitInterface
             return false;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private bool getGcHeapBoundaries(ref void* pLowerAddr, ref void* pHighestAddr)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return false;
+        }
+
         private int getArrayOrStringLength(CORINFO_OBJECT_STRUCT_* objHnd)
         {
             return HandleToObject(objHnd).ArrayLength ?? -1;

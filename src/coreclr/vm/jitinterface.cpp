@@ -5991,6 +5991,26 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
     return isImmutable;
 }
 
+bool CEEInfo::getGcHeapBoundaries(void** pLowerAddr, void** pHighestAddr)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result = true;
+
+    JIT_TO_EE_TRANSITION();
+
+    *pLowerAddr = static_cast<void*>(&g_lowest_address);
+    *pHighestAddr = static_cast<void*>(&g_highest_address);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /***********************************************************************/
 bool CEEInfo::getStringChar(CORINFO_OBJECT_HANDLE obj, int index, uint16_t* value)
 {

@@ -82,6 +82,7 @@ struct JitInterfaceCallbacks
     CORINFO_OBJECT_HANDLE (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
     bool (* getStringChar)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE strObj, int index, uint16_t* value);
+    bool (* getGcHeapBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, void** pLowerAddr, void** pHighestAddr);
     CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objPtr);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* pLookup);
@@ -890,6 +891,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getStringChar(_thisHandle, &pException, strObj, index, value);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getGcHeapBoundaries(
+          void** pLowerAddr,
+          void** pHighestAddr)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getGcHeapBoundaries(_thisHandle, &pException, pLowerAddr, pHighestAddr);
     if (pException != nullptr) throw pException;
     return temp;
 }
