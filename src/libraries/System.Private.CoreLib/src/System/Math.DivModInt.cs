@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 namespace System
 {
     /// <summary>
-    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// Math helpers for generated code. The helpers here are referenced by the runtime.
     /// </summary>
     public static partial class Math
     {
