@@ -741,6 +741,10 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
         assert(removedBlock->KindIs(BBJ_ALWAYS));
         comp->fgRemoveBlock(removedBlock, /* unreachable */ true);
     }
+    else
+    {
+        JITDUMP("ALLOCOBJ [%06u] is not part of an empty static\n", comp->dspTreeID(allocObj));
+    }
 
     return lclNum;
 }
@@ -1276,23 +1280,41 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
             }
         }
 
-        // We may be able to clone and specialize the enumerator uses to ensure
-        // that the allocated enumerator does not escape.
+        // Also check the alloc temps
         //
-        JITDUMP("   P%02u is guarding the escape of V%02u\n", pseudoLocal, lclNum);
         if (info->m_allocTemps != nullptr)
         {
-            JITDUMP("   along with ");
             for (unsigned v : *(info->m_allocTemps))
             {
-                JITDUMP("V%02u ", v);
+                if (BitVecOps::IsMember(bitVecTraits, escapingNodes, v))
+                {
+                    JITDUMP("   alloc temp V%02u escapes independently of P%02u\n", v, pseudoLocal)
+                    canClone = false;
+                    break;
+                }
             }
-            JITDUMP("\n");
         }
-        JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local, comp->eeGetClassName(info->m_type));
-        JITDUMP("   V%02u + secondary vars have %u appearances\n", info->m_local, info->m_appearanceCount);
 
-        comp->Metrics.EnumeratorGDVProvisionalNoEscape++;
+        if (canClone)
+        {
+            // We may be able to clone and specialize the enumerator uses to ensure
+            // that the allocated enumerator does not escape.
+            //
+            JITDUMP("   P%02u is guarding the escape of V%02u\n", pseudoLocal, lclNum);
+            if (info->m_allocTemps != nullptr)
+            {
+                JITDUMP("   along with ");
+                for (unsigned v : *(info->m_allocTemps))
+                {
+                    JITDUMP("V%02u ", v);
+                }
+                JITDUMP("\n");
+            }
+            JITDUMP("   they escape only when V%02u.Type NE %s\n", info->m_local, comp->eeGetClassName(info->m_type));
+            JITDUMP("   V%02u + secondary vars have %u appearances\n", info->m_local, info->m_appearanceCount);
+
+            comp->Metrics.EnumeratorGDVProvisionalNoEscape++;
+        }
 
         // See if cloning is actually viable.
         //
@@ -2801,8 +2823,9 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     //
     if ((info->m_allocTree->gtFlags & GTF_ALLOCOBJ_EMPTY_STATIC) != 0)
     {
-        JITDUMP("Anticipating the empty-collection static enumerator opt,"
-                " so not adjusting profile in the initial GDV region\n");
+        JITDUMP("Anticipating the empty-collection static enumerator opt for [%06u],"
+                " so not adjusting profile in the initial GDV region\n",
+                comp->dspTreeID(info->m_allocTree));
         return;
     }
 
