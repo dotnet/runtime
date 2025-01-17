@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <PropertyGroup Condition="'$(BuildHostILTools)' == 'true'">
-    <BuildHostTargetingPackage>true</BuildHostTargetingPackage>
+  <PropertyGroup>
+    <IsILToolPackage>true</IsILToolPackage>
   </PropertyGroup>
   <ItemGroup>
     <!-- identity project, runtime specific projects are included by props above -->

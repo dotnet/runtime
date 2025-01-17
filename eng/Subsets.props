@@ -164,10 +164,6 @@
     <TargetCxxLibraryProperties Condition="'$(TargetCxxAbiLibrary)' != ''">$(TargetCxxLibraryProperties);CxxAbiLibrary=$(TargetCxxAbiLibrary)</TargetCxxLibraryProperties>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <BuildHostTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
-  </PropertyGroup>
-
   <ItemGroup>
     <!-- CoreClr -->
     <SubsetName Include="Clr" Description="The full CoreCLR runtime. Equivalent to: $(DefaultCoreClrSubsets)" />
@@ -317,15 +313,17 @@
     <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
-    <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
-    <_CrossToolProperties Condition="'$(_BuildCrossComponents)' == 'true'">$(_CrossToolProperties);ClrCrossComponentsSubset=true</_CrossToolProperties>
-    <_CrossToolProperties Condition="'$(BuildHostILTools)' == 'true'">$(_CrossToolProperties);ClrILToolsSubset=true</_CrossToolProperties>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(_BuildAnyCrossArch)' == 'true' and '$(_CrossToolProperties)' != ''">
+  <ItemGroup>
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrCrossComponentsSubset=true" />
+    <_CrossToolSubset Condition="'$(BuildHostILTools)' == 'true'" Include="ClrILToolsSubset=true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(_BuildAnyCrossArch)' == 'true' and '@(_CrossToolSubset)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);$(_CrossToolProperties);
+      AdditionalProperties="%(AdditionalProperties);@(_CrossToolSubset);
                             HostArchitecture=$(BuildArchitecture);
                             HostCrossOS=$(HostOS);
                             PgoInstrument=false;
