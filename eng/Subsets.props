@@ -317,7 +317,7 @@
     <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
-    <BuildHostILTools Condition="$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
+    <BuildHostILTools Condition="'$(BuildHostTools)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">true</BuildHostILTools>
     <_CrossToolProperties Condition="'$(_BuildCrossComponents)' == 'true'">$(_CrossToolProperties);ClrCrossComponentsSubset=true</_CrossToolProperties>
     <_CrossToolProperties Condition="'$(BuildHostILTools)' == 'true'">$(_CrossToolProperties);ClrILToolsSubset=true</_CrossToolProperties>
   </PropertyGroup>
