@@ -160,7 +160,7 @@ Based on this PGO data, the JIT first translates the above into something like t
     return sum;
 ```
 Here we have shown the GDV expansions for the first two call sites, but left
-the other three unexpanded. so as not to clutter things too much. (Note the call to `MoveNext` has been duplicated here by the JIT, so there are now 5 interface call sites; this duplication comes from an optimization know as loop inversion).
+the other three unexpanded. so as not to clutter things too much. (Note the call to `MoveNext` has been duplicated here by the JIT, so there are now 5 interface call sites; this duplication comes from an optimization known as loop inversion).
 
 This may not look like an improvement, but the key point is that in the `if` part of each GDV diamond, the interface calls are now made on objects whose types are known exactly, so these calls can be devirtualized and inlined. And thanks to PGO, we know that the `if` true cases for the diamonds are the important cases for performance.
 
@@ -235,7 +235,7 @@ To resolve this we again dip back into our special knowledge of `GetEnumerator`.
 
 #### Challenge 5: Address Exposure
 
-We're getting closer to or goal, in the case of `...readonly_array_via_interface`. However promotion is still not happening. Before the JIT will promote a local object's fields it must ensure it knows about all the accesses to the fields. But in our case the propagation of the "stack address" from the allocation site in the inlined `GetEnumerator` to the uses in the inlined `MoveNext` and other methods is not happening in a timely fashion, because those uses are in a loop.
+We're getting closer to our goal, in the case of `...readonly_array_via_interface`. However promotion is still not happening. Before the JIT will promote a local object's fields it must ensure it knows about all the accesses to the fields. But in our case the propagation of the "stack address" from the allocation site in the inlined `GetEnumerator` to the uses in the inlined `MoveNext` and other methods is not happening in a timely fashion, because those uses are in a loop.
 
 And, furthermore, there is a use in the `finally` clause. Even though the `Dispose` method doesn't do anything, there is a residual null check and so the enumerator is referenced there.
 
@@ -243,9 +243,9 @@ So we made some enhancements to our early address propagation to resolve both th
 
 #### Challenge 6: Cloning
 
-With all that in place, the abstraction for the `...readonly_array_via_interface` is largely gone: the enumerator object is now replaced by a locals, one per field. And so the JIT is poised to apply on its full suite of loop optimization techniques. In particular IV analysis, bounds check elimination, and so on.
+With all that in place, the abstraction for the `...readonly_array_via_interface` is largely gone: the enumerator object is now replaced by locals, one per field. And so the JIT is poised to apply its full suite of loop optimization techniques, in particular IV analysis, bounds check elimination, and so on.
 
-However, there is one last hurdle to overcome: the loop "header" is also the start of a try region. The JIT often relies on cloning to enable bounds check elimination, meaning: it analyzes the loop body, and if it sees that if a the array accesses in the loop can be proved to be in-bounds by a check it could make before the loop starts, it duplicates the loop, adds the checks, and so ends up with a "fast path" loop with no (or fewer) bounds checks; and a slow path loop with full checking. (Footnote 7).
+However, there is one last hurdle to overcome: the loop "header" is also the start of a try region. The JIT often relies on cloning to enable bounds check elimination: it analyzes the loop body, and if it sees that the array accesses in the loop can be proven to be in-bounds by a check made before the loop starts, it duplicates the loop, adds the checks, and so ends up with a "fast path" loop with no (or fewer) bounds checks, and a slow path loop with full checking. (Footnote 7).
 
 So we did work to enable cloning when the loop header is also a try entry [dotnet/runtime#108604](https://github.com/dotnet/runtime/pull/108604). But when working on this we realized it was going to lead to a lot more cloning, and so we first had to put some more realistic limits on how much code the JIT would be willing to duplicate to try and optimize [dotnet/runtime#108771](https://github.com/dotnet/runtime/pull/108771).
 
@@ -294,7 +294,7 @@ Now let's turn our attention back to the more complex case, where the only way t
 
 But it still allocates, so the enumerator object is still a heap object.
 
-We now need to deal with having an the upper GDV diamond, so in the code below, we cannot resolve the GDV tests, since we are not 100% sure which type of object we have for `e`. PGO can tell us the likely type, and GDV can guess for that type, but we don't have any guarantees.
+We now need to deal with having the upper GDV diamond, so in the code below, we cannot resolve the GDV tests, since we are not 100% sure which type of object we have for `e`. PGO can tell us the likely type, and GDV can guess for that type, but we don't have any guarantees.
 
 How are we going to arrange to have these guarantees? If you've been reading the footnotes, or perhaps have a good intuitive feel for this sort of thing, the answer is that we are going to clone and create a specialized version of this code for the case where the upper GDV test succeeds; once we do that this case more or less reduces to the case above. (Footnote 8)
 
@@ -304,9 +304,9 @@ What this means in practice is that when we run escape analysis, we need it to a
 
 ### Conditional Escape Analysis
 
-Thanks to PGO and GDV, if we knew all the lower GDV tests succeeded, then we would know the enumerator object could not escape. So the first key insight is that the problematic cases are the ones where the lower GDV tests fails. The second key insight is that the failing side of each GDV diamond is particularly simple: an interface call where the enumerator is the `this`. And the third key insight is that all the lower GDV tests are equivalent and only depend on the value produced at the bottom of the upper GDV diamond.
+Thanks to PGO and GDV, if we knew all the lower GDV tests succeeded, then we would know the enumerator object could not escape. So the first key insight is that the problematic cases are the ones where the lower GDV tests fail. The second key insight is that the failing side of each GDV diamond is particularly simple: an interface call where the enumerator is the `this`. And the third key insight is that all the lower GDV tests are equivalent and only depend on the value produced at the bottom of the upper GDV diamond.
 
-So when doing escape analysis, if we can determine that all escaping accesses are interface calls of that form, and all are made under a failing GDV test checking the type of the object produced by the upper GDV diamond, we've conditionally proved that those references won't cause escape, if we can arrange for the GDV test to always succeed, which we can do by cloning the entire region from the enumerator allocation site in the upper diamond down through all the uses in the lower diamonds.
+So when doing escape analysis, if we can determine that all escaping accesses are interface calls of that form, and all are made under a failing GDV test checking the type of the object produced by the upper GDV diamond, we've conditionally proven that those references won't cause escape, if we can arrange for the GDV test to always succeed, which we can do by cloning the entire region from the enumerator allocation site in the upper diamond down through all the uses in the lower diamonds.
 
 #### Escape Analysis
 
@@ -381,7 +381,7 @@ Since `ac` escapes, the `new E()` must be a heap allocation.
 If you look closely at the simplified example, `new E()` cannot actually escape, because if that path of the upper GDV is taken, then the `e.MoveNext()` on the failing side of the lower GDV cannot happen. Establishing that requires  conditional escape analysis.
 
 To model conditional escape, the JIT first identifies allocation sites like
-`ac = new E()` that happen on the successful side of GDV diamonds, where a reference to the allocated object can become the GDV result, and finds the local that is the holds the result of that GDV (here it is `e`). For each such `E, e` pair the JIT creates a new pseudo-variable `P` that will connect up references to `e` or copies thereof that happen under a failed GDV guard that tests the type of `e` against `E`.
+`ac = new E()` that happen on the successful side of GDV diamonds, where a reference to the allocated object can become the GDV result, and finds the local that holds the result of that GDV (here it is `e`). For each such `E, e` pair the JIT creates a new pseudo-variable `P` that will connect up references to `e` or copies thereof that happen under a failed GDV guard that tests the type of `e` against `E`.
 
 So it creates a mapping `(e, E) -> P`.
 
@@ -398,11 +398,11 @@ Then closure computation runs:
 
 So we have proven that if can we arrange things so that any GDV test of the form `(e.Type == E)` succeeds, then the `new E()` does not escape and can be stack allocated. (Footnote 9)
 
-Note it is also possible (in some other example) that there is an escaping reference that is not under a suitable failing GDV. In such a case the object escapes and is stack allocated. So it's only when all potentially escaping references are under a suitable failing GDV that we move on to the next stage to attempt stack allocation.
+Note it is also possible (in some other example) that there is an escaping reference that is not under a suitable failing GDV. In such a case the object escapes and is heap allocated. So it's only when all potentially escaping references are under a suitable failing GDV that we move on to the next stage to attempt stack allocation.
 
 #### Challenge 8: Flow-Insensitivity
 
-You will notice in the algorithm sketch above we are implicitly relying on certain ordering properties in the code, eg the allocation at `ac = new E()` reaches to `e = t` via a chain of temp copies, and that that assignment to `e` reaches to at each `(e.Type == E)` test. But since the analysis is flow-insensitive, so we have not yet proven any of this.
+You will notice in the algorithm sketch above we are implicitly relying on certain ordering properties in the code, e.g. the allocation at `ac = new E()` reaches to `e = t` via a chain of temp copies, and that that assignment to `e` reaches to at each `(e.Type == E)` test. But since the analysis is flow-insensitive, we have not yet proven any of this.
 
 To establish these facts the JIT also tracks all appearances of all variables that might refer to the object, and then, after the initial round of escape analysis, relies on dominance information to demonstrate that those appearances all must refer to the allocated object.
 
@@ -414,7 +414,7 @@ If you refer back to the expanded `foreach` above, you will notice that the lowe
 
 The JIT has had the ability to clone loops for a long time, but not this more general kind of region-based cloning, and especially not when the cloning involves cloning a try region.
 
-Cloning a try region turns out to be fairly involved; in addition to the `try` region itself, cloning must also encompass any handler (here a `finally`), any code outside the try that facilitates executing the handlers (aka the `callfinally` region), any promises made to create suitable throw helper blocks within the try or handler, (aka `ACDs`), any nested `try` regions (within the `try` or the `finally`), and the associated EH table entries.
+Cloning a try region turns out to be fairly involved; in addition to the `try` region itself, cloning must also encompass any handler (here a `finally`), any code outside the try that facilitates executing the handlers (aka the `callfinally` region), any promises made to create suitable throw helper blocks within the try or handler (aka `ACDs`), any nested `try` regions (within the `try` or the `finally`), and the associated EH table entries.
 
 Support for cloning a try was added in [runtime/dotnet#110020](https://github.com/dotnet/runtime/pull/110020).
 
@@ -434,7 +434,7 @@ We also modify the GDV tests in the original code to always fail. This is not st
 
 Once the JIT has cloned to prevent escape, and swapped out the set of enumerating-reference vars to enable promotion, what's left? One thing we need to consider is that the cloned (fast) path and original (slow) path likely involve try/finallys, and because they may share other variable references (for non-enumerator things) we may need to somewhat aggressively optimize the slow path in order to ensure we get the best code in the fast path. In particular the JIT may need to also do "finally cloning" along the slow path even if believes this code is very unlikely to execute.
 
-It looks like the existing heuristic to not clone any finally that seems tob e rarely executed almost never fires, so we can perhaps simply relax that; alternatively, we can mark the finally in some way so that a different heuristic can be applied to the slow/cold finally.
+It looks like the existing heuristic to not clone any finally that seems to be rarely executed almost never fires, so we can perhaps simply relax that; alternatively, we can mark the finally in some way so that a different heuristic can be applied to the slow/cold finally.
 
 This was addressed by [dotnet/runtime#110483](https://github.com/dotnet/runtime/pull/110483).
 
@@ -442,11 +442,11 @@ This was addressed by [dotnet/runtime#110483](https://github.com/dotnet/runtime/
 
 Once we've established that we can indeed clone, one last question remains: is the benefit from all this code duplication worthwhile? Our initial experience indicates that simply stack allocating an object may not provide enough benefit; we also need to ensure the object can be promoted. (Footnote 12)
 
-To help ensure stack allocation this we extend the cloning to also re-write all of the local vars that might reference the `new E()` so that downstream phases (also somewhat flow-insensitive) do not see references to the same locals in the cloned code and in the original code.
+To help ensure stack allocation we extend the cloning to also re-write all of the local vars that might reference the `new E()` so that downstream phases (also somewhat flow-insensitive) do not see references to the same locals in the cloned code and in the original code.
 
 #### Challenge 12: Multi-Guess GDV
 
-The JIT is also able to expand an GDV into multiple guesses. This is not (yet) the default, but it would be ideal if it was compatible with conditional escape analysis. Under multi guess-GDV we may see a conditional escape protected by two or more failing guards, and more than one one conditional enumerator allocation under a successful (and perhaps some failing) upper GDV guards.
+The JIT is also able to expand a GDV into multiple guesses. This is not (yet) the default, but it would be ideal if it was compatible with conditional escape analysis. Under multi-guess GDV we may see a conditional escape protected by two or more failing guards, and more than one conditional enumerator allocation under a successful (and perhaps some failing) upper GDV guards.
 
 Generalizing what we have above to handle this case seems fairly straightforward, provided we are willing to create one clone region per distinct GDV guard type.
 
@@ -456,7 +456,7 @@ Another possibility is that the upper GDV diamond contains multiple allocations 
 
 #### Challenge 13: Exact Multi-Guess GDV
 
-Under NAOT there is one other similar possibility: thanks to whole-program analysis, ILC can enumerate all the classes that can implement `IEnumerable<int>` say, and if there are just a small number of possible implementing classes, tell the JIT to guess for each in turn. Handling this would require some extra work as well; the JIT could clone for each known class and then the original code would become unreachable.
+Under NAOT there is one other similar possibility: thanks to whole-program analysis, ILC can enumerate all the classes that can implement, say, `IEnumerable<int>`, and if there are just a small number of possible implementing classes, tell the JIT to guess for each in turn. Handling this would require some extra work as well; the JIT could clone for each known class and then the original code would become unreachable.
 
 ## `List<T>`
 
@@ -619,7 +619,7 @@ As we've seen from the above, *if* we can arrange to stack allocate the enumerat
 
 The optimization that turns a heap allocation into a stack allocation does so by creating a fixed set of slots on the stack frame for the object. This doesn't work properly if the allocation site can be visited more than once during a call to a method, since it's possible the storage allocated from an early visit is still in use (aka "live") when a later visit happens. Note if there are multiple visits to a bit of code in a method it generally means the method contains a loop (Footnote 15).
 
-There are a couple of different ways to try and handle these cases. One is to replace the fixed stack allocation with a dynamic one. There is already a mechanism (`stackalloc` in C#) for this, and we could consider using it, but this currently won't interact well with promotion, so the subsequent optimizations won't happen. And there is some extra up-front cost each method call. And the stack itself is a limited resource, so we don't want to be allocating a potentially large amount of space. So there are tradeoffs here that are not yet well understood.
+There are a couple of different ways to try and handle these cases. One is to replace the fixed stack allocation with a dynamic one. There is already a mechanism (`stackalloc` in C#) for this, and we could consider using it, but this currently won't interact well with promotion, so the subsequent optimizations won't happen. And there is some extra up-front cost to each method call. And the stack itself is a limited resource, so we don't want to be allocating a potentially large amount of space. So there are tradeoffs here that are not yet well understood.
 
 The second is to prove that the stack allocated instance is no longer live on any subsequent visit, so that the fixed bit of storage can be recycled. This is perhaps doable, and should be the common case with enumerators, so we will likely be considering it as an enhancement.
 
