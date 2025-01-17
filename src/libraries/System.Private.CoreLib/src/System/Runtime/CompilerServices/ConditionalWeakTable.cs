@@ -195,7 +195,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="key">The key of the value to find. It cannot be <see langword="null"/>.</param>
         /// <param name="value">The value to add and bind to <typeparamref name="TKey"/>, if one does not exist already.</param>
         /// <returns>The value bound to <typeparamref name="TKey"/> in the current <see cref="ConditionalWeakTable{TKey, TValue}"/> instance, after the method completes.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="key"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
         public TValue GetOrAdd(TKey key, TValue value)
         {
             // key is validated by TryGetValue
@@ -214,7 +214,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="key">The key of the value to find. It cannot be <see langword="null"/>.</param>
         /// <param name="valueFactory">The callback that creates a value for key, if one does not exist already. It cannot be <see langword="null"/>.</param>
         /// <returns>The value bound to <typeparamref name="TKey"/> in the current <see cref="ConditionalWeakTable{TKey, TValue}"/> instance, after the method completes.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="key"/> or <paramref name="valueFactory"/> are <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="valueFactory"/> are <see langword="null"/>.</exception>
         /// <remarks>
         /// If multiple threads try to initialize the same key, the table may invoke <paramref name="valueFactory"/> multiple times
         /// with the same key. Exactly one of these calls will succeed and the returned value of that call will be the one added to
@@ -246,7 +246,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="valueFactory">The callback that creates a value for key, if one does not exist already. It cannot be <see langword="null"/>.</param>
         /// <param name="factoryArgument">The additional argument to supply to <paramref name="valueFactory"/> upon invocation.</param>
         /// <returns>The value bound to <typeparamref name="TKey"/> in the current <see cref="ConditionalWeakTable{TKey, TValue}"/> instance, after the method completes.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="key"/> or <paramref name="valueFactory"/> are <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="key"/> or <paramref name="valueFactory"/> are <see langword="null"/>.</exception>
         /// <remarks>
         /// If multiple threads try to initialize the same key, the table may invoke <paramref name="valueFactory"/> multiple times with the
         /// same key. Exactly one of these calls will succeed and the returned value of that call will be the one added to the table and
