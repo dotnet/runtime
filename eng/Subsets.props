@@ -388,11 +388,14 @@
     <!-- skip the architectures that don't have LKG runtime packs -->
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_publish.csproj" Condition="'$(NativeAotSupported)' == 'true' and '$(StageOneBuild)' != 'true'" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true' and '$(StageOneBuild)' != 'true'" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_publish.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true' and '$(StageOneBuild)' != 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_inbuild.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Condition="'$(NativeAotSupported)' == 'true' and '$(StageOneBuild)' != 'true'" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Condition="'$(NativeAotSupported)' == 'true' and '$(StageOneBuild)' != 'true'" Category="clr" />
 
+    <!-- Always build the in-build variants of these tools. They run on the host machine, which we always have LKG packs for. -->
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_inbuild.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_inbuild.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
@@ -576,7 +579,6 @@
             <_BuildNativeAOTRuntimePack Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">true</_BuildNativeAOTRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true' and '$(BuildNativeAOTRuntimePack)' != 'true'">true</_BuildHostPack>
             <_BuildBundle Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
-            <BuildHostTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
           </PropertyGroup>
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
