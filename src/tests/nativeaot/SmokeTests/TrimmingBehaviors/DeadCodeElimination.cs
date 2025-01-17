@@ -28,6 +28,7 @@ class DeadCodeElimination
         TestTypeIsEnum.Run();
         TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
+        TestCanBeNonNull.Run();
         TestUnmodifiableStaticFieldOptimization.Run();
         TestUnmodifiableInstanceFieldOptimization.Run();
         TestGetMethodOptimization.Run();
@@ -713,6 +714,105 @@ class DeadCodeElimination
 
             ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UnusedFromVirtual));
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
+        }
+    }
+
+    class TestCanBeNonNull
+    {
+        interface INever1;
+        interface INever2<T>;
+        interface INever3<T>;
+        interface INever3_Variant<in T>;
+
+        class ImplementsINever3Object : INever3<object>;
+        class ImplementsINever3_VariantObject : INever3_Variant<object>;
+
+        interface IImplemented;
+        class Implements : IImplemented;
+
+        class Canary1;
+        class Canary2;
+        class Canary3;
+        class Canary4;
+        class Canary5;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object AcceptINever(INever1 inst)
+        {
+            if (inst != null)
+            {
+                return new Canary1();
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object AcceptINever2<T>(INever2<T> inst)
+        {
+            if (inst != null)
+            {
+                return new Canary2();
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object AcceptIImplemented(IImplemented inst)
+        {
+            if (inst != null)
+            {
+                return new Canary3();
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object AcceptINever3String(INever3<string> inst)
+        {
+            if (inst != null)
+            {
+                return new Canary4();
+            }
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object AcceptINever3_VariantString(INever3_Variant<string> inst)
+        {
+            if (inst != null)
+            {
+                return new Canary5();
+            }
+            return null;
+        }
+
+        public static void Run()
+        {
+            if (AcceptINever(null) != null)
+                throw new Exception();
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestCanBeNonNull), nameof(Canary1));
+#endif
+
+            if (AcceptINever2<object>(null) != null)
+                throw new Exception();
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestCanBeNonNull), nameof(Canary2));
+#endif
+
+            if (AcceptIImplemented(new Implements()) == null)
+                throw new Exception();
+            ThrowIfNotPresent(typeof(TestCanBeNonNull), nameof(Canary3));
+
+            new ImplementsINever3Object().ToString();
+            AcceptINever3String(null);
+#if !DEBUG
+            ThrowIfPresentWithUsableMethodTable(typeof(TestCanBeNonNull), nameof(Canary4));
+#endif
+
+            if (AcceptINever3_VariantString(new ImplementsINever3_VariantObject()) == null)
+                throw new Exception();
+            ThrowIfNotPresent(typeof(TestCanBeNonNull), nameof(Canary5));
         }
     }
 

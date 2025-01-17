@@ -209,11 +209,26 @@ namespace ILCompiler
         public virtual bool CanReferenceConstructedMethodTable(TypeDesc type) => true;
 
         /// <summary>
+        /// Gets a value indicating whether it might be possible that the interface type is implemented by a constructed type data structure
+        /// in this compilation. Note that the MethodTable for the interface itself could still be optimized away.
+        /// </summary>
+        public virtual bool CanInterfaceBeImplementedByConstructedMethodTable(TypeDesc type) => true;
+
+        /// <summary>
         /// Gets a value indicating whether a (potentially canonically-equlivalent) constructed MethodTable could
         /// exist. This is similar to <see cref="CanReferenceConstructedMethodTable"/>, but will return true
         /// for List&lt;__Canon&gt; if a constructed MethodTable for List&lt;object&gt; exists.
         /// </summary>
         public virtual bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type) => true;
+
+        /// <summary>
+        /// Gets a value indicating whether it might be possible that the interface type is implemented by a constructed type data structure
+        /// in this compilation. Note that the MethodTable for the interface itself could still be optimized away.
+        /// Similar to <see cref="CanInterfaceBeImplementedByConstructedMethodTable"/> but will return true for
+        /// IInterface&lt;__Canon&gt; if IInterface&lt;String&gt; could be implemented.
+        /// </summary>
+        public virtual bool CanInterfaceOrCanonicalFormOfItBeImplementedByConstructedMethodTable(TypeDesc type) => true;
+
 
         public virtual TypeDesc[] GetImplementingClasses(TypeDesc type) => null;
 #endif

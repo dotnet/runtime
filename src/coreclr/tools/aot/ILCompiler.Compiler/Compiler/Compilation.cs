@@ -108,9 +108,19 @@ namespace ILCompiler
             return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
         }
 
+        public bool CanInterfaceBeImplementedByConstructedMethodTable(TypeDesc type)
+        {
+            return NodeFactory.DevirtualizationManager.CanInterfaceBeImplementedByConstructedMethodTable(type.NormalizeInstantiation());
+        }
+
         public bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
         {
             return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation());
+        }
+
+        public bool CanInterfaceOrCanonicalFormOfItBeImplementedByConstructedMethodTable(TypeDesc type)
+        {
+            return NodeFactory.DevirtualizationManager.CanInterfaceOrCanonicalFormOfItBeImplementedByConstructedMethodTable(type.NormalizeInstantiation());
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)

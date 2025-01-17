@@ -438,6 +438,8 @@ namespace ILCompiler
             private HashSet<TypeDesc> _constructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedMethodTables = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _implementedInterfaces = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _canonImplementedInterfaces = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
@@ -506,6 +508,13 @@ namespace ILCompiler
                                     if (CanAssumeWholeProgramViewOnTypeUse(factory, type, baseInterface))
                                     {
                                         RecordImplementation(baseInterface, type);
+                                    }
+
+                                    if (_implementedInterfaces.Add(baseInterface))
+                                    {
+                                        TypeDesc canonBaseInterface = baseInterface.ConvertToCanonForm(CanonicalFormKind.Specific);
+                                        if (baseInterface != canonBaseInterface)
+                                            _canonImplementedInterfaces.Add(canonBaseInterface);
                                     }
                                 }
 
@@ -729,11 +738,25 @@ namespace ILCompiler
                 return _constructedMethodTables.Contains(type);
             }
 
+            public override bool CanInterfaceBeImplementedByConstructedMethodTable(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(type.IsInterface);
+                return _implementedInterfaces.Contains(type);
+            }
+
             public override bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
             {
                 Debug.Assert(type.NormalizeInstantiation() == type);
                 Debug.Assert(ConstructedEETypeNode.CreationAllowed(type));
                 return _constructedMethodTables.Contains(type) || _canonConstructedMethodTables.Contains(type);
+            }
+
+            public override bool CanInterfaceOrCanonicalFormOfItBeImplementedByConstructedMethodTable(TypeDesc type)
+            {
+                Debug.Assert(type.NormalizeInstantiation() == type);
+                Debug.Assert(type.IsInterface);
+                return _implementedInterfaces.Contains(type) || _canonImplementedInterfaces.Contains(type);
             }
 
             public override TypeDesc[] GetImplementingClasses(TypeDesc type)
