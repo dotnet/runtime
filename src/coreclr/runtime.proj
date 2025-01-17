@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AndroidApiLevelMin Condition="'$(TargetsAndroid)' == 'true' and '$(UseNativeAotCoreLib)' != 'true'">29</AndroidApiLevelMin>
+    <!-- If changing API level, the value in eng/native/build-commons.sh also needs changed. -->
+    <AndroidApiLevelMin Condition="'$(TargetsAndroid)' == 'true' and '$(UseNativeAotCoreLib)' != 'true'">28</AndroidApiLevelMin>
   </PropertyGroup>
 
   <ItemGroup>

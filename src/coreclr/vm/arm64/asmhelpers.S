@@ -777,6 +777,7 @@ LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
 
+#ifndef TARGET_ANDROID
 // Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
 // once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.
 
@@ -805,4 +806,5 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
+#endif // TARGET_ANDROID
 #endif // !TARGET_OSX

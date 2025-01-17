@@ -87,9 +87,9 @@ build_native()
             exit 1
         fi
 
-        # API level 29 is the first to not have emulated TLS. CoreCLR lacks support for it, so we have to set API level 29 for now.
+        # If changing, AndroidApiLevelMin in coreclr/runtime.proj needs changed as well.
         if [[ "$runtimeFlavor" == CoreCLR ]]; then
-            ANDROID_API_LEVEL=29
+            ANDROID_API_LEVEL=28
         fi
 
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
