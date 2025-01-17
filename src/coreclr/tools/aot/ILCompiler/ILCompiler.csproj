@@ -5,14 +5,4 @@
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
-
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
-    <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-  </PropertyGroup>
-
-  <Target Name="PublishCompiler"
-          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
-          AfterTargets="Build"
-          DependsOnTargets="Publish" />
-
 </Project>

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using static System.Text.Json.Utf8JsonWriter;
 
 namespace System.Text.Json
 {
@@ -312,9 +313,23 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_CannotMixEncodings(Utf8JsonWriter.SegmentEncoding previousEncoding, Utf8JsonWriter.SegmentEncoding currentEncoding)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_CannotMixEncodings(EnclosingContainerType previousEncoding, EnclosingContainerType currentEncoding)
         {
-            throw GetInvalidOperationException(SR.Format(SR.CannotMixEncodings, previousEncoding, currentEncoding));
+            throw GetInvalidOperationException(SR.Format(SR.CannotMixEncodings, GetEncodingName(previousEncoding), GetEncodingName(currentEncoding)));
+
+            static string GetEncodingName(EnclosingContainerType encoding)
+            {
+                switch (encoding)
+                {
+                    case EnclosingContainerType.Utf8StringSequence: return "UTF-8";
+                    case EnclosingContainerType.Utf16StringSequence: return "UTF-16";
+                    case EnclosingContainerType.Base64StringSequence: return "Base64";
+                    default:
+                        Debug.Fail("Unknown encoding.");
+                        return "Unknown";
+                };
+            }
         }
 
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
