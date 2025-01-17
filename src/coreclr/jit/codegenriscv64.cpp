@@ -1097,35 +1097,32 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (FloatingPointUtils::isPositiveZero(constValue))
             {
                 // A faster/smaller way to generate 0.0
-                // We will just zero out the entire vector register for both float and double
+                // We will just zero out the entire register for both float and double
                 emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, REG_R0);
+                break;
             }
-            else if (size == EA_4BYTE)
-            {
-                regNumber temp = tree->GetSingleTempReg();
 
+            if (size == EA_4BYTE)
+            {
                 uint32_t bits = BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue));
-                uint32_t hi20 = (bits + 0x800) >> 12;
-                uint32_t lo12 = bits & 0xfff;
-                if (hi20 != 0)
+                if ((bits << (32 - 12)) == 0) // if 12 lowest bits are zero, synthesize with a single lui instruction
+                {
+                    regNumber temp = internalRegisters.GetSingle(tree);
+
+                    uint32_t hi20 = bits >> 12;
+                    assert(hi20 != 0);
                     emit->emitIns_R_I(INS_lui, size, temp, hi20);
-                if (lo12 != 0)
-                    emit->emitIns_R_R_I(INS_addi, size, temp, (hi20 != 0 ? temp : REG_ZERO), lo12);
-
-                emit->emitIns_R_R(INS_fmv_w_x, size, targetReg, temp);
+                    emit->emitIns_R_R(INS_fmv_w_x, size, targetReg, temp);
+                    break;
+                }
             }
-            else
-            {
-                // Get a temp integer register to compute long address.
-                // regNumber addrReg = internalRegisters.GetSingle(tree);
 
-                // We must load the FP constant from the constant pool
-                // Emit a data section constant for the float or double constant.
-                CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
+            // We must load the FP constant from the constant pool
+            // Emit a data section constant for the float or double constant.
+            CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(constValue, size);
 
-                // Compute the address of the FP constant and load the data.
-                emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
-            }
+            // Compute the address of the FP constant and load the data.
+            emit->emitIns_R_C(size == EA_4BYTE ? INS_flw : INS_fld, size, targetReg, REG_NA, hnd, 0);
         }
         break;
 

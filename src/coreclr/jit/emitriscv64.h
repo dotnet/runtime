@@ -180,7 +180,8 @@ static bool isValidUimm5(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
 static bool isValidSimm20(ssize_t value)
 {
-    return -(((int)1) << 19) <= value && value < (((int)1) << 19);
+    value >>= 20;
+    return value == 0 || value == -1;
 };
 
 // Returns true if 'value' is a legal unsigned immediate 20 bit encoding.

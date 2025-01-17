@@ -143,13 +143,17 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CNS_DBL:
         {
-            emitAttr size       = emitActualTypeSize(tree);
-            double   constValue = tree->AsDblCon()->DconValue();
+            emitAttr size = emitActualTypeSize(tree);
 
+            double constValue = tree->AsDblCon()->DconValue();
             if (!FloatingPointUtils::isPositiveZero(constValue) && size == EA_4BYTE)
             {
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalRegisterUses();
+                uint32_t bits = BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue));
+                if ((bits << (32 - 12)) == 0) // if 12 lowest bits are zero, synthesize with a single lui instruction
+                {
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalRegisterUses();
+                }
             }
         }
             FALLTHROUGH;
