@@ -54,7 +54,7 @@
       <!-- Add folder otherwise -->
       <ResolvedFileToPublish Include="@(_symbolRecursivePath)"
                              Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolSourcePath)')">
-        <RelativePath>$(TargetName)$(_symbolExt)/%(RecursiveDir)</RelativePath>
+        <RelativePath>$(TargetName)$(_symbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
     </ItemGroup>
