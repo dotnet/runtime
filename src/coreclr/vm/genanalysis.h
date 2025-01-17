@@ -6,6 +6,10 @@
 #ifndef __GENANALYSIS_H__
 #define __GENANALYSIS_H__
 
+#ifndef FEATURE_EVENT_TRACE
+typedef struct _EventPipeSession EventPipeSession;
+#endif //FEATURE_EVENT_TRACE
+
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING

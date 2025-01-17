@@ -294,10 +294,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_EVENT_TRACE
                 EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
 #ifdef GEN_ANALYSIS_STRESS
                 GenAnalysis::EnableGenerationalAwareSession();
-#endif
+#endif //GEN_ANALYSIS_STRESS
+#endif //FEATURE_EVENT_TRACE
             }
 
             // Writing an empty file to indicate completion
