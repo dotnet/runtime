@@ -4936,7 +4936,6 @@ void Compiler::fgMoveColdBlocks()
 Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBcount]{})
     , blockOrder(nullptr)
     , tempOrder(nullptr)
     , numCandidateBlocks(0)
@@ -5133,10 +5132,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
-    // Any edges under consideration should be between reachable blocks
-    assert(compiler->m_dfsTree->Contains(srcBlk));
-    assert(compiler->m_dfsTree->Contains(dstBlk));
-
     // Ignore cross-region branches
     if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
     {
@@ -5159,8 +5154,10 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    const unsigned srcPos = ordinals[srcBlk->bbPostorderNum];
-    const unsigned dstPos = ordinals[dstBlk->bbPostorderNum];
+    const unsigned srcPos = srcBlk->bbPostorderNum;
+    const unsigned dstPos = dstBlk->bbPostorderNum;
+    assert(srcPos < compiler->m_dfsTree->GetPostOrderCount());
+    assert(dstPos < compiler->m_dfsTree->GetPostOrderCount());
 
     // Don't consider edges to or from outside the hot range (i.e. ordinal doesn't match 'blockOrder' position).
     if ((srcBlk != blockOrder[srcPos]) || (dstBlk != blockOrder[dstPos]))
@@ -5264,11 +5261,7 @@ void Compiler::ThreeOptLayout::Run()
     blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound * 2];
     tempOrder  = (blockOrder + numBlocksUpperBound);
 
-    // Initialize the current block order.
-    // Note that we default-initialized 'ordinals' with zeros.
-    // Block reordering shouldn't change the method's entry point,
-    // so if a block has an ordinal of zero and it's not 'fgFirstBB',
-    // the block wasn't visited below, meaning it's not in the range of candidate blocks.
+    // Initialize the current block order
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
         if (!compiler->m_dfsTree->Contains(block))
@@ -5279,8 +5272,8 @@ void Compiler::ThreeOptLayout::Run()
         assert(numCandidateBlocks < numBlocksUpperBound);
         blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
 
-        assert(ordinals[block->bbPostorderNum] == 0);
-        ordinals[block->bbPostorderNum] = numCandidateBlocks++;
+        // Repurpose 'bbPostorderNum' for the block's ordinal
+        block->bbPostorderNum = numCandidateBlocks++;
 
         // While walking the span of blocks to reorder,
         // remember where each try region ends within this span.
@@ -5304,14 +5297,8 @@ void Compiler::ThreeOptLayout::Run()
             continue;
         }
 
-        // Ignore try regions unreachable via normal flow
-        if (!compiler->m_dfsTree->Contains(tryBeg))
-        {
-            continue;
-        }
-
-        // Only reorder try regions within the candidate span of blocks.
-        if ((ordinals[tryBeg->bbPostorderNum] != 0) || tryBeg->IsFirst())
+        // Only reorder try regions within the candidate span of blocks
+        if ((tryBeg->bbPostorderNum < numCandidateBlocks) && (blockOrder[tryBeg->bbPostorderNum] == tryBeg))
         {
             JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
             modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
@@ -5385,8 +5372,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
-        const unsigned    srcPos = ordinals[srcBlk->bbPostorderNum];
-        const unsigned    dstPos = ordinals[dstBlk->bbPostorderNum];
+        const unsigned    srcPos = srcBlk->bbPostorderNum;
+        const unsigned    dstPos = dstBlk->bbPostorderNum;
 
         // This edge better be between blocks in the current region
         assert((srcPos >= startPos) && (srcPos <= endPos));
@@ -5406,7 +5393,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             continue;
         }
 
-        // Before getting any edges, make sure 'ordinals' is accurate
+        // Before getting any edges, make sure the ordinals are accurate
         assert(blockOrder[srcPos] == srcBlk);
         assert(blockOrder[dstPos] == dstBlk);
 
@@ -5518,11 +5505,11 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         // Update the ordinals for the blocks we moved
         for (unsigned i = s2Start; i <= endPos; i++)
         {
-            ordinals[blockOrder[i]->bbPostorderNum] = i;
+            blockOrder[i]->bbPostorderNum = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
-        assert((ordinals[srcBlk->bbPostorderNum] + 1) == ordinals[dstBlk->bbPostorderNum]);
+        assert((srcBlk->bbPostorderNum + 1) == dstBlk->bbPostorderNum);
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
@@ -5559,10 +5546,9 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
 
-    const unsigned startPos  = ordinals[startBlock->bbPostorderNum];
-    const unsigned endPos    = ordinals[endBlock->bbPostorderNum];
+    const unsigned startPos  = startBlock->bbPostorderNum;
+    const unsigned endPos    = endBlock->bbPostorderNum;
     const unsigned numBlocks = (endPos - startPos + 1);
-    assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);
 
     if (numBlocks < 3)
