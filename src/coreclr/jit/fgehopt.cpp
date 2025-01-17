@@ -2990,12 +2990,10 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
 
         if (block->hasHndIndex())
         {
-            const unsigned originalHndIndex = block->getHndIndex();
-
-            // if (originalHndIndex ==
-            const unsigned  cloneHndIndex = originalHndIndex + indexShift;
-            EHblkDsc* const originalEbd   = ehGetDsc(originalHndIndex);
-            EHblkDsc* const clonedEbd     = ehGetDsc(cloneHndIndex);
+            const unsigned  originalHndIndex = block->getHndIndex();
+            const unsigned  cloneHndIndex    = originalHndIndex + indexShift;
+            EHblkDsc* const originalEbd      = ehGetDsc(originalHndIndex);
+            EHblkDsc* const clonedEbd        = ehGetDsc(cloneHndIndex);
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
 

@@ -2534,10 +2534,35 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     //
     BlockToBlockMap map(comp->getAllocator(CMK_ObjectAllocator));
 
-    // Insert blocks just after the allocation site
+    // If there is an enclosing EH region, insert the new blocks at the end of this
+    // region. Otherwise insert the new blocks just after the allocation site
     //
-    BasicBlock*  insertionPoint = info->m_allocBlock;
-    BasicBlock** insertAfter    = &insertionPoint;
+    BasicBlock* insertionPoint = info->m_allocBlock;
+
+    bool     inTry             = false;
+    unsigned enclosingEHRegion = comp->ehGetMostNestedRegionIndex(insertionPoint, &inTry);
+
+    if (enclosingEHRegion != 0)
+    {
+        EHblkDsc* const ebd = comp->ehGetDsc(enclosingEHRegion - 1);
+
+        if (inTry)
+        {
+            insertionPoint = ebd->ebdTryLast;
+        }
+        else
+        {
+            insertionPoint = ebd->ebdHndLast;
+        }
+
+        JITDUMP("Will insert new blocks at end of enclosing EH#%u %s region " FMT_BB "\n", enclosingEHRegion - 1,
+                inTry ? "try" : "handler", insertionPoint->bbNum);
+    }
+    else
+    {
+        JITDUMP("Will insert new blocks after allocation block " FMT_BB "\n", insertionPoint->bbNum);
+    }
+    BasicBlock** insertAfter = &insertionPoint;
 
     // Compute profile scale for the original blocks.
     //
