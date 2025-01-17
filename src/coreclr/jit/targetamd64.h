@@ -399,7 +399,8 @@
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX
   #define REG_INT_LAST             REG_R23
-  #define REG_INT_COUNT            (REG_INT_LAST - REG_INT_FIRST + 1)
+  #define REG_INT_LAST_APX_AWARE             get_REG_INT_LAST()
+  #define REG_INT_COUNT            (REG_INT_LAST_APX_AWARE - REG_INT_FIRST + 1)
   #define REG_NEXT(reg)           ((regNumber)((unsigned)(reg) + 1))
   #define REG_PREV(reg)           ((regNumber)((unsigned)(reg) - 1))
 
