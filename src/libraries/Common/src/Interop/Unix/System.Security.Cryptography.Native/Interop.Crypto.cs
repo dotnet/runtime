@@ -5,8 +5,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -192,7 +194,6 @@ internal static partial class Interop
 
         private static bool GetMemoryDebug()
         {
-            Console.WriteLine($"Checking for {Interop.OpenSsl.OpenSslDebugEnvironmentVariable} environment variable");
             string? value = Environment.GetEnvironmentVariable(Interop.OpenSsl.OpenSslDebugEnvironmentVariable);
             if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
             {
@@ -228,6 +229,18 @@ internal static partial class Interop
         // We only need to store the keys but we use ConcurrentDictionary to avoid locking
         private static ConcurrentDictionary<UIntPtr, UIntPtr>? _allocations;
 
+        // Even though ConcurrentDictionary is thread safe, it is not guaranteed that the
+        // enumeration will return a point-in-time snapshot of the dictionary. It is possible
+        // that a single element can be concurrently:
+        // - removed from the dictionary (and the pointed to-memory subsequently deallocated)
+        // - accessed via GetIncrementalAllocations (and the pointer getting dereferenced)
+        //
+        // To avoid this, we use the *readers* role of the RW-lock to secure insertion/deletion,
+        // and the *writer* role to secure enumeration. This allows concurrent modifications to
+        // the dictionary (which is safely handled internally) while preventing the above
+        // mentioned race and potential crash from access violation.
+        private static ReaderWriterLockSlim? _allocationsLock;
+
         [UnmanagedCallersOnly]
         private static unsafe void MemoryTrackinCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
         {
@@ -236,28 +249,37 @@ internal static partial class Interop
             Debug.Assert(entry.File != null);
             Debug.Assert(ptr != UIntPtr.Zero);
 
-            switch (operation)
+            try
             {
-                case MemoryOperation.Malloc:
-                    Debug.Assert(size == entry.Size);
-                    _allocations!.TryAdd(ptr, ptr);
-                    break;
-                case MemoryOperation.Realloc:
-                    if ((IntPtr)oldPtr != IntPtr.Zero)
-                    {
-                        _allocations!.TryRemove(oldPtr, out _);
-                    }
-                    _allocations!.TryAdd(ptr, ptr);
-                    break;
-                case MemoryOperation.Free:
-                    _allocations!.TryRemove(ptr, out _);
-                    break;
+                // see comment at _allocationsLock for why Readl lock is used here
+                _allocationsLock!.EnterReadLock();
+                switch (operation)
+                {
+                    case MemoryOperation.Malloc:
+                        Debug.Assert(size == entry.Size);
+                        _allocations!.TryAdd(ptr, ptr);
+                        break;
+                    case MemoryOperation.Realloc:
+                        if ((IntPtr)oldPtr != IntPtr.Zero)
+                        {
+                            _allocations!.TryRemove(oldPtr, out _);
+                        }
+                        _allocations!.TryAdd(ptr, ptr);
+                        break;
+                    case MemoryOperation.Free:
+                        _allocations!.TryRemove(ptr, out _);
+                        break;
+                }
+            }
+            finally
+            {
+                _allocationsLock!.ExitReadLock();
             }
         }
 
         public static unsafe void EnableTracking()
         {
-            System.Console.WriteLine("EnableTracking");
+            _allocationsLock ??= new ReaderWriterLockSlim();
             _allocations ??= new ConcurrentDictionary<UIntPtr, UIntPtr>();
             _allocations!.Clear();
             SetMemoryTracking(&MemoryTrackinCallback);
@@ -265,28 +287,35 @@ internal static partial class Interop
 
         public static unsafe void DisableTracking()
         {
-            System.Console.WriteLine("DisableTracking");
             SetMemoryTracking(null);
             _allocations!.Clear();
         }
 
         public static unsafe Tuple<UIntPtr, int, string>[] GetIncrementalAllocations()
         {
-            if (_allocations == null || _allocations.IsEmpty)
+            ConcurrentDictionary<UIntPtr, UIntPtr>? allocations = _allocations;
+
+            if (allocations == null || allocations.IsEmpty)
             {
                 return Array.Empty<Tuple<UIntPtr, int, string>>();
             }
 
-            Tuple<UIntPtr, int, string>[] allocations = new Tuple<UIntPtr, int, string>[_allocations.Count];
-            int index = 0;
-            foreach ((UIntPtr ptr, UIntPtr value) in _allocations)
+            try
             {
-                ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
-                allocations[index] = new Tuple<UIntPtr, int, string>(ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
-                index++;
-            }
+                // see comment at _allocationsLock for why Write lock is used here
+                _allocationsLock!.EnterWriteLock();
 
-            return allocations;
+                return allocations.Select(kvp =>
+                {
+                    (UIntPtr ptr, _) = kvp;
+                    ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
+                    return new Tuple<UIntPtr, int, string>(ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
+                }).ToArray();
+            }
+            finally
+            {
+                _allocationsLock!.ExitWriteLock();
+            }
         }
     }
 }
