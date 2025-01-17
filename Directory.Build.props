@@ -498,7 +498,6 @@
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
-    <AfterMicrosoftNetSdkProps>$(AfterMicrosoftNetSdkProps);$(RepositoryEngineeringDir)NetSdk.AfterProps.props</AfterMicrosoftNetSdkProps>
   </PropertyGroup>
 
   <PropertyGroup>

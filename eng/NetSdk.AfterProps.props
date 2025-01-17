@@ -1,9 +1,0 @@
-<Project>
-  <!--
-    Set properties based on the SDK's RID here. Setting the properties here will ensure they're available during property evaulation in project files
-    and during item evaluation everywhere.
-  -->
-  <PropertyGroup>
-    <BuildHostTools Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'">true</BuildHostTools>
-  </PropertyGroup>
-</Project>
