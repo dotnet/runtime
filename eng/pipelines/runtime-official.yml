@@ -164,6 +164,7 @@ extends:
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
+            postBuildSteps:
               # Upload the results.
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
@@ -189,22 +190,12 @@ extends:
               displayName: Download runtime packs for CrossDac
               inputs:
                 artifact: 'IntermediateArtifacts'
-                path: $(CrossRuntimeExtractionRoot)
+                path: $(Build.SourcesDirectory)/artifacts/RuntimeDownload
                 patterns: |
-                  IntermediateArtifacts/linux_*/Shipping/Microsoft.NETCore.App.Runtime.*.nupkg
-            - task: CopyFiles@2
-              displayName: Flatten packages
-              inputs:
-                sourceFolder: $(CrossRuntimeExtractionRoot)
-                contents: '*/Shipping/*.nupkg'
-                cleanTargetFolder: false
-                targetFolder: $(CrossRuntimeExtractionRoot)
-                flattenFolders: true
-            - task: ExtractFiles@1
-              displayName: Extract CrossDac packages
-              inputs:
-                archiveFilePatterns: '$(CrossRuntimeExtractionRoot)/**/*.nupkg'
-                destinationFolder: $(CrossRuntimeExtractionRoot)
+                  IntermediateArtifacts/linux_*/Shipping/Microsoft.NETCore.App.Runtime.linux-*.nupkg
+                  !IntermediateArtifacts/linux_*/Shipping/Microsoft.NETCore.App.Runtime.linux-*.symbols.nupkg
+            - powershell: $(Build.SourcesDirectory)/eng/extract-for-crossdac.ps1 -DownloadDirectory $(Build.SourcesDirectory)/artifacts/RuntimeDownload -ExtractDirectory $(CrossRuntimeExtractionRoot)
+              displayName: Extract runtime packs
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
                 displayName: Build cross-OS DACs
@@ -225,7 +216,7 @@ extends:
             - build_linux_musl_arm64_release_AllRuntimes
           variables:
           - name: CrossRuntimeExtractionRoot
-            value: $(Build.StagingDirectory)/CrossDac
+            value: $(Build.SourcesDirectory)/artifacts/CrossDac
 
       #
       # Build All runtime packs for mobile platforms

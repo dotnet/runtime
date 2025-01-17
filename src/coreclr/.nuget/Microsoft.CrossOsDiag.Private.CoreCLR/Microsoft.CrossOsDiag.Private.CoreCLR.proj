@@ -2,12 +2,14 @@
   <PropertyGroup>
     <BuildIdentityPackage>false</BuildIdentityPackage>
     <SupportedRids>linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64;linux-arm;linux-musl-arm</SupportedRids>
-    <CrossDacArtifactsDir>$(ArtifactsBinDir)/coreclr/</CrossDacArtifactsDir>
-    <!--
-      In dotnet/runtime's official build, we'll extract the runtime packs to a specific directory and pass that here.
-      In the VMR, we'll restore the runtime packs as NuGet packages.
-    -->
-    <CrossRuntimeExtractionRoot Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(NuGetPackageRoot)</CrossRuntimeExtractionRoot>
+  </PropertyGroup>
+
+  <!--
+    In dotnet/runtime's official build, we'll extract the runtime packs to a specific directory and pass that here.
+    In the VMR, we'll restore the runtime packs as NuGet packages.
+  -->
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <CrossRuntimeExtractionRoot>$(NuGetPackageRoot)</CrossRuntimeExtractionRoot>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +24,7 @@
 
     <TargetRuntimePacks Include="@(SupportedRid->'Microsoft.NETCore.App.Runtime.%(Rid)')" />
 
-    <PackageDownload Condition="'$(DotNetBuildOrchestrator)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(ProductVersion)]" />
+    <PackageDownload Condition="'$(DotNetBuildOrchestrator)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(Version)]" />
   </ItemGroup>
 
   <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">
@@ -39,7 +41,7 @@
     </JoinItems>
 
     <ItemGroup>
-      <_projectsToBuild CoreCLRRuntimePath="$(NuGetPackageRoot)/microsoft.netcore.app.runtime.%(Rid)/$(ProductVersion)/runtimes/%(Rid)/native" />
+      <_projectsToBuild CoreCLRRuntimePath="$(CrossRuntimeExtractionRoot)/microsoft.netcore.app.runtime.%(Rid)/$(Version)/runtimes/%(Rid)/native" />
 
       <_projectsToBuild AdditionalProperties="%(_projectsToBuild.AdditionalProperties);CrossDacOutputDir=%(CrossDacOutputDir);CoreCLRRuntimePath=%(CoreCLRRuntimePath)" />
     </ItemGroup>
