@@ -2678,8 +2678,8 @@ AGAIN:
     }
     if (op1->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV))
     {
-        if ((op1->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) !=
-            (op2->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)))
+        if ((op1->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW | GTF_UMOD_UINT16_OPERANDS)) !=
+            (op2->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW | GTF_UMOD_UINT16_OPERANDS)))
         {
             return false;
         }
