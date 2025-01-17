@@ -173,6 +173,8 @@ internal static partial class Interop
         public const uint WINHTTP_OPTION_STREAM_ERROR_CODE = 159;
         public const uint WINHTTP_OPTION_REQUIRE_STREAM_END = 160;
 
+        public const uint WINHTTP_OPTION_CONNECTION_GUID = 178;
+
         public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
         {
             WINHTTP_WEB_SOCKET_BINARY_MESSAGE_BUFFER_TYPE = 0,
