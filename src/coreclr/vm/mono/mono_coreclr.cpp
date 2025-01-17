@@ -741,6 +741,34 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID
     g_profControlBlock.storedProfilers.InsertHead(profilerData);
 }
 
+extern "C" EXPORT_API ObjectHandleID EXPORT_CC coreclr_unity_profiler_class_get_assembly_load_context_handle(ClassID classId)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    TypeHandle typeHandle = TypeHandle::FromPtr((void *)classId);
+
+    if (!typeHandle.IsRestored())
+        return NULL;
+
+    if (classId == PROFILER_GLOBAL_CLASS)
+        return NULL;
+
+    Module* pModule = typeHandle.GetModule();
+    if (pModule == NULL)
+        return NULL;
+
+    Assembly *pAssembly = pModule->GetAssembly();
+    if (pAssembly == NULL)
+        return NULL;
+
+    AssemblyBinder* pAssemblyBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
+    if (pAssemblyBinder->IsDefault())
+        return NULL;
+
+    // ManagedAssemblyLoadContext is a handle to the managed AssemblyLoadContext object
+    return (ObjectHandleID)pAssemblyBinder->GetManagedAssemblyLoadContext();
+}
+
 extern "C" EXPORT_API ObjectHandleID EXPORT_CC coreclr_unity_profiler_get_managed_assembly_load_context(AssemblyID assemblyID)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -755,6 +783,26 @@ extern "C" EXPORT_API ObjectHandleID EXPORT_CC coreclr_unity_profiler_get_manage
 
     // ManagedAssemblyLoadContext is a handle to the managed AssemblyLoadContext object
     return (ObjectHandleID)pAssemblyBinder->GetManagedAssemblyLoadContext();
+}
+
+extern "C" EXPORT_API ObjectHandleID EXPORT_CC coreclr_unity_profiler_assembly_load_context_get_loader_allocator_handle(ObjectID assemblyLoadContextObjectID)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    ASSEMBLYLOADCONTEXTREF pAssemblyLoadContext = (ASSEMBLYLOADCONTEXTREF)assemblyLoadContextObjectID;
+    if (pAssemblyLoadContext == NULL)
+        return NULL;
+
+    AssemblyBinder* pAssemblyBinder = (AssemblyBinder*)pAssemblyLoadContext->GetNativeAssemblyBinder();
+    if (pAssemblyBinder == NULL)
+        return NULL;
+
+    LoaderAllocator* loaderAllocator = pAssemblyBinder->GetLoaderAllocator();
+    if (loaderAllocator == NULL)
+        return NULL;
+
+    // ManagedAssemblyLoadContext is a handle to the managed AssemblyLoadContext object
+    return (ObjectHandleID)loaderAllocator->GetLoaderAllocatorObjectHandle();
 }
 
 extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_concurrent_mode(gboolean state)

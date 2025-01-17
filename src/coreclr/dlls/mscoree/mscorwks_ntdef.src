@@ -34,7 +34,9 @@ EXPORTS
         coreclr_unity_array_element_size
         coreclr_unity_class_array_element_size
         coreclr_unity_profiler_register
+        coreclr_unity_profiler_class_get_assembly_load_context_handle
         coreclr_unity_profiler_get_managed_assembly_load_context
+        coreclr_unity_profiler_assembly_load_context_get_loader_allocator_handle
         coreclr_unity_gc_concurrent_mode
         mono_assembly_get_assemblyref
         mono_class_get_name
