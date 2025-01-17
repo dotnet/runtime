@@ -428,7 +428,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         case CORINFO_HELP_NEWARR_1_DIRECT:
                         case CORINFO_HELP_NEWARR_1_ALIGN8:
                         {
-                            if (data->AsCall()->gtArgs.CountArgs() == 2 &&
+                            if ((data->AsCall()->gtArgs.CountArgs() == 2) &&
                                 data->AsCall()->gtArgs.GetArgByIndex(1)->GetNode()->IsCnsIntOrI())
                             {
                                 allocType = OAT_NEWARR;
@@ -438,7 +438,9 @@ bool ObjectAllocator::MorphAllocObjNodes()
 #ifdef FEATURE_READYTORUN
                         case CORINFO_HELP_READYTORUN_NEWARR_1:
                         {
-                            if (data->AsCall()->gtArgs.CountArgs() == 1 &&
+                            // Disable for R2R for now, since embedding the array type can block prejitting
+                            //
+                            if (!comp->opts.IsReadyToRun() && (data->AsCall()->gtArgs.CountArgs() == 1) &&
                                 data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
                             {
                                 allocType = OAT_NEWARR;
