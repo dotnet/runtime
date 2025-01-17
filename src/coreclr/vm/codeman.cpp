@@ -1548,17 +1548,6 @@ void EEJitManager::SetCpuInfo()
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-    // Clean up mutually exclusive ISAs
-    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
-    {
-        CPUCompileFlags.Clear(InstructionSet_VectorT256);
-        CPUCompileFlags.Clear(InstructionSet_VectorT128);
-    }
-    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
-    {
-        CPUCompileFlags.Clear(InstructionSet_VectorT128);
-    }
-
     int cpuidInfo[4];
 
     const int CPUID_EAX = 0;
@@ -1625,6 +1614,45 @@ void EEJitManager::SetCpuInfo()
             }
         }
     }
+
+    // JIT maps Vector<T> to Vector128, Vector256, or Vector512 for the purposes of most intrinsic resolution.
+    // If JIT reports that the corresponding fixed-width vector class is not hardware accelerated, that will
+    // mean Vector<T> is also reported as not accelerated, so we will limit Vector<T> size using the same rules.
+    // This logic must be kept in sync with Compiler::compSetProcessor/Compiler::getPreferredVectorByteLength.
+
+    uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
+
+    if ((preferredVectorBitWidth == 0) && CPUCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING))
+    {
+        preferredVectorBitWidth = 256;
+    }
+
+    if (preferredVectorBitWidth != 0)
+    {
+        if (CPUCompileFlags.IsSet(InstructionSet_VectorT512) && (preferredVectorBitWidth < 512))
+        {
+            CPUCompileFlags.Clear(InstructionSet_VectorT512);
+        }
+
+        if (CPUCompileFlags.IsSet(InstructionSet_VectorT256) && (preferredVectorBitWidth < 256))
+        {
+            CPUCompileFlags.Clear(InstructionSet_VectorT256);
+        }
+    }
+
+    // Only one VectorT ISA can be set, and we have validated that anything left in the flags is supported
+    // by both the hardware and the config. Remove everything less than the largest supported.
+
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
+    {
+        CPUCompileFlags.Clear(InstructionSet_VectorT256);
+        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+    }
+
 #endif // TARGET_X86 || TARGET_AMD64
 
     m_CPUCompileFlags = CPUCompileFlags;

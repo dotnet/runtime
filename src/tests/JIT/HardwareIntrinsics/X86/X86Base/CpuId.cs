@@ -386,11 +386,11 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             if ((maxVectorTBitWidth >= 512) && !isAvx512HierarchyDisabled)
             {
-                vectorTByteLength = 64;
+                vectorTByteLength = int.Min(64, preferredVectorByteLength);
             }
             else if ((maxVectorTBitWidth is 0 or >= 256) && !isAvx2HierarchyDisabled)
             {
-                vectorTByteLength = 32;
+                vectorTByteLength = int.Min(32, preferredVectorByteLength);
             }
 
             if (Vector<byte>.Count != vectorTByteLength)
