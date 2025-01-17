@@ -701,6 +701,13 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        // Custom type instead of a value tuple to avoid rooting 'ITuple' and other value tuple stuff
+        private struct GetOrCreateComInterfaceForObjectParameters
+        {
+            public ComWrappers? This;
+            public CreateComInterfaceFlags Flags;
+        }
+
         /// <summary>
         /// Create a COM representation of the supplied object that can be passed to a non-managed environment.
         /// </summary>
@@ -718,9 +725,9 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, items) =>
             {
-                ManagedObjectWrapper* value = items.This.CreateManagedObjectWrapper(c, items.Flags);
+                ManagedObjectWrapper* value = items.This!.CreateManagedObjectWrapper(c, items.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            }, (This: this, Flags: flags));
+            }, new GetOrCreateComInterfaceForObjectParameters { This = this, Flags = flags });
 
             managedObjectWrapper.AddRef();
             return managedObjectWrapper.ComIp;
