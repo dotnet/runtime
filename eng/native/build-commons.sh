@@ -54,12 +54,11 @@ build_native()
 
     targetOS="$1"
     hostArch="$2"
-    runtimeFlavor="$3"
-    cmakeDir="$4"
-    intermediatesDir="$5"
-    target="$6"
-    cmakeArgs="$7"
-    message="$8"
+    cmakeDir="$3"
+    intermediatesDir="$4"
+    target="$5"
+    cmakeArgs="$6"
+    message="$7"
 
     # All set to commence the build
     echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__TargetArch.$__BuildType in $intermediatesDir"
@@ -85,11 +84,6 @@ build_native()
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1
-        fi
-
-        # If changing, AndroidApiLevelMin in coreclr/runtime.proj needs changed as well.
-        if [[ "$runtimeFlavor" == CoreCLR ]]; then
-            ANDROID_API_LEVEL=28
         fi
 
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
