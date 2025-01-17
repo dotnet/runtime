@@ -394,7 +394,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (!jsonPropertyInfo.GetMemberAndWriteJson(obj!, ref state, writer))
                         {
-                            Debug.Assert(jsonPropertyInfo.EffectiveConverter.ConverterStrategy != ConverterStrategy.Value);
+                            Debug.Assert(jsonPropertyInfo.EffectiveConverter.ConverterStrategy != ConverterStrategy.SimpleValue);
                             return false;
                         }
 

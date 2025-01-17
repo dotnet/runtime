@@ -19,7 +19,8 @@ namespace System.Text.Json.Serialization
                 {
                     // This is first call to the converter -- advance the reader
                     // to the first JSON token and perform a read-ahead if necessary.
-                    if (!reader.TryAdvanceWithOptionalReadAhead(RequiresReadAhead))
+                    if (!reader.TryAdvanceWithOptionalReadAhead(RequiresReadAhead) &&
+                        (!CanConsumePartialReaderValue || reader.IsFinalBlock)) // Partial non-final values can be processed by some converters
                     {
                         if (state.SupportContinuation && state.Current.ReturnValue is object result)
                         {

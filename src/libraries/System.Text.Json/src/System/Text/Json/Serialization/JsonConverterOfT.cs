@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization
             return typeToConvert == typeof(T);
         }
 
-        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Value;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.SimpleValue;
 
         internal sealed override JsonTypeInfo CreateJsonTypeInfo(JsonSerializerOptions options)
         {
@@ -160,7 +160,8 @@ namespace System.Text.Json.Serialization
                 return true;
             }
 
-            if (ConverterStrategy == ConverterStrategy.Value)
+            if (ConverterStrategy == ConverterStrategy.SimpleValue ||
+                ConverterStrategy == ConverterStrategy.SegmentableValue && !state.IsContinuation && !reader._hasPartialStringValue)
             {
                 // A value converter should never be within a continuation.
                 Debug.Assert(!state.IsContinuation);
@@ -264,7 +265,7 @@ namespace System.Text.Json.Serialization
                     state.Current.OriginalTokenType,
                     state.Current.OriginalDepth,
                     bytesConsumed: 0,
-                    isValueConverter: false,
+                    isValueConverter: ConverterStrategy == ConverterStrategy.SegmentableValue,
                     ref reader);
 
                 // No need to clear state.Current.* since a stack pop will occur.
@@ -339,7 +340,7 @@ namespace System.Text.Json.Serialization
                 return true;
             }
 
-            if (ConverterStrategy == ConverterStrategy.Value)
+            if (ConverterStrategy == ConverterStrategy.SimpleValue)
             {
                 Debug.Assert(!state.IsContinuation);
 
@@ -360,9 +361,19 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(IsInternalConverter);
             bool isContinuation = state.IsContinuation;
+
+            if (ConverterStrategy == ConverterStrategy.SegmentableValue && !state.IsContinuation)
+            {
+                Debug.Assert(this is JsonHybridResumableConverter<T>);
+
+                JsonHybridResumableConverter<T> jsonHybridConverter = (JsonHybridResumableConverter<T>)this;
+                return jsonHybridConverter.WriteWithoutStackFrame(writer, value, options, ref state);
+            }
+
             bool success;
 
             if (
+                ConverterStrategy != ConverterStrategy.SegmentableValue &&
 #if NET
                 // Short-circuit the check against "is not null"; treated as a constant by recent versions of the JIT.
                 !typeof(T).IsValueType &&
@@ -411,6 +422,7 @@ namespace System.Text.Json.Serialization
             // DEBUG: ensure push/pop operations preserve stack integrity
             JsonTypeInfo originalJsonTypeInfo = state.Current.JsonTypeInfo;
 #endif
+
             state.Push();
             Debug.Assert(Type == state.Current.JsonTypeInfo.Type);
 
@@ -498,7 +510,7 @@ namespace System.Text.Json.Serialization
 
         internal void VerifyRead(JsonTokenType tokenType, int depth, long bytesConsumed, bool isValueConverter, ref Utf8JsonReader reader)
         {
-            Debug.Assert(isValueConverter == (ConverterStrategy == ConverterStrategy.Value));
+            Debug.Assert(isValueConverter == JsonSerializer.IsValueConverterStrategy(ConverterStrategy));
 
             switch (tokenType)
             {
@@ -527,14 +539,14 @@ namespace System.Text.Json.Serialization
                     break;
 
                 case JsonTokenType.None:
-                    Debug.Assert(IsRootLevelMultiContentStreamingConverter);
+                    Debug.Assert(IsRootLevelMultiContentStreamingConverter || CanConsumePartialReaderValue);
                     break;
 
                 default:
                     if (isValueConverter)
                     {
                         // A value converter should not make any reads.
-                        if (reader.BytesConsumed != bytesConsumed)
+                        if (reader.BytesConsumed != bytesConsumed && ConverterStrategy != ConverterStrategy.SegmentableValue)
                         {
                             ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                         }
