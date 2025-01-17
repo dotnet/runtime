@@ -1343,6 +1343,7 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Cbrt(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Ceiling(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Clamp(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat min, System.Runtime.InteropServices.NFloat max) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ClampNative(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat min, System.Runtime.InteropServices.NFloat max) { throw null; }
         public int CompareTo(object? obj) { throw null; }
         public int CompareTo(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static TInteger ConvertToInteger<TInteger>(System.Runtime.InteropServices.NFloat value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
@@ -1394,10 +1395,12 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Max(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MaxMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MaxMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxNative(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MaxNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat Min(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinNative(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MultiplyAddEstimate(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right, System.Runtime.InteropServices.NFloat addend) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }

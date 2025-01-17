@@ -14,7 +14,12 @@
   <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
     <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
               Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
-              Visibility="Vertical" />
+              Visibility="Vertical"
+              IsShipping="false" />
+    <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSDKRuntimeIdentifier).Microsoft.DotNet.ILCompiler.*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
   </ItemGroup>
 
   <!--
