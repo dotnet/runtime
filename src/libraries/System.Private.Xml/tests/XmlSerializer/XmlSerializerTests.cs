@@ -159,6 +159,27 @@ public static partial class XmlSerializerTests
         Assert.Equal(x.F2, y.F2);
         Utils.Equal<SimpleType>(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
         Assert.Equal(x.P2, y.P2);
+
+        // Do it again with null and empty arrays
+        x = new TypeWithGetSetArrayMembers
+        {
+            F1 = null,
+            F2 = new int[] { },
+            P1 = new SimpleType[] { },
+            P2 = null
+        };
+        y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x,
+@"<?xml version=""1.0""?>
+<TypeWithGetSetArrayMembers xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <F2 />
+  <P1 />
+</TypeWithGetSetArrayMembers>");
+
+        Assert.NotNull(y);
+        Assert.Null(y.F1);  // Arrays stay null
+        Assert.Empty(y.F2);
+        Assert.Empty(y.P1);
+        Assert.Null(y.P2);  // Arrays stay null
     }
 
     [Fact]
@@ -170,13 +191,55 @@ public static partial class XmlSerializerTests
         x.P2[0] = -1;
         x.P2[1] = 3;
 
-        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x,
-@"<?xml version=""1.0""?>
-<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
+        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, WithXmlHeader(@"<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />"));
 
         Assert.NotNull(y);
         // XmlSerializer seems not complain about missing public setter of Array property
         // However, it does not serialize the property. So for this test case, I'll use it to verify there are no complaints about missing public setter
+    }
+
+    [Fact]
+    public static void Xml_ArraylikeMembers()
+    {
+        var assertEqual = (TypeWithArraylikeMembers a, TypeWithArraylikeMembers b) => {
+            Assert.Equal(a.IntAField, b.IntAField);
+            Assert.Equal(a.NIntAField, b.NIntAField);
+            Assert.Equal(a.IntLField, b.IntLField);
+            Assert.Equal(a.NIntLField, b.NIntLField);
+            Assert.Equal(a.IntAProp, b.IntAProp);
+            Assert.Equal(a.NIntAProp, b.NIntAProp);
+            Assert.Equal(a.IntLProp, b.IntLProp);
+            Assert.Equal(a.NIntLProp, b.NIntLProp);
+        };
+
+        // Populated array-like members
+        var x = TypeWithArraylikeMembers.CreateWithPopulatedMembers();
+        var y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, null /* Just checking the input and output objects is good enough here */, null, true);
+        Assert.NotNull(y);
+        assertEqual(x, y);
+
+        // Empty array-like members
+        x = TypeWithArraylikeMembers.CreateWithEmptyMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, WithXmlHeader("<TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntAField />\r\n  <NIntAField />\r\n  <IntLField />\r\n  <NIntLField />\r\n  <IntAProp />\r\n  <NIntAProp />\r\n  <IntLProp />\r\n  <NIntLProp />\r\n</TypeWithArraylikeMembers>"));
+        Assert.NotNull(y);
+        assertEqual(x, y);
+        Assert.Empty(y.IntAField);  // Check on a couple fields to be sure they are empty and not null.
+        Assert.Empty(y.NIntLProp);
+
+        // Null array-like members
+        // Null arrays and collections are omitted from xml output (or set to 'nil'). But they differ in deserialization.
+        // Null arrays are deserialized as null as expected. Null collections are unintuitively deserialized as empty collections. This behavior is preserved for compatibility with NetFx.
+        x = TypeWithArraylikeMembers.CreateWithNullMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, WithXmlHeader("<TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <NIntLField xsi:nil=\"true\" />\r\n  <NIntAProp xsi:nil=\"true\" />\r\n</TypeWithArraylikeMembers>"));
+        Assert.NotNull(y);
+        Assert.Null(y.IntAField);
+        Assert.Null(y.NIntAField);
+        Assert.Empty(y.IntLField);
+        Assert.Empty(y.NIntLField);
+        Assert.Null(y.IntAProp);
+        Assert.Null(y.NIntAProp);
+        Assert.Empty(y.IntLProp);
+        Assert.Empty(y.NIntLProp);
     }
 
     [Fact]
@@ -1388,6 +1451,12 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.NotNull(actual.ManyChoices);
         Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
         Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
+
+        // Try again with a null array
+        value = new TypeWithArrayPropertyHavingChoice() { ManyChoices = null, ChoiceArray = itemChoices };
+        actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayPropertyHavingChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+        Assert.NotNull(actual);
+        Assert.Null(actual.ManyChoices);   // Arrays keep null-ness
     }
 
     [Fact]

@@ -928,6 +928,40 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.AnotherStringList[0], actual.AnotherStringList[0]);
         Assert.StrictEqual(value.PublicIntListField[0], actual.PublicIntListField[0]);
         Assert.StrictEqual(value.PublicIntListFieldWithXmlElementAttribute[0], actual.PublicIntListFieldWithXmlElementAttribute[0]);
+
+        // Try with an empty list
+        value = new TypeWithListPropertiesWithoutPublicSetters();
+        actual = SerializeAndDeserialize<TypeWithListPropertiesWithoutPublicSetters>(value,
+@"<?xml version=""1.0""?>
+<TypeWithListPropertiesWithoutPublicSetters xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <PublicIntListField />
+  <IntList />
+  <StringList />
+  <AnotherStringList />
+</TypeWithListPropertiesWithoutPublicSetters>");
+        Assert.NotNull(actual);
+        Assert.Empty(actual.PublicIntListField);
+        Assert.Empty(actual.IntList);
+        Assert.Empty(actual.StringList);
+        Assert.Empty(actual.AnotherStringList);
+        Assert.Empty(actual.PropertyWithXmlElementAttribute);
+        Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
+
+        // And also try with a null list
+        value = new TypeWithListPropertiesWithoutPublicSetters(createLists: false);
+        actual = SerializeAndDeserialize<TypeWithListPropertiesWithoutPublicSetters>(value,
+@"<?xml version=""1.0""?>
+<TypeWithListPropertiesWithoutPublicSetters xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringList xsi:nil=""true"" />
+  <AnotherStringList />
+</TypeWithListPropertiesWithoutPublicSetters>");
+        Assert.NotNull(actual);
+        Assert.Empty(actual.PublicIntListField);
+        Assert.Empty(actual.IntList);
+        Assert.Empty(actual.StringList);
+        Assert.Empty(actual.AnotherStringList);
+        Assert.Empty(actual.PropertyWithXmlElementAttribute);
+        Assert.Empty(actual.PublicIntListFieldWithXmlElementAttribute);
     }
 
     [Fact]
@@ -1273,6 +1307,7 @@ public static partial class XmlSerializerTests
         Assert.NotNull(actual.Things);
         Assert.Equal(value.Things.Length, actual.Things.Length);
 
+        // Try with an unexpected namespace
         var expectedElem = (XmlElement)value.Things[1];
         var actualElem = (XmlElement)actual.Things[1];
         Assert.Equal(expectedElem.Name, actualElem.Name);
@@ -1287,6 +1322,26 @@ public static partial class XmlSerializerTests
         };
 
         Assert.Throws<InvalidOperationException>(() => actual = SerializeAndDeserialize(value, string.Empty, skipStringCompare: true));
+
+        // Try with no elements
+        value = new TypeWithMultiNamedXmlAnyElement()
+        {
+            Things = new object[] { }
+        };
+        actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+        Assert.NotNull(actual);
+        Assert.Null(actual.Things);
+
+        // Try with a null list
+        value = new TypeWithMultiNamedXmlAnyElement()
+        {
+            Things = null
+        };
+        actual = SerializeAndDeserialize(value,
+           "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />");
+        Assert.NotNull(actual);
+        Assert.Null(actual.Things);
     }
 
 

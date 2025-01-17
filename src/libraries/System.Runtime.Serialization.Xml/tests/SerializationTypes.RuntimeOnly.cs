@@ -1472,14 +1472,18 @@ namespace SerializationTypes
             StaticProperty = "Static property should not be checked for public setter";
         }
 
-        public TypeWithListPropertiesWithoutPublicSetters()
+        public TypeWithListPropertiesWithoutPublicSetters() : this(true) { }
+        public TypeWithListPropertiesWithoutPublicSetters(bool createLists)
         {
-            PropertyWithXmlElementAttribute = new List<string>();
-            IntList = new MyGenericList<int>();
-            StringList = new List<string>();
-            PrivateIntListField = new List<int>();
-            PublicIntListField = new List<int>();
-            PublicIntListFieldWithXmlElementAttribute = new List<int>();
+            if (createLists)
+            {
+                PropertyWithXmlElementAttribute = new List<string>();
+                IntList = new MyGenericList<int>();
+                StringList = new List<string>();
+                PrivateIntListField = new List<int>();
+                PublicIntListField = new List<int>();
+                PublicIntListFieldWithXmlElementAttribute = new List<int>();
+            }
         }
 
         public static string StaticProperty { get; private set; }
@@ -1488,6 +1492,7 @@ namespace SerializationTypes
         [XmlElement("PropWithXmlElementAttr")]
         public List<string> PropertyWithXmlElementAttribute { get; private set; }
         public MyGenericList<int> IntList { get; private set; }
+        [XmlArray(IsNullable = true)]
         public List<string> StringList { get; private set; }
         public List<string> AnotherStringList { get { return _anotherStringList; } }
 
