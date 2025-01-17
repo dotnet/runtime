@@ -42,10 +42,15 @@ namespace System.Globalization.Tests
             // culture.
             Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
             Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
-            
-            // The current culture taken from default system culture should be specific
-            // TODO: https://github.com/dotnet/runtime/issues/111501
-            //Assert.False(CultureInfo.CurrentCulture.IsNeutralCulture);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "https://github.com/dotnet/runtime/issues/111501")]
+        public void CurrentCulture_Default_Is_Specific()
+        {
+            // On OSX-like platforms, the current culture taken from default system culture should be specific.
+            Assert.False(CultureInfo.CurrentCulture.IsNeutralCulture);
         }
 
         [Fact]
