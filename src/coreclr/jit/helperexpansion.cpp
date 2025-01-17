@@ -2700,12 +2700,24 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) != 0)
     {
         fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
-        fgRemoveRefPred(nullcheckBb->GetTrueEdge());
+        FlowEdge* const removedEdge = nullcheckBb->GetTrueEdge();
+        fgRemoveRefPred(removedEdge);
         nullcheckBb->SetKindAndTargetEdge(BBJ_ALWAYS, nullcheckBb->GetFalseEdge());
 
         // Locally repair profile
         if (nullcheckBb->hasProfileWeight())
         {
+            BasicBlock* const removedTarget = removedEdge->getDestinationBlock();
+            if (removedTarget->bbPreds == nullptr)
+            {
+                // Unreachable path will be removed by the next flowgraph simplification pass.
+                // For now, mark the profile as inconsistent to skip post-phase checks.
+                JITDUMP("fgLateCastExpansionForCall: " FMT_BB
+                        " is unreachable, and will be removed later. Data %s inconsistent.\n",
+                        removedTarget->bbNum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
+            }
+
             for (BasicBlock* const block : Blocks(nullcheckBb->Next(), lastBb))
             {
                 weight_t incomingWeight = BB_ZERO_WEIGHT;
