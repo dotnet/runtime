@@ -2,23 +2,46 @@
   <PropertyGroup>
     <BuildIdentityPackage>false</BuildIdentityPackage>
     <SupportedRids>linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64;linux-arm;linux-musl-arm</SupportedRids>
+    <CrossDacArtifactsDir>$(ArtifactsBinDir)/coreclr/</CrossDacArtifactsDir>
+    <!--
+      In dotnet/runtime's official build, we'll extract the runtime packs to a specific directory and pass that here.
+      In the VMR, we'll restore the runtime packs as NuGet packages.
+    -->
+    <CrossRuntimeExtractionRoot Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(NuGetPackageRoot)</CrossRuntimeExtractionRoot>
   </PropertyGroup>
 
-  <Target Name="VerifyCrossDacProperties" BeforeTargets="Build;Pack">
-    <Error Condition="'$(CrossDacArtifactsDir)' == '' or !Exists('$(CrossDacArtifactsDir)')"
-          Text="Packaging the Cross OS DAC requires property CrossDacArtifactsDir to a path containing all cross OS DAC assets needed." />
-  </Target>
+  <ItemGroup>
+    <SupportedRid Include="linux-x64" CrossDacOutputDir="linux.x64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-musl-x64" CrossDacOutputDir="linux_musl.x64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-arm64" CrossDacOutputDir="linux.arm64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-musl-arm64" CrossDacOutputDir="linux_musl.arm64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-arm" CrossDacOutputDir="linux.arm.$(Configuration)/x86" />
+    <SupportedRid Include="linux-musl-arm" CrossDacOutputDir="linux_musl.arm.$(Configuration)/x86" />
+
+    <SupportedRid Update="@(SupportedRid)" Rid="%(Identity)" />
+
+    <TargetRuntimePacks Include="@(SupportedRid->'Microsoft.NETCore.App.Runtime.%(Rid)')" />
+
+    <PackageDownload Condition="'$(DotNetBuildOrchestrator)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(ProductVersion)]" />
+  </ItemGroup>
 
   <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">
+
+    <JoinItems
+      Left="@(Project)"
+      Right="@(TargetRuntimePacks)"
+      LeftKey="PackageTargetRuntime"
+      RightKey="Rid"
+      ItemSpecToUse="Left"
+      LeftMetadata="*"
+      RightMetadata="*">
+      <Output TaskParameter="JoinResult" ItemName="_projectsToBuild" />
+    </JoinItems>
+
     <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="$(SupportedRids.Contains('%(Project.PackageTargetRuntime)'))">
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.x64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-x64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.x64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.arm64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm64'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.arm64.$(Configuration)/x64</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux.arm.$(Configuration)/x86</AdditionalProperties>
-        <AdditionalProperties Condition="'%(Project.PackageTargetRuntime)' == 'linux-musl-arm'">%(AdditionalProperties);CrossDacBinRoot=$(CrossDacArtifactsDir)/linux_musl.arm.$(Configuration)/x86</AdditionalProperties>
-      </_projectsToBuild>
+      <_projectsToBuild CoreCLRRuntimePath="$(NuGetPackageRoot)/microsoft.netcore.app.runtime.%(Rid)/$(ProductVersion)/runtimes/%(Rid)/native" />
+
+      <_projectsToBuild AdditionalProperties="%(_projectsToBuild.AdditionalProperties);CrossDacOutputDir=%(CrossDacOutputDir);CoreCLRRuntimePath=%(CoreCLRRuntimePath)" />
     </ItemGroup>
 
     <ItemGroup>

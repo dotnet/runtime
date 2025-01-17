@@ -8,14 +8,14 @@
 
   <ItemGroup>
     <!-- Intentional rather than globbing here, even if very manual, to make sure we publish the Cross OS Dac -->
-    <NativeBinary Include="$(CrossDacBinRoot)/mscordaccore.dll" />
-    <NativeBinary Include="$(CrossDacBinRoot)/mscordbi.dll" />
+    <NativeBinary Include="$(ArtifactsBinDir)/$(CrossDacOutputDir)/mscordaccore.dll" />
+    <NativeBinary Include="$(ArtifactsBinDir)/$(CrossDacOutputDir)/mscordbi.dll" />
     <!-- The infrastructure, and this package is only for indexing. Avoid creating a transport package and just let this one have the symbols itself -->
     <File Include="@(NativeBinary -> '%(RootDir)%(Directory)/%(Filename).pdb')">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
     </File>
 
-    <NativeBinary Include="$(CrossDacBinRoot)/libcoreclr.so" />
+    <NativeBinary Include="$(CoreCLRRuntimePath)/libcoreclr.so" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
