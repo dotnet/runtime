@@ -1109,7 +1109,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 {
                     regNumber temp = internalRegisters.GetSingle(tree);
 
-                    uint32_t hi20 = bits >> 12;
+                    int32_t hi20 = ((int32_t)bits) >> 12;
                     assert(hi20 != 0);
                     emit->emitIns_R_I(INS_lui, size, temp, hi20);
                     emit->emitIns_R_R(INS_fmv_w_x, size, targetReg, temp);
