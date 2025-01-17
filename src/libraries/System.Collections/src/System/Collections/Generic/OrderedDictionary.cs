@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if NET8_0_OR_GREATER
+#if NET
 using static System.ArgumentNullException;
 using static System.ArgumentOutOfRangeException;
 #else

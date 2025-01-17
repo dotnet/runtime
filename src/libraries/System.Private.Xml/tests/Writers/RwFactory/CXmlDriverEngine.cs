@@ -693,7 +693,7 @@ namespace System.Xml.RwFactoryWriterTests
             }
             catch (Exception e)
             {
-                throw new CXmlDriverException("XmlDriver: CreateIntance failed for TestCase '" + "CRWFactoryDriverScenario"/*type.Name*/ + "' (" + e.ToString() + ")");
+                throw new CXmlDriverException($"XmlDriver: CreateInstance failed for TestCase '{nameof(CRWFactoryDriverScenario) /*type.Name*/}' ({e})");
             }
             return tmp;
         }

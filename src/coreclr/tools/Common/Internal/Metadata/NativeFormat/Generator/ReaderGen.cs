@@ -128,9 +128,9 @@ internal sealed class ReaderGen : CsWriter
         CloseScope();
 
         OpenScope($"internal {handleName}(int value)");
-        WriteLine("HandleType hType = (HandleType)(value >> 24);");
-        WriteLine($"Debug.Assert(hType == 0 || hType == HandleType.{record.Name} || hType == HandleType.Null);");
-        WriteLine($"_value = (value & 0x00FFFFFF) | (((int)HandleType.{record.Name}) << 24);");
+        WriteLine("HandleType hType = (HandleType)((uint)value >> 25);");
+        WriteLine($"Debug.Assert(hType == HandleType.{record.Name} || hType == HandleType.Null);");
+        WriteLine($"_value = (value & 0x01FFFFFF) | (((int)HandleType.{record.Name}) << 25);");
         WriteLine("_Validate();");
         CloseScope();
 
@@ -157,18 +157,18 @@ internal sealed class ReaderGen : CsWriter
         WriteLine("    => new Handle(handle._value);");
 
         WriteLineIfNeeded();
-        WriteLine("internal int Offset => (_value & 0x00FFFFFF);");
+        WriteLine("internal int Offset => (_value & 0x01FFFFFF);");
 
         WriteLineIfNeeded();
         WriteLine($"public {record.Name} Get{record.Name}(MetadataReader reader)");
         WriteLine($"    => new {record.Name}(reader, this);");
 
         WriteLineIfNeeded();
-        WriteLine("public bool IsNil => (_value & 0x00FFFFFF) == 0;");
+        WriteLine("public bool IsNil => (_value & 0x01FFFFFF) == 0;");
  
         WriteScopeAttribute("[System.Diagnostics.Conditional(\"DEBUG\")]");
         OpenScope("internal void _Validate()");
-        WriteLine($"if ((HandleType)((_value & 0xFF000000) >> 24) != HandleType.{record.Name})");
+        WriteLine($"if ((HandleType)((uint)_value >> 25) != HandleType.{record.Name})");
         WriteLine("    throw new ArgumentException();");
         CloseScope("_Validate");
 

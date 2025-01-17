@@ -3,20 +3,26 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Moq;
 using Xunit;
 
-namespace Microsoft.Diagnostics.DataContractReader.UnitTests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class CodeVersionsTests
+using static Microsoft.Diagnostics.DataContractReader.Tests.MockExtensions;
+using MockCodeVersions = MockDescriptors.CodeVersions;
+
+internal static class MockExtensions
 {
-
     internal class MockModule
     {
         public TargetPointer Address { get; set; }
         public TargetPointer MethodDefToILCodeVersioningStateAddress { get; set; }
         public Dictionary<uint, TargetPointer> MethodDefToILCodeVersioningStateTable {get; set;}
     }
+
     internal class MockMethodTable
     {
         public TargetPointer Address { get; set; }
@@ -29,7 +35,7 @@ public class CodeVersionsTests
         public bool IsVersionable { get; private set; }
 
         public uint RowId { get; set; }
-        public uint MethodToken => 0x06000000 | RowId;
+        public uint MethodToken => EcmaMetadataUtils.CreateMethodDef(RowId);
 
         // n.b. in the real RuntimeTypeSystem_1 this is more complex
         public TargetCodePointer NativeCode { get; private set; }
@@ -59,318 +65,106 @@ public class CodeVersionsTests
             };
         }
     }
+
     internal class MockCodeBlockStart
     {
         public TargetCodePointer StartAddress { get; set;}
         public uint Length { get; set; }
-
-        public bool Contains(TargetPointer ip) =>  ip >= StartAddress && ip < StartAddress + Length;
-        public bool Contains(TargetCodePointer ip) => Contains(ip.AsTargetPointer);
         public MockMethodDesc MethodDesc {get; set;}
-        public TargetPointer MethodDescAddress => MethodDesc.Address;
     }
 
-    internal class MockExecutionManager : IExecutionManager
+    public static void AddCodeBlock(this Mock<IExecutionManager> mock, MockCodeBlockStart block)
     {
-        private IReadOnlyCollection<MockCodeBlockStart> _codeBlocks;
-
-        public MockExecutionManager(IReadOnlyCollection<MockCodeBlockStart> codeBlocks)
-        {
-            _codeBlocks = codeBlocks;
-        }
-
-        private MockCodeBlockStart? FindCodeBlock(TargetPointer ip)
-        {
-            if (ip == TargetPointer.Null)
-            {
-                return null;
-            }
-            foreach (var block in _codeBlocks)
-            {
-                if (block.Contains(ip))
-                {
-                    return block;
-                }
-            }
-            return null;
-        }
-
-        CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
-        {
-            var block = FindCodeBlock(ip.AsTargetPointer);
-            if (block == null)
-                return null;
-            return new CodeBlockHandle(ip.AsTargetPointer);
-        }
-
-        TargetCodePointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle) => FindCodeBlock(codeInfoHandle.Address)?.StartAddress ?? TargetCodePointer.Null;
-        TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle) => FindCodeBlock(codeInfoHandle.Address)?.MethodDescAddress ?? TargetPointer.Null;
+        CodeBlockHandle handle = new CodeBlockHandle(block.StartAddress.AsTargetPointer);
+        mock.Setup(e => e.GetCodeBlockHandle(It.Is<TargetCodePointer>(ip => ip >= block.StartAddress && ip < block.StartAddress + block.Length)))
+            .Returns(handle);
+        mock.Setup(e => e.GetStartAddress(handle)).Returns(block.StartAddress);
+        mock.Setup(e => e.GetMethodDesc(handle)).Returns(block.MethodDesc.Address);
     }
 
-    internal class MockRuntimeTypeSystem : IRuntimeTypeSystem
+    public static void AddModule(this Mock<ILoader> mock, MockModule module)
     {
-        private readonly Target _target;
-        IReadOnlyCollection<MockMethodDesc> _methodDescs;
-        IReadOnlyCollection<MockMethodTable> _methodTables;
-        public MockRuntimeTypeSystem(Target target, IReadOnlyCollection<MockMethodDesc> methodDescs, IReadOnlyCollection<MockMethodTable> methodTables)
+        Contracts.ModuleHandle handle = new Contracts.ModuleHandle(module.Address);
+        mock.Setup(l => l.GetModuleHandle(module.Address)).Returns(handle);
+        mock.Setup(l => l.GetLookupTables(handle)).Returns(new ModuleLookupTables() {
+            MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
+        });
+        mock.Setup(l => l.GetModuleLookupMapElement(module.MethodDefToILCodeVersioningStateAddress, It.IsAny<uint>(), out It.Ref<TargetNUInt>.IsAny))
+        .Returns<TargetPointer, uint, TargetNUInt>((table, token, flags) =>
         {
-            _target = target;
-            _methodDescs = methodDescs;
-            _methodTables = methodTables;
-        }
-
-        private MockMethodDesc? TryFindMethodDesc(TargetPointer targetPointer)
-        {
-            foreach (var methodDesc in _methodDescs)
+            flags = new TargetNUInt(0);
+            if (module.MethodDefToILCodeVersioningStateTable.TryGetValue(EcmaMetadataUtils.GetRowId(token), out TargetPointer value))
             {
-                if (methodDesc.Address == targetPointer)
-                {
-                    return methodDesc;
-                }
+                return value;
             }
-            return null;
-        }
+            throw new InvalidOperationException($"No token found for 0x{token:x} in table {table}");
+        });
+    }
 
-        private MockMethodTable? TryFindMethodTable(TargetPointer targetPointer)
+    public static void AddMethodDesc(this Mock<IRuntimeTypeSystem> mock, MockMethodDesc methodDesc)
+    {
+        MethodDescHandle handle = new MethodDescHandle(methodDesc.Address);
+        mock.Setup(r => r.GetMethodDescHandle(methodDesc.Address)).Returns(handle);
+        mock.Setup(r => r.IsVersionable(handle)).Returns(methodDesc.IsVersionable);
+        mock.Setup(r => r.GetNativeCode(handle)).Returns(methodDesc.NativeCode);
+        mock.Setup(r => r.GetMethodDescVersioningState(handle)).Returns(methodDesc.MethodDescVersioningState);
+        mock.Setup(r => r.GetMethodTable(handle)).Returns(() => methodDesc.MethodTable?.Address ?? throw new InvalidOperationException($"MethodTable not found for {methodDesc.Address}"));
+        mock.Setup(r => r.GetMethodToken(handle)).Returns(methodDesc.MethodToken);
+    }
+
+    public static void AddMethodTable(this Mock<IRuntimeTypeSystem> mock, MockCodeVersions builder, MockMethodTable methodTable)
+    {
+        TypeHandle handle = new TypeHandle(methodTable.Address);
+        mock.Setup(r => r.GetTypeHandle(methodTable.Address)).Returns<TargetPointer>(address =>
         {
-            foreach (var methodTable in _methodTables)
-            {
-                if (methodTable.Address == targetPointer)
-                {
-                    return methodTable;
-                }
-            }
-            return null;
-        }
-
-        private MockMethodDesc FindMethodDesc(TargetPointer targetPointer) => TryFindMethodDesc(targetPointer) ?? throw new InvalidOperationException($"MethodDesc not found for {targetPointer}");
-        private MockMethodTable FindMethodTable(TargetPointer targetPointer) => TryFindMethodTable(targetPointer) ?? throw new InvalidOperationException($"MethodTable not found for {targetPointer}");
-
-        MethodDescHandle IRuntimeTypeSystem.GetMethodDescHandle(TargetPointer targetPointer) => new MethodDescHandle(FindMethodDesc(targetPointer).Address);
-
-        bool IRuntimeTypeSystem.IsVersionable(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).IsVersionable;
-        TargetCodePointer IRuntimeTypeSystem.GetNativeCode(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).NativeCode;
-        TargetPointer IRuntimeTypeSystem.GetMethodDescVersioningState(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).MethodDescVersioningState;
-
-        TargetPointer IRuntimeTypeSystem.GetMethodTable(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).MethodTable?.Address ?? throw new InvalidOperationException($"MethodTable not found for {methodDesc.Address}");
-        uint IRuntimeTypeSystem.GetMethodToken(MethodDescHandle methodDesc) => FindMethodDesc(methodDesc.Address).MethodToken;
-
-        TypeHandle IRuntimeTypeSystem.GetTypeHandle(TargetPointer address)
-        {
-            ulong addressLowBits = (ulong)address & ((ulong)_target.PointerSize - 1);
-
+            // this is not quite accurate on 32 bit architectures, but it's good enough for testing
+            ulong addressLowBits = (ulong)address & ((ulong)builder.Builder.TargetTestHelpers.PointerSize - 1);
             // no typedescs for now, just method tables with 0 in the low bits
             if (addressLowBits != 0)
             {
                 throw new InvalidOperationException("Invalid type handle pointer");
             }
-            MockMethodTable methodTable = FindMethodTable(address);
-            return new TypeHandle(methodTable.Address);
-        }
-
-        TargetPointer IRuntimeTypeSystem.GetModule(TypeHandle typeHandle) => FindMethodTable(typeHandle.Address).Module?.Address ?? throw new InvalidOperationException($"Module not found for {typeHandle.Address}");
+            return handle;
+        });
+        mock.Setup(r => r.GetModule(handle)).Returns(methodTable.Module?.Address ?? throw new InvalidOperationException($"Module not found for {handle.Address}"));
     }
+}
 
-    internal class MockLoader : ILoader
+public class CodeVersionsTests
+{
+    internal Target CreateTarget(
+        MockTarget.Architecture arch,
+        MockCodeVersions builder,
+        Mock<ILoader> mockLoader = null,
+        Mock<IExecutionManager> mockExecutionManager = null,
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = null)
     {
-        private readonly IReadOnlyCollection<MockModule> _modules;
-        public MockLoader(IReadOnlyCollection<MockModule> modules)
-        {
-            _modules = modules;
-        }
-        private MockModule? TryFindModule(TargetPointer targetPointer)
-        {
-            foreach (var module in _modules)
-            {
-                if (module.Address == targetPointer)
-                {
-                    return module;
-                }
-            }
-            return null;
-        }
+        mockLoader ??= new Mock<ILoader>();
+        mockExecutionManager ??= new Mock<IExecutionManager>();
+        mockRuntimeTypeSystem ??= new Mock<IRuntimeTypeSystem>();
 
-        private MockModule FindModule(TargetPointer targetPointer) => TryFindModule(targetPointer) ?? throw new InvalidOperationException($"Module not found for {targetPointer}");
+        TestPlaceholderTarget target = new TestPlaceholderTarget(
+            arch,
+            builder.Builder.GetReadContext().ReadFromTarget,
+            builder.Types);
 
-        Contracts.ModuleHandle ILoader.GetModuleHandle(TargetPointer modulePointer) => new Contracts.ModuleHandle(FindModule(modulePointer).Address);
-
-        ModuleLookupTables ILoader.GetLookupTables(Contracts.ModuleHandle handle)
-        {
-            MockModule module = FindModule(handle.Address);
-            return new ModuleLookupTables() {
-                MethodDefToILCodeVersioningState = module.MethodDefToILCodeVersioningStateAddress,
-            };
-        }
-
-        TargetPointer ILoader.GetModuleLookupMapElement(TargetPointer tableAddress, uint token, out TargetNUInt flags)
-        {
-            flags = new TargetNUInt(0);
-            Dictionary<uint,TargetPointer>? table = null;
-            foreach (var module in _modules)
-            {
-                if (module.MethodDefToILCodeVersioningStateTable != null && module.MethodDefToILCodeVersioningStateAddress == tableAddress)
-                {
-                    table = module.MethodDefToILCodeVersioningStateTable;
-                }
-            }
-            if (table == null) {
-                throw new InvalidOperationException($"No table found with address {tableAddress} for token 0x{token:x}, {flags}");
-            }
-            uint rowId = EcmaMetadataUtils.GetRowId(token);
-            if (table.TryGetValue(rowId, out TargetPointer value))
-            {
-                return value;
-            }
-            throw new InvalidOperationException($"No token found for 0x{token:x} in table {tableAddress}");
-        }
-    }
-
-    internal class CodeVersionsBuilder
-    {
-        internal readonly MockMemorySpace.Builder Builder;
-        internal readonly Dictionary<DataType, Target.TypeInfo> TypeInfoCache = new();
-
-        internal struct AllocationRange
-        {
-            public ulong CodeVersionsRangeStart;
-            public ulong CodeVersionsRangeEnd;
-        }
-
-        public  static readonly AllocationRange DefaultAllocationRange = new AllocationRange() {
-            CodeVersionsRangeStart = 0x000f_c000,
-            CodeVersionsRangeEnd = 0x00010_0000,
-        };
-
-        private readonly MockMemorySpace.BumpAllocator _codeVersionsAllocator;
-
-        public CodeVersionsBuilder(MockTarget.Architecture arch, AllocationRange allocationRange) : this(new MockMemorySpace.Builder(new TargetTestHelpers(arch)), allocationRange)
-        {}
-        public CodeVersionsBuilder(MockMemorySpace.Builder builder, AllocationRange allocationRange, Dictionary<DataType, Target.TypeInfo>? typeInfoCache = null)
-        {
-            Builder = builder;
-            _codeVersionsAllocator = Builder.CreateAllocator(allocationRange.CodeVersionsRangeStart, allocationRange.CodeVersionsRangeEnd);
-            TypeInfoCache = typeInfoCache ?? CreateTypeInfoCache(Builder.TargetTestHelpers);
-        }
-
-        internal static Dictionary<DataType, Target.TypeInfo> CreateTypeInfoCache(TargetTestHelpers targetTestHelpers)
-        {
-            Dictionary<DataType, Target.TypeInfo> typeInfoCache = new();
-            AddToTypeInfoCache(targetTestHelpers, typeInfoCache);
-            return typeInfoCache;
-        }
-
-        internal static void AddToTypeInfoCache(TargetTestHelpers targetTestHelpers, Dictionary<DataType, Target.TypeInfo> typeInfoCache)
-        {
-            var layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.MethodDescVersioningState.NativeCodeVersionNode), DataType.pointer),
-                (nameof(Data.MethodDescVersioningState.Flags), DataType.uint8),
-            ]);
-            typeInfoCache[DataType.MethodDescVersioningState] = new Target.TypeInfo() {
-                    Fields = layout.Fields,
-                    Size = layout.Stride,
-            };
-            layout = targetTestHelpers.LayoutFields([
-               (nameof(Data.NativeCodeVersionNode.Next), DataType.pointer),
-               (nameof(Data.NativeCodeVersionNode.MethodDesc), DataType.pointer),
-               (nameof(Data.NativeCodeVersionNode.NativeCode), DataType.pointer),
-            ]);
-            typeInfoCache[DataType.NativeCodeVersionNode] = new Target.TypeInfo() {
-                    Fields = layout.Fields,
-                    Size = layout.Stride,
-            };
-            layout = targetTestHelpers.LayoutFields([
-                (nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef), DataType.uint32),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionModule), DataType.pointer),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionKind), DataType.uint32),
-                (nameof(Data.ILCodeVersioningState.ActiveVersionNode), DataType.pointer),
-            ]);
-            typeInfoCache[DataType.ILCodeVersioningState] = new Target.TypeInfo() {
-                    Fields = layout.Fields,
-                    Size = layout.Stride,
-            };
-        }
-
-        public void MarkCreated() => Builder.MarkCreated();
-
-        public TargetPointer AddMethodDescVersioningState(TargetPointer nativeCodeVersionNode)
-        {
-            Target.TypeInfo info = TypeInfoCache[DataType.MethodDescVersioningState];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.MethodDescVersioningState].Size, "MethodDescVersioningState");
-            Builder.AddHeapFragment(fragment);
-            Span<byte> mdvs = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
-            Builder.TargetTestHelpers.WritePointer(mdvs.Slice(info.Fields[nameof(Data.MethodDescVersioningState.NativeCodeVersionNode)].Offset, Builder.TargetTestHelpers.PointerSize), nativeCodeVersionNode);
-            return fragment.Address;
-        }
-
-        public TargetPointer AddNativeCodeVersionNode()
-        {
-            Target.TypeInfo info = TypeInfoCache[DataType.NativeCodeVersionNode];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.NativeCodeVersionNode].Size, "NativeCodeVersionNode");
-            Builder.AddHeapFragment(fragment);
-            return fragment.Address;
-        }
-        public void FillNativeCodeVersionNode(TargetPointer dest, TargetPointer methodDesc, TargetCodePointer nativeCode, TargetPointer next)
-        {
-            Target.TypeInfo info = TypeInfoCache[DataType.NativeCodeVersionNode];
-            Span<byte> ncvn = Builder.BorrowAddressRange(dest, (int)info.Size!);
-            Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.Next)].Offset, Builder.TargetTestHelpers.PointerSize), next);
-            Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.MethodDesc)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
-            Builder.TargetTestHelpers.WritePointer(ncvn.Slice(info.Fields[nameof(Data.NativeCodeVersionNode.NativeCode)].Offset, Builder.TargetTestHelpers.PointerSize), nativeCode);
-        }
-
-        public TargetPointer AddILCodeVersioningState(uint activeVersionKind, TargetPointer activeVersionNode, TargetPointer activeVersionModule, uint activeVersionMethodDef)
-        {
-            Target.TypeInfo info = TypeInfoCache[DataType.ILCodeVersioningState];
-            MockMemorySpace.HeapFragment fragment = _codeVersionsAllocator.Allocate((ulong)TypeInfoCache[DataType.ILCodeVersioningState].Size, "ILCodeVersioningState");
-            Builder.AddHeapFragment(fragment);
-            Span<byte> ilcvs = Builder.BorrowAddressRange(fragment.Address, fragment.Data.Length);
-            Builder.TargetTestHelpers.WritePointer(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionModule)].Offset, Builder.TargetTestHelpers.PointerSize), activeVersionModule);
-            Builder.TargetTestHelpers.WritePointer(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionNode)].Offset, Builder.TargetTestHelpers.PointerSize), activeVersionNode);
-            Builder.TargetTestHelpers.Write(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionMethodDef)].Offset, sizeof(uint)), activeVersionMethodDef);
-            Builder.TargetTestHelpers.Write(ilcvs.Slice(info.Fields[nameof(Data.ILCodeVersioningState.ActiveVersionKind)].Offset, sizeof(uint)), activeVersionKind);
-            return fragment.Address;
-        }
-
-    }
-
-    internal class CVTestTarget : TestPlaceholderTarget
-    {
-        public static CVTestTarget FromBuilder(MockTarget.Architecture arch, IReadOnlyCollection<MockMethodDesc> methodDescs, IReadOnlyCollection<MockMethodTable> methodTables, IReadOnlyCollection<MockCodeBlockStart> codeBlocks, IReadOnlyCollection<MockModule> modules, CodeVersionsBuilder builder)
-        {
-            builder.MarkCreated();
-            return new CVTestTarget(arch, reader: builder.Builder.GetReadContext().ReadFromTarget, typeInfoCache: builder.TypeInfoCache,
-                                    methodDescs: methodDescs, methodTables: methodTables, codeBlocks: codeBlocks, modules: modules);
-        }
-
-        public CVTestTarget(MockTarget.Architecture arch, IReadOnlyCollection<MockMethodDesc>? methodDescs = null,
-                            IReadOnlyCollection<MockMethodTable>? methodTables = null,
-                            IReadOnlyCollection<MockCodeBlockStart>? codeBlocks = null,
-                            IReadOnlyCollection<MockModule>? modules = null,
-                            ReadFromTargetDelegate reader = null,
-                            Dictionary<DataType, TypeInfo>? typeInfoCache = null) : base(arch) {
-            IExecutionManager mockExecutionManager = new MockExecutionManager(codeBlocks ?? []);
-            IRuntimeTypeSystem mockRuntimeTypeSystem = new MockRuntimeTypeSystem(this, methodDescs ?? [], methodTables ?? []);
-            ILoader loader = new MockLoader(modules ?? []);
-            if (reader != null)
-                SetDataReader(reader);
-            if (typeInfoCache != null)
-                SetTypeInfoCache(typeInfoCache);
-            SetDataCache(new DefaultDataCache(this));
-            IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
-            SetContracts(new TestRegistry() {
-                CodeVersionsContract = new (() => cvfactory.CreateContract(this, 1)),
-                ExecutionManagerContract = new (() => mockExecutionManager),
-                RuntimeTypeSystemContract = new (() => mockRuntimeTypeSystem),
-                LoaderContract = new (() => loader),
-            });
-        }
+        IContractFactory<ICodeVersions> cvfactory = new CodeVersionsFactory();
+        ContractRegistry reg = Mock.Of<ContractRegistry>(
+            c => c.CodeVersions == cvfactory.CreateContract(target, 1)
+                && c.RuntimeTypeSystem == mockRuntimeTypeSystem.Object
+                && c.ExecutionManager == mockExecutionManager.Object
+                && c.Loader == mockLoader.Object);
+        target.SetContracts(reg);
+        return target;
     }
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TestGetNativeCodeVersionNull(MockTarget.Architecture arch)
+    public void GetNativeCodeVersion_Null(MockTarget.Architecture arch)
     {
-        var target = new CVTestTarget(arch);
+        var mockExecutionManager = new Mock<IExecutionManager>();
+        mockExecutionManager.Setup(e => e.GetCodeBlockHandle(TargetCodePointer.Null)).Returns(() => null);
+        var target = CreateTarget(arch, new MockCodeVersions(arch), mockExecutionManager: mockExecutionManager);
         var codeVersions = target.Contracts.CodeVersions;
 
         Assert.NotNull(codeVersions);
@@ -383,7 +177,7 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TestGetNativeCodeVersionOneVersionNonVersionable(MockTarget.Architecture arch)
+    public void GetNativeCodeVersion_OneVersion_NonVersionable(MockTarget.Architecture arch)
     {
         TargetCodePointer codeBlockStart = new TargetCodePointer(0x0a0a_0000);
         MockMethodDesc oneMethod = MockMethodDesc.CreateNonVersionable(selfAddress: new TargetPointer(0x1a0a_0000), nativeCode: codeBlockStart);
@@ -394,9 +188,21 @@ public class CodeVersionsTests
             MethodDesc = oneMethod,
         };
 
-        var target = new CVTestTarget(arch, methodDescs: [oneMethod], codeBlocks: [oneBlock]);
-        var codeVersions = target.Contracts.CodeVersions;
+        Mock<IExecutionManager> mockExecutionManager = new Mock<IExecutionManager>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
 
+        mockExecutionManager.AddCodeBlock(oneBlock);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+
+        var target = CreateTarget(
+            arch,
+            new MockCodeVersions(arch),
+            mockExecutionManager: mockExecutionManager,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+
+        var codeVersions = target.Contracts.CodeVersions;
         Assert.NotNull(codeVersions);
 
         TargetCodePointer codeBlockEnd = codeBlockStart + oneBlock.Length;
@@ -413,11 +219,11 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TestGetNativeCodeVersionOneVersionVersionable(MockTarget.Architecture arch)
+    public void GetNativeCodeVersion_OneVersion_Versionable(MockTarget.Architecture arch)
     {
-        var builder = new CodeVersionsBuilder(arch, CodeVersionsBuilder.DefaultAllocationRange);
+        var builder = new MockCodeVersions(arch);
         TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
-        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode);
+        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode, true);
         TargetCodePointer codeBlockStart = new TargetCodePointer(0x0a0a_0000);
         MockMethodDesc oneMethod = MockMethodDesc.CreateVersionable(selfAddress: new TargetPointer(0x1a0a_0000), methodDescVersioningState: methodDescVersioningStateAddress);
         MockCodeBlockStart oneBlock = new MockCodeBlockStart()
@@ -426,14 +232,23 @@ public class CodeVersionsTests
             Length = 0x100,
             MethodDesc = oneMethod,
         };
-        builder.FillNativeCodeVersionNode(nativeCodeVersionNode, methodDesc: oneMethod.Address, nativeCode: codeBlockStart, next: TargetPointer.Null);
+        builder.FillNativeCodeVersionNode(nativeCodeVersionNode, methodDesc: oneMethod.Address, nativeCode: codeBlockStart, next: TargetPointer.Null, isActive: false, ilVersionId: default);
 
-        var target = CVTestTarget.FromBuilder(arch, [oneMethod], [], [oneBlock], [], builder);
+        Mock<IExecutionManager> mockExecutionManager = new Mock<IExecutionManager>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockExecutionManager.AddCodeBlock(oneBlock);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockExecutionManager: mockExecutionManager,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
         var codeVersions = target.Contracts.CodeVersions;
-
         Assert.NotNull(codeVersions);
 
         TargetCodePointer codeBlockEnd = codeBlockStart + oneBlock.Length;
@@ -450,44 +265,461 @@ public class CodeVersionsTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void TestGetActiveNativeCodeVersionDefaultCase(MockTarget.Architecture arch)
+    public void GetActiveNativeCodeVersion_DefaultCase(MockTarget.Architecture arch)
     {
         uint methodRowId = 0x25; // arbitrary
         TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
-        uint methodDefToken = 0x06000000 | methodRowId;
-        var builder = new CodeVersionsBuilder(arch, CodeVersionsBuilder.DefaultAllocationRange);
+        uint methodDefToken = EcmaMetadataUtils.CreateMethodDef(methodRowId);
+        var builder = new MockCodeVersions(arch);
         var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var methodDescNilTokenAddress = new TargetPointer(0x00aa_bb00);
         var moduleAddress = new TargetPointer(0x00ca_ca00);
 
-
-        TargetPointer versioningState = builder.AddILCodeVersioningState(activeVersionKind: 0/*==unknown*/, activeVersionNode: TargetPointer.Null, activeVersionModule: moduleAddress, activeVersionMethodDef: methodDefToken);
-        var oneModule = new MockModule() {
+        TargetPointer versioningState = builder.AddILCodeVersioningState(
+            activeVersionKind: 0/*==unknown*/,
+            activeVersionNode: TargetPointer.Null,
+            activeVersionModule: moduleAddress,
+            activeVersionMethodDef: methodDefToken,
+            firstVersionNode: TargetPointer.Null);
+        var module = new MockModule() {
             Address = moduleAddress,
             MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
             MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
                 { methodRowId, versioningState}
             },
         };
-        var oneMethodTable = new MockMethodTable() {
+        var methodTable = new MockMethodTable() {
             Address = new TargetPointer(0x00ba_ba00),
-            Module = oneModule,
+            Module = module,
         };
-        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: TargetPointer.Null, nativeCode: expectedNativeCodePointer);
-        oneMethod.MethodTable = oneMethodTable;
-        oneMethod.RowId = methodRowId;
+        var method = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: TargetPointer.Null, nativeCode: expectedNativeCodePointer);
+        method.MethodTable = methodTable;
+        method.RowId = methodRowId;
 
-        var target = CVTestTarget.FromBuilder(arch, [oneMethod], [oneMethodTable], [], [oneModule], builder);
+        var methodNilToken = MockMethodDesc.CreateVersionable(selfAddress: methodDescNilTokenAddress, methodDescVersioningState: TargetPointer.Null, nativeCode: expectedNativeCodePointer);
+        methodNilToken.MethodTable = methodTable;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockRuntimeTypeSystem.AddMethodDesc(method);
+        mockRuntimeTypeSystem.AddMethodDesc(methodNilToken);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+        mockLoader.AddModule(module);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
 
         // TEST
 
         var codeVersions = target.Contracts.CodeVersions;
+        Assert.NotNull(codeVersions);
 
+        {
+            NativeCodeVersionHandle handle = codeVersions.GetActiveNativeCodeVersion(methodDescAddress);
+            Assert.True(handle.Valid);
+            Assert.Equal(methodDescAddress, handle.MethodDescAddress);
+            var actualCodeAddress = codeVersions.GetNativeCode(handle);
+            Assert.Equal(expectedNativeCodePointer, actualCodeAddress);
+        }
+        {
+            NativeCodeVersionHandle handle = codeVersions.GetActiveNativeCodeVersion(methodDescNilTokenAddress);
+            Assert.True(handle.Valid);
+            Assert.Equal(methodDescNilTokenAddress, handle.MethodDescAddress);
+            var actualCodeAddress = codeVersions.GetNativeCode(handle);
+            Assert.Equal(expectedNativeCodePointer, actualCodeAddress);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetActiveNativeCodeVersion_IterateVersionNodes(MockTarget.Architecture arch)
+    {
+        GetActiveNativeCodeVersion_IterateVersionNodes_Impl(arch, shouldFindActiveCodeVersion: true);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetActiveNativeCodeVersion_IterateVersionNodes_NoMatch(MockTarget.Architecture arch)
+    {
+        GetActiveNativeCodeVersion_IterateVersionNodes_Impl(arch, shouldFindActiveCodeVersion: false);
+    }
+
+    private void GetActiveNativeCodeVersion_IterateVersionNodes_Impl(MockTarget.Architecture arch, bool shouldFindActiveCodeVersion)
+    {
+        uint methodRowId = 0x25; // arbitrary
+        TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
+        uint methodDefToken = 0x06000000 | methodRowId;
+        var builder = new MockCodeVersions(arch);
+        var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var moduleAddress = new TargetPointer(0x00ca_ca00);
+
+        TargetPointer versioningState = builder.AddILCodeVersioningState(
+            activeVersionKind: 0/*==unknown*/,
+            activeVersionNode: TargetPointer.Null,
+            activeVersionModule: moduleAddress,
+            activeVersionMethodDef: methodDefToken,
+            firstVersionNode: TargetPointer.Null);
+        var module = new MockModule()
+        {
+            Address = moduleAddress,
+            MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
+            MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
+                { methodRowId, versioningState}
+            },
+        };
+        var methodTable = new MockMethodTable()
+        {
+            Address = new TargetPointer(0x00ba_ba00),
+            Module = module,
+        };
+
+        // Add the linked list of native code version nodes
+        int count = 3;
+        int activeIndex = shouldFindActiveCodeVersion ? count - 1 : -1;
+        (TargetPointer firstNode, TargetPointer activeVersionNode) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, count, activeIndex, expectedNativeCodePointer, default);
+        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
+
+        var methodDesc = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress, nativeCode: expectedNativeCodePointer);
+        methodDesc.MethodTable = methodTable;
+        methodDesc.RowId = methodRowId;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(methodDesc);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+
+        var codeVersions = target.Contracts.CodeVersions;
+        Assert.NotNull(codeVersions);
+
+        NativeCodeVersionHandle handle = codeVersions.GetActiveNativeCodeVersion(methodDescAddress);
+        if (shouldFindActiveCodeVersion)
+        {
+            Assert.True(handle.Valid);
+            Assert.Equal(activeVersionNode, handle.CodeVersionNodeAddress);
+            var actualCodeAddress = codeVersions.GetNativeCode(handle);
+            Assert.Equal(expectedNativeCodePointer, actualCodeAddress);
+        }
+        else
+        {
+            Assert.False(handle.Valid);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetActiveNativeCodeVersion_ExplicitILCodeVersion(MockTarget.Architecture arch)
+    {
+        GetActiveNativeCodeVersion_ExplicitILCodeVersion_Impl(arch, shouldFindActiveCodeVersion: true);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetActiveNativeCodeVersion_ExplicitILCodeVersion_NoMatch(MockTarget.Architecture arch)
+    {
+        GetActiveNativeCodeVersion_ExplicitILCodeVersion_Impl(arch, shouldFindActiveCodeVersion: false);
+    }
+
+    private void GetActiveNativeCodeVersion_ExplicitILCodeVersion_Impl(MockTarget.Architecture arch, bool shouldFindActiveCodeVersion)
+    {
+        uint methodRowId = 0x25; // arbitrary
+        TargetCodePointer expectedNativeCodePointer = new TargetCodePointer(0x0700_abc0);
+        var builder = new MockCodeVersions(arch);
+        var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var moduleAddress = new TargetPointer(0x00ca_ca00);
+
+        TargetNUInt ilVersionId = new TargetNUInt(5);
+        TargetPointer ilVersionNode = builder.AddILCodeVersionNode(TargetPointer.Null, ilVersionId, /* kStateActive */ 0x00000002);
+        TargetPointer versioningState = builder.AddILCodeVersioningState(
+            activeVersionKind: 1 /* Explicit */,
+            activeVersionNode: ilVersionNode,
+            activeVersionModule: TargetPointer.Null,
+            activeVersionMethodDef: 0,
+            firstVersionNode: ilVersionNode);
+        var module = new MockModule()
+        {
+            Address = moduleAddress,
+            MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
+            MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
+                { methodRowId, versioningState}
+            },
+        };
+        var methodTable = new MockMethodTable()
+        {
+            Address = new TargetPointer(0x00ba_ba00),
+            Module = module,
+        };
+
+        // Add the linked list of native code version nodes
+        int count = 3;
+        int activeIndex = shouldFindActiveCodeVersion ? count - 1 : -1;
+        TargetNUInt activeIlVersionId = shouldFindActiveCodeVersion ? ilVersionId : default;
+        (TargetPointer firstNode, TargetPointer activeVersionNode) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, count, activeIndex, expectedNativeCodePointer, activeIlVersionId);
+        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
+
+        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress, nativeCode: expectedNativeCodePointer);
+        oneMethod.MethodTable = methodTable;
+        oneMethod.RowId = methodRowId;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+
+        var codeVersions = target.Contracts.CodeVersions;
         Assert.NotNull(codeVersions);
 
         var handle = codeVersions.GetActiveNativeCodeVersion(methodDescAddress);
-        Assert.True(handle.Valid);
-        var actualCodeAddress = codeVersions.GetNativeCode(handle);
-        Assert.Equal(expectedNativeCodePointer, actualCodeAddress);
+        if (shouldFindActiveCodeVersion)
+        {
+            Assert.True(handle.Valid);
+            Assert.Equal(activeVersionNode, handle.CodeVersionNodeAddress);
+            var actualCodeAddress = codeVersions.GetNativeCode(handle);
+            Assert.Equal(expectedNativeCodePointer, actualCodeAddress);
+        }
+        else
+        {
+            Assert.False(handle.Valid);
+        }
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetILCodeVersions_SyntheticAndExplicit(MockTarget.Architecture arch)
+    {
+        uint methodRowId = 0x25; // arbitrary
+        TargetCodePointer expectedSyntheticCodePointer = new TargetCodePointer(0x0700_abc0);
+        TargetCodePointer expectedExplicitCodePointer = new TargetCodePointer(0x0780_abc0);
+        var builder = new MockCodeVersions(arch);
+        var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var moduleAddress = new TargetPointer(0x00ca_ca00);
+
+        TargetNUInt ilVersionId = new TargetNUInt(2);
+        TargetPointer ilVersionNode = builder.AddILCodeVersionNode(TargetPointer.Null, ilVersionId, /* kStateActive */ 0x00000002);
+        TargetPointer versioningState = builder.AddILCodeVersioningState(
+            activeVersionKind: 1 /* Explicit */,
+            activeVersionNode: ilVersionNode,
+            activeVersionModule: TargetPointer.Null,
+            activeVersionMethodDef: 0,
+            firstVersionNode: ilVersionNode);
+        var module = new MockModule()
+        {
+            Address = moduleAddress,
+            MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
+            MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
+                { methodRowId, versioningState}
+            },
+        };
+        var methodTable = new MockMethodTable()
+        {
+            Address = new TargetPointer(0x00ba_ba00),
+            Module = module,
+        };
+
+        (TargetPointer firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedSyntheticCodePointer, new TargetNUInt(0));
+        (firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedExplicitCodePointer, ilVersionId, firstNode);
+
+        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
+
+        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress);
+        oneMethod.MethodTable = methodTable;
+        oneMethod.RowId = methodRowId;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+
+        var codeVersions = target.Contracts.CodeVersions;
+        Assert.NotNull(codeVersions);
+
+        // Get all ILCodeVersions
+        List<ILCodeVersionHandle> ilCodeVersions = codeVersions.GetILCodeVersions(methodDescAddress).ToList();
+        Assert.Equal(2, ilCodeVersions.Count);
+
+        // Get the explicit ILCodeVersion and assert that it is in the list of ILCodeVersions
+        ILCodeVersionHandle explicitILCodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
+        Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILCodeVersion));
+        Assert.Equal(expectedExplicitCodePointer, codeVersions.GetNativeCode(codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, explicitILCodeVersion)));
+
+        // Find the other ILCodeVersion (synthetic) and assert that it is valid.
+        ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILCodeVersion));
+        Assert.True(syntheticILcodeVersion.IsValid);
+        Assert.Equal(expectedSyntheticCodePointer, codeVersions.GetNativeCode(codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, syntheticILcodeVersion)));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void IlToNativeToIlCodeVersion_SyntheticAndExplicit(MockTarget.Architecture arch)
+    {
+        uint methodRowId = 0x25; // arbitrary
+        TargetCodePointer expectedSyntheticCodePointer = new TargetCodePointer(0x0700_abc0);
+        TargetCodePointer expectedExplicitCodePointer = new TargetCodePointer(0x0780_abc0);
+        var builder = new MockCodeVersions(arch);
+        var methodDescAddress = new TargetPointer(0x00aa_aa00);
+        var moduleAddress = new TargetPointer(0x00ca_ca00);
+
+        TargetNUInt ilVersionId = new TargetNUInt(2);
+        TargetPointer ilVersionNode = builder.AddILCodeVersionNode(TargetPointer.Null, ilVersionId, /* kStateActive */ 0x00000002);
+        TargetPointer versioningState = builder.AddILCodeVersioningState(
+            activeVersionKind: 1 /* Explicit */,
+            activeVersionNode: ilVersionNode,
+            activeVersionModule: TargetPointer.Null,
+            activeVersionMethodDef: 0,
+            firstVersionNode: ilVersionNode);
+        var module = new MockModule()
+        {
+            Address = moduleAddress,
+            MethodDefToILCodeVersioningStateAddress = new TargetPointer(0x00da_da00),
+            MethodDefToILCodeVersioningStateTable = new Dictionary<uint, TargetPointer>() {
+                { methodRowId, versioningState}
+            },
+        };
+        var methodTable = new MockMethodTable()
+        {
+            Address = new TargetPointer(0x00ba_ba00),
+            Module = module,
+        };
+
+        (TargetPointer firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedSyntheticCodePointer, new TargetNUInt(0));
+        (firstNode, _) = builder.AddNativeCodeVersionNodesForMethod(methodDescAddress, 2, 1, expectedExplicitCodePointer, ilVersionId, firstNode);
+
+        TargetPointer methodDescVersioningStateAddress = builder.AddMethodDescVersioningState(nativeCodeVersionNode: firstNode, isDefaultVersionActive: false);
+
+        var oneMethod = MockMethodDesc.CreateVersionable(selfAddress: methodDescAddress, methodDescVersioningState: methodDescVersioningStateAddress);
+        oneMethod.MethodTable = methodTable;
+        oneMethod.RowId = methodRowId;
+
+        Mock<ILoader> mockLoader = new Mock<ILoader>();
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+
+        mockLoader.AddModule(module);
+        mockRuntimeTypeSystem.AddMethodDesc(oneMethod);
+        mockRuntimeTypeSystem.AddMethodTable(builder, methodTable);
+
+        var target = CreateTarget(
+            arch,
+            builder,
+            mockLoader: mockLoader,
+            mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+
+        var codeVersions = target.Contracts.CodeVersions;
+        Assert.NotNull(codeVersions);
+
+        // Get all ILCodeVersions
+        List<ILCodeVersionHandle> ilCodeVersions = codeVersions.GetILCodeVersions(methodDescAddress).ToList();
+        Assert.Equal(2, ilCodeVersions.Count);
+
+        // Get the explicit ILCodeVersion and assert that it is in the list of ILCodeVersions
+        ILCodeVersionHandle explicitILCodeVersion = codeVersions.GetActiveILCodeVersion(methodDescAddress);
+        Assert.Contains(ilCodeVersions, ilcodeVersion => ilcodeVersion.Equals(explicitILCodeVersion));
+        Assert.True(explicitILCodeVersion.IsValid);
+
+        // Find the other ILCodeVersion (synthetic) and assert that it is valid.
+        ILCodeVersionHandle syntheticILcodeVersion = ilCodeVersions.Find(ilCodeVersion => !ilCodeVersion.Equals(explicitILCodeVersion));
+        Assert.True(syntheticILcodeVersion.IsValid);
+
+        // Verify getting ILCode is equal to ILCode from NativeCode from ILCode.
+        NativeCodeVersionHandle explicitNativeCodeVersion = codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, explicitILCodeVersion);
+        Assert.True(explicitILCodeVersion.Equals(codeVersions.GetILCodeVersion(explicitNativeCodeVersion)));
+
+        NativeCodeVersionHandle syntheticNativeCodeVersion = codeVersions.GetActiveNativeCodeVersionForILCodeVersion(methodDescAddress, syntheticILcodeVersion);
+        Assert.True(syntheticILcodeVersion.Equals(codeVersions.GetILCodeVersion(syntheticNativeCodeVersion)));
+    }
+
+    private void GetGCStressCodeCopy_Impl(MockTarget.Architecture arch, bool returnsNull)
+    {
+        MockCodeVersions builder = new(arch);
+        Mock<IRuntimeTypeSystem> mockRuntimeTypeSystem = new();
+
+        // Setup synthetic NativeCodeVersion
+        TargetPointer expectedSyntheticCodeCopyAddr = returnsNull ? TargetPointer.Null : new(0x2345_6789);
+        TargetPointer syntheticMethodDescAddr = new(0x2345_8000);
+        NativeCodeVersionHandle syntheticHandle = NativeCodeVersionHandle.CreateSynthetic(syntheticMethodDescAddr);
+        MethodDescHandle methodDescHandle = new MethodDescHandle(syntheticMethodDescAddr);
+        mockRuntimeTypeSystem.Setup(rts => rts.GetMethodDescHandle(syntheticMethodDescAddr)).Returns(methodDescHandle);
+        mockRuntimeTypeSystem.Setup(rts => rts.GetGCStressCodeCopy(methodDescHandle)).Returns(expectedSyntheticCodeCopyAddr);
+
+        // Setup explicit NativeCodeVersion
+        TargetPointer? explicitGCCoverageInfoAddr = returnsNull ? TargetPointer.Null : new(0x1234_5678);
+        TargetPointer nativeCodeVersionNode = builder.AddNativeCodeVersionNode();
+        builder.FillNativeCodeVersionNode(
+            nativeCodeVersionNode,
+            methodDesc: TargetPointer.Null,
+            nativeCode: TargetCodePointer.Null,
+            next: TargetPointer.Null,
+            isActive: true,
+            ilVersionId: new(1),
+            gcCoverageInfo: explicitGCCoverageInfoAddr);
+        NativeCodeVersionHandle explicitHandle = NativeCodeVersionHandle.CreateExplicit(nativeCodeVersionNode);
+
+        var target = CreateTarget(arch, builder, mockRuntimeTypeSystem: mockRuntimeTypeSystem);
+
+        // TEST
+        var codeVersions = target.Contracts.CodeVersions;
+        TargetPointer actualSyntheticCodeCopyAddr = codeVersions.GetGCStressCodeCopy(syntheticHandle);
+        Assert.Equal(expectedSyntheticCodeCopyAddr, actualSyntheticCodeCopyAddr);
+
+        if(returnsNull)
+        {
+            TargetPointer actualExplicitCodeCopyAddr = codeVersions.GetGCStressCodeCopy(explicitHandle);
+            Assert.Equal(TargetPointer.Null, actualExplicitCodeCopyAddr);
+        }
+        else
+        {
+            Target.TypeInfo gcCoverageInfoType = target.GetTypeInfo(DataType.GCCoverageInfo);
+            TargetPointer expectedExplicitCodeCopyAddr = explicitGCCoverageInfoAddr.Value + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+            TargetPointer actualExplicitCodeCopyAddr = codeVersions.GetGCStressCodeCopy(explicitHandle);
+            Assert.Equal(expectedExplicitCodeCopyAddr, actualExplicitCodeCopyAddr);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCStressCodeCopy_Null(MockTarget.Architecture arch)
+    {
+        GetGCStressCodeCopy_Impl(arch, returnsNull: true);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetGCStressCodeCopy_NotNull(MockTarget.Architecture arch)
+    {
+        GetGCStressCodeCopy_Impl(arch, returnsNull: false);
+    }
 }

@@ -4,10 +4,6 @@ if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CM
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
-if (CLR_CMAKE_TARGET_OSX)
-    add_definitions(-D_DARWIN_C_SOURCE)
-endif ()
-
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c

@@ -66,6 +66,18 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_NeedNonNegNum(string paramName)
+        {
+            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Generic_MustBeNonNegative);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowArgumentException_InvalidOffLen()
+        {
+            throw new ArgumentException(SR.Argument_InvalidOffLen);
+        }
+
+        [DoesNotReturn]
         public static void ThrowArgumentException_ArrayTooSmall(string paramName)
         {
             throw new ArgumentException(SR.ArrayTooSmall, paramName);
@@ -297,6 +309,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_CannotSkipOnPartial()
         {
             throw GetInvalidOperationException(SR.CannotSkip);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_CannotMixEncodings(Utf8JsonWriter.SegmentEncoding previousEncoding, Utf8JsonWriter.SegmentEncoding currentEncoding)
+        {
+            throw GetInvalidOperationException(SR.Format(SR.CannotMixEncodings, previousEncoding, currentEncoding));
         }
 
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
@@ -604,6 +622,9 @@ namespace System.Text.Json
                 case ExceptionResource.CannotWriteValueAfterPrimitiveOrClose:
                     message = SR.Format(SR.CannotWriteValueAfterPrimitiveOrClose, tokenType);
                     break;
+                case ExceptionResource.CannotWriteWithinString:
+                    message = SR.CannotWriteWithinString;
+                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -770,6 +791,7 @@ namespace System.Text.Json
         ExpectedOneCompleteToken,
         NotEnoughData,
         InvalidLeadingZeroInNumber,
+        CannotWriteWithinString,
     }
 
     internal enum NumericType
