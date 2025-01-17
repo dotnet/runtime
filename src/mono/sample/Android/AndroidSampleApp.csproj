@@ -19,9 +19,6 @@
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
   <UsingTask TaskName="MonoAOTCompiler" 
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
-             TaskName="NdkToolFinderTask"
-             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
   
   <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <_MobileIntermediateOutputPath>$(IntermediateOutputPath)mobile</_MobileIntermediateOutputPath>
@@ -67,25 +64,6 @@
 
     <PropertyGroup>
       <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
-      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
-      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
-      <_LdName>clang</_LdName>
-      <_LdOptions>-fuse-ld=lld</_LdOptions>
-      <_AsName>clang</_AsName>
     </PropertyGroup>
 
     <MonoAOTCompiler Condition="'$(ForceAOT)' == 'true'"

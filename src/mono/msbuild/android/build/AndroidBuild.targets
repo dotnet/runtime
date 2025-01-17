@@ -7,9 +7,8 @@
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
-             TaskName="NdkToolFinderTask"
-             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
+  <!-- Import default AOT arguments -->
+  <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
@@ -112,33 +111,11 @@
       <_AotOutputType>ObjectFile</_AotOutputType>
     </PropertyGroup>
 
-    <PropertyGroup>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
-      <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
-      <_LdName>clang</_LdName>
-      <_LdOptions>-fuse-ld=lld</_LdOptions>
-      <_AsName>clang</_AsName>
-    </PropertyGroup>
-
+    <!-- Extend default AOT arguments -->
     <ItemGroup>
-      <MonoAOTCompilerDefaultAotArguments Include="static" />
-      <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_IsLibraryMode)' == 'true'" Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) == ''" Include="runtime-init-callback" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(_UsesRuntimeInitCallback)' == 'true' and $(CustomRuntimeInitCallback) != ''" Include="runtime-init-callback=$(CustomRuntimeInitCallback)" />
-
-      <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
-      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=10000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
-      <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
-      <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=31000" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -148,11 +125,6 @@
 
     <PropertyGroup>
       <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'">
-      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
-      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
 
     <ItemGroup>
