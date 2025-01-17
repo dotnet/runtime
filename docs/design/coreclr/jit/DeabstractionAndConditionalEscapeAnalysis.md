@@ -635,7 +635,7 @@ Another area to explore are `Linq` methods that take two (or more) `IEnumerable<
 
 ## Linq
 
-Ideally the work above would show improvements in `Linq` methods. However the situation with `Linq` is more complex (and one, can safely infer, we are not yet seeing many improvements). Let's dig in a little.
+Ideally the work above would show improvements in `Linq` methods. However the situation with `Linq` is more complex (and one can safely infer from this that we are not yet seeing many improvements). Let's dig in a little.
 
 First, let's contrast a "naive" `Linq` implementation for `Where` against the actual implementation, both for .NET 9 and with the changes above, on an array:
 ```C#
