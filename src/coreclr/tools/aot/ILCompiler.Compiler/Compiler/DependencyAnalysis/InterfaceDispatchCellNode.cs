@@ -63,10 +63,10 @@ namespace ILCompiler.DependencyAnalysis
 
             result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
 
-            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
-            // see a RuntimeTypeHandle representing this interface.
-            result.Add(factory.ConstructedTypeSymbol(_targetMethod.OwningType), "Interface type");
+            //// We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            //// If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            //// see a RuntimeTypeHandle representing this interface.
+            result.Add(factory.NecessaryTypeSymbol(_targetMethod.OwningType), "Interface type");
 
             return result;
         }
@@ -75,10 +75,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
 
-            // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-            // If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
-            // see a RuntimeTypeHandle representing this interface.
-            IEETypeNode interfaceType = factory.ConstructedTypeSymbol(_targetMethod.OwningType);
+            //// We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+            //// If this dispatch cell is ever used with an object that implements IDynamicIntefaceCastable, user code will
+            //// see a RuntimeTypeHandle representing this interface.
+            IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
             if (factory.Target.SupportsRelativePointers)
             {
                 if (interfaceType.RepresentsIndirectionCell)
