@@ -88,9 +88,6 @@
       <_CoreClrBuildArg Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
 
       <!--
-        # TODO: https://github.com/dotnet/runtime/issues/111491
-      -->
-      <!--
         Unsure if something like this is actually defined. We need this to differentiate between
         features that are enabled in mono android, but not in coreclr.
       -->
