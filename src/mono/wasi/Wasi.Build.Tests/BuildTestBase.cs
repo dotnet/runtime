@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net9.0";
+        public const string DefaultTargetFramework = "net10.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -46,7 +46,7 @@ namespace Wasm.Build.Tests
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
-        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
         private static int s_testCounter;
@@ -55,8 +55,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget9.config");
-                            // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+            Path.Combine(BuildEnvironment.TestDataPath, "nuget10.config");
 
         static BuildTestBase()
         {

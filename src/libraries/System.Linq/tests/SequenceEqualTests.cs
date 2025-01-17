@@ -33,8 +33,8 @@ namespace System.Linq.Tests
         [Fact]
         public void BothEmpty()
         {
-            int[] first = { };
-            int[] second = { };
+            int[] first = [];
+            int[] second = [];
 
             Assert.True(first.SequenceEqual(second));
             Assert.True(FlipIsCollection(first).SequenceEqual(second));
@@ -45,8 +45,8 @@ namespace System.Linq.Tests
         [Fact]
         public void MismatchInMiddle()
         {
-            int?[] first = { 1, 2, 3, 4 };
-            int?[] second = { 1, 2, 6, 4 };
+            int?[] first = [1, 2, 3, 4];
+            int?[] second = [1, 2, 6, 4];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -57,8 +57,8 @@ namespace System.Linq.Tests
         [Fact]
         public void NullComparer()
         {
-            string[] first = { "Bob", "Tim", "Chris" };
-            string[] second = { "Bbo", "mTi", "rishC" };
+            string[] first = ["Bob", "Tim", "Chris"];
+            string[] second = ["Bbo", "mTi", "rishC"];
 
             Assert.False(first.SequenceEqual(second, null));
             Assert.False(FlipIsCollection(first).SequenceEqual(second, null));
@@ -69,8 +69,8 @@ namespace System.Linq.Tests
         [Fact]
         public void CustomComparer()
         {
-            string[] first = { "Bob", "Tim", "Chris" };
-            string[] second = { "Bbo", "mTi", "rishC" };
+            string[] first = ["Bob", "Tim", "Chris"];
+            string[] second = ["Bbo", "mTi", "rishC"];
 
             Assert.True(first.SequenceEqual(second, new AnagramEqualityComparer()));
             Assert.True(FlipIsCollection(first).SequenceEqual(second, new AnagramEqualityComparer()));
@@ -81,8 +81,8 @@ namespace System.Linq.Tests
         [Fact]
         public void RunOnce()
         {
-            string[] first = { "Bob", "Tim", "Chris" };
-            string[] second = { "Bbo", "mTi", "rishC" };
+            string[] first = ["Bob", "Tim", "Chris"];
+            string[] second = ["Bbo", "mTi", "rishC"];
 
             Assert.True(first.RunOnce().SequenceEqual(second.RunOnce(), new AnagramEqualityComparer()));
         }
@@ -90,8 +90,8 @@ namespace System.Linq.Tests
         [Fact]
         public void BothSingleNullExplicitComparer()
         {
-            string[] first = { null };
-            string[] second = { null };
+            string[] first = [null];
+            string[] second = [null];
 
             Assert.True(first.SequenceEqual(second, StringComparer.Ordinal));
             Assert.True(FlipIsCollection(first).SequenceEqual(second, StringComparer.Ordinal));
@@ -102,8 +102,8 @@ namespace System.Linq.Tests
         [Fact]
         public void BothMatchIncludingNullElements()
         {
-            int?[] first = { -6, null, 0, -4, 9, 10, 20 };
-            int?[] second = { -6, null, 0, -4, 9, 10, 20 };
+            int?[] first = [-6, null, 0, -4, 9, 10, 20];
+            int?[] second = [-6, null, 0, -4, 9, 10, 20];
 
             Assert.True(first.SequenceEqual(second));
             Assert.True(FlipIsCollection(first).SequenceEqual(second));
@@ -114,8 +114,8 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptyWithNonEmpty()
         {
-            int?[] first = { };
-            int?[] second = { 2, 3, 4 };
+            int?[] first = [];
+            int?[] second = [2, 3, 4];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -126,8 +126,8 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptyWithEmpty()
         {
-            int?[] first = { 2, 3, 4 };
-            int?[] second = { };
+            int?[] first = [2, 3, 4];
+            int?[] second = [];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -138,8 +138,8 @@ namespace System.Linq.Tests
         [Fact]
         public void MismatchingSingletons()
         {
-            int?[] first = { 2 };
-            int?[] second = { 4 };
+            int?[] first = [2];
+            int?[] second = [4];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -150,8 +150,8 @@ namespace System.Linq.Tests
         [Fact]
         public void MismatchOnFirst()
         {
-            int?[] first = { 1, 2, 3, 4, 5 };
-            int?[] second = { 2, 2, 3, 4, 5 };
+            int?[] first = [1, 2, 3, 4, 5];
+            int?[] second = [2, 2, 3, 4, 5];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -163,8 +163,8 @@ namespace System.Linq.Tests
         [Fact]
         public void MismatchOnLast()
         {
-            int?[] first = { 1, 2, 3, 4, 4 };
-            int?[] second = { 1, 2, 3, 4, 5 };
+            int?[] first = [1, 2, 3, 4, 4];
+            int?[] second = [1, 2, 3, 4, 5];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -175,8 +175,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SecondLargerThanFirst()
         {
-            int?[] first = { 1, 2, 3, 4 };
-            int?[] second = { 1, 2, 3, 4, 4 };
+            int?[] first = [1, 2, 3, 4];
+            int?[] second = [1, 2, 3, 4, 4];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -187,8 +187,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstLargerThanSecond()
         {
-            int?[] first = { 1, 2, 3, 4, 4 };
-            int?[] second = { 1, 2, 3, 4 };
+            int?[] first = [1, 2, 3, 4, 4];
+            int?[] second = [1, 2, 3, 4];
 
             Assert.False(first.SequenceEqual(second));
             Assert.False(FlipIsCollection(first).SequenceEqual(second));
@@ -200,7 +200,7 @@ namespace System.Linq.Tests
         public void FirstSourceNull()
         {
             int[] first = null;
-            int[] second = { };
+            int[] second = [];
 
             AssertExtensions.Throws<ArgumentNullException>("first", () => first.SequenceEqual(second));
         }
@@ -208,7 +208,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SecondSourceNull()
         {
-            int[] first = { };
+            int[] first = [];
             int[] second = null;
 
             AssertExtensions.Throws<ArgumentNullException>("second", () => first.SequenceEqual(second));

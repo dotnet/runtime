@@ -314,7 +314,7 @@ namespace System
         /// <inheritdoc cref="Contains{T}(ReadOnlySpan{T}, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe bool Contains<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+        public static bool Contains<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
             Contains((ReadOnlySpan<T>)span, value);
 
         /// <summary>
@@ -697,7 +697,7 @@ namespace System
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+        public static int IndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
             IndexOf((ReadOnlySpan<T>)span, value);
 
         /// <summary>
@@ -707,7 +707,7 @@ namespace System
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
+        public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
             IndexOf((ReadOnlySpan<T>)span, value);
 
         /// <summary>
@@ -717,7 +717,7 @@ namespace System
         /// <param name="value">The value to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
+        public static int LastIndexOf<T>(this Span<T> span, T value) where T : IEquatable<T>? =>
             LastIndexOf((ReadOnlySpan<T>)span, value);
 
         /// <summary>
@@ -727,7 +727,7 @@ namespace System
         /// <param name="value">The sequence to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
+        public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
             LastIndexOf((ReadOnlySpan<T>)span, value);
 
         /// <summary>Searches for the first index of any value other than the specified <paramref name="value"/>.</summary>
@@ -2162,7 +2162,7 @@ namespace System
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>? =>
+        public static bool SequenceEqual<T>(this Span<T> span, ReadOnlySpan<T> other) where T : IEquatable<T>? =>
             SequenceEqual((ReadOnlySpan<T>)span, other);
 
         /// <summary>
@@ -2584,7 +2584,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
             IndexOfAny((ReadOnlySpan<T>)span, value0, value1);
 
         /// <summary>
@@ -2596,7 +2596,7 @@ namespace System
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
+        public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
             IndexOfAny((ReadOnlySpan<T>)span, value0, value1, value2);
 
         /// <summary>
@@ -3014,7 +3014,7 @@ namespace System
         /// <param name="value1">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1) where T : IEquatable<T>? =>
             LastIndexOfAny((ReadOnlySpan<T>)span, value0, value1);
 
         /// <summary>
@@ -3026,7 +3026,7 @@ namespace System
         /// <param name="value2">One of the values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
+        public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2) where T : IEquatable<T>? =>
             LastIndexOfAny((ReadOnlySpan<T>)span, value0, value1, value2);
 
         /// <summary>
@@ -3501,7 +3501,7 @@ namespace System
         /// Determines the relative order of the sequences being compared by comparing the elements using IComparable{T}.CompareTo(T).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IComparable<T>?
+        public static int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other) where T : IComparable<T>?
         {
             // Can't use IsBitwiseEquatable<T>() below because that only tells us about
             // equality checks, not about CompareTo checks.
@@ -3549,7 +3549,7 @@ namespace System
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [OverloadResolutionPriority(-1)]
-        public static unsafe bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
+        public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
             StartsWith((ReadOnlySpan<T>)span, value);
 
         /// <summary>
@@ -3589,7 +3589,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic] // Unrolled and vectorized for half-constant input
         [OverloadResolutionPriority(-1)]
-        public static unsafe bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
+        public static bool EndsWith<T>(this Span<T> span, ReadOnlySpan<T> value) where T : IEquatable<T>? =>
             EndsWith((ReadOnlySpan<T>)span, value);
 
         /// <summary>

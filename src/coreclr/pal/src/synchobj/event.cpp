@@ -37,11 +37,6 @@ CObjectType CorUnix::otManualResetEvent(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                EVENT_ALL_ACCESS, // Currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
                 CObjectType::ThreadReleaseHasNoSideEffects,
@@ -56,11 +51,6 @@ CObjectType CorUnix::otAutoResetEvent(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                EVENT_ALL_ACCESS, // Currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
                 CObjectType::ThreadReleaseAltersSignalCount,

@@ -9679,10 +9679,52 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Remember that this function contains 'new' of an SD array.
                 optMethodFlags |= OMF_HAS_NEWARRAY;
+                block->SetFlags(BBF_HAS_NEWARR);
 
-                /* Push the result of the call on the stack */
+                if (opts.OptimizationEnabled())
+                {
+                    // We assign the newly allocated object (by a GT_CALL to newarr node)
+                    // to a temp. Note that the pattern "temp = allocArr" is required
+                    // by ObjectAllocator phase to be able to determine newarr nodes
+                    // without exhaustive walk over all expressions.
+                    lclNum = lvaGrabTemp(true DEBUGARG("NewArr temp"));
 
-                impPushOnStack(op1, tiRetVal);
+                    impStoreToTemp(lclNum, op1, CHECK_SPILL_ALL);
+
+                    assert(lvaTable[lclNum].lvSingleDef == 0);
+                    lvaTable[lclNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def local\n", lclNum);
+                    lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
+
+                    /* Push the result of the call on the stack */
+
+                    impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
+
+#ifdef DEBUG
+                    // Under SPMI, look up info we might ask for if we stack allocate this array
+                    //
+                    if (JitConfig.EnableExtraSuperPmiQueries())
+                    {
+                        void* pEmbedClsHnd;
+                        info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
+                        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+                        CorInfoType elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                        var_types   elemType    = JITtype2varType(elemCorType);
+                        if (elemType == TYP_STRUCT)
+                        {
+                            typGetObjLayout(elemClsHnd);
+                            info.compCompHnd->isValueClass(elemClsHnd);
+                        }
+                        void* pIndirection;
+                        info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &pIndirection);
+                    }
+#endif
+                }
+                else
+                {
+                    /* Push the result of the call on the stack */
+                    impPushOnStack(op1, tiRetVal);
+                }
 
                 callTyp = TYP_REF;
             }

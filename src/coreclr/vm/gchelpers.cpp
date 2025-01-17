@@ -1059,7 +1059,7 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* ppRefClass)
         PRECONDITION(CheckPointer(ppRefClass));
     } CONTRACTL_END;
 
-    // Create a COM+ Class object.
+    // Create a CLR Class object.
     MethodTable *pMT = g_pRuntimeTypeClass;
     _ASSERTE(pMT != NULL);
     *ppRefClass= AllocateObject(pMT);
