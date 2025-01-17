@@ -44,18 +44,12 @@ C_FUNC(\Name):
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        lui \HelperReg, %hi(C_FUNC(\Name))
-        addi \HelperReg, \HelperReg, %lo(C_FUNC(\Name))
-.endm
-
-.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
-        lui \HelperReg, %hi(C_FUNC(\Name))
-        ld  \HelperReg, %lo(C_FUNC(\Name))(\HelperReg)
+    la \HelperReg, C_FUNC(\Name) // Resolves the address in one step
 .endm
 
 .macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
-        lui \HelperReg, %hi(C_FUNC(\Name))
-        lw  \HelperReg, %lo(C_FUNC(\Name))(\HelperReg)
+    la \HelperReg, C_FUNC(\Name)
+    lw \HelperReg, 0(\HelperReg)
 .endm
 
 .macro PROLOG_STACK_ALLOC Size

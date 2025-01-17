@@ -864,7 +864,7 @@ namespace System.Reflection.PortableExecutable.Tests
 
                     Assert.True(peImagePtr != null);
 
-                    var peReader = new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
+                    var peReader = new PEReader(new UnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
                     peReader.Dispose();
                 }
             }
