@@ -13,21 +13,22 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
-        /// Assuming that the writer is currently in a valid state, this returns true if a JSON value is allowed at the current position.
+        /// Returns whether a JSON value can be written at the current position based on the current <see cref="_enclosingContainer"/>:
         /// <list type="bullet">
         /// <item>
-        /// If <see cref="_enclosingContainer"/> is an array then writing a value is always allowed.
+        /// <see cref="EnclosingContainerType.Array"/>: Writing a value is always allowed.
         /// </item>
         /// <item>
-        /// If <see cref="_enclosingContainer"/> is an object then writing a value is allowed only if <see cref="_tokenType"/> is a property name.
+        /// <see cref="EnclosingContainerType.Object"/>: Writing a value is allowed only if <see cref="_tokenType"/> is a property name.
         /// Because we designed <see cref="EnclosingContainerType.Object"/> == <see cref="JsonTokenType.PropertyName"/>, we can just check for equality.
         /// </item>
         /// <item>
-        /// If <see cref="_enclosingContainer"/> is none (the root level) then writing a value is allowed only if <see cref="_tokenType"/> is None (only
-        /// one value may be written at the root). This case is identical to the previous case.
+        /// <see cref="EnclosingContainerType.None"/>: Writing a value is allowed only if <see cref="_tokenType"/> is None (only one value may be written at the root).
+        /// This case is identical to the previous case.
         /// </item>
         /// <item>
-        /// If <see cref="_enclosingContainer"/> is a partial value, then it will never be a valid <see cref="_tokenType"/> by construction.
+        /// <see cref="EnclosingContainerType.Utf8StringSequence"/>, <see cref="EnclosingContainerType.Utf16StringSequence"/>, <see cref="EnclosingContainerType.Base64StringSequence"/>:
+        /// Writing a value is never valid and <see cref="_enclosingContainer"/> does not equal any <see cref="JsonTokenType"/> by construction.
         /// </item>
         /// </list>
         /// This method performs better without short circuiting (this often gets inlined so using simple branch free code seems to have some benefits).
@@ -75,6 +76,8 @@ namespace System.Text.Json
 
         private void ValidateWritingSegment(EnclosingContainerType currentSegmentEncoding)
         {
+            Debug.Assert(currentSegmentEncoding is EnclosingContainerType.Utf8StringSequence or EnclosingContainerType.Utf16StringSequence or EnclosingContainerType.Base64StringSequence);
+
             // A string segment can be written if either:
             // 1) The writer is currently in a partial string of the same type. In this case the new segment
             // will continue the partial string.

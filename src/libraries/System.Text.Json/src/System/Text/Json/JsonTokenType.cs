@@ -12,8 +12,8 @@ namespace System.Text.Json
     /// </summary>
     public enum JsonTokenType : byte
     {
-        // Do not re-order.
-        // We rely on the ordering to quickly check things like IsTokenTypePrimitive
+        // Do not re-number.
+        // We rely on the underlying values to quickly check things like JsonReaderHelper.IsTokenTypePrimitive and Utf8JsonWriter.CanWriteValue
 
         /// <summary>
         ///   Indicates that there is no value (as distinct from <see cref="Null"/>).

@@ -122,7 +122,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialUtf8String);
+                Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf8StringSequence);
 
                 ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
                 Debug.Assert(partialStringDataBytes.Length == 3);
@@ -151,7 +151,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialUtf16String);
+                Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf16StringSequence);
 
                 ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
                 Debug.Assert(partialStringDataBytes.Length == 3);
@@ -179,7 +179,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialBase64String);
+                Debug.Assert(_enclosingContainer == EnclosingContainerType.Base64StringSequence);
 
                 ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
                 Debug.Assert(partialStringDataBytes.Length == 3);
@@ -589,7 +589,9 @@ namespace System.Text.Json
         private void WriteStart(byte token)
         {
             if (CurrentDepth >= _options.MaxDepth)
+            {
                 ThrowInvalidOperationException_DepthTooLarge();
+            }
 
             if (_options.IndentedOrNotSkipValidation)
             {
@@ -1273,26 +1275,26 @@ namespace System.Text.Json
         /// <summary>
         /// Indicates whether the writer is currently writing a partial string value.
         /// </summary>
-        private bool IsWritingPartialString => _enclosingContainer >= EnclosingContainerType.PartialUtf8String;
+        private bool IsWritingPartialString => _enclosingContainer >= EnclosingContainerType.Utf8StringSequence;
 
         /// <summary>
         /// The type of container that is enclosing the current position. The underlying values have been chosen
-        /// to allow validation to be done using bitwise operations and must be kept in sync with <see cref="JsonTokenType"/>.
+        /// to allow <see cref="CanWriteValue"/> to be done using bitwise operations and must be kept in sync with <see cref="JsonTokenType"/>.
         /// </summary>
         internal enum EnclosingContainerType : byte
         {
             /// <summary>
-            /// Root
+            /// Root level.
             /// </summary>
-            None =                  0b000_0_0000,
+            None = JsonTokenType.None,
 
             /// <summary>
-            /// JSON object. Note that this is the same value as <see cref="JsonTokenType.PropertyName"/>. See <see cref="CanWriteValue"/> for more details.
+            /// JSON object.
             /// </summary>
-            Object =                0b000_0_0101,
+            Object = JsonTokenType.PropertyName,
 
             /// <summary>
-            /// JSON array
+            /// JSON array. This is chosen large enough to not conflict with any <see cref="JsonTokenType"/> value.
             /// </summary>
             Array =                 0b000_1_0000,
 
@@ -1301,21 +1303,21 @@ namespace System.Text.Json
             /// so <see cref="_bitStack"/> does not need to store its state.
             /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
             /// </summary>
-            PartialUtf8String =     0b001_0_0000,
+            Utf8StringSequence =    0b001_0_0000,
 
             /// <summary>
             /// Partial UTF-16 string. This is a container if viewed as an array of "utf-16 string segment"-typed values. This array can only be one level deep
             /// so <see cref="_bitStack"/> does not need to store its state.
             /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
             /// </summary>
-            PartialUtf16String =    0b010_0_0000,
+            Utf16StringSequence =   0b010_0_0000,
 
             /// <summary>
             /// Partial Base64 string. This is a container if viewed as an array of "base64 string segment"-typed values. This array can only be one level deep
             /// so <see cref="_bitStack"/> does not need to store its state.
             /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
             /// </summary>
-            PartialBase64String =   0b011_0_0000,
+            Base64StringSequence =  0b011_0_0000,
         }
     }
 }

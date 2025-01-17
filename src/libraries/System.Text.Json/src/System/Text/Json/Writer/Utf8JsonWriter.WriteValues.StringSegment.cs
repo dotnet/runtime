@@ -30,13 +30,13 @@ namespace System.Text.Json
 
             if (!_options.SkipValidation)
             {
-                ValidateWritingSegment(EnclosingContainerType.PartialUtf16String);
+                ValidateWritingSegment(EnclosingContainerType.Utf16StringSequence);
             }
 
-            if (_enclosingContainer != EnclosingContainerType.PartialUtf16String)
+            if (_enclosingContainer != EnclosingContainerType.Utf16StringSequence)
             {
                 WriteStringSegmentPrologue();
-                _enclosingContainer = EnclosingContainerType.PartialUtf16String;
+                _enclosingContainer = EnclosingContainerType.Utf16StringSequence;
             }
 
             // The steps to write a string segment are to complete the previous partial code point
@@ -64,7 +64,7 @@ namespace System.Text.Json
         private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<char> value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
-            Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialUtf16String);
+            Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf16StringSequence);
 
             scoped ReadOnlySpan<char> partialStringDataBuffer = PartialUtf16StringData;
 
@@ -198,13 +198,13 @@ namespace System.Text.Json
 
             if (!_options.SkipValidation)
             {
-                ValidateWritingSegment(EnclosingContainerType.PartialUtf8String);
+                ValidateWritingSegment(EnclosingContainerType.Utf8StringSequence);
             }
 
-            if (_enclosingContainer != EnclosingContainerType.PartialUtf8String)
+            if (_enclosingContainer != EnclosingContainerType.Utf8StringSequence)
             {
                 WriteStringSegmentPrologue();
-                _enclosingContainer = EnclosingContainerType.PartialUtf8String;
+                _enclosingContainer = EnclosingContainerType.Utf8StringSequence;
             }
 
             // The steps to write a string segment are to complete the previous partial code point
@@ -232,7 +232,7 @@ namespace System.Text.Json
         private void WriteStringSegmentWithLeftover(scoped ReadOnlySpan<byte> utf8Value, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
-            Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialUtf8String);
+            Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf8StringSequence);
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialUtf8StringData;
 
@@ -365,13 +365,13 @@ namespace System.Text.Json
 
             if (!_options.SkipValidation)
             {
-                ValidateWritingSegment(EnclosingContainerType.PartialBase64String);
+                ValidateWritingSegment(EnclosingContainerType.Base64StringSequence);
             }
 
-            if (_enclosingContainer != EnclosingContainerType.PartialBase64String)
+            if (_enclosingContainer != EnclosingContainerType.Base64StringSequence)
             {
                 WriteStringSegmentPrologue();
-                _enclosingContainer = EnclosingContainerType.PartialBase64String;
+                _enclosingContainer = EnclosingContainerType.Base64StringSequence;
             }
 
             // The steps to write a string segment are to complete the previous partial string data
@@ -399,7 +399,7 @@ namespace System.Text.Json
         private void WriteBase64StringSegmentWithLeftover(scoped ReadOnlySpan<byte> bytes, bool isFinalSegment)
         {
             Debug.Assert(HasPartialStringData);
-            Debug.Assert(_enclosingContainer == EnclosingContainerType.PartialBase64String);
+            Debug.Assert(_enclosingContainer == EnclosingContainerType.Base64StringSequence);
 
             scoped ReadOnlySpan<byte> partialStringDataBuffer = PartialBase64StringData;
 

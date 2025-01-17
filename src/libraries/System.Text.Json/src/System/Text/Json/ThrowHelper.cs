@@ -322,9 +322,9 @@ namespace System.Text.Json
             {
                 switch (encoding)
                 {
-                    case EnclosingContainerType.PartialUtf8String: return "UTF-8";
-                    case EnclosingContainerType.PartialUtf16String: return "UTF-16";
-                    case EnclosingContainerType.PartialBase64String: return "Base64";
+                    case EnclosingContainerType.Utf8StringSequence: return "UTF-8";
+                    case EnclosingContainerType.Utf16StringSequence: return "UTF-16";
+                    case EnclosingContainerType.Base64StringSequence: return "Base64";
                     default:
                         Debug.Fail("Unknown encoding.");
                         return "Unknown";
