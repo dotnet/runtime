@@ -629,6 +629,17 @@ namespace Internal.TypeSystem
         //    function returns null if the interface method implementation is not defined by the current type in
         //    the hierarchy.For variance to work correctly, this requires that interfaces be queried in correct order.
         //    See current interface call resolution for details on how that happens.
+        //
+        //    The returnRecursive parameter is solely intended to optimize the recursion through
+        //    the ResolveInterfaceMethodToVirtualMethodOnTypeRecursive helper method and should not
+        //    be used for anything else. ResolveInterfaceMethodToVirtualMethodOnTypeRecursive walks
+        //    up the type hierarchy, calls ResolveInterfaceMethodToVirtualMethodOnType on each base
+        //    type, and bails out on a first successful match. Since we perform the same expansion in
+        //    the last branch of this method by calling ResolveInterfaceMethodToVirtualMethodOnTypeRecursive
+        //    for the base type, we allow the caller to specify that such computed value should be
+        //    returned instead of discarded. This allows short-circuiting the outer loop over type
+        //    hierarchy and avoids unnecessary exponential algorithmic complexity of the resolution
+        //    algorithm.
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType, bool returnRecursive = false)
         {
             Debug.Assert(!interfaceMethod.Signature.IsStatic);
