@@ -2241,6 +2241,10 @@ namespace Internal.JitInterface
             if (!ConstructedEETypeNode.CreationAllowed(type))
                 return false;
 
+            // TODO: rather conservative
+            if (type.HasVariance)
+                return false;
+
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
             // Interface optimization may be able to remove MethodTable of interfaces if they were never actually
