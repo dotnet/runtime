@@ -321,7 +321,11 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
 #endif // HOST_UNIX
     m_CurrentClause({}),
     m_pMDToReportFunctionLeave(NULL),
-    m_lastReportedFunclet({0, 0, 0})
+    m_lastReportedFunclet({0, 0, 0}),
+#ifdef HOST_WINDOWS
+    m_pLongJmpBuf(NULL),
+    m_longJmpReturnValue(0)
+#endif // HOST_WINDOWS
 {
     pThread->GetExceptionState()->m_pCurrentTracker = this;
     m_pInitialFrame = pThread->GetFrame();
