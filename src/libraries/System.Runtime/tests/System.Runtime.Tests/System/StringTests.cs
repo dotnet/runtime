@@ -800,6 +800,7 @@ namespace System.Tests
             yield return new object[] { "", "\0", "y", StringComparison.InvariantCulture, "" };
         }
 
+        [Theory]
         [MemberData(nameof(Replace_StringComparison_TestData))]
         public void Replace_StringComparison_ReturnsExpected(string original, string oldValue, string newValue, StringComparison comparisonType, string expected)
         {
@@ -865,6 +866,7 @@ namespace System.Tests
             }
         }
 
+        [Theory]
         [MemberData(nameof(Replace_StringComparisonCulture_TestData))]
         public void Replace_StringComparisonCulture_ReturnsExpected(string original, string oldValue, string newValue, bool ignoreCase, CultureInfo culture, string expected)
         {
