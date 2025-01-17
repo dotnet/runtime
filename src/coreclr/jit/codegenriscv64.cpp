@@ -1092,8 +1092,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             assert(emitter::isFloatReg(targetReg));
 
-            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0)
-            // and not for negative zero (-0.0)
+            // Make sure we use "fmv.w.x reg, zero" only for positive zero (0.0) and not for negative zero (-0.0)
             if (FloatingPointUtils::isPositiveZero(constValue))
             {
                 // A faster/smaller way to generate 0.0
@@ -1102,19 +1101,25 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 break;
             }
 
-            if (size == EA_4BYTE)
+            int64_t bits =
+                (size == EA_4BYTE)
+                    ? (int32_t)BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue))
+                    : (int64_t)BitOperations::DoubleToUInt64Bits(constValue);
+            bool fitsInLui = ((bits & 0xfff) == 0) && emitter::isValidSimm20(bits >> 12);
+            if (fitsInLui || emitter::isValidSimm12(bits)) // can we synthesize bits with a single instruction?
             {
-                uint32_t bits = BitOperations::SingleToUInt32Bits(FloatingPointUtils::convertToSingle(constValue));
-                if ((bits << (32 - 12)) == 0) // if 12 lowest bits are zero, synthesize with a single lui instruction
+                regNumber temp = internalRegisters.GetSingle(tree);
+                if (fitsInLui)
                 {
-                    regNumber temp = internalRegisters.GetSingle(tree);
-
-                    int32_t hi20 = ((int32_t)bits) >> 12;
-                    assert(hi20 != 0);
-                    emit->emitIns_R_I(INS_lui, size, temp, hi20);
-                    emit->emitIns_R_R(INS_fmv_w_x, size, targetReg, temp);
-                    break;
+                    emit->emitIns_R_I(INS_lui, size, temp, bits >> 12);
                 }
+                else
+                {
+                    emit->emitIns_R_R_I(INS_addi, size, temp, REG_ZERO, bits);
+                }
+
+                emit->emitIns_R_R(size == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, size, targetReg, temp);
+                break;
             }
 
             // We must load the FP constant from the constant pool
