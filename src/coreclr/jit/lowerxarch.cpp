@@ -477,13 +477,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-<<<<<<< .mine
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp) ||
-                ((blkNode->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
-=======
             if (blkNode->IsAddressNotOnHeap(comp))
-
->>>>>>> .theirs
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = layout->GetSlotCount();

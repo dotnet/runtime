@@ -1906,44 +1906,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
 PhaseStatus Compiler::fgWriteBarrierExpansion()
 {
-    if (opts.OptimizationDisabled())
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->isRunRarely())
-        {
-            // It's just an optimization - don't waste time on rarely executed blocks
-            continue;
-        }
-
-        while (true)
-        {
-        AGAIN:
-            for (Statement* const stmt : block->NonPhiStatements())
-            {
-                for (GenTree* const tree : stmt->TreeList())
-                {
-                    if (fgWriteBarrierExpansionForStore(&block, stmt, tree))
-                    {
-                        result = PhaseStatus::MODIFIED_EVERYTHING;
-                        goto AGAIN;
-                    }
-                }
-            }
-            break;
-        }
-    }
-
-    if (result == PhaseStatus::MODIFIED_EVERYTHING)
-    {
-        fgInvalidateDfsTree();
-    }
-
-    return result;
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* stmt, GenTree* store)
