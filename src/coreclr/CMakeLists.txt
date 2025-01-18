@@ -75,9 +75,9 @@ endif()
 # Include libraries native shims
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-    set(STATIC_LIBS_ONLY 1)
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+  set(STATIC_LIBS_ONLY 1)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
+endif()
 
 #-----------------------------------------
 # Add Projects

@@ -12,6 +12,14 @@
     Mark assets as Vertical visibility when building in the VMR
   -->
   <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <Artifact Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILAsm.*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
+    <Artifact Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILDAsm.*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
     <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
               Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
               Visibility="Vertical"
