@@ -1973,12 +1973,40 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
         return false;
     }
 
-    BasicBlock* block     = *pBlock;
-    DebugInfo   debugInfo = stmt->GetDebugInfo();
+    if (stmt->GetRootNode() != store)
+    {
+        return false;
+    }
 
-    BasicBlock* firstBb;
-    BasicBlock* lastBb;
-    SplitAtTreeAndReplaceItWithLocal(this, block, stmt, store, &firstBb, &lastBb, true);
+    BasicBlock*     block         = *pBlock;
+    DebugInfo       debugInfo     = stmt->GetDebugInfo();
+    BasicBlockFlags originalFlags = block->GetFlagsRaw();
+    BasicBlock*     prevBb        = block;
+
+    // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
+    // it *Before* rather than *After* so if the current statement is the first in the
+    // current block - invoke fgSplitBlockAtBeginning
+    if (stmt == block->firstStmt())
+    {
+        block = fgSplitBlockAtBeginning(prevBb);
+    }
+    else
+    {
+        assert(stmt->GetPrevStmt() != block->lastStmt());
+        JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, stmt->GetPrevStmt()->GetID());
+        block = fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
+    }
+
+    *stmt->GetRootNodePointer() = gtNewNothingNode();
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    // We split a block, possibly, in the middle - we need to propagate some flags
+    prevBb->SetFlagsRaw(originalFlags & (~(BBF_SPLIT_LOST | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
+    block->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_RETLESS_CALL));
+
+    // prevBb should flow into block
+    assert(prevBb->KindIs(BBJ_ALWAYS) && prevBb->JumpsToNext() && prevBb->NextIs(block));
 
     GenTree* lowerAddrCon = gtNewIconHandleNode((size_t)lowerBoundAddr, GTF_ICON_GLOBAL_PTR);
     GenTree* lowerAddrTmp = fgInsertCommaFormTemp(&lowerAddrCon);
@@ -1994,7 +2022,7 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
     GenTree* combinedCheck =
         gtNewOperNode(GT_NE, TYP_INT, gtNewOperNode(GT_OR, TYP_INT, lowAddrCheckOp, highAddrCheckOp), gtNewIconNode(0));
     BasicBlock* lowAddrCheckBb =
-        fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCheck), debugInfo, true);
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCheck), debugInfo, true);
 
     GenTree* heapStore = gtCloneExpr(store);
     heapStore->gtFlags |= GTF_IND_TGT_HEAP;
@@ -2004,18 +2032,18 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
 
     BasicBlock* heapPathBb  = fgNewBBFromTreeAfter(BBJ_ALWAYS, lowAddrCheckBb, heapStore, debugInfo, true);
     BasicBlock* stackPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, heapPathBb, stackStore, debugInfo, true);
-    fgRedirectTargetEdge(firstBb, lowAddrCheckBb);
+    fgRedirectTargetEdge(prevBb, lowAddrCheckBb);
 
     FlowEdge* const addrCheckTrueEdge  = fgAddRefPred(stackPathBb, lowAddrCheckBb);
     FlowEdge* const addrCheckFalseEdge = fgAddRefPred(heapPathBb, lowAddrCheckBb);
-    FlowEdge* const heapPathEdge       = fgAddRefPred(lastBb, heapPathBb);
-    FlowEdge* const stackPathEdge      = fgAddRefPred(lastBb, stackPathBb);
+    FlowEdge* const heapPathEdge       = fgAddRefPred(block, heapPathBb);
+    FlowEdge* const stackPathEdge      = fgAddRefPred(block, stackPathBb);
 
     lowAddrCheckBb->SetTrueEdge(addrCheckTrueEdge);
     lowAddrCheckBb->SetFalseEdge(addrCheckFalseEdge);
     heapPathBb->SetTargetEdge(heapPathEdge);
     stackPathBb->SetTargetEdge(stackPathEdge);
-    lowAddrCheckBb->inheritWeightPercentage(firstBb, 100);
+    lowAddrCheckBb->inheritWeightPercentage(prevBb, 100);
     heapPathBb->inheritWeightPercentage(lowAddrCheckBb, 40);
     stackPathBb->inheritWeightPercentage(lowAddrCheckBb, 60);
     addrCheckTrueEdge->setLikelihood(0.6);
