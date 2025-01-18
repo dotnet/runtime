@@ -7941,6 +7941,7 @@ struct GenTreeIndir : public GenTreeOp
         return gtOp2;
     }
 
+    bool     IsAddressNotOnHeap(Compiler* comp);
     bool     HasBase();
     bool     HasIndex();
     GenTree* Base();
