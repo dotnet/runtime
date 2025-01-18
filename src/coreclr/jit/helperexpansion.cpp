@@ -2017,10 +2017,10 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
     heapPathBb->SetTargetEdge(heapPathEdge);
     stackPathBb->SetTargetEdge(stackPathEdge);
     lowAddrCheckBb->inheritWeightPercentage(firstBb, 100);
-    heapPathBb->inheritWeightPercentage(lowAddrCheckBb, 50);
-    stackPathBb->inheritWeightPercentage(lowAddrCheckBb, 50);
-    addrCheckTrueEdge->setLikelihood(0.5);
-    addrCheckFalseEdge->setLikelihood(0.5);
+    heapPathBb->inheritWeightPercentage(lowAddrCheckBb, 40);
+    stackPathBb->inheritWeightPercentage(lowAddrCheckBb, 60);
+    addrCheckTrueEdge->setLikelihood(0.6);
+    addrCheckFalseEdge->setLikelihood(0.4);
     heapPathEdge->setLikelihood(1.0);
     stackPathEdge->setLikelihood(1.0);
     return true;
