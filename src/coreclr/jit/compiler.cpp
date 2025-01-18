@@ -5137,6 +5137,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Expand WB
+        DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgWriteBarrierExpansion);
+
         // Optimize boolean conditions
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
@@ -5144,9 +5147,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
-
-        // Expand WB
-        DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgWriteBarrierExpansion);
 
         // Optimize block order
         //

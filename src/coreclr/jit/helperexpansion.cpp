@@ -1906,7 +1906,44 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
 PhaseStatus Compiler::fgWriteBarrierExpansion()
 {
-    return PhaseStatus::MODIFIED_NOTHING;
+    if (opts.OptimizationDisabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    {
+        if (block->isRunRarely())
+        {
+            // It's just an optimization - don't waste time on rarely executed blocks
+            continue;
+        }
+
+        while (true)
+        {
+        AGAIN:
+            for (Statement* const stmt : block->NonPhiStatements())
+            {
+                for (GenTree* const tree : stmt->TreeList())
+                {
+                    if (fgWriteBarrierExpansionForStore(&block, stmt, tree))
+                    {
+                        result = PhaseStatus::MODIFIED_EVERYTHING;
+                        goto AGAIN;
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
+    {
+        fgInvalidateDfsTree();
+    }
+
+    return result;
 }
 
 bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* stmt, GenTree* store)
@@ -1944,9 +1981,15 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
     BasicBlock* lastBb;
     SplitAtTreeAndReplaceItWithLocal(this, block, stmt, store, &firstBb, &lastBb, true);
 
+    GenTree* lowerAddrCon = gtNewIconHandleNode((size_t)lowerBoundAddr, GTF_ICON_GLOBAL_PTR);
+    GenTree* lowerAddrTmp = fgInsertCommaFormTemp(&lowerAddrCon);
+
+    ssize_t  detla               = (ssize_t)upperBoundAddr - (ssize_t)lowerBoundAddr;
+    GenTree* upperAddrCon        = gtNewOperNode(GT_ADD, TYP_I_IMPL, lowerAddrTmp, gtNewIconNode(detla, TYP_I_IMPL));
+    GenTree* lowerBoundAddrIndir = gtNewIndir(TYP_I_IMPL, lowerAddrCon, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    GenTree* upperBoundAddrIndir = gtNewIndir(TYP_I_IMPL, upperAddrCon, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
     // const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
-    auto lowerBoundAddrIndir = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)lowerBoundAddr, GTF_ICON_GLOBAL_PTR, false);
-    auto upperBoundAddrIndir = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)upperBoundAddr, GTF_ICON_GLOBAL_PTR, false);
 
     GenTree*    lowAddrCheckOp = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(storeAddr), lowerBoundAddrIndir);
     BasicBlock* lowAddrCheckBb =
@@ -1957,10 +2000,10 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
         fgNewBBFromTreeAfter(BBJ_COND, lowAddrCheckBb, gtNewOperNode(GT_JTRUE, TYP_VOID, highAddrCheckOp), debugInfo,
                              true);
 
-    auto heapStore = gtCloneExpr(store);
+    GenTree* heapStore = gtCloneExpr(store);
     heapStore->gtFlags |= GTF_IND_TGT_HEAP;
 
-    auto stackStore = gtCloneExpr(store);
+    GenTree* stackStore = gtCloneExpr(store);
     stackStore->gtFlags |= GTF_IND_TGT_NOT_HEAP;
 
     BasicBlock* heapPathBb  = fgNewBBFromTreeAfter(BBJ_ALWAYS, highAddrCheckBb, heapStore, debugInfo, true);
