@@ -5258,7 +5258,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
                 return GetWriteBarrierForm(comp, funcApp.m_args[0]);
             }
         }
-        if (funcApp.m_func == VNF_InitVal)
+        if ((funcApp.m_func == VNF_InitVal) && comp->compMethodHasRetVal())
         {
             unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
             if ((lclNum == comp->info.compRetBuffArg) &&
