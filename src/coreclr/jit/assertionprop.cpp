@@ -5258,13 +5258,30 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
                 return GetWriteBarrierForm(comp, funcApp.m_args[0]);
             }
         }
-        if ((funcApp.m_func == VNF_InitVal) && comp->compMethodHasRetVal())
+        if (funcApp.m_func == VNF_InitVal)
         {
-            unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
-            if ((lclNum == comp->info.compRetBuffArg) &&
-                comp->eeIsByrefLike(comp->info.compMethodInfo->args.retTypeClass))
+            // See if the address is in current method's return buffer
+            // while the return type is a byref-like type.
+            if (comp->compMethodHasRetVal())
             {
-                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+                unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
+                if ((lclNum == comp->info.compRetBuffArg) &&
+                    comp->eeIsByrefLike(comp->info.compMethodInfo->args.retTypeClass))
+                {
+                    return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+                }
+            }
+
+            // Same for implicit "this" parameter
+            if ((comp->info.compThisArg != BAD_VAR_NUM))
+            {
+                assert(!comp->info.compIsStatic);
+
+                unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
+                if ((lclNum == comp->info.compThisArg) && comp->eeIsByrefLike(comp->info.compClassHnd))
+                {
+                    return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+                }
             }
         }
     }
