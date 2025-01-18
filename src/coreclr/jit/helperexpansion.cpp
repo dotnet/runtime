@@ -1989,16 +1989,13 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
     GenTree* lowerBoundAddrIndir = gtNewIndir(TYP_I_IMPL, lowerAddrCon, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     GenTree* upperBoundAddrIndir = gtNewIndir(TYP_I_IMPL, upperAddrCon, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-    // const bool notInHeap = ((BYTE*)dest < g_lowest_address || (BYTE*)dest >= g_highest_address);
-
-    GenTree*    lowAddrCheckOp = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(storeAddr), lowerBoundAddrIndir);
+    // const bool notInHeap = ((BYTE*)dest < g_lowest_address | (BYTE*)dest >= g_highest_address);
+    GenTree* lowAddrCheckOp  = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(storeAddr), lowerBoundAddrIndir);
+    GenTree* highAddrCheckOp = gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(storeAddr), upperBoundAddrIndir);
+    GenTree* combinedCheck =
+        gtNewOperNode(GT_NE, TYP_INT, gtNewOperNode(GT_OR, TYP_INT, lowAddrCheckOp, highAddrCheckOp), gtNewIconNode(0));
     BasicBlock* lowAddrCheckBb =
-        fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, lowAddrCheckOp), debugInfo, true);
-
-    GenTree*    highAddrCheckOp = gtNewOperNode(GT_GE, TYP_INT, gtCloneExpr(storeAddr), upperBoundAddrIndir);
-    BasicBlock* highAddrCheckBb =
-        fgNewBBFromTreeAfter(BBJ_COND, lowAddrCheckBb, gtNewOperNode(GT_JTRUE, TYP_VOID, highAddrCheckOp), debugInfo,
-                             true);
+        fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCheck), debugInfo, true);
 
     GenTree* heapStore = gtCloneExpr(store);
     heapStore->gtFlags |= GTF_IND_TGT_HEAP;
@@ -2006,33 +2003,24 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
     GenTree* stackStore = gtCloneExpr(store);
     stackStore->gtFlags |= GTF_IND_TGT_NOT_HEAP;
 
-    BasicBlock* heapPathBb  = fgNewBBFromTreeAfter(BBJ_ALWAYS, highAddrCheckBb, heapStore, debugInfo, true);
+    BasicBlock* heapPathBb  = fgNewBBFromTreeAfter(BBJ_ALWAYS, lowAddrCheckBb, heapStore, debugInfo, true);
     BasicBlock* stackPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, heapPathBb, stackStore, debugInfo, true);
     fgRedirectTargetEdge(firstBb, lowAddrCheckBb);
 
-    FlowEdge* const lowAddrCheckTrueEdge   = fgAddRefPred(stackPathBb, lowAddrCheckBb);
-    FlowEdge* const lowAddrCheckFalseEdge  = fgAddRefPred(highAddrCheckBb, lowAddrCheckBb);
-    FlowEdge* const highAddrCheckTrueEdge  = fgAddRefPred(stackPathBb, highAddrCheckBb);
-    FlowEdge* const highAddrCheckFalseEdge = fgAddRefPred(heapPathBb, highAddrCheckBb);
-    FlowEdge* const heapPathEdge           = fgAddRefPred(lastBb, heapPathBb);
-    FlowEdge* const stackPathEdge          = fgAddRefPred(lastBb, stackPathBb);
+    FlowEdge* const addrCheckTrueEdge  = fgAddRefPred(stackPathBb, lowAddrCheckBb);
+    FlowEdge* const addrCheckFalseEdge = fgAddRefPred(heapPathBb, lowAddrCheckBb);
+    FlowEdge* const heapPathEdge       = fgAddRefPred(lastBb, heapPathBb);
+    FlowEdge* const stackPathEdge      = fgAddRefPred(lastBb, stackPathBb);
 
-    lowAddrCheckBb->SetTrueEdge(lowAddrCheckTrueEdge);
-    lowAddrCheckBb->SetFalseEdge(lowAddrCheckFalseEdge);
-    highAddrCheckBb->SetTrueEdge(highAddrCheckTrueEdge);
-    highAddrCheckBb->SetFalseEdge(highAddrCheckFalseEdge);
+    lowAddrCheckBb->SetTrueEdge(addrCheckTrueEdge);
+    lowAddrCheckBb->SetFalseEdge(addrCheckFalseEdge);
     heapPathBb->SetTargetEdge(heapPathEdge);
     stackPathBb->SetTargetEdge(stackPathEdge);
-
-    lowAddrCheckBb->inheritWeightPercentage(firstBb, 50);
-    highAddrCheckBb->inheritWeightPercentage(lowAddrCheckBb, 50);
-    heapPathBb->inheritWeightPercentage(highAddrCheckBb, 50);
-    stackPathBb->inheritWeightPercentage(highAddrCheckBb, 50);
-
-    lowAddrCheckTrueEdge->setLikelihood(0.5);
-    lowAddrCheckFalseEdge->setLikelihood(0.5);
-    highAddrCheckTrueEdge->setLikelihood(0.5);
-    highAddrCheckFalseEdge->setLikelihood(0.5);
+    lowAddrCheckBb->inheritWeightPercentage(firstBb, 100);
+    heapPathBb->inheritWeightPercentage(lowAddrCheckBb, 50);
+    stackPathBb->inheritWeightPercentage(lowAddrCheckBb, 50);
+    addrCheckTrueEdge->setLikelihood(0.5);
+    addrCheckFalseEdge->setLikelihood(0.5);
     heapPathEdge->setLikelihood(1.0);
     stackPathEdge->setLikelihood(1.0);
     return true;
