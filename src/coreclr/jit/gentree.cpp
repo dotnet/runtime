@@ -18244,6 +18244,21 @@ bool GenTree::isIndir() const
     return OperGet() == GT_IND || OperGet() == GT_STOREIND;
 }
 
+bool GenTreeIndir::IsAddressNotOnHeap(Compiler* comp)
+{
+    if (((gtFlags & GTF_IND_TGT_NOT_HEAP) != 0) || Addr()->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR))
+    {
+        return true;
+    }
+
+    if (OperIs(GT_STORE_BLK) && AsBlk()->GetLayout()->IsStackOnly(comp))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 bool GenTreeIndir::HasBase()
 {
     return Base() != nullptr;
