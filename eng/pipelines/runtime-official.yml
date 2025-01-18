@@ -256,7 +256,7 @@ extends:
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true /p:PrimaryRuntimeFlavor=Mono
+            buildArgs: -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
