@@ -1960,9 +1960,8 @@ bool Compiler::fgWriteBarrierExpansionForStore(BasicBlock** pBlock, Statement* s
     }
 
     auto storeAddr = store->AsIndir()->Addr();
-    if ((storeAddr->gtFlags & GTF_ALL_EFFECT) != 0)
+    if (!storeAddr->OperIs(GT_LCL_VAR) || (storeAddr->AsLclVar()->GetLclNum() != info.compRetBuffArg))
     {
-        // TODO
         return false;
     }
 

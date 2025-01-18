@@ -4697,7 +4697,15 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 BasicBlock* Compiler::fgSplitBlockBeforeTree(
     BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
 {
-    gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
+    if (stmt->GetRootNode() != splitPoint)
+    {
+        gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
+    }
+    else
+    {
+        *firstNewStmt = stmt;
+        *splitNodeUse = stmt->GetRootNodePointer();
+    }
 
     BasicBlockFlags originalFlags = block->GetFlagsRaw();
     BasicBlock*     prevBb        = block;
