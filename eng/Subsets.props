@@ -55,13 +55,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Make sure CoreCLR runtime packaging is not triggered when we are explicitly dealing with a mono runtime build. -->
-    <CoreCLRSupported Condition="'$(CoreCLRSupported)' != '' and '$(PrimaryRuntimeFlavor)' == 'Mono'">false</CoreCLRSupported>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
@@ -86,12 +82,7 @@
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
     <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
   </PropertyGroup>
-
-  <!-- Android has a CoreCLR and Mono runtime. Default is mono. -->
-  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' and $(_subset.Contains('+clr.'))">
-    <DefaultPrimaryRuntimeFlavor>CoreCLR</DefaultPrimaryRuntimeFlavor>
-    <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
-  </PropertyGroup>
+  
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
     <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true' and !$(_subset.Contains('+clr.nativeaotlibs+'))">Mono</RuntimeFlavor>
