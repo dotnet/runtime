@@ -2506,7 +2506,34 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && !reMorphing && !argObj->OperIs(GT_FIELD_LIST))
+        if (argObj->OperIs(GT_FIELD_LIST))
+        {
+            // FIELD_LISTs can be created directly by physical promotion.
+            // Physical promotion will create this shape even for single-reg
+            // arguments. We strip the field list here for that case as the
+            // rest of the JIT does not expect single-reg args to be wrapped
+            // like that.
+            GenTreeFieldList* fieldList = argObj->AsFieldList();
+            if (fieldList->Uses().GetHead()->GetNext() == nullptr)
+            {
+                GenTree* node = fieldList->Uses().GetHead()->GetNode();
+
+                JITDUMP("Replacing single-field FIELD_LIST [%06u] by sole field [%06u]\n", dspTreeID(fieldList),
+                        dspTreeID(node));
+
+                assert(varTypeUsesSameRegType(node, arg.AbiInfo.ArgType));
+                GenTree** effectiveUse = parentArgx;
+                while ((*effectiveUse)->OperIs(GT_COMMA))
+                {
+                    effectiveUse = &(*effectiveUse)->AsOp()->gtOp2;
+                }
+                *effectiveUse = node;
+
+                argx   = *parentArgx;
+                argObj = node;
+            }
+        }
+        else if (isStructArg && !reMorphing)
         {
             unsigned originalSize;
             if (argObj->TypeIs(TYP_STRUCT))
