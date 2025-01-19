@@ -2337,6 +2337,15 @@ void CallArgs::DetermineNewABIInfo(Compiler* comp, GenTreeCall* call)
             ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
             arg.NewAbiInfo            = ABIPassingInformation::FromSegment(comp, segment);
         }
+
+        // TODO-Cleanup: This should be added to the new ABI info.
+        Compiler::structPassingKind passingKind = Compiler::SPK_ByValue;
+        if (argLayout != nullptr)
+        {
+            comp->getArgTypeForStruct(argSigClass, &passingKind, call->IsVarargs(), argLayout->GetSize());
+        }
+
+        arg.AbiInfo.PassedByRef = passingKind == Compiler::SPK_ByReference;
     }
 
     m_argsStackSize               = classifier.StackSize();
