@@ -1548,6 +1548,7 @@ void EEJitManager::SetCpuInfo()
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
+    bool throttleVector512 = false;
     int cpuidInfo[4];
 
     const int CPUID_EAX = 0;
@@ -1600,7 +1601,7 @@ void EEJitManager::SetCpuInfo()
                     // * Cascade Lake
                     // * Cooper Lake
 
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                    throttleVector512 = true;
                 }
             }
             else if (xarchCpuInfo.ExtendedModelId == 0x06)
@@ -1609,33 +1610,40 @@ void EEJitManager::SetCpuInfo()
                 {
                     // * Cannon Lake
 
-                    CPUCompileFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING);
+                    throttleVector512 = true;
                 }
             }
         }
     }
 
-    // JIT maps Vector<T> to Vector128, Vector256, or Vector512 for the purposes of most intrinsic resolution.
-    // If JIT reports that the corresponding fixed-width vector class is not hardware accelerated, that will
-    // mean Vector<T> is also reported as not accelerated, so we will limit Vector<T> size using the same rules.
-    // This logic must be kept in sync with Compiler::compSetProcessor/Compiler::getPreferredVectorByteLength.
+    // If we have a PreferredVectorBitWidth, we will pass that to JIT in the form of a virtual vector ISA of the
+    // appropriate size. We will also clamp the max Vector<T> size to be no larger than PreferredVectorBitWidth,
+    // because JIT maps Vector<T> to the fixed-width vector of matching size for the purposes of intrinsic
+    // resolution. We want to avoid a situation where e.g. Vector.IsHardwareAccelerated returns false
+    // because Vector512.IsHardwareAccelerated returns false due to config or automatic throttling.
 
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
 
-    if ((preferredVectorBitWidth == 0) && CPUCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_VECTOR512_THROTTLING))
+    if ((preferredVectorBitWidth == 0) && throttleVector512)
     {
         preferredVectorBitWidth = 256;
     }
 
     if (preferredVectorBitWidth != 0)
     {
-        if (CPUCompileFlags.IsSet(InstructionSet_VectorT512) && (preferredVectorBitWidth < 512))
+        if (preferredVectorBitWidth >= 512)
         {
+            CPUCompileFlags.Set(InstructionSet_Vector512);
+        }
+        else if (preferredVectorBitWidth >= 256)
+        {
+            CPUCompileFlags.Set(InstructionSet_Vector256);
             CPUCompileFlags.Clear(InstructionSet_VectorT512);
         }
-
-        if (CPUCompileFlags.IsSet(InstructionSet_VectorT256) && (preferredVectorBitWidth < 256))
+        else
         {
+            CPUCompileFlags.Set(InstructionSet_Vector128);
+            CPUCompileFlags.Clear(InstructionSet_VectorT512);
             CPUCompileFlags.Clear(InstructionSet_VectorT256);
         }
     }

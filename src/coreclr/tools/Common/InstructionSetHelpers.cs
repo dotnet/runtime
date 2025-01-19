@@ -252,6 +252,37 @@ namespace System.CommandLine
             optimisticInstructionSet.Remove(unsupportedInstructionSet);
             optimisticInstructionSet.Add(supportedInstructionSet);
 
+            if (flags.HasFlag(InstructionSetSupportFlags.Vector512Throttling))
+            {
+                Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512F))
+                {
+                    Debug.Assert(InstructionSet.X86_Vector256 == InstructionSet.X64_Vector256);
+                    Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
+                    Debug.Assert(InstructionSet.X86_VectorT512 == InstructionSet.X64_VectorT512);
+
+                    // AVX-512 is supported, but we are compiling specifically for hardware that has a performance penalty for
+                    // using 512-bit ops. We want to tell JIT not to consider Vector512 to be hardware accelerated, which we do
+                    // by passing a PreferredVectorBitWidth value, in the form of a virtual vector ISA of the appropriate size.
+                    //
+                    // If we are downgrading the max accelerated vector size, we also need to downgrade Vector<T> size.
+
+                    supportedInstructionSet.AddInstructionSet(InstructionSet.X86_Vector256);
+
+                    if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_VectorT512))
+                    {
+                        supportedInstructionSet.RemoveInstructionSet(InstructionSet.X86_VectorT512);
+                        supportedInstructionSet.AddInstructionSet(InstructionSet.X86_VectorT256);
+                    }
+
+                    if (optimisticInstructionSet.HasInstructionSet(InstructionSet.X86_VectorT512))
+                    {
+                        optimisticInstructionSet.RemoveInstructionSet(InstructionSet.X86_VectorT512);
+                        optimisticInstructionSet.AddInstructionSet(InstructionSet.X86_VectorT256);
+                    }
+                }
+            }
+
             return new InstructionSetSupport(supportedInstructionSet,
                 unsupportedInstructionSet,
                 optimisticInstructionSet,
