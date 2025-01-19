@@ -54,17 +54,17 @@ public class Test
         }
     }
 
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Explicit, Size = 2)]
     public ref struct Explicit4
     {
         [FieldOffset(0)]
-        public Size4Bytes Field1;
-        [FieldOffset(4)]
-        public Size4Bytes Field2;
+        public Size1Byte Field1;
+        [FieldOffset(1)]
+        public Size1Byte Field2;
 
-        public ref struct Size4Bytes
+        public ref struct Size1Byte
         {
-            public uint Value;
+            public byte Value;
         }
     }
 
@@ -119,7 +119,7 @@ public class Test
     // Invalid. Explicit offset on second field is invalid
     // since first field on type will be misaligned.
     [StructLayout(LayoutKind.Explicit)]
-    public ref struct Explicit_Invalid32bit
+    public ref struct Explicit5a_Invalid32
     {
         [FieldOffset(0)]
         public WithByRefs Field1;
@@ -128,7 +128,16 @@ public class Test
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public ref struct Explicit_Invalid64bit
+    public ref struct Explicit5b_Invalid32
+    {
+        [FieldOffset(0)]
+        public WithORefs Field1;
+        [FieldOffset(2)]
+        public WithORefs Field2;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public ref struct Explicit5a_Invalid64
     {
         [FieldOffset(0)]
         public WithByRefs Field1;
@@ -136,28 +145,51 @@ public class Test
         public WithByRefs Field2;
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    public ref struct Explicit5b_Invalid64
+    {
+        [FieldOffset(0)]
+        public WithORefs Field1;
+        [FieldOffset(4)]
+        public WithORefs Field2;
+    }
+
     [Fact]
-    public static void Validate_Throws_Explicit()
+    public static void Validate_Explicit5_Invalid()
     {
         if (Environment.Is64BitProcess)
         {
-            Assert.Throws<TypeLoadException>(() => Load64());
+            Assert.Throws<TypeLoadException>(() => LoadA64());
+            Assert.Throws<TypeLoadException>(() => LoadB64());
         }
         else
         {
-            Assert.Throws<TypeLoadException>(() => Load32());
+            Assert.Throws<TypeLoadException>(() => LoadA32());
+            Assert.Throws<TypeLoadException>(() => LoadB32());
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static string Load32()
+        static string LoadA32()
         {
-            return typeof(Explicit_Invalid32bit).ToString();
+            return typeof(Explicit5a_Invalid32).ToString();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static string Load64()
+        static string LoadB32()
         {
-            return typeof(Explicit_Invalid64bit).ToString();
+            return typeof(Explicit5b_Invalid32).ToString();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string LoadA64()
+        {
+            return typeof(Explicit5a_Invalid64).ToString();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string LoadB64()
+        {
+            return typeof(Explicit5b_Invalid64).ToString();
         }
     }
 }
