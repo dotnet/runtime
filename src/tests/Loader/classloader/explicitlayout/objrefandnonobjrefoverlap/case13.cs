@@ -54,6 +54,20 @@ public class Test
         }
     }
 
+    [StructLayout(LayoutKind.Explicit)]
+    public ref struct Explicit4
+    {
+        [FieldOffset(0)]
+        public Size4Bytes Field1;
+        [FieldOffset(4)]
+        public Size4Bytes Field2;
+
+        public ref struct Size4Bytes
+        {
+            public uint Value;
+        }
+    }
+
     [Fact]
     public static void Validate_Explicit1()
     {
@@ -87,6 +101,63 @@ public class Test
         static string Load3()
         {
             return typeof(Explicit3).ToString();
+        }
+    }
+
+    [Fact]
+    public static void Validate_Explicit4()
+    {
+        Load4();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string Load4()
+        {
+            return typeof(Explicit4).ToString();
+        }
+    }
+
+    // Invalid. Explicit offset on second field is invalid
+    // since first field on type will be misaligned.
+    [StructLayout(LayoutKind.Explicit)]
+    public ref struct Explicit_Invalid32bit
+    {
+        [FieldOffset(0)]
+        public WithByRefs Field1;
+        [FieldOffset(2)]
+        public WithByRefs Field2;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public ref struct Explicit_Invalid64bit
+    {
+        [FieldOffset(0)]
+        public WithByRefs Field1;
+        [FieldOffset(4)]
+        public WithByRefs Field2;
+    }
+
+    [Fact]
+    public static void Validate_Throws_Explicit()
+    {
+        if (Environment.Is64BitProcess)
+        {
+            Assert.Throws<TypeLoadException>(() => Load64());
+        }
+        else
+        {
+            Assert.Throws<TypeLoadException>(() => Load32());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string Load32()
+        {
+            return typeof(Explicit_Invalid32bit).ToString();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static string Load64()
+        {
+            return typeof(Explicit_Invalid64bit).ToString();
         }
     }
 }

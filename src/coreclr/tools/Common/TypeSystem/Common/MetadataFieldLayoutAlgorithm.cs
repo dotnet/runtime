@@ -329,13 +329,11 @@ namespace Internal.TypeSystem
                 LayoutInt computedOffset = fieldAndOffset.Offset + cumulativeInstanceFieldPos + offsetBias;
 
                 // GC pointers MUST be aligned.
-                // We treat byref-like structs as GC pointers too.
                 bool needsToBeAligned =
                     !computedOffset.IsIndeterminate
                     &&
                     (
                         fieldType.IsGCPointer
-                        || fieldType.IsByRefLike
                         || (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
                     );
                 if (needsToBeAligned)
