@@ -526,6 +526,34 @@ namespace System.Reflection.Runtime.General
                     return false;
                 return true;
             }
+            else if (handleType == HandleType.TypeSpecification)
+            {
+                Type? type = typeHandle.Resolve(reader, new TypeContext(null, null)).ToType();
+                string? namespaceName = type.Namespace;
+                int idx = name.Length;
+                ReadOnlySpan<char> typeName = name.AsSpan();
+                do
+                {
+                    idx -= type.Name.Length;
+                    if (idx < 0)
+                        return false;
+                    if (!typeName[idx..(idx + type.Name.Length)].Equals(type.Name, StringComparison.Ordinal))
+                        return false;
+                    idx--; // Skip '+'
+                }
+                while ((type = type.DeclaringType) != null);
+
+                idx = namespaceParts.Length;
+                string[] targetNamespaceParts = namespaceName?.Split('.') ?? Array.Empty<string>();
+                if (namespaceParts.Length != targetNamespaceParts.Length)
+                    return false;
+                while (idx-- != 0)
+                {
+                    if (!namespaceParts[idx].Equals(targetNamespaceParts[idx], StringComparison.Ordinal))
+                        return false;
+                }
+                return true;
+            }
             else
                 throw new NotSupportedException();
         }
