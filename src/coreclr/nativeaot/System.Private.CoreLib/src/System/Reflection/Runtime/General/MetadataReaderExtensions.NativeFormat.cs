@@ -529,28 +529,30 @@ namespace System.Reflection.Runtime.General
             else if (handleType == HandleType.TypeSpecification)
             {
                 Type? type = typeHandle.Resolve(reader, new TypeContext(null, null)).ToType();
-                string? namespaceName = type.Namespace;
-                int idx = name.Length;
+                ReadOnlySpan<char> namespaceName = type.Namespace ?? "";
                 ReadOnlySpan<char> typeName = name.AsSpan();
+
+                int offset = typeName.Length;
                 do
                 {
-                    idx -= type.Name.Length;
-                    if (idx < 0)
+                    offset -= type.Name.Length;
+                    if (offset < 0)
                         return false;
-                    if (!typeName[idx..(idx + type.Name.Length)].Equals(type.Name, StringComparison.Ordinal))
+                    if (!typeName[offset..(offset + type.Name.Length)].Equals(type.Name, StringComparison.Ordinal))
                         return false;
-                    idx--; // Skip '+'
+                    offset--; // Skip '+'
                 }
                 while ((type = type.DeclaringType) != null);
 
-                idx = namespaceParts.Length;
-                string[] targetNamespaceParts = namespaceName?.Split('.') ?? Array.Empty<string>();
-                if (namespaceParts.Length != targetNamespaceParts.Length)
-                    return false;
-                while (idx-- != 0)
+                offset = namespaceName.Length;
+                for (int idx = namespaceParts.Length - 1; idx >= 0; idx--)
                 {
-                    if (!namespaceParts[idx].Equals(targetNamespaceParts[idx], StringComparison.Ordinal))
+                    offset -= namespaceParts[idx].Length;
+                    if (offset < 0)
                         return false;
+                    if (!namespaceName[offset..(offset + namespaceParts[idx].Length)].Equals(namespaceParts[idx], StringComparison.Ordinal))
+                        return false;
+                    offset--; // Skip '.'
                 }
                 return true;
             }
