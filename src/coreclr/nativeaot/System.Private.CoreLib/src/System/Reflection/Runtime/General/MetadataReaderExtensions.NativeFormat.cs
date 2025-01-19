@@ -483,17 +483,6 @@ namespace System.Reflection.Runtime.General
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
 
-            if (handleType == HandleType.TypeSpecification)
-            {
-                TypeSpecification typeSpecification = typeHandle.ToTypeSpecificationHandle(reader).GetTypeSpecification(reader);
-                if (typeSpecification.Signature.HandleType == HandleType.TypeInstantiationSignature)
-                {
-                    TypeInstantiationSignature sig = typeSpecification.Signature.ToTypeInstantiationSignatureHandle(reader).GetTypeInstantiationSignature(reader);
-                    typeHandle = sig.GenericType;
-                    handleType = typeHandle.HandleType;
-                }
-            }
-
             if (handleType == HandleType.TypeDefinition)
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
@@ -538,6 +527,8 @@ namespace System.Reflection.Runtime.General
                     return false;
                 return true;
             }
+            else if (handleType == HandleType.TypeSpecification)
+                return false;
             else
                 throw new NotSupportedException();
         }
