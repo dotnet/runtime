@@ -843,26 +843,20 @@ GenTree* Lowering::LowerCast(GenTree* tree)
         srcType = varTypeToUnsigned(srcType);
     }
 
-    // We should never see the following casts as they are expected to be lowered
-    // appropriately or converted into helper calls by front-end.
+    // We should not see the following casts unless directly supported by hardware,
+    // as they are expected to be lowered appropriately or converted into helper calls by front-end.
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
     //       Reason: must be converted to a helper call
     //   srcType = uint                            castToType = float/double
     //       Reason: uint -> float/double = uint -> long -> float/double
-    //   srcType = ulong                           castToType = float
-    //       Reason: ulong -> float = ulong -> double -> float
     if (varTypeIsFloating(srcType))
     {
         noway_assert(!tree->gtOverflow());
         assert(castToType != TYP_ULONG || comp->canUseEvexEncoding());
     }
     else if (srcType == TYP_UINT)
-    {
-        noway_assert(!varTypeIsFloating(castToType));
-    }
-    else if (srcType == TYP_ULONG)
     {
         assert(castToType != TYP_FLOAT || comp->canUseEvexEncoding());
     }

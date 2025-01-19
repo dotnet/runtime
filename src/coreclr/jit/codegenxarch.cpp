@@ -7219,10 +7219,9 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
     }
     else
     {
-        instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(dstType));
+        instruction ins = ins_FloatConv(dstType, srcType);
 
-        // integral to floating-point conversions all have RMW semantics if VEX support
-        // is not available
+        // floating-point conversions all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
         inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
@@ -7299,29 +7298,18 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_ATTR(genTypeSize(TYP_INT))) || (srcSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
-    // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
-    // here since they should have been lowered appropriately.
-    noway_assert(srcType != TYP_UINT);
-    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) || compiler->canUseEvexEncodingDebugOnly());
+    // Also we don't expect to see uint32 -> float/double here unless the EVEX unsigned conversion
+    // instructions are available, since they should have been lowered appropriately.
+    assert((srcType != TYP_UINT) || compiler->canUseEvexEncodingDebugOnly());
 
-    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) && compiler->canUseEvexEncoding())
-    {
-        assert(compiler->canUseEvexEncodingDebugOnly());
-        genConsumeOperands(treeNode->AsOp());
-        instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
-        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
-        genProduceReg(treeNode);
-        return;
-    }
-
-    // To convert int to a float/double, cvtsi2ss/sd SSE2 instruction is used
+    // To convert integral type to floating, the cvt[u]si2ss/sd instruction is used
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
-    // upper bytes unmodified.  If "cvtsi2ss/sd xmmReg, r32/r64" occurs inside a loop,
+    // upper bytes unmodified.  If "cvt[u]si2ss/sd xmmReg, r32/r64" occurs inside a loop,
     // the partial write could introduce a false dependency and could cause a stall
     // if there are further uses of xmmReg. We have such a case occurring with a
     // customer reported version of SpectralNorm benchmark, resulting in 2x perf
     // regression.  To avoid false dependency, we emit "xorps xmmReg, xmmReg" before
-    // cvtsi2ss/sd instruction.
+    // cvt[u]si2ss/sd instruction.
 
     genConsumeOperands(treeNode->AsOp());
     GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, treeNode->GetRegNum(), treeNode->GetRegNum(),
@@ -7329,20 +7317,26 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     // Note that here we need to specify srcType that will determine
     // the size of source reg/mem operand and rex.w prefix.
-    instruction ins = ins_FloatConv(dstType, TYP_INT, emitTypeSize(srcType));
+    instruction ins = ins_FloatConv(dstType, srcType);
 
     // integral to floating-point conversions all have RMW semantics if VEX support
     // is not available
 
     const bool isRMW = !compiler->canUseVexEncoding();
 
-    // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
-    // will interpret ULONG value as LONG.  Hence we need to adjust the
-    // result if sign-bit of srcType is set.
-    if (srcType == TYP_ULONG)
+    if (varTypeIsUnsigned(srcType) && compiler->canUseEvexEncoding())
     {
-        assert(dstType == TYP_DOUBLE);
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
+    }
+    else if (srcType == TYP_ULONG)
+    {
         assert(op1->isUsedFromReg());
+
+        // We will have selected an unsigned conversion instruction above, but we
+        // can't use it here because we have no EVEX support. Switch to the signed
+        // equivalent, and add code to fix up the result.
+
+        ins = ins_FloatConv(dstType, genActualType(srcType));
 
         // The following LONG->DOUBLE cast machinery is based on clang's implementation
         // with "-ffp-model=strict" flag:
@@ -7374,7 +7368,15 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
         BasicBlock* label = genCreateTempLabel();
         inst_JMP(EJ_jns, label);
-        GetEmitter()->emitIns_R_R(INS_addsd, EA_8BYTE, targetReg, targetReg);
+        if (dstType == TYP_FLOAT)
+        {
+            GetEmitter()->emitIns_R_R(INS_addss, EA_4BYTE, targetReg, targetReg);
+        }
+        else
+        {
+            assert(dstType == TYP_DOUBLE);
+            GetEmitter()->emitIns_R_R(INS_addsd, EA_8BYTE, targetReg, targetReg);
+        }
         genDefineTempLabel(label);
     }
     else
@@ -7447,7 +7449,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // Note that we need to specify dstType here so that it will determine
     // the size of destination integer register and also the rex.w prefix.
     genConsumeOperands(treeNode->AsOp());
-    instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
+    instruction ins = ins_FloatConv(dstType, srcType);
     GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     genProduceReg(treeNode);
 }
