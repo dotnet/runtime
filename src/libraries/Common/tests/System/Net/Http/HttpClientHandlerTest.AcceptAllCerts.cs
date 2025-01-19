@@ -78,13 +78,13 @@ namespace System.Net.Http.Functional.Tests
 #pragma warning restore SYSLIB0039
                 }
 
-                var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
-                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                var options = new GenericLoopbackOptions { UseSsl = true, SslProtocols = acceptedProtocol };
+                await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
                         server.AcceptConnectionSendResponseAndCloseAsync(),
                         client.GetAsync(url));
-                }, options);
+                }, options: options);
             }
         }
 
