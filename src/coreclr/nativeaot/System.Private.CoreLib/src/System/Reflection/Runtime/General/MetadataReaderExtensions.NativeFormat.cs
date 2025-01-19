@@ -530,7 +530,7 @@ namespace System.Reflection.Runtime.General
             {
                 Type? type = typeHandle.Resolve(reader, new TypeContext(null, null)).ToType();
                 ReadOnlySpan<char> namespaceName = type.Namespace ?? "";
-                ReadOnlySpan<char> typeName = name.AsSpan();
+                ReadOnlySpan<char> typeName = name;
 
                 int offset = typeName.Length;
                 do
@@ -544,17 +544,22 @@ namespace System.Reflection.Runtime.General
                 }
                 while ((type = type.DeclaringType) != null);
 
-                offset = namespaceName.Length;
-                for (int idx = namespaceParts.Length - 1; idx >= 0; idx--)
+                if (offset != -1)
+                    return false;
+
+                int idx = 0;
+                if (namespaceName.Length > 0)
                 {
-                    offset -= namespaceParts[idx].Length;
-                    if (offset < 0)
-                        return false;
-                    if (!namespaceName[offset..(offset + namespaceParts[idx].Length)].Equals(namespaceParts[idx], StringComparison.Ordinal))
-                        return false;
-                    offset--; // Skip '.'
+                    foreach (Range range in namespaceName.Split('.'))
+                    {
+                        if (idx >= namespaceParts.Length)
+                            return false;
+                        if (!namespaceName[range].Equals(namespaceParts[idx++], StringComparison.Ordinal))
+                            return false;
+                    }
                 }
-                return true;
+
+                return namespaceParts.Length == idx;
             }
             else
                 throw new NotSupportedException();
