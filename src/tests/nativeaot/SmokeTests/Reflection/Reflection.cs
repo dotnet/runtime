@@ -2704,11 +2704,14 @@ internal static class ReflectionTest
     // Regression test for https://github.com/dotnet/runtime/issues/111578
     class TestGenericAttributesOnEnum
     {
+        [AttributeUsage(AttributeTargets.Enum, AllowMultiple = true)]
         class MyAttribute<T> : Attribute { }
+        [AttributeUsage(AttributeTargets.Enum, AllowMultiple = true)]
         class MyAttribute<T, U> : Attribute { }
 
         [MyAttribute<int>]
         [MyAttribute<string>]
+        [MyAttribute<float, long>]
         [MyAttribute<int, string>]
         enum MyEnum { A, B, C, D }
 
