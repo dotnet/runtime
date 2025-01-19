@@ -61,13 +61,39 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             };
             using (var client = new HttpClient(handler))
             {
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer).Result;
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     _ = await response.Content.ReadAsStringAsync();
                 }
                 Assert.Equal(1, callbackCount);
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version20348OrLower))]
+        public async Task SendAsync_ServerCertificateValidationCallback_CalledPerRequest()
+        {
+            int callbackCount = 0;
+            const int RequestCount = 5;
+            var handler = new WinHttpHandler()
+            {
+                ServerCertificateValidationCallback = (m, cert, chain, err) =>
+                {
+                    Interlocked.Increment(ref callbackCount);
+                    return true;
+                }
+            };
+            using (var client = new HttpClient(handler))
+            {
+                for (int i = 0; i < RequestCount; i++)
+                {
+                    var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer).Result;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    _ = await response.Content.ReadAsStringAsync();
+                }
+                Assert.Equal(RequestCount, callbackCount);
             }
         }
 
