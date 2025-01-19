@@ -235,7 +235,7 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }
-            else if (targetArchitecture == TargetArchitecture.ARM64)
+            else if (allowOptimistic && targetArchitecture == TargetArchitecture.ARM64)
             {
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("crc");

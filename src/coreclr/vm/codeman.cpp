@@ -1629,23 +1629,20 @@ void EEJitManager::SetCpuInfo()
         preferredVectorBitWidth = 256;
     }
 
-    if (preferredVectorBitWidth != 0)
+    if (preferredVectorBitWidth >= 512)
     {
-        if (preferredVectorBitWidth >= 512)
-        {
-            CPUCompileFlags.Set(InstructionSet_Vector512);
-        }
-        else if (preferredVectorBitWidth >= 256)
-        {
-            CPUCompileFlags.Set(InstructionSet_Vector256);
-            CPUCompileFlags.Clear(InstructionSet_VectorT512);
-        }
-        else
-        {
-            CPUCompileFlags.Set(InstructionSet_Vector128);
-            CPUCompileFlags.Clear(InstructionSet_VectorT512);
-            CPUCompileFlags.Clear(InstructionSet_VectorT256);
-        }
+        CPUCompileFlags.Set(InstructionSet_Vector512);
+    }
+    else if (preferredVectorBitWidth >= 256)
+    {
+        CPUCompileFlags.Set(InstructionSet_Vector256);
+        CPUCompileFlags.Clear(InstructionSet_VectorT512);
+    }
+    else if (preferredVectorBitWidth != 0)
+    {
+        CPUCompileFlags.Set(InstructionSet_Vector128);
+        CPUCompileFlags.Clear(InstructionSet_VectorT512);
+        CPUCompileFlags.Clear(InstructionSet_VectorT256);
     }
 
     // Only one VectorT ISA can be set, and we have validated that anything left in the flags is supported
