@@ -2513,9 +2513,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // arguments. We strip the field list here for that case as the
             // rest of the JIT does not expect single-reg args to be wrapped
             // like that.
-            GenTreeFieldList* fieldList = argObj->AsFieldList();
-            if (fieldList->Uses().GetHead()->GetNext() == nullptr)
+            if (arg.NewAbiInfo.HasExactlyOneRegisterSegment())
             {
+                GenTreeFieldList* fieldList = argObj->AsFieldList();
+                assert(fieldList->Uses().GetHead()->GetNext() == nullptr);
                 GenTree* node = fieldList->Uses().GetHead()->GetNode();
 
                 JITDUMP("Replacing single-field FIELD_LIST [%06u] by sole field [%06u]\n", dspTreeID(fieldList),
