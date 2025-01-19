@@ -23,6 +23,8 @@
     <PropertyGroup>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
       <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(PlatformTarget)</TargetArchitecture>
+      <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
+      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">False</StripDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -93,7 +95,7 @@
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Normal</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
-      <_AOTMode Condition="'$(ForceFullAOT)' == 'true'">Full</_AOTMode>
+      <_AOTMode Condition="'$(ForceAOT)' == 'true' and '$(AOTWithLibraryFiles)' != 'true'">Full</_AOTMode>
       <_AotOutputType>AsmOnly</_AotOutputType>
     </PropertyGroup>
     <!-- Should consider renaming property to something more appropriate-->
@@ -241,10 +243,10 @@
         MonoRuntimeHeaders="$(_MonoHeaderPath)"
         NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidBundleDir)"
-        ProjectName="$(AssemblyName)"
+        ProjectName="$(AppName)"
         RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        StripDebugSymbols="False">
+        StripDebugSymbols="$(StripDebugSymbols)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>
