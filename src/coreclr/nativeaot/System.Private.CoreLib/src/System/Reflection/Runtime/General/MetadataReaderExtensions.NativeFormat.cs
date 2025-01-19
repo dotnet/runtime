@@ -482,6 +482,18 @@ namespace System.Reflection.Runtime.General
         {
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
+
+            if (handleType == HandleType.TypeSpecification)
+            {
+                TypeSpecification typeSpecification = typeHandle.ToTypeSpecificationHandle(reader).GetTypeSpecification(reader);
+                if (typeSpecification.Signature.HandleType == HandleType.TypeInstantiationSignature)
+                {
+                    TypeInstantiationSignature sig = typeSpecification.Signature.ToTypeInstantiationSignatureHandle(reader).GetTypeInstantiationSignature(reader);
+                    typeHandle = sig.GenericType;
+                    handleType = typeHandle.HandleType;
+                }
+            }
+
             if (handleType == HandleType.TypeDefinition)
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
@@ -525,43 +537,6 @@ namespace System.Reflection.Runtime.General
                 if (!nsHandle.GetNamespaceReference(reader).Name.StringOrNullEquals(null, reader))
                     return false;
                 return true;
-            }
-            else if (handleType == HandleType.TypeSpecification)
-            {
-                Type? type = typeHandle.Resolve(reader, new TypeContext(null, null)).ToType();
-                ReadOnlySpan<char> namespaceName = type.Namespace ?? "";
-                ReadOnlySpan<char> typeName = name;
-
-                int offset = typeName.Length;
-                do
-                {
-                    offset -= type.Name.Length;
-                    if (offset < 0)
-                        return false;
-                    if (!typeName.Slice(offset, type.Name.Length).SequenceEqual(type.Name))
-                        return false;
-                    offset--; // Skip '+'
-                }
-                while ((type = type.DeclaringType) != null);
-
-                if (offset != -1)
-                    return false;
-
-                int idx = 0, start = 0, end = 1;
-                while (end <= namespaceName.Length)
-                {
-                    if (end == namespaceName.Length || namespaceName[end] == '.')
-                    {
-                        if (idx >= namespaceParts.Length)
-                            return false;
-                        if (!namespaceName.Slice(start, end - start).SequenceEqual(namespaceParts[idx++]))
-                            return false;
-                        start = end + 1;
-                    }
-                    end++;
-                }
-
-                return namespaceParts.Length == idx;
             }
             else
                 throw new NotSupportedException();
