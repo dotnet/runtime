@@ -538,7 +538,7 @@ namespace System.Reflection.Runtime.General
                     offset -= type.Name.Length;
                     if (offset < 0)
                         return false;
-                    if (!typeName[offset..(offset + type.Name.Length)].Equals(type.Name, StringComparison.Ordinal))
+                    if (!typeName.Slice(offset, type.Name.Length).SequenceEqual(type.Name))
                         return false;
                     offset--; // Skip '+'
                 }
@@ -547,16 +547,18 @@ namespace System.Reflection.Runtime.General
                 if (offset != -1)
                     return false;
 
-                int idx = 0;
-                if (namespaceName.Length > 0)
+                int idx = 0, start = 0, end = 1;
+                while (end <= namespaceName.Length)
                 {
-                    foreach (Range range in namespaceName.Split('.'))
+                    if (end == namespaceName.Length || namespaceName[end] == '.')
                     {
                         if (idx >= namespaceParts.Length)
                             return false;
-                        if (!namespaceName[range].Equals(namespaceParts[idx++], StringComparison.Ordinal))
+                        if (!namespaceName.Slice(start, end - start).SequenceEqual(namespaceParts[idx++]))
                             return false;
+                        start = end + 1;
                     }
+                    end++;
                 }
 
                 return namespaceParts.Length == idx;
