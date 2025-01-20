@@ -14,10 +14,10 @@ namespace Internal.IL.Stubs
     /// </summary>
     public sealed partial class ValueTypeGetFieldHelperMethodOverride : ILStubMethod
     {
-        private DefType _owningType;
+        private MetadataType _owningType;
         private MethodSignature _signature;
 
-        internal ValueTypeGetFieldHelperMethodOverride(DefType owningType)
+        internal ValueTypeGetFieldHelperMethodOverride(MetadataType owningType)
         {
             _owningType = owningType;
         }
@@ -61,17 +61,22 @@ namespace Internal.IL.Stubs
 
             ILEmitter emitter = new ILEmitter();
 
-            if (_owningType is MetadataType mdType)
+            // Types marked as InlineArray aren't supported by
+            // the built-in Equals() or GetHashCode().
+            if (_owningType.IsInlineArray)
             {
-                // Types marked as InlineArray aren't supported by
-                // the built-in Equals() or GetHashCode().
-                if (mdType.IsInlineArray)
-                {
-                    var stream = emitter.NewCodeStream();
-                    MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
-                    stream.EmitCallThrowHelper(emitter, thrower);
-                    return emitter.Link(this);
-                }
+                var stream = emitter.NewCodeStream();
+                MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
+                stream.EmitCallThrowHelper(emitter, thrower);
+                return emitter.Link(this);
+            }
+
+            if (_owningType.IsValueType && ComparerIntrinsics.CanCompareValueTypeBitsUntilOffset(_owningType, Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null), out int lastFieldEndOffset))
+            {
+                var stream = emitter.NewCodeStream();
+                stream.EmitLdc(-lastFieldEndOffset);
+                stream.Emit(ILOpcode.ret);
+                return emitter.Link(this);
             }
 
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");

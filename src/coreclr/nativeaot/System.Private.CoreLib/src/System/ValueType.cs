@@ -31,8 +31,9 @@ namespace System
             return this.GetType().ToString();
         }
 
-        private const int UseFastHelper = -1;
         private const int GetNumFields = -1;
+
+        private const int UseSizeFromMethodTable = int.MinValue;
 
         // An override of this method will be injected by the compiler into all valuetypes that cannot be compared
         // using a simple memory comparison.
@@ -44,7 +45,7 @@ namespace System
             // Value types that don't override this method will use the fast path that looks at bytes, not fields.
             Debug.Assert(index == GetNumFields);
             mt = default;
-            return UseFastHelper;
+            return UseSizeFromMethodTable;
         }
 
         public override unsafe bool Equals([NotNullWhen(true)] object? obj)
@@ -57,13 +58,14 @@ namespace System
             ref byte thisRawData = ref this.GetRawData();
             ref byte thatRawData = ref obj.GetRawData();
 
-            if (numFields == UseFastHelper)
+            if (numFields < 0)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
                 Debug.Assert(!this.GetMethodTable()->ContainsGCPointers);
 
                 // Compare the memory
-                int valueTypeSize = (int)this.GetMethodTable()->ValueTypeSize;
+                // The size of the memory to compare is the smaller of ValueTypeSize and -numFields
+                int valueTypeSize = numFields == UseSizeFromMethodTable ? (int)this.GetMethodTable()->ValueTypeSize : -numFields;
                 return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, valueTypeSize);
             }
             else
@@ -100,10 +102,14 @@ namespace System
 
             int numFields = __GetFieldHelper(GetNumFields, out _);
 
-            if (numFields == UseFastHelper)
-                hashCode.AddBytes(GetSpanForField(this.GetMethodTable(), ref this.GetRawData()));
+            if (numFields < 0)
+            {
+                hashCode.AddBytes(new ReadOnlySpan<byte>(ref this.GetRawData(), numFields == UseSizeFromMethodTable ? (int)this.GetMethodTable()->ValueTypeSize : -numFields));
+            }
             else
+            {
                 RegularGetValueTypeHashCode(ref hashCode, ref this.GetRawData(), numFields);
+            }
 
             return hashCode.ToHashCode();
         }
