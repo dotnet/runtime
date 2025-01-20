@@ -2056,6 +2056,12 @@ namespace System
             TimeZoneInfoResult result = TimeZoneInfoResult.Success;
             e = null;
 
+            if (Invariant && !cachedData._allSystemTimeZonesRead)
+            {
+                PopulateAllSystemTimeZones(cachedData);
+                cachedData._allSystemTimeZonesRead = true;
+            }
+
             // check the cache
             if (cachedData._systemTimeZones != null)
             {
@@ -2069,6 +2075,12 @@ namespace System
 
                     return result;
                 }
+            }
+
+            if (Invariant)
+            {
+                value = null;
+                return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
 
             if (cachedData._timeZonesUsingAlternativeIds != null)

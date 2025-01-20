@@ -154,7 +154,7 @@ namespace System
         {
             if (Invariant)
             {
-                return Array.Empty<string>();
+                return new string[] { "UTC" };
             }
 
             try

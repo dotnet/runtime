@@ -149,11 +149,9 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            value = null;
-            e = null;
-
             if (Invariant)
             {
+                value = null;
                 e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
             }
@@ -454,6 +452,11 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
+                if (Invariant)
+                {
+                    return new string[] { "UTC" };
+                }
+
                 int numTimeZoneIDs = _isBackwards.AsSpan(0, _ids.Length).Count(false);
                 string[] nonBackwardsTZIDs = new string[numTimeZoneIDs];
                 var index = 0;

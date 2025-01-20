@@ -113,6 +113,12 @@ namespace System
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
+
+            cachedData._systemTimeZones ??= new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase)
+            {
+                { UtcId, s_utcTimeZone }
+            };
+
             if (Invariant)
             {
                 return;
