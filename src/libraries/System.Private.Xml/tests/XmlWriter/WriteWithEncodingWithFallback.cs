@@ -143,7 +143,7 @@ namespace System.Xml.XmlWriterTests
             using (XmlWriter writer = XmlWriter.Create(ms, settings))
             {
                 await writer.WriteStartDocumentAsync();
-                Exception exception = Assert.Throws<System.AggregateException>(() =>
+                Exception exception = Assert.Throws<System.AggregateException>(async () =>
                     {
                         await writer.WriteElementStringAsync(null, problematicString, null, "test");
                         await writer.FlushAsync();
