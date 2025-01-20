@@ -379,7 +379,7 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 #endif
         for (const auto& entry : g_pThreadStaticCollectibleTypeIndices->CollectibleEntries())
         {
-            _ASSERTE((entry.TlsIndex.GetIndexOffset() <= pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
+            _ASSERTE((entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles) || !allRemainingIndicesAreNotValid);
             if (entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles)
             {
 #ifndef _DEBUG
@@ -392,7 +392,9 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
             {
                 if (pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] != (LOADERHANDLE)NULL)
                 {
-                    entry.pMT->GetLoaderAllocator()->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
+                    LoaderAllocator *pLoaderAllocator = entry.pMT->GetLoaderAllocator();
+                    if (pLoaderAllocator->IsExposedObjectLive())
+                        pLoaderAllocator->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
                     pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = (LOADERHANDLE)NULL;
                 }
             }
