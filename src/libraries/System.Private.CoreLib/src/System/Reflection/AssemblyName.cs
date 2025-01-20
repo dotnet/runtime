@@ -327,7 +327,7 @@ namespace System.Reflection
 
             EscapeStringToBuilder(codebase.AsSpan(indexOfFirstToEscape), ref vsb);
 
-            string result = string.Concat(codebase.AsSpan(0, indexOfFirstToEscape), vsb.ToString());
+            string result = string.Concat(codebase.AsSpan(0, indexOfFirstToEscape), vsb.AsSpan());
             vsb.Dispose();
             return result;
         }
