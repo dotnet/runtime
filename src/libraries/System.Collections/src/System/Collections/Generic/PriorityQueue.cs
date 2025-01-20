@@ -172,7 +172,7 @@ namespace System.Collections.Generic
         public int Count => _size;
 
         /// <summary>
-        ///  Gets the total numbers of elements the internal data structure can hold without resizing.
+        ///  Gets the total numbers of elements the queue's backing storage can hold without resizing.
         /// </summary>
         public int Capacity => _nodes.Length;
 
