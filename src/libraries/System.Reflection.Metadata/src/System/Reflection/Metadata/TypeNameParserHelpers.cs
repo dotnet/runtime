@@ -104,23 +104,69 @@ namespace System.Reflection.Metadata
 
         internal static ReadOnlySpan<char> GetNamespace(ReadOnlySpan<char> fullName)
         {
-            int offset = fullName.LastIndexOf('.');
+            // A type name of a nested type can also contain a namespace.
+            // We want to return the namespace of the outermost type, so we need to split before the first unescaped '+',
+            // and then before the last unescaped '.' after that.
+            int offset = IndexOfAnyUnescaped(fullName, '+');
 
-            if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            if (offset > 0)
             {
-                offset = GetUnescapedOffset(fullName, startIndex: offset);
+                fullName = fullName.Slice(0, offset);
             }
 
-            return offset < 0 ? [] : fullName.Slice(0, offset);
+            offset = LastIndexOfAnyUnescaped(fullName, '.');
 
-            static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
+            return offset < 0 ? [] : fullName.Slice(0, offset);
+        }
+
+        private static int IndexOfAnyUnescaped(ReadOnlySpan<char> str, char c)
+        {
+            int offset = str.IndexOf(c);
+
+            if (offset > 0 && str[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            {
+                offset = IndexOfAnyUnescapedSlow(str, c, startIndex: offset);
+            }
+
+            return offset;
+
+            static int IndexOfAnyUnescapedSlow(ReadOnlySpan<char> str, char c, int startIndex)
+            {
+                int offset = startIndex;
+                for (; offset < str.Length; offset++)
+                {
+                    if (str[offset] == c)
+                    {
+                        if (offset == 0 || str[offset - 1] != EscapeCharacter)
+                        {
+                            break;
+                        }
+                        offset++; // skip the escaping character
+                    }
+                }
+                return offset;
+            }
+        }
+
+        private static int LastIndexOfAnyUnescaped(ReadOnlySpan<char> str, char c)
+        {
+            int offset = str.LastIndexOf(c);
+
+            if (offset > 0 && str[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            {
+                offset = LastIndexOfAnyUnescapedSlow(str, c, startIndex: offset);
+            }
+
+            return offset;
+
+            static int LastIndexOfAnyUnescapedSlow(ReadOnlySpan<char> str, char c, int startIndex)
             {
                 int offset = startIndex;
                 for (; offset >= 0; offset--)
                 {
-                    if (fullName[offset] == '.')
+                    if (str[offset] == c)
                     {
-                        if (offset == 0 || fullName[offset - 1] != EscapeCharacter)
+                        if (offset == 0 || str[offset - 1] != EscapeCharacter)
                         {
                             break;
                         }
