@@ -2052,7 +2052,8 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 			}
 			mono_mb_emit_ldarg_addr (mb, 1);
 			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_LDVIRTFTN_DELEGATE);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
