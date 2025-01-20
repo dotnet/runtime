@@ -2450,6 +2450,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.TypeName MakeSZArrayTypeName() { throw null; }
         public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParseOptions? options = null) { throw null; }
+        public static string Unescape(string name) { throw null; }
         public System.Reflection.Metadata.TypeName WithAssemblyName(System.Reflection.Metadata.AssemblyNameInfo? assemblyName) { throw null; }
     }
     public sealed partial class TypeNameParseOptions
