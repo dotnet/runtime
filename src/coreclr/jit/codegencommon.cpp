@@ -7160,7 +7160,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             for (unsigned i = 0; i < retRegCount; ++i)
             {
                 gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                    retTypeDesc.GetReturnRegType(i));
+                                       retTypeDesc.GetReturnRegType(i));
             }
         }
     }
