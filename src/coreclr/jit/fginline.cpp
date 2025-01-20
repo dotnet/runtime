@@ -589,7 +589,7 @@ private:
                 context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
-                if (context != nullptr)
+                if (context != nullptr && !m_compiler->compCurBB->HasFlag(BBF_INTERNAL))
                 {
                     IL_OFFSET ilOffset = 0;
                     INDEBUG(ilOffset = call->gtRawILOffset);
@@ -597,10 +597,7 @@ private:
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
                     m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
-
-                    const bool isInlineCandidate = call->IsInlineCandidate();
-
-                    if (isInlineCandidate)
+                    if (call->IsInlineCandidate())
                     {
                         if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
                         {
