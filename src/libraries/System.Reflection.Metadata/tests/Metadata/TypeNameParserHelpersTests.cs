@@ -38,6 +38,18 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("JustTypeName", "")]
+        [InlineData("Namespace.TypeName", "Namespace")]
+        [InlineData("Namespace1.Namespace2.TypeName", "Namespace1.Namespace2")]
+        [InlineData("Namespace.NotNamespace\\.TypeName", "Namespace")]
+        [InlineData("Namespace1.Namespace2.Containing+Nested", "Namespace1.Namespace2")]
+        [InlineData("Namespace1.Namespace2.Not\\+Nested", "Namespace1.Namespace2")]
+        [InlineData("NotNamespace1\\.NotNamespace2\\.TypeName", "")]
+        [InlineData("NotNamespace1\\.NotNamespace2\\.Not\\+Nested", "")]
+        public void GetNamespaceReturnsJustNamespace(string fullName, string expected)
+            => Assert.Equal(expected, TypeNameParserHelpers.GetNamespace(fullName.AsSpan()).ToString());
+
+        [Theory]
         [InlineData("JustTypeName", "JustTypeName")]
         [InlineData("Namespace.TypeName", "TypeName")]
         [InlineData("Namespace1.Namespace2.TypeName", "TypeName")]

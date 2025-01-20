@@ -39,7 +39,7 @@ namespace System.Reflection.Metadata
 #else
         private readonly ImmutableArray<TypeName> _genericArguments;
 #endif
-        private string? _name, _fullName, _assemblyQualifiedName;
+        private string? _name, _namespace, _fullName, _assemblyQualifiedName;
 
         internal TypeName(string? fullName,
             AssemblyNameInfo? assemblyName,
@@ -281,6 +281,46 @@ namespace System.Reflection.Metadata
                 }
 
                 return _name;
+            }
+        }
+
+        /// <summary>
+        /// The namespace of this type; e.g., "System".
+        /// </summary>
+        public string Namespace
+        {
+            get
+            {
+                if (_namespace is null)
+                {
+                    TypeName rootTypeName = this;
+                    while (true)
+                    {
+                        if (IsConstructedGenericType)
+                        {
+                            rootTypeName = GetGenericTypeDefinition();
+                        }
+                        else if (IsPointer || IsByRef || IsArray)
+                        {
+                            rootTypeName = GetElementType();
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                    // At this point the type does not have a modifier applied to it, so it should have its full name initialized.
+                    Debug.Assert(rootTypeName._fullName is not null);
+                    ReadOnlySpan<char> rootFullName = rootTypeName._fullName.AsSpan();
+                    if (rootTypeName._nestedNameLength > 0)
+                    {
+                        rootFullName = rootFullName.Slice(0, rootTypeName._nestedNameLength);
+                    }
+                    _namespace = TypeNameParserHelpers.GetNamespace(rootFullName).ToString();
+                }
+
+                return _namespace;
             }
         }
 

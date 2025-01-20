@@ -13,13 +13,14 @@ namespace System.Reflection.Metadata.Tests
     public class TypeNameTests
     {
         [Theory]
-        [InlineData("  System.Int32", "System.Int32", "Int32")]
-        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", "NestedType")]
-        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string expectedName)
+        [InlineData("  System.Int32", "System.Int32", "System", "Int32")]
+        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", "MyNamespace", "NestedType")]
+        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string expectedNamespace, string expectedName)
         {
             TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(expectedName, parsed.Name);
+            Assert.Equal(expectedNamespace, parsed.Namespace);
             Assert.Equal(expectedFullName, parsed.FullName);
             Assert.Equal(expectedFullName, parsed.AssemblyQualifiedName);
         }
@@ -32,6 +33,7 @@ namespace System.Reflection.Metadata.Tests
             TypeName parsed = TypeName.Parse(".NoNamespace".AsSpan());
 
             Assert.Equal("NoNamespace", parsed.Name);
+            Assert.Empty(parsed.Namespace);
             Assert.Equal(".NoNamespace", parsed.FullName);
             Assert.Equal(".NoNamespace", parsed.AssemblyQualifiedName);
         }
@@ -698,6 +700,7 @@ namespace System.Reflection.Metadata.Tests
             while (true)
             {
                 Assert.Equal(parsed.Name, made.Name);
+                Assert.Equal(parsed.Namespace, made.Namespace);
                 Assert.Equal(parsed.FullName, made.FullName);
                 Assert.Equal(assemblyName, made.AssemblyName);
                 Assert.NotEqual(parsed.AssemblyQualifiedName, made.AssemblyQualifiedName);
@@ -792,6 +795,7 @@ namespace System.Reflection.Metadata.Tests
                 Type genericType = type.GetGenericTypeDefinition();
                 TypeName genericTypeName = parsed.GetGenericTypeDefinition();
                 Assert.Equal(genericType.Name, genericTypeName.Name);
+                Assert.Equal(genericType.Namespace, genericTypeName.Namespace);
                 Assert.Equal(genericType.FullName, genericTypeName.FullName);
                 Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
@@ -965,6 +969,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
             Assert.Equal(type.FullName, typeName.FullName);
+            Assert.Equal(type.Namespace, typeName.Namespace);
             Assert.Equal(type.Name, typeName.Name);
 
 #if NET

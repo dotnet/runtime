@@ -102,6 +102,35 @@ namespace System.Reflection.Metadata
             static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
+        internal static ReadOnlySpan<char> GetNamespace(ReadOnlySpan<char> fullName)
+        {
+            int offset = fullName.LastIndexOf('.');
+
+            if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            {
+                offset = GetUnescapedOffset(fullName, startIndex: offset);
+            }
+
+            return offset < 0 ? [] : fullName.Slice(0, offset);
+
+            static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
+            {
+                int offset = startIndex;
+                for (; offset >= 0; offset--)
+                {
+                    if (fullName[offset] == '.')
+                    {
+                        if (offset == 0 || fullName[offset - 1] != EscapeCharacter)
+                        {
+                            break;
+                        }
+                        offset--; // skip the escaping character
+                    }
+                }
+                return offset;
+            }
+        }
+
         internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
         {
             // The two-value form of MemoryExtensions.LastIndexOfAny does not suffer
