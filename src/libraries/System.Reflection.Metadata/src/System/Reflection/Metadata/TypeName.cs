@@ -300,14 +300,19 @@ namespace System.Reflection.Metadata
                         rootTypeName = rootTypeName._elementOrGenericType;
                     }
 
-                    // At this point the type does not have a modifier applied to it, so it should have its full name initialized.
-                    Debug.Assert(rootTypeName._fullName is not null);
-                    ReadOnlySpan<char> rootFullName = rootTypeName._fullName.AsSpan();
-                    if (rootTypeName._nestedNameLength > 0)
+                    // By setting the namespace field at the root type name, we avoid recomputing it for all derived names.
+                    if (rootTypeName._namespace is null)
                     {
-                        rootFullName = rootFullName.Slice(0, rootTypeName._nestedNameLength);
+                        // At this point the type does not have a modifier applied to it, so it should have its full name set.
+                        Debug.Assert(rootTypeName._fullName is not null);
+                        ReadOnlySpan<char> rootFullName = rootTypeName._fullName.AsSpan();
+                        if (rootTypeName._nestedNameLength > 0)
+                        {
+                            rootFullName = rootFullName.Slice(0, rootTypeName._nestedNameLength);
+                        }
+                        rootTypeName._namespace = TypeNameParserHelpers.GetNamespace(rootFullName).ToString();
                     }
-                    _namespace = TypeNameParserHelpers.GetNamespace(rootFullName).ToString();
+                    _namespace = rootTypeName._namespace;
                 }
 
                 return _namespace;
