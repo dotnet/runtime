@@ -296,13 +296,13 @@ namespace System.Reflection.Metadata
                     TypeName rootTypeName = this;
                     while (true)
                     {
-                        if (IsConstructedGenericType)
+                        if (rootTypeName.IsConstructedGenericType)
                         {
-                            rootTypeName = GetGenericTypeDefinition();
+                            rootTypeName = rootTypeName.GetGenericTypeDefinition();
                         }
-                        else if (IsPointer || IsByRef || IsArray)
+                        else if (rootTypeName.IsPointer || rootTypeName.IsByRef || rootTypeName.IsArray)
                         {
-                            rootTypeName = GetElementType();
+                            rootTypeName = rootTypeName.GetElementType();
                         }
                         else
                         {
