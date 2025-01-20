@@ -55,9 +55,9 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodEntrypoint(invokeStub), "Reflection invoke");
 
                 var signature = method.Signature;
-                AddSignatureDependency(ref dependencies, factory, signature.ReturnType, "Reflection invoke");
+                AddSignatureDependency(ref dependencies, factory, signature.ReturnType, "Reflection invoke", isOut: true);
                 foreach (var parameterType in signature)
-                    AddSignatureDependency(ref dependencies, factory, parameterType, "Reflection invoke");
+                    AddSignatureDependency(ref dependencies, factory, parameterType, "Reflection invoke", isOut: false);
             }
 
             if (method.OwningType.IsValueType && !method.Signature.IsStatic)
@@ -96,10 +96,13 @@ namespace ILCompiler.DependencyAnalysis
             ReflectionVirtualInvokeMapNode.GetVirtualInvokeMapDependencies(ref dependencies, factory, method);
         }
 
-        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason)
+        internal static void AddSignatureDependency(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, string reason, bool isOut)
         {
             if (type.IsByRef)
+            {
                 type = ((ParameterizedType)type).ParameterType;
+                isOut = true;
+            }
 
             // Pointer runtime type handles can be created at runtime if necessary
             while (type.IsPointer)
@@ -114,11 +117,10 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsGCPointer)
                 return;
 
-            TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
-            if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, canonType);
-            else
+            if (isOut)
                 dependencies.Add(factory.MaximallyConstructableType(type), reason);
+            else
+                dependencies.Add(factory.NecessaryTypeSymbol(type), reason);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
