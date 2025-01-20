@@ -191,7 +191,7 @@ namespace Internal.TypeSystem
                         return canonType;
                 }
 
-                (string typeNamespace, string name) = TypeNameHelpers.Split(fullName);
+                (string typeNamespace, string name) = TypeName.Split(fullName);
 
                 return module.GetType(typeNamespace, name, throwIfNotFound: false);
             }
