@@ -312,11 +312,11 @@ namespace ILCompiler
                     {
                         var type = (TypeDesc)targetOfLookup;
 
-                        //// We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
-                        //// If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
-                        //// see a RuntimeTypeHandle representing this interface.
-                        //if (type.IsInterface)
-                        //    return NodeFactory.MaximallyConstructableType(type);
+                        // We counter-intuitively ask for a constructed type symbol. This is needed due to IDynamicInterfaceCastable.
+                        // If this cast happens with an object that implements IDynamicIntefaceCastable, user code will
+                        // see a RuntimeTypeHandle representing this interface.
+                        if (type.IsInterface)
+                            return NodeFactory.MaximallyConstructableType(type);
 
                         if (type.IsNullable)
                             type = type.Instantiation[0];
