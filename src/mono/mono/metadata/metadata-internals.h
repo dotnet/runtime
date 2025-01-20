@@ -1021,8 +1021,14 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open);
 
 MONO_API void            mono_type_get_desc (GString *res, MonoType *type, mono_bool include_namespace);
 
+enum {
+	MONO_TYPE_EQ_FLAGS_NONE = 0,
+	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
+	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2,
+};
+
 gboolean
-mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only);
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, int flags);
 
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image, const char *ptr);
