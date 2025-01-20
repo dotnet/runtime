@@ -108,7 +108,12 @@ namespace System.Net
                 string? str = _password as string;
                 if (str != null)
                 {
-                    return MarshalToSecureString(str);
+                    var secureStr = new SecureString();
+                    for (int i = 0; i < str.Length; i++)
+                    {
+                        secureStr.AppendChar(str[i]);
+                    }
+                    return secureStr;
                 }
                 SecureString? sstr = _password as SecureString;
                 return sstr != null ? sstr.Copy() : new SecureString();
@@ -173,19 +178,6 @@ namespace System.Net
                 }
             }
             return result;
-        }
-
-        private SecureString MarshalToSecureString(string str)
-        {
-            var secureStr = new SecureString();
-            if (str != null)
-            {
-                for (int i = 0; i < str.Length; i++)
-                {
-                    secureStr.AppendChar(str[i]);
-                }
-            }
-            return secureStr;
         }
     }
 }
