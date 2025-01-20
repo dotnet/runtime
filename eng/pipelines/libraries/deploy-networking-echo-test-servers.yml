@@ -4,8 +4,8 @@
 # - corefx-net-http2-staging.azurewebsites.net
 #
 # Usage instructions:
-# 1) Start pipeline at https://dev.azure.com/dnceng/internal/_build?definitionId=1419 (
-deploy-networking-echo-test-servers), pick the correct branch and start the build.
+# 1) Start pipeline at https://dev.azure.com/dnceng/internal/_build?definitionId=1419
+#    (deploy-networking-echo-test-servers), pick the correct branch and start the build.
 # 2) After pipeline succeeds, check your changes against the staging slots, two possible ways to do this are:
 #   - create a no-merge PR where you overwrite the default urls (e.g. https://github.com/dotnet/runtime/pull/111396)
 #   - test locally, either by same changes as in above PR, or by using the override environment variables
