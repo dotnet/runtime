@@ -118,9 +118,9 @@ namespace ILCompiler.DependencyAnalysis
                 return;
 
             if (isOut)
-                dependencies.Add(factory.MaximallyConstructableType(type), reason);
+                dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
             else
-                dependencies.Add(factory.NecessaryTypeSymbol(type), reason);
+                dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
