@@ -602,19 +602,22 @@ private:
 
                     if (isInlineCandidate)
                     {
-                        Statement* stmt = m_compiler->gtNewStmt(call);
-                        m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
-                        GenTreeRetExpr* retExpr =
-                            m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(call->TypeGet()));
-                        *pTree = retExpr;
+                        if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
+                        {
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
+                            *pTree = retExpr;
 
-                        call->GetSingleInlineCandidateInfo()->retExpr            = retExpr;
-                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                        INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
-
+                            call->GetSingleInlineCandidateInfo()->retExpr            = retExpr;
+                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                            INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
+                            m_compiler->compCurStmt = stmt;
+                        }
                         JITDUMP("New inline candidate due to late devirtualization:");
                         DISPTREE(call);
-                        m_compiler->compCurStmt = stmt;
                     }
                 }
                 m_madeChanges = true;
