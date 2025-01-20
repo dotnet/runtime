@@ -3001,14 +3001,15 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 #endif
     int srcCount = BuildCastUses(cast, candidates);
     buildInternalRegisterUses();
-    SingleTypeRegSet dstcandidates = RBM_NONE;
-    // if (varTypeUsesIntReg(castType) && cast->GetRegNum() == REG_NA)
+#ifdef TARGET_AMD64
+    candidates = RBM_NONE;
     if ((varTypeIsFloating(srcType) && !varTypeIsFloating(castType)) ||
         (varTypeUsesIntReg(castType) && cast->GetRegNum() == REG_NA))
     {
-        dstcandidates = BuildApxIncompatibleGPRMask(cast, dstcandidates, true);
+        candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
     }
-    BuildDef(cast, dstcandidates);
+#endif
+    BuildDef(cast, candidates);
 
     return srcCount;
 }
