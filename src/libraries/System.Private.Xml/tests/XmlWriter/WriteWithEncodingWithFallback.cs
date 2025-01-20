@@ -4,6 +4,7 @@
 using System.IO;
 using System.Text;
 using Xunit;
+using System.Threading.Tasks;
 
 namespace System.Xml.XmlWriterTests
 {
