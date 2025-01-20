@@ -194,11 +194,11 @@ static bool isValidSimm21(ssize_t value)
     return -(((int)1) << 20) <= value && value < (((int)1) << 20);
 };
 
-// Returns true if 'value' is a legal signed immediate 32 bit encoding.
+// Returns true if 'value' is a legal signed immediate 32-bit encoding with the offset adjustment.
 static bool isValidSimm32(ssize_t value)
 {
-    return -(((ssize_t)1) << 31) <= value && value < (((ssize_t)1) << 31);
-};
+    return (-(((ssize_t)1) << 31) - 0x800) <= value && value < (((ssize_t)1) << 31) - 0x800;
+}
 
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)

@@ -109,6 +109,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 // The portable helper is used if the platform does not provide optimized implementation.
 //
 
+EXTERN_C FCDECL0(void, JIT_PollGC);
+
 #ifndef JIT_MonEnter
 #define JIT_MonEnter JIT_MonEnter_Portable
 #endif
@@ -1027,7 +1029,6 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
 
 FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL0(VOID, JIT_PollGC);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
