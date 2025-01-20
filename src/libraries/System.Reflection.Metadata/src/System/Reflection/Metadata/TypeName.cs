@@ -442,6 +442,22 @@ namespace System.Reflection.Metadata
         }
 
         /// <summary>
+        /// Converts any escaped characters in the input type name or namespace.
+        /// </summary>
+        /// <param name="name">The input string containing the name to convert.</param>
+        /// <returns>A string of characters with any escaped characters converted to their unescaped form.</returns>
+        /// <remarks>The unescaped string can be used for looking up the type name or namespace in metadata.</remarks>
+        public static string Unescape(string name)
+        {
+            if (name is null)
+            {
+                TypeNameParserHelpers.ThrowArgumentNullException(nameof(name));
+            }
+
+            return TypeNameParserHelpers.Unescape(name);
+        }
+
+        /// <summary>
         /// Gets the number of dimensions in an array.
         /// </summary>
         /// <returns>An integer that contains the number of dimensions in the current type.</returns>
