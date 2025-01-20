@@ -544,6 +544,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            // TODO: KJ IMPLEMENT!
+            throw new NotImplementedException();
+        }
+
         private unsafe T InvokeWithCertContext<T>(CertContextCallback<T> callback)
         {
             bool added = false;

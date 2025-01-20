@@ -24,5 +24,6 @@ namespace System.Security.Cryptography.X509Certificates
         DateTime NotBefore { get; }
         byte[] RawData { get; }
         byte[] Export(X509ContentType contentType, SafePasswordHandle password);
+        byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password);
     }
 }

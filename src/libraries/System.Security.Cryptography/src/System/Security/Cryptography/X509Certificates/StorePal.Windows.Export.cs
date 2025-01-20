@@ -102,6 +102,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            // TODO: do it.
+            throw new NotImplementedException();
+        }
+
         private byte[] SaveToMemoryStore(Interop.Crypt32.CertStoreSaveAs dwSaveAs)
         {
             unsafe

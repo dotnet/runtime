@@ -10,11 +10,18 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        internal static readonly PbeParameters Windows3desPbe =
+            new PbeParameters(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 2000);
+
+        internal static readonly PbeParameters WindowsAesPbe =
+            new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 2000);
+
         internal static void AddRange<T>(this ICollection<T> coll, IEnumerable<T> newData)
         {
             foreach (T datum in newData)
@@ -386,6 +393,16 @@ namespace Internal.Cryptography
             {
                 throw new ArgumentOutOfRangeException(nameof(hashAlgorithmName));
             }
+        }
+
+        internal static PbeParameters MapExportParametersToPbeParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            return exportParameters switch
+            {
+                Pkcs12ExportPbeParameters.Default or Pkcs12ExportPbeParameters.Pbes2TripleDesSha1 => Windows3desPbe,
+                Pkcs12ExportPbeParameters.Pbes2Aes256Sha256 => WindowsAesPbe,
+                _ => throw new CryptographicException(),
+            };
         }
     }
 }

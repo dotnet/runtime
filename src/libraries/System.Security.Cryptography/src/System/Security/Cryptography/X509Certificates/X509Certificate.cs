@@ -345,6 +345,24 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary> Exports the certificate and private key in PKCS#12 / PFX format. </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded certificate and private key.</returns>
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
+        {
+            VerifyExportParameters(exportParameters);
+
+            if (Pal is null)
+                throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
+
+            using (var safePasswordHandle = new SafePasswordHandle(password, passwordProvided: true))
+            {
+                return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
+
         public virtual string GetRawCertDataString()
         {
             ThrowIfInvalid();
@@ -685,6 +703,14 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
                 throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
+        }
+
+        private static void VerifyExportParameters(Pkcs12ExportPbeParameters exportParameters)
+        {
+            if (exportParameters is < Pkcs12ExportPbeParameters.Default or > Pkcs12ExportPbeParameters.Pbes2Aes256Sha256)
+            {
+                throw new ArgumentOutOfRangeException(nameof(exportParameters));
+            }
         }
     }
 }
