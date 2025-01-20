@@ -1362,6 +1362,13 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return id->idHasMem();
     }
 
+    if ((ins == INS_pslld) || (ins == INS_psllq) || (ins == INS_psllw) || (ins == INS_psrad) || (ins == INS_psraw) ||
+        (ins == INS_psrld) || (ins == INS_psrlq) || (ins == INS_psrlw))
+    {
+        // Memory operand with immediate can only be encoded using EVEX
+        return id->idHasMemAndCns();
+    }
+
     return false;
 }
 

@@ -9204,6 +9204,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_ShiftRightArithmetic:
                 {
                     assert((tupleType & INS_TT_MEM128) != 0);
+                    tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
 
                     // Shift amount (op2) can be either imm8 or vector. If vector, it will always be xmm/m128.
                     //
@@ -9215,12 +9216,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                         expectedSize = genTypeSize(TYP_SIMD16);
                         break;
                     }
-                    else if ((expectedSize < genTypeSize(TYP_SIMD64)) && (ins != INS_vpsraq))
+                    else if (!comp->canUseEvexEncoding())
                     {
-                        // TODO-XArch-CQ: This should really only be checking EVEX capability, however
-                        // emitter::TakesEvexPrefix doesn't currently handle requiring EVEX based on presence
-                        // of an immediate operand. For now we disable containment of op1 unless EVEX is
-                        // required for some other reason.
                         supportsMemoryOp = false;
                         break;
                     }
@@ -9266,7 +9263,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 default:
                 SIZE_FROM_TUPLE_TYPE:
                 {
-                    tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
                     switch (tupleType)
                     {
                         case INS_TT_NONE:
