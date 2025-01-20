@@ -47,6 +47,31 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [OuterLoop]
+        [Fact]
+        public async Task SendAsync_ServerCertificateValidationCallback_CalledOnce()
+        {
+            int callbackCount = 0;
+            var handler = new WinHttpHandler()
+            {
+                ServerCertificateValidationCallback = (m, cert, chain, err) =>
+                {
+                    Interlocked.Increment(ref callbackCount);
+                    return true;
+                }
+            };
+            using (var client = new HttpClient(handler))
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.SecureRemoteEchoServer).Result;
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    _ = await response.Content.ReadAsStringAsync();
+                }
+                Assert.Equal(1, callbackCount);
+            }
+        }
+
+        [OuterLoop]
         [Theory]
         [InlineData(CookieUsePolicy.UseInternalCookieStoreOnly, "cookieName1", "cookieValue1")]
         [InlineData(CookieUsePolicy.UseSpecifiedCookieContainer, "cookieName2", "cookieValue2")]

@@ -148,6 +148,8 @@ namespace System.Net.Http
 
         public bool RetryRequest { get; set; }
 
+        public bool NeedsValidation { get; set; }
+
         public RendezvousAwaitable<int> LifecycleAwaitable { get; set; } = new RendezvousAwaitable<int>();
         public TaskCompletionSource<bool>? TcsInternalWriteDataToRequestStream { get; set; }
         public bool AsyncReadInProgress { get; set; }

@@ -91,6 +91,10 @@ namespace System.Net.Http
                         OnRequestSendingRequest(state);
                         return;
 
+                    case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER:
+                        OnRequestConnectedToServer(state);
+                        return;
+
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REQUEST_ERROR:
                         Debug.Assert(
                             statusInformationLength == Marshal.SizeOf<Interop.WinHttp.WINHTTP_ASYNC_RESULT>(),
@@ -244,7 +248,7 @@ namespace System.Net.Http
             // the TransportContext object.
             state.TransportContext.SetChannelBinding(state.RequestHandle);
 
-            if (state.ServerCertificateValidationCallback != null)
+            if (state.ServerCertificateValidationCallback != null && state.NeedsValidation)
             {
                 IntPtr certHandle = IntPtr.Zero;
                 uint certHandleSize = (uint)IntPtr.Size;
@@ -316,6 +320,14 @@ namespace System.Net.Http
                         (int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE, "ServerCertificateValidationCallback");
                 }
             }
+        }
+
+        private static void OnRequestConnectedToServer(WinHttpRequestState state)
+        {
+            Debug.Assert(state != null, "OnRequestConnectedToServer: state is null");
+            state.NeedsValidation = true;
+            // This notification is sent when the TCP connection to the server is established.
+            // We don't need to do anything here.
         }
 
         private static void OnRequestError(WinHttpRequestState state, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult)

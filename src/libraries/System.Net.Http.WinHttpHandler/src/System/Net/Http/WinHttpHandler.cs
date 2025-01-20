@@ -608,6 +608,7 @@ namespace System.Net.Http
             state.ServerCredentials = _serverCredentials;
             state.DefaultProxyCredentials = _defaultProxyCredentials;
             state.PreAuthenticate = _preAuthenticate;
+            state.NeedsValidation = false;
 
             Task.Factory.StartNew(s =>
                 {
@@ -1644,7 +1645,8 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_ALL_COMPLETIONS |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_HANDLES |
                 Interop.WinHttp.WINHTTP_CALLBACK_FLAG_REDIRECT |
-                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST;
+                Interop.WinHttp.WINHTTP_CALLBACK_FLAG_SEND_REQUEST |
+                Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CONNECTED_TO_SERVER;
 
             IntPtr oldCallback = Interop.WinHttp.WinHttpSetStatusCallback(
                 requestHandle,
