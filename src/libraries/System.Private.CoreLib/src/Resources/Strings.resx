@@ -4271,12 +4271,6 @@
   <data name="CannotCreatePointerOfByRef" xml:space="preserve">
     <value>Cannot create a pointer to a byref: {0}</value>
   </data>
-  <data name="TypeLoad_TypeNotFound" xml:space="preserve">
-    <value>The type '{0}' cannot be found.</value>
-  </data>
-  <data name="TypeLoad_TypeNotFoundInAssembly" xml:space="preserve">
-    <value>The type '{0}' cannot be found in assembly '{1}'.</value>
-  </data>
   <data name="TypeLoad_MethodOverrideNotVirtual" xml:space="preserve">
     <value>Method '{0}' overrides '{1}' but it is not virtual.</value>
   </data>

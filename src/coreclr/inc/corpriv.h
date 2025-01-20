@@ -314,50 +314,19 @@ typedef enum {
 
     // generate a .reloc for a pointer sized location,
     // This is transformed into BASED_HIGHLOW or BASED_DIR64 based on the platform
-    srRelocHighLow = IMAGE_REL_BASED_HIGHLOW,
-
-    // generate a .reloc for the top 16-bits of a 32 bit number, where the
-    // bottom 16 bits are included in the next word in the .reloc table
-    srRelocHighAdj,     // Never Used
+    srRelocHighLow,
 
     // generate a token map relocation, nothing into .reloc section
     srRelocMapToken,
-
-    // relative address fixup
-    srRelocRelative,
 
     // Generate only a section-relative reloc, nothing into .reloc
     // section.  This reloc is relative to the file position of the
     // section, not the section's virtual address.
     srRelocFilePos,
 
-    // code relative address fixup
-    srRelocCodeRelative,
-
-    // generate a .reloc for a 64 bit address
-    srRelocDir64 = IMAGE_REL_BASED_DIR64,
-
-    // generate a 30-bit section-relative reloc, used for tagged pointer values
-    srRelocAbsoluteTagged,
-
-
     // A sentinel value to help ensure any additions to this enum are reflected
     // in PEWriter.cpp's RelocName array.
     srRelocSentinel,
-
-    // Flags that can be used with the above reloc types
-
-    // do not emit base reloc
-    srNoBaseReloc = 0x4000,
-
-    // pre-fixup contents of memory are ptr rather than a section offset
-    srRelocPtr = 0x8000,
-
-    // legal enums which include the Ptr flag
-    srRelocAbsolutePtr = srRelocPtr + srRelocAbsolute,
-    srRelocHighLowPtr = srRelocPtr + srRelocHighLow,
-    srRelocRelativePtr = srRelocPtr + srRelocRelative,
-    srRelocDir64Ptr = srRelocPtr + srRelocDir64,
 
 } CeeSectionRelocType;
 

@@ -1121,3 +1121,14 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
+
+LEAF_ENTRY JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, $t0
+        ld.w    $t0, $t0, 0
+        bne     $t0, $zero, LOCAL_LABEL(JIT_PollGCRarePath)
+        jirl $r0, $ra, 0
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, $t0
+        ld.d    $t0, $t0, 0
+        EPILOG_BRANCH_REG $t0
+LEAF_END JIT_PollGC, _TEXT

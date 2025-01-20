@@ -95,11 +95,15 @@ namespace System.Net.Http
 
             _connection = connection;
 
-            // Errors are observed via Abort().
-            _sendSettingsTask = SendSettingsAsync();
+            // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+            using (ExecutionContext.SuppressFlow())
+            {
+                // Errors are observed via Abort().
+                _sendSettingsTask = SendSettingsAsync();
 
-            // This process is cleaned up when _connection is disposed, and errors are observed via Abort().
-            _ = AcceptStreamsAsync();
+                // This process is cleaned up when _connection is disposed, and errors are observed via Abort().
+                _ = AcceptStreamsAsync();
+            }
         }
 
         /// <summary>

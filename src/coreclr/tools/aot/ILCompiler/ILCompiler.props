@@ -12,9 +12,11 @@
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
+    <UseLocalTargetingRuntimePack Condition="'$(StageTwoBuild)' == 'true'">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="../AotCompilerCommon.props" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(StageTwoBuild)' == 'true'" />
 
   <PropertyGroup>
     <SelfContained>true</SelfContained>

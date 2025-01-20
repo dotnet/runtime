@@ -108,6 +108,7 @@ public:
     HRESULT getCorHeader(IMAGE_COR20_HEADER **ppHeader);
 
     HRESULT getFileTimeStamp(DWORD *pTimeStamp);
+    void setFileHeaderTimeStamp(DWORD timeStamp);
 
     HRESULT setLibraryGuid(_In_ LPWSTR libraryGuid);
 

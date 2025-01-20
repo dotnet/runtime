@@ -161,7 +161,7 @@ namespace System.Text.Json
             try
             {
                 jsonTypeInfo.Serialize(writer, value);
-                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+                return JsonReaderHelper.TranscodeHelper(output.WrittenSpan);
             }
             finally
             {
@@ -178,7 +178,7 @@ namespace System.Text.Json
             try
             {
                 jsonTypeInfo.SerializeAsObject(writer, value);
-                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+                return JsonReaderHelper.TranscodeHelper(output.WrittenSpan);
             }
             finally
             {

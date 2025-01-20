@@ -117,7 +117,6 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PooledStringBuilder.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\ReadOnlyUnmanagedMemoryStream.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StreamExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyDefinition.cs" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyFile.cs" />

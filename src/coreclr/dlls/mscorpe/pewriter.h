@@ -83,6 +83,7 @@ public:
     size_t getImageBase();
 
     HRESULT getFileTimeStamp(DWORD *pTimeStamp);
+    void setFileHeaderTimeStamp(DWORD timeStamp);
 
     IMAGE_NT_HEADERS32* ntHeaders32()    { return (IMAGE_NT_HEADERS32*) m_ntHeaders; }
     IMAGE_NT_HEADERS64* ntHeaders64()    { return (IMAGE_NT_HEADERS64*) m_ntHeaders; }

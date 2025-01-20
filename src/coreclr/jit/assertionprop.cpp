@@ -2601,6 +2601,89 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memset: Unrolls NI_System_SpanHelpers_Fill for constant length.
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_Fill call to unroll
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
+{
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
+
+    CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* valArg = call->gtArgs.GetUserArgByIndex(2);
+
+    var_types valType     = valArg->GetSignatureType();
+    unsigned  lengthScale = genTypeSize(valType);
+
+    if (lengthScale == 1)
+    {
+        // Lower expands it slightly better.
+        JITDUMP("...value's type is byte - leave it for lower to expand.\n");
+        return nullptr;
+    }
+
+    if (varTypeIsStruct(valType) || varTypeIsGC(valType))
+    {
+        JITDUMP("...value's type is not supported - bail out.\n");
+        return nullptr;
+    }
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+    if ((len > getUnrollThreshold(Memset)) ||
+        // The first condition prevents the overflow in the second condition.
+        // since both len and lengthScale are expected to be small at this point.
+        (len * lengthScale) > getUnrollThreshold(Memset))
+    {
+        JITDUMP("...length is too big to unroll - bail out.\n");
+        return nullptr;
+    }
+
+    // Some arbitrary threshold if the value is not a constant,
+    // since it is unlikely that we can optimize it further.
+    if (!valArg->GetNode()->OperIsConst() && (len >= 8))
+    {
+        JITDUMP("...length is too big to unroll for non-constant value - bail out.\n");
+        return nullptr;
+    }
+
+    // Spill the side effects directly in the args, we're going to
+    // pick them up in the following gtExtractSideEffList
+    GenTree* dst = fgMakeMultiUse(&dstArg->NodeRef());
+    GenTree* val = fgMakeMultiUse(&valArg->NodeRef());
+
+    GenTree* result = nullptr;
+    gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
+
+    for (size_t offset = 0; offset < len; offset++)
+    {
+        // Clone dst and add offset if necessary.
+        GenTree*         offsetNode = gtNewIconNode((ssize_t)(offset * lengthScale), TYP_I_IMPL);
+        GenTree*         currDst    = gtNewOperNode(GT_ADD, dst->TypeGet(), gtCloneExpr(dst), offsetNode);
+        GenTreeStoreInd* storeInd =
+            gtNewStoreIndNode(valType, currDst, gtCloneExpr(val), GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+
+        // Merge with the previous result.
+        result = result == nullptr ? storeInd : gtNewOperNode(GT_COMMA, TYP_VOID, result, storeInd);
+    }
+
+    JITDUMP("...optimized into STOREIND(s):\n");
+    DISPTREE(result);
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memmove: Unrolls NI_System_SpanHelpers_Memmove/CORINFO_HELP_MEMCPY
 //    if possible. This function effectively duplicates LowerCallMemmove.
 //    However, unlike LowerCallMemmove, it is able to optimize src into constants with help of VN.
@@ -2756,6 +2839,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove) || call->IsHelperCall(this, CORINFO_HELP_MEMCPY))
     {
         return optVNBasedFoldExpr_Call_Memmove(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
+    {
+        return optVNBasedFoldExpr_Call_Memset(call);
     }
 
     return nullptr;
@@ -4690,6 +4778,19 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCas
     if (!lcl->OperIs(GT_LCL_VAR))
     {
         return nullptr;
+    }
+
+    // Try and see if we can make this cast into a cheaper zero-extending version
+    // if the input is known to be non-negative.
+    if (!cast->IsUnsigned() && genActualTypeIsInt(lcl) && cast->TypeIs(TYP_LONG) && (TARGET_POINTER_SIZE == 8))
+    {
+        bool isKnownNonZero;
+        bool isKnownNonNegative;
+        optAssertionProp_RangeProperties(assertions, lcl, &isKnownNonZero, &isKnownNonNegative);
+        if (isKnownNonNegative)
+        {
+            cast->SetUnsigned();
+        }
     }
 
     IntegralRange  range = IntegralRange::ForCastInput(cast);

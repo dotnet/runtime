@@ -36,7 +36,7 @@ namespace System.Reflection.Internal
         public override Stream GetStream(out StreamConstraints constraints)
         {
             constraints = new StreamConstraints(null, 0, _size);
-            return new ReadOnlyUnmanagedMemoryStream(_memory, _size);
+            return new UnmanagedMemoryStream(_memory, _size);
         }
 
         protected override void Dispose(bool disposing)

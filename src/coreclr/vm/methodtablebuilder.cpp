@@ -5219,9 +5219,8 @@ MethodTableBuilder::InitNewMethodDesc(
         }
     }
 
-    // Turn off inlining for any calls
-    // that are marked in the metadata as not being inlineable.
-    if(IsMiNoInlining(pMethod->GetImplAttrs()))
+    // Turn off inlining for any calls that are marked in the metadata as NoInlining or NoOptimization.
+    if (IsMiNoInlining(pMethod->GetImplAttrs()) || IsMiNoOptimization(pMethod->GetImplAttrs()))
     {
         pNewMD->SetNotInline(true);
     }

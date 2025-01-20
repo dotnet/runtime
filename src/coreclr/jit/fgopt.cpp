@@ -1355,7 +1355,7 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         //
         if (bDest->hasProfileWeight())
         {
-            bDest->setBBProfileWeight(max(0.0, bDest->bbWeight - removedWeight));
+            bDest->decreaseBBProfileWeight(removedWeight);
         }
 
         return true;
@@ -1620,7 +1620,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             if (bDest->hasProfileWeight())
             {
                 weight_t const branchThroughWeight = oldEdge->getLikelyWeight();
-                bDest->setBBProfileWeight(max(0.0, bDest->bbWeight - branchThroughWeight));
+                bDest->decreaseBBProfileWeight(branchThroughWeight);
             }
 
             // Update the switch jump table
@@ -4828,7 +4828,7 @@ void Compiler::fgMoveColdBlocks()
         }
     };
 
-    BasicBlock* const lastMainBB = fgLastBBInMainFunction();
+    BasicBlock* lastMainBB = fgLastBBInMainFunction();
     if (lastMainBB->IsFirst())
     {
         return;
@@ -4855,15 +4855,41 @@ void Compiler::fgMoveColdBlocks()
 
     // We have moved all cold main blocks before lastMainBB to after lastMainBB.
     // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
+    // But first, we can't move just the tail of a call-finally pair,
+    // so point lastMainBB to the pair's head, if necessary.
     //
-    if (lastMainBB->isBBWeightCold(this) && !lastMainBB->isBBCallFinallyPairTail())
+    if (lastMainBB->isBBCallFinallyPairTail())
     {
+        lastMainBB = lastMainBB->Prev();
+    }
+
+    BasicBlock* lastHotBB = nullptr;
+    if (lastMainBB->isBBWeightCold(this))
+    {
+        // lastMainBB is cold, so the block behind it (if there is one) is the last hot block
+        //
+        lastHotBB = lastMainBB->Prev();
+
+        // Move lastMainBB
+        //
         BasicBlock* const newLastMainBB = fgLastBBInMainFunction();
         if (lastMainBB != newLastMainBB)
         {
             moveBlock(lastMainBB, newLastMainBB);
         }
     }
+    else
+    {
+        // lastMainBB isn't cold, so it (or its call-finally pair tail) the last hot block
+        //
+        lastHotBB = lastMainBB->isBBCallFinallyPair() ? lastMainBB->Next() : lastMainBB;
+    }
+
+    // Save the beginning of the cold section for later.
+    // If lastHotBB is null, there isn't a hot section,
+    // so there's no point in differentiating between sections for layout purposes.
+    //
+    fgFirstColdBlock = (lastHotBB == nullptr) ? nullptr : lastHotBB->Next();
 }
 
 //-----------------------------------------------------------------------------
@@ -4910,7 +4936,6 @@ void Compiler::fgMoveColdBlocks()
 Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , ordinals(new(comp, CMK_Generic) unsigned[comp->fgBBcount]{})
     , blockOrder(nullptr)
     , tempOrder(nullptr)
     , numCandidateBlocks(0)
@@ -5107,10 +5132,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const srcBlk = edge->getSourceBlock();
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
-    // Any edges under consideration should be between reachable blocks
-    assert(compiler->m_dfsTree->Contains(srcBlk));
-    assert(compiler->m_dfsTree->Contains(dstBlk));
-
     // Ignore cross-region branches
     if ((srcBlk->bbTryIndex != currEHRegion) || (dstBlk->bbTryIndex != currEHRegion))
     {
@@ -5133,13 +5154,13 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
         return;
     }
 
-    const unsigned srcPos = ordinals[srcBlk->bbPostorderNum];
-    const unsigned dstPos = ordinals[dstBlk->bbPostorderNum];
+    const unsigned srcPos = srcBlk->bbPostorderNum;
+    const unsigned dstPos = dstBlk->bbPostorderNum;
+    assert(srcPos < compiler->m_dfsTree->GetPostOrderCount());
+    assert(dstPos < compiler->m_dfsTree->GetPostOrderCount());
 
-    // Don't consider edges from outside the hot range.
-    // If 'srcBlk' has an ordinal of zero and it isn't the first block,
-    // it's not tracked by 'ordinals', so it's not in the hot section.
-    if ((srcPos == 0) && !srcBlk->IsFirst())
+    // Don't consider edges to or from outside the hot range (i.e. ordinal doesn't match 'blockOrder' position).
+    if ((srcBlk != blockOrder[srcPos]) || (dstBlk != blockOrder[dstPos]))
     {
         return;
     }
@@ -5212,19 +5233,19 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 //
 void Compiler::ThreeOptLayout::Run()
 {
-    // Walk backwards through the main method body, looking for the last hot block.
     // Since we moved all cold blocks to the end of the method already,
-    // we should have a span of hot blocks to consider reordering at the beginning of the method.
-    // While doing this, try to get as tight an upper bound for the number of hot blocks as possible.
-    // For methods without funclet regions, 'numBlocksUpperBound' is exact.
-    // Otherwise, it's off by the number of handler blocks.
-    BasicBlock* finalBlock;
-    unsigned    numBlocksUpperBound = compiler->fgBBcount;
-    for (finalBlock = compiler->fgLastBBInMainFunction();
-         !finalBlock->IsFirst() && finalBlock->isBBWeightCold(compiler); finalBlock = finalBlock->Prev())
-    {
-        numBlocksUpperBound--;
-    }
+    // we should have a span of hot blocks to consider reordering at the beginning of the method
+    // (unless none of the blocks are cold relative to the rest of the method,
+    // in which case we will reorder the whole main method body).
+    BasicBlock* const finalBlock = (compiler->fgFirstColdBlock != nullptr) ? compiler->fgFirstColdBlock->Prev()
+                                                                           : compiler->fgLastBBInMainFunction();
+
+    // Reset cold section pointer, in case we decide to do hot/cold splitting later
+    compiler->fgFirstColdBlock = nullptr;
+
+    // We better have an end block for the hot section, and it better not be the start of a call-finally pair.
+    assert(finalBlock != nullptr);
+    assert(!finalBlock->isBBCallFinallyPair());
 
     // For methods with fewer than three candidate blocks, we cannot partition anything
     if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
@@ -5233,41 +5254,26 @@ void Compiler::ThreeOptLayout::Run()
         return;
     }
 
-    // If only the first block of a call-finally pair is hot, include the whole pair in the hot section anyway.
-    // This ensures the call-finally pair won't be split up when swapping partitions.
-    if (finalBlock->isBBCallFinallyPair())
-    {
-        finalBlock = finalBlock->Next();
-        numBlocksUpperBound++;
-    }
-
+    // Get an upper bound on the number of hot blocks without walking the whole block list.
+    // We will only consider blocks reachable via normal flow.
+    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount();
     assert(numBlocksUpperBound != 0);
-    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
-    tempOrder  = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound];
+    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound * 2];
+    tempOrder  = (blockOrder + numBlocksUpperBound);
 
-    // Initialize the current block order.
-    // Note that we default-initialized 'ordinals' with zeros.
-    // Block reordering shouldn't change the method's entry point,
-    // so if a block has an ordinal of zero and it's not 'fgFirstBB',
-    // the block wasn't visited below, so it's not in the range of candidate blocks.
-    unsigned nextPostorderNum = compiler->m_dfsTree->GetPostOrderCount();
+    // Initialize the current block order
     for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
     {
+        if (!compiler->m_dfsTree->Contains(block))
+        {
+            continue;
+        }
+
         assert(numCandidateBlocks < numBlocksUpperBound);
         blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
 
-        // Unreachable blocks should have been pushed out of the candidate set of blocks.
-        // However, the entries of unreachable EH regions are left in-place to facilitate reestablishing contiguity,
-        // so it is possible for us to encounter unreachable blocks.
-        // When we do, assign them postorder numbers that can be used as keys into 'ordinals'.
-        if (!compiler->m_dfsTree->Contains(block))
-        {
-            assert(nextPostorderNum < compiler->fgBBcount);
-            block->bbPostorderNum = nextPostorderNum++;
-        }
-
-        assert(ordinals[block->bbPostorderNum] == 0);
-        ordinals[block->bbPostorderNum] = numCandidateBlocks++;
+        // Repurpose 'bbPostorderNum' for the block's ordinal
+        block->bbPostorderNum = numCandidateBlocks++;
 
         // While walking the span of blocks to reorder,
         // remember where each try region ends within this span.
@@ -5291,14 +5297,8 @@ void Compiler::ThreeOptLayout::Run()
             continue;
         }
 
-        // Ignore try regions unreachable via normal flow
-        if (!compiler->m_dfsTree->Contains(tryBeg))
-        {
-            continue;
-        }
-
-        // Only reorder try regions within the candidate span of blocks.
-        if ((ordinals[tryBeg->bbPostorderNum] != 0) || tryBeg->IsFirst())
+        // Only reorder try regions within the candidate span of blocks
+        if ((tryBeg->bbPostorderNum < numCandidateBlocks) && (blockOrder[tryBeg->bbPostorderNum] == tryBeg))
         {
             JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
             modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
@@ -5372,8 +5372,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 
         BasicBlock* const srcBlk = candidateEdge->getSourceBlock();
         BasicBlock* const dstBlk = candidateEdge->getDestinationBlock();
-        const unsigned    srcPos = ordinals[srcBlk->bbPostorderNum];
-        const unsigned    dstPos = ordinals[dstBlk->bbPostorderNum];
+        const unsigned    srcPos = srcBlk->bbPostorderNum;
+        const unsigned    dstPos = dstBlk->bbPostorderNum;
 
         // This edge better be between blocks in the current region
         assert((srcPos >= startPos) && (srcPos <= endPos));
@@ -5393,7 +5393,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             continue;
         }
 
-        // Before getting any edges, make sure 'ordinals' is accurate
+        // Before getting any edges, make sure the ordinals are accurate
         assert(blockOrder[srcPos] == srcBlk);
         assert(blockOrder[dstPos] == dstBlk);
 
@@ -5505,11 +5505,11 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
         // Update the ordinals for the blocks we moved
         for (unsigned i = s2Start; i <= endPos; i++)
         {
-            ordinals[blockOrder[i]->bbPostorderNum] = i;
+            blockOrder[i]->bbPostorderNum = i;
         }
 
         // Ensure this move created fallthrough from 'srcBlk' to 'dstBlk'
-        assert((ordinals[srcBlk->bbPostorderNum] + 1) == ordinals[dstBlk->bbPostorderNum]);
+        assert((srcBlk->bbPostorderNum + 1) == dstBlk->bbPostorderNum);
 
         // At every cut point is an opportunity to consider more candidate edges.
         // To the left of each cut point, consider successor edges that don't fall through.
@@ -5546,10 +5546,9 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
 
-    const unsigned startPos  = ordinals[startBlock->bbPostorderNum];
-    const unsigned endPos    = ordinals[endBlock->bbPostorderNum];
+    const unsigned startPos  = startBlock->bbPostorderNum;
+    const unsigned endPos    = endBlock->bbPostorderNum;
     const unsigned numBlocks = (endPos - startPos + 1);
-    assert((startPos != 0) || startBlock->IsFirst());
     assert(startPos <= endPos);
 
     if (numBlocks < 3)
@@ -6108,6 +6107,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
         }
     } while (change);
 
+    // OSR entry blocks will frequently have a profile imbalance as original method execution was hijacked at them.
+    // Mark the profile as inconsistent if we might have propagated the OSR entry weight.
+    if (modified && opts.IsOSR())
+    {
+        JITDUMP("fgUpdateFlowGraph: Inconsistent OSR entry weight may have been propagated. Data %s consistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
+
 #ifdef DEBUG
     if (!isPhase)
     {
@@ -6624,7 +6632,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 // crossJumpTarget, so the profile update can be done locally.
                 if (crossJumpTarget->hasProfileWeight())
                 {
-                    crossJumpTarget->setBBProfileWeight(crossJumpTarget->bbWeight + predBlock->bbWeight);
+                    crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
                 }
             }
 
@@ -6770,12 +6778,6 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     {
         madeChanges |= fgHeadMerge(block, early);
     }
-
-    // If we altered flow, reset fgModified. Given where we sit in the
-    // phase list, flow-dependent side data hasn't been built yet, so
-    // nothing needs invalidation.
-    //
-    fgModified = false;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

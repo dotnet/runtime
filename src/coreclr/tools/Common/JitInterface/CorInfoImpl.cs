@@ -1117,9 +1117,9 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsNoInlining)
+            if (method.IsNoInlining || method.IsNoOptimization)
             {
-                /* Function marked as not inlineable */
+                // NoOptimization implies NoInlining.
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
             else if (method.IsAggressiveInlining)

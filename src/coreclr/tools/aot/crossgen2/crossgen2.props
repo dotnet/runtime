@@ -15,9 +15,11 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
     <RunAnalyzers>false</RunAnalyzers>
+    <UseLocalTargetingRuntimePack Condition="'$(StageTwoBuild)' == 'true'">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="../AotCompilerCommon.props" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(StageTwoBuild)' == 'true'" />
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="Properties\Resources.resx">

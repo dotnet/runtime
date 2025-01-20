@@ -528,37 +528,70 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
         static int ISimdVector<Vector64<T>, T>.Alignment => Vector64.Alignment;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count" />
+        static int ISimdVector<Vector64<T>, T>.ElementCount => Vector64<T>.Count;
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
-        static bool ISimdVector<Vector64<T>, T>.IsHardwareAccelerated => Vector64.IsHardwareAccelerated;
+        static bool ISimdVector<Vector64<T>, T>.IsHardwareAccelerated
+        {
+            [Intrinsic]
+            get => Vector64.IsHardwareAccelerated;
+        }
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Abs(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Abs(Vector64<T> vector) => Vector64.Abs(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Add(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Add(Vector64<T> left, Vector64<T> right) => left + right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.All(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector64<T>, T>.All(Vector64<T> vector, T value) => Vector64.All(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AllWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector64<T>, T>.AllWhereAllBitsSet(Vector64<T> vector) => Vector64.AllWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.AndNot(Vector64<T> left, Vector64<T> right) => Vector64.AndNot(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Any(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector64<T>, T>.Any(Vector64<T> vector, T value) => Vector64.Any(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AnyWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector64<T>, T>.AnyWhereAllBitsSet(Vector64<T> vector) => Vector64.AnyWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.BitwiseAnd(Vector64<T> left, Vector64<T> right) => left & right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseOr(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.BitwiseOr(Vector64<T> left, Vector64<T> right) => left | right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Ceiling(Vector64<T> vector) => Vector64.Ceiling(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Clamp(Vector64<T> value, Vector64<T> min, Vector64<T> max) => Vector64.Clamp(value, min, max);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.ClampNative(Vector64<T> value, Vector64<T> min, Vector64<T> max) => Vector64.ClampNative(value, min, max);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.ConditionalSelect(Vector64<T> condition, Vector64<T> left, Vector64<T> right) => Vector64.ConditionalSelect(condition, left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.CopySign(Vector64<T> value, Vector64<T> sign) => Vector64.CopySign(value, sign);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
@@ -570,7 +603,16 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, Span{T})" />
         static void ISimdVector<Vector64<T>, T>.CopyTo(Vector64<T> vector, Span<T> destination) => vector.CopyTo(destination);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector64<T>, T>.Count(Vector64<T> vector, T value) => Vector64.Count(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CountWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector64<T>, T>.CountWhereAllBitsSet(Vector64<T> vector) => Vector64.CountWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Create(T value) => Vector64.Create(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T[])" />
@@ -583,204 +625,314 @@ namespace System.Runtime.Intrinsics
         static Vector64<T> ISimdVector<Vector64<T>, T>.Create(ReadOnlySpan<T> values) => Vector64.Create(values);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalar(T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.CreateScalar(T value) => Vector64.CreateScalar(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalarUnsafe(T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.CreateScalarUnsafe(T value) => Vector64.CreateScalarUnsafe(value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Divide(Vector64<T> left, Vector64<T> right) => left / right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Divide(TSelf, T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Divide(Vector64<T> left, T right) => left / right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Dot(TSelf, TSelf)" />
+        [Intrinsic]
         static T ISimdVector<Vector64<T>, T>.Dot(Vector64<T> left, Vector64<T> right) => Vector64.Dot(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Equals(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Equals(Vector64<T> left, Vector64<T> right) => Vector64.Equals(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.EqualsAll(Vector64<T> left, Vector64<T> right) => left == right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.EqualsAny(Vector64<T> left, Vector64<T> right) => Vector64.EqualsAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Floor(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Floor(Vector64<T> vector) => Vector64.Floor(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GetElement(TSelf, int)" />
+        [Intrinsic]
         static T ISimdVector<Vector64<T>, T>.GetElement(Vector64<T> vector, int index) => vector.GetElement(index);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThan(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.GreaterThan(Vector64<T> left, Vector64<T> right) => Vector64.GreaterThan(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.GreaterThanAll(Vector64<T> left, Vector64<T> right) => Vector64.GreaterThanAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.GreaterThanAny(Vector64<T> left, Vector64<T> right) => Vector64.GreaterThanAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqual(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.GreaterThanOrEqual(Vector64<T> left, Vector64<T> right) => Vector64.GreaterThanOrEqual(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.GreaterThanOrEqualAll(Vector64<T> left, Vector64<T> right) => Vector64.GreaterThanOrEqualAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.GreaterThanOrEqualAny(Vector64<T> left, Vector64<T> right) => Vector64.GreaterThanOrEqualAny(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector64<T>, T>.IndexOf(Vector64<T> vector, T value) => Vector64.IndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector64<T>, T>.IndexOfWhereAllBitsSet(Vector64<T> vector) => Vector64.IndexOfWhereAllBitsSet(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsEvenInteger(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsEvenInteger(Vector64<T> vector) => Vector64.IsEvenInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsFinite(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsFinite(Vector64<T> vector) => Vector64.IsFinite(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsInfinity(Vector64<T> vector) => Vector64.IsInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInteger(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsInteger(Vector64<T> vector) => Vector64.IsInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNaN(Vector64<T> vector) => Vector64.IsNaN(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNegative(Vector64<T> vector) => Vector64.IsNegative(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegativeInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNegativeInfinity(Vector64<T> vector) => Vector64.IsNegativeInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNormal(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNormal(Vector64<T> vector) => Vector64.IsNormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsOddInteger(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsOddInteger(Vector64<T> vector) => Vector64.IsOddInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsPositive(Vector64<T> vector) => Vector64.IsPositive(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsPositiveInfinity(Vector64<T> vector) => Vector64.IsPositiveInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsSubnormal(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsSubnormal(Vector64<T> vector) => Vector64.IsSubnormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        [Intrinsic]
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsZero(Vector64<T> vector) => Vector64.IsZero(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector64<T>, T>.LastIndexOf(Vector64<T> vector, T value) => Vector64.LastIndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector64<T>, T>.LastIndexOfWhereAllBitsSet(Vector64<T> vector) => Vector64.LastIndexOfWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LessThan(Vector64<T> left, Vector64<T> right) => Vector64.LessThan(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.LessThanAll(Vector64<T> left, Vector64<T> right) => Vector64.LessThanAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.LessThanAny(Vector64<T> left, Vector64<T> right) => Vector64.LessThanAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqual(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LessThanOrEqual(Vector64<T> left, Vector64<T> right) => Vector64.LessThanOrEqual(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAll(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.LessThanOrEqualAll(Vector64<T> left, Vector64<T> right) => Vector64.LessThanOrEqualAll(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
+        [Intrinsic]
         static bool ISimdVector<Vector64<T>, T>.LessThanOrEqualAny(Vector64<T> left, Vector64<T> right) => Vector64.LessThanOrEqualAny(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Load(T* source) => Vector64.Load(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAligned(T*)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAligned(T* source) => Vector64.LoadAligned(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAlignedNonTemporal(T* source) => Vector64.LoadAlignedNonTemporal(source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadUnsafe(ref readonly T source) => Vector64.LoadUnsafe(in source);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T, nuint)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadUnsafe(ref readonly T source, nuint elementOffset) => Vector64.LoadUnsafe(in source, elementOffset);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Max(Vector64<T> left, Vector64<T> right) => Vector64.Max(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MaxMagnitude(Vector64<T> left, Vector64<T> right) => Vector64.MaxMagnitude(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MaxMagnitudeNumber(Vector64<T> left, Vector64<T> right) => Vector64.MaxMagnitudeNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MaxNative(Vector64<T> left, Vector64<T> right) => Vector64.MaxNative(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MaxNumber(Vector64<T> left, Vector64<T> right) => Vector64.MaxNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Min(Vector64<T> left, Vector64<T> right) => Vector64.Min(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MinMagnitude(Vector64<T> left, Vector64<T> right) => Vector64.MinMagnitude(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MinMagnitudeNumber(Vector64<T> left, Vector64<T> right) => Vector64.MinMagnitudeNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MinNative(Vector64<T> left, Vector64<T> right) => Vector64.MinNative(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MinNumber(Vector64<T> left, Vector64<T> right) => Vector64.MinNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Multiply(Vector64<T> left, Vector64<T> right) => left * right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Multiply(Vector64<T> left, T right) => left * right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.MultiplyAddEstimate(Vector64<T> left, Vector64<T> right, Vector64<T> addend) => Vector64.MultiplyAddEstimate(left, right, addend);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Negate(Vector64<T> vector) => -vector;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.None(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector64<T>, T>.None(Vector64<T> vector, T value) => Vector64.None(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.NoneWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector64<T>, T>.NoneWhereAllBitsSet(Vector64<T> vector) => Vector64.NoneWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.OnesComplement(Vector64<T> vector) => ~vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Round(Vector64<T> vector) => Vector64.Round(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.ShiftLeft(Vector64<T> vector, int shiftCount) => vector << shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightArithmetic(TSelf, int)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.ShiftRightArithmetic(Vector64<T> vector, int shiftCount) => vector >> shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftRightLogical(TSelf, int)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.ShiftRightLogical(Vector64<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Sqrt(Vector64<T> vector) => Vector64.Sqrt(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
+        [Intrinsic]
         static void ISimdVector<Vector64<T>, T>.Store(Vector64<T> source, T* destination) => source.Store(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAligned(TSelf, T*)" />
+        [Intrinsic]
         static void ISimdVector<Vector64<T>, T>.StoreAligned(Vector64<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
+        [Intrinsic]
         static void ISimdVector<Vector64<T>, T>.StoreAlignedNonTemporal(Vector64<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
+        [Intrinsic]
         static void ISimdVector<Vector64<T>, T>.StoreUnsafe(Vector64<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T, nuint)" />
+        [Intrinsic]
         static void ISimdVector<Vector64<T>, T>.StoreUnsafe(Vector64<T> vector, ref T destination, nuint elementOffset) => vector.StoreUnsafe(ref destination, elementOffset);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Subtract(TSelf, TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Subtract(Vector64<T> left, Vector64<T> right) => left - right;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sum(TSelf)" />
+        [Intrinsic]
         static T ISimdVector<Vector64<T>, T>.Sum(Vector64<T> vector) => Vector64.Sum(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
+        [Intrinsic]
         static T ISimdVector<Vector64<T>, T>.ToScalar(Vector64<T> vector) => vector.ToScalar();
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Truncate(Vector64<T> vector) => Vector64.Truncate(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
         static bool ISimdVector<Vector64<T>, T>.TryCopyTo(Vector64<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.WithElement(TSelf, int, T)" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.WithElement(Vector64<T> vector, int index, T value) => vector.WithElement(index, value);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
+        [Intrinsic]
         static Vector64<T> ISimdVector<Vector64<T>, T>.Xor(Vector64<T> left, Vector64<T> right) => left ^ right;
-
-        //
-        // New Surface Area
-        //
-
-        static bool ISimdVector<Vector64<T>, T>.AnyWhereAllBitsSet(Vector64<T> vector) => Vector64.EqualsAny(vector, AllBitsSet);
-
-        static bool ISimdVector<Vector64<T>, T>.Any(Vector64<T> vector, T value) => Vector64.EqualsAny(vector, Vector64.Create(value));
-
-        static int ISimdVector<Vector64<T>, T>.IndexOfLastMatch(Vector64<T> vector)
-        {
-            uint mask = vector.ExtractMostSignificantBits();
-            return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-        }
-
-        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNaN(Vector64<T> vector) => Vector64.IsNaN(vector);
-
-        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNegative(Vector64<T> vector) => Vector64.IsNegative(vector);
-
-        static Vector64<T> ISimdVector<Vector64<T>, T>.IsPositive(Vector64<T> vector) => Vector64.IsPositive(vector);
-
-        static Vector64<T> ISimdVector<Vector64<T>, T>.IsPositiveInfinity(Vector64<T> vector) => Vector64.IsPositiveInfinity(vector);
-
-        static Vector64<T> ISimdVector<Vector64<T>, T>.IsZero(Vector64<T> vector) => Vector64.IsZero(vector);
     }
 }

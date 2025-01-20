@@ -531,6 +531,83 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     }
 } CONTEXT, *PCONTEXT;
 
+#elif defined(TARGET_RISCV64)
+
+#define CONTEXT_RISCV64   0x01000000L
+
+#define CONTEXT_CONTROL (CONTEXT_RISCV64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_RISCV64 | 0x2L)
+
+#define RISCV64_MAX_BREAKPOINTS     8
+#define RISCV64_MAX_WATCHPOINTS     2
+
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+    //
+    // Control flags.
+    //
+    uint32_t ContextFlags;
+
+    //
+    // Integer registers
+    //
+    uint64_t X0;
+    uint64_t Ra;
+    uint64_t Sp;
+    uint64_t Gp;
+    uint64_t Tp;
+    uint64_t T0;
+    uint64_t T1;
+    uint64_t T2;
+    uint64_t Fp;
+    uint64_t S1;
+    uint64_t A0;
+    uint64_t A1;
+    uint64_t A2;
+    uint64_t A3;
+    uint64_t A4;
+    uint64_t A5;
+    uint64_t A6;
+    uint64_t A7;
+    uint64_t S2;
+    uint64_t S3;
+    uint64_t S4;
+    uint64_t S5;
+    uint64_t S6;
+    uint64_t S7;
+    uint64_t S8;
+    uint64_t S9;
+    uint64_t S10;
+    uint64_t S11;
+    uint64_t T3;
+    uint64_t T4;
+    uint64_t T5;
+    uint64_t T6;
+    uint64_t Pc;
+
+    //
+    // Floating Point Registers
+    //
+    uint64_t F[32];
+    uint32_t Fcsr;
+
+    void SetIp(uintptr_t ip) { Pc = ip; }
+    void SetArg0Reg(uintptr_t val) { A0 = val; }
+    void SetArg1Reg(uintptr_t val) { A1 = val; }
+    uintptr_t GetIp() { return Pc; }
+    uintptr_t GetRa() { return Ra; }
+    uintptr_t GetSp() { return Sp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &X0; pReg <= &T6; pReg++)
+            lambda((size_t*)pReg);
+
+        // RA can be used as a scratch register
+        lambda((size_t*)&Ra);
+    }
+} CONTEXT, *PCONTEXT;
+
 #elif defined(HOST_WASM)
 
 typedef struct DECLSPEC_ALIGN(8) _CONTEXT {

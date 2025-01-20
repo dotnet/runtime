@@ -2506,7 +2506,7 @@ namespace System
                 TVector current;
                 TVector values = TVector.Create(value);
 
-                int offset = length - TVector.Count;
+                int offset = length - TVector.ElementCount;
 
                 // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
                 while (offset > 0)
@@ -2515,10 +2515,10 @@ namespace System
 
                     if (TNegator.HasMatch(values, current))
                     {
-                        return offset + TVector.IndexOfLastMatch(TNegator.GetMatchMask(values, current));
+                        return offset + TVector.LastIndexOfWhereAllBitsSet(TNegator.GetMatchMask(values, current));
                     }
 
-                    offset -= TVector.Count;
+                    offset -= TVector.ElementCount;
                 }
 
                 // Process the first vector in the search space.
@@ -2527,7 +2527,7 @@ namespace System
 
                 if (TNegator.HasMatch(values, current))
                 {
-                    return TVector.IndexOfLastMatch(TNegator.GetMatchMask(values, current));
+                    return TVector.LastIndexOfWhereAllBitsSet(TNegator.GetMatchMask(values, current));
                 }
 
                 return -1;

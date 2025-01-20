@@ -284,5 +284,27 @@ namespace Wasm.Build.Tests
                 Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async void LibraryModeBuild(bool useWasmSdk)
+        {
+            var config = Configuration.Release;
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
+            if (!useWasmSdk)
+            {
+                UpdateFile($"{info.ProjectName}.csproj", new Dictionary<string, string>() {
+                    { "Microsoft.NET.Sdk.WebAssembly", "Microsoft.NET.Sdk" }
+                });
+            }
+            BuildProject(info, config, new BuildOptions(AssertAppBundle: useWasmSdk));
+            if (useWasmSdk)
+            {
+                var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, ExpectedExitCode: 100));
+                Assert.Contains("WASM Library MyExport is called", result.TestOutput);
+            }
+            
+        }
     }
 }

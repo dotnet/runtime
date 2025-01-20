@@ -48,11 +48,6 @@ CObjectType CorUnix::otMutex(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
                 CObjectType::ThreadReleaseAltersSignalCount,
@@ -69,11 +64,6 @@ CObjectType CorUnix::otNamedMutex(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // Should be MUTEX_ALL_ACCESS; currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject, // PAL's naming infrastructure is not used
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject, // PAL's waiting infrastructure is not used
                 CObjectType::SignalingNotApplicable, // PAL's signaling infrastructure is not used
                 CObjectType::ThreadReleaseNotApplicable, // PAL's signaling infrastructure is not used

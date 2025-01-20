@@ -495,6 +495,17 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Dp;
+
+        // IsProcessorFeaturePresent does not have a dedicated flag for RDM, so we enable it by implication.
+        // 1) DP is an optional instruction set for Armv8.2, which may be included only in processors implementing at least Armv8.1.
+        // 2) Armv8.1 requires RDM when AdvSIMD is implemented, and AdvSIMD is a baseline requirement of .NET.
+        //
+        // Therefore, by documented standard, DP cannot exist here without RDM. In practice, there is only one CPU supported
+        // by Windows that includes RDM without DP, so this implication also has little practical chance of a false negative.
+        //
+        // See: https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/Learn%20the%20Architecture/Understanding%20the%20Armv8.x%20extensions.pdf
+        //      https://developer.arm.com/documentation/109697/2024_09/Feature-descriptions/The-Armv8-1-architecture-extension
+        result |= ARM64IntrinsicConstants_Rdm;
     }
 
     if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))

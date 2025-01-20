@@ -12,3 +12,4 @@ We have removed the following folders from our local copy as these files are not
 Also, if the next version does not yet contain the fixes included in 12bc7edc73308f017ec40c6b2db694a6e3490ac2, cherry-pick it as a patch.
 
 Apply https://github.com/zlib-ng/zlib-ng/pull/1812
+Apply https://github.com/zlib-ng/zlib-ng/pull/1853

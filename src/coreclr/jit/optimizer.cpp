@@ -2351,7 +2351,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 PhaseStatus Compiler::optInvertLoops()
 {
     noway_assert(opts.OptimizationEnabled());
-    noway_assert(fgModified == false);
 
 #if defined(OPT_CONFIG)
     if (!JitConfig.JitDoLoopInversion())
@@ -2387,13 +2386,6 @@ PhaseStatus Compiler::optInvertLoops()
         }
     }
 
-    if (fgModified)
-    {
-        // Reset fgModified here as we've done a consistent set of edits.
-        //
-        fgModified = false;
-    }
-
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -2410,7 +2402,6 @@ PhaseStatus Compiler::optInvertLoops()
 PhaseStatus Compiler::optOptimizeFlow()
 {
     noway_assert(opts.OptimizationEnabled());
-    noway_assert(fgModified == false);
 
     fgUpdateFlowGraph(/* doTailDuplication */ true);
     fgReorderBlocks(/* useProfile */ false);

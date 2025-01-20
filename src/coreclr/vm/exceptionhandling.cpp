@@ -5867,7 +5867,7 @@ void TrackerAllocator::FreeTrackerMemory(ExceptionTracker* pTracker)
     InterlockedExchangeT(&(pTracker->m_pThread), NULL);
 }
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
 // This is Windows specific implementation as it is based upon the notion of collided unwind that is specific
 // to Windows 64bit.
 //
@@ -5890,8 +5890,8 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     }
 
     pDispatcherContext->ControlPc = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
-
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    
+#if defined(TARGET_ARM64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
     // where such exceptions have happened do not have callsites. On a similar
@@ -5911,21 +5911,10 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
     // be fixing it at their end, in their implementation of collided unwind.
     pDispatcherContext->ContextRecord->ContextFlags &= ~CONTEXT_DEBUG_REGISTERS;
 
-#ifdef TARGET_ARM
-    // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
-    pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_ARM;
-#elif defined(TARGET_LOONGARCH64)
-    // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
-    pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_LOONGARCH64;
-#elif defined(TARGET_RISCV64)
-    // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
-    pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_RISCV64;
-#else // TARGET_ARM64
     // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
     pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_ARM64;
-#endif // TARGET_ARM
 
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARM64
 
     INDEBUG(pDispatcherContext->FunctionEntry = (PT_RUNTIME_FUNCTION)INVALID_POINTER_CD);
     INDEBUG(pDispatcherContext->ImageBase     = INVALID_POINTER_CD);
@@ -6101,7 +6090,7 @@ HijackHandler(IN     PEXCEPTION_RECORD   pExceptionRecord,
 }
 
 
-#endif // !TARGET_UNIX
+#endif // !TARGET_WINDOWS
 
 #ifdef _DEBUG
 // IsSafeToUnwindFrameChain:

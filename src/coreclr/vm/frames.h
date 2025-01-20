@@ -720,7 +720,6 @@ private:
     friend class TailCallFrame;
     friend class AppDomain;
     friend VOID RealCOMPlusThrow(OBJECTREF);
-
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
