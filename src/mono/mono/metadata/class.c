@@ -354,14 +354,14 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY: {
-		int i, rank = type->data.array->rank;
+		int i, rank = m_type_get_array(type)->rank;
 		MonoTypeNameFormat nested_format;
 
 		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			m_class_get_byval_arg (type->data.array->eklass), str, FALSE, nested_format);
+			m_class_get_byval_arg (m_type_get_array(type)->eklass), str, FALSE, nested_format);
 		g_string_append_c (str, '[');
 		if (rank == 1)
 			g_string_append_c (str, '*');
@@ -376,7 +376,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_name_check_byref (type, str);
 
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (type->data.array->eklass, str);
+			_mono_type_get_assembly_name (m_type_get_array(type)->eklass, str);
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
@@ -386,13 +386,13 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			m_class_get_byval_arg (type->data.klass), str, FALSE, nested_format);
+			m_class_get_byval_arg (m_type_get_klass(type)), str, FALSE, nested_format);
 		g_string_append (str, "[]");
 
 		mono_type_name_check_byref (type, str);
 
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (type->data.klass, str);
+			_mono_type_get_assembly_name (m_type_get_klass(type), str);
 		break;
 	}
 	case MONO_TYPE_PTR: {
@@ -402,21 +402,21 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			type->data.type, str, FALSE, nested_format);
+			m_type_get_type(type), str, FALSE, nested_format);
 		g_string_append_c (str, '*');
 
 		mono_type_name_check_byref (type, str);
 
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (mono_class_from_mono_type_internal (type->data.type), str);
+			_mono_type_get_assembly_name (mono_class_from_mono_type_internal (m_type_get_type(type)), str);
 		break;
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (!mono_generic_param_name (type->data.generic_param))
-			g_string_append_printf (str, "%s%d", type->type == MONO_TYPE_VAR ? "!" : "!!", type->data.generic_param->num);
+		if (!mono_generic_param_name (m_type_get_generic_param(type)))
+			g_string_append_printf (str, "%s%d", type->type == MONO_TYPE_VAR ? "!" : "!!", m_type_get_generic_param(type)->num);
 		else
-			g_string_append (str, mono_generic_param_name (type->data.generic_param));
+			g_string_append (str, mono_generic_param_name (m_type_get_generic_param(type)));
 
 		mono_type_name_check_byref (type, str);
 
@@ -427,12 +427,12 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
-		mono_type_get_name_recurse (type->data.method->ret, str, FALSE, nested_format);
+		mono_type_get_name_recurse (m_type_get_method(type)->ret, str, FALSE, nested_format);
 
 		g_string_append_c (str, '(');
-		for (int i = 0; i < type->data.method->param_count; ++i) {
-			mono_type_get_name_recurse (type->data.method->params[i], str, FALSE, nested_format);
-			if (i != type->data.method->param_count - 1)
+		for (int i = 0; i < m_type_get_method(type)->param_count; ++i) {
+			mono_type_get_name_recurse (m_type_get_method(type)->params[i], str, FALSE, nested_format);
+			if (i != m_type_get_method(type)->param_count - 1)
 				g_string_append (str, ", ");
 		}
 		g_string_append_c (str, ')');
@@ -592,10 +592,10 @@ mono_type_get_name (MonoType *type)
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !m_type_is_byref (type))
-		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
-		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_get_klass(type)) && !m_type_is_byref (type))
+		return mono_class_enum_basetype_internal (m_type_get_klass(type));
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_get_generic_class(type)->container_class) && !m_type_is_byref (type))
+		return mono_class_enum_basetype_internal (m_type_get_generic_class(type)->container_class);
 	return type;
 }
 
@@ -619,16 +619,16 @@ mono_class_is_open_constructed_type (MonoType *t)
 	case MONO_TYPE_MVAR:
 		return TRUE;
 	case MONO_TYPE_SZARRAY:
-		return mono_class_is_open_constructed_type (m_class_get_byval_arg (t->data.klass));
+		return mono_class_is_open_constructed_type (m_class_get_byval_arg (m_type_get_klass(t)));
 	case MONO_TYPE_ARRAY:
-		return mono_class_is_open_constructed_type (m_class_get_byval_arg (t->data.array->eklass));
+		return mono_class_is_open_constructed_type (m_class_get_byval_arg (m_type_get_array(t)->eklass));
 	case MONO_TYPE_PTR:
-		return mono_class_is_open_constructed_type (t->data.type);
+		return mono_class_is_open_constructed_type (m_type_get_type(t));
 	case MONO_TYPE_GENERICINST:
-		return t->data.generic_class->context.class_inst->is_open;
+		return m_type_get_generic_class(t)->context.class_inst->is_open;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return mono_class_is_gtd (t->data.klass);
+		return mono_class_is_gtd (m_type_get_klass(t));
 	default:
 		return FALSE;
 	}
@@ -659,7 +659,7 @@ can_inflate_gparam_with (MonoGenericParam *gparam, MonoType *type)
 	MonoGenericParamInfo *info = mono_generic_param_info (gparam);
 	if (info && (info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)) {
 		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
-			MonoGenericParam *inst_gparam = type->data.generic_param;
+			MonoGenericParam *inst_gparam = m_type_get_generic_param(type);
 			if (inst_gparam->gshared_constraint && inst_gparam->gshared_constraint->type == MONO_TYPE_OBJECT)
 				return FALSE;
 		}
@@ -702,7 +702,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			else
 				return type;
 		}
-		MonoGenericParam *gparam = type->data.generic_param;
+		MonoGenericParam *gparam = m_type_get_generic_param(type);
 		if (num >= inst->type_argc) {
 			const char *pname = mono_generic_param_name (gparam);
 			mono_error_set_bad_image (error, image, "MVAR %d (%s) cannot be expanded in this context with %d instantiations",
@@ -736,7 +736,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			else
 				return type;
 		}
-		MonoGenericParam *gparam = type->data.generic_param;
+		MonoGenericParam *gparam = m_type_get_generic_param(type);
 		if (num >= inst->type_argc) {
 			const char *pname = mono_generic_param_name (gparam);
 			mono_error_set_bad_image (error, image, "VAR %hu (%s) cannot be expanded in this context with %d instantiations",
@@ -776,7 +776,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *eclass = type->data.klass;
+		MonoClass *eclass = m_type_get_klass(type);
 		MonoType *nt, *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (eclass), context, error);
 		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
@@ -788,7 +788,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_ARRAY: {
-		MonoClass *eclass = type->data.array->eklass;
+		MonoClass *eclass = m_type_get_array(type)->eklass;
 		MonoType *nt, *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (eclass), context, error);
 		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
@@ -800,7 +800,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = type->data.generic_class;
+		MonoGenericClass *gclass = m_type_get_generic_class(type);
 		MonoGenericInst *inst;
 		MonoType *nt;
 		if (!gclass->context.class_inst->is_open) {
@@ -816,7 +816,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (inst != gclass->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
 
-		if (gclass == type->data.generic_class) {
+		if (gclass == m_type_get_generic_class(type)) {
 			if (!changed)
 				return NULL;
 			else
@@ -829,7 +829,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *klass = type->data.klass;
+		MonoClass *klass = m_type_get_klass(type);
 		MonoGenericContainer *container = mono_class_try_get_generic_container (klass);
 		MonoGenericInst *inst;
 		MonoGenericClass *gclass = NULL;
@@ -861,7 +861,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_PTR: {
-		MonoType *nt, *inflated = inflate_generic_type (image, type->data.type, context, error);
+		MonoType *nt, *inflated = inflate_generic_type (image, m_type_get_type(type), context, error);
 		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
 		if (!inflated && changed)
@@ -871,7 +871,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_FNPTR: {
-		MonoMethodSignature *in_sig = type->data.method;
+		MonoMethodSignature *in_sig = m_type_get_method(type);
 		// quick bail out - if there are no type variables anywhere in the signature,
 		// there's nothing that could get inflated.
 		if (!in_sig->has_type_parameters) {
@@ -1671,11 +1671,11 @@ mono_type_has_exceptions (MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_SZARRAY:
-		return mono_class_has_failure (type->data.klass);
+		return mono_class_has_failure (m_type_get_klass(type));
 	case MONO_TYPE_ARRAY:
-		return mono_class_has_failure (type->data.array->eklass);
+		return mono_class_has_failure (m_type_get_array(type)->eklass);
 	case MONO_TYPE_GENERICINST:
-		return mono_class_has_failure (mono_class_create_generic_inst (type->data.generic_class));
+		return mono_class_has_failure (mono_class_create_generic_inst (m_type_get_generic_class(type)));
 	default:
 		return FALSE;
 	}
@@ -1747,7 +1747,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
 	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
-		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint->type == MONO_TYPE_OBJECT))
+		(!m_type_get_generic_param(type)->gshared_constraint || m_type_get_generic_param(type)->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return mono_get_object_type ();
 	return type;
 }
@@ -2268,57 +2268,57 @@ mono_class_from_mono_type_internal (MonoType *type)
 	g_assert (type);
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
-		return type->data.klass? type->data.klass: mono_defaults.object_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.object_class;
 	case MONO_TYPE_VOID:
-		return type->data.klass? type->data.klass: mono_defaults.void_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.void_class;
 	case MONO_TYPE_BOOLEAN:
-		return type->data.klass? type->data.klass: mono_defaults.boolean_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.boolean_class;
 	case MONO_TYPE_CHAR:
-		return type->data.klass? type->data.klass: mono_defaults.char_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.char_class;
 	case MONO_TYPE_I1:
-		return type->data.klass? type->data.klass: mono_defaults.sbyte_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.sbyte_class;
 	case MONO_TYPE_U1:
-		return type->data.klass? type->data.klass: mono_defaults.byte_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.byte_class;
 	case MONO_TYPE_I2:
-		return type->data.klass? type->data.klass: mono_defaults.int16_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.int16_class;
 	case MONO_TYPE_U2:
-		return type->data.klass? type->data.klass: mono_defaults.uint16_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.uint16_class;
 	case MONO_TYPE_I4:
-		return type->data.klass? type->data.klass: mono_defaults.int32_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.int32_class;
 	case MONO_TYPE_U4:
-		return type->data.klass? type->data.klass: mono_defaults.uint32_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.uint32_class;
 	case MONO_TYPE_I:
-		return type->data.klass? type->data.klass: mono_defaults.int_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.int_class;
 	case MONO_TYPE_U:
-		return type->data.klass? type->data.klass: mono_defaults.uint_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.uint_class;
 	case MONO_TYPE_I8:
-		return type->data.klass? type->data.klass: mono_defaults.int64_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.int64_class;
 	case MONO_TYPE_U8:
-		return type->data.klass? type->data.klass: mono_defaults.uint64_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.uint64_class;
 	case MONO_TYPE_R4:
-		return type->data.klass? type->data.klass: mono_defaults.single_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.single_class;
 	case MONO_TYPE_R8:
-		return type->data.klass? type->data.klass: mono_defaults.double_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.double_class;
 	case MONO_TYPE_STRING:
-		return type->data.klass? type->data.klass: mono_defaults.string_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.string_class;
 	case MONO_TYPE_TYPEDBYREF:
-		return type->data.klass? type->data.klass: mono_defaults.typed_reference_class;
+		return m_type_get_klass(type)? m_type_get_klass(type): mono_defaults.typed_reference_class;
 	case MONO_TYPE_ARRAY:
-		return mono_class_create_bounded_array (type->data.array->eklass, type->data.array->rank, TRUE);
+		return mono_class_create_bounded_array (m_type_get_array(type)->eklass, m_type_get_array(type)->rank, TRUE);
 	case MONO_TYPE_PTR:
-		return mono_class_create_ptr (type->data.type);
+		return mono_class_create_ptr (m_type_get_type(type));
 	case MONO_TYPE_FNPTR:
-		return mono_class_create_fnptr (type->data.method);
+		return mono_class_create_fnptr (m_type_get_method(type));
 	case MONO_TYPE_SZARRAY:
-		return mono_class_create_array (type->data.klass, 1);
+		return mono_class_create_array (m_type_get_klass(type), 1);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return type->data.klass;
+		return m_type_get_klass(type);
 	case MONO_TYPE_GENERICINST:
-		return mono_class_create_generic_inst (type->data.generic_class);
+		return mono_class_create_generic_inst (m_type_get_generic_class(type));
 	case MONO_TYPE_MVAR:
 	case MONO_TYPE_VAR:
-		return mono_class_create_generic_parameter (type->data.generic_param);
+		return mono_class_create_generic_parameter (m_type_get_generic_param(type));
 	default:
 		g_warning ("mono_class_from_mono_type_internal: implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
@@ -3717,7 +3717,7 @@ mono_gparam_is_reference_conversible (MonoClass *target, MonoClass *candidate, g
 	if (check_for_reference_conv &&
 		mono_type_is_generic_argument (m_class_get_byval_arg (target)) &&
 		mono_type_is_generic_argument (m_class_get_byval_arg (candidate))) {
-		MonoGenericParam *gparam = m_class_get_byval_arg (candidate)->data.generic_param;
+		MonoGenericParam *gparam = m_type_get_generic_param (m_class_get_byval_arg (candidate));
 		MonoGenericParamInfo *pinfo = mono_generic_param_info (gparam);
 
 		if (!pinfo || (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0)
@@ -3796,8 +3796,8 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	if (target_byval_arg->type != candidate_byval_arg->type)
 		return FALSE;
 
-	gparam = target_byval_arg->data.generic_param;
-	ogparam = candidate_byval_arg->data.generic_param;
+	gparam = m_type_get_generic_param(target_byval_arg);
+	ogparam = m_type_get_generic_param(candidate_byval_arg);
 	tinfo = mono_generic_param_info (gparam);
 	cinfo = mono_generic_param_info (ogparam);
 
@@ -3888,10 +3888,10 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 static MonoType*
 mono_type_get_underlying_type_ignore_byref (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))
-		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class))
-		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_get_klass(type)))
+		return mono_class_enum_basetype_internal (m_type_get_klass(type));
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_get_generic_class(type)->container_class))
+		return mono_class_enum_basetype_internal (m_type_get_generic_class(type)->container_class);
 	return type;
 }
 
@@ -3921,7 +3921,7 @@ mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean si
 	if (mono_type_is_primitive (t)) {
 		return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
 	} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
-		return t->type == ot->type && t->data.generic_param->num == ot->data.generic_param->num;
+		return t->type == ot->type && m_type_get_generic_param(t)->num == m_type_get_generic_param(ot)->num;
 	} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
 		return t->type == ot->type;
 	} else {
@@ -4138,7 +4138,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 	 * In this case, Foo is assignable from T1.
 	 */
 	if (mono_type_is_generic_argument (oklass_byval_arg)) {
-		MonoGenericParam *gparam = oklass_byval_arg->data.generic_param;
+		MonoGenericParam *gparam = m_type_get_generic_param(oklass_byval_arg);
 		MonoClass **constraints = mono_generic_container_get_param_info (gparam->owner, gparam->num)->constraints;
 		int i;
 
@@ -4306,7 +4306,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		if (MONO_CLASS_IS_INTERFACE_INTERNAL (eclass)) {
 			MonoType *eoclass_byval_arg = m_class_get_byval_arg (eoclass);
 			if (mono_type_is_generic_argument (eoclass_byval_arg)) {
-				MonoGenericParam *eoparam = eoclass_byval_arg->data.generic_param;
+				MonoGenericParam *eoparam = m_type_get_generic_param(eoclass_byval_arg);
 				MonoGenericParamInfo *eoinfo = mono_generic_param_info (eoparam);
 				int eomask = eoinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 				// check for class constraint
@@ -4337,7 +4337,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		}
 
 		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR) {
-			if (mono_metadata_signature_equal (klass_byval_arg->data.method, oklass_byval_arg->data.method)) {
+			if (mono_metadata_signature_equal (m_type_get_method(klass_byval_arg), m_type_get_method(oklass_byval_arg))) {
 				*result = TRUE;
 				return;
 			}
@@ -4653,7 +4653,7 @@ mono_generic_param_get_base_type (MonoClass *klass)
 	MonoType *type = m_class_get_byval_arg (klass);
 	g_assert (mono_type_is_generic_argument (type));
 
-	MonoGenericParam *gparam = type->data.generic_param;
+	MonoGenericParam *gparam = m_type_get_generic_param(type);
 
 	g_assert (gparam->owner && !gparam->owner->is_anonymous);
 
@@ -4671,7 +4671,7 @@ mono_generic_param_get_base_type (MonoClass *klass)
 
 			MonoType *constraint_type = m_class_get_byval_arg (constraint);
 			if (mono_type_is_generic_argument (constraint_type)) {
-				MonoGenericParam *constraint_param = constraint_type->data.generic_param;
+				MonoGenericParam *constraint_param = m_type_get_generic_param(constraint_type);
 				MonoGenericParamInfo *constraint_info = mono_generic_param_info (constraint_param);
 				if ((constraint_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0 &&
 				    (constraint_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) == 0)
@@ -4826,14 +4826,14 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return 8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_get_klass(type))) {
+			type = mono_class_enum_basetype_internal (m_type_get_klass(type));
 			klass = m_class_get_element_class (klass);
 			goto handle_enum;
 		}
 		return mono_class_value_size (klass, NULL);
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_get_generic_class(type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR: {
@@ -6323,15 +6323,15 @@ can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 		MonoType *type = ginst->type_argv[i];
 		switch (type->type) {
 		case MONO_TYPE_SZARRAY:
-			if (!can_access_type (access_klass, type->data.klass))
+			if (!can_access_type (access_klass, m_type_get_klass(type)))
 				return FALSE;
 			break;
 		case MONO_TYPE_ARRAY:
-			if (!can_access_type (access_klass, type->data.array->eklass))
+			if (!can_access_type (access_klass, m_type_get_array(type)->eklass))
 				return FALSE;
 			break;
 		case MONO_TYPE_PTR:
-			if (!can_access_type (access_klass, mono_class_from_mono_type_internal (type->data.type)))
+			if (!can_access_type (access_klass, mono_class_from_mono_type_internal (m_type_get_type(type))))
 				return FALSE;
 			break;
 		case MONO_TYPE_CLASS:
@@ -6930,7 +6930,7 @@ mono_method_get_base_method (MonoMethod *method, gboolean definition, MonoError 
 		 * up the class hierarchy. */
 		MonoType *ty = mono_class_gtd_get_canonical_inst (klass);
 		g_assert (ty->type == MONO_TYPE_GENERICINST);
-		MonoGenericClass *gklass = ty->data.generic_class;
+		MonoGenericClass *gklass = m_type_get_generic_class(ty);
 		generic_inst = mono_generic_class_get_context (gklass);
 		klass = gklass->container_class;
 	} else if (mono_class_is_ginst (klass)) {

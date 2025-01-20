@@ -673,7 +673,7 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr ((gpointer)trampoline);
 
-		
+
 		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline, (gpointer)trampoline, NULL);
 
 		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline);
