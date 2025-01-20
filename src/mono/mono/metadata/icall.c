@@ -4743,6 +4743,22 @@ ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflec
 	return result;
 }
 
+MonoBoolean
+ves_icall_System_Reflection_RuntimeAssembly_InternalTryGetRawMetadata (MonoQCallAssemblyHandle assembly_h, gpointer_ref blob, gint32_ref length, MonoError *error)
+{
+	MonoAssembly *assembly = assembly_h.assembly;
+	MonoImage *image = assembly->image;
+
+	if (image_is_dynamic (image)) {
+		return FALSE;
+	}
+
+	*blob = image->raw_metadata;
+	*((guint32*)length) = image->raw_metadata_len;
+
+	return TRUE;
+}
+
 /* move this in some file in mono/util/ */
 static char *
 g_concat_dir_and_file (const char *dir, const char *file)
