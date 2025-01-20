@@ -247,7 +247,7 @@ namespace System.Net.NetworkInformation
             return true;
         }
 
-        private static unsafe PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))

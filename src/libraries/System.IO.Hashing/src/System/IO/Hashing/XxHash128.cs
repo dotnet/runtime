@@ -211,17 +211,7 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteBigEndian128(in Hash128 hash, Span<byte> destination)
         {
-            ulong low = hash.Low64;
-            ulong high = hash.High64;
-            if (BitConverter.IsLittleEndian)
-            {
-                low = BinaryPrimitives.ReverseEndianness(low);
-                high = BinaryPrimitives.ReverseEndianness(high);
-            }
-
-            ref byte dest0 = ref MemoryMarshal.GetReference(destination);
-            Unsafe.WriteUnaligned(ref dest0, high);
-            Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref dest0, new IntPtr(sizeof(ulong))), low);
+            BinaryPrimitives.TryWriteUInt128BigEndian(destination, Unsafe.BitCast<Hash128, UInt128>(hash));
         }
 
         private static Hash128 HashLength0To16(byte* source, uint length, ulong seed)

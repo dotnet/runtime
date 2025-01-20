@@ -175,17 +175,17 @@ namespace System.Net
             return result;
         }
 
-        private unsafe SecureString MarshalToSecureString(string str)
+        private SecureString MarshalToSecureString(string str)
         {
-            if (string.IsNullOrEmpty(str))
+            var secureStr = new SecureString();
+            if (str != null)
             {
-                return new SecureString();
+                for (int i = 0; i < str.Length; i++)
+                {
+                    secureStr.AppendChar(str[i]);
+                }
             }
-
-            fixed (char* ptr = str)
-            {
-                return new SecureString(ptr, str.Length);
-            }
+            return secureStr;
         }
     }
 }
