@@ -601,7 +601,11 @@ private:
                         callInfo.hMethod           = method;
                         callInfo.methodFlags       = methodFlags;
                         m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
-                        if (call->IsInlineCandidate())
+
+                        const bool isInlineCandidate                  = call->IsInlineCandidate();
+                        const bool isGuardedDevirtualizationCandidate = call->IsGuardedDevirtualizationCandidate();
+
+                        if (isInlineCandidate || isGuardedDevirtualizationCandidate)
                         {
                             if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
                             {
@@ -610,14 +614,38 @@ private:
                                 GenTreeRetExpr* retExpr =
                                     m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
                                                                                genActualType(call->TypeGet()));
-                                *pTree = retExpr;
 
-                                call->GetSingleInlineCandidateInfo()->retExpr            = retExpr;
-                                call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                                INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
+                                if (call->IsGuardedDevirtualizationCandidate())
+                                {
+                                    for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
+                                    {
+                                        call->GetGDVCandidateInfo(i)->retExpr = retExpr;
+                                    }
+                                }
+                                else
+                                {
+                                    call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                                }
+
                                 m_compiler->compCurStmt = stmt;
+                                *pTree                  = retExpr;
                             }
-                            JITDUMP("New inline candidate due to late devirtualization:");
+
+                            if (call->IsGuardedDevirtualizationCandidate())
+                            {
+                                for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
+                                {
+                                    call->GetGDVCandidateInfo(i)->exactContextHandle = context;
+                                    INDEBUG(call->GetGDVCandidateInfo(i)->inlinersContext = call->gtInlineContext);
+                                }
+                            }
+                            else
+                            {
+                                call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                                INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+                            }
+
+                            JITDUMP("New inline candidate due to late devirtualization:\n");
                             DISPTREE(call);
                         }
                     }
