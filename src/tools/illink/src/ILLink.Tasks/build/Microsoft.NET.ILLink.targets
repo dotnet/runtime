@@ -33,6 +33,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       could be removed by the ILLink, causing a trimmed app to crash. -->
   <PropertyGroup Condition="'$(PublishTrimmed)' == 'true'">
     <StartupHookSupport Condition="'$(StartupHookSupport)' == ''">false</StartupHookSupport>
+    <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == ''">false</MetadataUpdaterSupport>
     <CustomResourceTypesSupport Condition="'$(CustomResourceTypesSupport)' == ''">false</CustomResourceTypesSupport>
     <EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization Condition="'$(EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization)' == ''">false</EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization>
     <EnableUnsafeBinaryFormatterSerialization Condition="'$(EnableUnsafeBinaryFormatterSerialization)' == ''">false</EnableUnsafeBinaryFormatterSerialization>

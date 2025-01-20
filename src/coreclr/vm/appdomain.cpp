@@ -1006,6 +1006,8 @@ extern "C" PCODE g_pGetGCStaticBase;
 PCODE g_pGetGCStaticBase;
 extern "C" PCODE g_pGetNonGCStaticBase;
 PCODE g_pGetNonGCStaticBase;
+extern "C" PCODE g_pPollGC;
+PCODE g_pPollGC;
 
 void SystemDomain::LoadBaseSystemClasses()
 {
@@ -1144,6 +1146,7 @@ void SystemDomain::LoadBaseSystemClasses()
 
         g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
         g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
+        g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
 
     #ifdef PROFILING_SUPPORTED
         // Note that g_profControlBlock.fBaseSystemClassesLoaded must be set to TRUE only after
@@ -1287,6 +1290,8 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
         CLASS__METHODBASEINVOKER,
+        CLASS__INITHELPERS,
+        CLASS__STATICSHELPERS,
     };
 
     static bool fInited = false;

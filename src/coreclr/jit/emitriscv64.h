@@ -85,10 +85,9 @@ void    emitOutputInstrJumpDistanceHelper(const insGroup* ig,
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
-static bool IsMovInstruction(instruction ins);
-bool        IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
-bool        IsRedundantLdStr(
-           instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
+bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+bool IsRedundantLdStr(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
 static code_t insEncodeRTypeInstr(
     unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7);
@@ -195,11 +194,11 @@ static bool isValidSimm21(ssize_t value)
     return -(((int)1) << 20) <= value && value < (((int)1) << 20);
 };
 
-// Returns true if 'value' is a legal signed immediate 32 bit encoding.
+// Returns true if 'value' is a legal signed immediate 32-bit encoding with the offset adjustment.
 static bool isValidSimm32(ssize_t value)
 {
-    return -(((ssize_t)1) << 31) <= value && value < (((ssize_t)1) << 31);
-};
+    return (-(((ssize_t)1) << 31) - 0x800) <= value && value < (((ssize_t)1) << 31) - 0x800;
+}
 
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)

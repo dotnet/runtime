@@ -9147,8 +9147,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         }
 
         // Since we're merging two stores of the same type, the new type is twice wider.
-        var_types oldType = ind->TypeGet();
-        var_types newType;
+        var_types oldType             = ind->TypeGet();
+        var_types newType             = TYP_UNDEF;
+        bool      tryReusingPrevValue = false;
         switch (oldType)
         {
             case TYP_BYTE:
@@ -9200,7 +9201,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     newType = TYP_SIMD32;
                     break;
                 }
-                return;
+                tryReusingPrevValue = true;
+                break;
 
             case TYP_SIMD32:
                 if (comp->getPreferredVectorByteLength() >= 64)
@@ -9208,8 +9210,14 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     newType = TYP_SIMD64;
                     break;
                 }
-                return;
-#endif // TARGET_AMD64
+                tryReusingPrevValue = true;
+                break;
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+            case TYP_SIMD16:
+                tryReusingPrevValue = true;
+                break;
+
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
@@ -9221,6 +9229,27 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             default:
                 return;
         }
+
+        // If we can't merge these two stores into a single store, we can at least
+        // cache prevData.value to a local and reuse it in currData.
+        // Normally, LSRA is expected to do this for us, but it's not always the case for SIMD.
+        if (tryReusingPrevValue)
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            LIR::Use use;
+            if (currData.value->OperIs(GT_CNS_VEC) && GenTree::Compare(prevData.value, currData.value) &&
+                BlockRange().TryGetUse(prevData.value, &use))
+            {
+                GenTree* prevValueTmp = comp->gtNewLclvNode(use.ReplaceWithLclVar(comp), prevData.value->TypeGet());
+                BlockRange().InsertBefore(currData.value, prevValueTmp);
+                BlockRange().Remove(currData.value);
+                ind->Data() = prevValueTmp;
+            }
+#endif // FEATURE_HW_INTRINSICS
+            return;
+        }
+
+        assert(newType != TYP_UNDEF);
 
         // We should not be here for stores requiring write barriers.
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));
