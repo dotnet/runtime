@@ -586,8 +586,36 @@ private:
                 }
 
                 CORINFO_CONTEXT_HANDLE contextInput = context;
+                context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
+                if (context != nullptr)
+                {
+                    IL_OFFSET         ilOffset = m_compiler->compCurStmt->GetDebugInfo().GetLocation().GetOffset();
+                    CORINFO_CALL_INFO callInfo = {};
+                    callInfo.hMethod           = method;
+                    callInfo.methodFlags       = methodFlags;
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
+
+                    const bool isInlineCandidate = call->IsInlineCandidate();
+
+                    if (isInlineCandidate)
+                    {
+                        Statement* stmt = m_compiler->gtNewStmt(call);
+                        m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
+                        GenTreeRetExpr* retExpr =
+                            m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(call->TypeGet()));
+                        *pTree = retExpr;
+
+                        call->GetSingleInlineCandidateInfo()->retExpr            = retExpr;
+                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                        INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
+
+                        JITDUMP("New inline candidate due to late devirtualization:");
+                        DISPTREE(call);
+                        m_compiler->compCurStmt = stmt;
+                    }
+                }
                 m_madeChanges = true;
             }
         }
@@ -730,11 +758,11 @@ PhaseStatus Compiler::fgInline()
     do
     {
         // Make the current basic block address available globally
-        compCurBB = block;
-
-        for (Statement* const stmt : block->Statements())
+        compCurBB       = block;
+        Statement* stmt = block->firstStmt();
+        while (stmt != nullptr)
         {
-
+            compCurStmt = stmt;
 #if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
@@ -756,6 +784,7 @@ PhaseStatus Compiler::fgInline()
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
             walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            stmt = compCurStmt;
 
             GenTree* expr = stmt->GetRootNode();
 
@@ -805,6 +834,8 @@ PhaseStatus Compiler::fgInline()
                 madeChanges = true;
                 stmt->SetRootNode(expr->AsOp()->gtOp1);
             }
+
+            stmt = stmt->GetNextStmt();
         }
 
         block = block->Next();
@@ -1075,7 +1106,8 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
-    if (tree->gtOper == GT_CALL)
+    // We may get late devirtualization opportunities for virtual calls that are not inline candidates.
+    if (tree->gtOper == GT_CALL && !tree->AsCall()->IsVirtual())
     {
         Compiler*    compiler = data->compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
