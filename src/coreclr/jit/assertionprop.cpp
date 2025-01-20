@@ -5260,28 +5260,26 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
         }
         if (funcApp.m_func == VNF_InitVal)
         {
-            // See if the address is in current method's return buffer
-            // while the return type is a byref-like type.
-            if (comp->compMethodHasRetVal())
+            unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
+            assert(lclNum != BAD_VAR_NUM);
+            CORINFO_CLASS_HANDLE srcCls = NO_CLASS_HANDLE;
+
+            if (comp->compMethodHasRetVal() && (lclNum == comp->info.compRetBuffArg))
             {
-                unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
-                if ((lclNum == comp->info.compRetBuffArg) &&
-                    comp->eeIsByrefLike(comp->info.compMethodInfo->args.retTypeClass))
-                {
-                    return GCInfo::WriteBarrierForm::WBF_NoBarrier;
-                }
+                // See if the address is in current method's return buffer
+                // while the return type is a byref-like type.
+                srcCls = comp->info.compMethodInfo->args.retTypeClass;
+            }
+            else if (lclNum == comp->info.compThisArg)
+            {
+                // Same for implicit "this" parameter
+                assert(!comp->info.compIsStatic);
+                srcCls = comp->info.compClassHnd;
             }
 
-            // Same for implicit "this" parameter
-            if ((comp->info.compThisArg != BAD_VAR_NUM))
+            if ((srcCls != NO_CLASS_HANDLE) && comp->eeIsByrefLike(srcCls))
             {
-                assert(!comp->info.compIsStatic);
-
-                unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
-                if ((lclNum == comp->info.compThisArg) && comp->eeIsByrefLike(comp->info.compClassHnd))
-                {
-                    return GCInfo::WriteBarrierForm::WBF_NoBarrier;
-                }
+                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
             }
         }
     }
