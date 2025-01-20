@@ -217,6 +217,7 @@ namespace System.Reflection.Metadata
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
+        [MemberNotNullWhen(false, nameof(_elementOrGenericType))]
         public bool IsSimple => _elementOrGenericType is null;
 
         /// <summary>
@@ -294,20 +295,9 @@ namespace System.Reflection.Metadata
                 if (_namespace is null)
                 {
                     TypeName rootTypeName = this;
-                    while (true)
+                    while (!rootTypeName.IsSimple)
                     {
-                        if (rootTypeName.IsConstructedGenericType)
-                        {
-                            rootTypeName = rootTypeName.GetGenericTypeDefinition();
-                        }
-                        else if (rootTypeName.IsPointer || rootTypeName.IsByRef || rootTypeName.IsArray)
-                        {
-                            rootTypeName = rootTypeName.GetElementType();
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        rootTypeName = rootTypeName._elementOrGenericType;
                     }
 
                     // At this point the type does not have a modifier applied to it, so it should have its full name initialized.
