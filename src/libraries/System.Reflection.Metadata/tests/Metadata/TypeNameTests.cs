@@ -90,6 +90,16 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("Int32", "Int32")]
+        [InlineData("System.Int32", "System.Int32")]
+        [InlineData("System.Int32[]", "System.Int32[]")]
+        [InlineData("System.Int32\\[\\]", "System.Int32[]")]
+        [InlineData("System.Int32\\", "System.Int32\\")]
+        [InlineData("System.Int32\\\\[]", "System.Int32\\[]")]
+        public void Unescape(string input, string expectedUnescaped)
+            => Assert.Equal(expectedUnescaped, TypeName.Unescape(input));
+
+        [Theory]
         [InlineData("Namespace.Kość", "Namespace.Kość")]
         public void UnicodeCharactersAreAllowedByDefault(string input, string expectedFullName)
             => Assert.Equal(expectedFullName, TypeName.Parse(input.AsSpan()).FullName);
