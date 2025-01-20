@@ -4,6 +4,21 @@
 
 trigger: none
 
+# To reduce the load on the pipeline, enable it only for PRs that affect Mono LLVM related code.
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+
+  paths:
+    include:
+      - src/mono/mono/mini/aot-*.*
+      - src/mono/mono/mini/llvm-*.*
+      - src/mono/mono/mini/mini-llvm-*.*
+      - src/mono/mono/mini/intrinsics.c
+      - src/mono/mono/mini/simd-*.*
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
