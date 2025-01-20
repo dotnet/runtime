@@ -6,12 +6,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public static class Test11242
+public static class Test111242
 {
-    [DllImport("Test11242Lib")]
+    [DllImport("Test111242Lib")]
     static extern unsafe void TestSetJmp(delegate* unmanaged<void*,void> managedCallback);
 
-    [DllImport("Test11242Lib")]
+    [DllImport("Test111242Lib")]
     static extern unsafe void TestLongJmp(void *jmpBuf);
 
     static bool ExceptionFilter(Exception ex)

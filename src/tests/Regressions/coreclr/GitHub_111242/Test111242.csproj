@@ -11,7 +11,7 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Test11242.cs" />
+    <Compile Include="Test111242.cs" />
   </ItemGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
