@@ -32,7 +32,9 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
                 value.WriteTo(writer, options);
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
             }
         }
 

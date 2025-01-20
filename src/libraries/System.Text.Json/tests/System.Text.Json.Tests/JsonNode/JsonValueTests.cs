@@ -288,6 +288,7 @@ namespace System.Text.Json.Nodes.Tests
                 Assert.Throws<InvalidOperationException>(() => JsonValue.Create(document.RootElement));
         }
 
+#pragma warning disable SYSLIB0060 // Type or member is obsolete
         [Fact]
         public static void WriteTo_Validation()
         {
@@ -308,6 +309,7 @@ namespace System.Text.Json.Nodes.Tests
             string json = Encoding.UTF8.GetString(stream.ToArray());
             Assert.Equal(Json, json);
         }
+#pragma warning restore SYSLIB0060 // Type or member is obsolete
 
         [Fact]
         public static void DeepCloneNotTrimmable()

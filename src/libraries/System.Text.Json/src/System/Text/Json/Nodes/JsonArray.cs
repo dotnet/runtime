@@ -261,6 +261,7 @@ namespace System.Text.Json.Nodes
         }
 
         /// <inheritdoc/>
+        [Obsolete(Obsoletions.JsonNodeWriteToMessage, DiagnosticId = Obsoletions.JsonNodeWriteToDiagId)]
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
             if (writer is null)
