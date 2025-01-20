@@ -2704,25 +2704,18 @@ internal static class ReflectionTest
     // Regression test for https://github.com/dotnet/runtime/issues/111578
     class TestGenericAttributesOnEnum
     {
-        [AttributeUsage(AttributeTargets.Enum)]
         class MyAttribute<T> : Attribute { }
 
-        [MyAttribute<int>]
-        enum MyEnum { A, B, C, D }
+        [My<int>]
+        enum MyEnum { A = 1, B = 2 }
 
-        private static void GetEnumValues()
-        {
-            var values = Enum.GetValues<MyEnum>();
-            Assert.Equal(4, values.Length);
-            Assert.Equal(MyEnum.A, values[0]);
-            Assert.Equal(MyEnum.B, values[1]);
-            Assert.Equal(MyEnum.C, values[2]);
-            Assert.Equal(MyEnum.D, values[3]);
-        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetVal() => MyEnum.A | MyEnum.B;
 
         public static void Run()
         {
-            GetEnumValues();
+            if (GetVal().ToString() != "3")
+                throw new Exception();
         }
     }
 

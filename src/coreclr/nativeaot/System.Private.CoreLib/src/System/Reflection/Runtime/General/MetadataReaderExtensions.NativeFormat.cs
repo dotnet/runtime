@@ -482,7 +482,6 @@ namespace System.Reflection.Runtime.General
         {
             Handle typeHandle = customAttributeHandle.GetCustomAttribute(reader).GetAttributeTypeHandle(reader);
             HandleType handleType = typeHandle.HandleType;
-
             if (handleType == HandleType.TypeDefinition)
             {
                 TypeDefinition typeDefinition = typeHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
