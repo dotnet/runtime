@@ -200,8 +200,7 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
 }
 
 //-----------------------------------------------------------------------------
-bool GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator *pLoaderAllocator
-    DEBUG_ARG(bool checkCollectibleObjRef /* = true */))
+void GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator *pLoaderAllocator)
 {
     CONTRACTL
     {
@@ -221,15 +220,8 @@ bool GcReportLoaderAllocator(promote_func* fn, ScanContext* sc, LoaderAllocator 
 
             // We are reporting the location of a local variable, assert it doesn't change.
             _ASSERTE(oldObj == refCollectionObject);
-            return true;
-        }
-        else
-        {
-            _ASSERT(!checkCollectibleObjRef);
-            return false;
         }
     }
-    return (pLoaderAllocator != NULL);
 }
 
 //-----------------------------------------------------------------------------

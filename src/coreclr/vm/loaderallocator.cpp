@@ -2145,16 +2145,13 @@ void LoaderAllocator::GcReportAssociatedLoaderAllocators_Unsafe(TADDR ptr, promo
 {
     LIMITED_METHOD_CONTRACT;
 
-    bool atLeastOneValidObjectRef = false, hasAnyAssociated = false;
     GlobalLoaderAllocator* pGlobalAllocator = (GlobalLoaderAllocator*)SystemDomain::GetGlobalLoaderAllocator();
     pGlobalAllocator->m_memoryAssociations.ForEachInRangeWorker_Unlocked(ptr,
-        [fn, sc, &atLeastOneValidObjectRef, &hasAnyAssociated](TADDR laAddr)
+        [fn, sc](TADDR laAddr)
         {
-            atLeastOneValidObjectRef |= GcReportLoaderAllocator(fn, sc, (LoaderAllocator*)laAddr DEBUG_ARG(false));
-            hasAnyAssociated = true;
+            GcReportLoaderAllocator(fn, sc, (LoaderAllocator*)laAddr);
         }
     );
-    _ASSERTE(atLeastOneValidObjectRef || !hasAnyAssociated);
 }
 
 
