@@ -179,10 +179,10 @@ namespace Internal.TypeSystem
                     TypeDesc type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
                     if (type == null)
                         return null;
-                    return ((MetadataType)type).GetNestedType(TypeNameHelpers.Unescape(typeName.Name));
+                    return ((MetadataType)type).GetNestedType(TypeName.Unescape(typeName.Name));
                 }
 
-                string fullName = TypeNameHelpers.Unescape(typeName.FullName);
+                string fullName = TypeName.Unescape(typeName.FullName);
 
                 if (_canonResolver != null)
                 {

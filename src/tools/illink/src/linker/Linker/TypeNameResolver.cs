@@ -129,10 +129,10 @@ namespace Mono.Linker
 					TypeDefinition? type = GetSimpleTypeFromModule (typeName.DeclaringType!, module);
 					if (type == null)
 						return null;
-					return GetNestedType (type, TypeNameHelpers.Unescape (typeName.Name));
+					return GetNestedType (type, TypeName.Unescape (typeName.Name));
 				}
 
-				return module.ResolveType (TypeNameHelpers.Unescape (typeName.FullName), _metadataResolver);
+				return module.ResolveType (TypeName.Unescape (typeName.FullName), _metadataResolver);
 			}
 
 			TypeDefinition? GetNestedType (TypeDefinition type, string nestedTypeName)
