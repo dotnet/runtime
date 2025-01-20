@@ -591,30 +591,35 @@ private:
                                                 isLateDevirtualization, explicitTailCall);
                 if (context != nullptr && !m_compiler->compCurBB->HasFlag(BBF_INTERNAL))
                 {
-                    IL_OFFSET ilOffset = 0;
-                    INDEBUG(ilOffset = call->gtRawILOffset);
-                    CORINFO_CALL_INFO callInfo = {};
-                    callInfo.hMethod           = method;
-                    callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
-                    if (call->IsInlineCandidate())
+                    CORINFO_METHOD_INFO methInfo;
+                    if (m_compiler->info.compCompHnd->getMethodInfo(call->gtCallMethHnd, &methInfo, context) &&
+                        genActualType(JITtype2varType(methInfo.args.retType)) == genActualType(call->TypeGet()))
                     {
-                        if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
+                        IL_OFFSET ilOffset = 0;
+                        INDEBUG(ilOffset = call->gtRawILOffset);
+                        CORINFO_CALL_INFO callInfo = {};
+                        callInfo.hMethod           = method;
+                        callInfo.methodFlags       = methodFlags;
+                        m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
+                        if (call->IsInlineCandidate())
                         {
-                            Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
-                            GenTreeRetExpr* retExpr =
-                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                           genActualType(call->TypeGet()));
-                            *pTree = retExpr;
+                            if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
+                            {
+                                Statement* stmt = m_compiler->gtNewStmt(call);
+                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
+                                GenTreeRetExpr* retExpr =
+                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                               genActualType(call->TypeGet()));
+                                *pTree = retExpr;
 
-                            call->GetSingleInlineCandidateInfo()->retExpr            = retExpr;
-                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                            INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
-                            m_compiler->compCurStmt = stmt;
+                                call->GetSingleInlineCandidateInfo()->retExpr            = retExpr;
+                                call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                                INDEBUG(call->gtInlineContext = call->GetSingleInlineCandidateInfo()->inlinersContext);
+                                m_compiler->compCurStmt = stmt;
+                            }
+                            JITDUMP("New inline candidate due to late devirtualization:");
+                            DISPTREE(call);
                         }
-                        JITDUMP("New inline candidate due to late devirtualization:");
-                        DISPTREE(call);
                     }
                 }
                 m_madeChanges = true;
