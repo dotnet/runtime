@@ -492,9 +492,27 @@ extends:
           - linux_loongarch64
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR
-            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked
+            nameSuffix: CoreCLR_TwoStage
+            buildArgs: -s clr+libs+host -c $(_BuildConfig) -rc Checked -p:StageOneBuild=true
             timeoutInMinutes: 120
+            postBuildSteps:
+              - script: |
+                  echo Running $(Build.SourcesDirectory)/build$(scriptExt)  \
+                    ${{ variables.debugOnPrReleaseOnRolling }}              \
+                    -s clr.tools+packs -rc Checked -cross                   \
+                    -os $(osGroup)                                          \
+                    -a $(archType)                                          \
+                    -c $(_BuildConfig)                                      \
+                    -p:StageTwoBuild=true
+
+                  $(Build.SourcesDirectory)/build$(scriptExt)  \
+                    ${{ variables.debugOnPrReleaseOnRolling }} \
+                    -s clr.tools+packs -rc Checked -cross      \
+                    -os $(osGroup)                             \
+                    -a $(archType)                             \
+                    -c $(_BuildConfig)                         \
+                    -p:StageTwoBuild=true
+                displayName: Build clr.tools and packs
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
