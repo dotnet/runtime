@@ -1317,36 +1317,51 @@ m_type_get_klass (const MonoType *type)
 static inline MonoGenericParam *
 m_type_get_generic_param (const MonoType *type)
 {
-	g_assert ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR));
-	return type->data.generic_param;
+	if (G_LIKELY((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)))
+		return type->data.generic_param;
+
+	m_type_invalid_access ("m_type_get_generic_param", type->type);
+	return NULL;
 }
 
 static inline MonoArrayType *
 m_type_get_array (const MonoType *type)
 {
-	g_assert (type->type == MONO_TYPE_ARRAY);
-	return type->data.array;
+	if (G_LIKELY(type->type == MONO_TYPE_ARRAY))
+		return type->data.array;
+
+	m_type_invalid_access ("m_type_get_array", type->type);
+	return NULL;
 }
 
 static inline MonoType *
 m_type_get_type (const MonoType *type)
 {
-	g_assert (type->type == MONO_TYPE_PTR);
-	return type->data.type;
+	if (G_LIKELY(type->type == MONO_TYPE_PTR))
+		return type->data.type;
+
+	m_type_invalid_access ("m_type_get_type", type->type);
+	return NULL;
 }
 
 static inline MonoMethodSignature *
 m_type_get_method (const MonoType *type)
 {
-	g_assert (type->type == MONO_TYPE_FNPTR);
-	return type->data.method;
+	if (G_LIKELY(type->type == MONO_TYPE_FNPTR))
+		return type->data.method;
+
+	m_type_invalid_access ("m_type_get_method", type->type);
+	return NULL;
 }
 
 static inline MonoGenericClass *
 m_type_get_generic_class (const MonoType *type)
 {
-	g_assert (type->type == MONO_TYPE_GENERICINST);
-	return type->data.generic_class;
+	if (G_LIKELY(type->type == MONO_TYPE_GENERICINST))
+		return type->data.generic_class;
+
+	m_type_invalid_access ("m_type_get_generic_class", type->type);
+	return NULL;
 }
 
 /**
