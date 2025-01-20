@@ -351,12 +351,13 @@ internal static partial class Interop
                 if (sslAuthenticationOptions.IsClient)
                 {
                     // We don't support client resume on old OpenSSL versions.
-                    // We don't want to try on empty TargetName since that is our key.
+                    // We don't want to try on empty TargetName or IP Address since hostname is our key.
                     // If we already have CertificateContext, then we know which cert the user wants to use and we can cache.
                     // The only client auth scenario where we can't cache is when user provides a cert callback and we don't know
                     // beforehand which cert will be used. and wan't to avoid resuming session created with different certificate.
                     if (!Interop.Ssl.Capabilities.Tls13Supported ||
                        string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ||
+                       IPAddress.IsValid(sslAuthenticationOptions.TargetHost) ||
                        (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null))
                     {
                         cacheSslContext = false;
@@ -791,11 +792,13 @@ internal static partial class Interop
             if (ptr != IntPtr.Zero)
             {
                 GCHandle gch = GCHandle.FromIntPtr(ptr);
+                IntPtr name = Ssl.SslGetServerName(ssl);
+                Debug.Assert(name != IntPtr.Zero);
 
                 SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
                 // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
                 // may be released while the ssl session is still active.
-                if (ctxHandle != null && ctxHandle.TryAddSession(Ssl.SslGetServerName(ssl), session))
+                if (ctxHandle != null && ctxHandle.TryAddSession(name, session))
                 {
                     // offered session was stored in our cache.
                     return 1;
