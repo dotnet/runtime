@@ -12,7 +12,8 @@
     <AppName>HelloAndroid</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
-    <_UseAotDataFile>false</_UseAotDataFile>
+    <!-- With Mono AOT on Android we default to not using AOT data file optimization as it can degrade runtime performance for small binary size improvements. -->
+    <_UseAotDataFile Condition="'$(RunAOTCompilation)' == 'true'">false</_UseAotDataFile>
   </PropertyGroup>
 
   <ItemGroup>
