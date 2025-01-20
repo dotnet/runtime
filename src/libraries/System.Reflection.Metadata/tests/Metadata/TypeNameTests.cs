@@ -795,7 +795,7 @@ namespace System.Reflection.Metadata.Tests
                 Type genericType = type.GetGenericTypeDefinition();
                 TypeName genericTypeName = parsed.GetGenericTypeDefinition();
                 Assert.Equal(genericType.Name, genericTypeName.Name);
-                Assert.Equal(genericType.Namespace, genericTypeName.Namespace);
+                Assert.Equal(genericType.Namespace ?? "", genericTypeName.Namespace);
                 Assert.Equal(genericType.FullName, genericTypeName.FullName);
                 Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
@@ -969,7 +969,7 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
             Assert.Equal(type.FullName, typeName.FullName);
-            Assert.Equal(type.Namespace, typeName.Namespace);
+            Assert.Equal(type.Namespace ?? "", typeName.Namespace);
             Assert.Equal(type.Name, typeName.Name);
 
 #if NET
