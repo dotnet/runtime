@@ -16,10 +16,8 @@ namespace System.Reflection.Metadata
         internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
 #if NET8_0_OR_GREATER
+        // Keep this in sync with GetFullTypeNameLength/NeedsEscaping
         private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
-        private static bool NeedsEscaping(char c) => s_endOfFullTypeNameDelimitersSearchValues.Contains(c);
-#else
-        private static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
 #endif
 
         internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, ReadOnlySpan<TypeName> genericArgs)
@@ -99,6 +97,9 @@ namespace System.Reflection.Metadata
                 }
                 return offset;
             }
+
+            // Keep this in sync with s_endOfFullTypeNameDelimitersSearchValues
+            static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
         internal static ReadOnlySpan<char> GetNamespace(ReadOnlySpan<char> fullName)
@@ -165,45 +166,42 @@ namespace System.Reflection.Metadata
 
         internal static string Unescape(string input)
         {
-            int indexOfEscapeChar = input.IndexOf(EscapeCharacter);
-            if (indexOfEscapeChar < 0)
+            int indexOfEscapeCharacter = input.IndexOf(EscapeCharacter);
+            if (indexOfEscapeCharacter < 0)
             {
                 // Nothing to escape, just return the original value.
                 return input;
             }
 
-            ValueStringBuilder builder = new(stackalloc char[128]);
-            builder.EnsureCapacity(input.Length);
+            return UnescapeToBuilder(input, indexOfEscapeCharacter);
 
-            UnescapeToBuilder(input.AsSpan(), ref builder);
-
-            string result = builder.ToString();
-            builder.Dispose();
-            return result;
-
-            static void UnescapeToBuilder(ReadOnlySpan<char> input, ref ValueStringBuilder builder)
+            static string UnescapeToBuilder(string name, int indexOfEscapeCharacter)
             {
-                while (!input.IsEmpty)
+                // this code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#)
+                var sb = new ValueStringBuilder(stackalloc char[64]);
+                sb.EnsureCapacity(name.Length);
+                sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
+
+                for (int i = indexOfEscapeCharacter; i < name.Length;)
                 {
-                    int indexOfEscapeChar = input.IndexOf(EscapeCharacter);
-                    if (indexOfEscapeChar < 0)
+                    char c = name[i++];
+
+                    if (c != EscapeCharacter)
                     {
-                        builder.Append(input);
-                        break;
+                        sb.Append(c);
                     }
-                    builder.Append(input.Slice(0, indexOfEscapeChar));
-                    int indexOfNextChar = indexOfEscapeChar + 1;
-                    if (indexOfNextChar < input.Length && input[indexOfNextChar] is char c && NeedsEscaping(c))
+                    else if (i < name.Length && name[i] == EscapeCharacter) // escaped escape character ;)
                     {
-                        builder.Append(c);
-                        indexOfNextChar++;
+                        sb.Append(c);
+                        // Consume the escaped escape character, it's important for edge cases
+                        // like escaped escape character followed by another escaped char (example: "\\\\\\+")
+                        i++;
                     }
-                    else
-                    {
-                        builder.Append(EscapeCharacter);
-                    }
-                    input = input.Slice(indexOfNextChar);
                 }
+
+                string result = sb.ToString();
+                sb.Dispose();
+                return result;
             }
         }
 

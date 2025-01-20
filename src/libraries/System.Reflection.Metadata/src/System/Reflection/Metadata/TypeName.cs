@@ -436,7 +436,10 @@ namespace System.Reflection.Metadata
         /// </summary>
         /// <param name="name">The input string containing the name to convert.</param>
         /// <returns>A string of characters with any escaped characters converted to their unescaped form.</returns>
-        /// <remarks>The unescaped string can be used for looking up the type name or namespace in metadata.</remarks>
+        /// <remarks>
+        /// <para>The unescaped string can be used for looking up the type name or namespace in metadata.</para>
+        /// <para>This method removes escape characters even if they precede a character that does not require escaping.</para>
+        /// </remarks>
         public static string Unescape(string name)
         {
             if (name is null)
