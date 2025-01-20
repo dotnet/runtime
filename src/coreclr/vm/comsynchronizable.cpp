@@ -848,6 +848,12 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
 }
 #endif //FEATURE_COMINTEROP
 
+extern "C" void QCALLTYPE ThreadNative_PollGC()
+{
+    // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
+    // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
+}
+
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {
     QCALL_CONTRACT;
