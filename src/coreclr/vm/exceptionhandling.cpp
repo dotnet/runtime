@@ -5672,6 +5672,8 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 #ifdef HOST_WINDOWS
     // On Windows, this enables the possibility to propagate a longjmp across managed frames. Longjmp
     // behaves like a SEH exception, but only runs the second (unwinding) pass.
+    // NOTE: This is a best effort purely for back compatibility with the legacy exception handling.
+    // It is not guaranteed to work in all cases, and it is not recommended to use it in new code.
     if ((pExceptionRecord != NULL) && (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP))
     {
         // longjmp over managed frames. The EXCEPTION_RECORD::ExceptionInformation store the

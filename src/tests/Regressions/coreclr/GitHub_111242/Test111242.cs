@@ -35,7 +35,7 @@ public static class Test111242
         }
         catch
         {
-            Assert.Fail("Should not catch longjmp SEH exception via filter");	
+            Assert.Fail("Should not catch longjmp SEH exception via catch-all");	
         }
         finally
         {
