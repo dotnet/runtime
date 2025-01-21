@@ -257,7 +257,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             get
             {
-                using(EventLogHandle bookmarkHandle = NativeWrapper.EvtCreateBookmark(null))
+                using (EventLogHandle bookmarkHandle = NativeWrapper.EvtCreateBookmark(null))
                 {
                     NativeWrapper.EvtUpdateBookmark(bookmarkHandle, Handle);
                     string bookmarkText = NativeWrapper.EvtRenderBookmark(bookmarkHandle);
