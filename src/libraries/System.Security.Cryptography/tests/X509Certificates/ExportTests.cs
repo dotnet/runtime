@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using System.Linq;
 using System.Security.Cryptography.Dsa.Tests;
 using System.Security.Cryptography.EcDsa.Tests;
+using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Security.Cryptography.Pkcs;
 using Xunit;
 
@@ -126,6 +128,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(cert, cert2);
                     Assert.True(cert2.HasPrivateKey, "cert2.HasPrivateKey");
                 }
+            }
+        }
+
+        [Fact]
+        public static void ExportPkcs12_Simple()
+        {
+            const string password = "PLACEHOLDER";
+
+            using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(Pkcs12ExportPbeParameters.Pbes2TripleDesSha1, password);
+                VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    expectedMacIterations: 2000,
+                    expectedMacHashAlgorithm: HashAlgorithmName.SHA1);
             }
         }
 
@@ -603,6 +621,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     return (builder.Encode(), key);
                 }
             }
+        }
+
+        private static void VerifyPkcs12(
+            byte[] pkcs12,
+            string password,
+            int expectedMacIterations,
+            HashAlgorithmName expectedMacHashAlgorithm)
+        {
+            Pkcs12Info info = Pkcs12Info.Decode(pkcs12, out int read);
+            Assert.Equal(pkcs12.Length, read);
+            Assert.Equal(Pkcs12IntegrityMode.Password, info.IntegrityMode);
+            Assert.True(info.VerifyMac(password), nameof(info.VerifyMac));
+
+            PfxAsn pfxAsn = PfxAsn.Decode(pkcs12, AsnEncodingRules.BER);
+            MacData macData = Assert.NotNull(pfxAsn.MacData);
+            Assert.Equal(GetHashLength(expectedMacHashAlgorithm), macData.MacSalt.Length);
+            Assert.Equal(expectedMacIterations, macData.IterationCount);
+            Assert.Equal(expectedMacHashAlgorithm, HashAlgorithmName.FromOid(macData.Mac.DigestAlgorithm.Algorithm));
+            Assert.Null(macData.Mac.DigestAlgorithm.Parameters);
+        }
+
+        private static int GetHashLength(HashAlgorithmName hashAlgorithm)
+        {
+            // This is lazy but a one-liner.
+            return CryptographicOperations.HashData(hashAlgorithm, []).Length;
         }
     }
 }
