@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
@@ -407,7 +408,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Tcs_ValidateFaultedTask()
         {
             var tcs = new TaskCompletionSource<int>();
@@ -416,7 +417,7 @@ namespace System.Threading.Tasks.Tests
             ValidateFaultedTask(tcs.Task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskMethodBuilder_ValidateFaultedTask()
         {
             var atmb = AsyncTaskMethodBuilder.Create();
@@ -425,7 +426,7 @@ namespace System.Threading.Tasks.Tests
             ValidateFaultedTask(atmb.Task);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TaskMethodBuilderT_ValidateFaultedTask()
         {
             var atmbtr = AsyncTaskMethodBuilder<object>.Create();

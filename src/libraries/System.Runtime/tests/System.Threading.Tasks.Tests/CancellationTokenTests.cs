@@ -158,7 +158,7 @@ namespace System.Threading.Tasks.Tests
                });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TokenSourceDispose()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -185,7 +185,7 @@ namespace System.Threading.Tasks.Tests
             tokenSource.Dispose(); //Repeat calls to Dispose should be ok.
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void TokenSourceDispose_Negative()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -354,7 +354,7 @@ namespace System.Threading.Tasks.Tests
         /// The signal occurs on a separate thread, and should happen after the wait begins.
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenWaitHandle_SignalBeforeWait()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -372,7 +372,7 @@ namespace System.Threading.Tasks.Tests
         /// Test that WaitAny can be used with a CancellationToken.WaitHandle
         /// </summary>
         /// <returns></returns>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CancellationTokenWaitHandle_WaitAny()
         {
             CancellationTokenSource tokenSource = new CancellationTokenSource();

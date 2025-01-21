@@ -237,7 +237,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunTaskCompletionSourceTests_SetException()
         {
             // Test that recorded exception is persistent
@@ -964,7 +964,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Verifications for the Task.RunSynchronously() API
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CoreRunSynchronouslyTest()
         {
             //Executing RunSynchronously() validations on external thread

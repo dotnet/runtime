@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,7 +28,7 @@ namespace System.Threading.Tasks.Tests
             AssertExtensions.Throws<ArgumentException>("asyncResult", () => TaskToAsyncResult.Unwrap<int>(Task.FromResult((long)42)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task BeginFromTask_UnwrapTask_EndFromTask_Roundtrips()
         {
             var tcs = new TaskCompletionSource<int>();
@@ -82,7 +83,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Same(state, ar.AsyncState);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task BeginFromTask_CompletedAsynchronously_CallbackInvokedAsynchronously()
         {
             var tcs = new TaskCompletionSource();

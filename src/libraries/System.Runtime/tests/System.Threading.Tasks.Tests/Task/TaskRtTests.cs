@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
@@ -580,7 +581,7 @@ namespace System.Threading.Tasks.Tests
             Assert.True(t.IsCanceled);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunDelayTests()
         {
             //

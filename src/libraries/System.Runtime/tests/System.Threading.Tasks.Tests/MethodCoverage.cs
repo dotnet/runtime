@@ -369,7 +369,7 @@ namespace TaskCoverage
             mre2.WaitOne();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Task_WaitAll_NullArgument_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null); });
@@ -379,7 +379,7 @@ namespace TaskCoverage
             AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null, 30_000, CancellationToken.None); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Task_WaitAll_NullTaskElement_Throws()
         {
             Task[] nullElement = [null];
@@ -391,7 +391,7 @@ namespace TaskCoverage
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll(nullElement, 30_000, CancellationToken.None); });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Task_WaitAll_InvalidArgument_Throws()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll([Task.Factory.StartNew(() => { })], -2));
