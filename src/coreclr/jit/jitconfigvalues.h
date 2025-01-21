@@ -453,6 +453,9 @@ RELEASE_CONFIG_INTEGER(EnableArm64SveSm4,           "EnableArm64SveSm4",        
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbs,            "EnableRiscV64Zbs",          1) // Allows RiscV64 Zbs hardware intrinsics to be disabled
+#elif defined(TARGET_LOONGARCH64)
+RELEASE_CONFIG_INTEGER(EnableLoongArch64LAM_BH,    "EnableLoongArch64LAM_BH",    0) // Allows LoongArch64 LAM_BH+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableLoongArch64LAM_CAS,   "EnableLoongArch64LAM_CAS",   0) // Allows LoongArch64 LAM_CAS+ hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
