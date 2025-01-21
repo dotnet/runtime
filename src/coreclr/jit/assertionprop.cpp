@@ -4116,7 +4116,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
 //    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
 //    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
-//    4) UMOD with GTF_UMOD_UINT16_OPERANDS if both operands are proven to be in uint16 range
+//    4) Marks UMOD with GTF_UMOD_UINT16_OPERANDS if both operands are proven to be in uint16 range
 //
 // Arguments:
 //    assertions - set of live assertions

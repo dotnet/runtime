@@ -7221,9 +7221,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         BlockRange().InsertBefore(divMod, multiplier, mul1, cast, shiftAmount);
         BlockRange().InsertBefore(divMod, mul2, shift);
 
-        // (int)result
+        // (int)result or (long)result
         divMod->ChangeOper(GT_CAST);
-        divMod->AsCast()->gtCastType = TYP_INT;
+        divMod->AsCast()->gtCastType = type;
         divMod->gtOp1                = shift;
         divMod->gtOp2                = nullptr;
         divMod->SetUnsigned();
