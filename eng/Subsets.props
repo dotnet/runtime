@@ -313,10 +313,13 @@
     <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
+    <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
+    <_BuildCrossDebugComponents Condition="'$(_BuildCrossComponents)' and '$(TargetsWindows)' == 'true' and '$(_CrossBitwidthBuild)' != 'true'">true</_BuildCrossDebugComponents>
   </PropertyGroup>
 
   <ItemGroup>
     <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrCrossComponentsSubset=true" />
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true'" Include="ClrDebugSubset=true" />
     <_CrossToolSubset Condition="'$(BuildHostILTools)' == 'true'" Include="ClrILToolsSubset=true" />
   </ItemGroup>
 

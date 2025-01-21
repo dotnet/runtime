@@ -28,12 +28,3 @@ if (CLR_CMAKE_HOST_OS STREQUAL CLR_CMAKE_TARGET_OS OR CLR_CMAKE_TARGET_IOS OR CL
         endif()
     endif()
 endif()
-
-if(NOT CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_APPLE AND NOT FEATURE_CROSSBITNESS)
-    install_clr (TARGETS
-        mscordaccore
-        mscordbi
-        DESTINATIONS . sharedFramework
-        COMPONENT crosscomponents
-    )
-endif()
