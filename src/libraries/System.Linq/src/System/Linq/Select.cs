@@ -52,6 +52,7 @@ namespace System.Linq
             return new IEnumerableSelectIterator<TSource, TResult>(source, selector);
         }
 
+#pragma warning disable CA1859
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static IEnumerable<TResult> SelectImplementation<TSource, TResult>(Func<TSource, TResult> selector, Iterator<TSource> iterator)
         {
