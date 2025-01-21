@@ -419,7 +419,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     allocType = OAT_NEWOBJ;
                 }
-                else if (data->IsHelperCall())
+                else if (!comp->opts.IsReadyToRun() && data->IsHelperCall())
                 {
                     switch (data->AsCall()->GetHelperNum())
                     {
@@ -428,26 +428,14 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         case CORINFO_HELP_NEWARR_1_DIRECT:
                         case CORINFO_HELP_NEWARR_1_ALIGN8:
                         {
-                            if ((data->AsCall()->gtArgs.CountArgs() == 2) &&
-                                data->AsCall()->gtArgs.GetArgByIndex(1)->GetNode()->IsCnsIntOrI())
+                            if ((data->AsCall()->gtArgs.CountUserArgs() == 2) &&
+                                data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode()->IsCnsIntOrI())
                             {
                                 allocType = OAT_NEWARR;
                             }
                             break;
                         }
-#ifdef FEATURE_READYTORUN
-                        case CORINFO_HELP_READYTORUN_NEWARR_1:
-                        {
-                            // Disable for R2R for now, since embedding the array type can block prejitting
-                            //
-                            if (!comp->opts.IsReadyToRun() && (data->AsCall()->gtArgs.CountArgs() == 1) &&
-                                data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
-                            {
-                                allocType = OAT_NEWARR;
-                            }
-                            break;
-                        }
-#endif
+
                         default:
                         {
                             break;
@@ -480,6 +468,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     if (allocType == OAT_NEWARR)
                     {
                         assert(basicBlockHasNewArr);
+
+                        // R2R not yet supported
+                        //
+                        assert(!comp->opts.IsReadyToRun());
+
                         //------------------------------------------------------------------------
                         // We expect the following expression tree at this point
                         // For non-ReadyToRun:
@@ -499,17 +492,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         bool                 isNonNull = false;
                         CORINFO_CLASS_HANDLE clsHnd =
                             comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-                        GenTree* len = nullptr;
-#ifdef FEATURE_READYTORUN
-                        if (comp->opts.IsReadyToRun() && data->IsHelperCall(comp, CORINFO_HELP_READYTORUN_NEWARR_1))
-                        {
-                            len = data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-                        }
-                        else
-#endif
-                        {
-                            len = data->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
-                        }
+                        GenTree* const len = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
 
                         assert(len != nullptr);
 

@@ -13193,7 +13193,7 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
         case WellKnownArg::X86TailCallSpecialArg:
             return "tail call";
         case WellKnownArg::StackArrayLocal:
-            return "stack array local";
+            return "&lcl arr";
         default:
             return nullptr;
     }
