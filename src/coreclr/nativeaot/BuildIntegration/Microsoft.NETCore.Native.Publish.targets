@@ -36,9 +36,6 @@
       <_symbolExt Condition="'$(OS)' != 'Windows_NT'">$(NativeBinaryExt)$(NativeSymbolExt)</_symbolExt>
       <_symbolSourcePath>$(NativeOutputPath)$(TargetName)$(_symbolExt)</_symbolSourcePath>
       <_symbolTargetPath>$(PublishDir)\$(TargetName)$(_symbolExt)</_symbolTargetPath>
-      <!-- If the symbol is a dSYM bundle, it's a folder not a file. -->
-      <_symbolIsFile Condition="'$(NativeSymbolExt)' == '.dSYM'">false</_symbolIsFile>
-      <_symbolIsFile Condition="'$(_symbolIsFile)' == ''">true</_symbolIsFile>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true'">
@@ -46,14 +43,14 @@
 
       <!-- Add native symbol file if it exists. On Mac, the symbol path may be a folder-->
       <ResolvedFileToPublish Include="$(_symbolSourcePath)"
-                             Condition="'$(_symbolIsFile)' == 'true' and Exists('$(_symbolSourcePath)')">
+                             Condition="'$(_symbolIsFile)' == '' and Exists('$(_symbolSourcePath)')">
         <RelativePath>$(TargetName)$(_symbolExt)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
 
-      <!-- Add folder otherwise -->
+      <!-- Add folder otherwise. If the symbol is a dSYM bundle, it's a folder not a file. -->
       <ResolvedFileToPublish Include="@(_symbolRecursivePath)"
-                             Condition="'$(_symbolIsFile)' == 'false' and Exists('$(_symbolSourcePath)')">
+                             Condition="'$(NativeSymbolExt)' == '.dSYM' and Exists('$(_symbolSourcePath)')">
         <RelativePath>$(TargetName)$(_symbolExt)/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
