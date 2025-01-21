@@ -19,18 +19,30 @@ class Program
         }
 
         TimeZoneInfo utc = TimeZoneInfo.FindSystemTimeZoneById("UTC");
-        TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
-        if(utc == tst)
+        if(utc.BaseUtcOffset != TimeSpan.Zero)
         {
             return -1;
         }
-        if(utc.BaseUtcOffset != TimeSpan.Zero)
+
+        try
         {
-            return -2;
+            TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+            if(utc == tst)
+            {
+                return -2;
+            }
+            if(tst.BaseUtcOffset == TimeSpan.Zero)
+            {
+                return -3;
+            }
         }
-        if(tst.BaseUtcOffset == TimeSpan.Zero)
+        // some AzDO images don't have tzdata installed
+        catch (TimeZoneNotFoundException tznfe)
         {
-            return -3;
+            if(tznfe.InnerException == null || tznfe.InnerException.GetType() != typeof(System.IO.DirectoryNotFoundException))
+            {
+                return -4;
+            }
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_Invariant")]

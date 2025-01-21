@@ -18,22 +18,40 @@ namespace System.Tests
 {
     public static partial class TimeZoneInfoTests
     {
-        private static TimeZoneInfo s_regLocal = TimeZoneInfo.FindSystemTimeZoneById(TimeZoneInfo.Local.Id); // in case DST is disabled on Local
-        private static TimeZoneInfo s_GMTLondon = TimeZoneInfo.FindSystemTimeZoneById(s_strGMT);
-        private static TimeZoneInfo s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
-        private static TimeZoneInfo s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
-        private static TimeZoneInfo s_johannesburgTz = TimeZoneInfo.FindSystemTimeZoneById(s_strJohannesburg);
-        private static TimeZoneInfo s_casablancaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCasablanca);
-        private static TimeZoneInfo s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
-        private static TimeZoneInfo s_LisbonTz = TimeZoneInfo.FindSystemTimeZoneById(s_strLisbon);
-        private static TimeZoneInfo s_NewfoundlandTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNewfoundland);
+        private static TimeZoneInfo s_regLocal;
+        private static TimeZoneInfo s_GMTLondon;
+        private static TimeZoneInfo s_nairobiTz;
+        private static TimeZoneInfo s_amsterdamTz;
+        private static TimeZoneInfo s_johannesburgTz;
+        private static TimeZoneInfo s_casablancaTz;
+        private static TimeZoneInfo s_catamarcaTz;
+        private static TimeZoneInfo s_LisbonTz;
+        private static TimeZoneInfo s_NewfoundlandTz;
 
-        private static bool s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
-        private static bool s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
-        private static bool s_localSupportsDST = TimeZoneInfo.Local.SupportsDaylightSavingTime;
+        private static bool s_localIsPST;
+        private static bool s_regLocalSupportsDST;
+        private static bool s_localSupportsDST;
 
-        // In 2006, Australia delayed ending DST by a week.  However, Windows says it still ended the last week of March.
-        private static readonly int s_sydneyOffsetLastWeekOfMarch2006 = s_isWindows ? 10 : 11;
+        private static readonly int s_sydneyOffsetLastWeekOfMarch2006;
+
+        static TimeZoneInfoTests()
+        {
+            s_regLocal = TimeZoneInfo.FindSystemTimeZoneById(TimeZoneInfo.Local.Id); // in case DST is disabled on Local
+            s_GMTLondon = TimeZoneInfo.FindSystemTimeZoneById(s_strGMT);
+            s_nairobiTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNairobi);
+            s_amsterdamTz = TimeZoneInfo.FindSystemTimeZoneById(s_strAmsterdam);
+            s_johannesburgTz = TimeZoneInfo.FindSystemTimeZoneById(s_strJohannesburg);
+            s_casablancaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCasablanca);
+            s_catamarcaTz = TimeZoneInfo.FindSystemTimeZoneById(s_strCatamarca);
+            s_LisbonTz = TimeZoneInfo.FindSystemTimeZoneById(s_strLisbon);
+            s_NewfoundlandTz = TimeZoneInfo.FindSystemTimeZoneById(s_strNewfoundland);
+
+            s_localIsPST = TimeZoneInfo.Local.Id == s_strPacific;
+            s_regLocalSupportsDST = s_regLocal.SupportsDaylightSavingTime;
+            s_localSupportsDST = TimeZoneInfo.Local.SupportsDaylightSavingTime;
+
+            s_sydneyOffsetLastWeekOfMarch2006 = s_isWindows ? 10 : 11;
+        }
 
         //  Due to ICU size limitations, full daylight/standard names are not included for the browser.
         //  Name abbreviations, if available, are used instead
