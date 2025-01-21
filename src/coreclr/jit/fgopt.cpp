@@ -5469,8 +5469,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                     continue;
                 }
 
-                // Don't consider any cut points that would move try/handler entries
-                if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
+                // Don't consider any cut points that would disturb other EH regions
+                if (!BasicBlock::sameEHRegion(s2Block, s3Block))
                 {
                     continue;
                 }
