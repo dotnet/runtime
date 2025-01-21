@@ -607,7 +607,7 @@ private:
                 context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
-                if (context != nullptr && !m_compiler->compCurBB->HasFlag(BBF_INTERNAL))
+                if (context != nullptr)
                 {
                     IL_OFFSET ilOffset = BAD_IL_OFFSET;
                     INDEBUG(ilOffset = call->gtRawILOffset);
