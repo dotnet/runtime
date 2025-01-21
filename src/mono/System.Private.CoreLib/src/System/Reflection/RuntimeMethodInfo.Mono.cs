@@ -745,7 +745,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return invoker ??= new MethodBaseInvoker(this, ArgumentTypes, DeclaringType);
+                return invoker ??= new MethodBaseInvoker(this, ArgumentTypes, returnType: typeof(void));
             }
         }
 

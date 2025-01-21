@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, new object[] { "" }));
             Exception exInner = ex.InnerException;
             Assert.Contains("Method Here", ex.ToString());
-            Assert.Contains("InvokeStub_<Object, Void> (Object, IntPtr, Object)", exInner.ToString());
+            Assert.Contains("InvokeStub_<Object, Void>", exInner.ToString());
         }
 
         [ConditionalFact(typeof(InvokeEmitTests), nameof(IsEmitInvokeSupported))]
@@ -25,7 +25,7 @@ namespace System.Reflection.Tests
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { "" }));
             Exception exInner = ex.InnerException;
             Assert.Contains("Ctor Here", exInner.ToString());
-            Assert.Contains("InvokeStub_<Object, Void> (Object, IntPtr, Object)", exInner.ToString());
+            Assert.Contains("InvokeStub_<Object, Void>", exInner.ToString());
         }
 
         private static bool IsEmitInvokeSupported()

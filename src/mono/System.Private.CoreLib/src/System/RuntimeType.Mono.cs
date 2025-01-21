@@ -1591,7 +1591,16 @@ namespace System
                             }
 
                             // fast path??
-                            server = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
+                            try
+                            {
+                                server = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
+                            }
+                            catch (Exception ex) when (wrapExceptions && ex is not TargetInvocationException)
+                            {
+                                // Activator.CreateInstance may indirectly re-enter reflection code in order to call the cctor,
+                                // which can interfere with exception handling since TargetInvocationException may not be thrown.
+                                throw new TargetInvocationException(ex);
+                            }
                         }
                         else
                         {
