@@ -609,39 +609,42 @@ private:
                                                 isLateDevirtualization, explicitTailCall);
                 if (context != nullptr && !m_compiler->compCurBB->HasFlag(BBF_INTERNAL))
                 {
-                    CORINFO_METHOD_INFO methInfo;
-                    if (m_compiler->info.compCompHnd->getMethodInfo(call->gtCallMethHnd, &methInfo, context) &&
-                        genActualType(JITtype2varType(methInfo.args.retType)) == genActualType(call->TypeGet()))
+                    IL_OFFSET ilOffset = BAD_IL_OFFSET;
+                    INDEBUG(ilOffset = call->gtRawILOffset);
+                    CORINFO_CALL_INFO callInfo = {};
+                    callInfo.hMethod           = method;
+                    callInfo.methodFlags       = methodFlags;
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
+
+                    if (call->IsInlineCandidate())
                     {
-                        IL_OFFSET ilOffset = BAD_IL_OFFSET;
-                        INDEBUG(ilOffset = call->gtRawILOffset);
-                        CORINFO_CALL_INFO callInfo = {};
-                        callInfo.hMethod           = method;
-                        callInfo.methodFlags       = methodFlags;
-                        m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
+                        CallArg* retBuffer = call->gtArgs.GetRetBufferArg();
 
-                        if (call->IsInlineCandidate())
+                        if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID || retBuffer != nullptr)
                         {
-                            if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
-                            {
-                                Statement* stmt = m_compiler->gtNewStmt(call);
-                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                                GenTreeRetExpr* retExpr =
-                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                               genActualType(call->TypeGet()));
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
 
-                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
 
-                                m_curStmt = stmt;
-                                *pTree    = retExpr;
-                            }
-
-                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
-
-                            JITDUMP("New inline candidate due to late devirtualization:\n");
-                            DISPTREE(call);
+                            m_curStmt = stmt;
+                            *pTree    = retExpr;
                         }
+
+                        if (retBuffer != nullptr)
+                        {
+                            call->GetSingleInlineCandidateInfo()->preexistingSpillTemp =
+                                retBuffer->GetNode()->AsLclVarCommon()->GetLclNum();
+                        }
+
+                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+
+                        JITDUMP("New inline candidate due to late devirtualization:\n");
+                        DISPTREE(call);
                     }
                 }
                 m_madeChanges = true;

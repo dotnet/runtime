@@ -9201,9 +9201,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_CLASS_HANDLE clsHandle = compCompHnd->getMethodClass(ftn);
         unsigned const       clsAttr   = compCompHnd->getClassAttribs(clsHandle);
 
+        CallArg* pRetBuf = pParam->call->gtArgs.GetRetBufferArg();
+
         // Return type
         //
-        var_types const fncRetType = pParam->call->TypeGet();
+        var_types const fncRetType = pRetBuf == nullptr ? pParam->call->TypeGet() : TYP_STRUCT;
 
 #ifdef DEBUG
         var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
