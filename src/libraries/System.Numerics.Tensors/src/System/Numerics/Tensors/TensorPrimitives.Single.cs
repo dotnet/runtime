@@ -860,7 +860,7 @@ namespace System.Numerics.Tensors
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
             InvokeSpanIntoSpan<ExpOperator_Single>(x, destination);
-            float expSum = Sum(x);
+            float expSum = Sum(destination);
             InvokeSpanScalarIntoSpan<DivideOperator_Single>(destination, expSum, destination);
         }
 

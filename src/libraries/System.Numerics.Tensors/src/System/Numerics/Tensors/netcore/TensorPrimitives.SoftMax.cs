@@ -37,7 +37,7 @@ namespace System.Numerics.Tensors
             ValidateInputOutputSpanNonOverlapping(x, destination);
 
             InvokeSpanIntoSpan<T, ExpOperator<T>>(x, destination);
-            T expSum = Sum(x);
+            T expSum = Sum(destination);
             InvokeSpanScalarIntoSpan<T, DivideOperator<T>>(destination, expSum, destination);
         }
     }
