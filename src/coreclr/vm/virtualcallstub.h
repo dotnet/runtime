@@ -1537,5 +1537,9 @@ private:
     static FastTable* dead;             //linked list head of to be deleted (abandoned) buckets
 };
 
+BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver);
+BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver);
+
+inline bool DispatchStubRequiresExtraSlot() { return true; }
 
 #endif // !_VIRTUAL_CALL_STUB_H

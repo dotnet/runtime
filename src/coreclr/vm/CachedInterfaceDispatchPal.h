@@ -140,6 +140,11 @@ struct InterfaceDispatchCell
         IDC_CachePointerMaskShift = 0x2,
     };
 
+    static TADDR InitialDispatchCacheCellValue()
+    {
+        return IDC_CachePointerPointerUninitialized;
+    }
+
     DispatchCellInfo GetDispatchCellInfo()
     {
         // Capture m_pCache into a local for safe access (this is a volatile read of a value that may be
