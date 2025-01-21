@@ -608,9 +608,14 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             {
                 assert(block->isBBCallFinallyPair());
 
+                // In some cases we may have unreachable callfinallys.
+                // If so, skip the optimization; a later pass can catch this
+                // once unreachable blocks have been pruned.
+                //
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
+                    JITDUMP("EH#%u found unexpected (likely unreachable) callfinally " FMT_BB "; skipping.\n", XTnum,
+                            block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -621,7 +626,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         {
             JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
-            assert(verifiedSingleCallfinally);
             continue;
         }
 
