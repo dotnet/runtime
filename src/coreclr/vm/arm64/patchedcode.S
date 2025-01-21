@@ -185,18 +185,20 @@ LOCAL_LABEL(CheckCardTableBounds):
     cbz  w17, LOCAL_LABEL(CheckCardTable)
 
     // Check if we need to update the card table
-    lsr x17, x14, 8
-    and x17, x17, 7
+    lsr w17, w14, 8
+    and w17, w17, 7
     movz w15, 1
-    lsl w17, w15, w17  // w17 = 1 << (LHS >> 8 && 7)
+    lsl w17, w15, w17  // w17 = 1 << (RHS >> 8 && 7)
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
     ldrb w12, [x15]  // w12 = [(RHS >> 11) + g_card_table]
     cmp  w12, w17
-    bne  LOCAL_LABEL(Exit)
+    beq  LOCAL_LABEL(Exit)
 
     // Update the card table
-    strb w17, [x15]
+    // TODO: Is this correct? the AMD64 code is odd.
+    orr  w12, w12, w17
+    strb w12, [x15]
     b  LOCAL_LABEL(CheckCardBundleTable)
 
     // End of Region Checks
