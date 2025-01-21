@@ -790,12 +790,6 @@ PhaseStatus Compiler::fgInline()
         Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
         {
-#if defined(DEBUG)
-            // In debug builds we want the inline tree to show all failed
-            // inlines. Some inlines may fail very early and never make it to
-            // candidate stage. So scan the tree looking for those early failures.
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
-#endif
             // See if we need to replace some return value place holders.
             // Also, see if this replacement enables further devirtualization.
             //
@@ -861,6 +855,11 @@ PhaseStatus Compiler::fgInline()
                 stmt->SetRootNode(expr->AsOp()->gtOp1);
             }
 
+#if defined(DEBUG)
+            // In debug builds we want the inline tree to show all failed
+            // inlines.
+            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
+#endif
             stmt = stmt->GetNextStmt();
         }
 
@@ -1132,8 +1131,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
-    // We may get late devirtualization opportunities for virtual calls that are not inline candidates.
-    if (tree->gtOper == GT_CALL && !tree->AsCall()->IsVirtual())
+    if (tree->gtOper == GT_CALL)
     {
         Compiler*    compiler = data->compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
