@@ -37,7 +37,17 @@ internal readonly struct Loader_1 : ILoader
     string ILoader.GetPath(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        return _target.ReadUtf16String(module.Path);
+        return module.Path != TargetPointer.Null
+            ? _target.ReadUtf16String(module.Path)
+            : string.Empty;
+    }
+
+    string ILoader.GetFileName(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        return module.FileName != TargetPointer.Null
+            ? _target.ReadUtf16String(module.FileName)
+            : string.Empty;
     }
 
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)
@@ -100,5 +110,13 @@ internal readonly struct Loader_1 : ILoader
             }
         } while (table != TargetPointer.Null);
         return TargetPointer.Null;
+    }
+
+    bool ILoader.IsCollectible(ModuleHandle handle)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        TargetPointer assembly = module.Assembly;
+        Data.Assembly la = _target.ProcessedData.GetOrAdd<Data.Assembly>(assembly);
+        return la.IsCollectible != 0;
     }
 }

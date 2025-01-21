@@ -31,7 +31,7 @@ typedef DPTR(ThreadLocalLoaderAllocator) PTR_ThreadLocalLoaderAllocator;
 #ifndef DACCESS_COMPILE
 static TLSIndexToMethodTableMap *g_pThreadStaticCollectibleTypeIndices;
 static TLSIndexToMethodTableMap *g_pThreadStaticNonCollectibleTypeIndices;
-static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, ThreadBlockingInfo_First) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
+static PTR_MethodTable g_pMethodTablesForDirectThreadLocalData[offsetof(ThreadLocalData, ExtendedDirectThreadLocalTLSData) - offsetof(ThreadLocalData, pThread) + EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 
 static uint32_t g_NextTLSSlot = 1;
 static uint32_t g_NextNonCollectibleTlsSlot = NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
@@ -125,8 +125,8 @@ int32_t IndexOffsetToDirectThreadLocalIndex(int32_t indexOffset)
     LIMITED_METHOD_CONTRACT;
 
     int32_t adjustedIndexOffset = indexOffset + OFFSETOF__CORINFO_Array__data;
-    _ASSERTE(((uint32_t)adjustedIndexOffset) >= offsetof(ThreadLocalData, ThreadBlockingInfo_First));
-    int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, ThreadBlockingInfo_First);
+    _ASSERTE(((uint32_t)adjustedIndexOffset) >= offsetof(ThreadLocalData, pThread));
+    int32_t directThreadLocalIndex = adjustedIndexOffset - offsetof(ThreadLocalData, pThread);
     _ASSERTE(((uint32_t)directThreadLocalIndex) < (sizeof(g_pMethodTablesForDirectThreadLocalData) / sizeof(g_pMethodTablesForDirectThreadLocalData[0])));
     _ASSERTE(directThreadLocalIndex >= 0);
     return directThreadLocalIndex;
@@ -140,7 +140,7 @@ PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex inde
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -309,6 +309,8 @@ void InitializeThreadStaticData()
 
     g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
+    CoreLibBinder::GetClass(CLASS__DIRECTONTHREADLOCALDATA);
+    CoreLibBinder::GetClass(CLASS__THREAD_BLOCKING_INFO);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
 
@@ -377,7 +379,7 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
 #endif
         for (const auto& entry : g_pThreadStaticCollectibleTypeIndices->CollectibleEntries())
         {
-            _ASSERTE((entry.TlsIndex.GetIndexOffset() <= pThread->cLoaderHandles) || allRemainingIndicesAreNotValid);
+            _ASSERTE((entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles) || !allRemainingIndicesAreNotValid);
             if (entry.TlsIndex.GetIndexOffset() >= pThread->cLoaderHandles)
             {
 #ifndef _DEBUG
@@ -390,7 +392,9 @@ void FreeLoaderAllocatorHandlesForTLSData(Thread *pThread)
             {
                 if (pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] != (LOADERHANDLE)NULL)
                 {
-                    entry.pMT->GetLoaderAllocator()->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
+                    LoaderAllocator *pLoaderAllocator = entry.pMT->GetLoaderAllocator();
+                    if (pLoaderAllocator->IsExposedObjectLive())
+                        pLoaderAllocator->FreeHandle(pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()]);
                     pThread->pLoaderHandles[entry.TlsIndex.GetIndexOffset()] = (LOADERHANDLE)NULL;
                 }
             }
@@ -713,11 +717,16 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     {
         bool usedDirectOnThreadLocalDataPath = false;
 
-        if (!gcStatic && ((pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO)) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
+        if (!gcStatic && ((pMT == CoreLibBinder::GetExistingClass(CLASS__THREAD_BLOCKING_INFO)) || (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA)) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
         {
-            if (pMT == CoreLibBinder::GetClassIfExist(CLASS__THREAD_BLOCKING_INFO))
+            if (pMT == CoreLibBinder::GetExistingClass(CLASS__THREAD_BLOCKING_INFO))
             {
                 newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data);
+                usedDirectOnThreadLocalDataPath = true;
+            }
+            else if (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+            {
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, pThread) - OFFSETOF__CORINFO_Array__data);
                 usedDirectOnThreadLocalDataPath = true;
             }
             else
@@ -915,8 +924,6 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for linux musl arm64
 #elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
     // Optimization is disabled for FreeBSD/arm64
-#elif defined(FEATURE_INTERPRETER)
-    // Optimization is disabled when interpreter may be used
 #elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
     bool tlsResolverValid = IsValidTLSResolver();
     if (tlsResolverValid)

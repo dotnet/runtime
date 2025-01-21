@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //*****************************************************************************
-// MetaModelRW.h -- header file for Read/Write compressed COM+ metadata.
+// MetaModelRW.h -- header file for Read/Write compressed CLR metadata.
 //
 
 //

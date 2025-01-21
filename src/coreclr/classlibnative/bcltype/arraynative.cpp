@@ -110,7 +110,7 @@ static void CheckElementType(TypeHandle elementType)
     }
 }
 
-void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
+extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
 {
     CONTRACTL {
         QCALL_CHECK;
@@ -203,5 +203,22 @@ void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT3
     }
 
 Done: ;
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE Array_CreateInstanceMDArray(EnregisteredTypeHandle typeHandle, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    TypeHandle typeHnd = TypeHandle::FromPtr(typeHandle);
+    _ASSERTE(typeHnd.IsFullyLoaded());
+    _ASSERTE(typeHnd.GetMethodTable()->IsArray());
+
+    retArray.Set(AllocateArrayEx(typeHnd, pArgList, dwNumArgs));
+
     END_QCALL;
 }

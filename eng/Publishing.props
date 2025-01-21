@@ -9,6 +9,28 @@
   </PropertyGroup>
 
   <!--
+    Mark assets as Vertical visibility when building in the VMR
+  -->
+  <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <Artifact Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILAsm.*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
+    <Artifact Condition="'$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSdkRuntimeIdentifier).Microsoft.NETCore.ILDAsm.*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
+    <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\Microsoft.NETCore.App.Crossgen2.$(NETCoreSdkRuntimeIdentifier).*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
+    <Artifact Condition="'$(RuntimeFlavor)' != 'Mono' and '$(OutputRID)' != '$(NETCoreSdkRuntimeIdentifier)'"
+              Update="$(ArtifactsPackagesDir)**\runtime.$(NETCoreSDKRuntimeIdentifier).Microsoft.DotNet.ILCompiler.*.nupkg"
+              Visibility="Vertical"
+              IsShipping="false" />
+  </ItemGroup>
+
+  <!--
     Look through the downloaded artifacts to figure out how to ship them. Creates item groups for
     other types of publishing to use.
 
@@ -77,14 +99,14 @@
 
     <!--
       Packages that aren't matched above as RID-specific are considered RID-agnostic. Also include
-      the AllConfigurations packages from the Libraries build.
+      the packages from the Libraries build.
     -->
     <RidAgnosticNupkgToPublishFile
       Include="
         $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*.nupkg;
         $(DownloadDirectory)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
         $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
-        $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
+        $(DownloadDirectory)*\Libraries_WithPackages\**\*.nupkg"
       Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
     <TransportPackagesToPublishFile
@@ -131,7 +153,7 @@
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"
              Properties="IsShipping=false;
                          Crossgen2SdkOverridePropsPath=;
@@ -156,7 +178,7 @@
           BeforeTargets="PublishToAzureDevOpsArtifacts"
           Condition="'$(_ShouldGenerateProductVersionFiles)' == 'true'">
     <!-- Retrieve the runtime pack product version. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"
              Properties="Crossgen2SdkOverridePropsPath=;
                          Crossgen2SdkOverrideTargetsPath=">

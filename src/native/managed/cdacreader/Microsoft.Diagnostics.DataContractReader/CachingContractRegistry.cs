@@ -34,6 +34,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IDacStreams)] = new DacStreamsFactory(),
             [typeof(IExecutionManager)] = new ExecutionManagerFactory(),
             [typeof(ICodeVersions)] = new CodeVersionsFactory(),
+            [typeof(IPlatformMetadata)] = new PlatformMetadataFactory(),
+            [typeof(IPrecodeStubs)] = new PrecodeStubsFactory(),
+            [typeof(IReJIT)] = new ReJITFactory(),
         };
         configureFactories?.Invoke(_factories);
     }
@@ -47,6 +50,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IDacStreams DacStreams => GetContract<IDacStreams>();
     public override IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
     public override ICodeVersions CodeVersions => GetContract<ICodeVersions>();
+    public override IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
+    public override IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
+    public override IReJIT ReJIT => GetContract<IReJIT>();
 
     private TContract GetContract<TContract>() where TContract : IContract
     {
