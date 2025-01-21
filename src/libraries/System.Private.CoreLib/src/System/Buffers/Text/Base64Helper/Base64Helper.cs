@@ -161,35 +161,6 @@ namespace System.Buffers.Text
         }
 #endif
 
-#if NET
-        // same as ShuffleUnsafe, except that we guarantee that if the high bit is set, it gives 0
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NET9_0_OR_GREATER
-        [CompExactlyDependsOn(typeof(Ssse3))]
-        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        [CompExactlyDependsOn(typeof(PackedSimd))]
-#endif
-        internal static Vector128<byte> ShuffleUnsafeModified(Vector128<byte> vector, Vector128<byte> indices)
-        {
-            if (Ssse3.IsSupported)
-            {
-                return Ssse3.Shuffle(vector, indices);
-            }
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
-            }
-
-            if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.Swizzle(vector, indices);
-            }
-
-            return Vector128.Shuffle(vector, indices);
-        }
-#endif
-
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
         {

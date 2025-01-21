@@ -1138,7 +1138,7 @@ namespace System.Buffers
 
                 // We use a shuffle to look up potential matches for each byte based on its low nibble.
                 // Since all values have a unique low nibble, there's at most one potential match per nibble.
-                Vector128<byte> values = Base64Helper.ShuffleUnsafeModified(bitmapLookup, lowNibbles);
+                Vector128<byte> values = SearchValues.ShuffleUnsafeModified(bitmapLookup, lowNibbles);
 
                 // Compare potential matches with the source to rule out false positives that have a different high nibble.
                 return Vector128.Equals(source, values);
@@ -1160,10 +1160,10 @@ namespace System.Buffers
 
                 // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.
                 // Lookup the rows via the lower nibble and the column via the higher nibble.
-                Vector128<byte> bitMask = Base64Helper.ShuffleUnsafeModified(bitmapLookup, lowNibbles);
+                Vector128<byte> bitMask = SearchValues.ShuffleUnsafeModified(bitmapLookup, lowNibbles);
 
                 // For values above 127, the high nibble will be above 7. We construct the positions vector for the shuffle such that those values map to 0.
-                Vector128<byte> bitPositions = Base64Helper.ShuffleUnsafeModified(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
+                Vector128<byte> bitPositions = SearchValues.ShuffleUnsafeModified(Vector128.Create(0x8040201008040201, 0).AsByte(), highNibbles);
 
                 return bitMask & bitPositions;
             }

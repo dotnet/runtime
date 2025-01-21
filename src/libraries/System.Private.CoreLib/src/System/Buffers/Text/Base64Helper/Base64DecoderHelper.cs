@@ -827,12 +827,14 @@ namespace System.Buffers.Text
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
 
-            if (AdvSimd.Arm64.IsSupported)
+            if (Ssse3.IsSupported)
             {
-                right &= mask8F;
+                return Ssse3.Shuffle(left, right);
             }
-
-            return Base64Helper.ShuffleUnsafeModified(left, right);
+            else
+            {
+                return AdvSimd.Arm64.VectorTableLookup(left, right & mask8F);
+            }
         }
 
 #if NET9_0_OR_GREATER

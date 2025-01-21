@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
@@ -291,6 +292,19 @@ namespace System.Buffers
         internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
+        }
+
+        // same as ShuffleUnsafe, except that we guarantee that if the high bit is set, it gives 0
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        internal static Vector128<byte> ShuffleUnsafeModified(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(vector, indices);
+            }
+
+            return Vector128.Shuffle(vector, indices);
         }
     }
 }

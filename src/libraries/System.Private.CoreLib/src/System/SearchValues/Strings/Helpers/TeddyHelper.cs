@@ -312,7 +312,7 @@ namespace System.Buffers
         [CompExactlyDependsOn(typeof(PackedSimd))]
         private static Vector128<byte> Shuffle(Vector128<byte> maskLow, Vector128<byte> maskHigh, Vector128<byte> low, Vector128<byte> high)
         {
-            return Base64Helper.ShuffleUnsafeModified(maskLow, low) & Vector128.ShuffleUnsafe(maskHigh, high);
+            return SearchValues.ShuffleUnsafeModified(maskLow, low) & Vector128.ShuffleUnsafe(maskHigh, high);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
