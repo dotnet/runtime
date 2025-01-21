@@ -19515,6 +19515,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
+        case INS_vmovd:
+        case INS_vmovw:
         case INS_movaps:
         case INS_movups:
         case INS_movapd:
@@ -19656,6 +19658,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vrangeps:
         case INS_vrangesd:
         case INS_vrangess:
+        case INS_vminmaxsd:
+        case INS_vminmaxss:
+        case INS_vminmaxpd:
+        case INS_vminmaxps:
         case INS_vreducepd:
         case INS_vreduceps:
         case INS_vreducesd:
@@ -19671,45 +19677,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
 
         // TODO-XArch-AVX10.2: handle perf for AVX10.2 instructions
-        case INS_vminmaxsd:
-        case INS_vminmaxss:
-        case INS_vminmaxpd:
-        case INS_vminmaxps:
-        case INS_vcvtps2ibs:
-        case INS_vcvtps2iubs:
-        case INS_vcvttps2ibs:
-        case INS_vcvttps2iubs:
-        case INS_vmpsadbw:
-        case INS_vcvttsd2sis32:
-        case INS_vcvttsd2sis64:
-        case INS_vcvttsd2usis32:
-        case INS_vcvttsd2usis64:
-        case INS_vcvttss2sis32:
-        case INS_vcvttss2sis64:
-        case INS_vcvttss2usis32:
-        case INS_vcvttss2usis64:
-        case INS_vcvttps2dqs:
-        case INS_vcvttps2udqs:
-        case INS_vcvttpd2qqs:
-        case INS_vcvttpd2uqqs:
-        case INS_vmovd:
-        case INS_vmovw:
         case INS_vcomxsd:
         case INS_vcomxss:
         case INS_vucomxsd:
         case INS_vucomxss:
-        case INS_vpdpwsud:
-        case INS_vpdpwsuds:
-        case INS_vpdpwusd:
-        case INS_vpdpwusds:
-        case INS_vpdpwuud:
-        case INS_vpdpwuuds:
-        case INS_vpdpbssd:
-        case INS_vpdpbssds:
-        case INS_vpdpbsud:
-        case INS_vpdpbsuds:
-        case INS_vpdpbuud:
-        case INS_vpdpbuuds:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;
@@ -19891,8 +19862,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvtusi2ss32:
         case INS_vcvtusi2ss64:
         case INS_vcvttsd2usi32:
+        case INS_vcvttsd2usis32:
         case INS_vcvttsd2usi64:
+        case INS_vcvttsd2usis64:
         case INS_vcvttss2usi32:
+        case INS_vcvttss2usis32:
+        case INS_vcvttsd2sis32:
+        case INS_vcvttsd2sis64:
+        case INS_vcvttss2sis32:
+        case INS_vcvttss2sis64:
+        case INS_vcvttss2usis64:
+        case INS_vcvttps2dqs:
+        case INS_vcvttps2udqs:
+        case INS_vcvttpd2qqs:
+        case INS_vcvttpd2uqqs:
+        case INS_vcvttps2ibs:
+        case INS_vcvttps2iubs:
+        case INS_vcvtps2ibs:
+        case INS_vcvtps2iubs:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
             break;
@@ -20329,6 +20316,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         }
 
         case INS_mpsadbw:
+        case INS_vmpsadbw:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency += PERFSCORE_LATENCY_4C;
             break;
@@ -20342,9 +20330,21 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_pmaddwd:
         case INS_pmaddubsw:
         case INS_vpdpbusd:
-        case INS_vpdpwssd:
         case INS_vpdpbusds:
+        case INS_vpdpbssd:
+        case INS_vpdpbssds:
+        case INS_vpdpbsud:
+        case INS_vpdpbsuds:
+        case INS_vpdpbuud:
+        case INS_vpdpbuuds:
         case INS_vpdpwssds:
+        case INS_vpdpwssd:        
+        case INS_vpdpwsud:
+        case INS_vpdpwsuds:
+        case INS_vpdpwusd:
+        case INS_vpdpwusds:
+        case INS_vpdpwuud:
+        case INS_vpdpwuuds:
         case INS_gf2p8affineinvqb:
         case INS_gf2p8affineqb:
         case INS_gf2p8mulb:
