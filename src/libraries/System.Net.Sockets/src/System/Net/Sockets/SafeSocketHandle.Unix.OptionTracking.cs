@@ -26,7 +26,7 @@ namespace System.Net.Sockets
                 return;
             }
 
-            _trackedOptions |= GetMask(tracked);
+            _trackedOptions |= GetFlag(tracked);
         }
 
         internal void GetTrackedSocketOptions(Span<int> values, out LingerOption? lingerOption)
@@ -36,23 +36,23 @@ namespace System.Net.Sockets
 
             // SO_LINGER is the only tracked socket option with a non-int value.
             lingerOption = null;
-            int lingerMask = GetMask(TrackableSocketOptions.SO_LINGER);
-            if ((trackedOptions & lingerMask) == lingerMask)
+            int lingerFlag = GetFlag(TrackableSocketOptions.SO_LINGER);
+            if ((trackedOptions & lingerFlag) == lingerFlag)
             {
                 SocketError errorCode = SocketPal.GetLingerOption(this, out lingerOption);
                 if (NetEventSource.Log.IsEnabled() && errorCode != SocketError.Success) NetEventSource.Info(this, $"GetLingerOption returned errorCode:{errorCode}");
 
                 // Ignore it during the processing of int-value options.
-                trackedOptions &= ~lingerMask;
+                trackedOptions &= ~lingerFlag;
             }
 
             // For DualMode, we use the value stored in the handle rather than querying the socket itself,
             // as on Unix stacks binding a dual-mode socket to an IPv6 address may cause IPV6_V6ONLY to revert to true.
-            int ipv6OnlyMask = GetMask(TrackableSocketOptions.IPV6_V6ONLY);
-            if ((trackedOptions & ipv6OnlyMask) == ipv6OnlyMask)
+            int ipv6OnlyFlag = GetFlag(TrackableSocketOptions.IPV6_V6ONLY);
+            if ((trackedOptions & ipv6OnlyFlag) == ipv6OnlyFlag)
             {
                 values[(int)TrackableSocketOptions.IPV6_V6ONLY - 1] = DualMode ? 0 : 1;
-                trackedOptions &= ~ipv6OnlyMask;
+                trackedOptions &= ~ipv6OnlyFlag;
             }
 
             for (int i = 0; i < values.Length; i++)
@@ -71,15 +71,15 @@ namespace System.Net.Sockets
         internal void SetTrackedSocketOptions(ReadOnlySpan<int> values, LingerOption? lingerOption)
         {
             Debug.Assert(values.Length == TrackableOptionCount);
-            int lingerMask = GetMask(TrackableSocketOptions.SO_LINGER);
+            int lingerFlag = GetFlag(TrackableSocketOptions.SO_LINGER);
             if (lingerOption is not null)
             {
-                Debug.Assert((_trackedOptions & lingerMask) == lingerMask);
+                Debug.Assert((_trackedOptions & lingerFlag) == lingerFlag);
                 SocketError errorCode = SocketPal.SetLingerOption(this, lingerOption);
                 if (NetEventSource.Log.IsEnabled() && errorCode != SocketError.Success) NetEventSource.Info(this, $"SetLingerOption returned errorCode:{errorCode}");
             }
 
-            int trackedOptions = _trackedOptions & ~lingerMask;
+            int trackedOptions = _trackedOptions & ~lingerFlag;
 
             for (int i = 0; i < values.Length; i++)
             {
@@ -94,7 +94,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static int GetMask(TrackableSocketOptions tracked) => 1 << ((int)tracked - 1);
+        private static int GetFlag(TrackableSocketOptions tracked) => 1 << ((int)tracked - 1);
 
         // Relevant option names and values taken from Windows headers.
         private enum TrackableSocketOptions
