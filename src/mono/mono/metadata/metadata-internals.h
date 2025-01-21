@@ -30,7 +30,7 @@ struct _MonoType {
 		MonoMethodSignature *method;
 		MonoGenericParam *generic_param; /* for VAR and MVAR */
 		MonoGenericClass *generic_class; /* for GENERICINST */
-	} data; /* don't access directly, use m_type_get_<name> */
+	} data; /* don't access directly, use m_type_data_get_<name> */
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;
@@ -1296,17 +1296,18 @@ m_type_is_byref (const MonoType *type)
 	return type->byref__;
 }
 
-void
-m_type_invalid_access (const char * fn_name, MonoTypeEnum actual_type);
+MONO_NEVER_INLINE void
+m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type);
 
 static inline MonoClass *
-m_type_get_klass (const MonoType *type)
+m_type_data_get_klass (const MonoType *type)
 {
 	switch (type->type) {
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_SZARRAY:
 			return type->data.klass;
 		default:
 			m_type_invalid_access ("m_type_get_klass", type->type);
@@ -1315,7 +1316,7 @@ m_type_get_klass (const MonoType *type)
 }
 
 static inline MonoGenericParam *
-m_type_get_generic_param (const MonoType *type)
+m_type_data_get_generic_param (const MonoType *type)
 {
 	if (G_LIKELY((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)))
 		return type->data.generic_param;
@@ -1325,7 +1326,7 @@ m_type_get_generic_param (const MonoType *type)
 }
 
 static inline MonoArrayType *
-m_type_get_array (const MonoType *type)
+m_type_data_get_array (const MonoType *type)
 {
 	if (G_LIKELY(type->type == MONO_TYPE_ARRAY))
 		return type->data.array;
@@ -1335,7 +1336,7 @@ m_type_get_array (const MonoType *type)
 }
 
 static inline MonoType *
-m_type_get_type (const MonoType *type)
+m_type_data_get_type (const MonoType *type)
 {
 	if (G_LIKELY(type->type == MONO_TYPE_PTR))
 		return type->data.type;
@@ -1345,7 +1346,7 @@ m_type_get_type (const MonoType *type)
 }
 
 static inline MonoMethodSignature *
-m_type_get_method (const MonoType *type)
+m_type_data_get_method (const MonoType *type)
 {
 	if (G_LIKELY(type->type == MONO_TYPE_FNPTR))
 		return type->data.method;
@@ -1355,7 +1356,7 @@ m_type_get_method (const MonoType *type)
 }
 
 static inline MonoGenericClass *
-m_type_get_generic_class (const MonoType *type)
+m_type_data_get_generic_class (const MonoType *type)
 {
 	if (G_LIKELY(type->type == MONO_TYPE_GENERICINST))
 		return type->data.generic_class;
@@ -1376,7 +1377,7 @@ static inline MonoClass*
 mono_type_get_class_internal (MonoType *type)
 {
 	/* FIXME: review the runtime users before adding the assert here */
-	return m_type_get_klass(type);
+	return m_type_data_get_klass (type);
 }
 
 /**
@@ -1390,7 +1391,7 @@ mono_type_get_class_internal (MonoType *type)
 static inline MonoArrayType*
 mono_type_get_array_type_internal (MonoType *type)
 {
-	return m_type_get_array(type);
+	return m_type_data_get_array (type);
 }
 
 static inline int

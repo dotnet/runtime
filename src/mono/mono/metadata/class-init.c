@@ -1887,7 +1887,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
 	if (!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
-		MonoGenericParam *gparam = m_type_get_generic_param(ftype);
+		MonoGenericParam *gparam = m_type_data_get_generic_param (ftype);
 
 		if (gparam->gshared_constraint)
 			return class_has_references (mono_class_from_mono_type_internal (gparam->gshared_constraint));
@@ -1935,7 +1935,7 @@ mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
 {
 	MonoType *type = m_class_get_byval_arg (klass);
 	g_assert (mono_type_is_generic_parameter (type));
-	MonoGenericParam *gparam = m_type_get_generic_param(type);
+	MonoGenericParam *gparam = m_type_data_get_generic_param (type);
 	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) != 0)
 		return TRUE;
 	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) != 0)
@@ -2699,7 +2699,7 @@ setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **met
 	if (mono_class_is_gtd (iface)) {
 		MonoType *ty = mono_class_gtd_get_canonical_inst (iface);
 		g_assert (ty->type == MONO_TYPE_GENERICINST);
-		gclass = m_type_get_generic_class(ty);
+		gclass = m_type_data_get_generic_class (ty);
 	} else
 		gclass = mono_class_get_generic_class (iface);
 
