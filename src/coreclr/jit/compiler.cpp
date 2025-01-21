@@ -5267,7 +5267,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // The common phase checks and dumps are no longer relevant past this point.
     //
-    activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseChecks = PhaseChecks::CHECK_PROFILE;
     activePhaseDumps  = PhaseDumps::DUMP_NONE;
 
     // Generate code
