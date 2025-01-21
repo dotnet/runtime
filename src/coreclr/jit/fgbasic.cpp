@@ -4823,16 +4823,14 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 //------------------------------------------------------------------------
 // fgSplitEdge: Splits the edge between a block 'curr' and its successor 'succ' by creating a new block
-//              that replaces 'succ' as a successor of 'curr', and which branches unconditionally
-//              to (or falls through to) 'succ'. Note that for a BBJ_COND block 'curr',
-//              'succ' might be the fall-through path or the branch path from 'curr'.
+//              that replaces 'succ' as a successor of 'curr', and which branches unconditionally to 'succ'.
 //
 // Arguments:
 //    curr - A block which branches to 'succ'
 //    succ - The target block
 //
 // Return Value:
-//    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
+//    Returns a new block, that is a successor of 'curr' and branches unconditionally to 'succ'
 //
 // Assumptions:
 //    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
@@ -4847,20 +4845,11 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     assert(fgPredsComputed);
     assert(fgGetPredForBlock(succ, curr) != nullptr);
 
-    BasicBlock* newBlock;
-    if (curr->NextIs(succ))
-    {
-        // The successor is the fall-through path of a BBJ_COND, or
-        // an immediately following block of a BBJ_SWITCH (which has
-        // no fall-through path). For this case, simply insert a new
-        // fall-through block after 'curr'.
-        newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
-    }
-    else
-    {
-        // The new block always jumps to 'succ'
-        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* isRunRarely */ curr->isRunRarely());
-    }
+    // One of fgSplitEdge's callsites is in LSRA, which runs after block layout.
+    // Ideally, we wouldn't introduce new blocks after reordering them, but if we must,
+    // try to avoid breaking up any fallthrough by inserting newBlock after curr;
+    // we're effectively moving the curr->succ branch up a block.
+    BasicBlock* newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
     newBlock->CopyFlags(curr, succ->GetFlagsRaw() & BBF_BACKWARD_JUMP);
 
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
