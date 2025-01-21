@@ -211,7 +211,10 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteBigEndian128(in Hash128 hash, Span<byte> destination)
         {
-            BinaryPrimitives.TryWriteUInt128BigEndian(destination, Unsafe.BitCast<Hash128, UInt128>(hash));
+            Span<byte> dest1 = destination.Slice(0, sizeof(ulong));
+            Span<byte> dest2 = destination.Slice(sizeof(ulong), sizeof(ulong));
+            BinaryPrimitives.WriteUInt64BigEndian(dest1, hash.Low64);
+            BinaryPrimitives.WriteUInt64BigEndian(dest2, hash.High64);
         }
 
         private static Hash128 HashLength0To16(byte* source, uint length, ulong seed)
