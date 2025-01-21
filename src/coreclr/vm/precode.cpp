@@ -182,6 +182,55 @@ PCODE Precode::TryToSkipFixupPrecode(PCODE addr)
     return 0;
 }
 
+#ifdef FEATURE_INTERPRETER
+static TADDR GetMethodDescFromPrecodeData(TADDR methodDesc)
+{
+    LIMITED_METHOD_CONTRACT;
+    if ((methodDesc & InterpretedCodeAddressFlag) == 0)
+    {
+        return methodDesc;
+    }
+
+    PTR_CodeHeader pCodeHeader = PTR_CodeHeader((methodDesc & ~(TADDR)1) - sizeof(CodeHeader));
+    return dac_cast<TADDR>(pCodeHeader->GetMethodDesc());
+}
+
+static PCODE GetTargetFromPrecodeData(TADDR methodDesc, PCODE target)
+{
+    LIMITED_METHOD_CONTRACT;
+    if ((methodDesc & InterpretedCodeAddressFlag) == 0)
+    {
+        return target;
+    }
+
+    return dac_cast<PCODE>(methodDesc);
+}
+
+TADDR FixupPrecode::GetMethodDesc()
+{
+    LIMITED_METHOD_CONTRACT;
+    return GetMethodDescFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc));
+}
+
+PCODE FixupPrecode::GetTarget()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetTargetFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc), GetData()->Target);
+}
+
+TADDR StubPrecode::GetMethodDesc()
+{
+    LIMITED_METHOD_CONTRACT;
+    return GetMethodDescFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc));
+}
+
+PCODE StubPrecode::GetTarget()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetTargetFromPrecodeData(dac_cast<TADDR>(GetData()->MethodDesc), GetData()->Target);
+}
+#endif // FEATURE_INTERPRETER
+
 #ifndef DACCESS_COMPILE
 
 Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
@@ -278,7 +327,7 @@ void Precode::ResetTargetInterlocked()
     // interlocked operation above (see ClrFlushInstructionCache())
 }
 
-BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
+BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub, BOOL fInterpreter)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsPointingToPrestub(target));
@@ -293,17 +342,18 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     switch (precodeType)
     {
     case PRECODE_STUB:
-        ret = AsStubPrecode()->SetTargetInterlocked(target, expected);
+        ret = AsStubPrecode()->SetTargetInterlocked(target, expected, fInterpreter);
         break;
 
 #ifdef HAS_FIXUP_PRECODE
     case PRECODE_FIXUP:
-        ret = AsFixupPrecode()->SetTargetInterlocked(target, expected);
+        ret = AsFixupPrecode()->SetTargetInterlocked(target, expected, fInterpreter);
         break;
 #endif // HAS_FIXUP_PRECODE
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     case PRECODE_THISPTR_RETBUF:
+        _ASSERTE(!fInterpreter);
         ret = AsThisPtrRetBufPrecode()->SetTargetInterlocked(target, expected);
         ClrFlushInstructionCache(this, sizeof(ThisPtrRetBufPrecode), /* hasCodeExecutedBefore */ true);
         break;
@@ -384,7 +434,7 @@ void StubPrecode::Init(StubPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocator
         pStubData->Target = target;
     }
 
-    pStubData->MethodDesc = pMD;
+    pStubData->MethodDesc = (TADDR)pMD;
     pStubData->Type = type;
 }
 
@@ -501,7 +551,7 @@ void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocat
     _ASSERTE(pPrecodeRX == this);
 
     FixupPrecodeData *pData = GetData();
-    pData->MethodDesc = pMD;
+    pData->MethodDesc = (TADDR)pMD;
 
     _ASSERTE(GetMethodDesc() == (TADDR)pMD);
 

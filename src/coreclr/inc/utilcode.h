@@ -3969,4 +3969,7 @@ struct SpinConstants
 
 extern SpinConstants g_SpinConstants;
 
+// This value is or-ed to the code address as a marker to indicate it is an address of the interpreter IR bytecode
+static const size_t InterpretedCodeAddressFlag = 2;
+
 #endif // __UtilCode_h__

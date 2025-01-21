@@ -2060,6 +2060,18 @@ public:
         m_jitSwitchedToMinOpt = true;
     }
 
+    void SetIsInterpreterCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isInterpreterCode = true;
+    }
+
+    bool IsInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInterpreterCode;
+    }
+
 #ifdef FEATURE_TIERED_COMPILATION
 public:
     bool JitSwitchedToOptimized() const
@@ -2128,6 +2140,8 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
+    bool m_isInterpreterCode; // The generated code is interpreter IR
+
     PrepareCodeConfig *m_nextInSameThread;
 };
 

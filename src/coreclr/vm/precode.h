@@ -76,7 +76,7 @@ struct InvalidPrecode
 
 struct StubPrecodeData
 {
-    PTR_MethodDesc MethodDesc;
+    TADDR MethodDesc; // MethodDesc pointer or interpreted code address or-ed with the InterpretedCodeAddressFlag
     PCODE Target;
     BYTE Type;
 };
@@ -86,6 +86,10 @@ typedef DPTR(StubPrecodeData) PTR_StubPrecodeData;
 #if !(defined(TARGET_ARM64) && defined(TARGET_UNIX))
 extern "C" void StubPrecodeCode();
 extern "C" void StubPrecodeCode_End();
+#endif
+
+#ifdef FEATURE_INTERPRETER
+extern "C" void InterpreterStub();
 #endif
 
 // Regular precode
@@ -129,18 +133,26 @@ struct StubPrecode
     }
 
     TADDR GetMethodDesc()
+#ifdef FEATURE_INTERPRETER
+    ;
+#else
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return dac_cast<TADDR>(GetData()->MethodDesc);
     }
+#endif
 
     PCODE GetTarget()
+#ifdef FEATURE_INTERPRETER
+    ;
+#else
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
         return GetData()->Target;
     }
+#endif
 
     BYTE GetType()
     {
@@ -163,7 +175,7 @@ struct StubPrecode
         InterlockedExchangeT<PCODE>(&pData->Target, GetPreStubEntryPoint());
     }
 
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
+    BOOL SetTargetInterlocked(TADDR target, TADDR expected, BOOL fInterpreter)
     {
         CONTRACTL
         {
@@ -172,6 +184,12 @@ struct StubPrecode
         }
         CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+        if (fInterpreter)
+        {
+            target = (PCODE)InterpreterStub;
+        }
+#endif
         StubPrecodeData *pData = GetData();
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
   }
@@ -210,7 +228,7 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 struct FixupPrecodeData
 {
     PCODE Target;
-    class MethodDesc *MethodDesc;
+    TADDR MethodDesc;  // MethodDesc pointer or interpreted code address or-ed with the InterpretedCodeAddressFlag
     PCODE PrecodeFixupThunk;
 };
 
@@ -271,16 +289,23 @@ struct FixupPrecode
     }
 
     TADDR GetMethodDesc()
+#ifdef FEATURE_INTERPRETER
+    ;
+#else
     {
-        LIMITED_METHOD_CONTRACT;
         return (TADDR)GetData()->MethodDesc;
     }
+#endif
 
     PCODE GetTarget()
+#ifdef FEATURE_INTERPRETER
+    ;
+#else
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return GetData()->Target;
     }
+#endif
 
     PCODE *GetTargetSlot()
     {
@@ -306,7 +331,7 @@ struct FixupPrecode
         InterlockedExchangeT<PCODE>(&GetData()->Target, target);
     }
 
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
+    BOOL SetTargetInterlocked(TADDR target, TADDR expected, BOOL fInterpreter)
     {
         CONTRACTL
         {
@@ -315,6 +340,15 @@ struct FixupPrecode
         }
         CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+        if (fInterpreter)
+        {
+            _ASSERTE(IS_ALIGNED(&GetData()->PrecodeFixupThunk, sizeof(SIZE_T)));
+            _ASSERTE((PCODE)GetData()->Target == ((PCODE)this + FixupCodeOffset));
+            PCODE oldTarget = (PCODE)GetData()->PrecodeFixupThunk;
+            return InterlockedCompareExchangeT<PCODE>(&GetData()->PrecodeFixupThunk, (PCODE)InterpreterStub, (PCODE)oldTarget) == (PCODE)oldTarget;
+        }
+#endif
         PCODE oldTarget = (PCODE)GetData()->Target;
         if (oldTarget != ((PCODE)this + FixupCodeOffset))
         {
@@ -538,7 +572,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void ResetTargetInterlocked();
-    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE);
+    BOOL SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub = TRUE, BOOL fInterpreter = FALSE);
 
     // Reset precode to point to prestub
     void Reset();

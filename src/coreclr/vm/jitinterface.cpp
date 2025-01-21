@@ -6611,7 +6611,7 @@ void CEEInfo::setMethodAttribs (
         ftn->SetNotInline(true);
     }
 
-    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
+    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT | CORINFO_FLG_INTERPRETER))
     {
         PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
         if (config != nullptr)
@@ -6620,6 +6620,10 @@ void CEEInfo::setMethodAttribs (
             {
                 _ASSERTE(!ftn->IsJitOptimizationDisabled());
                 config->SetJitSwitchedToMinOpt();
+            }
+            else if (attribs & CORINFO_FLG_INTERPRETER)
+            {
+                config->SetIsInterpreterCode();
             }
 #ifdef FEATURE_TIERED_COMPILATION
             else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
@@ -13138,6 +13142,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef TARGET_ARM
         ret |= THUMB_CODE;
 #endif
+
+        if (config->IsInterpreterCode())
+        {
+            ret |= InterpretedCodeAddressFlag;
+        }
 
         // We are done
         break;
