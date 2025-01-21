@@ -70,7 +70,6 @@ set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
 set __OutputRid=
-set __ExplicitHostArch=
 set __SubDir=
 
 :Arg_Loop
@@ -128,7 +127,7 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-hostarch"            (set __HostArch=%2&set __ExplicitHostArch=1&shift&shift&goto Arg_Loop)
+if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-subdir"              (set __SubDir=%2&shift&shift&goto Arg_Loop)
@@ -220,11 +219,6 @@ set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set "__ArtifactsIntermediatesDir=%__RepoRootDir%\artifacts\obj\coreclr\"
 if "%__Ninja%"=="0" (set "__IntermediatesDir=%__IntermediatesDir%\ide")
 set "__PackagesBinDir=%__BinDir%\.nuget"
-
-if "%__ExplicitHostArch%" == "1" (
-    set __BinDir=%__BinDir%\%__HostArch%
-    set __IntermediatesDir=%__IntermediatesDir%\%__HostArch%
-)
 
 if NOT "%__SubDir%"=="" (
     set __BinDir=%__BinDir%\%__SubDir%
