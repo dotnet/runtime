@@ -411,7 +411,7 @@ CMiniMd::CommonGetCustomAttributeByNameEx(
                 IfFailGo(GetCustomAttributeRecord(ridStart, &pRec));
                 IfFailGo(getValueOfCustomAttribute(pRec, reinterpret_cast<const BYTE **>(ppData), pcbData));
                 if (ptkCA)
-                    *ptkCA = TokenFromRid(mdtCustomAttribute, ridStart);
+                    *ptkCA = TokenFromRid(ridStart, mdtCustomAttribute);
             }
             break;
         }

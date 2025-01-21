@@ -19,11 +19,52 @@
     <ExcludeLineupReference Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ExcludeLineupReference>
   </PropertyGroup>
 
+  <Target Name="AddBuildIntegrationFiles"
+          DependsOnTargets="ResolveLibrariesFromLocalBuild"
+          BeforeTargets="GetPackageFiles"
+          Condition="'$(PackageTargetRuntime)' == ''">
+    <ItemGroup>
+      <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
+      <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetHostIlcCompilerFiles"
+          DependsOnTargets="ResolveLibrariesFromLocalBuild"
+          BeforeTargets="GetPackageFiles"
+          Condition="'$(PackHostILCompiler)' == 'true' and '$(PackageTargetRuntime)' != ''">
+
+    <ItemGroup>
+      <File Include="$(CoreCLRCrossILCompilerDir)*" TargetPath="tools" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'">
+      <File Include="$(SharedNativeRoot)libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
+      <File Include="$(SharedNativeRoot)libs\System.Security.Cryptography.Native\*" TargetPath="native/src/libs/System.Security.Cryptography.Native"/>
+      <File Include="$(SharedNativeRoot)libs\build-local.sh" TargetPath="native/src/libs/build-local.sh"/>
+      <File Include="$(SharedNativeRoot)minipal\*" TargetPath="native/src/minipal"/>
+      <File Include="$(SharedNativeRoot)libs\Common\*" TargetPath="native/src/libs/Common"/>
+    </ItemGroup>
+
+    <!-- exclude native symbols from ilc package (they are included in symbols package) -->
+    <ItemGroup>
+       <!-- on windows, remove the pdbs only from tools directory (both managed and native) -->
+      <LibPackageExcludes Include="tools\%2A%2A\%2A.pdb"/>
+
+      <LibPackageExcludes Include="%2A%2A\%2A.dbg"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.debug"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.dSYM"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.dwarf"/>
+    </ItemGroup>
+
+  </Target>
+
   <Target Name="GetIlcCompilerFiles"
           DependsOnTargets="ResolveLibrariesFromLocalBuild"
-          BeforeTargets="GetPackageFiles">
+          BeforeTargets="GetPackageFiles"
+          Condition="'$(PackHostILCompiler)' != 'true' and '$(PackageTargetRuntime)' != ''">
 
-    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <ItemGroup>
       <!-- Include all libraries (managed, static, etc.), but exclude native shared libraries (those with LibSuffix) -->
       <File Include="@(LibrariesRuntimeFiles)" TargetPath="framework" Condition="'%(LibrariesRuntimeFiles.IsNative)' != 'true' or '%(LibrariesRuntimeFiles.Extension)' != '$(LibSuffix)'" />
 
@@ -32,17 +73,12 @@
       <File Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" TargetPath="mibc" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(PackageTargetRuntime)' != '' and '$(TargetOS)' == 'linux'">
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'">
       <File Include="$(SharedNativeRoot)libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
       <File Include="$(SharedNativeRoot)libs\System.Security.Cryptography.Native\*" TargetPath="native/src/libs/System.Security.Cryptography.Native"/>
       <File Include="$(SharedNativeRoot)libs\build-local.sh" TargetPath="native/src/libs/build-local.sh"/>
       <File Include="$(SharedNativeRoot)minipal\*" TargetPath="native/src/minipal"/>
       <File Include="$(SharedNativeRoot)libs\Common\*" TargetPath="native/src/libs/Common"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-      <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
-      <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
     </ItemGroup>
 
     <!-- exclude native symbols from ilc package (they are included in symbols package) -->
