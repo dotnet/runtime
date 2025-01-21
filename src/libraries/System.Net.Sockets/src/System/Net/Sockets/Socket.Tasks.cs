@@ -184,7 +184,7 @@ namespace System.Net.Sockets
                 throw new SocketException((int)SocketError.IsConnected);
             }
 
-            ValidateForMultiConnect(isMultiEndpoint: false);
+            ValidateForMultiConnect();
 
             return Core(addresses, port, cancellationToken);
 

@@ -37,7 +37,7 @@ namespace System.Net.Sockets
             set => _handle.PreferInlineCompletions = value;
         }
 
-        partial void ValidateForMultiConnect(bool isMultiEndpoint)
+        partial void ValidateForMultiConnect()
         {
             // ValidateForMultiConnect is called before any {Begin}Connect{Async} call,
             // regardless of whether it's targeting an endpoint with multiple addresses.
@@ -47,7 +47,7 @@ namespace System.Net.Sockets
             // only targeting a single address, but it already experienced a failure in a
             // previous connect call, then this is logically part of a multi endpoint connect,
             // and the same logic applies.  Either way, in such a situation we throw.
-            if (_handle.ExposedHandleOrUntrackedConfiguration && (isMultiEndpoint || _handle.LastConnectFailed))
+            if (_handle.ExposedHandleOrUntrackedConfiguration && _handle.LastConnectFailed)
             {
                 ThrowMultiConnectNotSupported();
             }
