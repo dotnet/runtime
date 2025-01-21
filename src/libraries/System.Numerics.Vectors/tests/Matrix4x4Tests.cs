@@ -7,29 +7,9 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public sealed class Matrix4x4Tests : Matrix4x4RightHandTests
+    public sealed class Matrix4x4Tests
     {
-        static Matrix4x4 GenerateFilledMatrix(float value) => new Matrix4x4
-        {
-            M11 = value,
-            M12 = value,
-            M13 = value,
-            M14 = value,
-            M21 = value,
-            M22 = value,
-            M23 = value,
-            M24 = value,
-            M31 = value,
-            M32 = value,
-            M33 = value,
-            M34 = value,
-            M41 = value,
-            M42 = value,
-            M43 = value,
-            M44 = value
-        };
-
-        static Matrix4x4 GenerateIncrementalMatrixNumber(float value = 0.0f)
+        private static Matrix4x4 GenerateIncrementalMatrixNumber(float value = 0.0f)
         {
             Matrix4x4 a = new Matrix4x4();
             a.M11 = value + 1.0f;
@@ -51,7 +31,7 @@ namespace System.Numerics.Tests
             return a;
         }
 
-        static Matrix4x4 GenerateTestMatrix()
+        private static Matrix4x4 GenerateTestMatrix()
         {
             Matrix4x4 m =
                 Matrix4x4.CreateRotationX(MathHelper.ToRadians(30.0f)) *
@@ -61,13 +41,55 @@ namespace System.Numerics.Tests
             return m;
         }
 
-        internal static Matrix4x4 DefaultVarianceMatrix = GenerateFilledMatrix(1e-5f);
+        private static Matrix4x4 DefaultVarianceMatrix = GenerateFilledMatrix(1e-5f);
 
-        internal static void AssertEqual(Matrix4x4 expected, Matrix4x4 actual, Matrix4x4 variance)
+        private static Matrix4x4 GenerateFilledMatrix(float value) => new Matrix4x4
+        {
+            M11 = value,
+            M12 = value,
+            M13 = value,
+            M14 = value,
+            M21 = value,
+            M22 = value,
+            M23 = value,
+            M24 = value,
+            M31 = value,
+            M32 = value,
+            M33 = value,
+            M34 = value,
+            M41 = value,
+            M42 = value,
+            M43 = value,
+            M44 = value
+        };
+
+        private static Vector3 InverseHandedness(Vector3 vector) => new Vector3(vector.X, vector.Y, -vector.Z);
+
+        // The handedness of matrix M is B^-1 * M * B where B is the change of handedness matrix.
+        // Since only the Z coordinate is flipped when changing handedness,
+        // 
+        // B = [ 1  0  0  0
+        //       0  1  0  0
+        //       0  0 -1  0
+        //       0  0  0  1 ]
+        //
+        // and B is its own inverse. So the handedness swap can be simplified to
+        // 
+        // B^-1 * M * B = [  m11  m12  -m13  m14
+        //                   m21  m22  -m23  m24
+        //                  -m31 -m32   m33 -m34
+        //                   m41  m42  -m43  m44 ]
+        private static Matrix4x4 InverseHandedness(Matrix4x4 matrix) => new Matrix4x4(
+             matrix.M11,  matrix.M12, -matrix.M13,  matrix.M14,
+             matrix.M21,  matrix.M22, -matrix.M23,  matrix.M24,
+            -matrix.M31, -matrix.M32,  matrix.M33, -matrix.M34,
+             matrix.M41,  matrix.M42, -matrix.M43,  matrix.M44);
+
+        private static void AssertEqual(Matrix4x4 expected, Matrix4x4 actual, Matrix4x4 variance)
         {
             for (var i = 0; i < 4; i++)
                 for (var j = 0; j < 4; j++)
-                    AssertExtensions.Equal(expected[i, j], actual[i, j], variance[i, j], $"Values differ at Matrix4x4.M{i+1}{j+1}");
+                    AssertExtensions.Equal(expected[i, j], actual[i, j], variance[i, j], $"Values differ at Matrix4x4.M{i + 1}{j + 1}");
         }
 
         [Theory]
@@ -886,6 +908,167 @@ namespace System.Numerics.Tests
             Matrix4x4 rotateAroundCenter = Matrix4x4.CreateRotationZ(radians, center);
             Matrix4x4 rotateAroundCenterExpected = Matrix4x4.CreateTranslation(-center) * Matrix4x4.CreateRotationZ(radians) * Matrix4x4.CreateTranslation(center);
             Assert.True(MathHelper.Equal(rotateAroundCenter, rotateAroundCenterExpected));
+        }
+
+        [Fact]
+        public void Matrix4x4CreateLookAtTest()
+        {
+            Vector3 cameraPosition = new Vector3(10.0f, 20.0f, 30.0f);
+            Vector3 cameraTarget = new Vector3(3.0f, 2.0f, -4.0f);
+            Vector3 cameraUpVector = new Vector3(0.0f, 1.0f, 0.0f);
+
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = +0.979457f;
+            expected.M12 = -0.0928268f;
+            expected.M13 = +0.179017f;
+
+            expected.M21 = +0.0f;
+            expected.M22 = +0.887748f;
+            expected.M23 = +0.460329f;
+
+            expected.M31 = -0.201653f;
+            expected.M32 = -0.450873f;
+            expected.M33 = +0.869511f;
+
+            expected.M41 = -3.74498f;
+            expected.M42 = -3.30051f;
+            expected.M43 = -37.0821f;
+            expected.M44 = +1.0f;
+
+            Matrix4x4 actual = Matrix4x4.CreateLookAt(cameraPosition, cameraTarget, cameraUpVector);
+            Assert.True(MathHelper.Equal(expected, actual), $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateLookAt)} did not return the expected value.");
+        }
+
+        [Fact]
+        public void Matrix4x4CreateLookAtLeftHandedTest()
+        {
+            Vector3 cameraPosition = new Vector3(10.0f, 20.0f, 30.0f);
+            Vector3 cameraTarget = new Vector3(3.0f, 2.0f, -4.0f);
+            Vector3 cameraUpVector = new Vector3(0.0f, 1.0f, 0.0f);
+
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = -0.979457f;
+            expected.M12 = -0.0928268f;
+            expected.M13 = -0.179017f;
+
+            expected.M21 = +0.0f;
+            expected.M22 = +0.887748f;
+            expected.M23 = -0.460329f;
+
+            expected.M31 = +0.201653f;
+            expected.M32 = -0.450873f;
+            expected.M33 = -0.869511f;
+
+            expected.M41 = +3.74498f;
+            expected.M42 = -3.30051f;
+            expected.M43 = +37.0821f;
+            expected.M44 = +1.0f;
+
+            Matrix4x4 actual = Matrix4x4.CreateLookAtLeftHanded(cameraPosition, cameraTarget, cameraUpVector);
+            Assert.True(MathHelper.Equal(expected, actual), $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateLookAtLeftHanded)} did not return the expected value.");
+        }
+
+        [Fact]
+        public void Matrix4x4CreateLookToTest()
+        {
+            Vector3 cameraPosition = new Vector3(10.0f, 20.0f, 30.0f);
+            Vector3 cameraDirection = new Vector3(-7.0f, -18.0f, -34.0f);
+            Vector3 cameraUpVector = new Vector3(0.0f, 1.0f, 0.0f);
+
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = +0.979457f;
+            expected.M12 = -0.0928268f;
+            expected.M13 = +0.179017f;
+
+            expected.M21 = +0.0f;
+            expected.M22 = +0.887748f;
+            expected.M23 = +0.460329f;
+
+            expected.M31 = -0.201653f;
+            expected.M32 = -0.450873f;
+            expected.M33 = +0.869511f;
+
+            expected.M41 = -3.74498f;
+            expected.M42 = -3.30051f;
+            expected.M43 = -37.0821f;
+            expected.M44 = +1.0f;
+
+            Matrix4x4 actual = Matrix4x4.CreateLookTo(cameraPosition, cameraDirection, cameraUpVector);
+            Assert.True(MathHelper.Equal(expected, actual), $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateLookTo)} did not return the expected value.");
+        }
+
+        [Fact]
+        public void Matrix4x4CreateLookToLeftHandedTest()
+        {
+            Vector3 cameraPosition = new Vector3(10.0f, 20.0f, 30.0f);
+            Vector3 cameraDirection = new Vector3(-7.0f, -18.0f, -34.0f);
+            Vector3 cameraUpVector = new Vector3(0.0f, 1.0f, 0.0f);
+
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = -0.979457f;
+            expected.M12 = -0.0928268f;
+            expected.M13 = -0.179017f;
+
+            expected.M21 = +0.0f;
+            expected.M22 = +0.887748f;
+            expected.M23 = -0.460329f;
+
+            expected.M31 = +0.201653f;
+            expected.M32 = -0.450873f;
+            expected.M33 = -0.869511f;
+
+            expected.M41 = +3.74498f;
+            expected.M42 = -3.30051f;
+            expected.M43 = +37.0821f;
+            expected.M44 = +1.0f;
+
+            Matrix4x4 actual = Matrix4x4.CreateLookToLeftHanded(cameraPosition, cameraDirection, cameraUpVector);
+            Assert.True(MathHelper.Equal(expected, actual), $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateLookToLeftHanded)} did not return the expected value.");
+        }
+
+        [Fact]
+        public void Matrix4x4CreateViewportTest()
+        {
+            float x = 10.0f;
+            float y = 20.0f;
+            float width = 80.0f;
+            float height = 160.0f;
+            float minDepth = 1.5f;
+            float maxDepth = 1000.0f;
+
+            Matrix4x4 expected = new Matrix4x4();
+            expected.M11 = +40.0f;
+
+            expected.M22 = -80.0f;
+
+            expected.M33 = -998.5f;
+
+            expected.M41 = +50.0f;
+            expected.M42 = +100.0f;
+            expected.M43 = +1.5f;
+            expected.M44 = +1.0f;
+
+            Matrix4x4 actual = Matrix4x4.CreateViewport(x, y, width, height, minDepth, maxDepth);
+            Assert.True(MathHelper.Equal(expected, actual), $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateViewport)} did not return the expected value.");
+        }
+
+        [Fact]
+        public void Matrix4x4CreateViewportLeftHandedTest()
+        {
+            float x = 10.0f, y = 20.0f;
+            float width = 3.0f, height = 4.0f;
+            float minDepth = 100.0f, maxDepth = 200.0f;
+
+            Matrix4x4 expected = Matrix4x4.Identity;
+            expected.M11 = width * 0.5f;
+            expected.M22 = -height * 0.5f;
+            expected.M33 = maxDepth - minDepth;
+            expected.M41 = x + expected.M11;
+            expected.M42 = y - expected.M22;
+            expected.M43 = minDepth;
+
+            Matrix4x4 actual = Matrix4x4.CreateViewportLeftHanded(x, y, width, height, minDepth, maxDepth);
+            Assert.True(MathHelper.Equal(expected, actual), $"{nameof(Matrix4x4)}.{nameof(Matrix4x4.CreateViewportLeftHanded)} did not return the expected value.");
         }
 
         // A test for CreateWorld (Vector3f, Vector3f, Vector3f)
@@ -1976,6 +2159,570 @@ namespace System.Numerics.Tests
 
             Matrix4x4 actual = Matrix4x4.Subtract(a, b);
             Assert.Equal(expected, actual);
+        }
+
+        private void CreateBillboardFact(Vector3 placeDirection, Vector3 cameraUpVector, Matrix4x4 expectedRotationRightHanded, Matrix4x4 expectedRotationLeftHanded)
+        {
+            Vector3 cameraPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 objectPosition = cameraPosition + placeDirection * 10.0f;
+            Matrix4x4 expected = expectedRotationRightHanded * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualRH), "Matrix4x4.CreateBillboard did not return the expected value.");
+
+            placeDirection = InverseHandedness(placeDirection);
+            cameraUpVector = InverseHandedness(cameraUpVector);
+
+            cameraPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            objectPosition = cameraPosition + placeDirection * 10.0f;
+            expected = expectedRotationLeftHanded * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateBillboardLeftHanded(objectPosition, cameraPosition, cameraUpVector, new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualLH), "Matrix4x4.CreateBillboardLeftHanded did not return the expected value.");
+
+            AssertEqual(actualRH, InverseHandedness(actualLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualRH), actualLH, DefaultVarianceMatrix);
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Forward side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest01()
+        {
+            // Object placed at Forward of camera. result must be same as 180 degrees rotate along y-axis.
+            CreateBillboardFact(
+                new Vector3(0, 0, -1),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Backward side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest02()
+        {
+            // Object placed at Backward of camera. This result must be same as 0 degrees rotate along y-axis.
+            CreateBillboardFact(
+                new Vector3(0, 0, 1),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(0)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(0)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Right side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest03()
+        {
+            // Place object at Right side of camera. This result must be same as 90 degrees rotate along y-axis.
+            CreateBillboardFact(
+                new Vector3(1, 0, 0),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(90)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Left side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest04()
+        {
+            // Place object at Left side of camera. This result must be same as -90 degrees rotate along y-axis.
+            CreateBillboardFact(
+                new Vector3(-1, 0, 0),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(90)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Up side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest05()
+        {
+            // Place object at Up side of camera. result must be same as 180 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateBillboardFact(
+                new Vector3(0, 1, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(180)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(180)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Down side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest06()
+        {
+            // Place object at Down side of camera. result must be same as 0 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateBillboardFact(
+                new Vector3(0, -1, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(0)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(0)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Right side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest07()
+        {
+            // Place object at Right side of camera. result must be same as 90 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateBillboardFact(
+                new Vector3(1, 0, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Left side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest08()
+        {
+            // Place object at Left side of camera. result must be same as -90 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateBillboardFact(
+                new Vector3(-1, 0, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Up side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest09()
+        {
+            // Place object at Up side of camera. result must be same as -90 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateBillboardFact(
+                new Vector3(0, 1, 0),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Down side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest10()
+        {
+            // Place object at Down side of camera. result must be same as 90 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateBillboardFact(
+                new Vector3(0, -1, 0),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Forward side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest11()
+        {
+            // Place object at Forward side of camera. result must be same as 180 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateBillboardFact(
+                new Vector3(0, 0, -1),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Backward side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateBillboardTest12()
+        {
+            // Place object at Backward side of camera. result must be same as 0 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateBillboardFact(
+                new Vector3(0, 0, 1),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(0.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(0.0f)));
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Object and camera positions are too close and doesn't pass cameraForwardVector.
+        [Fact]
+        public void Matrix4x4CreateBillboardTooCloseTest1()
+        {
+            Vector3 objectPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 cameraPosition = objectPosition;
+            Vector3 cameraUpVector = new Vector3(0, 1, 0);
+
+            // Doesn't pass camera face direction. CreateBillboard uses new Vector3f(0, 0, -1) direction. Result must be same as 180 degrees rotate along y-axis.
+            Matrix4x4 expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualRH), "Matrix4x4.CreateBillboard did not return the expected value.");
+
+            objectPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            cameraPosition = objectPosition;
+            cameraUpVector = new Vector3(0, 1, 0);
+
+            expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateBillboardLeftHanded(objectPosition, cameraPosition, cameraUpVector, new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualLH), "Matrix4x4.CreateBillboardLeftHanded did not return the expected value.");
+
+            AssertEqual(actualRH, InverseHandedness(actualLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualRH), actualLH, DefaultVarianceMatrix);
+        }
+
+        // A test for CreateBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Object and camera positions are too close and passed cameraForwardVector.
+        [Fact]
+        public void Matrix4x4CreateBillboardTooCloseTest2()
+        {
+            Vector3 objectPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 cameraPosition = objectPosition;
+            Vector3 cameraUpVector = new Vector3(0, 1, 0);
+
+            // Passes Vector3f.Right as camera face direction. Result must be same as -90 degrees rotate along y-axis.
+            Matrix4x4 expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(1, 0, 0));
+            Assert.True(MathHelper.Equal(expected, actualRH), "Matrix4x4.CreateBillboard did not return the expected value.");
+
+            objectPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            cameraPosition = objectPosition;
+            cameraUpVector = new Vector3(0, 1, 0);
+
+            expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateBillboardLeftHanded(objectPosition, cameraPosition, cameraUpVector, new Vector3(1, 0, 0));
+            Assert.True(MathHelper.Equal(expected, actualLH), "Matrix4x4.CreateBillboardLeftHanded did not return the expected value.");
+        }
+
+        private void CreateConstrainedBillboardFact(Vector3 placeDirection, Vector3 rotateAxis, Matrix4x4 expectedRotationRightHanded, Matrix4x4 expectedRotationLeftHanded)
+        {
+            Vector3 cameraPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 objectPosition = cameraPosition + placeDirection * 10.0f;
+            Matrix4x4 expected = expectedRotationRightHanded * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, rotateAxis, new Vector3(0, 0, -1), new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualRH), $"{nameof(Matrix4x4.CreateConstrainedBillboard)} did not return the expected value.");
+
+            // When you move camera along rotateAxis, result must be same.
+            cameraPosition += rotateAxis * 10.0f;
+            Matrix4x4 actualTranslatedUpRH = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, rotateAxis, new Vector3(0, 0, -1), new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualTranslatedUpRH), $"{nameof(Matrix4x4.CreateConstrainedBillboard)} did not return the expected value.");
+
+            cameraPosition -= rotateAxis * 30.0f;
+            Matrix4x4 actualTranslatedDownRH = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, rotateAxis, new Vector3(0, 0, -1), new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualTranslatedDownRH), $"{nameof(Matrix4x4.CreateConstrainedBillboard)} did not return the expected value.");
+
+            placeDirection = InverseHandedness(placeDirection);
+            rotateAxis = InverseHandedness(rotateAxis);
+
+            cameraPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            objectPosition = cameraPosition + placeDirection * 10.0f;
+            expected = expectedRotationLeftHanded * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateConstrainedBillboardLeftHanded(objectPosition, cameraPosition, rotateAxis, new Vector3(0, 0, -1), new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualLH), $"{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)} did not return the expected value.");
+
+            // When you move camera along rotateAxis, result must be same.
+            cameraPosition += rotateAxis * 10.0f;
+            Matrix4x4 actualTranslatedUpLH = Matrix4x4.CreateConstrainedBillboardLeftHanded(objectPosition, cameraPosition, rotateAxis, new Vector3(0, 0, -1), new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualTranslatedUpLH), $"{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)} did not return the expected value.");
+
+            cameraPosition -= rotateAxis * 30.0f;
+            Matrix4x4 actualTranslatedDownLH = Matrix4x4.CreateConstrainedBillboardLeftHanded(objectPosition, cameraPosition, rotateAxis, new Vector3(0, 0, -1), new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualTranslatedDownLH), $"{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)} did not return the expected value.");
+
+            AssertEqual(actualRH, InverseHandedness(actualLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualRH), actualLH, DefaultVarianceMatrix);
+
+            AssertEqual(actualTranslatedUpRH, InverseHandedness(actualTranslatedUpLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualTranslatedUpRH), actualTranslatedUpLH, DefaultVarianceMatrix);
+
+            AssertEqual(actualTranslatedDownRH, InverseHandedness(actualTranslatedDownLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualTranslatedDownRH), actualTranslatedDownLH, DefaultVarianceMatrix);
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Forward side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest01()
+        {
+            // Object placed at Forward of camera. result must be same as 180 degrees rotate along y-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, 0, -1),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Backward side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest02()
+        {
+            // Object placed at Backward of camera. This result must be same as 0 degrees rotate along y-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, 0, 1),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(0)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(0)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Right side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest03()
+        {
+            // Place object at Right side of camera. This result must be same as 90 degrees rotate along y-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(1, 0, 0),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(90)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Left side of camera on XZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest04()
+        {
+            // Place object at Left side of camera. This result must be same as -90 degrees rotate along y-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(-1, 0, 0),
+                new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(90)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Up side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest05()
+        {
+            // Place object at Up side of camera. result must be same as 180 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, 1, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(180)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(180)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Down side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest06()
+        {
+            // Place object at Down side of camera. result must be same as 0 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, -1, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(0)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(0)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Right side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest07()
+        {
+            // Place object at Right side of camera. result must be same as 90 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(1, 0, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Left side of camera on XY-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest08()
+        {
+            // Place object at Left side of camera. result must be same as -90 degrees rotate along z-axis after 90 degrees rotate along x-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(-1, 0, 0),
+                new Vector3(0, 0, 1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Up side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest09()
+        {
+            // Place object at Up side of camera. result must be same as -90 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, 1, 0),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Down side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest10()
+        {
+            // Place object at Down side of camera. result must be same as 90 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, -1, 0),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Forward side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest11()
+        {
+            // Place object at Forward side of camera. result must be same as 180 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, 0, -1),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Place object at Backward side of camera on YZ-plane
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTest12()
+        {
+            // Place object at Backward side of camera. result must be same as 0 degrees rotate along x-axis after 90 degrees rotate along z-axis.
+            CreateConstrainedBillboardFact(
+                new Vector3(0, 0, 1),
+                new Vector3(-1, 0, 0),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(0.0f)),
+                Matrix4x4.CreateRotationZ(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationX(MathHelper.ToRadians(0.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Object and camera positions are too close and doesn't pass cameraForwardVector.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTooCloseTest1()
+        {
+            Vector3 objectPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 cameraPosition = objectPosition;
+            Vector3 cameraUpVector = new Vector3(0, 1, 0);
+
+            // Doesn't pass camera face direction. CreateConstrainedBillboard uses new Vector3f(0, 0, -1) direction. Result must be same as 180 degrees rotate along y-axis.
+            Matrix4x4 expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(0, 0, 1), new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualRH), $"{nameof(Matrix4x4.CreateConstrainedBillboard)} did not return the expected value.");
+
+            objectPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            cameraPosition = objectPosition;
+            cameraUpVector = new Vector3(0, 1, 0);
+
+            expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateConstrainedBillboardLeftHanded(objectPosition, cameraPosition, cameraUpVector, new Vector3(0, 0, -1), new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualLH), $"{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)} did not return the expected value.");
+
+            AssertEqual(actualRH, InverseHandedness(actualLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualRH), actualLH, DefaultVarianceMatrix);
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Object and camera positions are too close and passed cameraForwardVector.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardTooCloseTest2()
+        {
+            Vector3 objectPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 cameraPosition = objectPosition;
+            Vector3 cameraUpVector = new Vector3(0, 1, 0);
+
+            // Passes Vector3f.Right as camera face direction. Result must be same as -90 degrees rotate along y-axis.
+            Matrix4x4 expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, cameraUpVector, new Vector3(1, 0, 0), new Vector3(0, 0, -1));
+            Assert.True(MathHelper.Equal(expected, actualRH), $"{nameof(Matrix4x4.CreateConstrainedBillboard)} did not return the expected value.");
+
+            objectPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            cameraPosition = objectPosition;
+            cameraUpVector = new Vector3(0, 1, 0);
+
+            expected = Matrix4x4.CreateRotationY(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateConstrainedBillboardLeftHanded(objectPosition, cameraPosition, cameraUpVector, new Vector3(1, 0, 0), new Vector3(0, 0, 1));
+            Assert.True(MathHelper.Equal(expected, actualLH), $"{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)} did not return the expected value.");
+
+            AssertEqual(actualRH, InverseHandedness(actualLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualRH), actualLH, DefaultVarianceMatrix);
+        }
+
+        private static void Matrix4x4CreateConstrainedBillboardAlongAxisFact(Vector3 rotateAxis, Vector3 cameraForward, Vector3 objectForward, Matrix4x4 expectedRotationRightHanded, Matrix4x4 expectedRotationLeftHanded)
+        {
+            // Place camera at up side of object.
+            Vector3 objectPosition = new Vector3(3.0f, 4.0f, 5.0f);
+            Vector3 cameraPosition = objectPosition + rotateAxis * 10.0f;
+
+            Matrix4x4 expected = expectedRotationRightHanded * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualLH = Matrix4x4.CreateConstrainedBillboard(objectPosition, cameraPosition, rotateAxis, cameraForward, objectForward);
+            Assert.True(MathHelper.Equal(expected, actualLH), $"{nameof(Matrix4x4.CreateConstrainedBillboard)} did not return the expected value.");
+
+            rotateAxis = InverseHandedness(rotateAxis);
+            cameraForward = InverseHandedness(cameraForward);
+            objectForward = InverseHandedness(objectForward);
+
+            objectPosition = new Vector3(3.0f, 4.0f, -5.0f);
+            cameraPosition = objectPosition + rotateAxis * 10.0f;
+
+            expected = expectedRotationLeftHanded * Matrix4x4.CreateTranslation(objectPosition);
+            Matrix4x4 actualRH = Matrix4x4.CreateConstrainedBillboardLeftHanded(objectPosition, cameraPosition, rotateAxis, cameraForward, objectForward);
+            Assert.True(MathHelper.Equal(expected, actualRH), $"{nameof(Matrix4x4.CreateConstrainedBillboardLeftHanded)} did not return the expected value.");
+
+            AssertEqual(actualRH, InverseHandedness(actualLH), DefaultVarianceMatrix);
+            AssertEqual(InverseHandedness(actualRH), actualLH, DefaultVarianceMatrix);
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Angle between rotateAxis and camera to object vector is too small. And use doesn't passed objectForwardVector parameter.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardAlongAxisTest1()
+        {
+            // In this case, CreateConstrainedBillboard picks new Vector3f(0, 0, -1) as object forward vector.
+            Matrix4x4CreateConstrainedBillboardAlongAxisFact(
+                new Vector3(0, 1, 0), new Vector3(0, 0, -1), new Vector3(0, 0, -1),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Angle between rotateAxis and camera to object vector is too small. And user doesn't passed objectForwardVector parameter.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardAlongAxisTest2()
+        {
+            // In this case, CreateConstrainedBillboard picks new Vector3f(1, 0, 0) as object forward vector.
+            Matrix4x4CreateConstrainedBillboardAlongAxisFact(
+                new Vector3(0, 0, -1), new Vector3(0, 0, -1), new Vector3(0, 0, -1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Angle between rotateAxis and camera to object vector is too small. And user passed correct objectForwardVector parameter.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardAlongAxisTest3()
+        {
+            // User passes correct objectForwardVector.
+            Matrix4x4CreateConstrainedBillboardAlongAxisFact(
+                new Vector3(0, 1, 0), new Vector3(0, 0, -1), new Vector3(0, 0, -1),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Angle between rotateAxis and camera to object vector is too small. And user passed incorrect objectForwardVector parameter.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardAlongAxisTest4()
+        {
+            // User passes correct objectForwardVector.
+            Matrix4x4CreateConstrainedBillboardAlongAxisFact(
+                new Vector3(0, 1, 0), new Vector3(0, 0, -1), new Vector3(0, 1, 0),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)),
+                Matrix4x4.CreateRotationY(MathHelper.ToRadians(180.0f)));
+        }
+
+        // A test for CreateConstrainedBillboard (Vector3f, Vector3f, Vector3f, Vector3f?)
+        // Angle between rotateAxis and camera to object vector is too small. And user passed incorrect objectForwardVector parameter.
+        [Fact]
+        public void Matrix4x4CreateConstrainedBillboardAlongAxisTest5()
+        {
+            // In this case, CreateConstrainedBillboard picks Vector3f.Right as object forward vector.
+            Matrix4x4CreateConstrainedBillboardAlongAxisFact(
+                new Vector3(0, 0, -1), new Vector3(0, 0, -1), new Vector3(0, 0, -1),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(-90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)),
+                Matrix4x4.CreateRotationX(MathHelper.ToRadians(90.0f)) * Matrix4x4.CreateRotationZ(MathHelper.ToRadians(-90.0f)));
         }
 
         // A test for CreateScale (Vector3f)
