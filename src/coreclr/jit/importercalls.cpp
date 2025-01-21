@@ -4353,7 +4353,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
@@ -4382,9 +4382,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
                 break;
             }
-#endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64)
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
             case NI_System_Threading_Interlocked_CompareExchange:
             {
@@ -4394,12 +4394,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4436,12 +4436,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
-#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
                 else if (genTypeSize(retType) < 4)
                 {
                     break;
                 }
-#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
@@ -4471,7 +4471,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                           callType, op1, op2);
                 break;
             }
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
             case NI_System_Threading_Interlocked_MemoryBarrier:
             {

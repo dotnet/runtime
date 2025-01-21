@@ -368,17 +368,90 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_CMPXCHG:
         {
-            NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+            GenTreeCmpXchg* cas = tree->AsCmpXchg();
+            assert(dstCount == 1);
+            assert(!cas->Addr()->isContained() && !cas->Data()->isContained());
+            srcCount = 2;
+            setDelayFree(BuildUse(cas->Addr()));
+            setDelayFree(BuildUse(cas->Data()));
+
+            GenTree* comparand = cas->Comparand();
+            if (!comparand->isContained())
+            {
+                srcCount++;
+                setDelayFree(BuildUse(comparand));
+            }
+            else
+            {
+                assert(comparand->IsIntegralConst(0));
+            }
+
+            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_LAM_CAS))
+            {
+                if (!varTypeIsSmall(tree->TypeGet()))
+                {
+                    buildInternalIntRegisterDefForNode(tree); // ISA1.1 temp reg for store conditional error
+                }
+                else
+                {
+                    // For SmallType ISA1.0 need five temp reg to detal GT_CMPXCHG
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalIntRegisterDefForNode(tree);
+                }
+            }
+
+            // Internals may not collide with target
+            setInternalRegsDelayFree = true;
+            buildInternalRegisterUses();
+            BuildDef(tree);
         }
         break;
 
         case GT_LOCKADD:
+        {
+            NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+        }
+        break;
+
         case GT_XORR:
         case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
         {
-            NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
+            assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
+            GenTree* addr = tree->gtGetOp1();
+            GenTree* data = tree->gtGetOp2();
+            assert(!addr->isContained());
+
+            setDelayFree(BuildUse(addr));
+            srcCount = 1;
+            if (!data->isContained())
+            {
+                srcCount++;
+                setDelayFree(BuildUse(data));
+            }
+            else
+            {
+                assert(data->IsIntegralConst(0));
+            }
+
+            if ((!m_compiler->compOpportunisticallyDependsOn(InstructionSet_LAM_BH)) && varTypeIsSmall(tree->TypeGet()))
+            {
+
+                // For SmallType ISA1.0 need five temp reg to detal GT_XCHG
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalIntRegisterDefForNode(tree);
+
+                setInternalRegsDelayFree = true;
+                buildInternalRegisterUses();
+            }
+            BuildDef(tree);
         }
         break;
 

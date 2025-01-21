@@ -758,6 +758,22 @@ int minipal_getcpufeatures(void)
 
 #endif // HOST_RISCV64
 
+#if defined(HOST_LOONGARCH64)
+#define LAM_BH 0x8000000    // LAM_BH
+#define LAM_CAS 0x10000000  // LAMCAS
+    uint32_t cpucfg = 0;
+    uint32_t world = 0x2;
+    asm volatile("cpucfg %0, %1\n\t"
+            :"=r"(cpucfg)
+            :"r"(world)
+            );
+
+    if (cpucfg & LAM_BH)
+        result |= LOONGARCH64IntrinsicConstants_LAM_BH;
+    if (cpucfg & LAM_CAS)
+        result |= LOONGARCH64IntrinsicConstants_LAM_CAS;
+#endif // HOST_LOONGARCH64
+
     return result;
 }
 

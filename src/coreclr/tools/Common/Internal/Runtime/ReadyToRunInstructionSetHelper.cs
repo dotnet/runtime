@@ -200,6 +200,16 @@ namespace Internal.ReadyToRunConstants
                     }
                 }
 
+                case TargetArchitecture.LoongArch64:
+                    {
+                        switch (instructionSet)
+                        {
+                            case InstructionSet.LOONGARCH64_LAM_BH: return ReadyToRunInstructionSet.LAM_BH;
+                            case InstructionSet.LOONGARCH64_LAM_CAS: return ReadyToRunInstructionSet.LAM_CAS;
+                            default: throw new Exception("Unknown instruction set");
+                        }
+                    }
+
                 default: throw new Exception("Unknown architecture");
             }
         }

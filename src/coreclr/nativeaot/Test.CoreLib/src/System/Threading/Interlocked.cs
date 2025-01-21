@@ -21,7 +21,7 @@ namespace System.Threading
         [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
-#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_X86 || TARGET_64BIT
             return CompareExchange(ref location1, value, comparand);
 #else
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
@@ -31,7 +31,7 @@ namespace System.Threading
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_64BIT
             return CompareExchange(ref location1, value, comparand);
 #else
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
