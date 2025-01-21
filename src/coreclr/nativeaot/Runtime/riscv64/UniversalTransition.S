@@ -136,6 +136,8 @@
         mv a1, t1                                         // Second parameter to target function
         jalr t0, t1, 0                                    // Jump to the function in t1
 
+    ALTERNATE_ENTRY ReturnFrom\FunctionName
+
         // Restore the result address from t2
         mv t2, a0                                       // Move result to t2
 
@@ -168,7 +170,6 @@
     NESTED_END Rhp\FunctionName, _TEXT
 
     .endm
-
 
     // To enable proper step-in behavior in the debugger, we need to have two instances
     // of the thunk. For the first one, the debugger steps into the call in the function,
