@@ -31,6 +31,8 @@ c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
     "ECDHE-RSA-AES256-SHA384:" \
     "ECDHE-RSA-AES128-SHA256:" \
 
+int32_t CryptoNative_EnsureOpenSslInitialized(void);
+
 #ifdef NEED_OPENSSL_1_0
 static void EnsureLibSsl10Initialized(void)
 {
@@ -172,7 +174,6 @@ static void DetectCiphersuiteConfiguration(void)
 }
 
 void CryptoNative_EnsureLibSslInitialized(void)
-
 {
     CryptoNative_EnsureOpenSslInitialized();
 
