@@ -69,6 +69,11 @@ namespace System.Reflection.Metadata
             return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
+        public TypeDefinitionHandle GetDeclaringType()
+        {
+            return _reader.GetDeclaringType(Handle);
+        }
+
         public PropertyAccessors GetAccessors()
         {
             int getter = 0;

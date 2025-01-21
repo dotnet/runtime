@@ -57,6 +57,11 @@ namespace System.Reflection.Metadata
             return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
+        public TypeDefinitionHandle GetDeclaringType()
+        {
+            return _reader.GetDeclaringType(Handle);
+        }
+
         public EventAccessors GetAccessors()
         {
             int adder = 0;

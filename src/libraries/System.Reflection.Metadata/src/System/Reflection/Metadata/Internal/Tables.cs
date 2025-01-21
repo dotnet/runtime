@@ -1213,6 +1213,47 @@ namespace System.Reflection.Metadata.Ecma335
             int rowOffset = (rowId - 1) * this.RowSize;
             return this.Block.PeekReference(rowOffset + _EventListOffset, _IsEventRefSizeSmall);
         }
+
+        internal TypeDefinitionHandle FindTypeContainingEvent(int eventRowId, int numberOfEvents)
+        {
+            int numOfRows = this.NumberOfRows;
+            int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, _EventListOffset, (uint)eventRowId, _IsEventRefSizeSmall);
+            int row = slot + 1;
+            if (row == 0)
+            {
+                return default(TypeDefinitionHandle);
+            }
+
+            if (row > numOfRows)
+            {
+                if (eventRowId <= numberOfEvents)
+                {
+                    return TypeDefinitionHandle.FromRowId(numOfRows);
+                }
+
+                return default(TypeDefinitionHandle);
+            }
+
+            int value = this.GetEventListStartFor(row);
+            if (value == eventRowId)
+            {
+                while (row < numOfRows)
+                {
+                    int newRow = row + 1;
+                    value = this.GetEventListStartFor(newRow);
+                    if (value == eventRowId)
+                    {
+                        row = newRow;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return TypeDefinitionHandle.FromRowId(row);
+        }
     }
 
     internal readonly struct EventPtrTableReader
@@ -1342,6 +1383,47 @@ namespace System.Reflection.Metadata.Ecma335
         {
             int rowOffset = (rowId - 1) * this.RowSize;
             return this.Block.PeekReference(rowOffset + _PropertyListOffset, _IsPropertyRefSizeSmall);
+        }
+
+        internal TypeDefinitionHandle FindTypeContainingProperty(int propertyRowId, int numberOfProperties)
+        {
+            int numOfRows = this.NumberOfRows;
+            int slot = this.Block.BinarySearchForSlot(numOfRows, this.RowSize, _PropertyListOffset, (uint)propertyRowId, _IsPropertyRefSizeSmall);
+            int row = slot + 1;
+            if (row == 0)
+            {
+                return default(TypeDefinitionHandle);
+            }
+
+            if (row > numOfRows)
+            {
+                if (propertyRowId <= numberOfProperties)
+                {
+                    return TypeDefinitionHandle.FromRowId(numOfRows);
+                }
+
+                return default(TypeDefinitionHandle);
+            }
+
+            int value = this.GetPropertyListStartFor(row);
+            if (value == propertyRowId)
+            {
+                while (row < numOfRows)
+                {
+                    int newRow = row + 1;
+                    value = this.GetPropertyListStartFor(newRow);
+                    if (value == propertyRowId)
+                    {
+                        row = newRow;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return TypeDefinitionHandle.FromRowId(row);
         }
     }
 
