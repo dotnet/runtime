@@ -871,8 +871,8 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     {
         BasicBlock* const trueTarget  = m_b1->GetTrueTarget();
         BasicBlock* const falseTarget = m_b1->GetFalseTarget();
-        trueTarget->setBBProfileWeight(m_b1->GetTrueEdge()->getLikelyWeight());
-        falseTarget->setBBProfileWeight(m_b1->GetFalseEdge()->getLikelyWeight());
+        trueTarget->setBBProfileWeight(trueTarget->computeIncomingWeight());
+        falseTarget->setBBProfileWeight(falseTarget->computeIncomingWeight());
 
         if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
         {
@@ -1364,20 +1364,10 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         // Update profile
         if (m_b1->hasProfileWeight())
         {
-            auto setIncomingWeight = [](BasicBlock* block) {
-                weight_t incomingWeight = BB_ZERO_WEIGHT;
-                for (FlowEdge* const predEdge : block->PredEdges())
-                {
-                    incomingWeight += predEdge->getLikelyWeight();
-                }
-
-                block->setBBProfileWeight(incomingWeight);
-            };
-
             BasicBlock* const trueTarget  = origB1TrueEdge->getDestinationBlock();
             BasicBlock* const falseTarget = newB1FalseEdge->getDestinationBlock();
-            setIncomingWeight(trueTarget);
-            setIncomingWeight(falseTarget);
+            trueTarget->setBBProfileWeight(trueTarget->computeIncomingWeight());
+            falseTarget->setBBProfileWeight(falseTarget->computeIncomingWeight());
 
             if ((trueTarget->NumSucc() > 0) || (falseTarget->NumSucc() > 0))
             {
