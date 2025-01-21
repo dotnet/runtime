@@ -20338,7 +20338,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpdpbuud:
         case INS_vpdpbuuds:
         case INS_vpdpwssds:
-        case INS_vpdpwssd:        
+        case INS_vpdpwssd:
         case INS_vpdpwsud:
         case INS_vpdpwsuds:
         case INS_vpdpwusd:
