@@ -5673,7 +5673,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     // On Windows, this enables the possibility to propagate a longjmp across managed frames. Longjmp
     // behaves like a SEH exception, but only runs the second (unwinding) pass.
     // NOTE: This is a best effort purely for back compatibility with the legacy exception handling.
-    // It is not guaranteed to work in all cases, and it is not recommended to use it in new code.
+    // Skipping over managed frames using setjmp/longjmp is
+    // is unsupported and it is not guaranteed to work reliably in all cases.
+    // https://learn.microsoft.com/dotnet/standard/native-interop/exceptions-interoperability#setjmplongjmp-behaviors
     if ((pExceptionRecord != NULL) && (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP))
     {
         // longjmp over managed frames. The EXCEPTION_RECORD::ExceptionInformation store the
