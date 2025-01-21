@@ -172,12 +172,12 @@ LOCAL_LABEL(CheckCardTableBounds):
     add  x12, x12, x17 // x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
 
     // Check whether the region we're storing into is gen 0 - nothing to do in this case
-    ldrb w15, [x15]
-    cbz  w15, LOCAL_LABEL(Exit)
+    ldrb w12, [x12]
+    cbz  w12, LOCAL_LABEL(Exit)
 
     // Check this is going from old to young
-    ldrb w12, [x12]
-    cmp  w12, w17
+    ldrb w15, [x15]
+    cmp  w15, w12
     bhs  LOCAL_LABEL(Exit)
 
     // Bitwise write barriers only
