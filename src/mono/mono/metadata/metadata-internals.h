@@ -1327,7 +1327,7 @@ m_type_data_get_klass (const MonoType *type)
 		case MONO_TYPE_SZARRAY:
 			return type->data.klass;
 		default:
-			m_type_invalid_access ("m_type_get_klass", type->type);
+			m_type_invalid_access (__func__, type->type);
 			return NULL;
 	}
 }
@@ -1338,7 +1338,7 @@ m_type_data_get_generic_param (const MonoType *type)
 	if (G_LIKELY((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)))
 		return type->data.generic_param;
 
-	m_type_invalid_access ("m_type_get_generic_param", type->type);
+	m_type_invalid_access (__func__, type->type);
 	return NULL;
 }
 
@@ -1348,7 +1348,7 @@ m_type_data_get_array (const MonoType *type)
 	if (G_LIKELY(type->type == MONO_TYPE_ARRAY))
 		return type->data.array;
 
-	m_type_invalid_access ("m_type_get_array", type->type);
+	m_type_invalid_access (__func__, type->type);
 	return NULL;
 }
 
@@ -1358,7 +1358,7 @@ m_type_data_get_type (const MonoType *type)
 	if (G_LIKELY(type->type == MONO_TYPE_PTR))
 		return type->data.type;
 
-	m_type_invalid_access ("m_type_get_type", type->type);
+	m_type_invalid_access (__func__, type->type);
 	return NULL;
 }
 
@@ -1368,7 +1368,7 @@ m_type_data_get_method (const MonoType *type)
 	if (G_LIKELY(type->type == MONO_TYPE_FNPTR))
 		return type->data.method;
 
-	m_type_invalid_access ("m_type_get_method", type->type);
+	m_type_invalid_access (__func__, type->type);
 	return NULL;
 }
 
@@ -1378,7 +1378,7 @@ m_type_data_get_generic_class (const MonoType *type)
 	if (G_LIKELY(type->type == MONO_TYPE_GENERICINST))
 		return type->data.generic_class;
 
-	m_type_invalid_access ("m_type_get_generic_class", type->type);
+	m_type_invalid_access (__func__, type->type);
 	return NULL;
 }
 

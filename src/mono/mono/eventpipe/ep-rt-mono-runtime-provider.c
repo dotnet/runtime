@@ -1554,8 +1554,15 @@ bulk_type_log_single_type (
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
 	// with arrays or generics to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
 	switch (mono_underlying_type->type) {
-	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY:
+	{
+		// FIXME: Previously was handled by below ARRAY block but that is incorrect; this implementation is speculative -kg
+		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
+		// FIXME: Do we have to encode the rank of 1 explicitly?
+		// FIXME: Encode the mono_type_parameters and type_parameters_count
+		break;
+	}
+	case MONO_TYPE_ARRAY:
 	{
 		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
 		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
