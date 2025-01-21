@@ -2807,17 +2807,17 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
             return false;
     }
 
-    if ((call->gtCallMoreFlags & GTF_CALL_M_STACK_ARRAY) == 0)
+    // If this is a local array, the new helper will have an arg for the array's address
+    //
+    CallArg* const stackLocalAddressArg = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
+
+    if (stackLocalAddressArg == nullptr)
     {
         return false;
     }
 
-    CallArg* const             stackLocalAddressArg  = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
-    GenTreeLclVarCommon* const stackLocalAddressNode = stackLocalAddressArg->GetNode()->AsLclVarCommon();
-    const unsigned             lclNum                = stackLocalAddressNode->GetLclNum();
-
-    JITDUMP("Expanding new array helper for stack allocated array V%20u [%06d] in " FMT_BB ":\n", dspTreeID(call),
-            lclNum, block->bbNum);
+    JITDUMP("Expanding new array helper for stack allocated array at [%06d] in " FMT_BB ":\n", dspTreeID(call),
+            block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
 
@@ -2825,53 +2825,45 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, 
     GenTree**  callUse = nullptr;
     bool       split   = gtSplitTree(block, stmt, call, &newStmt, &callUse);
 
-    if (!split)
+    if (split)
     {
-        newStmt = stmt;
+        while ((newStmt != nullptr) && (newStmt != stmt))
+        {
+            fgMorphStmtBlockOps(block, newStmt);
+            newStmt = newStmt->GetNextStmt();
+        }
     }
+
+    GenTree* const stackLocalAddress = stackLocalAddressArg->GetNode();
 
     // Initialize the array method table pointer.
     //
     CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
 
-    // Hack to reduce SPMI failures
-    GenTree* mt = nullptr;
+    GenTree* const   mt      = gtNewIconEmbClsHndNode(arrayHnd);
+    GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
+    Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
 
-    if (opts.IsReadyToRun())
-    {
-        mt = gtNewIconEmbClsHndNode(arrayHnd);
-    }
-    else
-    {
-        mt = gtNewIconHandleNode((size_t)arrayHnd, GTF_ICON_CLASS_HDL);
-    }
-
-    GenTree* const   mtStore = gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, mt);
-    Statement* const mtStmt  = gtNewStmt(mtStore);
-
-    fgInsertStmtBefore(block, newStmt, mtStmt);
-    gtSetStmtInfo(mtStmt);
-    fgSetStmtSeq(mtStmt);
+    fgInsertStmtBefore(block, stmt, mtStmt);
 
     // Initialize the array length.
     //
-    GenTree* const   lengthArg    = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
-    GenTree* const   lengthArgInt = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
-    GenTree* const   lengthStore = gtNewStoreLclFldNode(lclNum, TYP_INT, OFFSETOF__CORINFO_Array__length, lengthArgInt);
-    Statement* const lenStmt     = gtNewStmt(lengthStore);
+    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
+    GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
+                                                   gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
+    GenTree* const   lengthStore   = gtNewStoreValueNode(TYP_INT, lengthAddress, lengthArgInt);
+    Statement* const lenStmt       = fgNewStmtFromTree(lengthStore);
 
-    fgInsertStmtBefore(block, newStmt, lenStmt);
-    gtSetStmtInfo(lenStmt);
-    fgSetStmtSeq(lenStmt);
+    fgInsertStmtBefore(block, stmt, lenStmt);
 
-    // Replace call with &lclNum.
+    // Replace call with local address
     //
-    *callUse = stackLocalAddressNode;
+    *callUse = gtCloneExpr(stackLocalAddress);
     DEBUG_DESTROY_NODE(call);
 
+    fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
-    gtSetStmtInfo(stmt);
-    fgSetStmtSeq(stmt);
 
     return true;
 }
