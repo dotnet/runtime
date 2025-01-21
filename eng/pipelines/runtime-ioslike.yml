@@ -18,6 +18,9 @@ pr:
       - src/mono/mono/mini/mini-llvm-*.*
       - src/mono/mono/mini/intrinsics.c
       - src/mono/mono/mini/simd-*.*
+      - src/mono/mono/mini/decompose.c
+      - src/mono/mono/mini/method-to-ir.c
+      - src/mono/mono/mini/mini.c
 
 variables:
   - template: /eng/pipelines/common/variables.yml
