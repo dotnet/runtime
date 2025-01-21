@@ -204,7 +204,8 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool m_madeChanges = false;
+    bool       m_madeChanges = false;
+    Statement* m_curStmt     = nullptr;
 
 public:
     enum
@@ -219,9 +220,26 @@ public:
     {
     }
 
-    bool MadeChanges()
+    bool MadeChanges() const
     {
         return m_madeChanges;
+    }
+
+    // ------------------------------------------------------------------------
+    // WalkStatement: Walk the tree of a statement, and return the newly added
+    // statement if any, otherwise return the original statement.
+    //
+    // Arguments:
+    //    stmt - the statement to walk.
+    //
+    // Return Value:
+    //    The newly added statement if any, or the original statement.
+    //
+    Statement* WalkStatement(Statement* stmt)
+    {
+        m_curStmt = stmt;
+        WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
+        return m_curStmt;
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -595,55 +613,31 @@ private:
                     if (m_compiler->info.compCompHnd->getMethodInfo(call->gtCallMethHnd, &methInfo, context) &&
                         genActualType(JITtype2varType(methInfo.args.retType)) == genActualType(call->TypeGet()))
                     {
-                        IL_OFFSET ilOffset = 0;
+                        IL_OFFSET ilOffset = BAD_IL_OFFSET;
                         INDEBUG(ilOffset = call->gtRawILOffset);
                         CORINFO_CALL_INFO callInfo = {};
                         callInfo.hMethod           = method;
                         callInfo.methodFlags       = methodFlags;
                         m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
 
-                        const bool isInlineCandidate                  = call->IsInlineCandidate();
-                        const bool isGuardedDevirtualizationCandidate = call->IsGuardedDevirtualizationCandidate();
-
-                        if (isInlineCandidate || isGuardedDevirtualizationCandidate)
+                        if (call->IsInlineCandidate())
                         {
                             if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID)
                             {
                                 Statement* stmt = m_compiler->gtNewStmt(call);
-                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
+                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
                                 GenTreeRetExpr* retExpr =
                                     m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
                                                                                genActualType(call->TypeGet()));
 
-                                if (call->IsGuardedDevirtualizationCandidate())
-                                {
-                                    for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
-                                    {
-                                        call->GetGDVCandidateInfo(i)->retExpr = retExpr;
-                                    }
-                                }
-                                else
-                                {
-                                    call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-                                }
+                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
 
-                                m_compiler->compCurStmt = stmt;
-                                *pTree                  = retExpr;
+                                m_curStmt = stmt;
+                                *pTree    = retExpr;
                             }
 
-                            if (call->IsGuardedDevirtualizationCandidate())
-                            {
-                                for (uint8_t i = 0; i < call->GetInlineCandidatesCount(); i++)
-                                {
-                                    call->GetGDVCandidateInfo(i)->exactContextHandle = context;
-                                    INDEBUG(call->GetGDVCandidateInfo(i)->inlinersContext = call->gtInlineContext);
-                                }
-                            }
-                            else
-                            {
-                                call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                                INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
-                            }
+                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
                             JITDUMP("New inline candidate due to late devirtualization:\n");
                             DISPTREE(call);
@@ -796,7 +790,6 @@ PhaseStatus Compiler::fgInline()
         Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
         {
-            compCurStmt = stmt;
 #if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
@@ -817,8 +810,7 @@ PhaseStatus Compiler::fgInline()
             // possible further optimization, as the (now complete) GT_RET_EXPR
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
-            walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
-            stmt = compCurStmt;
+            stmt = walker.WalkStatement(stmt);
 
             GenTree* expr = stmt->GetRootNode();
 
