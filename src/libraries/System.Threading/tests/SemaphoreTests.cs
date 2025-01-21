@@ -13,7 +13,7 @@ namespace System.Threading.Tests
     {
         private const int FailedWaitTimeout = 30000;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConstructorAndDisposeTest()
         {
             var s = new Semaphore(0, 1);
@@ -27,7 +27,7 @@ namespace System.Threading.Tests
             s.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SignalAndUnsignalTest()
         {
             var s = new Semaphore(0, 1);
@@ -53,7 +53,7 @@ namespace System.Threading.Tests
             Assert.Throws<SemaphoreFullException>(() => s.Release());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WaitTest()
         {
             var s = new Semaphore(1, 2);
@@ -71,7 +71,7 @@ namespace System.Threading.Tests
             Assert.False(s.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithAllIndexesSignaledTest()
         {
             var ss =
@@ -119,7 +119,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithInnerIndexesSignaled()
         {
             var ss =
@@ -152,7 +152,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithAllIndexesUnsignaled()
         {
             var ss =
@@ -236,7 +236,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Semaphore(2, 1, "CtorSemaphoreTest", out createdNew));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CanWaitWithoutBlockingUntilNoCount()
         {
             const int InitialCount = 5;
@@ -248,7 +248,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void CanWaitWithoutBlockingForReleasedCount()
         {
             using (Semaphore s = new Semaphore(0, int.MaxValue))

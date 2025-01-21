@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using Xunit;
 
@@ -59,7 +60,7 @@ namespace System.Threading.Tests
             Assert.Equal(ev.InitialCount, ev.CurrentCount);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(0)]
         [InlineData(100)]
         public static void RunCountdownEventTest1_SimpleTimeout(int ms)
@@ -70,7 +71,7 @@ namespace System.Threading.Tests
             Assert.False(ev.WaitHandle.WaitOne(ms));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunCountdownEventTest2_Exceptions()
         {
             CountdownEvent cde = null;

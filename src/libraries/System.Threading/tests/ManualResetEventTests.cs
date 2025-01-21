@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -8,7 +9,7 @@ namespace System.Threading.Tests
 {
     public class ManualResetEventTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConstructorAndDisposeTest()
         {
             var e = new ManualResetEvent(false);
@@ -23,7 +24,7 @@ namespace System.Threading.Tests
             e.Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SetAndResetTest()
         {
             var e = new ManualResetEvent(true);
@@ -39,7 +40,7 @@ namespace System.Threading.Tests
             Assert.True(e.WaitOne(0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WaitTest()
         {
             var e = new ManualResetEvent(true);
@@ -50,7 +51,7 @@ namespace System.Threading.Tests
             Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithAllIndexesSetTest()
         {
             var es =
@@ -73,7 +74,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithInnerIndexesSetTest()
         {
             var es =
@@ -94,7 +95,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithAllIndexesResetTest()
         {
             var es =

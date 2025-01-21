@@ -88,7 +88,7 @@ namespace System.Threading
 #if !FEATURE_SINGLE_THREADED
         internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
 #else
-        internal const int SpinCountforSpinBeforeWait = 0;
+        internal const int SpinCountforSpinBeforeWait = 1;
 #endif
 
         // The number of times we've spun already.
@@ -128,9 +128,7 @@ namespace System.Threading
         /// </remarks>
         public void SpinOnce()
         {
-#if !FEATURE_SINGLE_THREADED
             SpinOnceCore(DefaultSleep1Threshold);
-#endif
         }
 
         /// <summary>

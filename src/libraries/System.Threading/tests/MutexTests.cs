@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +14,7 @@ namespace System.Threading.Tests
 {
     public class MutexTests : FileCleanupTestBase
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConstructorAndDisposeTest()
         {
             var m = new Mutex();
@@ -41,7 +42,7 @@ namespace System.Threading.Tests
             Assert.Throws<ObjectDisposedException>(() => m.WaitOne(0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void AcquireAndReleaseTest()
         {
             var m = new Mutex();
@@ -58,7 +59,7 @@ namespace System.Threading.Tests
             Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void WaitTest()
         {
             var m = new Mutex();
@@ -72,7 +73,7 @@ namespace System.Threading.Tests
             m.ReleaseMutex();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithAllIndexesUnlockedTest()
         {
             var ms =
@@ -118,7 +119,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithOuterIndexesLockedTest()
         {
             var ms =
@@ -162,7 +163,7 @@ namespace System.Threading.Tests
             ms[3].ReleaseMutex();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void MultiWaitWithAllIndexesLockedTest()
         {
             var ms =

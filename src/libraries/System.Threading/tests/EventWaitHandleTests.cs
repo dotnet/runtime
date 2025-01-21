@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -9,7 +10,7 @@ namespace System.Threading.Tests
 {
     public class EventWaitHandleTests
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false, EventResetMode.AutoReset)]
         [InlineData(false, EventResetMode.ManualReset)]
         [InlineData(true, EventResetMode.AutoReset)]
@@ -78,7 +79,7 @@ namespace System.Threading.Tests
                 Assert.Throws<WaitHandleCannotBeOpenedException>(() => new EventWaitHandle(false, mode, name));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void SetReset()
         {
             using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
@@ -111,7 +112,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(GetValidNames))]
         public void OpenExisting_Windows(string name)
         {
