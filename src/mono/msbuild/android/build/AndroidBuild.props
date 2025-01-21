@@ -30,4 +30,5 @@
 
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
   <Import Condition="'$(UseNativeAOTRuntime)' != 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(RunAOTCompilation)' == 'true'" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />
 </Project>

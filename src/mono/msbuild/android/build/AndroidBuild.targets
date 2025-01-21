@@ -7,8 +7,6 @@
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
-  <!-- Import default AOT arguments -->
-  <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />

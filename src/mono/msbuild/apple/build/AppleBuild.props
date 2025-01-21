@@ -44,6 +44,7 @@
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
 
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true')" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />
 </Project>
