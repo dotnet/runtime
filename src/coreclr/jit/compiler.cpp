@@ -4871,11 +4871,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
     }
 
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
-
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
