@@ -2720,13 +2720,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
             for (BasicBlock* const block : Blocks(nullcheckBb->Next(), lastBb))
             {
-                weight_t incomingWeight = BB_ZERO_WEIGHT;
-                for (FlowEdge* const predEdge : block->PredEdges())
-                {
-                    incomingWeight += predEdge->getLikelyWeight();
-                }
-
-                block->setBBProfileWeight(incomingWeight);
+                block->setBBProfileWeight(block->computeIncomingWeight());
             }
         }
     }
