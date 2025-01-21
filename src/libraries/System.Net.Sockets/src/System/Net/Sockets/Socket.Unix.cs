@@ -131,7 +131,7 @@ namespace System.Net.Sockets
         internal SocketError ReplaceHandle()
         {
             // Collect values of trackable socket options marked by SafeSocketHandle.TrackSocketOption().
-            Span<int> optionValues = stackalloc int[SafeSocketHandle.LastTrackableSocketOptionIndex + 1];
+            Span<int> optionValues = stackalloc int[SafeSocketHandle.TrackableOptionCount];
             _handle.GetTrackedSocketOptions(optionValues, out LingerOption? lingerOption);
 
             // TReplace the handle with a new one.

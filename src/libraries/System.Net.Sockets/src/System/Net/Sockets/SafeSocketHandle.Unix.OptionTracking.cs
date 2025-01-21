@@ -31,7 +31,7 @@ namespace System.Net.Sockets
 
         internal void GetTrackedSocketOptions(Span<int> values, out LingerOption? lingerOption)
         {
-            Debug.Assert(values.Length == LastTrackableSocketOptionIndex + 1);
+            Debug.Assert(values.Length == TrackableOptionCount);
             int trackedOptions = _trackedOptions;
 
             // SO_LINGER is the only tracked socket option with a non-int value.
@@ -70,6 +70,7 @@ namespace System.Net.Sockets
 
         internal void SetTrackedSocketOptions(ReadOnlySpan<int> values, LingerOption? lingerOption)
         {
+            Debug.Assert(values.Length == TrackableOptionCount);
             int lingerMask = GetMask(TrackableSocketOptions.SO_LINGER);
             if (lingerOption is not null)
             {
@@ -127,7 +128,7 @@ namespace System.Net.Sockets
             SO_RCVTIMEO
         }
 
-        internal static int LastTrackableSocketOptionIndex => (int)TrackableSocketOptions.SO_RCVTIMEO;
+        internal static int TrackableOptionCount => (int)TrackableSocketOptions.SO_RCVTIMEO;
 
         private static TrackableSocketOptions ToTrackableSocketOptions(SocketOptionName name, SocketOptionLevel level)
             => ((int)name, level) switch
