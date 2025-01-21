@@ -143,13 +143,11 @@ namespace System.Xml.XmlWriterTests
             using (XmlWriter writer = XmlWriter.Create(ms, settings))
             {
                 await writer.WriteStartDocumentAsync();
-                Exception exception = await Assert.ThrowsAsync<System.AggregateException>(async () =>
+                await Assert.ThrowsAsync<System.Text.EncoderFallbackException>(async () =>
                     {
                         await writer.WriteElementStringAsync(null, problematicString, null, "test");
                         await writer.FlushAsync();
                     });
-
-                Assert.Equal(typeof(System.Text.EncoderFallbackException), exception.InnerException.GetType());
             }
         }
 
