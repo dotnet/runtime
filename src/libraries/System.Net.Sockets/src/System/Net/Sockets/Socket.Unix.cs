@@ -130,26 +130,11 @@ namespace System.Net.Sockets
 
         internal SocketError ReplaceHandle()
         {
-            // Copy out values from key options. The copied values should be kept in sync with the
-            // handling in SafeSocketHandle.TrackOption.  Note that we copy these values out first, before
-            // we change _handle, so that we can use the helpers on Socket which internally access _handle.
-            // Then once _handle is switched to the new one, we can call the setters to propagate the retrieved
-            // values back out to the new underlying socket.
-            bool broadcast = false, dontFragment = false, noDelay = false;
-            int receiveSize = -1, receiveTimeout = -1, sendSize = -1, sendTimeout = -1;
-            short ttl = -1;
-            LingerOption? linger = null;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) dontFragment = DontFragment;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) broadcast = EnableBroadcast;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) linger = LingerState;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.NoDelay)) noDelay = NoDelay;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveBufferSize)) receiveSize = ReceiveBufferSize;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveTimeout)) receiveTimeout = ReceiveTimeout;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.SendBufferSize)) sendSize = SendBufferSize;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) sendTimeout = SendTimeout;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.Ttl)) ttl = Ttl;
+            // Collect values of trackable socket options marked by SafeSocketHandle.TrackSocketOption().
+            Span<int> optionValues = stackalloc int[SafeSocketHandle.LastTrackableSocketOptionIndex + 1];
+            _handle.GetTrackedSocketOptions(optionValues, out LingerOption? lingerOption);
 
-            // Then replace the handle with a new one
+            // TReplace the handle with a new one.
             SafeSocketHandle oldHandle = _handle;
             SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
             Volatile.Write(ref _handle, newHandle);
@@ -167,19 +152,8 @@ namespace System.Net.Sockets
                 throw new ObjectDisposedException(GetType().FullName);
             }
 
-            // And put back the copied settings.  For DualMode, we use the value stored in the _handle
-            // rather than querying the socket itself, as on Unix stacks binding a dual-mode socket to
-            // an IPv6 address may cause the IPv6Only setting to revert to true.
-            if (_handle.IsTrackedOption(TrackedSocketOptions.DualMode)) DualMode = _handle.DualMode;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.DontFragment)) DontFragment = dontFragment;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.EnableBroadcast)) EnableBroadcast = broadcast;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.LingerState)) LingerState = linger!;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.NoDelay)) NoDelay = noDelay;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveBufferSize)) ReceiveBufferSize = receiveSize;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.ReceiveTimeout)) ReceiveTimeout = receiveTimeout;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.SendBufferSize)) SendBufferSize = sendSize;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) SendTimeout = sendTimeout;
-            if (_handle.IsTrackedOption(TrackedSocketOptions.Ttl)) Ttl = ttl;
+            // Copy the tracked socket options to the new handle.
+            _handle.SetTrackedSocketOptions(optionValues, lingerOption);
 
             return SocketError.Success;
         }

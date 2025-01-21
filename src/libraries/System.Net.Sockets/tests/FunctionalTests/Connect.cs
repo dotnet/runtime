@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Sockets.Tests
 {
@@ -240,6 +241,127 @@ namespace System.Net.Sockets.Tests
             // According to the OSX man page, it's enough connecting to an invalid address to dissolve the connection. (0 port connection returns error on OSX)
             await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsApplePlatform ? 1 : 0));
             Assert.True(s.Connected);
+        }
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task MultiConnect_KeepAliveOptionsPreserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
+            c =>
+            {
+                c.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 5);
+                c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 4);
+                c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
+            },
+            c =>
+            {
+                int keepAlive = (int)c.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive)!;
+                int keepAliveTime = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime)!;
+                int keepAliveInterval = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval)!;
+                int keepAliveRetryCount = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount)!;
+
+                Assert.Equal(1, keepAlive);
+                Assert.Equal(5, keepAliveTime);
+                Assert.Equal(4, keepAliveInterval);
+                Assert.Equal(3, keepAliveRetryCount);
+            });
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task MultiConnect_LingerState_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
+            c =>
+            {
+                c.LingerState = new LingerOption(true, 42);
+            },
+            c =>
+            {
+                Assert.True(c.LingerState.Enabled);
+                Assert.Equal(42, c.LingerState.LingerTime);
+            });
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task MultiConnect_MiscProperties_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
+            c =>
+            {
+                c.ReceiveTimeout = 4321;
+                c.NoDelay = true;
+            },
+            c =>
+            {
+                Assert.Equal(4321, c.ReceiveTimeout);
+                Assert.True(c.NoDelay);
+            });
+
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task MultiConnect_DualMode_Preserved()
+        {
+            if (UsesEap) throw new SkipTestException("EAP does not support IPAddress[] connect");
+
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket l = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                port = l.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return l;
+            });
+
+            Socket l = portBlocker.MainSocket;
+            l.Listen();
+            _ = l.AcceptAsync();
+
+            using Socket c = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
+            {
+                DualMode = false
+            };
+
+            IPAddress[] addresses = [IPAddress.Parse("fc00:1:2:3:4:5:6:7"), IPAddress.IPv6Loopback]; // No listeners on the first address.
+            await c.ConnectAsync(addresses, port);
+            Assert.False(c.DualMode);
+        }
+
+        private async Task MultiConnectTestImpl(bool dnsConnect, Action<Socket> setupSocket, Action<Socket> validateSocket)
+        {
+            if (UsesEap && !dnsConnect)
+            {
+                throw new SkipTestException("EAP does not support IPAddress[] connect");
+            }
+
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
+            Assert.NotEmpty(addresses);
+
+            // While most Unix environments are configured to resolve 'localhost' only to the ipv4 loopback address, on some CI machines it resolves to both ::1 and 127.0.0.1.
+            // In such environments this test stresses the socket option tracking feature implemented in the Unix PAL by forcing the first connect attempt to fail.
+            bool testFailingConnect = addresses.Length > 1;
+            _output.WriteLine($"dnsConnect={dnsConnect}, testFailingConnect={testFailingConnect}, 'loopback' resolved to {string.Join(',', addresses)}.");
+
+            // In case testFailingConnect == true, PortBlocker's "shadow socket" will be the one addresses[0] is pointing to.
+            // The test will fail to connect to that socket.
+            IPAddress successAddress = testFailingConnect ? addresses[1] : addresses[0];
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(successAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(successAddress);
+                return s;
+            });
+            Socket listeningSocket = portBlocker.MainSocket;
+
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket c = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            setupSocket(c);
+
+            await (dnsConnect ? ConnectAsync(c, new DnsEndPoint("localhost", port)) : MultiConnectAsync(c, addresses, port));
+
+            validateSocket(c);
+
+            listeningSocket.Dispose();
         }
     }
 
