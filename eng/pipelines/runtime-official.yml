@@ -429,6 +429,8 @@ extends:
             - Build_windows_x86_release_AllRuntimes
             - Build_windows_arm64_release_AllRuntimes
 
+    - stage: Publish
+      jobs:
       - template: /eng/common/templates-official/job/publish-build-assets.yml
         parameters:
           publishUsingPipelines: true
