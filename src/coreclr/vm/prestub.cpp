@@ -1421,7 +1421,11 @@ namespace
         _ASSERTE(state.IgnoreCustomModifiers); // We should always ignore custom modifiers for field look-up.
         PCCOR_SIGNATURE pSig1Tmp = pSig1;
         CorElementType byRefTypeMaybe = CorSigUncompressElementType(pSig1Tmp);
-        if (byRefTypeMaybe != ELEMENT_TYPE_BYREF)
+        if (byRefTypeMaybe == ELEMENT_TYPE_BYREF)
+        {
+            pSig1 = pSig1Tmp; // Update with the ELEMENT_TYPE_BYREF consumed signature.
+        }
+        else
         {
             _ASSERTE(byRefTypeMaybe == ELEMENT_TYPE_CMOD_INTERNAL
                 || byRefTypeMaybe == ELEMENT_TYPE_CMOD_REQD
@@ -1430,10 +1434,10 @@ namespace
             MetaSig::ConsumeCustomModifiers(pSig1, pEndSig1);
             if (pSig1 >= pEndSig1)
                 ThrowHR(META_E_BAD_SIGNATURE);
-        }
 
-        CorElementType byRefType = CorSigUncompressElementType(pSig1);
-        _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
+            CorElementType byRefType = CorSigUncompressElementType(pSig1);
+            _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
+        }
 
         // Compare the types
         if (FALSE == MetaSig::CompareElementType(
