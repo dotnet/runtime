@@ -180,13 +180,16 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVX;
             }
-            else if (strcmp(className + 3, "10v1") == 0)
+            else if (strcmp(className + 3, "10v") == 0)
             {
-                return InstructionSet_AVX10v1;
-            }
-            else if (strcmp(className + 3, "10v2") == 0)
-            {
-                return InstructionSet_AVX10v2;
+                if (strcmp(className + 6, "1") == 0)
+                {
+                    return InstructionSet_AVX10v1;
+                }
+                else if (strcmp(className + 6, "2") == 0)
+                {
+                    return InstructionSet_AVX10v2;
+                }
             }
             else if (strcmp(className + 3, "2") == 0)
             {

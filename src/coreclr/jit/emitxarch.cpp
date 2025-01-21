@@ -1417,7 +1417,9 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 // - R, X, B, W - bits to express corresponding REX prefixes.Additionally, X combines with B to expand r/m to 32 SIMD
 // registers
 // - R' - combines with R to expand reg to 32 SIMD registers
-// - mm - lower 2 bits of m-mmmmm (5-bit) in corresponding VEX prefix
+// - mmm - Encodes the map number to which the instruction belongs to
+//   mm - lower 2 bits of m-mmmmm (5-bit) in corresponding VEX prefix (For AVX10.1 and below)
+//   mmm - map number to which the instruction belongs to (For AVX10.2 and above)
 // - vvvv (4-bits) - register specifier in 1's complement form; must be 1111 if unused
 // - pp (2-bits) - opcode extension providing equivalent functionality of a SIMD size prefix
 //                 these prefixes are treated mandatory when used with escape opcode 0Fh for
@@ -1433,6 +1435,11 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 // - V'- bit to extend vvvv
 // - aaa - specifies mask register
 //    Rest    - reserved for future use and usage of them will uresult in Undefined instruction exception.
+// - u - Bit to indicate YMM Embedded rounding.
+//   Reserved for isas Avx10.1 and below
+//   Needs to be set to 0 for AVX10.2 adn above to indicate YMM embedded rounding
+// - B' - reserved as of now
+//   set to 0 for future compatibility. 
 //
 #define DEFAULT_BYTE_EVEX_PREFIX 0x62F07C0800000000ULL
 
@@ -1481,11 +1488,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         code |= BBIT_IN_BYTE_EVEX_PREFIX;
 
-        // enable ymm embedded rounding
-        if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
-        {
-            code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
-        }
         if (!id->idHasMem())
         {
             // ymm embedded rounding case.
@@ -2279,7 +2281,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             //                          1. An escape byte 0F (For isa before AVX10.2)
             //                          2. A map number from 0 to 7 (For AVX10.2 and above)
             leadingBytes = check;
-            assert(leadingBytes == 0x0F || (leadingBytes >= 0x00 && leadingBytes <= 0x07));
+            assert(leadingBytes == 0x0F || (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 && leadingBytes <= 0x07));
 
             // Get rid of both sizePrefix and escape byte
             code &= 0x0000FFFFLL;
