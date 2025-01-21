@@ -2270,12 +2270,6 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                     break;
                 }
 
-                case 0x00:
-                {
-                    // No SIMD size prefix
-                    break;
-                }
-
                 default:
                 {
                     assert(!"unrecognized SIMD size prefix");
@@ -2313,7 +2307,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //      1. the byte in position 11 must be an escape byte.
         //      2. the byte in position 11 must be a map number from 0 to 7.
         leadingBytes = (code >> 16) & 0xFF;
-        assert(leadingBytes == 0x0F || (leadingBytes >= 0x00 && leadingBytes <= 0x07));
+        assert(leadingBytes == 0x0F || (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) &&
+                                        leadingBytes >= 0x00 && leadingBytes <= 0x07));
         code &= 0xFFFF;
     }
 
@@ -2353,6 +2348,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x05:
         {
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
             evexPrefix |= (0x05 << 16);
             break;
         }
