@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -460,7 +462,7 @@ namespace System.Numerics.Tensors
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>Enumerates the elements of a <see cref="TensorSpan{T}"/>.</summary>
-        public ref struct Enumerator
+        public ref struct Enumerator : IEnumerator<T>
         {
             /// <summary>The span being enumerated.</summary>
             private readonly TensorSpan<T> _span;
@@ -477,8 +479,8 @@ namespace System.Numerics.Tensors
                 _span = span;
                 _items = -1;
                 _curIndexes = new nint[_span.Rank];
-
-                _curIndexes[_span.Rank - 1] = -1;
+                if (_span.Rank > 0)
+                    _curIndexes[_span.Rank - 1] = -1;
             }
 
             /// <summary>Advances the enumerator to the next element of the span.</summary>
@@ -499,6 +501,31 @@ namespace System.Numerics.Tensors
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => ref _span[_curIndexes];
             }
+
+            /// <summary>Gets the element at the current position of the enumerator.</summary>
+            T IEnumerator<T>.Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _span[_curIndexes];
+            }
+
+            /// <summary>Gets the element at the current position of the enumerator.</summary>
+            object IEnumerator.Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _span[_curIndexes]!;
+            }
+
+            /// <summary>Sets the current position of the enumerator to its initial position, which is before the first element in the tensor span.</summary>
+            void IEnumerator.Reset()
+            {
+                _items = -1;
+                _curIndexes.Clear();
+                if (_span.Rank > 0)
+                    _curIndexes[_span.Rank - 1] = -1;
+            }
+
+            void IDisposable.Dispose() { }
         }
 
         /// <summary>
