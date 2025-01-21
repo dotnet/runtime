@@ -72,16 +72,3 @@ PALEXPORT int64_t CryptoNative_OpenSslVersionNumber(void);
 PALEXPORT void CryptoNative_RegisterLegacyAlgorithms(void);
 
 PALEXPORT int32_t CryptoNative_OpenSslAvailable(void);
-
-PALEXPORT int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount);
-
-typedef enum
-{
-    MallocOperation = 1,
-    ReallocOperation = 2,
-    FreeOperation = 3,
-} MemoryOperation;
-
-typedef void (*CRYPTO_allocation_cb)(MemoryOperation operation, void* ptr, void* oldPtr, int size, const char *file, int line);
-
-PALEXPORT int32_t CryptoNative_SetMemoryTracking(CRYPTO_allocation_cb callback);

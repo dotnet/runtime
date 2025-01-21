@@ -5,6 +5,7 @@
 
 // Include System.Security.Cryptography.Native headers
 #include "openssl.h"
+#include "memory_debug.h"
 #include "pal_asn1.h"
 #include "pal_bignum.h"
 #include "pal_bio.h"
