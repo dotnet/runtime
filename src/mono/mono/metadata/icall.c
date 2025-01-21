@@ -4749,10 +4749,6 @@ ves_icall_System_Reflection_RuntimeAssembly_InternalTryGetRawMetadata (MonoQCall
 	MonoAssembly *assembly = assembly_h.assembly;
 	MonoImage *image = assembly->image;
 
-	if (image_is_dynamic (image) || image->has_updates) {
-		return FALSE;
-	}
-
 	*blob = image->raw_metadata;
 	*((guint32*)length) = image->raw_metadata_len;
 
