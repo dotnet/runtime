@@ -1,8 +1,8 @@
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU OR CLR_CMAKE_TARGET_BROWSER)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU OR CLR_CMAKE_TARGET_BROWSER)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -110,13 +110,15 @@ endif(CLR_CMAKE_TARGET_HAIKU)
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
-set(ARCH_SOURCES
-  arch/${PAL_ARCH_SOURCES_DIR}/context2.S
-  arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
-  arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
-)
+if (NOT CLR_CMAKE_TARGET_BROWSER)
+  set(ARCH_SOURCES
+    arch/${PAL_ARCH_SOURCES_DIR}/context2.S
+    arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
+    arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
+  )
+endif()
 
-if(NOT CLR_CMAKE_TARGET_OSX)
+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_BROWSER)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
