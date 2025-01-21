@@ -1303,10 +1303,27 @@ static inline MonoClass *
 m_type_data_get_klass (const MonoType *type)
 {
 	switch (type->type) {
+		// list based on class.c mono_class_from_mono_type_internal cases
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_VOID:
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+		case MONO_TYPE_R4:
+		case MONO_TYPE_R8:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_SZARRAY:
 			return type->data.klass;
 		default:
