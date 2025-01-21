@@ -2414,6 +2414,7 @@ namespace System
         public static double Cbrt(double x) { throw null; }
         public static double Ceiling(double x) { throw null; }
         public static double Clamp(double value, double min, double max) { throw null; }
+        public static double ClampNative(double value, double min, double max) { throw null; }
         public int CompareTo(double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static TInteger ConvertToIntegerNative<TInteger>(double value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
@@ -2466,10 +2467,12 @@ namespace System
         public static double Max(double x, double y) { throw null; }
         public static double MaxMagnitude(double x, double y) { throw null; }
         public static double MaxMagnitudeNumber(double x, double y) { throw null; }
+        public static double MaxNative(double x, double y) { throw null; }
         public static double MaxNumber(double x, double y) { throw null; }
         public static double Min(double x, double y) { throw null; }
         public static double MinMagnitude(double x, double y) { throw null; }
         public static double MinMagnitudeNumber(double x, double y) { throw null; }
+        public static double MinNative(double x, double y) { throw null; }
         public static double MinNumber(double x, double y) { throw null; }
         public static double MultiplyAddEstimate(double left, double right, double addend) { throw null; }
         public static bool operator ==(double left, double right) { throw null; }
@@ -3226,6 +3229,7 @@ namespace System
         public static System.Half Cbrt(System.Half x) { throw null; }
         public static System.Half Ceiling(System.Half x) { throw null; }
         public static System.Half Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
+        public static System.Half ClampNative(System.Half value, System.Half min, System.Half max) { throw null; }
         public int CompareTo(System.Half other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
         public static TInteger ConvertToIntegerNative<TInteger>(System.Half value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
@@ -3277,10 +3281,12 @@ namespace System
         public static System.Half Max(System.Half x, System.Half y) { throw null; }
         public static System.Half MaxMagnitude(System.Half x, System.Half y) { throw null; }
         public static System.Half MaxMagnitudeNumber(System.Half x, System.Half y) { throw null; }
+        public static System.Half MaxNative(System.Half x, System.Half y) { throw null; }
         public static System.Half MaxNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half Min(System.Half x, System.Half y) { throw null; }
         public static System.Half MinMagnitude(System.Half x, System.Half y) { throw null; }
         public static System.Half MinMagnitudeNumber(System.Half x, System.Half y) { throw null; }
+        public static System.Half MinNative(System.Half x, System.Half y) { throw null; }
         public static System.Half MinNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half MultiplyAddEstimate(System.Half left, System.Half right, System.Half addend) { throw null; }
         public static System.Half operator +(System.Half left, System.Half right) { throw null; }
@@ -5359,6 +5365,7 @@ namespace System
         public static float Cbrt(float x) { throw null; }
         public static float Ceiling(float x) { throw null; }
         public static float Clamp(float value, float min, float max) { throw null; }
+        public static float ClampNative(float value, float min, float max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(float value) { throw null; }
         public static TInteger ConvertToIntegerNative<TInteger>(float value) where TInteger : System.Numerics.IBinaryInteger<TInteger> { throw null; }
@@ -5411,10 +5418,12 @@ namespace System
         public static float Max(float x, float y) { throw null; }
         public static float MaxMagnitude(float x, float y) { throw null; }
         public static float MaxMagnitudeNumber(float x, float y) { throw null; }
+        public static float MaxNative(float x, float y) { throw null; }
         public static float MaxNumber(float x, float y) { throw null; }
         public static float Min(float x, float y) { throw null; }
         public static float MinMagnitude(float x, float y) { throw null; }
         public static float MinMagnitudeNumber(float x, float y) { throw null; }
+        public static float MinNative(float x, float y) { throw null; }
         public static float MinNumber(float x, float y) { throw null; }
         public static float MultiplyAddEstimate(float left, float right, float addend) { throw null; }
         public static bool operator ==(float left, float right) { throw null; }
@@ -5819,8 +5828,11 @@ namespace System
     {
         public static bool IsNormalized(this string strInput) { throw null; }
         public static bool IsNormalized(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static bool IsNormalized(this ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static string Normalize(this string strInput) { throw null; }
+        public static bool TryNormalize(this ReadOnlySpan<char> source, Span<char> destination, out int charsWritten, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
         public static string Normalize(this string strInput, System.Text.NormalizationForm normalizationForm) { throw null; }
+        public static int GetNormalizedLength(this ReadOnlySpan<char> source, System.Text.NormalizationForm normalizationForm = System.Text.NormalizationForm.FormC) { throw null; }
     }
     [System.FlagsAttribute]
     public enum StringSplitOptions
@@ -6014,7 +6026,8 @@ namespace System
         public static System.TimeSpan FromMicroseconds(double value) { throw null; }
         public static System.TimeSpan FromMicroseconds(long microseconds) { throw null; }
         public static System.TimeSpan FromMilliseconds(double value) { throw null; }
-        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds = (long)0) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds) { throw null; }
+        public static System.TimeSpan FromMilliseconds(long milliseconds, long microseconds) { throw null; }
         public static System.TimeSpan FromMinutes(double value) { throw null; }
         public static System.TimeSpan FromMinutes(long minutes) { throw null; }
         public static System.TimeSpan FromMinutes(long minutes, long seconds = (long)0, long milliseconds = (long)0, long microseconds = (long)0) { throw null; }
@@ -8362,6 +8375,12 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
     }
+    public static partial class ReadOnlyCollection
+    {
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> CreateCollection<T>(params System.ReadOnlySpan<T> values) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlySet<T> CreateSet<T>(params System.ReadOnlySpan<T> values) { throw null; }
+    }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateCollection")]
     public partial class ReadOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
@@ -8467,6 +8486,7 @@ namespace System.Collections.ObjectModel
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         }
     }
+    [System.Runtime.CompilerServices.CollectionBuilder(typeof(System.Collections.ObjectModel.ReadOnlyCollection), "CreateSet")]
     public partial class ReadOnlySet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ReadOnlySet(System.Collections.Generic.ISet<T> @set) { }
@@ -10758,17 +10778,17 @@ namespace System.IO
         public static readonly new System.IO.StreamReader Null;
         public StreamReader(System.IO.Stream stream) { }
         public StreamReader(System.IO.Stream stream, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.IO.FileStreamOptions options) { }
-        public StreamReader(string path, System.Text.Encoding encoding) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
+        public StreamReader(string path, System.Text.Encoding? encoding) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
+        public StreamReader(string path, System.Text.Encoding? encoding, bool detectEncodingFromByteOrderMarks, System.IO.FileStreamOptions options) { }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual System.Text.Encoding CurrentEncoding { get { throw null; } }
         public bool EndOfStream { get { throw null; } }
@@ -11448,10 +11468,13 @@ namespace System.Numerics
     public partial interface INumber<TSelf> : System.IComparable, System.IComparable<TSelf>, System.IEquatable<TSelf>, System.IFormattable, System.IParsable<TSelf>, System.ISpanFormattable, System.ISpanParsable<TSelf>, System.Numerics.IAdditionOperators<TSelf, TSelf, TSelf>, System.Numerics.IAdditiveIdentity<TSelf, TSelf>, System.Numerics.IComparisonOperators<TSelf, TSelf, bool>, System.Numerics.IDecrementOperators<TSelf>, System.Numerics.IDivisionOperators<TSelf, TSelf, TSelf>, System.Numerics.IEqualityOperators<TSelf, TSelf, bool>, System.Numerics.IIncrementOperators<TSelf>, System.Numerics.IModulusOperators<TSelf, TSelf, TSelf>, System.Numerics.IMultiplicativeIdentity<TSelf, TSelf>, System.Numerics.IMultiplyOperators<TSelf, TSelf, TSelf>, System.Numerics.INumberBase<TSelf>, System.Numerics.ISubtractionOperators<TSelf, TSelf, TSelf>, System.Numerics.IUnaryNegationOperators<TSelf, TSelf>, System.Numerics.IUnaryPlusOperators<TSelf, TSelf> where TSelf : System.Numerics.INumber<TSelf>?
     {
         static virtual TSelf Clamp(TSelf value, TSelf min, TSelf max) { throw null; }
+        static virtual TSelf ClampNative(TSelf value, TSelf min, TSelf max) { throw null; }
         static virtual TSelf CopySign(TSelf value, TSelf sign) { throw null; }
         static virtual TSelf Max(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf MaxNative(TSelf x, TSelf y) { throw null; }
         static virtual TSelf MaxNumber(TSelf x, TSelf y) { throw null; }
         static virtual TSelf Min(TSelf x, TSelf y) { throw null; }
+        static virtual TSelf MinNative(TSelf x, TSelf y) { throw null; }
         static virtual TSelf MinNumber(TSelf x, TSelf y) { throw null; }
         static virtual int Sign(TSelf value) { throw null; }
     }
@@ -13974,7 +13997,7 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
-        public static void SetUnhandledExceptionHandler(System.Runtime.ExceptionServices.UnhandledExceptionHandler handler) { }
+        public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
@@ -13987,7 +14010,6 @@ namespace System.Runtime.ExceptionServices
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
     }
-    public delegate bool UnhandledExceptionHandler(System.Exception exception);
 }
 namespace System.Runtime.InteropServices
 {
