@@ -2194,7 +2194,7 @@ emitter::code_t emitter::AddEvexRPrimePrefix(code_t code)
 
 bool isPrefix(BYTE b)
 {
-    /* Any (b == 0) case should be checked by caller and not get here*/
+    assert(b != 0);    // Caller should check this
     assert(b != 0x67); // We don't use the address size prefix
     assert(b != 0x65); // The GS segment override prefix is emitted separately
     assert(b != 0x64); // The FS segment override prefix is emitted separately
@@ -2234,8 +2234,14 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // check for a prefix in the 11 position
         BYTE sizePrefix = (code >> 16) & 0xFF;
 
-        if (isPrefix(sizePrefix))
+        if (sizePrefix == 0)
         {
+            // no simd prefix for EVEX2 - AVX10.2 and above
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
+        }
+        else if (isPrefix(sizePrefix))
+        {
+            // EVEX1 - EVEX encoding before Avx10.2
             // 'pp' bits in byte 1 of EVEX prefix allows us to encode SIMD size prefixes as two bits
             //
             //   00  - None   (0F    - packed float)
@@ -2276,26 +2282,29 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
                     unreached();
                 }
             }
+        }
+        else
+        {
+            unreached();
+        }
+        // Now the byte in the 22 position should be either of the below:
+        //                          1. An escape byte 0F (For isa before AVX10.2)
+        //                          2. A map number from 0 to 7 (For AVX10.2 and above)
+        leadingBytes = check;
+        assert(leadingBytes == 0x0F || (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) &&
+                                        leadingBytes >= 0x00 && leadingBytes <= 0x07));
 
-            // Now the byte in the 22 position should be either of the below:
-            //                          1. An escape byte 0F (For isa before AVX10.2)
-            //                          2. A map number from 0 to 7 (For AVX10.2 and above)
-            leadingBytes = check;
-            assert(leadingBytes == 0x0F || (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) &&
-                                            leadingBytes >= 0x00 && leadingBytes <= 0x07));
+        // Get rid of both sizePrefix and escape byte
+        code &= 0x0000FFFFLL;
 
-            // Get rid of both sizePrefix and escape byte
-            code &= 0x0000FFFFLL;
+        // Check the byte in the 33 position to see if it is 3A or 38.
+        // In such a case escape bytes must be 0x0F3A or 0x0F38
+        check = code & 0xFF;
 
-            // Check the byte in the 33 position to see if it is 3A or 38.
-            // In such a case escape bytes must be 0x0F3A or 0x0F38
-            check = code & 0xFF;
-
-            if ((check == 0x3A) || (check == 0x38))
-            {
-                leadingBytes = (leadingBytes << 8) | check;
-                code &= 0x0000FF00LL;
-            }
+        if ((check == 0x3A) || (check == 0x38))
+        {
+            leadingBytes = (leadingBytes << 8) | check;
+            code &= 0x0000FF00LL;
         }
     }
     else
