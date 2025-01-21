@@ -63,7 +63,7 @@ jobs:
         nameSuffix: AndroidMono
         isOfficialBuild: false
         postBuildSteps:
-          - template: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+          - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
             parameters:
               rootFolder: '$(Build.SourcesDirectory)/artifacts/'
               includeRootFolder: true
@@ -131,7 +131,7 @@ jobs:
         pool:
           vmImage: 'macos-13'
         postBuildSteps:
-          - template: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
+          - template: /eng/pipelines/performance/templates/build-perf-bdn-app.yml
             parameters:
               rootFolder: '$(Build.SourcesDirectory)/artifacts/'
               includeRootFolder: true
