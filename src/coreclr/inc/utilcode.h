@@ -3141,7 +3141,7 @@ class RangeList
 
         SUPPORTS_DAC;
 
-        for (const RangeListBlock* b = &m_starterBlock;  b != nullptr;  b = b->next)
+        for (const RangeListBlock* b = &m_starterBlock; b != nullptr; b = b->next)
         {
             for (const Range r : b->ranges)
             {
