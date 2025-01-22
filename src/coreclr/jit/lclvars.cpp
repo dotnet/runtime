@@ -2503,9 +2503,9 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->lvStackAllocatedBox)
+    if (varDsc->lvStackAllocatedObject)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
+        JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated object\n", lclNum);
         return false;
     }
 

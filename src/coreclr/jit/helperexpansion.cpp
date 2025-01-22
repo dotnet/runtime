@@ -2733,3 +2733,158 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     return true;
 }
+
+//------------------------------------------------------------------------------
+// fgExpandStackArrayAllocations : expand "new helpers" for stack arrays
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgExpandStackArrayAllocations()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+
+    if (!doesMethodHaveStackAllocatedArray())
+    {
+        // The method being compiled doesn't have any stack allocated arrays.
+        return result;
+    }
+
+    // Find allocation sites, and transform them into initializations of the
+    // array method table and length, and replace the allocation call with
+    // the address of the local array.
+    //
+    bool modified = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+            {
+                continue;
+            }
+
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                if (!tree->IsCall())
+                {
+                    continue;
+                }
+
+                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                {
+                    // If we expand, we split the statement's tree
+                    // so will be done with this statment.
+                    //
+                    modified = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // we cant assert(modified) here as array allocation sites may
+    // have been unreachable or dead-coded.
+    //
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------------
+// fgExpandStackArrayAllocation: expand new array helpers for stack allocated arrays
+//
+// Arguments:
+//    block -  block containing the helper call to expand
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
+//
+// Returns:
+//    true if a runtime lookup was found and expanded.
+//
+bool Compiler::fgExpandStackArrayAllocation(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+{
+    if (!call->IsHelperCall())
+    {
+        return false;
+    }
+
+    const CorInfoHelpFunc helper         = eeGetHelperNum(call->gtCallMethHnd);
+    int                   lengthArgIndex = -1;
+
+    switch (helper)
+    {
+        case CORINFO_HELP_NEWARR_1_DIRECT:
+        case CORINFO_HELP_NEWARR_1_VC:
+        case CORINFO_HELP_NEWARR_1_OBJ:
+        case CORINFO_HELP_NEWARR_1_ALIGN8:
+            lengthArgIndex = 1;
+            break;
+
+        case CORINFO_HELP_READYTORUN_NEWARR_1:
+            lengthArgIndex = 0;
+            break;
+
+        default:
+            return false;
+    }
+
+    // If this is a local array, the new helper will have an arg for the array's address
+    //
+    CallArg* const stackLocalAddressArg = call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal);
+
+    if (stackLocalAddressArg == nullptr)
+    {
+        return false;
+    }
+
+    JITDUMP("Expanding new array helper for stack allocated array at [%06d] in " FMT_BB ":\n", dspTreeID(call),
+            block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+
+    Statement* newStmt = nullptr;
+    GenTree**  callUse = nullptr;
+    bool       split   = gtSplitTree(block, stmt, call, &newStmt, &callUse);
+
+    if (split)
+    {
+        while ((newStmt != nullptr) && (newStmt != stmt))
+        {
+            fgMorphStmtBlockOps(block, newStmt);
+            newStmt = newStmt->GetNextStmt();
+        }
+    }
+
+    GenTree* const stackLocalAddress = stackLocalAddressArg->GetNode();
+
+    // Initialize the array method table pointer.
+    //
+    CORINFO_CLASS_HANDLE arrayHnd = (CORINFO_CLASS_HANDLE)call->compileTimeHelperArgumentHandle;
+
+    GenTree* const   mt      = gtNewIconEmbClsHndNode(arrayHnd);
+    GenTree* const   mtStore = gtNewStoreValueNode(TYP_I_IMPL, stackLocalAddress, mt);
+    Statement* const mtStmt  = fgNewStmtFromTree(mtStore);
+
+    fgInsertStmtBefore(block, stmt, mtStmt);
+
+    // Initialize the array length.
+    //
+    GenTree* const   lengthArg     = call->gtArgs.GetArgByIndex(lengthArgIndex)->GetNode();
+    GenTree* const   lengthArgInt  = fgOptimizeCast(gtNewCastNode(TYP_INT, lengthArg, false, TYP_INT));
+    GenTree* const   lengthAddress = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(stackLocalAddress),
+                                                   gtNewIconNode(OFFSETOF__CORINFO_Array__length, TYP_I_IMPL));
+    GenTree* const   lengthStore   = gtNewStoreValueNode(TYP_INT, lengthAddress, lengthArgInt);
+    Statement* const lenStmt       = fgNewStmtFromTree(lengthStore);
+
+    fgInsertStmtBefore(block, stmt, lenStmt);
+
+    // Replace call with local address
+    //
+    *callUse = gtCloneExpr(stackLocalAddress);
+    DEBUG_DESTROY_NODE(call);
+
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    return true;
+}

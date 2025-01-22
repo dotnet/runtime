@@ -780,6 +780,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "SwiftSelf";
         case WellKnownArg::X86TailCallSpecialArg:
             return "X86TailCallSpecialArg";
+        case WellKnownArg::StackArrayLocal:
+            return "StackArrayLocal";
     }
 
     return "N/A";
@@ -3633,7 +3635,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 
         if (((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(index, MAX_ARR_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
+            gtComplexityExceeds(index, MAX_INDEX_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
             (index->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(index->AsLclVar()->GetLclNum())))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
@@ -5136,6 +5138,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     // its ref count and address-taken flag reset in fgMarkDemotedImplicitByRefArgs.
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
+                }
+                else if (varDsc->IsStackAllocatedObject())
+                {
+                    // Stack allocated objects currently cannot be passed to callees
+                    // so won't be live at tail call sites.
                 }
 #if FEATURE_FIXED_OUT_ARGS
                 else if (varNum == lvaOutgoingArgSpaceVar)
