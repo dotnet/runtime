@@ -364,7 +364,9 @@ namespace System.Net.Http
             }
 
             // Stop sending requests to this connection.
-            _pool.InvalidateHttp3Connection(this);
+            // Do not dispose the connection when invalidating as the rest of this method does exactly that:
+            //   set up _firstRejectedStreamId, close the connection with proper error code and CheckForShutdown.
+            _pool.InvalidateHttp3Connection(this, dispose: false);
 
             long connectionResetErrorCode = (abortException as HttpProtocolException)?.ErrorCode ?? (long)Http3ErrorCode.InternalError;
 
@@ -397,7 +399,9 @@ namespace System.Net.Http
             }
 
             // Stop sending requests to this connection.
-            _pool.InvalidateHttp3Connection(this);
+            // Do not dispose the connection when invalidating as the rest of this method does exactly that:
+            //   set up _firstRejectedStreamId to the stream id from GO_AWAY frame and CheckForShutdown.
+            _pool.InvalidateHttp3Connection(this, dispose: false);
 
             var streamsToGoAway = new List<Http3RequestStream>();
 

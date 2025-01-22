@@ -170,10 +170,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
-if(FEATURE_STANDALONE_GC)
-  add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(gc)
-endif(FEATURE_STANDALONE_GC)
+add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
