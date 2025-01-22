@@ -10711,6 +10711,7 @@ public:
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
+        STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 
     enum                compStressArea

@@ -60,8 +60,8 @@
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
-    <!-- In source build, mono is only supported as primary runtime flavor. On Windows mono is supported for x86/x64 only. -->
-    <DefaultSubsets Condition="('$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+tools+host+packs</DefaultSubsets>
+    <!-- In source build, mono is only supported as primary runtime flavor. -->
+    <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">clr.nativeaotlibs+clr.nativeaotruntime+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">mono+packs</DefaultSubsets>
   </PropertyGroup>
@@ -99,11 +99,13 @@
 
     <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
+    <_MonoAotCrossSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">mono.aotcross</_MonoAotCrossSubsets>
+
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'wasi'">$(DefaultMonoSubsets)mono.wasiruntime+</DefaultMonoSubsets>
-    <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(_MonoAotCrossSubsets)' != ''">$(DefaultMonoSubsets)$(_MonoAotCrossSubsets)+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' == 'true' or '$(ForceBuildMobileManifests)' == 'true'">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="$(_subset.Contains('+mono.wasmworkload+'))">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
@@ -111,7 +113,7 @@
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' != 'true'">$(DefaultMonoSubsets)host.native+</DefaultMonoSubsets>
 
     <!-- If the Mono runtime isn't supported but the AOT compiler is, just build the AOT cross compiler -->
-    <DefaultMonoSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(MonoSupported)' != 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">mono.aotcross</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(MonoSupported)' != 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">$(_MonoAotCrossSubsets)</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
