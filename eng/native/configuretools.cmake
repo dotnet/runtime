@@ -108,12 +108,3 @@ if (CLR_CMAKE_HOST_LINUX)
     set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
   endif()
 endif()
-
-# Common configuration for all runtimes, set runtime feature flag
-string(TOLOWER "${PROJECT_NAME}" PROJECT_NAME_LOWER)
-
-if(PROJECT_NAME_LOWER STREQUAL "coreclr")
-    set(CLR_CMAKE_RUNTIME_CORECLR 1)
-elseif(PROJECT_NAME_LOWER STREQUAL "mono")
-    set(CLR_CMAKE_RUNTIME_MONO 1)
-endif()
