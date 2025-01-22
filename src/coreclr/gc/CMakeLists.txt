@@ -2,13 +2,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
-
-  # Local GC meta-issue: https://github.com/dotnet/runtime/issues/8061
-
-  # https://github.com/dotnet/runtime/issues/8059
   remove_definitions(-DSTRESS_HEAP)
-
-  # https://github.com/dotnet/runtime/issues/8062
   remove_definitions(-DWRITE_BARRIER_CHECK)
 endif(FEATURE_STANDALONE_GC)
 
