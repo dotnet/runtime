@@ -92,7 +92,7 @@
       <LLVMFiles Include="$(_LocalLLVMArtifacts)\obj\InstallRoot-$(BuildArchitecture)\**"
                  FileArch="%(PackageReference.PackageArch)"  Condition="'$(_LocalLLVMArtifacts)' != ''" />
     </ItemGroup>
-    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)">
+    <Copy SourceFiles="@(LLVMFiles)" DestinationFolder="$(MonoLLVMDir)\%(LLVMFiles.FileArch)\%(RecursiveDir)" UseHardlinksIfPossible="true">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
     </Copy>
   </Target>
