@@ -205,6 +205,7 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
     bool       m_madeChanges  = false;
+    Statement* m_curStmt      = nullptr;
     Statement* m_firstNewStmt = nullptr;
 
 public:
@@ -238,8 +239,9 @@ public:
     Statement* WalkStatement(Statement* stmt)
     {
         m_firstNewStmt = nullptr;
-        WalkTree(stmt->GetRootNodePointer(), nullptr);
-        return m_firstNewStmt == nullptr ? stmt : m_firstNewStmt;
+        m_curStmt      = stmt;
+        WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
+        return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -622,7 +624,7 @@ private:
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
                             Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
                             if (m_firstNewStmt == nullptr)
                             {
                                 m_firstNewStmt = stmt;
@@ -806,8 +808,7 @@ PhaseStatus Compiler::fgInline()
             // possible further optimization, as the (now complete) GT_RET_EXPR
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
-            compCurStmt = stmt;
-            stmt        = walker.WalkStatement(stmt);
+            stmt = walker.WalkStatement(stmt);
 
             GenTree* expr = stmt->GetRootNode();
 
