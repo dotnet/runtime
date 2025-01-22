@@ -3586,7 +3586,7 @@ private:
     }
 };
 
-// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_VAR_ADDR, LCL_FLD_ADDR.
+// Common supertype of [STORE_]LCL_VAR, [STORE_]LCL_FLD, PHI_ARG, LCL_ADDR.
 // This inherits from UnOp because lclvar stores are unary.
 //
 struct GenTreeLclVarCommon : public GenTreeUnOp
@@ -4227,6 +4227,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
     GTF_CALL_M_CAST_OBJ_NONNULL        = 0x08000000, // if we expand this specific cast we don't need to check the input object for null
                                                      // NOTE: if needed, this flag can be removed, and we can introduce new _NONNUL cast helpers
+    GTF_CALL_M_STACK_ARRAY             = 0x10000000, // this call is a new array helper for a stack allocated array.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4566,6 +4567,7 @@ enum class WellKnownArg : unsigned
     SwiftError,
     SwiftSelf,
     X86TailCallSpecialArg,
+    StackArrayLocal,
 };
 
 #ifdef DEBUG
@@ -7586,12 +7588,12 @@ private:
 
 public:
     GenTreeArrAddr(GenTree* addr, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, uint8_t firstElemOffset)
-        : GenTreeUnOp(GT_ARR_ADDR, TYP_BYREF, addr DEBUGARG(/* largeNode */ false))
+        : GenTreeUnOp(GT_ARR_ADDR, addr->TypeGet(), addr DEBUGARG(/* largeNode */ false))
         , m_elemClassHandle(elemClassHandle)
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        assert(addr->TypeIs(TYP_BYREF));
+        assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
     }
