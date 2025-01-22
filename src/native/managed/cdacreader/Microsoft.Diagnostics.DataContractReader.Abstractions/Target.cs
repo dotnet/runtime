@@ -139,6 +139,10 @@ internal abstract class Target
         /// <param name="data">On return, set to the cached data value, or null if the data hasn't been cached yet.</param>
         /// <returns>True if a copy of the data is cached, or false otherwise</returns>
         bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data);
+        /// <summary>
+        /// Clear all cached data
+        /// </summary>
+        void Clear();
     }
 
     /// <summary>

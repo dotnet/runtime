@@ -142,11 +142,11 @@ struct RuntimeThreadLocals
 #ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
-    uintptr_t               m_uHijackedReturnValueFlags;
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
 #ifdef TARGET_X86
+    uintptr_t               m_uHijackedReturnValueFlags;
     PCODE                   m_LastRedirectIP;
     uint64_t                m_SpinCount;
 #endif

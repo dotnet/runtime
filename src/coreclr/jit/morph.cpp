@@ -51,7 +51,6 @@ PhaseStatus Compiler::fgMorphInit()
                                     impTokenLookupContextHandle /* context */) &
         CORINFO_INITCLASS_USE_HELPER)
     {
-        fgEnsureFirstBBisScratch();
         fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
         madeChanges = true;
     }
@@ -67,8 +66,7 @@ PhaseStatus Compiler::fgMorphInit()
                 GenTree* op = gtNewLclvNode(i, TYP_REF);
                 op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
-                fgEnsureFirstBBisScratch();
-                fgNewStmtAtEnd(fgFirstBB, op);
+                fgNewStmtAtBeg(fgFirstBB, op);
                 madeChanges = true;
                 if (verbose)
                 {
@@ -249,6 +247,8 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
         SharedTempsScope scope(this);
         tree = fgMorphArgs(call);
     }
+
+    tree->SetMorphed(this);
 
     return tree;
 }
@@ -554,12 +554,12 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Fix the return type to be TYP_DOUBLE
             //
             oper->gtType = TYP_DOUBLE;
+            oper->SetMorphed(this);
 
             // Add a Cast to TYP_FLOAT
             //
             tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
-            INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
+            tree->SetMorphed(this);
             return tree;
         }
         else
@@ -653,11 +653,6 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 // of cases we can handle.
                 shiftAmount         = gtFoldExpr(shiftAmount);
                 oper->AsOp()->gtOp2 = shiftAmount;
-
-#if DEBUG
-                // We may remorph the shift amount tree again later, so clear any morphed flag.
-                shiftAmount->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
 
                 if (shiftAmount->IsIntegralConst())
                 {
@@ -1662,8 +1657,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 {
                     unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
                     GenTree* store     = comp->gtNewTempStore(tmpVarNum, use.GetNode());
-
-                    INDEBUG(store->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    store->SetMorphed(comp);
 
                     if (setupArg == nullptr)
                     {
@@ -1672,10 +1666,12 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     else
                     {
                         setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, store);
-                        INDEBUG(setupArg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                        setupArg->SetMorphed(comp);
                     }
 
-                    use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
+                    GenTree* setupUse = comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode()));
+                    setupUse->SetMorphed(comp);
+                    use.SetNode(setupUse);
                     fieldList->AddAllEffectsFlags(use.GetNode());
                 }
 
@@ -1687,8 +1683,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                 unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
 
                 setupArg = comp->gtNewTempStore(tmpVarNum, argx);
-
-                INDEBUG(setupArg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                setupArg->SetMorphed(comp, /* doChildren */ true);
 
                 LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
                 var_types  lclVarType = genActualType(argx->gtType);
@@ -1717,6 +1712,7 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
                     // Create a copy of the temp to go to the late argument list
                     defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
                 }
+                defArg->SetMorphed(comp);
             }
 
 #ifdef DEBUG
@@ -1970,6 +1966,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         GenTree* offsetNode = comp->gtNewIconNode(comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell, TYP_I_IMPL);
         GenTree* newArg     = comp->gtNewOperNode(GT_ADD, TYP_BYREF, cloned, offsetNode);
+
+        newArg->SetMorphed(comp, /* doChildren */ true);
 
         // Append newArg as the last arg
         PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
@@ -3083,6 +3081,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             {
                 GenTreeLclFld* lclFld = gtNewLclFldNode(argNode->AsLclVarCommon()->GetLclNum(), genActualType(type),
                                                         argNode->AsLclVarCommon()->GetLclOffs() + offset);
+                lclFld->SetMorphed(this);
                 return lclFld;
             }
             else
@@ -3105,11 +3104,13 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 }
 
                 GenTree* indir = gtNewIndir(type, addr);
+                indir->SetMorphed(this, /* doChildren*/ true);
                 return indir;
             }
         };
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
+        newArg->SetMorphed(this);
 
         for (const ABIPassingSegment& seg : arg->NewAbiInfo.Segments())
         {
@@ -3174,9 +3175,11 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
     {
         LclVarDsc* fieldVarDsc = lvaGetDesc(fieldLclNum);
         GenTree*   lclVar      = gtNewLclvNode(fieldLclNum, fieldVarDsc->TypeGet());
+        lclVar->SetMorphed(this);
         fieldList->AddField(this, lclVar, fieldVarDsc->lvFldOffset, fieldVarDsc->TypeGet());
         fieldLclNum++;
     }
+    fieldList->SetMorphed(this);
     return fieldList;
 }
 
@@ -3345,16 +3348,20 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     // For fixed out args we create the setup node here; EvalArgsToTemps knows
     // to handle the case of "already have a setup node" properly.
     arg->SetEarlyNode(copyBlk);
-    arg->SetLateNode(call->gtArgs.MakeTmpArgNode(this, arg, tmp));
+    GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
+    argNode->SetMorphed(this);
+    arg->SetLateNode(argNode);
 
 #else // !FEATURE_FIXED_OUT_ARGS
 
     // Structs are always on the stack, and thus never need temps
     // so we have to put the copy and temp all into one expression.
     GenTree* argNode = call->gtArgs.MakeTmpArgNode(this, arg, tmp);
+    argNode->SetMorphed(this);
 
     // Change the expression to "(tmp=val),tmp"
     argNode = gtNewOperNode(GT_COMMA, argNode->TypeGet(), copyBlk, argNode);
+    argNode->SetMorphed(this);
 
     arg->SetEarlyNode(argNode);
 
@@ -3791,7 +3798,6 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     DISPTREE(tree)
 
     tree = fgMorphTree(tree);
-    DBEXEC(tree == indexAddr, tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     JITDUMP("fgMorphIndexAddr (after remorph):\n")
     DISPTREE(tree)
@@ -3816,7 +3822,6 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     if (expandedTree != nullptr)
     {
         expandedTree = fgMorphTree(expandedTree);
-        DBEXEC(expandedTree == lclNode, expandedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
         return expandedTree;
     }
 
@@ -4194,7 +4199,7 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
     if (tree->OperIsSimple())
     {
         result = fgMorphSmpOp(tree, mac);
-        DBEXEC(result != fieldNode, result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        result->SetMorphed(this);
 
         // Quirk: preserve previous behavior with this NO_CSE.
         if (isAddr && result->OperIs(GT_COMMA))
@@ -4205,7 +4210,6 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
     else
     {
         result = fgMorphTree(tree, mac);
-        DBEXEC(result == fieldNode, result->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
     }
 
     JITDUMP("\nFinal value of Compiler::fgMorphFieldAddr after morphing:\n");
@@ -5115,11 +5119,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         //
         if (isImplicitOrStressTailCall)
         {
-            if (varDsc->lvHasLdAddrOp && !lvaIsImplicitByRefLocal(varNum))
-            {
-                failTailCall("Local address taken", varNum);
-                return nullptr;
-            }
             if (varDsc->IsAddressExposed())
             {
                 if (lvaIsImplicitByRefLocal(varNum))
@@ -5362,55 +5361,27 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     //
     if (compCurBB->KindIs(BBJ_ALWAYS))
     {
+        BasicBlock* const curBlock    = compCurBB;
+        BasicBlock* const targetBlock = curBlock->GetTarget();
+
         // Flow no longer reaches the target from here.
         //
-        fgRemoveRefPred(compCurBB->GetTargetEdge());
+        fgRemoveRefPred(curBlock->GetTargetEdge());
 
-        // Adjust profile weights of the successor blocks.
+        // Adjust profile weights of the successor block.
         //
         // Note if this is a tail call to loop, further updates
         // are needed once we install the loop edge.
         //
-        BasicBlock* curBlock = compCurBB;
-        if (curBlock->hasProfileWeight())
+        if (curBlock->hasProfileWeight() && targetBlock->hasProfileWeight())
         {
-            weight_t    weightLoss = curBlock->bbWeight;
-            BasicBlock* nextBlock  = curBlock->GetTarget();
+            targetBlock->decreaseBBProfileWeight(curBlock->bbWeight);
 
-            while (nextBlock->hasProfileWeight())
+            if (targetBlock->NumSucc() > 0)
             {
-                // Since we have linear flow we can update the next block weight.
-                //
-                weight_t const nextWeight    = nextBlock->bbWeight;
-                weight_t const newNextWeight = nextWeight - weightLoss;
-
-                // If the math would result in a negative weight then there's
-                // no local repair we can do; just leave things inconsistent.
-                //
-                if (newNextWeight >= 0)
-                {
-                    // Note if we'd already morphed the IR in nextblock we might
-                    // have done something profile sensitive that we should arguably reconsider.
-                    //
-                    JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", nextBlock->bbNum,
-                            nextWeight, newNextWeight);
-
-                    nextBlock->setBBProfileWeight(newNextWeight);
-                }
-                else
-                {
-                    JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
-                            " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
-                            nextBlock->bbNum, nextWeight, compCurBB->bbNum, weightLoss);
-                }
-
-                if (!nextBlock->KindIs(BBJ_ALWAYS))
-                {
-                    break;
-                }
-
-                curBlock  = nextBlock;
-                nextBlock = curBlock->GetTarget();
+                JITDUMP("Flow removal out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                        curBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
         }
     }
@@ -5586,6 +5557,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
         if (isRootReplaced)
         {
+            call->SetMorphed(this);
+
             // We have replaced the root node of this stmt and deleted the rest,
             // but we still have the deleted, dead nodes on the `fgMorph*` stack
             // if the root node was a store, `RET` or `CAST`.
@@ -6313,7 +6286,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     // For the helper-assisted tail calls, we need to push all the arguments
     // into a single list, and then add a few extra at the beginning or end.
     //
-    // For x86, the tailcall helper is defined as:
+    // For Windows x86, the tailcall helper is defined as:
     //
     //      JIT_TailCall(<function args>, int numberOfOldStackArgsWords, int numberOfNewStackArgsWords, int flags, void*
     //      callTarget)
@@ -6670,8 +6643,11 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     // block won't be in the loop (it's assumed to have no predecessors), we need to update the special local here.
     if (!info.compIsStatic && (lvaArg0Var != info.compThisArg))
     {
-        GenTree*   arg0Store     = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
-        Statement* arg0StoreStmt = gtNewStmt(arg0Store, callDI);
+        GenTree* const thisArg = gtNewLclVarNode(info.compThisArg);
+        thisArg->SetMorphed(this);
+        GenTree* const arg0Store = gtNewStoreLclVarNode(lvaArg0Var, thisArg);
+        arg0Store->SetMorphed(this);
+        Statement* const arg0StoreStmt = gtNewStmt(arg0Store, callDI);
         fgInsertStmtBefore(block, paramAssignmentInsertionPoint, arg0StoreStmt);
     }
 
@@ -6724,8 +6700,13 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             if ((info.compInitMem && (isUserLocal || structWithGCFields)) || hadSuppressedInit)
             {
                 GenTree* zero = (lclType == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclType);
+                zero->SetMorphed(this);
                 GenTree* init = gtNewStoreLclVarNode(varNum, zero);
-                init->gtType  = lclType; // TODO-ASG: delete this zero-diff quirk.
+
+                // No need for assertion prop here since the first block is now an (opaque) join
+                // and has already been morphed.
+                init->SetMorphed(this);
+                init->gtType = lclType; // TODO-ASG: delete this zero-diff quirk.
                 if (lclType == TYP_STRUCT)
                 {
                     init = fgMorphInitBlock(init);
@@ -6741,28 +6722,33 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     fgRemoveStmt(block, lastStmt);
 
     // Set the loop edge.
+    BasicBlock* entryBB;
     if (opts.IsOSR())
     {
         // Todo: this may not look like a viable loop header.
-        // Might need the moral equivalent of a scratch BB.
-        FlowEdge* const newEdge = fgAddRefPred(fgEntryBB, block);
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        // Might need the moral equivalent of an init BB.
+        entryBB = fgEntryBB;
     }
     else
     {
-        // We should have ensured the first BB was scratch
-        // in morph init...
-        //
         assert(doesMethodHaveRecursiveTailcall());
-        assert(fgFirstBBisScratch());
 
-        // Loop detection needs to see a pred out of the loop,
-        // so mark the scratch block BBF_DONT_REMOVE to prevent empty
-        // block removal on it.
-        //
-        fgFirstBB->SetFlags(BBF_DONT_REMOVE);
-        FlowEdge* const newEdge = fgAddRefPred(fgFirstBB->Next(), block);
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+        // TODO-Cleanup: We should really be expanding tailcalls into loops
+        // much earlier than this, at a place where we do not need to have
+        // hacky workarounds to figure out what the actual IL entry block is.
+        entryBB = fgGetFirstILBlock();
+    }
+
+    FlowEdge* const newEdge = fgAddRefPred(entryBB, block);
+    block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+
+    // Update profile
+    if (block->hasProfileWeight() && entryBB->hasProfileWeight())
+    {
+        entryBB->increaseBBProfileWeight(block->bbWeight);
+        JITDUMP("Flow into entry BB " FMT_BB " increased. Data %s inconsistent.\n", entryBB->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // Finish hooking things up.
@@ -6835,17 +6821,27 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*         arg,
             // The argument is not assigned to a temp. We need to create a new temp and insert a store.
             unsigned tmpNum         = lvaGrabTemp(true DEBUGARG("arg temp"));
             lvaTable[tmpNum].lvType = arg->gtType;
-            GenTree*   tempSrc      = arg;
-            GenTree*   tmpStoreNode = gtNewStoreLclVarNode(tmpNum, tempSrc);
+            GenTree* tempSrc        = arg;
+            GenTree* tmpStoreNode   = gtNewStoreLclVarNode(tmpNum, tempSrc);
+            tmpStoreNode->SetMorphed(this);
             Statement* tmpStoreStmt = gtNewStmt(tmpStoreNode, callDI);
             fgInsertStmtBefore(block, tmpAssignmentInsertionPoint, tmpStoreStmt);
             argInTemp = gtNewLclvNode(tmpNum, tempSrc->gtType);
+
+            // No need for assertion prop here since the first block is now an opqaque join
+            // and has laready been morphed
+            argInTemp->SetMorphed(this);
         }
 
         // Now assign the temp to the parameter.
         assert(lvaGetDesc(lclParamNum)->lvIsParam);
         GenTree* paramStoreNode = gtNewStoreLclVarNode(lclParamNum, argInTemp);
-        paramAssignStmt         = gtNewStmt(paramStoreNode, callDI);
+
+        // No need for assertion prop here since the first block is now an opqaque join
+        // and has laready been morphed
+        paramStoreNode->SetMorphed(this);
+
+        paramAssignStmt = gtNewStmt(paramStoreNode, callDI);
 
         fgInsertStmtBefore(block, paramAssignmentInsertionPoint, paramAssignStmt);
     }
@@ -6906,7 +6902,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
             JITDUMP("\nInserting store of a multi-reg call result to a temp:\n");
             DISPSTMT(storeStmt);
-            INDEBUG(result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            result->SetMorphed(this);
 
             return result;
         }
@@ -7098,32 +7094,18 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 else
                 {
                     argSetup = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, setupArgNode);
-#if DEBUG
-                    argSetup->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
+                    argSetup->SetMorphed(this);
                 }
             }
-
-#ifdef DEBUG
-            auto resetMorphedFlag = [](GenTree** slot, fgWalkData* data) -> fgWalkResult {
-                (*slot)->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-                return WALK_CONTINUE;
-            };
-
-            fgWalkTreePost(&arr, resetMorphedFlag);
-            fgWalkTreePost(&index, resetMorphedFlag);
-            fgWalkTreePost(&value, resetMorphedFlag);
-#endif // DEBUG
 
             GenTree* indexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, NO_CLASS_HANDLE);
             GenTree* store     = gtNewStoreIndNode(TYP_REF, indexAddr, value);
             GenTree* result    = fgMorphTree(store);
+
             if (argSetup != nullptr)
             {
                 result = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, result);
-#if DEBUG
-                result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
+                result->SetMorphed(this);
             }
 
             return result;
@@ -7575,7 +7557,7 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     DEBUG_DESTROY_NODE(tree);
     DEBUG_DESTROY_NODE(cns2);
     DEBUG_DESTROY_NODE(foldedCns);
-    INDEBUG(cns1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    cns1->SetMorphed(this);
 
     return op1->AsOp();
 }
@@ -7642,7 +7624,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             GenTree* expandedTree = fgMorphExpandLocal(tree->AsLclVarCommon());
             if (expandedTree != nullptr)
             {
-                DBEXEC(tree != expandedTree, expandedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                expandedTree->SetMorphed(this);
                 tree = expandedTree;
                 oper = tree->OperGet();
                 op1  = tree->gtGetOp1();
@@ -7746,7 +7728,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
                 if (iconNode != nullptr)
                 {
-                    INDEBUG(iconNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    iconNode->SetMorphed(this);
                     return iconNode;
                 }
             }
@@ -7759,7 +7741,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 if (constNode != nullptr)
                 {
                     assert(constNode->OperIsConst()); // No further morphing required.
-                    INDEBUG(constNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    constNode->SetMorphed(this);
                     return constNode;
                 }
             }
@@ -7891,6 +7873,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 if (op2->OperIs(GT_CNS_NATIVELONG) && op2->AsIntConCommon()->LngValue() >= 2 &&
                     op2->AsIntConCommon()->LngValue() <= 0x3fffffff)
                 {
+                    op2->SetMorphed(this);
                     tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
                     noway_assert(op1->TypeIs(TYP_LONG));
 
@@ -8688,6 +8671,7 @@ DONE_MORPHING_CHILDREN:
                     {
                         GenTree* newOp1 = op1op1;                                                  // a
                         GenTree* newOp2 = gtNewIconNodeWithVN(this, -constVal, op1op2->TypeGet()); // -C
+                        newOp2->SetMorphed(this);
                         mulOrDiv->gtOp1 = newOp1;
                         mulOrDiv->gtOp2 = newOp2;
                         mulOrDiv->SetVNsFromNode(tree);
@@ -8748,9 +8732,8 @@ DONE_MORPHING_CHILDREN:
                 commaNode->gtFlags     = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
                                                                          // dangerous, clear the GTF_REVERSE_OPS at
                                                                          // least.
-#ifdef DEBUG
-                commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+                commaNode->SetMorphed(this);
+
                 while (commaNode->AsOp()->gtOp2->gtOper == GT_COMMA)
                 {
                     commaNode         = commaNode->AsOp()->gtOp2;
@@ -8761,9 +8744,7 @@ DONE_MORPHING_CHILDREN:
                     // least.
                     commaNode->gtFlags |= ((commaNode->AsOp()->gtOp1->gtFlags | commaNode->AsOp()->gtOp2->gtFlags) &
                                            (GTF_ASG | GTF_CALL));
-#ifdef DEBUG
-                    commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+                    commaNode->SetMorphed(this);
                 }
 
                 tree          = op1;
@@ -8788,10 +8769,7 @@ DONE_MORPHING_CHILDREN:
                 }
 
                 op1->gtFlags |= treeFlags & GTF_GLOB_REF;
-
-#ifdef DEBUG
-                op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
+                op1->SetMorphed(this);
                 commaNode->AsOp()->gtOp2 = op1;
                 commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
                 return tree;
@@ -8806,7 +8784,7 @@ DONE_MORPHING_CHILDREN:
                 if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
                     tree = gtUnusedValNode(op1);
-                    INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    tree->SetMorphed(this, /* doChildren */ true);
                 }
                 else
                 {
@@ -8924,7 +8902,7 @@ DONE_MORPHING_CHILDREN:
                     JITDUMP("false\n");
                     tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
                 }
-                INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                tree->SetMorphed(this);
                 return tree;
             }
             break;
@@ -9531,7 +9509,9 @@ SKIP:
         }
         else
         {
-            andOp->gtOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
+            GenTree* const newOp1 = gtNewCastNode(TYP_INT, andOp->gtGetOp1(), false, TYP_INT);
+            newOp1->SetMorphed(this);
+            andOp->gtOp1 = newOp1;
         }
 
         assert(andMask == andOp->gtGetOp2());
@@ -9658,8 +9638,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
         fgUpdateConstTreeValueNumber(ret);
 
         DEBUG_DESTROY_NODE(cmp);
-
-        INDEBUG(ret->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        ret->SetMorphed(this);
 
         return ret;
     }
@@ -9791,12 +9770,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         if (optimizedTree != node)
         {
             assert(!fgIsCommaThrow(optimizedTree));
-            INDEBUG(optimizedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            optimizedTree->SetMorphed(this);
             return optimizedTree;
         }
         else if (!optimizedTree->OperIsHWIntrinsic())
         {
-            INDEBUG(optimizedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            optimizedTree->SetMorphed(this);
             return optimizedTree;
         }
     }
@@ -9918,8 +9897,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 node = hwop1;
             }
-
-            INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            node->SetMorphed(this);
             return node;
         }
 
@@ -10067,9 +10045,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     DEBUG_DESTROY_NODE(actualOp2);
                 }
 
+                node->SetMorphed(this);
                 node = gtNewSimdCvtMaskToVectorNode(retType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
-
-                INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                node->SetMorphed(this);
                 return node;
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -10169,7 +10147,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 DEBUG_DESTROY_NODE(op1);
                 DEBUG_DESTROY_NODE(node);
-                INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                negNode->SetMorphed(this);
 
                 return negNode;
 #elif defined(TARGET_XARCH)
@@ -10226,7 +10204,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(node);
-                INDEBUG(notNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                notNode->SetMorphed(this);
 
                 return notNode;
             }
@@ -10238,7 +10216,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 DEBUG_DESTROY_NODE(op2);
                 DEBUG_DESTROY_NODE(node);
-                INDEBUG(negNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                negNode->SetMorphed(this);
 
                 return negNode;
             }
@@ -10629,8 +10607,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
         {
             op2          = fgMakeMultiUse(&op1);
             GenTree* add = gtNewOperNode(GT_ADD, mul->TypeGet(), op1, op2);
-            INDEBUG(add->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
+            add->SetMorphed(this, /* doChildren */ true);
             return add;
         }
     }
@@ -10719,7 +10696,9 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                 }
 
                 // change the multiplication into a smaller multiplication (by 3, 5 or 9) and a shift
-                op1 = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, gtNewIconNodeWithVN(this, factor, mul->TypeGet()));
+                GenTree* const factorNode = gtNewIconNodeWithVN(this, factor, mul->TypeGet());
+                factorNode->SetMorphed(this);
+                op1        = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, factorNode);
                 mul->gtOp1 = op1;
                 fgMorphTreeDone(op1);
 
@@ -11472,7 +11451,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if ((morphedTree != tree) || !morphedTree->OperIsHWIntrinsic())
         {
-            INDEBUG(morphedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            morphedTree->SetMorphed(this);
         }
         else
         {
@@ -11541,19 +11520,15 @@ GenTree* Compiler::fgMorphModToZero(GenTreeOp* tree)
     if (op1SideEffects != nullptr)
     {
         GenTree* comma = gtNewOperNode(GT_COMMA, zero->TypeGet(), op1SideEffects, zero);
-        INDEBUG(comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
+        comma->SetMorphed(this);
         DEBUG_DESTROY_NODE(tree);
-
         return comma;
     }
     else
     {
-        INDEBUG(zero->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
+        zero->SetMorphed(this);
         DEBUG_DESTROY_NODE(tree->gtOp1);
         DEBUG_DESTROY_NODE(tree);
-
         return zero;
     }
 }
@@ -11679,14 +11654,9 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
         result = gtNewOperNode(GT_COMMA, type, tempInfos[i].store, result);
     }
 
-#ifdef DEBUG
-    result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-
+    result->SetMorphed(this);
     optRecordSsaUses(result, compCurBB);
-
     div->CheckDivideByConstOptimized(this);
-
     return result;
 }
 
@@ -11717,11 +11687,9 @@ GenTree* Compiler::fgMorphUModToAndSub(GenTreeOp* tree)
     const size_t   cnsValue = (static_cast<size_t>(tree->gtOp2->AsIntConCommon()->IntegralValue())) - 1;
     GenTree* const newTree  = gtNewOperNode(GT_AND, type, tree->gtOp1, gtNewIconNodeWithVN(this, cnsValue, type));
 
-    INDEBUG(newTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
+    newTree->SetMorphed(this);
     DEBUG_DESTROY_NODE(tree->gtOp2);
     DEBUG_DESTROY_NODE(tree);
-
     return newTree;
 }
 
@@ -12060,7 +12028,9 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 
     mul->SetAllEffectsFlags(op1, op2);
     op1->SetDoNotCSE();
+    op1->SetMorphed(this);
     op2->SetDoNotCSE();
+    op2->SetMorphed(this);
 
     return mul;
 }
@@ -12074,6 +12044,7 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree);
+    tree->ClearMorphed();
 
 #ifdef DEBUG
     if (verbose)
@@ -12136,9 +12107,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     if (fgGlobalMorph)
     {
-        /* Ensure that we haven't morphed this node already */
-        assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
-
         /* Before morphing the tree, we try to propagate any active assertions */
         if (optLocalAssertionProp)
         {
@@ -12158,10 +12126,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
         }
         PREFAST_ASSUME(tree != nullptr);
     }
-
-    /* Save the original un-morphed tree for fgMorphTreeDone */
-
-    GenTree* const oldTree = tree;
 
     /* Figure out what kind of a node we have */
 
@@ -12286,8 +12250,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
     }
 DONE:
 
-    const bool isNewTree = (oldTree != tree);
-    fgMorphTreeDone(tree, optAssertionPropDone, isNewTree DEBUGARG(thisMorphNum));
+    fgMorphTreeDone(tree, optAssertionPropDone DEBUGARG(thisMorphNum));
 
     return tree;
 }
@@ -12534,12 +12497,11 @@ void Compiler::fgAssertionGen(GenTree* tree)
 //    tree - the tree after morphing
 //
 // Notes:
-//    Simple version where the tree has not been marked
-//    as morphed, and where assertion kill/gen has not yet been done.
+//    Simple version where assertion kill/gen has not yet been done.
 //
 void Compiler::fgMorphTreeDone(GenTree* tree)
 {
-    fgMorphTreeDone(tree, false, false);
+    fgMorphTreeDone(tree, false);
 }
 
 //------------------------------------------------------------------------
@@ -12552,15 +12514,13 @@ void Compiler::fgMorphTreeDone(GenTree* tree)
 //   morphNum - counts invocations of fgMorphTree
 //
 // Notes:
-//  This function is called to complete the morphing of a tree node
+//  This function is called to complete the morphing of a tree node.
 //  It should only be called once for each node.
-//  If DEBUG is defined the flag GTF_DEBUG_NODE_MORPHED is checked and updated,
-//  to enforce the invariant that each node is only morphed once.
 //
 //  When local assertion prop is active assertions are killed and generated
 //  based on tree (unless optAssertionPropDone is true).
 //
-void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum))
+void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG(int morphNum))
 {
 #ifdef DEBUG
     if (verbose && treesBeforeAfterMorph)
@@ -12576,19 +12536,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool is
         return;
     }
 
-    if (isMorphedTree)
-    {
-        // caller should have set the morphed flag
-        //
-        assert((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) && "ERROR: Did not morph this node!");
-    }
-    else
-    {
-        // caller should not have set the morphed flag
-        //
-        assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
-        INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-    }
+    tree->SetMorphed(this);
 
     // Note "tree" may generate new assertions that we
     // miss if we did them early... perhaps we should skip
@@ -12687,63 +12635,23 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 fgRemoveStmt(block, lastStmt);
                 result = FoldResult::FOLD_REMOVED_LAST_STMT;
             }
-            // block is a BBJ_COND that we are folding the conditional for.
-            // bTaken is the path that will always be taken from block.
-            // bNotTaken is the path that will never be taken from block.
-            //
-            BasicBlock* bTaken;
-            BasicBlock* bNotTaken;
-            FlowEdge*   edgeTaken;
+
+            FlowEdge *retainedEdge, *removedEdge;
 
             if (cond->AsIntCon()->gtIconVal != 0)
             {
-                // JTRUE 1 - transform the basic block into a BBJ_ALWAYS
-                bTaken    = block->GetTrueTarget();
-                bNotTaken = block->GetFalseTarget();
-
-                // Remove 'block' from the predecessor list of 'bNotTaken' */
-                fgRemoveRefPred(block->GetFalseEdge());
-
-                edgeTaken = block->GetTrueEdge();
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, edgeTaken);
+                retainedEdge = block->GetTrueEdge();
+                removedEdge  = block->GetFalseEdge();
             }
             else
             {
-                // JTRUE 0 - transform the basic block into a BBJ_ALWAYS
-                bTaken    = block->GetFalseTarget();
-                bNotTaken = block->GetTrueTarget();
-
-                // Remove 'block' from the predecessor list of 'bNotTaken' */
-                fgRemoveRefPred(block->GetTrueEdge());
-
-                edgeTaken = block->GetFalseEdge();
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
+                retainedEdge = block->GetFalseEdge();
+                removedEdge  = block->GetTrueEdge();
             }
 
-            // We examine the taken edge (block -> bTaken)
-            // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
-            // else if bTaken has valid profile weight and block does not we try to adjust block's weight
-            // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
-            //
-            if (block->hasProfileWeight())
-            {
-                if (!bTaken->hasProfileWeight())
-                {
-                    if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
-                    {
-                        // Update the weight of bTaken
-                        bTaken->inheritWeight(block);
-                    }
-                }
-            }
-            else if (bTaken->hasProfileWeight())
-            {
-                if (bTaken->countOfInEdges() == 1)
-                {
-                    // Update the weight of block
-                    block->inheritWeight(bTaken);
-                }
-            }
+            fgRemoveRefPred(removedEdge);
+            block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+            fgRepairProfileCondToUncond(block, retainedEdge, removedEdge);
 
 #ifdef DEBUG
             if (verbose)
@@ -12810,16 +12718,24 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // modify the flow graph
 
             // Find the actual jump target
-            size_t     switchVal = (size_t)cond->AsIntCon()->gtIconVal;
-            unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
-            FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-            bool       foundVal  = false;
+            size_t     switchVal           = (size_t)cond->AsIntCon()->gtIconVal;
+            unsigned   jumpCnt             = block->GetSwitchTargets()->bbsCount;
+            FlowEdge** jumpTab             = block->GetSwitchTargets()->bbsDstTab;
+            bool       foundVal            = false;
+            bool       profileInconsistent = false;
 
             for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
             {
                 FlowEdge* curEdge = *jumpTab;
 
                 assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
+
+                BasicBlock* const targetBlock = curEdge->getDestinationBlock();
+                if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
+                {
+                    targetBlock->decreaseBBProfileWeight(curEdge->getLikelyWeight());
+                    profileInconsistent |= (targetBlock->NumSucc() > 0);
+                }
 
                 // If val matches switchVal or we are at the last entry and
                 // we never found the switch value then set the new jump dest
@@ -12828,12 +12744,25 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 {
                     block->SetKindAndTargetEdge(BBJ_ALWAYS, curEdge);
                     foundVal = true;
+
+                    if (block->hasProfileWeight() && targetBlock->hasProfileWeight())
+                    {
+                        targetBlock->increaseBBProfileWeight(block->bbWeight);
+                        profileInconsistent |= (targetBlock->NumSucc() > 0);
+                    }
                 }
                 else
                 {
                     // Remove 'curEdge'
                     fgRemoveRefPred(curEdge);
                 }
+            }
+
+            if (profileInconsistent)
+            {
+                JITDUMP("Flow change out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
 
             assert(foundVal);
@@ -13087,16 +13016,6 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
                 morphedTree = stmt->GetRootNode();
             }
-            else
-            {
-                /* This must be a tailcall that caused a GCPoll to get
-                injected. We haven't actually morphed the call yet
-                but the flag still got set, clear it here...  */
-
-#ifdef DEBUG
-                morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif
-            }
 
             noway_assert(compTailCallUsed);
             noway_assert(morphedTree->gtOper == GT_CALL);
@@ -13127,6 +13046,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 
             morphedTree = gtCloneExpr(morphedTree);
             noway_assert(morphedTree != nullptr);
+            morphedTree->SetMorphed(this, /* doChildren*/ true);
 
             if (verbose)
             {
@@ -13486,6 +13406,11 @@ PhaseStatus Compiler::fgMorphBlocks()
     //
     fgGlobalMorph = true;
 
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentBeforeMorph = 1;
+    }
+
     if (opts.OptimizationEnabled())
     {
         // Local assertion prop is enabled if we are optimizing.
@@ -13508,14 +13433,6 @@ PhaseStatus Compiler::fgMorphBlocks()
         // this flag before we start reading it.
         // The main reason why this flag is not set is that we are running in minOpts.
         lvSetMinOptsDoNotEnreg();
-    }
-
-    // Ensure the first BB is scratch if we might need it as a pred for
-    // the recursive tail call to loop optimization.
-    //
-    if (doesMethodHaveRecursiveTailcall())
-    {
-        fgEnsureFirstBBisScratch();
     }
 
     // Morph all blocks.
@@ -13544,17 +13461,16 @@ PhaseStatus Compiler::fgMorphBlocks()
         MorphUnreachableInfo unreachableInfo(this);
 
         // Allow edge creation to genReturnBB (target of return merging)
-        // and the scratch block successor (target for tail call to loop).
+        // and the first IL BB (target for tail call to loop).
         // This will also disallow dataflow into these blocks.
         //
         if (genReturnBB != nullptr)
         {
             genReturnBB->SetFlags(BBF_CAN_ADD_PRED);
         }
-        if (fgFirstBBisScratch())
-        {
-            fgFirstBB->Next()->SetFlags(BBF_CAN_ADD_PRED);
-        }
+        // TODO-Cleanup: Remove this by transforming tailcalls to loops earlier.
+        BasicBlock* firstILBB = opts.IsOSR() ? fgEntryBB : fgGetFirstILBlock();
+        firstILBB->SetFlags(BBF_CAN_ADD_PRED);
 
         // Remember this so we can sanity check that no new blocks will get created.
         //
@@ -13579,10 +13495,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         {
             genReturnBB->RemoveFlags(BBF_CAN_ADD_PRED);
         }
-        if (fgFirstBBisScratch())
-        {
-            fgFirstBB->Next()->RemoveFlags(BBF_CAN_ADD_PRED);
-        }
+        firstILBB->RemoveFlags(BBF_CAN_ADD_PRED);
     }
 
     // Under OSR, we no longer need to specially protect the original method entry
@@ -13594,6 +13507,25 @@ PhaseStatus Compiler::fgMorphBlocks()
         assert(fgEntryBB->bbRefs >= 1);
         fgEntryBB->bbRefs--;
         fgEntryBBExtraRefs = 0;
+
+        // The original method entry will now be checked for profile consistency.
+        // If the entry has inconsistent incoming weight, flag the profile as inconsistent.
+        //
+        if (fgEntryBB->hasProfileWeight())
+        {
+            weight_t incomingWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : fgEntryBB->PredEdges())
+            {
+                incomingWeight += predEdge->getLikelyWeight();
+            }
+
+            if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
+            {
+                JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
+                        fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
+            }
+        }
 
         // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
@@ -13630,7 +13562,80 @@ PhaseStatus Compiler::fgMorphBlocks()
         Metrics.MorphLocals            = lvaCount;
     }
 
+    // We may have converted a tailcall into a loop, in which case the first BB
+    // may no longer be canonical.
+    fgCanonicalizeFirstBB();
+
+    if (fgPgoConsistent)
+    {
+        Metrics.ProfileConsistentAfterMorph = 1;
+    }
+
+    INDEBUG(fgPostGlobalMorphChecks();)
+
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgPostGlobalMorphChecks: Make sure all nodes were morphed
+//
+void Compiler::fgPostGlobalMorphChecks()
+{
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        Visitor(Compiler* comp)
+            : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            assert((*use)->WasMorphed());
+            assert((*use)->gtMorphCount <= 5);
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor v(this);
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            v.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+    }
+}
+
+#endif
+
+//------------------------------------------------------------------------
+// fgGetFirstILBB: Obtain the first basic block that was created due to IL.
+//
+// Returns:
+//   The basic block, skipping the init BB.
+//
+// Remarks:
+//   TODO-Cleanup: Refactor users to be able to remove this function.
+//
+BasicBlock* Compiler::fgGetFirstILBlock()
+{
+    BasicBlock* firstILBB = fgFirstBB;
+    while (firstILBB->HasFlag(BBF_INTERNAL))
+    {
+        assert(firstILBB->KindIs(BBJ_ALWAYS));
+        firstILBB = firstILBB->GetTarget();
+        assert((firstILBB != nullptr) && (firstILBB != fgFirstBB));
+    }
+
+    return firstILBB;
 }
 
 //------------------------------------------------------------------------
@@ -13800,7 +13805,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             assert(genReturnErrorLocal != BAD_VAR_NUM);
             const DebugInfo& di              = lastStmt->GetDebugInfo();
             GenTree*         swiftErrorStore = gtNewTempStore(genReturnErrorLocal, ret->gtGetOp1());
-            Statement* const newStmt         = gtNewStmt(swiftErrorStore, di);
+            swiftErrorStore->SetMorphed(this);
+            Statement* const newStmt = gtNewStmt(swiftErrorStore, di);
             fgInsertStmtBefore(block, lastStmt, newStmt);
         }
 #endif // SWIFT_SUPPORT
@@ -13826,6 +13832,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             Statement*       pAfterStatement = lastStmt;
             const DebugInfo& di              = lastStmt->GetDebugInfo();
             GenTree* tree = gtNewTempStore(genReturnLocal, retVal, CHECK_SPILL_NONE, &pAfterStatement, di, block);
+            // TODO: assertion gen/kill?
+            tree->SetMorphed(this);
             if (tree->OperIsCopyBlkOp())
             {
                 tree = fgMorphCopyBlock(tree);
@@ -14282,6 +14290,15 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     BasicBlock* condBlock = fgNewBBafter(BBJ_ALWAYS, block, true);
     BasicBlock* elseBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
 
+    // Update flowgraph
+    fgRedirectTargetEdge(block, condBlock);
+    condBlock->SetTargetEdge(fgAddRefPred(elseBlock, condBlock));
+    elseBlock->SetTargetEdge(fgAddRefPred(remainderBlock, elseBlock));
+
+    // Propagate flow from block into condBlock.
+    // Leave flow out of remainderBlock intact, as it will post-dominate block.
+    condBlock->inheritWeight(block);
+
     // These blocks are only internal if 'block' is (but they've been set as internal by fgNewBBafter).
     // If they're not internal, mark them as imported to avoid asserts about un-imported blocks.
     if (!block->HasFlag(BBF_INTERNAL))
@@ -14294,27 +14311,6 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     block->RemoveFlags(BBF_NEEDS_GCPOLL);
     remainderBlock->SetFlags(propagateFlagsToRemainder | propagateFlagsToAll);
-
-    condBlock->inheritWeight(block);
-
-    // Make sure remainderBlock gets exactly the same weight as block after split
-    assert(condBlock->bbWeight == remainderBlock->bbWeight);
-
-    assert(block->KindIs(BBJ_ALWAYS));
-    fgRedirectTargetEdge(block, condBlock);
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
-        condBlock->SetTargetEdge(newEdge);
-    }
-
-    {
-        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
-        elseBlock->SetTargetEdge(newEdge);
-    }
-
-    assert(condBlock->JumpsToNext());
-    assert(elseBlock->JumpsToNext());
 
     condBlock->SetFlags(propagateFlagsToAll);
     elseBlock->SetFlags(propagateFlagsToAll);
@@ -14330,6 +14326,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +--->--------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
@@ -14343,13 +14340,12 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
-        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, thenBlock);
-        thenBlock->SetTargetEdge(newEdge);
+        thenBlock->SetTargetEdge(fgAddRefPred(remainderBlock, thenBlock));
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const elseEdge = fgAddRefPred(thenBlock, condBlock);
-        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
-        condBlock->SetCond(thenEdge, elseEdge);
+        FlowEdge* const thenEdge = fgAddRefPred(thenBlock, condBlock);
+        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(elseEdge, thenEdge);
         thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
         elseBlock->inheritWeightPercentage(condBlock, elseLikelihood);
         thenEdge->setLikelihood(thenLikelihood / 100.0);
@@ -14363,6 +14359,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              +-->-------------+
         //              bbj_cond(true)
         //
+        // TODO: Remove unnecessary condition reversal
         gtReverseCond(condExpr);
 
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();

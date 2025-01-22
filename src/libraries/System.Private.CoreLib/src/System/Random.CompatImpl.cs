@@ -193,7 +193,7 @@ namespace System
             }
 
             /// <summary>Produces a value in the range [0, ulong.MaxValue].</summary>
-            private unsafe ulong NextUInt64() =>
+            private ulong NextUInt64() =>
                  ((ulong)(uint)_parent.Next(1 << 22)) |
                 (((ulong)(uint)_parent.Next(1 << 22)) << 22) |
                 (((ulong)(uint)_parent.Next(1 << 20)) << 44);

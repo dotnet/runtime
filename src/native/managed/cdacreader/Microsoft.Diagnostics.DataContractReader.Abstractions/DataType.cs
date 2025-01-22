@@ -57,6 +57,11 @@ public enum DataType
     InstantiatedMethodDesc,
     DynamicMethodDesc,
     StoredSigMethodDesc,
+    ArrayMethodDesc,
+    FCallMethodDesc,
+    PInvokeMethodDesc,
+    EEImplMethodDesc,
+    CLRToCOMCallMethodDesc,
     RangeSectionMap,
     RangeSectionFragment,
     RangeSection,
@@ -76,4 +81,5 @@ public enum DataType
     NonVtableSlot,
     MethodImpl,
     NativeCodeSlot,
+    GCCoverageInfo,
 }
