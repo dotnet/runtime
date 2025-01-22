@@ -82,6 +82,7 @@ type_check_context_used (MonoType *type, gboolean recursive)
 		return MONO_GENERIC_CONTEXT_USED_CLASS;
 	case MONO_TYPE_MVAR:
 		return MONO_GENERIC_CONTEXT_USED_METHOD;
+	// FIXME: This is inconsistent - for SZARRAY it is checking T[] while for ARRAY it is checking T -kg
 	case MONO_TYPE_SZARRAY:
 		return mono_class_check_context_used (mono_type_get_class_internal (type));
 	case MONO_TYPE_ARRAY:
