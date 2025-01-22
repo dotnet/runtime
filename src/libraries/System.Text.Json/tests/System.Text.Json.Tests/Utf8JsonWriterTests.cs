@@ -2935,6 +2935,64 @@ namespace System.Text.Json.Tests
                     Assert.Throws<InvalidOperationException>(() => write(jsonUtf8));
                 }
             }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartArray();
+                jsonUtf8.WriteStringValueSegment("foo"u8, isFinalSegment: false);
+                if (options.SkipValidation)
+                {
+                    write(jsonUtf8);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => write(jsonUtf8));
+                }
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartArray();
+                jsonUtf8.WriteStringValueSegment("foo".ToCharArray(), isFinalSegment: false);
+                if (options.SkipValidation)
+                {
+                    write(jsonUtf8);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => write(jsonUtf8));
+                }
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WritePropertyName("prop");
+                jsonUtf8.WriteStringValueSegment("foo"u8, isFinalSegment: false);
+                if (options.SkipValidation)
+                {
+                    write(jsonUtf8);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => write(jsonUtf8));
+                }
+            }
+
+            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+            {
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WritePropertyName("prop");
+                jsonUtf8.WriteStringValueSegment("foo".ToCharArray(), isFinalSegment: false);
+                if (options.SkipValidation)
+                {
+                    write(jsonUtf8);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => write(jsonUtf8));
+                }
+            }
         }
 
         [Theory]
