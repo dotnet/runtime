@@ -7121,9 +7121,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             // consumed a reg for the operand. This is because the variable
             // is dead after return. But we are issuing more instructions
             // like "profiler leave callback" after this consumption. So
-            // if you are issuing more instructions after this point,
-            // remember to keep the variable live up until the new method
-            // exit point where it is actually dead.
+            // we update the liveness to be correct below, but keep in mind that
+            // instructions until emitted then should not rely on the outdated GC info.
             genConsumeReg(op1);
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -7171,19 +7170,22 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-    const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+    if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
+    {
+        const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
 
-    if (compiler->compMethodReturnsRetBufAddr())
-    {
-        gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-    }
-    else
-    {
-        unsigned retRegCount = retTypeDesc.GetReturnRegCount();
-        for (unsigned i = 0; i < retRegCount; ++i)
+        if (compiler->compMethodReturnsRetBufAddr())
         {
-            gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                   retTypeDesc.GetReturnRegType(i));
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+        }
+        else
+        {
+            unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+            for (unsigned i = 0; i < retRegCount; ++i)
+            {
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                       retTypeDesc.GetReturnRegType(i));
+            }
         }
     }
 
