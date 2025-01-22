@@ -1,4 +1,4 @@
-<Project InitialTargets="ValidateDownloadedAssets">
+<Project>
 
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
