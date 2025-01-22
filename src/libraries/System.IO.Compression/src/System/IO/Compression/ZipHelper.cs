@@ -108,6 +108,12 @@ namespace System.IO.Compression
             Debug.Assert(signatureToFind.Length != 0);
             Debug.Assert(maxBytesToRead > 0);
 
+            // This method reads blocks of BackwardsSeekingBufferSize bytes, searching each block for signatureToFind.
+            // A simple LastIndexOf(signatureToFind) doesn't account for cases where signatureToFind is split, starting in
+            // one block and ending in another.
+            // To account for this, we read blocks of BackwardsSeekingBufferSize bytes, but seek backwards by
+            // [BackwardsSeekingBufferSize - signatureToFind.Length] bytes. This guarantees that signatureToFind will not be
+            // split between two consecutive blocks, at the cost of reading [signatureToFind.Length] duplicate bytes in each iteration.
             int bufferPointer = 0;
             byte[] buffer = ArrayPool<byte>.Shared.Rent(BackwardsSeekingBufferSize);
             Span<byte> bufferSpan = buffer.AsSpan(0, BackwardsSeekingBufferSize);

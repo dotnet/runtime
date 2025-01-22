@@ -300,6 +300,8 @@ namespace System.IO.Compression.Tests
                     for (int i = 0; i < count; i++)
                     {
                         Assert.Equal(string.Format(entryNameFormat, i), readArchive.Entries[i].FullName);
+                        Assert.Equal(0, readArchive.Entries[i].CompressedLength);
+                        Assert.Equal(0, readArchive.Entries[i].Length);
                     }
                 }
             }

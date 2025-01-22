@@ -550,7 +550,7 @@ namespace System.IO.Compression
             long currPosition = stream.Position;
             int bytesRead = stream.Read(blockBytes);
 
-            if (bytesRead != SignatureConstantBytes.Length || !blockBytes.SequenceEqual(SignatureConstantBytes))
+            if (bytesRead != FieldLengths.Signature || !blockBytes.SequenceEqual(SignatureConstantBytes))
             {
                 return false;
             }

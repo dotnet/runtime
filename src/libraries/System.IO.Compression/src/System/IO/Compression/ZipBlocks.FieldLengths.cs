@@ -25,7 +25,7 @@ namespace System.IO.Compression
 
     internal partial struct Zip64EndOfCentralDirectoryLocator
     {
-        private static class FieldLengths
+        internal static class FieldLengths
         {
             public static readonly int Signature = SignatureConstantBytes.Length;
             public const int NumberOfDiskWithZip64EOCD = sizeof(uint);
@@ -116,7 +116,7 @@ namespace System.IO.Compression
 
     internal partial struct ZipEndOfCentralDirectoryBlock
     {
-        private static class FieldLengths
+        internal static class FieldLengths
         {
             public static readonly int Signature = SignatureConstantBytes.Length;
             public const int NumberOfThisDisk = sizeof(ushort);

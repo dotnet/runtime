@@ -578,7 +578,7 @@ namespace System.IO.Compression
                 // But if the EOCD has max possible size, the signature should be found somewhere in the previous 64K + 4 bytes
                 if (!ZipHelper.SeekBackwardsToSignature(_archiveStream,
                         ZipEndOfCentralDirectoryBlock.SignatureConstantBytes,
-                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.SignatureConstantBytes.Length))
+                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
                 long eocdStart = _archiveStream.Position;
@@ -638,7 +638,7 @@ namespace System.IO.Compression
                 // if we don't find it, assume it doesn't exist and use data from normal EOCD
                 if (ZipHelper.SeekBackwardsToSignature(_archiveStream,
                         Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes,
-                        Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes.Length))
+                        Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature))
                 {
                     // use locator to get to Zip64-EOCD
                     Zip64EndOfCentralDirectoryLocator locator;
