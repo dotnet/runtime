@@ -26,6 +26,7 @@ ARG CONFIGURATION
 # Build the stress server
 WORKDIR /app
 COPY . .
+WORKDIR /app/System.Net.Http/tests/StressTests/HttpStress
 
 RUN dotnet build -c $CONFIGURATION \
     -p:NetCoreAppCurrentVersion=$VERSION \
