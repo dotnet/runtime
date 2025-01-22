@@ -128,7 +128,9 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
     // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
     // are allocated in the domain of the dicitonary.
     DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(ownerType, methodSlot);
-    PCODE addr = UseCachedInterfaceDispatch() ? (PCODE)RhpInitialInterfaceDispatch : pMgr->GetCallStub(token);
+
+    PCODE addr;
+    INTERFACE_DISPATCH_CACHED_OR_VSD(addr = (PCODE)RhpInitialInterfaceDispatch, addr = pMgr->GetCallStub(token))
 
     BYTE* indcell = pMgr->GenerateStubIndirection(addr, token, pResolver != NULL);
 
@@ -784,7 +786,9 @@ void VirtualCallStubManager::InitStatic()
 {
     STANDARD_VM_CONTRACT;
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     InterfaceDispatch_Initialize();
+#endif
 
 #ifdef STUB_LOGGING
     // Note if you change these values using environment variables then you must use hex values :-(
@@ -1164,7 +1168,8 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     BYTE * ret              = NULL;
     UINT32 cellsPerBlock    = INDCELLS_PER_BLOCK;
 
-    UINT32 sizeOfIndCell = UseCachedInterfaceDispatch() ? sizeof(InterfaceDispatchCell) : sizeof(BYTE *);
+    UINT32 sizeOfIndCell;
+    INTERFACE_DISPATCH_CACHED_OR_VSD(sizeOfIndCell = sizeof(InterfaceDispatchCell), sizeOfIndCell = sizeof(BYTE *));
 
     // First try the recycled indirection cell list for Dynamic methods
     if (fUseRecycledCell)
@@ -1177,7 +1182,9 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     // Allocate from loader heap
     if (!ret)
     {
-        size_t alignment = UseCachedInterfaceDispatch() ? sizeof(TADDR) * 2 : sizeof(TADDR);
+        size_t alignment;
+        INTERFACE_DISPATCH_CACHED_OR_VSD(alignment = sizeof(TADDR) * 2, alignment = sizeof(TADDR));
+
         // Free list is empty, allocate a block of indcells from indcell_heap and insert it into the free list.
         BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(cellsPerBlock * sizeOfIndCell, alignment);
 
@@ -1198,18 +1205,16 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
         InsertIntoFreeIndCellList((((BYTE*)pBlock) + sizeOfIndCell), (((BYTE*)pBlock) + ((cellsPerBlock - 1) * sizeOfIndCell)));
     }
 
-    if (UseCachedInterfaceDispatch())
-    {
+    INTERFACE_DISPATCH_CACHED_OR_VSD(
         InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)ret;
         pCell->m_pStub = target;
         pCell->m_pCache = InterfaceDispatchCell::InitialDispatchCacheCellValue();
         pCell->m_token = token;
         ret = (BYTE *)pCell;
-    }
-    else
-    {
+        ,
         *((PCODE *)ret) = target;
-    }
+    )
+
     RETURN ret;
 }
 
@@ -1340,6 +1345,7 @@ ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCa
 }
 #endif // CHAIN_LOOKUP
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *protectedObj, DispatchToken token)
 {
     CONTRACTL {
@@ -1526,6 +1532,8 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     return target;
 }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
 /* Resolve to a method and return its address or NULL if there is none.
    Our return value is the target address that control should continue to.  Our caller will
    enter the target address as if a direct call with the original stack frame had been made from

@@ -979,12 +979,9 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         COMPlusThrow(kNotSupportedException);
     }
 
-    if (UseCachedInterfaceDispatch())
-    {
+    INTERFACE_DISPATCH_CACHED_OR_VSD(
         return (PCODE)CID_VirtualOpenDelegateDispatch;
-    }
-    else
-    {
+        ,
         // need to grab a virtual dispatch stub
         // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
         VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
@@ -992,7 +989,7 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
         _ASSERTE(pTargetCall);
         return pTargetCall;
-    }
+        );
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,

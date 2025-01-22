@@ -44,7 +44,13 @@ if(FEATURE_PERFTRACING)
     include_directories(${CORECLR_USEREVENTS_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
-add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
+if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+    add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
+endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+
+if(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+    add_definitions(-DFEATURE_VIRTUAL_STUB_DISPATCH)
+endif(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
 
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
@@ -290,8 +296,6 @@ set(GC_HEADERS_DAC
 
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
-    ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatchCoreclr.cpp
     appdomainnative.cpp
     assemblynative.cpp
     assemblyspec.cpp
@@ -379,6 +383,13 @@ set(VM_SOURCES_WKS
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+    list(APPEND VM_SOURCES_WKS
+        ${SHARED_RUNTIME_DIR}/CachedInterfaceDispatch.cpp
+        CachedInterfaceDispatchCoreclr.cpp
+    )
+endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
 list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
@@ -634,8 +645,13 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
-        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
     )
+
+    if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+        list(APPEND VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
+        )
+    endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/asmconstants.h
@@ -660,8 +676,13 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
-        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
     )
+
+    if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+        list(APPEND VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
+        )
+    endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/asmconstants.h
@@ -736,10 +757,12 @@ else(CLR_CMAKE_TARGET_WIN32)
     set(ASM_SUFFIX S)
 endif(CLR_CMAKE_TARGET_WIN32)
 
-set(VM_SOURCES_WKS_ARCH_ASM
-    ${VM_SOURCES_WKS_ARCH_ASM}
-    ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
-)
+if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+    set(VM_SOURCES_WKS_ARCH_ASM
+        ${VM_SOURCES_WKS_ARCH_ASM}
+        ${SHARED_RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
+    )
+endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH

@@ -1544,4 +1544,14 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
 inline bool UseCachedInterfaceDispatch() { return true; }
 
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispath; }
+#elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) { cachedDispatch; }
+#elif defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+#define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) { vsdDispath; }
+#else
+#error "No dispatch mechanism defined"
+#endif
+
 #endif // !_VIRTUAL_CALL_STUB_H
