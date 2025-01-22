@@ -161,14 +161,16 @@ namespace System.IO.Compression
         }
 
         // Returns the number of bytes actually read.
-        // Allows successive buffers to overlap by a number of bytes (to handle cases where the
-        // value being searched for straddles buffers.)
+        // Allows successive buffers to overlap by a number of bytes. This handles cases where
+        // the value being searched for straddles buffers (i.e. where the first buffer ends with the
+        // first X bytes being searched for, and the second buffer begins with the remaining bytes.)
         private static int SeekBackwardsAndRead(Stream stream, Span<byte> buffer, int overlap)
         {
             int bytesRead;
 
             if (stream.Position >= buffer.Length)
             {
+                Debug.Assert(overlap <= buffer.Length);
                 stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
                 bytesRead = ReadBytes(stream, buffer, buffer.Length);
                 stream.Seek(-buffer.Length, SeekOrigin.Current);

@@ -296,7 +296,6 @@ namespace System.IO.Compression
             }
 
             return true;
-
         }
 
         public static Zip64ExtraField GetAndRemoveZip64Block(List<ZipGenericExtraField> extraFields,
@@ -371,6 +370,8 @@ namespace System.IO.Compression
 
     internal partial struct Zip64EndOfCentralDirectoryLocator
     {
+        // The Zip File Format Specification references 0x07064B50, this is a big endian representation.
+        // ZIP files store values in little endian, so this is reversed.
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x06, 0x07];
 
         private const int BlockConstantSectionSize = 20;
