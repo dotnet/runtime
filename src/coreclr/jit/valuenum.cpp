@@ -6245,7 +6245,19 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
-    loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
+
+    // If this is a local array, there are no asyncronous modifications, so we can set the
+    // conservative VN to the liberal VN.
+    //
+    VNFuncApp arrFn;
+    if (vnStore->IsVNNewLocalArr(arrVN, &arrFn))
+    {
+        loadTree->gtVNPair.SetConservative(loadValueVN);
+    }
+    else
+    {
+        loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -7359,7 +7371,22 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
     bool result = false;
     if (GetVNFunc(vn, funcApp))
     {
-        result = (funcApp->m_func == VNF_JitNewArr) || (funcApp->m_func == VNF_JitReadyToRunNewArr);
+        result = (funcApp->m_func == VNF_JitNewArr) || (funcApp->m_func == VNF_JitNewLclArr) ||
+                 (funcApp->m_func == VNF_JitReadyToRunNewArr) || (funcApp->m_func == VNF_JitReadyToRunNewLclArr);
+    }
+    return result;
+}
+
+bool ValueNumStore::IsVNNewLocalArr(ValueNum vn, VNFuncApp* funcApp)
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+    bool result = false;
+    if (GetVNFunc(vn, funcApp))
+    {
+        result = (funcApp->m_func == VNF_JitNewLclArr) || (funcApp->m_func == VNF_JitReadyToRunNewLclArr);
     }
     return result;
 }
@@ -13489,6 +13516,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         break;
 
         case VNF_JitNewArr:
+        case VNF_JitNewLclArr:
         {
             generateUniqueVN  = true;
             ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
@@ -13527,6 +13555,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         break;
 
         case VNF_JitReadyToRunNewArr:
+        case VNF_JitReadyToRunNewLclArr:
         {
             generateUniqueVN  = true;
             ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetNode()->gtVNPair);
@@ -14338,7 +14367,22 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 }
             }
 
+            if (isAlloc && ((call->gtCallMoreFlags & GTF_CALL_M_STACK_ARRAY) != 0))
+            {
+                if (vnf == VNF_JitNewArr)
+                {
+                    vnf = VNF_JitNewLclArr;
+                    // modHeap = false;
+                }
+                else if (vnf == VNF_JitReadyToRunNewArr)
+                {
+                    vnf = VNF_JitReadyToRunNewLclArr;
+                    // modHeap = false;
+                }
+            }
+
             fgValueNumberHelperCallFunc(call, vnf, vnpExc);
+
             return modHeap;
         }
         else
