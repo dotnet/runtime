@@ -71,14 +71,12 @@
     <Compile Include="AllAsyncTests.cs" />
     <Compile Include="AsyncEnumerableTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <!--<Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />-->
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
-    <!--<Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="System.Private.CoreLib\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />-->
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Linq.AsyncEnumerable.csproj" />
     <ProjectReference Include="..\..\System.Threading.Channels\src\System.Threading.Channels.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
 </Project>
