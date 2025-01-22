@@ -25498,6 +25498,18 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar4x64, simdBaseJitType, simdSize);
     }
+    else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+    {
+        // swap the operands to match the encoding requirements
+        GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType, simdSize);
+    }
+    else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    {
+        // swap the operands to match the encoding requirements
+        GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType, simdSize);
+    }
     else
     {
         assert((elementSize == 1 && simdSize == 32) || elementSize == 2 || (elementSize == 4 && simdSize == 16) ||
