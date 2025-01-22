@@ -74,9 +74,7 @@ REGALIAS(R13, SP)
 REGALIAS(R14, LR)
 REGALIAS(R15, PC)
 
-// Temporary workaround to avoid changing all the code that uses REG_* enum values.
-// as they conflict with symbols defined in Android NDK. This will be removed later
-// when we figure out a better solution.
+// Ignore REG_* symbols defined in Android NDK
 #undef REG_R0
 #define REG_R0 JITREG_R0
 #undef REG_R1

@@ -124,9 +124,7 @@ REGDEF(FFR,   1+NBASE, 0x0000,    "ffr",  "na")
 // This must be last!
 REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 
-// Temporary workaround to avoid changing all the code that uses REG_* enum values.
-// as they conflict with symbols defined in Android NDK. This will be removed later
-// when we figure out a better solution.
+// Ignore REG_* symbols defined in Android NDK
 #undef REG_R0
 #define REG_R0 JITREG_R0
 #undef REG_R1

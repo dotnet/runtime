@@ -133,9 +133,7 @@ REGDEF(K7,     7+KBASE,    KMASK(7),     "k7"   )
 
 REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 
-// Temporary workaround to avoid changing all the code that uses REG_* enum values.
-// as they conflict with symbols defined in Android NDK. This will be removed later
-// when we figure out a better solution.
+// Ignore REG_* symbols defined in Android NDK
 #if defined(TARGET_X86)
 #undef REG_EAX
 #define REG_EAX JITREG_EAX
