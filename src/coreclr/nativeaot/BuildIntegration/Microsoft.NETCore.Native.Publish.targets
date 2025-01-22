@@ -115,4 +115,7 @@
 
   </Target>
 
+  <!-- Empty target to provide back-compat for other targets that run before/after CopyNativeBinary. -->
+  <Target Name="CopyNativeBinary" AfterTargets="Publish" />
+
 </Project>
