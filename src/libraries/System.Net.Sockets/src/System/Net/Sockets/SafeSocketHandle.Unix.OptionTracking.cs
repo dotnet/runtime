@@ -40,7 +40,13 @@ namespace System.Net.Sockets
             if ((trackedOptions & lingerFlag) == lingerFlag)
             {
                 SocketError errorCode = SocketPal.GetLingerOption(this, out lingerOption);
-                if (NetEventSource.Log.IsEnabled() && errorCode != SocketError.Success) NetEventSource.Info(this, $"GetLingerOption returned errorCode:{errorCode}");
+                if (errorCode != SocketError.Success)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetLingerOption returned errorCode:{errorCode}");
+
+                    // Untrack this option, so we don't try to set it.
+                    _trackedOptions &= ~lingerFlag;
+                }
 
                 // Ignore it during the processing of int-value options.
                 trackedOptions &= ~lingerFlag;
@@ -57,13 +63,19 @@ namespace System.Net.Sockets
 
             for (int i = 0; i < values.Length; i++)
             {
-                int mask = 1 << i;
-                if ((trackedOptions & mask) == mask)
+                int flag = 1 << i;
+                if ((trackedOptions & flag) == flag)
                 {
                     TrackableSocketOptions tracked = (TrackableSocketOptions)(i + 1);
                     (SocketOptionName name, SocketOptionLevel level) = ToSocketOptions(tracked);
                     SocketError errorCode = SocketPal.GetSockOpt(this, level, name, out values[i]);
-                    if (NetEventSource.Log.IsEnabled() && errorCode != SocketError.Success) NetEventSource.Info(this, $"GetSockOpt({level},{name}) returned errorCode:{errorCode}");
+                    if (errorCode != SocketError.Success)
+                    {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"GetSockOpt({level},{name}) returned errorCode:{errorCode}");
+
+                        // Untrack this option, so we don't try to set it.
+                        _trackedOptions &= ~flag;
+                    }
                 }
             }
         }

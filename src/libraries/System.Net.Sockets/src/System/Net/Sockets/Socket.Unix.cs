@@ -133,6 +133,8 @@ namespace System.Net.Sockets
         internal SocketError ReplaceHandle()
         {
             // Collect values of trackable socket options marked by SafeSocketHandle.TrackSocketOption().
+            // The content of optionValues is uninitialized after creation but GetTrackedSocketOptions should fill the tracked options
+            // and SetTrackedSocketOptions should ignore the ones which are untracked.
             Span<int> optionValues = stackalloc int[SafeSocketHandle.TrackableOptionCount];
             _handle.GetTrackedSocketOptions(optionValues, out LingerOption? lingerOption);
 
