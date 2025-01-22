@@ -18,6 +18,10 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true'" />
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true'" />
 
+  <ItemGroup>
+    <Content Include="buildTransitive\$(PackageId).targets" PackagePath="buildTransitive\netstandard2.1\" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
   </ItemGroup>
@@ -31,7 +35,7 @@
              Link="Common\Interop\Windows\BCrypt\BCryptAeadHandleCache.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Cng.cs"
              Link="Common\Interop\Windows\BCrypt\Cng.cs" />
-<Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs"
+    <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptEncryptDecrypt.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs"
              Link="Common\Interop\Windows\BCrypt\Interop.BCryptImportKey.cs" />
