@@ -1560,7 +1560,7 @@ bulk_type_log_single_type (
 		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
 		// mono arrays are always arrays of by value types
 		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
-		*val->mono_type_parameters = m_class_get_byval_arg (mono_type_data_get_klass (mono_underlying_type));
+		*val->mono_type_parameters = m_class_get_byval_arg (m_type_data_get_klass (mono_underlying_type));
 		val->type_parameters_count++;
 		break;
 	}
