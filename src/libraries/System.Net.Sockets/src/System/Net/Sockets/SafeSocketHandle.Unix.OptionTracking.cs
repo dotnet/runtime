@@ -96,7 +96,8 @@ namespace System.Net.Sockets
 
         private static int GetFlag(TrackableSocketOptions tracked) => 1 << ((int)tracked - 1);
 
-        // Relevant option names and values taken from Windows headers.
+        // The code below is auto-generated based on option names and values defined in Windows headers:
+        // https://gist.github.com/antonfirsov/2cbfc37e665ad840ed7734994948c29a
         private enum TrackableSocketOptions
         {
             None = 0,
