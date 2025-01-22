@@ -98,14 +98,13 @@
     but we do produce them in both the VMR and the runtime official build.
   -->
   <PropertyGroup>
-    <_ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildRepo)' == 'true' and '$(DotNetBuildOrchestrator)' == 'true'">true</_ShouldGenerateProductVersionFiles>
-    <_ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildRepo)' != 'true' and '$(DotNetBuildOrchestrator)' != 'true'">true</_ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildOrchestrator)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
   <Target Name="GenerateProductVersionFiles"
           DependsOnTargets="GetNonStableProductVersion"
           BeforeTargets="PublishToAzureDevOpsArtifacts"
-          Condition="'$(_ShouldGenerateProductVersionFiles)' == 'true'">
+          Condition="'$(ShouldGenerateProductVersionFiles)' == 'true'">
     <!-- Retrieve the runtime pack product version. -->
     <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.CoreCLR.sfxproj"
              Targets="ReturnProductVersion"

@@ -397,16 +397,7 @@ extends:
                   PackageArtifacts/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
                   PackageArtifacts/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
-            - task: CopyFiles@2
-              displayName: Flatten packages
-              inputs:
-                sourceFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
-                contents: '*/Shipping/*.nupkg'
-                cleanTargetFolder: false
-                targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
-                flattenFolders: true
-
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120

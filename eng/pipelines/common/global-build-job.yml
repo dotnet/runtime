@@ -141,7 +141,7 @@ jobs:
       
       - name: _assetManifestFileNameParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
-          value: /p:AssetManifestFileName="${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{parameters.archType}}_${{parameters.nameSuffix }}"
+          value: /p:AssetManifestFileName="${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{parameters.archType}}_${{parameters.nameSuffix }}.xml"
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
       - name: _publishRidAgnosticArtifactsParameter
