@@ -373,6 +373,7 @@ namespace ILCompiler
                     throw new CommandLineException($"Unexpected feature switch pair '{switchPair}'");
                 featureSwitches[switchAndValue[0]] = switchValue;
             }
+            featureSwitches["System.Linq.Enumerable.ValueTypeTrimFriendlySelect"] = true;
 
             BodyAndFieldSubstitutions substitutions = default;
             IReadOnlyDictionary<ModuleDesc, IReadOnlySet<string>> resourceBlocks = default;
