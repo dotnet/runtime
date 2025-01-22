@@ -3,7 +3,7 @@ services:
   client:
     build:
       context: ../../../../ # ~> src/libraries
-      dockerfile: ./System.Net.Security/tests/StressTests/HttpStress/${DOCKERFILE:-Dockerfile}
+      dockerfile: ./System.Net.Http/tests/StressTests/HttpStress/${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
       - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
@@ -16,7 +16,7 @@ services:
   server:
     build:
       context: ../../../../ # ~> src/libraries
-      dockerfile: ./System.Net.Security/tests/StressTests/HttpStress/${DOCKERFILE:-Dockerfile}
+      dockerfile: ./System.Net.Http/tests/StressTests/HttpStress/${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
       - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
