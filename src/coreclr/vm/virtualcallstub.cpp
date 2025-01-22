@@ -17,6 +17,7 @@
 #include "array.h"
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
+#include "comdelegate.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -1365,11 +1366,75 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
     }
 #endif // _DEBUG
 
-    if (patch)
+    if (patch && pCallSite != NULL)
     {
         DispatchCellInfo cellInfo = ((InterfaceDispatchCell*)pCallSite->GetIndirectCell())->GetDispatchCellInfo();
         InterfaceDispatch_UpdateDispatchCellCache((InterfaceDispatchCell*)pCallSite->GetIndirectCell(), target, objectType, &cellInfo);
     }
+
+    return target;
+}
+
+// Resolve a dispatch on a virtual open delegate without updating any pointers
+extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(CheckPointer(pTransitionBlock));
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    FrameWithCookie<StubDispatchFrame> frame(pTransitionBlock);
+    StubDispatchFrame * pSDFrame = &frame;
+
+    OBJECTREF *protectedObj = pSDFrame->GetThisPtr();
+    _ASSERTE(protectedObj != NULL);
+    OBJECTREF pObj = *protectedObj;
+
+    PCODE target = (PCODE)NULL;
+
+    if (pObj == NULL) {
+        pSDFrame->SetForNullReferenceException();
+        pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        COMPlusThrow(kNullReferenceException);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        _ASSERTE(!"Throw returned");
+    }
+
+    MethodDesc *pTargetMD = COMDelegate::GetMethodDesc(pObj);
+    pSDFrame->SetFunction(pTargetMD);
+
+    pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
+
+    DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    target = CachedInterfaceDispatchResolveWorker(NULL, protectedObj, token);
+
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
 }
@@ -1443,11 +1508,6 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    // For Virtual Delegates the m_siteAddr is a field of a managed object
-    // Thus we have to report it as an interior pointer,
-    // so that it is updated during a gc
-    GCPROTECT_BEGININTERIOR( *(callSite.GetIndirectCellAddress()) );
-
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
     target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, indirectionCell->m_token);
@@ -1459,8 +1519,6 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
         _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
     }
 #endif // _DEBUG
-
-    GCPROTECT_END();
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;

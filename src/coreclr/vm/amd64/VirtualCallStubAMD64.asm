@@ -69,7 +69,6 @@ LEAF_END RhpVTableOffsetDispatch, _TEXT
 ;; On Input:
 ;;    r11                    contains the address of the indirection cell
 ;;  [rsp+0] m_ReturnAddress: contains the return address of caller to stub
-
 NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK

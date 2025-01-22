@@ -13669,7 +13669,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             // the moment an indirection cell uses "call [cell-addr]" on x86, and instead we would want the
             // euqivalent of "call [[call-addr]]".  This could perhaps be implemented as "call [eax]" </REVISIT_TODO>
             DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(ownerType, slot);
-            result = pMgr->GetCallStub(token);
+
+            if (UseCachedInterfaceDispatch())
+                return NULL; // R2R interface dispatch currently only supports fixups with a single pointer, return FALSE to skip using the method
+            else
+                result = pMgr->GetCallStub(token);
         }
         break;
 #ifdef FEATURE_READYTORUN
