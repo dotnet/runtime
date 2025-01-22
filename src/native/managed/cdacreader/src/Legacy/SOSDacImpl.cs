@@ -572,7 +572,10 @@ internal sealed unsafe partial class SOSDacImpl
     {
         try
         {
-            _target.Contracts.StackWalk.TestEntry();
+            if (ip == 1)
+            {
+                _target.Contracts.StackWalk.TestEntry();
+            }
         }
         catch
         {

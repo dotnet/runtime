@@ -8,6 +8,7 @@
 
 typedef DPTR(M128A)  PTR_M128A;
 
+#ifndef FEATURE_CDAC_UNWINDER
 //---------------------------------------------------------------------------------------
 //
 // Read 64 bit unsigned value from the specified address. When the unwinder is built
@@ -25,7 +26,7 @@ typedef DPTR(M128A)  PTR_M128A;
 //    If the memory read fails in the DAC mode, the failure is reported as an exception
 //    via the DacError function.
 //
-static ULONG64 MemoryRead64(PULONG64 addr)
+ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
 {
     return *dac_cast<PTR_ULONG64>((TADDR)addr);
 }
@@ -47,10 +48,11 @@ static ULONG64 MemoryRead64(PULONG64 addr)
 //    If the memory read fails in the DAC mode, the failure is reported as an exception
 //    via the DacError function.
 //
-static M128A MemoryRead128(PM128A addr)
+M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
 {
     return *dac_cast<PTR_M128A>((TADDR)addr);
 }
+#endif // !FEATURE_CDAC_UNWINDER
 
 #ifdef DACCESS_COMPILE
 
@@ -204,7 +206,8 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
 
 BOOL DacUnwindStackFrame(CONTEXT * pContext, KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)
 {
-    BOOL res = OOPStackUnwinderAMD64::Unwind(pContext);
+    OOPStackUnwinderAMD64 unwinder;
+    BOOL res = unwinder.Unwind(pContext);
 
     if (res && pContextPointers)
     {
@@ -257,6 +260,183 @@ BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
     return (hr == S_OK);
 }
 
+#elif defined(FEATURE_CDAC_UNWINDER)
+
+#define UNWINDER_ASSERT(x)
+
+//---------------------------------------------------------------------------------------
+//
+// The InstructionBuffer class abstracts accessing assembler instructions in the function
+// being unwound. It behaves as a memory byte pointer, but it reads the instruction codes
+// from the target process being debugged and removes all changes that the debugger
+// may have made to the code, e.g. breakpoint instructions.
+//
+class InstructionBuffer
+{
+    UINT m_offset;
+    SIZE_T m_address;
+    UCHAR m_buffer[32];
+
+    ReadCallback readCallback;
+
+    // Load the instructions from the target process being debugged
+    HRESULT Load()
+    {
+        HRESULT hr = readCallback(m_address, m_buffer, sizeof(m_buffer));
+        if (SUCCEEDED(hr))
+        {
+            // TODO: Implement for cDAC
+
+            // On X64, we need to replace any patches which are within the requested memory range.
+            // This is because the X64 unwinder needs to disassemble the native instructions in order to determine
+            // whether the IP is in an epilog.
+        }
+
+        return hr;
+    }
+
+public:
+
+    // Construct the InstructionBuffer for the given address in the target process
+    InstructionBuffer(SIZE_T address, ReadCallback readCallback)
+      : m_offset(0),
+        m_address(address),
+        readCallback(readCallback)
+    {
+        HRESULT hr = Load();
+        if (FAILED(hr))
+        {
+            // If we have failed to read from the target process, just pretend
+            // we've read zeros.
+            // The InstructionBuffer is used in code driven epilogue unwinding
+            // when we read processor instructions and simulate them.
+            // It's very rare to be stopped in an epilogue when
+            // getting a stack trace, so if we can't read the
+            // code just assume we aren't in an epilogue instead of failing
+            // the unwind.
+            memset(m_buffer, 0, sizeof(m_buffer));
+        }
+    }
+
+    // Move to the next byte in the buffer
+    InstructionBuffer& operator++()
+    {
+        m_offset++;
+        return *this;
+    }
+
+    // Skip delta bytes in the buffer
+    InstructionBuffer& operator+=(INT delta)
+    {
+        m_offset += delta;
+        return *this;
+    }
+
+    // Return address of the current byte in the buffer
+    explicit operator ULONG64()
+    {
+        return m_address + m_offset;
+    }
+
+    // Get the byte at the given index from the current position
+    // Invoke DacError if the index is out of the buffer
+    UCHAR operator[](int index)
+    {
+        int realIndex = m_offset + index;
+        UNWINDER_ASSERT(realIndex < (int)sizeof(m_buffer));
+        return m_buffer[realIndex];
+    }
+};
+
+BOOL amd64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
+{
+    HRESULT hr = E_FAIL;
+
+    OOPStackUnwinderAMD64 unwinder { readCallback, getAllocatedBuffer, getStackWalkInfo };
+    hr = unwinder.Unwind((CONTEXT*) pContext);
+
+    return (hr == S_OK);
+}
+
+BOOL OOPStackUnwinderAMD64::Unwind(CONTEXT * pContext)
+{
+    HRESULT hr = E_FAIL;
+
+    ULONG64 uControlPC = pContext->Rip;
+
+    // get the module base
+    ULONG64 uImageBase;
+    hr = GetModuleBase(uControlPC, &uImageBase);
+    if (FAILED(hr))
+    {
+        return FALSE;
+    }
+
+    // get the function entry
+    IMAGE_RUNTIME_FUNCTION_ENTRY functionEntry;
+    hr = GetFunctionEntry(uControlPC, &functionEntry, sizeof(functionEntry));
+    if (FAILED(hr))
+    {
+        return FALSE;
+    }
+
+    // call VirtualUnwind() to do the real work
+    ULONG64 EstablisherFrame;
+    hr = VirtualUnwind(0, uImageBase, uControlPC, &functionEntry, pContext, NULL, &EstablisherFrame, NULL, NULL);
+
+    return (hr == S_OK);
+}
+
+UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
+{
+    UNWIND_INFO unwindInfo;
+    if(readCallback((uint64_t)taUnwindInfo, &unwindInfo, sizeof(unwindInfo)) != S_OK)
+    {
+        return NULL;
+    }
+
+    DWORD cbUnwindInfo = offsetof(UNWIND_INFO, UnwindCode) +
+        unwindInfo.CountOfUnwindCodes * sizeof(UNWIND_CODE);
+
+    // Check if there is a chained unwind info.  If so, it has an extra RUNTIME_FUNCTION tagged to the end.
+    if ((unwindInfo.Flags & UNW_FLAG_CHAININFO) != 0)
+    {
+        // If there is an odd number of UNWIND_CODE, we need to adjust for alignment.
+        if ((unwindInfo.CountOfUnwindCodes & 1) != 0)
+        {
+            cbUnwindInfo += sizeof(UNWIND_CODE);
+        }
+        cbUnwindInfo += sizeof(T_RUNTIME_FUNCTION);
+    }
+
+    UNWIND_INFO* pUnwindInfo;
+    if(getAllocatedBuffer(cbUnwindInfo, (void**)&pUnwindInfo) != S_OK)
+    {
+        return NULL;
+    }
+
+    if(readCallback(taUnwindInfo, pUnwindInfo, cbUnwindInfo) != S_OK)
+    {
+        return NULL;
+    }
+
+    return pUnwindInfo;
+}
+
+ULONG64 OOPStackUnwinderAMD64::MemoryRead64(PULONG64 addr)
+{
+    ULONG64 value;
+    readCallback((uint64_t)addr, &value, sizeof(value));
+    return value;
+}
+
+M128A OOPStackUnwinderAMD64::MemoryRead128(PM128A addr)
+{
+    M128A value;
+    readCallback((uint64_t)addr, &value, sizeof(value));
+    return value;
+}
+
 #else // DACCESS_COMPILE
 
 // Report failure in the unwinder if the condition is FALSE
@@ -275,6 +455,7 @@ UNWIND_INFO * OOPStackUnwinderAMD64::GetUnwindInfo(TADDR taUnwindInfo)
     return (UNWIND_INFO *)taUnwindInfo;
 }
 
+#ifndef FEATURE_CDAC_UNWINDER
 //---------------------------------------------------------------------------------------
 //
 // This function behaves like the RtlVirtualUnwind in Windows.
@@ -333,7 +514,8 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
 {
     PEXCEPTION_ROUTINE handlerRoutine;
 
-    HRESULT res = OOPStackUnwinderAMD64::VirtualUnwind(
+    OOPStackUnwinderAMD64 unwinder;
+    HRESULT res = unwinder.VirtualUnwind(
         HandlerType,
         ImageBase,
         ControlPc,
@@ -344,11 +526,11 @@ PEXCEPTION_ROUTINE RtlVirtualUnwind_Unsafe(
         ContextPointers,
         &handlerRoutine);
 
-    _ASSERTE(SUCCEEDED(res));
+    UNWINDER_ASSERT(SUCCEEDED(res));
 
     return handlerRoutine;
 }
-
+#endif // FEATURE_CDAC_UNWINDER
 
 #endif // DACCESS_COMPILE
 
@@ -1206,7 +1388,11 @@ Arguments:
 
     InEpilogue = FALSE;
     if (UnwindVersion < 2) {
+#ifndef FEATURE_CDAC_UNWINDER
         InstructionBuffer InstrBuffer = (InstructionBuffer)ControlPc;
+#else // !FEATURE_CDAC_UNWINDER
+        InstructionBuffer InstrBuffer(ControlPc, readCallback);
+#endif // FEATURE_CDAC_UNWINDER
         InstructionBuffer NextByte = InstrBuffer;
 
         //

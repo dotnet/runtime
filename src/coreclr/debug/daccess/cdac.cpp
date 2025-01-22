@@ -25,7 +25,7 @@ namespace
         iter++;
         path.Truncate(iter);
         path.Append(CDAC_LIB_NAME);
-        *phCDAC = CLRLoadLibrary(path.GetUnicode());
+        *phCDAC = CLRLoadLibraryEx(path.GetUnicode(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
         if (*phCDAC == NULL)
             return false;
 
