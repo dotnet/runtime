@@ -729,6 +729,41 @@ namespace System.PrivateUri.Tests
             Assert.Equal(Combined, new Uri(baseUri, RelativeUriString).AbsoluteUri);
         }
 
+        [Theory]
+        [InlineData("http://bar/Testue/testImage.jpg")]
+        // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
+        [InlineData("http://bar/Testü/testImage.jpg")]
+        public static void Uri_CombineWithAbsoluteHttpUriResultInAbsoluteHttpSchema(string fileUri)
+        {
+            string baseUriString = "combine-scheme://foo";
+
+            var baseUri = new Uri(baseUriString, UriKind.Absolute);
+            var uri = new Uri(fileUri);
+            var resultUri = new Uri(baseUri, uri);
+            string resultUriString = resultUri.ToString();
+
+            Assert.DoesNotContain(baseUriString, resultUriString);
+            Assert.Contains("http://", resultUriString);
+            Assert.Equal(fileUri, resultUriString);
+        }
+
+        [Theory]
+        [InlineData(@"\\nas\Testue\testImage.jpg")]
+        // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
+        [InlineData(@"\\nas\Testü\testImage.jpg")]
+        public static void Uri_CombineWithAbsoluteFilePathResultInAbsoluteFileSchema(string fileUri)
+        {
+            string baseUriString = "combine-scheme://foo";
+
+            var baseUri = new Uri(baseUriString, UriKind.Absolute);
+            var uri = new Uri(fileUri);
+            var resultUri = new Uri(baseUri, uri);
+            string resultUriString = resultUri.ToString();
+
+            Assert.DoesNotContain(baseUriString, resultUriString);
+            Assert.Contains("file://", resultUriString);
+        }
+
         [Fact]
         public static void Uri_CachesIdnHost()
         {
