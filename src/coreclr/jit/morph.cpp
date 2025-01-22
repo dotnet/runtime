@@ -13520,12 +13520,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         //
         if (fgEntryBB->hasProfileWeight())
         {
-            weight_t incomingWeight = BB_ZERO_WEIGHT;
-            for (FlowEdge* const predEdge : fgEntryBB->PredEdges())
-            {
-                incomingWeight += predEdge->getLikelyWeight();
-            }
-
+            const weight_t incomingWeight = fgEntryBB->computeIncomingWeight();
             if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
             {
                 JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
