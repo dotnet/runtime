@@ -3424,7 +3424,7 @@ type_is_gtd (MonoType *type)
 	switch (type->type) {
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return mono_class_is_gtd (m_type_data_get_klass (type));
+		return mono_class_is_gtd (m_type_data_get_klass_unchecked (type));
 	default:
 		return FALSE;
 	}
@@ -3961,12 +3961,12 @@ mono_metadata_get_shared_type (MonoType *type)
 	switch (type->type){
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_get_mem_manager (m_type_data_get_klass (type))->collectible)
+		if (m_class_get_mem_manager (m_type_data_get_klass_unchecked (type))->collectible)
 			/* These can be unloaded, so references to them shouldn't be shared */
 			return NULL;
-		if (type == m_class_get_byval_arg (m_type_data_get_klass (type)))
+		if (type == m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)))
 			return type;
-		if (type == m_class_get_this_arg (m_type_data_get_klass (type)))
+		if (type == m_class_get_this_arg (m_type_data_get_klass_unchecked (type)))
 			return type;
 		break;
 	default:
@@ -4183,22 +4183,24 @@ mono_metadata_free_type (MonoType *type)
 	switch (type->type){
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_STRING:
-		if (!m_type_data_get_klass (type))
+		/* We should normally not be using this accessor because klass could be null, but we're guarding against the potential null here. */
+		/* fixme: is it legal and desirable to free System.Object or System.String? Under which circumstances do we need to do it? -kg */
+		if (!m_type_data_get_klass_unchecked (type))
 			break;
-		/* fall through */
+		/* fall through since we checked for null so the following logic is safe. */
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		if (type == m_class_get_byval_arg (m_type_data_get_klass (type)) || type == m_class_get_this_arg (m_type_data_get_klass (type)))
+		if (type == m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)) || type == m_class_get_this_arg (m_type_data_get_klass_unchecked (type)))
 			return;
 		break;
 	case MONO_TYPE_PTR:
-		mono_metadata_free_type (m_type_data_get_type (type));
+		mono_metadata_free_type (m_type_data_get_type_unchecked (type));
 		break;
 	case MONO_TYPE_FNPTR:
-		mono_metadata_free_method_signature (m_type_data_get_method (type));
+		mono_metadata_free_method_signature (m_type_data_get_method_unchecked (type));
 		break;
 	case MONO_TYPE_ARRAY:
-		mono_metadata_free_array (m_type_data_get_array (type));
+		mono_metadata_free_array (m_type_data_get_array_unchecked (type));
 		break;
 	default:
 		break;
@@ -5365,10 +5367,10 @@ mono_type_size (MonoType *t, int *align)
 		*align = MONO_ABI_ALIGNOF (gpointer);
 		return MONO_ABI_SIZEOF (gpointer);
 	case MONO_TYPE_VALUETYPE: {
-		if (m_class_is_enumtype (m_type_data_get_klass (t)))
-			return mono_type_size (mono_class_enum_basetype_internal (m_type_data_get_klass (t)), align);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t)))
+			return mono_type_size (mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t)), align);
 		else
-			return mono_class_value_size (m_type_data_get_klass (t), (guint32*)align);
+			return mono_class_value_size (m_type_data_get_klass_unchecked (t), (guint32*)align);
 	}
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_OBJECT:
@@ -5382,7 +5384,7 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_TYPEDBYREF:
 		return mono_class_value_size (mono_defaults.typed_reference_class, (guint32*)align);
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = m_type_data_get_generic_class (t);
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (t);
 		MonoClass *container_class = gclass->container_class;
 
 		// g_assert (!gclass->inst->is_open);
@@ -5399,12 +5401,13 @@ mono_type_size (MonoType *t, int *align)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (!m_type_data_get_generic_param (t)->gshared_constraint || m_type_data_get_generic_param (t)->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
+		if (!m_type_data_get_generic_param_unchecked (t)->gshared_constraint || m_type_data_get_generic_param_unchecked (t)->gshared_constraint->type == MONO_TYPE_VALUETYPE) {
 			*align = MONO_ABI_ALIGNOF (gpointer);
 			return MONO_ABI_SIZEOF (gpointer);
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
 			return mono_type_size (m_type_data_get_generic_param (t)->gshared_constraint, align);
+			/* FIXME: why is this goto here? -kg */
 			goto again;
 		}
 	default:
