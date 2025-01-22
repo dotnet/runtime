@@ -43,7 +43,7 @@
 
       <!-- Add native symbol file if it exists. On Mac, the symbol path may be a folder-->
       <ResolvedFileToPublish Include="$(_symbolSourcePath)"
-                             Condition="'$(_symbolIsFile)' == '' and Exists('$(_symbolSourcePath)')">
+                             Condition="'$(NativeSymbolExt)' != '.dSYM' and Exists('$(_symbolSourcePath)')">
         <RelativePath>$(TargetName)$(_symbolExt)</RelativePath>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </ResolvedFileToPublish>
