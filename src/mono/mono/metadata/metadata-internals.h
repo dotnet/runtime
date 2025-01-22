@@ -1300,6 +1300,12 @@ MONO_NEVER_INLINE void
 m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type);
 
 static inline MonoClass *
+m_type_data_get_klass_unchecked (const MonoType *type)
+{
+	return type->data.klass;
+}
+
+static inline MonoClass *
 m_type_data_get_klass (const MonoType *type)
 {
 	switch (type->type) {
@@ -1332,55 +1338,29 @@ m_type_data_get_klass (const MonoType *type)
 	}
 }
 
-static inline MonoGenericParam *
-m_type_data_get_generic_param (const MonoType *type)
-{
-	if (G_LIKELY((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)))
-		return type->data.generic_param;
+#define _DEFINE_TYPE_GETTER(field_type, field_name, predicate) \
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return type->data.field_name; \
+	} \
+	\
+	static inline field_type \
+	m_type_data_get_ ## field_name (const MonoType *type) \
+	{ \
+		if (G_LIKELY(predicate)) \
+			return type->data.field_name; \
+		m_type_invalid_access (__func__, type->type); \
+		return NULL; \
+	} \
 
-	m_type_invalid_access (__func__, type->type);
-	return NULL;
-}
+_DEFINE_TYPE_GETTER(MonoGenericParam *, generic_param, (type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR));
+_DEFINE_TYPE_GETTER(MonoArrayType *, array, type->type == MONO_TYPE_ARRAY);
+_DEFINE_TYPE_GETTER(MonoType *, type, type->type == MONO_TYPE_PTR);
+_DEFINE_TYPE_GETTER(MonoMethodSignature *, method, type->type == MONO_TYPE_FNPTR);
+_DEFINE_TYPE_GETTER(MonoGenericClass *, generic_class, type->type == MONO_TYPE_GENERICINST);
 
-static inline MonoArrayType *
-m_type_data_get_array (const MonoType *type)
-{
-	if (G_LIKELY(type->type == MONO_TYPE_ARRAY))
-		return type->data.array;
-
-	m_type_invalid_access (__func__, type->type);
-	return NULL;
-}
-
-static inline MonoType *
-m_type_data_get_type (const MonoType *type)
-{
-	if (G_LIKELY(type->type == MONO_TYPE_PTR))
-		return type->data.type;
-
-	m_type_invalid_access (__func__, type->type);
-	return NULL;
-}
-
-static inline MonoMethodSignature *
-m_type_data_get_method (const MonoType *type)
-{
-	if (G_LIKELY(type->type == MONO_TYPE_FNPTR))
-		return type->data.method;
-
-	m_type_invalid_access (__func__, type->type);
-	return NULL;
-}
-
-static inline MonoGenericClass *
-m_type_data_get_generic_class (const MonoType *type)
-{
-	if (G_LIKELY(type->type == MONO_TYPE_GENERICINST))
-		return type->data.generic_class;
-
-	m_type_invalid_access (__func__, type->type);
-	return NULL;
-}
+#undef _DEFINE_TYPE_GETTER
 
 /**
  * mono_type_get_class_internal:
