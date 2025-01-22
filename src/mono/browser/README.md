@@ -367,7 +367,7 @@ Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 
 ### `eng/testing/BrowserVersions.props`
 
-This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/GetChromeVersions.cs` task.
+This file is updated once a week by a github action `.github/workflows/bump-chrome-version.yml`, and the version is obtained by `src/tasks/WasmBuildTasks/UpdateChromeVersions.cs` task.
 
 # Perf pipeline
 
