@@ -140,18 +140,4 @@
                 RelativeBlobPath="Runtime/$(NonStableProductVersion)/%(Artifact.SubBlobFolder)%(Filename)%(Extension)" />
     </ItemGroup>
   </Target>
-
-  <Target Name="ValidateDownloadedAssets" Condition="'$(DotNetBuildRepo)' != 'true'">
-    <Error Text="DownloadDirectory is not set." Condition="'$(DownloadDirectory)' == ''" />
-    <Error Condition="'@(SymbolNupkgToPublishFile)' == ''" Text="No symbol packages found." />
-
-    <!--
-      Duplicate RuntimeNupkgFile items mean artifact upload will fail, but only after another hour
-      of signing. Detect this early. It's possible to automatically "fix" this with Distinct(),
-      however the patterns should be fairly specific: this is likely a build infra mistake that
-      should be corrected.
-    -->
-    <Error Text="Duplicate RuntimeNupkgFile entries for: %(RuntimeNupkgFile.Identity)" Condition="@(RuntimeNupkgFile->Count()) &gt; 1" />
-  </Target>
-
 </Project>
