@@ -86,6 +86,10 @@ build_native()
             exit 1
         fi
 
+        # cmake cache scripts can't see command line args
+        ANDROID_BUILD=1
+        export ANDROID_BUILD
+
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
 
         # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props

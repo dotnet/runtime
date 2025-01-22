@@ -1073,6 +1073,8 @@ extern "C" size_t GetThreadStaticsVariableOffset();
 
 void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
+
+#if !defined(TARGET_ANDROID)
     STANDARD_VM_CONTRACT;
     size_t threadStaticBaseOffset = 0;
 
@@ -1094,7 +1096,7 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
     pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
 
-#elif !defined(TARGET_ANDROID) && defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // For Linux arm64/loongarch64/riscv64, just get the offset of thread static variable, and during execution,
     // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
@@ -1108,6 +1110,7 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cNonCollectibleTlsData));
     pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pNonCollectibleTlsArrayData));
     pInfo->offsetOfBaseOfThreadLocalData = (uint32_t)threadStaticBaseOffset;
+#endif // !TARGET_ANDROID
 }
 #endif // !DACCESS_COMPILE
 

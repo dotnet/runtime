@@ -296,6 +296,8 @@ LEAF_END GetThreadVarsAddress, _TEXT
 #ifndef TARGET_OSX
 # EXTERN_C void* GetTlsIndexObjectDescOffset();
 
+#ifndef TARGET_ANDROID
+
 # <NOTE>
 # Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
 # once linker does its relocation and fixup of thread locals. The runtime gets the address of this function, so
@@ -318,7 +320,8 @@ LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
         call    EXTERNAL_C_FUNC(__tls_get_addr)                      # dummy call to have linker see the code pattern to replace the offset
         int 3
 LEAF_END GetTlsIndexObjectDescOffset, _TEXT
-#endif
+#endif // !TARGET_ANDROID
+#endif // !TARGET_OSX
 
 LEAF_ENTRY  JIT_PollGC, _TEXT
         PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax

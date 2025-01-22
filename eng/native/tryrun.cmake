@@ -1,8 +1,9 @@
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(TARGET_ARCH_NAME $ENV{TARGET_BUILD_ARCH})
+set(ANDROID_BUILD $ENV{ANDROID_BUILD})
 
 # Also allow building as Android without specifying `-cross`.
-if(NOT DEFINED TARGET_ARCH_NAME AND DEFINED ANDROID_PLATFORM)
+if(NOT DEFINED TARGET_ARCH_NAME AND DEFINED ANDROID_BUILD)
   if(ANDROID_ABI STREQUAL "arm64-v8a")
     set(TARGET_ARCH_NAME "arm64")
   elseif(ANDROID_ABI STREQUAL "x86_64")
@@ -21,7 +22,7 @@ macro(set_cache_value)
   set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
 endmacro()
 
-if(NOT DEFINED ANDROID_PLATFORM)
+if(NOT DEFINED ANDROID_BUILD)
   if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv7-alpine-linux-musleabihf OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
     EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/aarch64-alpine-linux-musl OR
@@ -50,7 +51,7 @@ if(NOT DEFINED ANDROID_PLATFORM)
 endif()
 
 if(DARWIN)
-  if(TARGET_ARCH_NAME MATCHES "^(arm64|x64)$")
+  if(DEFINED ANDROID_BUILD OR TARGET_ARCH_NAME MATCHES "^(arm64|x64)$")
     set_cache_value(HAS_POSIX_SEMAPHORES_EXITCODE 1)
     set_cache_value(HAVE_BROKEN_FIFO_KEVENT_EXITCODE 1)
     set_cache_value(HAVE_BROKEN_FIFO_SELECT_EXITCODE 1)
