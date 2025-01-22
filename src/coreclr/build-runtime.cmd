@@ -320,9 +320,6 @@ for /f "delims=" %%a in ("-%__RequestedBuildComponents%-") do (
     if not "!string:-spmi-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! spmi
     )
-    if not "!string:-crosscomponents-=!"=="!string!" (
-        set __CMakeTarget=!__CMakeTarget! crosscomponents
-    )
     if not "!string:-debug-=!"=="!string!" (
         set __CMakeTarget=!__CMakeTarget! debug
     )
