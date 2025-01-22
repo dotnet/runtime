@@ -2259,11 +2259,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!IsValidForShuffle(indices, simdSize, simdBaseType))
+            // Check if the required intrinsics to emit are available.
+            if (!IsValidForShuffle(indices, simdSize, simdBaseType, nullptr))
             {
                 break;
             }
 
+            // If the indices might become constant later, then we don't emit for now, delay until later.
             if (!indices->IsCnsVec())
             {
                 assert(sig->numArgs == 2);

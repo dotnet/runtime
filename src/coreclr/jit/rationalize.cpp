@@ -344,7 +344,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType))
+            // Check if the required intrinsics to emit are available.
+            if (!comp->IsValidForShuffle(op2, simdSize, simdBaseType, nullptr))
             {
                 break;
             }

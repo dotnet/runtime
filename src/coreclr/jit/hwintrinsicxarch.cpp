@@ -3650,12 +3650,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!IsValidForShuffle(indices, simdSize, simdBaseType))
-            {
-                break;
-            }
+            // Check if the required intrinsics are available to emit now (validForShuffle). If we have variable
+            // indices that might become possible to emit later (due to them becoming constant), this will be
+            // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
+            bool canBecomeValidForShuffle = false;
+            bool validForShuffle = !IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle);
 
-            if (!indices->IsCnsVec())
+            // If the indices might become constant later, then we don't emit for now, delay until later.
+            if (canBecomeValidForShuffle && ((!validForShuffle && canBecomeValidForShuffle) || !indices->IsCnsVec()))
             {
                 assert(sig->numArgs == 2);
 
@@ -3671,6 +3673,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                     break;
                 }
+            }
+
+            // If it isn't valid for shuffle (and can't become valid later, due to above block), then give up now.
+            if (!validForShuffle)
+            {
+                return nullptr;
             }
 
             if (sig->numArgs == 2)

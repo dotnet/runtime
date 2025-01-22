@@ -18444,9 +18444,13 @@ unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
     return simdSize / genTypeSize(simdBaseType);
 }
 
-bool Compiler::IsValidForShuffle(GenTree* indices, unsigned simdSize, var_types simdBaseType) const
+bool Compiler::IsValidForShuffle(GenTree* indices, unsigned simdSize, var_types simdBaseType, bool* canBecomeValid) const
 {
 #if defined(TARGET_XARCH)
+    if (canBecomeValid)
+    {
+        *canBecomeValid = false;
+    }
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
@@ -18480,11 +18484,20 @@ bool Compiler::IsValidForShuffle(GenTree* indices, unsigned simdSize, var_types 
         if (!indices->IsCnsVec() && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
         {
             // the variable implementation for Vector128 Shuffle always needs SSSE3
+            // however, this can become valid later if it becomes constant
+            if (canBecomeValid)
+            {
+                *canBecomeValid = true;
+            }
             return false;
         }
     }
 #endif // TARGET_XARCH
 
+    if (canBecomeValid)
+    {
+        *canBecomeValid = true;
+    }
     return true;
 }
 
@@ -25501,14 +25514,14 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
     {
         GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
-        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType,
-                                           simdSize);
+        retNode
+            = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType,
+                                       simdSize);
     }
     else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
     {
         GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
-        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, NI_AVX10v1_PermuteVar2x64x2, simdBaseJitType,
-                                           simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, NI_AVX10v1_PermuteVar2x64x2, simdBaseJitType, simdSize);
     }
     else
     {
