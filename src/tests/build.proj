@@ -456,10 +456,6 @@
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o</NativeDependencies>
-    </PropertyGroup>
-
     <RemoveDir Directories="$(AppleBuildDir)" />
     <RemoveDir Directories="$(AppDir)" />
     <MakeDir Directories="$(AppleBuildDir)" />
