@@ -635,12 +635,6 @@ private:
                             *pTree    = retExpr;
                         }
 
-                        if (retBuffer != nullptr)
-                        {
-                            call->GetSingleInlineCandidateInfo()->preexistingSpillTemp =
-                                retBuffer->GetNode()->AsLclVarCommon()->GetLclNum();
-                        }
-
                         call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
                         INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
