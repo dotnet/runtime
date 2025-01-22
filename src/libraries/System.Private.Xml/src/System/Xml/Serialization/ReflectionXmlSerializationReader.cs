@@ -1680,6 +1680,23 @@ namespace System.Xml.Serialization
                                 member.Source = (value) => setterDelegate(o, value);
                             }
                         }
+
+                        if (mapping.TypeDesc.IsArrayLike && !mapping.TypeDesc.IsArray && member.Source != null)
+                        {
+                            // At this point, the IL/CodeGen-based serializers of the past decide to "declare" all array-like members. Further in the code that
+                            // produces the 'declaration', we end up initializing non-array's with an empty collection - even if the XML data doesn't include
+                            // that collection (or even explicitly says it's null). This is a weird behavior, but we should mimic it here.
+                            // However, we don't want to create an empty collection just for it to be discarded later. So instead, make note that we need to
+                            // create an empty collection if we get to the end of our element and haven't already filled the collection.
+                            member.EnsureCollection = (obj) =>
+                            {
+                                if (GetMemberValue(obj, mapping.MemberInfo!) == null)
+                                {
+                                    var empty = ReflectionCreateObject(mapping.TypeDesc.Type!);
+                                    member.Source(empty);
+                                }
+                            };
+                        }
                     }
 
                     if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
@@ -1757,6 +1774,8 @@ namespace System.Xml.Serialization
                         var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
                         setMemberValue(o, collection);
                     }
+
+                    member.EnsureCollection?.Invoke(o!);
                 }
 
                 ReadEndElement();
@@ -2031,6 +2050,7 @@ namespace System.Xml.Serialization
             public Action<object?>? CheckSpecifiedSource;
             public Action<object>? ChoiceSource;
             public Action<string, string>? XmlnsSource;
+            public Action<object>? EnsureCollection;
 
             public Member(MemberMapping mapping)
             {
