@@ -195,10 +195,9 @@ LOCAL_LABEL(CheckCardTableBounds):
     tst  w12, w17
     bne  LOCAL_LABEL(Exit)
 
-    // Update the card table
-    // TODO: Is this correct? the AMD64 code is odd.
-    orr  w12, w12, w17
-    strb w12, [x15]
+    // Atomically update the card table
+    // Requires LSE, but the code is only compiled for 8.0
+    .word 0x383131FF // stsetb w17, [x15]
     b  LOCAL_LABEL(CheckCardBundleTable)
 
     // End of Region Checks

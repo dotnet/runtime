@@ -241,6 +241,13 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     PREPARE_EXTERNAL_VAR g_region_use_bitwise_write_barrier, x12
     ldr  w11, [x12]
 
+    // Only allow bitwise write barriers if LSE atomics are present
+    PREPARE_EXTERNAL_VAR g_arm64_atomics_present, x12
+    ldr  w13, [x12]
+    cbnz w13, LOCAL_LABEL(AtomicsPresent)
+    movz w11, 0
+LOCAL_LABEL(AtomicsPresent):
+
 #ifdef WRITE_BARRIER_CHECK
     PREPARE_EXTERNAL_VAR g_GCShadow, x12
     ldr  x13, [x12]
