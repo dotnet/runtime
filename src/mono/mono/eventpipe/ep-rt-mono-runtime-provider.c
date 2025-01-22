@@ -1558,23 +1558,23 @@ bulk_type_log_single_type (
 	{
 		// FIXME: Previously was handled by below ARRAY block but that is incorrect; this implementation is speculative -kg
 		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
-		// FIXME: Do we have to encode the rank of 1 explicitly?
-		// FIXME: Encode the mono_type_parameters and type_parameters_count
+		// mono arrays are always arrays of by value types
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = m_class_get_byval_arg (mono_type_data_get_klass (mono_underlying_type));
+		val->type_parameters_count++;
 		break;
 	}
 	case MONO_TYPE_ARRAY:
 	{
 		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
 		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
-		if (mono_underlying_type->type == MONO_TYPE_ARRAY) {
-			// Only ranks less than TypeFlagsArrayRankMax are supported.
-			// Fortunately TypeFlagsArrayRankMax should be greater than the
-			// number of ranks the type loader will support
-			uint32_t rank = mono_array_type->rank;
-			if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
-				rank <<= 8;
-				val->fixed_sized_data.flags |= rank;
-			}
+		// Only ranks less than TypeFlagsArrayRankMax are supported.
+		// Fortunately TypeFlagsArrayRankMax should be greater than the
+		// number of ranks the type loader will support
+		uint32_t rank = mono_array_type->rank;
+		if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
+			rank <<= 8;
+			val->fixed_sized_data.flags |= rank;
 		}
 
 		// mono arrays are always arrays of by value types
