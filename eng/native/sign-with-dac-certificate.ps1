@@ -7,26 +7,21 @@ param(
 )
 
 $inputFile = Get-Content -Raw $PSScriptRoot/signing/input.template.json | ConvertFrom-Json
-$inputFile.SignBatches = @{
-    SignBatches = @(
-        @{
-            SourceLocationType = "UNC"
-            DestinationLocationType = "UNC"
-            SignRequestFiles = $filesToSign | ForEach-Object {
-                @{
-                    SourceLocation = $_
-                }
-            }
-        }
-    )
+$inputFile.SignBatches.SignRequestFiles = $filesToSign | ForEach-Object {
+    @{
+        SourceLocation = $_
+    }
 }
 
 $inputJson = [System.IO.Path]::GetTempFileName()
-$inputFile | ConvertTo-Json | Out-File -FilePath $inputJson -Encoding utf8
+# Our JSON goes up to 6 levels deep, so we need to set the depth to 6
+# to successfully round-trip our JSON through ConvertTo-Json
+$inputFile | ConvertTo-Json -Depth 6 | Out-File -FilePath $inputJson -Encoding utf8
 
-$outputJson = [System.IO.Path]::GetTempFileName()
+$outputJson = Resolve-Path "$PSScriptRoot/../../artifacts/log/Release/signing-$(New-Guid).json.log"
 
 Write-Host "Signing files with DAC certificate"
+Write-Host "Logging output to $outputJson"
 
 & $esrpClient sign -a $PSScriptRoot/signing/auth.json -c $PSScriptRoot/signing/config.json -i $inputJson -o $outputJson -p $PSScriptRoot/signing/policy.json
 

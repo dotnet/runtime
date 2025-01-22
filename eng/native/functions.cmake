@@ -687,6 +687,6 @@ function(esrp_sign targetName)
     add_custom_command(
         TARGET ${targetName}
         POST_BUILD
-        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sign-with-dac-certificate.ps1" ${CLR_CMAKE_ESRP_CLIENT} $<TARGET_FILE:${targetName}>
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sign-with-dac-certificate.ps1" -esrpClient ${CLR_CMAKE_ESRP_CLIENT} $<TARGET_FILE:${targetName}>
     )
 endfunction()

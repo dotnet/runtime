@@ -14,7 +14,7 @@ $certCollection = New-Object System.Security.Cryptography.X509Certificates.X509C
 foreach ($cert in $certs)
 {
     $certBytes = [System.Convert]::FromBase64String($(Get-Item "Env:$cert").Value)
-    $certCollection.Import($certBytes,$null,[System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet)
+    $certCollection.Import($certBytes,$null, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet)
 }
 
 foreach ($cert in $certCollection)
