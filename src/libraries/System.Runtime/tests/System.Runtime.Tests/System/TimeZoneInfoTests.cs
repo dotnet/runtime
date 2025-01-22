@@ -2020,46 +2020,10 @@ namespace System.Tests
             }
         }
 
-        // In recent Linux distros like Ubuntu 24.04, removed the legacy Time Zone names and not mapping it any more. User can still have a way to install it if they need to.
-        // UCT is one of the legacy aliases for UTC which we use here to detect if the legacy names is support at the runtime.
-        // https://discourse.ubuntu.com/t/ubuntu-24-04-lts-noble-numbat-release-notes/39890#p-99950-tzdata-package-split
-        private static bool SupportLegacyTimeZoneNames { get; } = IsSupportedLegacyTimeZones();
-        private static bool IsSupportedLegacyTimeZones()
-        {
-            try
-            {
-                TimeZoneInfo.FindSystemTimeZoneById("UCT");
-            }
-            catch (TimeZoneNotFoundException)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
         [GeneratedRegex(@"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$")]
         private static partial Regex IanaAbbreviationRegex { get; }
 
-        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
-        // (This list is not likely to change.)
-        private static readonly string[] s_UtcAliases = SupportLegacyTimeZoneNames ?
-        [
-            "Etc/UTC",
-            "Etc/UCT",
-            "Etc/Universal",
-            "Etc/Zulu",
-            "UCT",
-            "UTC",
-            "Universal",
-            "Zulu"
-        ] : [
-            "Etc/UTC",
-            "Etc/UCT",
-            "Etc/Universal",
-            "Etc/Zulu",
-            "UTC"
-        ];        // On Android GMT, GMT+0, and GMT-0 are values
+        // On Android GMT, GMT+0, and GMT-0 are values
         private static readonly string[] s_GMTAliases = new[] {
             "GMT",
             "GMT0",
