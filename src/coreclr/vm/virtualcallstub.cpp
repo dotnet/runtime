@@ -104,9 +104,11 @@ BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator,
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
+extern "C" void RhpInitialInterfaceDispatch();
+
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
-    // Generate a dispatch stub and store it in the dictionary.
+    // Generate a dispatch stub and gather a slot.
     //
     // We generate an indirection so we don't have to write to the dictionary
     // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
@@ -124,9 +126,10 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
     // We indirect through a cell so that updates can take place atomically.
     // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
     // are allocated in the domain of the dicitonary.
-    PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+    DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(ownerType, methodSlot);
+    PCODE addr = UseCachedInterfaceDispatch() ? (PCODE)RhpInitialInterfaceDispatch : pMgr->GetCallStub(token);
 
-    BYTE* indcell = pMgr->GenerateStubIndirection(addr, pResolver != NULL);
+    BYTE* indcell = pMgr->GenerateStubIndirection(addr, token, pResolver != NULL);
 
     if (pResolver != NULL)
     {
@@ -993,6 +996,29 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
 
 #ifndef DACCESS_COMPILE
 
+DispatchToken VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END
+
+    MethodTable * pMT = ownerType.GetMethodTable();
+    pMT->GetRestoredSlot(slot);
+
+    DispatchToken token;
+    if (pMT->IsInterface())
+        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+    else
+        token = DispatchToken::CreateDispatchToken(slot);
+
+    return token;
+}
+
 PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
 {
     CONTRACTL {
@@ -1004,11 +1030,13 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
         INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
-    return GetCallStub(ownerType, pMD->GetSlot());
+    DispatchToken token = GetTokenFromFromOwnerAndSlot(ownerType, pMD->GetSlot());
+
+    return GetCallStub(token);
 }
 
 //find or create a stub
-PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
+PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
 {
     CONTRACT (PCODE) {
         THROWS;
@@ -1019,15 +1047,6 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
     } CONTRACT_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
-
-    MethodTable * pMT = ownerType.GetMethodTable();
-    pMT->GetRestoredSlot(slot);
-
-    DispatchToken token;
-    if (pMT->IsInterface())
-        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-    else
-        token = DispatchToken::CreateDispatchToken(slot);
 
     //get a stub from lookups, make if necessary
     PCODE stub = CALL_STUB_EMPTY_ENTRY;
@@ -1124,7 +1143,7 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 //              m_RecycledIndCellList when it is finalized.
 //
 //+----------------------------------------------------------------------------
-BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, BOOL fUseRecycledCell /* = FALSE*/ )
+BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToken token, BOOL fUseRecycledCell /* = FALSE*/ )
 {
     CONTRACT (BYTE*) {
         THROWS;
@@ -1134,13 +1153,15 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, BOOL fUseRec
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
-    _ASSERTE(isStubStatic(target));
+    _ASSERTE(UseCachedInterfaceDispatch() || isStubStatic(target));
 
     CrstHolder lh(&m_indCellLock);
 
     // The indirection cell to hold the pointer to the stub
     BYTE * ret              = NULL;
     UINT32 cellsPerBlock    = INDCELLS_PER_BLOCK;
+
+    UINT32 sizeOfIndCell = UseCachedInterfaceDispatch() ? sizeof(InterfaceDispatchCell) : sizeof(BYTE *);
 
     // First try the recycled indirection cell list for Dynamic methods
     if (fUseRecycledCell)
@@ -1153,24 +1174,38 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, BOOL fUseRec
     // Allocate from loader heap
     if (!ret)
     {
+        size_t alignment = UseCachedInterfaceDispatch() ? sizeof(TADDR) * 2 : sizeof(TADDR);
         // Free list is empty, allocate a block of indcells from indcell_heap and insert it into the free list.
-        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocMem(S_SIZE_T(cellsPerBlock) * S_SIZE_T(sizeof(BYTE *)));
+        BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(cellsPerBlock * sizeOfIndCell, alignment);
 
         // return the first cell in the block and add the rest to the free list
         ret = (BYTE *)pBlock;
 
         // link all the cells together
         // we don't need to null terminate the linked list, InsertIntoFreeIndCellList will do it.
+        BYTE** pBlockCur = pBlock;
         for (UINT32 i = 1; i < cellsPerBlock - 1; ++i)
         {
-            pBlock[i] = (BYTE *)&(pBlock[i+1]);
+            *pBlockCur = (BYTE *)&(pBlock[i+1]);
+            pBlockCur = (BYTE**)(((BYTE*)pBlockCur) + sizeOfIndCell);
         }
 
         // insert the list into the free indcell list.
         InsertIntoFreeIndCellList((BYTE *)&pBlock[1], (BYTE*)&pBlock[cellsPerBlock - 1]);
     }
 
-    *((PCODE *)ret) = target;
+    if (UseCachedInterfaceDispatch())
+    {
+        InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)ret;
+        pCell->m_pStub = target;
+        pCell->m_pCache = InterfaceDispatchCell::InitialDispatchCacheCellValue();
+        pCell->m_token = token;
+        ret = (BYTE *)pCell;
+    }
+    else
+    {
+        *((PCODE *)ret) = target;
+    }
     RETURN ret;
 }
 
@@ -1390,7 +1425,16 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     }
 
     pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
-    pSDFrame->SetFunction(indirectionCell->m_pMD);
+
+    DispatchToken representativeToken(indirectionCell->m_token);
+    MethodTable * pRepresentativeMT = pObj->GetMethodTable();
+    if (representativeToken.IsTypedToken())
+    {
+        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
+        CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
+    }
+
+    pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
 
     pSDFrame->Push(CURRENT_THREAD);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;

@@ -226,13 +226,15 @@ public:
     // The function is idempotent, i.e.
     // you'll get the same callstub twice if you call it with identical inputs.
     PCODE GetCallStub(TypeHandle ownerType, MethodDesc *pMD);
-    PCODE GetCallStub(TypeHandle ownerType, DWORD slot);
+    PCODE GetCallStub(DispatchToken token);
+
+    static DispatchToken GetTokenFromFromOwnerAndSlot(TypeHandle ownerType, uint32_t slot);
 
     // Stubs for vtable-based virtual calls with no lookups
     PCODE GetVTableCallStub(DWORD slot);
 
     // Generate an fresh indirection cell.
-    BYTE* GenerateStubIndirection(PCODE stub, BOOL fUseRecycledCell = FALSE);
+    BYTE* GenerateStubIndirection(PCODE stub, DispatchToken token, BOOL fUseRecycledCell = FALSE);
 
     // Set up static data structures - called during EEStartup
     static void InitStatic();
@@ -1540,6 +1542,6 @@ private:
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver);
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver);
 
-inline bool DispatchStubRequiresExtraSlot() { return true; }
+inline bool UseCachedInterfaceDispatch() { return true; }
 
 #endif // !_VIRTUAL_CALL_STUB_H

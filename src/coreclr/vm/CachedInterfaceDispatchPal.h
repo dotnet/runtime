@@ -49,7 +49,6 @@ enum class DispatchCellType
 struct DispatchCellInfo
 {
     DispatchCellType CellType;
-    MethodDesc *TargetMethod;
     DispatchToken Token;
 
     uintptr_t GetVTableOffset() const
@@ -72,9 +71,8 @@ private:
     };
 
 public:
-    void Initialize(MethodDesc *pInterfaceMethod, DispatchToken token)
+    void Initialize(DispatchToken token)
     {
-        m_pMD = pInterfaceMethod;
         m_token = token;
 /*        m_vtableOffset = 0;
         m_vtableSecondLevelOffset = 0;*/
@@ -82,7 +80,6 @@ public:
 
     void Initialize(const DispatchCellInfo *pNewCellInfo)
     {
-        m_pMD = pNewCellInfo->TargetMethod;
         m_token = pNewCellInfo->Token;
     }
 /*    void Initialize(uint32_t vtableOffset, uint32_t vtableSecondLevelOffset)
@@ -95,7 +92,7 @@ public:
     DispatchCellInfo GetDispatchCellInfo()
     {
         DispatchCellInfo cellInfo;
-        if (m_pMD->IsVtableMethod())
+        if (m_token.IsThisToken())
         {
             cellInfo.CellType = DispatchCellType::VTableOffset;
         }
@@ -103,15 +100,14 @@ public:
         {
             cellInfo.CellType = DispatchCellType::InterfaceAndSlot;
         }
-        cellInfo.TargetMethod = m_pMD;
         cellInfo.Token = m_token;
         cellInfo.HasCache = 1;
         return cellInfo;
     }
 
 private:
-    MethodDesc *  m_pMD;   // MethodDesc to dispatch to
     DispatchToken m_token;
+    TADDR padding; // Ensure that the size of this structure is a multiple of 2 pointers
 };
 
 // One of these is allocated per interface call site. It holds the stub to call, data to pass to that stub
@@ -125,7 +121,7 @@ struct InterfaceDispatchCell
     volatile TADDR m_pCache;   // Context used by the stub above (one or both of the low two bits are set
                                     // for initial dispatch, and if not set, using this as a cache pointer or
                                     // as a vtable offset.)
-    MethodDesc* m_pMD; // This defines the interface contract for this call site
+    TADDR dummy; // Padding to make the size of the structure a multiple of 2 pointers
     DispatchToken m_token;
 
     enum Flags
@@ -151,7 +147,6 @@ struct InterfaceDispatchCell
         // modified on another thread while this function is executing.)
         TADDR cachePointerValue = m_pCache;
         DispatchCellInfo cellInfo;
-        cellInfo.TargetMethod = m_pMD;
         cellInfo.Token = m_token;
 
         if (IsCache(cachePointerValue))

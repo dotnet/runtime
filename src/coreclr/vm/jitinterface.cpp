@@ -13668,7 +13668,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             // aren't quite set up to accept that. Furthermore the call sequences would be different - at
             // the moment an indirection cell uses "call [cell-addr]" on x86, and instead we would want the
             // euqivalent of "call [[call-addr]]".  This could perhaps be implemented as "call [eax]" </REVISIT_TODO>
-            result = pMgr->GetCallStub(ownerType, slot);
+            DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(ownerType, slot);
+            result = pMgr->GetCallStub(token);
         }
         break;
 #ifdef FEATURE_READYTORUN

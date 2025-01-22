@@ -980,6 +980,7 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
     // need to grab a virtual dispatch stub
     // method can be on a canonical MethodTable, we need to allocate the stub on the loader allocator associated with the exact type instantiation.
     VirtualCallStubManager *pVirtualStubManager = scopeType.GetMethodTable()->GetLoaderAllocator()->GetVirtualCallStubManager();
+    _ASSERTE(!UseCachedInterfaceDispatch()); // This code path is not yet ready
     PCODE pTargetCall = pVirtualStubManager->GetCallStub(scopeType, method);
     _ASSERTE(pTargetCall);
     return pTargetCall;
