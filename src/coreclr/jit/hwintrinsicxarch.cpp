@@ -3656,8 +3656,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             bool canBecomeValidForShuffle = false;
             bool validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle);
 
+            // If it isn't valid for shuffle (and can't become valid later), then give up now.
+            if (!canBecomeValidForShuffle)
+            {
+                return nullptr;
+            }
+
             // If the indices might become constant later, then we don't emit for now, delay until later.
-            if (canBecomeValidForShuffle && (!validForShuffle || !indices->IsCnsVec()))
+            if (!validForShuffle || !indices->IsCnsVec())
             {
                 assert(sig->numArgs == 2);
 
@@ -3673,12 +3679,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                     break;
                 }
-            }
-
-            // If it isn't valid for shuffle (and can't become valid later, due to above block), then give up now.
-            if (!validForShuffle)
-            {
-                return nullptr;
             }
 
             if (sig->numArgs == 2)
