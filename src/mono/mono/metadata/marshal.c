@@ -6358,6 +6358,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 		if ((param_attrs & PARAM_ATTRIBUTE_IN) && eklass != mono_get_char_class ())
 			break;
 
+		// FIXME: SZARRAY rank is always 1; this is either never true or is trying to check for T[][,]. I suspect this is just a dead if. -kg
 		if (m_class_get_rank (klass) > 1)
 			break;
 
@@ -6448,6 +6449,8 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 
 		mono_unichar2 *utf16_array = g_utf8_to_utf16 ((const char *)ptr, arr->max_length, NULL, NULL, NULL);
 		g_free (ptr);
+		// g_utf8_to_utf16 can fail and return NULL. In that case we can't do anything except either continue or crash.
+		g_assert (utf16_array);
 		memcpy (arr->vector, utf16_array, arr->max_length * sizeof (mono_unichar2));
 		g_free (utf16_array);
 		break;

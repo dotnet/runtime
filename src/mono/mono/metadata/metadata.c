@@ -7030,7 +7030,7 @@ handle_enum:
 		if (mspec) {
 			switch (mspec->native) {
 			case MONO_NATIVE_BYVALARRAY:
-				if ((m_class_get_element_class (m_type_data_get_klass (type)) == mono_defaults.char_class) && !unicode)
+				if ((m_class_get_element_class (mono_class_from_mono_type_internal (type)) == mono_defaults.char_class) && !unicode)
 					*conv = MONO_MARSHAL_CONV_ARRAY_BYVALCHARARRAY;
 				else
 					*conv = MONO_MARSHAL_CONV_ARRAY_BYVALARRAY;
