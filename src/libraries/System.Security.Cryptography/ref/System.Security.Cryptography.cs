@@ -1973,21 +1973,21 @@ namespace System.Security.Cryptography
     }
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations) { }
-        [System.ObsoleteAttribute("Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.", DiagnosticId="SYSLIB0060", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
         public int IterationCount { get { throw null; } set { } }

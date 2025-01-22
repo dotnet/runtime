@@ -189,7 +189,7 @@ namespace System
         internal const string SystemEventsEventsThreadShutdownMessage = "SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead.";
         internal const string SystemEventsEventsThreadShutdownDiagId = "SYSLIB0059";
 
-        internal const string Rfc2898DeriveBytesCtorMessage = "Creating instances of Rfc2898DeriveBytes is obsolete. Use the static Pbkdf2 method instead.";
+        internal const string Rfc2898DeriveBytesCtorMessage = "The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.";
         internal const string Rfc2898DeriveBytesCtorDiagId = "SYSLIB0060";
 
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
