@@ -26044,21 +26044,13 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
         if (value < elementCount)
         {
-            if (simdSize == 32)
-            {
-                // Most of the 256-bit shuffle/permute instructions operate as if
-                // the inputs were 2x 128-bit values. If the selected indices cross
-                // the respective 128-bit "lane" we may need to specialize the codegen
+            // Most of the 256-bit shuffle/permute instructions operate as if
+            // the inputs were 2x 128-bit values. If the selected indices cross
+            // the respective 128-bit "lane" we may need to specialize the codegen.
+            // Also, for AVX-512: If we don't cross 128-bit lanes, then we can emit vpshufb
+            // instead of vperm* - which has lower latency & allows zeroing in 1 step.
 
-                if (index < (elementCount / 2))
-                {
-                    crossLane |= (value >= (elementCount / 2));
-                }
-                else
-                {
-                    crossLane |= (value < (elementCount / 2));
-                }
-            }
+            crossLane ||= ((((uint64_t)index ^ value) * elementSize) & ~(uint64_t)15) != 0;
 
             // Setting the control for byte/sbyte and short/ushort is unnecessary
             // and will actually compute an incorrect control word. But it simplifies
@@ -26283,7 +26275,15 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     else if (simdSize == 64)
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
-        if (elementSize == 4)
+        if (!crossLane)
+        {
+            op2                        = gtNewVconNode(type);
+            op2->AsVecCon()->gtSimdVal = vecCns;
+
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+            return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512BW_Shuffle, simdBaseJitType, simdSize);
+        }
+        else if (elementSize == 4)
         {
             for (uint32_t i = 0; i < elementCount; i++)
             {
