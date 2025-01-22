@@ -85,7 +85,7 @@ extends:
             # Now that we've signed the diagnostic files, do the rest of the build.
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true
                 displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
 
       #
@@ -131,7 +131,7 @@ extends:
               # Now that we've entitled and signed createdump, we can build the rest.
               - template: /eng/pipelines/common/templates/global-build-step.yml
                 parameters:
-                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
+                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true
                   displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
 
       #
@@ -151,7 +151,7 @@ extends:
           - linux_musl_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -183,7 +183,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -sign -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
+            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -251,7 +251,7 @@ extends:
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -264,7 +264,7 @@ extends:
           - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
 
@@ -277,7 +277,7 @@ extends:
           - browser_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
@@ -296,7 +296,7 @@ extends:
           runtimeFlavor: mono
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish
                         /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: Mono_LLVMAOT
             runtimeVariant: LLVMAOT
@@ -313,7 +313,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -s tools+libs -restore -build -pack -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 95
@@ -343,7 +343,7 @@ extends:
           - linux_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
+            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -restore -build -publish -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             nameSuffix: PGO
             timeoutInMinutes: 95
@@ -406,7 +406,7 @@ extends:
                 targetFolder: $(Build.SourcesDirectory)/artifacts/workloadPackages
                 flattenFolders: true
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
