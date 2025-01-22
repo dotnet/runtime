@@ -216,6 +216,12 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
 
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+  list(APPEND RUNTIME_SOURCES_ARCH_ASM
+    ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchAot.${ASM_SUFFIX}
+  )
+endif ()
+
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})

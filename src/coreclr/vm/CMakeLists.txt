@@ -634,6 +634,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
+        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -659,6 +660,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
+        ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
