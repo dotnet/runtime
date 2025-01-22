@@ -609,15 +609,10 @@ private:
                                                 isLateDevirtualization, explicitTailCall);
                 if (context != nullptr)
                 {
-#if defined(DEBUG)
-                    IL_OFFSET ilOffset = call->gtRawILOffset;
-#else
-                    IL_OFFSET ilOffset = m_curStmt->GetDebugInfo().GetLocation().GetOffset();
-#endif // defined(DEBUG)
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, ilOffset);
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
 
                     if (call->IsInlineCandidate())
                     {
