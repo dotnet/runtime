@@ -1348,7 +1348,15 @@ m_type_data_get_klass (const MonoType *type)
 	}
 }
 
-/* unfortunately there's no way to generate doc comments for these that gets picked up on by IDEs */
+/**
+ * when using _unchecked accessors for performance, it is your responsibility to check
+ * MonoType->type first and make sure you are accessing the correct member!
+ * m_type_data_get_generic_param is legal for MONO_TYPE_VAR and MONO_TYPE_MVAR.
+ * m_type_data_get_array is legal for MONO_TYPE_ARRAY but *not* MONO_TYPE_SZARRAY.
+ * m_type_data_get_type is legal for MONO_TYPE_PTR.
+ * m_type_data_get_method is legal for MONO_TYPE_FNPTR.
+ * m_type_data_get_generic_class is legal for MONO_TYPE_GENERICINST.
+ */
 #define DEFINE_TYPE_GETTER(field_type, field_name, predicate) \
 	static inline field_type \
 	m_type_data_get_ ## field_name (const MonoType *type) \
@@ -1365,25 +1373,10 @@ m_type_data_get_klass (const MonoType *type)
 		return type->data.field_name; \
 	}
 
-/**
- * legal for MONO_TYPE_VAR and MONO_TYPE_MVAR.
- */
 DEFINE_TYPE_GETTER(MonoGenericParam *, generic_param, ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)));
-/**
- * legal for MONO_TYPE_ARRAY but *not* MONO_TYPE_SZARRAY.
- */
 DEFINE_TYPE_GETTER(MonoArrayType *, array, (type->type == MONO_TYPE_ARRAY));
-/**
- * legal for MONO_TYPE_PTR.
- */
 DEFINE_TYPE_GETTER(MonoType *, type, (type->type == MONO_TYPE_PTR));
-/**
- * legal for MONO_TYPE_FNPTR.
- */
 DEFINE_TYPE_GETTER(MonoMethodSignature *, method, (type->type == MONO_TYPE_FNPTR));
-/**
- * legal for MONO_TYPE_GENERICINST.
- */
 DEFINE_TYPE_GETTER(MonoGenericClass *, generic_class, (type->type == MONO_TYPE_GENERICINST));
 
 #undef DEFINE_TYPE_GETTER

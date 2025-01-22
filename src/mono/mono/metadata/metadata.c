@@ -1854,7 +1854,7 @@ mono_type_hash (gconstpointer data)
 {
 	const MonoType *type = (const MonoType *) data;
 	if (type->type == MONO_TYPE_GENERICINST)
-		return mono_generic_class_hash (m_type_data_get_generic_class (type));
+		return mono_generic_class_hash (m_type_data_get_generic_class_unchecked (type));
 	else
 		return type->type | ((m_type_is_byref (type) ? 1 : 0) << 8) | (type->attrs << 9);
 }
@@ -2091,7 +2091,7 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
 	 */
 	g_assert (!type->has_cmods);
 	if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
-		MonoType *ret = m_type_is_byref (type) ? m_class_get_this_arg (m_type_data_get_klass (type)) : m_class_get_byval_arg (m_type_data_get_klass (type));
+		MonoType *ret = m_type_is_byref (type) ? m_class_get_this_arg (m_type_data_get_klass_unchecked (type)) : m_class_get_byval_arg (m_type_data_get_klass_unchecked (type));
 
 		/* Consider the case:
 
@@ -2110,8 +2110,10 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
 
 		   LOCKING: even though we don't explicitly hold a lock, in the problematic case 'ret' is a field
 		   of a MonoClass which currently holds the loader lock.  'type' is local.
+
+		   FIXME: is 'ret' guaranteed to have a ->data.klass? Or could it be a different kind of type? -kg
 		*/
-		if (m_type_data_get_klass (ret) == m_type_data_get_klass (type)) {
+		if (m_type_data_get_klass (ret) == m_type_data_get_klass_unchecked (type)) {
 			*canonical_type = ret;
 			return TRUE;
 		}
@@ -2997,24 +2999,24 @@ retry:
 
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
-		return gclass_in_image (m_type_data_get_generic_class (type), image);
+		return gclass_in_image (m_type_data_get_generic_class_unchecked (type), image);
 	case MONO_TYPE_PTR:
-		type = m_type_data_get_type (type);
+		type = m_type_data_get_type_unchecked (type);
 		goto retry;
 	case MONO_TYPE_SZARRAY:
-		type = m_class_get_byval_arg (m_type_data_get_klass (type));
+		type = m_class_get_byval_arg (m_type_data_get_klass_unchecked (type));
 		goto retry;
 	case MONO_TYPE_ARRAY:
-		type = m_class_get_byval_arg (m_type_data_get_array (type)->eklass);
+		type = m_class_get_byval_arg (m_type_data_get_array_unchecked (type)->eklass);
 		goto retry;
 	case MONO_TYPE_FNPTR:
-		return signature_in_image (m_type_data_get_method (type), image);
+		return signature_in_image (m_type_data_get_method_unchecked (type), image);
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (image == mono_get_image_for_generic_param (m_type_data_get_generic_param (type)))
+		if (image == mono_get_image_for_generic_param (m_type_data_get_generic_param_unchecked (type)))
 			return TRUE;
-		else if (m_type_data_get_generic_param (type)->gshared_constraint) {
-			type = m_type_data_get_generic_param (type)->gshared_constraint;
+		else if (m_type_data_get_generic_param_unchecked (type)->gshared_constraint) {
+			type = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 			goto retry;
 		}
 		return FALSE;
@@ -3168,26 +3170,26 @@ retry:
 
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
-		collect_gclass_images (m_type_data_get_generic_class (type), data);
+		collect_gclass_images (m_type_data_get_generic_class_unchecked (type), data);
 		break;
 	case MONO_TYPE_PTR:
-		type = m_type_data_get_type (type);
+		type = m_type_data_get_type_unchecked (type);
 		goto retry;
 	case MONO_TYPE_SZARRAY:
-		type = m_class_get_byval_arg (m_type_data_get_klass (type));
+		type = m_class_get_byval_arg (m_type_data_get_klass_unchecked (type));
 		goto retry;
 	case MONO_TYPE_ARRAY:
-		type = m_class_get_byval_arg (m_type_data_get_array (type)->eklass);
+		type = m_class_get_byval_arg (m_type_data_get_array_unchecked (type)->eklass);
 		goto retry;
 	case MONO_TYPE_FNPTR:
-		collect_signature_images (m_type_data_get_method (type), data);
+		collect_signature_images (m_type_data_get_method_unchecked (type), data);
 		break;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 	{
-		MonoImage *image = mono_get_image_for_generic_param (m_type_data_get_generic_param (type));
+		MonoImage *image = mono_get_image_for_generic_param (m_type_data_get_generic_param_unchecked (type));
 		add_image (image, data);
-		type = m_type_data_get_generic_param (type)->gshared_constraint;
+		type = m_type_data_get_generic_param_unchecked (type)->gshared_constraint;
 		if (type)
 			goto retry;
 		break;
