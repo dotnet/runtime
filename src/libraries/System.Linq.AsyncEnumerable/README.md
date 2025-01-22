@@ -15,4 +15,4 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Deployment
 
-System.Linq.AsyncEnumerable is a NuGet package that gets shipped with every release of .NET.
+System.Linq.AsyncEnumerable is shipped as part of the .NET shared framework and as a NuGet package.
