@@ -9218,7 +9218,9 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
         // Return type
         //
-        var_types const fncRetType = pRetBuf == nullptr ? pParam->call->TypeGet() : TYP_STRUCT;
+        var_types const fncRetType =
+            pRetBuf == nullptr ? pParam->call->TypeGet()
+                               : pParam->pThis->lvaGetRealType(pRetBuf->GetEarlyNode()->AsLclVarCommon()->GetLclNum());
 
 #ifdef DEBUG
         var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
