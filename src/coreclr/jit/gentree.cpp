@@ -25502,13 +25502,15 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     {
         // swap the operands to match the encoding requirements
         GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType, simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType,
+                                           simdSize);
     }
     else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
     {
         // swap the operands to match the encoding requirements
         GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType, simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType,
+                                           simdSize);
     }
     else
     {
@@ -26050,7 +26052,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             // Also, for AVX-512: If we don't cross 128-bit lanes, then we can emit vpshufb
             // instead of vperm* - which has lower latency & allows zeroing in 1 step.
 
-            crossLane ||= ((((uint64_t)index ^ value) * elementSize) & ~(uint64_t)15) != 0;
+            crossLane |= ((((uint64_t)index ^ value) * elementSize) & ~(uint64_t)15) != 0;
 
             // Setting the control for byte/sbyte and short/ushort is unnecessary
             // and will actually compute an incorrect control word. But it simplifies
