@@ -204,8 +204,8 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    bool       m_madeChanges = false;
-    Statement* m_curStmt     = nullptr;
+    bool       m_madeChanges  = false;
+    Statement* m_firstNewStmt = nullptr;
 
 public:
     enum
@@ -226,20 +226,20 @@ public:
     }
 
     // ------------------------------------------------------------------------
-    // WalkStatement: Walk the tree of a statement, and return the newly added
-    // statement if any, otherwise return the original statement.
+    // WalkStatement: Walk the tree of a statement, and return the first newly
+    // added statement if any, otherwise return the original statement.
     //
     // Arguments:
     //    stmt - the statement to walk.
     //
     // Return Value:
-    //    The newly added statement if any, or the original statement.
+    //    The first newly added statement if any, or the original statement.
     //
     Statement* WalkStatement(Statement* stmt)
     {
-        m_curStmt = stmt;
-        WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
-        return m_curStmt;
+        m_firstNewStmt = nullptr;
+        WalkTree(stmt->GetRootNodePointer(), nullptr);
+        return m_firstNewStmt == nullptr ? stmt : m_firstNewStmt;
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -616,23 +616,27 @@ private:
 
                     if (call->IsInlineCandidate())
                     {
-                        CallArg* retBuffer = call->gtArgs.GetRetBufferArg();
-
                         // If the call is the top-level expression in a statement, and it returns void,
                         // there will be no use of its return value, and we can just inline it directly.
                         // In this case we don't need to create a RET_EXPR node for it.
-                        if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID || retBuffer != nullptr)
+                        if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
                             Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_compiler->compCurStmt, stmt);
+                            if (m_firstNewStmt == nullptr)
+                            {
+                                m_firstNewStmt = stmt;
+                            }
+
                             GenTreeRetExpr* retExpr =
                                 m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
                                                                            genActualType(call->TypeGet()));
-
                             call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
 
-                            m_curStmt = stmt;
-                            *pTree    = retExpr;
+                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                            DISPTREE(retExpr);
+
+                            *pTree = retExpr;
                         }
 
                         call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
@@ -802,7 +806,8 @@ PhaseStatus Compiler::fgInline()
             // possible further optimization, as the (now complete) GT_RET_EXPR
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
-            stmt = walker.WalkStatement(stmt);
+            compCurStmt = stmt;
+            stmt        = walker.WalkStatement(stmt);
 
             GenTree* expr = stmt->GetRootNode();
 
