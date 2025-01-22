@@ -5207,9 +5207,10 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 // Return Value:
 //    Exact type of write barrier required for the given address.
 //
-static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, ValueNum vn)
+static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
 {
-    const var_types type = vnStore->TypeOfVN(vn);
+    ValueNumStore*  vnStore = comp->vnStore;
+    const var_types type    = vnStore->TypeOfVN(vn);
     if (type == TYP_REF)
     {
         return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
@@ -5250,18 +5251,38 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
             //
             if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
             {
-                return GetWriteBarrierForm(vnStore, funcApp.m_args[1]);
+                return GetWriteBarrierForm(comp, funcApp.m_args[1]);
             }
             if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
             {
-                return GetWriteBarrierForm(vnStore, funcApp.m_args[0]);
+                return GetWriteBarrierForm(comp, funcApp.m_args[0]);
+            }
+        }
+        if (funcApp.m_func == VNF_InitVal)
+        {
+            unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
+            assert(lclNum != BAD_VAR_NUM);
+            CORINFO_CLASS_HANDLE srcCls = NO_CLASS_HANDLE;
+
+            if (comp->compMethodHasRetVal() && (lclNum == comp->info.compRetBuffArg))
+            {
+                // See if the address is in current method's return buffer
+                // while the return type is a byref-like type.
+                srcCls = comp->info.compMethodInfo->args.retTypeClass;
+            }
+            else if (lclNum == comp->info.compThisArg)
+            {
+                // Same for implicit "this" parameter
+                assert(!comp->info.compIsStatic);
+                srcCls = comp->info.compClassHnd;
+            }
+
+            if ((srcCls != NO_CLASS_HANDLE) && comp->eeIsByrefLike(srcCls))
+            {
+                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
             }
         }
     }
-
-    // TODO:
-    // * addr is ByRefLike - NoBarrier (https://github.com/dotnet/runtime/issues/9512)
-    //
     return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 }
 
@@ -5315,7 +5336,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     {
         // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
         // that they actually need no barrier? But that comes with a TP regression.
-        barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
+        barrierType = GetWriteBarrierForm(this, addr->gtVNPair.GetConservative());
     }
 
     JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));

@@ -659,6 +659,7 @@ protected:
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
     bool         genForceFuncletFrameType5;
+    bool         genReverseAndPairCalleeSavedRegisters;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------

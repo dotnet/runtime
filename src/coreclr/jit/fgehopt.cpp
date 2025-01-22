@@ -175,6 +175,12 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                     currentBlock->SetKind(BBJ_ALWAYS);
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
+                    // Update profile data into postTryFinallyBlock
+                    if (currentBlock->hasProfileWeight())
+                    {
+                        postTryFinallyBlock->increaseBBProfileWeight(currentBlock->bbWeight);
+                    }
+
                     // Cleanup the postTryFinallyBlock
                     fgCleanupContinuation(postTryFinallyBlock);
 
@@ -608,9 +614,14 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             {
                 assert(block->isBBCallFinallyPair());
 
+                // In some cases we may have unreachable callfinallys.
+                // If so, skip the optimization; a later pass can catch this
+                // once unreachable blocks have been pruned.
+                //
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
+                    JITDUMP("EH#%u found unexpected (likely unreachable) callfinally " FMT_BB "; skipping.\n", XTnum,
+                            block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -621,7 +632,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         {
             JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
-            assert(verifiedSingleCallfinally);
             continue;
         }
 
@@ -667,12 +677,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // last block of the `try`, and that could affect the block iteration above.
         fgPrepareCallFinallyRetForRemoval(leave);
         fgRemoveBlock(leave, /* unreachable */ true);
-
-        // Remove profile weight into the continuation block
-        if (continuation->hasProfileWeight())
-        {
-            continuation->decreaseBBProfileWeight(leave->bbWeight);
-        }
 
         // (3) Convert the callfinally to a normal jump to the handler
         assert(callFinally->HasInitializedTarget());
@@ -1667,6 +1671,16 @@ PhaseStatus Compiler::fgCloneFinally()
                     clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
                 }
+            }
+        }
+
+        // Update flow into normalCallFinallyReturn
+        if (normalCallFinallyReturn->hasProfileWeight())
+        {
+            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
+            {
+                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
             }
         }
 

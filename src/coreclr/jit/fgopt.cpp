@@ -1259,8 +1259,25 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     // Mark the block as removed
     block->SetFlags(BBF_REMOVED);
 
-    // Update bbRefs and bbPreds for the blocks reached by this block
-    fgRemoveBlockAsPred(block);
+    // Update bbRefs and bbPreds for this block's successors
+    bool profileInconsistent = false;
+    for (BasicBlock* const succBlock : block->Succs(this))
+    {
+        FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
+
+        if (block->hasProfileWeight() && succBlock->hasProfileWeight())
+        {
+            succBlock->decreaseBBProfileWeight(succEdge->getLikelyWeight());
+            profileInconsistent |= (succBlock->NumSucc() > 0);
+        }
+    }
+
+    if (profileInconsistent)
+    {
+        JITDUMP("Flow removal of " FMT_BB " needs to be propagated. Data %s inconsistent.\n", block->bbNum,
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
+    }
 }
 
 //-------------------------------------------------------------
@@ -2592,13 +2609,13 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         estDupCostSz += expr->GetCostSz();
     }
 
-    bool     allProfileWeightsAreValid = false;
-    weight_t weightJump                = bJump->bbWeight;
-    weight_t weightDest                = bDest->bbWeight;
-    weight_t weightNext                = bJump->Next()->bbWeight;
-    bool     rareJump                  = bJump->isRunRarely();
-    bool     rareDest                  = bDest->isRunRarely();
-    bool     rareNext                  = bJump->Next()->isRunRarely();
+    bool     haveProfileWeights = false;
+    weight_t weightJump         = bJump->bbWeight;
+    weight_t weightDest         = bDest->bbWeight;
+    weight_t weightNext         = bJump->Next()->bbWeight;
+    bool     rareJump           = bJump->isRunRarely();
+    bool     rareDest           = bDest->isRunRarely();
+    bool     rareNext           = bJump->Next()->isRunRarely();
 
     // If we have profile data then we calculate the number of time
     // the loop will iterate into loopIterations
@@ -2611,7 +2628,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
             bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
             bJump->Next()->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
         {
-            allProfileWeightsAreValid = true;
+            haveProfileWeights = true;
 
             if ((weightJump * 100) < weightDest)
             {
@@ -2668,9 +2685,9 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (verbose)
     {
         printf("\nDuplication of the conditional block " FMT_BB " (always branch from " FMT_BB
-               ") %s, because the cost of duplication (%i) is %s than %i, validProfileWeights = %s\n",
+               ") %s, because the cost of duplication (%i) is %s than %i, haveProfileWeights = %s\n",
                bDest->bbNum, bJump->bbNum, costIsTooHigh ? "not done" : "performed", estDupCostSz,
-               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, allProfileWeightsAreValid ? "true" : "false");
+               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, dspBool(haveProfileWeights));
     }
 #endif // DEBUG
 
@@ -2772,7 +2789,8 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     // bJump now falls through into the next block
     //
-    FlowEdge* const falseEdge = fgAddRefPred(bJump->Next(), bJump, destFalseEdge);
+    BasicBlock* const bDestFalseTarget = bJump->Next();
+    FlowEdge* const   falseEdge        = fgAddRefPred(bDestFalseTarget, bJump, destFalseEdge);
 
     // bJump now jumps to bDest's normal jump target
     //
@@ -2781,35 +2799,26 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
 
-    if (weightJump > 0)
+    // Update profile data
+    //
+    if (haveProfileWeights)
     {
-        if (allProfileWeightsAreValid)
-        {
-            if (weightDest > weightJump)
-            {
-                bDest->bbWeight = (weightDest - weightJump);
-            }
-            else if (!bDest->isRunRarely())
-            {
-                bDest->bbWeight = BB_UNITY_WEIGHT;
-            }
-        }
-        else
-        {
-            weight_t newWeightDest = 0;
+        // bJump no longer flows into bDest
+        //
+        bDest->decreaseBBProfileWeight(bJump->bbWeight);
+        bDestNormalTarget->decreaseBBProfileWeight(bJump->bbWeight * destFalseEdge->getLikelihood());
+        bDestFalseTarget->decreaseBBProfileWeight(bJump->bbWeight * destTrueEdge->getLikelihood());
 
-            if (weightDest > weightJump)
-            {
-                newWeightDest = (weightDest - weightJump);
-            }
-            if (weightDest >= (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT) / 2)
-            {
-                newWeightDest = (weightDest * 2) / (BB_LOOP_WEIGHT_SCALE * BB_UNITY_WEIGHT);
-            }
-            if (newWeightDest > 0)
-            {
-                bDest->bbWeight = newWeightDest;
-            }
+        // Propagate bJump's weight into its new successors
+        //
+        bDestNormalTarget->increaseBBProfileWeight(bJump->GetTrueEdge()->getLikelyWeight());
+        bDestFalseTarget->increaseBBProfileWeight(falseEdge->getLikelyWeight());
+
+        if ((bDestNormalTarget->NumSucc() > 0) || (bDestFalseTarget->NumSucc() > 0))
+        {
+            JITDUMP("fgOptimizeBranch: New flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 
@@ -2938,6 +2947,10 @@ bool Compiler::fgOptimizeSwitchJumps()
 
         blockToTargetEdge->setLikelihood(fraction);
         blockToNewBlockEdge->setLikelihood(max(0.0, 1.0 - fraction));
+
+        JITDUMP("fgOptimizeSwitchJumps: Updated flow into " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                newBlock->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
 
         // For now we leave the switch as is, since there's no way
         // to indicate that one of the cases is now unreachable.
@@ -3168,7 +3181,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
         // If block is not run rarely, then check to make sure that it has
         // at least one non-rarely run block.
 
-        if (!block->isRunRarely())
+        if (!block->isRunRarely() && !block->isBBCallFinallyPairTail())
         {
             bool rare = true;
 
@@ -5469,8 +5482,8 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
                     continue;
                 }
 
-                // Don't consider any cut points that would move try/handler entries
-                if (compiler->bbIsTryBeg(s3BlockPrev) || compiler->bbIsHandlerBeg(s3BlockPrev))
+                // Don't consider any cut points that would disturb other EH regions
+                if (!BasicBlock::sameEHRegion(s2Block, s3Block))
                 {
                     continue;
                 }

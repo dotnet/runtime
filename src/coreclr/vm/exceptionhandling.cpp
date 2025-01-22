@@ -970,7 +970,7 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
         else
         {
             OBJECTREF oref = ExceptionTracker::CreateThrowable(pExceptionRecord, FALSE);
-            DispatchManagedException(oref, pContextRecord);
+            DispatchManagedException(oref, pContextRecord, pExceptionRecord);
         }
     }
 #endif // !HOST_UNIX
@@ -5646,7 +5646,7 @@ void FirstChanceExceptionNotification()
 #endif // TARGET_UNIX
 }
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5660,14 +5660,32 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
 
-    EXCEPTION_RECORD exceptionRecord;
-    exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
-    exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
-    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
-    exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation, hr);
-    exceptionRecord.ExceptionRecord = NULL;
+    EXCEPTION_RECORD newExceptionRecord;
+    newExceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+    newExceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
+    newExceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF))&DispatchManagedException;
+    newExceptionRecord.NumberParameters = MarkAsThrownByUs(newExceptionRecord.ExceptionInformation, hr);
+    newExceptionRecord.ExceptionRecord = NULL;
 
-    ExInfo exInfo(pThread, &exceptionRecord, pExceptionContext, ExKind::Throw);
+    ExInfo exInfo(pThread, &newExceptionRecord, pExceptionContext, ExKind::Throw);
+
+#ifdef HOST_WINDOWS
+    // On Windows, this enables the possibility to propagate a longjmp across managed frames. Longjmp
+    // behaves like a SEH exception, but only runs the second (unwinding) pass.
+    // NOTE: This is a best effort purely for backward compatibility with the legacy exception handling.
+    // Skipping over managed frames using setjmp/longjmp is
+    // is unsupported and it is not guaranteed to work reliably in all cases.
+    // https://learn.microsoft.com/dotnet/standard/native-interop/exceptions-interoperability#setjmplongjmp-behaviors
+    if ((pExceptionRecord != NULL) && (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP))
+    {
+        // longjmp over managed frames. The EXCEPTION_RECORD::ExceptionInformation store the
+        // jmp_buf and the return value for STATUS_LONGJUMP, so we extract it here. When the
+        // exception handling code moves out of the managed frames, we call the longjmp with
+        // these arguments again to continue its propagation.
+        exInfo.m_pLongJmpBuf = (jmp_buf*)pExceptionRecord->ExceptionInformation[0];
+        exInfo.m_longJmpReturnValue = (int)pExceptionRecord->ExceptionInformation[1];
+    }
+#endif // HOST_WINDOWS
 
     if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
@@ -7683,6 +7701,14 @@ size_t GetSSPForFrameOnCurrentStack(TADDR ip)
 }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+#ifdef HOST_WINDOWS
+VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
+{
+    WRAPPER_NO_CONTRACT;
+    longjmp(*pJmpBuf, retVal);
+}
+#endif // HOST_WINDOWS
+
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     QCALL_CONTRACT;
@@ -7745,6 +7771,11 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
 
     ExInfo* pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+#ifdef HOST_WINDOWS
+    jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
+    int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
+#endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
     Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = pExInfo->m_propagateExceptionCallback;
@@ -7864,29 +7895,43 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
         pvRegDisplay->pCurrentContext->Ra = GetIP(pvRegDisplay->pCurrentContext);
 #endif
-        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
 #if defined(HOST_AMD64)
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 8);
 #elif defined(HOST_X86)
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 4);
 #endif
+
+// The SECOND_ARG_REG is defined only for Windows, it is used to handle longjmp propagation over managed frames
 #ifdef HOST_AMD64
 #ifdef UNIX_AMD64_ABI
 #define FIRST_ARG_REG Rdi
 #else
 #define FIRST_ARG_REG Rcx
+#define SECOND_ARG_REG Rdx
 #endif
 #elif defined(HOST_X86)
 #define FIRST_ARG_REG Ecx
 #elif defined(HOST_ARM64)
 #define FIRST_ARG_REG X0
+#define SECOND_ARG_REG X1
 #elif defined(HOST_ARM)
 #define FIRST_ARG_REG R0
 #elif defined(HOST_RISCV64) || defined(HOST_LOONGARCH64)
 #define FIRST_ARG_REG A0
 #endif
-
-        pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)OBJECTREFToObject(exceptionObj.Get());
+#ifdef HOST_WINDOWS
+        if (pLongJmpBuf != NULL)
+        {
+            SetIP(pvRegDisplay->pCurrentContext, (PCODE)PropagateLongJmpThroughNativeFrames);
+            pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)pLongJmpBuf;
+            pvRegDisplay->pCurrentContext->SECOND_ARG_REG = (size_t)longJmpReturnValue;
+        }
+        else
+#endif
+        {
+            SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
+            pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)OBJECTREFToObject(exceptionObj.Get());
+        }
 #undef FIRST_ARG_REG
         ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
     }
@@ -8087,7 +8132,7 @@ extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* 
     ExtendedEHClauseEnumerator *pExtendedEHEnum = (ExtendedEHClauseEnumerator*)pEHEnum;
     StackFrameIterator *pFrameIter = pExtendedEHEnum->pFrameIter;
 
-    if (pEHEnum->iCurrentPos < pExtendedEHEnum->EHCount)
+    while (pEHEnum->iCurrentPos < pExtendedEHEnum->EHCount)
     {
         IJitManager* pJitMan   = pFrameIter->m_crawl.GetJitManager();
         const METHODTOKEN& MethToken = pFrameIter->m_crawl.GetMethodToken();
@@ -8139,6 +8184,13 @@ extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* 
         else
         {
             result = FALSE;
+        }
+#ifdef HOST_WINDOWS
+        // When processing longjmp, only finally clauses are considered.
+        if ((pExInfo->m_pLongJmpBuf == NULL) || (flags & COR_ILEXCEPTION_CLAUSE_FINALLY) || (flags & COR_ILEXCEPTION_CLAUSE_FAULT))
+#endif // HOST_WINDOWS
+        {
+            break;
         }
     }
     END_QCALL;

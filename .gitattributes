@@ -68,6 +68,9 @@
 # this only affects the repo's language statistics
 *.h linguist-language=C
 
+# don't treat files in 'build' directories as generated
+**/build/** linguist-generated=false
+
 # CLR specific
 src/coreclr/pal/tests/palsuite/paltestlist.txt text eol=lf
 src/coreclr/pal/tests/palsuite/paltestlist_to_be_reviewed.txt text eol=lf

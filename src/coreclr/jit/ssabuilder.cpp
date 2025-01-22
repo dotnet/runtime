@@ -657,7 +657,14 @@ void SsaBuilder::AddDefToEHSuccessorPhis(BasicBlock* block, unsigned lclNum, uns
                 break;
             }
         }
-        assert(phiFound);
+
+#ifdef DEBUG
+        // If 'succ' is the handler of an unreachable try it is possible for
+        // 'block' to dominate it, in which case we will not find any phi.
+        // Tolerate this case.
+        EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(succ);
+        assert(phiFound || ((ehDsc != nullptr) && !m_pCompiler->m_dfsTree->Contains(ehDsc->ebdTryBeg)));
+#endif
 
         return BasicBlockVisit::Continue;
     });

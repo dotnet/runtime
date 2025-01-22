@@ -12270,7 +12270,7 @@ SKIP_GC_UPDATE:
         int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
         unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
         bool     FPbased;
-        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
+        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased, true);
         if (id->idGCref() != GCT_NONE)
         {
             emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
@@ -12311,15 +12311,11 @@ SKIP_GC_UPDATE:
 
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
-                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2, true);
                 ofs2Dist = EA_SIZE_IN_BYTES(size);
 #ifdef DEBUG
                 assert(FPbased == FPbased2);
-                if (FPbased)
-                {
-                    assert(id->idReg3() == REG_FP);
-                }
-                else
+                if (!FPbased)
                 {
                     assert(encodingZRtoSP(id->idReg3()) == REG_SP);
                 }

@@ -1150,6 +1150,9 @@ public:
     // Check if "vn" is "new [] (type handle, size)"
     bool IsVNNewArr(ValueNum vn, VNFuncApp* funcApp);
 
+    // Check if "vn" is "new [] (type handle, size) [stack allocated]"
+    bool IsVNNewLocalArr(ValueNum vn, VNFuncApp* funcApp);
+
     // Check if "vn" IsVNNewArr and return false if arr size cannot be determined.
     bool TryGetNewArrSize(ValueNum vn, int* size);
 

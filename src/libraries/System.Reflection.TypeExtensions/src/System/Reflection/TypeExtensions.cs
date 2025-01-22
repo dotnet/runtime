@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class TypeExtensions
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ConstructorInfo? GetConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] this Type type,
             Type[] types)
@@ -16,6 +19,7 @@ namespace System.Reflection
             return type.GetConstructor(types);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ConstructorInfo[] GetConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] this Type type)
         {
@@ -24,6 +28,7 @@ namespace System.Reflection
             return type.GetConstructors();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static ConstructorInfo[] GetConstructors(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] this Type type,
             BindingFlags bindingAttr)
@@ -33,6 +38,7 @@ namespace System.Reflection
             return type.GetConstructors(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetDefaultMembers(
             [DynamicallyAccessedMembers(
                 DynamicallyAccessedMemberTypes.PublicFields
@@ -47,6 +53,7 @@ namespace System.Reflection
             return type.GetDefaultMembers();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static EventInfo? GetEvent(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)] this Type type,
             string name)
@@ -56,6 +63,7 @@ namespace System.Reflection
             return type.GetEvent(name);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static EventInfo? GetEvent(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)] this Type type,
             string name,
@@ -66,6 +74,7 @@ namespace System.Reflection
             return type.GetEvent(name, bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static EventInfo[] GetEvents(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)] this Type type)
         {
@@ -74,6 +83,7 @@ namespace System.Reflection
             return type.GetEvents();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static EventInfo[] GetEvents(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)] this Type type,
             BindingFlags bindingAttr)
@@ -83,6 +93,7 @@ namespace System.Reflection
             return type.GetEvents(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static FieldInfo? GetField(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] this Type type,
             string name)
@@ -92,6 +103,7 @@ namespace System.Reflection
             return type.GetField(name);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static FieldInfo? GetField(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] this Type type,
             string name,
@@ -102,6 +114,7 @@ namespace System.Reflection
             return type.GetField(name, bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static FieldInfo[] GetFields(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] this Type type)
         {
@@ -110,6 +123,7 @@ namespace System.Reflection
             return type.GetFields();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static FieldInfo[] GetFields(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)] this Type type,
             BindingFlags bindingAttr)
@@ -119,6 +133,7 @@ namespace System.Reflection
             return type.GetFields(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Type[] GetGenericArguments(this Type type)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -126,6 +141,7 @@ namespace System.Reflection
             return type.GetGenericArguments();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Type[] GetInterfaces(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Type type)
         {
@@ -134,6 +150,7 @@ namespace System.Reflection
             return type.GetInterfaces();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetMember(
             [DynamicallyAccessedMembers(
                 DynamicallyAccessedMemberTypes.PublicFields
@@ -149,6 +166,7 @@ namespace System.Reflection
             return type.GetMember(name);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetMember(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] this Type type,
             string name,
@@ -159,6 +177,7 @@ namespace System.Reflection
             return type.GetMember(name, bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetMembers(
             [DynamicallyAccessedMembers(
                 DynamicallyAccessedMemberTypes.PublicFields
@@ -173,6 +192,7 @@ namespace System.Reflection
             return type.GetMembers();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MemberInfo[] GetMembers(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] this Type type,
             BindingFlags bindingAttr)
@@ -182,6 +202,7 @@ namespace System.Reflection
             return type.GetMembers(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] this Type type,
             string name)
@@ -191,6 +212,7 @@ namespace System.Reflection
             return type.GetMethod(name);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] this Type type,
             string name,
@@ -201,6 +223,7 @@ namespace System.Reflection
             return type.GetMethod(name, bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] this Type type,
             string name,
@@ -211,6 +234,7 @@ namespace System.Reflection
             return type.GetMethod(name, types);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo[] GetMethods(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] this Type type)
         {
@@ -219,6 +243,7 @@ namespace System.Reflection
             return type.GetMethods();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo[] GetMethods(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] this Type type,
             BindingFlags bindingAttr)
@@ -228,6 +253,7 @@ namespace System.Reflection
             return type.GetMethods(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Type? GetNestedType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] this Type type,
             string name,
@@ -238,6 +264,7 @@ namespace System.Reflection
             return type.GetNestedType(name, bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Type[] GetNestedTypes(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)] this Type type,
             BindingFlags bindingAttr)
@@ -247,6 +274,7 @@ namespace System.Reflection
             return type.GetNestedTypes(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PropertyInfo[] GetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] this Type type)
         {
@@ -255,6 +283,7 @@ namespace System.Reflection
             return type.GetProperties();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PropertyInfo[] GetProperties(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] this Type type,
             BindingFlags bindingAttr)
@@ -264,6 +293,7 @@ namespace System.Reflection
             return type.GetProperties(bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PropertyInfo? GetProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] this Type type,
             string name)
@@ -273,6 +303,7 @@ namespace System.Reflection
             return type.GetProperty(name);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PropertyInfo? GetProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] this Type type,
             string name,
@@ -283,6 +314,7 @@ namespace System.Reflection
             return type.GetProperty(name, bindingAttr);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PropertyInfo? GetProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] this Type type,
             string name,
@@ -293,6 +325,7 @@ namespace System.Reflection
             return type.GetProperty(name, returnType);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static PropertyInfo? GetProperty(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] this Type type,
             string name,
@@ -304,6 +337,7 @@ namespace System.Reflection
             return type.GetProperty(name, returnType, types);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsAssignableFrom(this Type type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Type? c)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -311,6 +345,7 @@ namespace System.Reflection
             return type.IsAssignableFrom(c);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool IsInstanceOfType(this Type type, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? o)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -319,9 +354,10 @@ namespace System.Reflection
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class AssemblyExtensions
     {
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed"), EditorBrowsable(EditorBrowsableState.Never)]
         public static Type[] GetExportedTypes(this Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -329,6 +365,7 @@ namespace System.Reflection
             return assembly.GetExportedTypes();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Module[] GetModules(this Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -336,7 +373,7 @@ namespace System.Reflection
             return assembly.GetModules();
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed"), EditorBrowsable(EditorBrowsableState.Never)]
         public static Type[] GetTypes(this Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -345,8 +382,10 @@ namespace System.Reflection
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class EventInfoExtensions
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetAddMethod(this EventInfo eventInfo)
         {
             ArgumentNullException.ThrowIfNull(eventInfo);
@@ -354,6 +393,7 @@ namespace System.Reflection
             return eventInfo.GetAddMethod();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetAddMethod(this EventInfo eventInfo, bool nonPublic)
         {
             ArgumentNullException.ThrowIfNull(eventInfo);
@@ -361,6 +401,7 @@ namespace System.Reflection
             return eventInfo.GetAddMethod(nonPublic);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetRaiseMethod(this EventInfo eventInfo)
         {
             ArgumentNullException.ThrowIfNull(eventInfo);
@@ -368,6 +409,7 @@ namespace System.Reflection
             return eventInfo.GetRaiseMethod();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetRaiseMethod(this EventInfo eventInfo, bool nonPublic)
         {
             ArgumentNullException.ThrowIfNull(eventInfo);
@@ -375,6 +417,7 @@ namespace System.Reflection
             return eventInfo.GetRaiseMethod(nonPublic);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetRemoveMethod(this EventInfo eventInfo)
         {
             ArgumentNullException.ThrowIfNull(eventInfo);
@@ -382,6 +425,7 @@ namespace System.Reflection
             return eventInfo.GetRemoveMethod();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetRemoveMethod(this EventInfo eventInfo, bool nonPublic)
         {
             ArgumentNullException.ThrowIfNull(eventInfo);
@@ -390,6 +434,7 @@ namespace System.Reflection
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class MemberInfoExtensions
     {
 
@@ -398,6 +443,7 @@ namespace System.Reflection
         /// <see cref="GetMetadataToken(MemberInfo)"/> throws <see cref="InvalidOperationException"/> otherwise.
         /// </summary>
         /// <remarks>This maybe</remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool HasMetadataToken(this MemberInfo member)
         {
             ArgumentNullException.ThrowIfNull(member);
@@ -420,6 +466,7 @@ namespace System.Reflection
         /// <exception cref="InvalidOperationException">
         /// There is no metadata token available. <see cref="HasMetadataToken(MemberInfo)"/> returns false in this case.
         /// </exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static int GetMetadataToken(this MemberInfo member)
         {
             ArgumentNullException.ThrowIfNull(member);
@@ -451,8 +498,10 @@ namespace System.Reflection
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class MethodInfoExtensions
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo GetBaseDefinition(this MethodInfo method)
         {
             ArgumentNullException.ThrowIfNull(method);
@@ -461,8 +510,10 @@ namespace System.Reflection
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class ModuleExtensions
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static bool HasModuleVersionId(this Module module)
         {
             ArgumentNullException.ThrowIfNull(module);
@@ -470,6 +521,7 @@ namespace System.Reflection
             return true; // not expected to fail on platforms with Module.ModuleVersionId built-in.
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static Guid GetModuleVersionId(this Module module)
         {
             ArgumentNullException.ThrowIfNull(module);
@@ -478,8 +530,10 @@ namespace System.Reflection
         }
     }
 
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class PropertyInfoExtensions
     {
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo[] GetAccessors(this PropertyInfo property)
         {
             ArgumentNullException.ThrowIfNull(property);
@@ -487,6 +541,7 @@ namespace System.Reflection
             return property.GetAccessors();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo[] GetAccessors(this PropertyInfo property, bool nonPublic)
         {
             ArgumentNullException.ThrowIfNull(property);
@@ -494,6 +549,7 @@ namespace System.Reflection
             return property.GetAccessors(nonPublic);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetGetMethod(this PropertyInfo property)
         {
             ArgumentNullException.ThrowIfNull(property);
@@ -501,6 +557,7 @@ namespace System.Reflection
             return property.GetGetMethod();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetGetMethod(this PropertyInfo property, bool nonPublic)
         {
             ArgumentNullException.ThrowIfNull(property);
@@ -508,6 +565,7 @@ namespace System.Reflection
             return property.GetGetMethod(nonPublic);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetSetMethod(this PropertyInfo property)
         {
             ArgumentNullException.ThrowIfNull(property);
@@ -515,6 +573,7 @@ namespace System.Reflection
             return property.GetSetMethod();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static MethodInfo? GetSetMethod(this PropertyInfo property, bool nonPublic)
         {
             ArgumentNullException.ThrowIfNull(property);

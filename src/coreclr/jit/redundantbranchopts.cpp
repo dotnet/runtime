@@ -1652,8 +1652,11 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
     // If this pred is in the set that will reuse block, do nothing.
     // Else revise pred to branch directly to the appropriate successor of block.
     //
-    for (BasicBlock* const predBlock : jti.m_block->PredBlocksEditing())
+    bool modifiedProfile = false;
+    for (FlowEdge* const predEdge : jti.m_block->PredEdgesEditing())
     {
+        BasicBlock* const predBlock = predEdge->getSourceBlock();
+
         // If this was an ambiguous pred, skip.
         //
         if (BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
@@ -1670,34 +1673,45 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
 
         // Jump to the appropriate successor.
         //
+        BasicBlock* newTarget = nullptr;
         if (isTruePred)
         {
             JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                     " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
-
-            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
-
-            if (setNoCseIn && !jti.m_trueTarget->HasFlag(BBF_NO_CSE_IN))
-            {
-                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_trueTarget->bbNum);
-                jti.m_trueTarget->SetFlags(BBF_NO_CSE_IN);
-            }
+            newTarget = jti.m_trueTarget;
         }
         else
         {
             JITDUMP("Jump flow from pred " FMT_BB " -> " FMT_BB
                     " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
-
-            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
-
-            if (setNoCseIn && !jti.m_falseTarget->HasFlag(BBF_NO_CSE_IN))
-            {
-                JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", jti.m_falseTarget->bbNum);
-                jti.m_falseTarget->SetFlags(BBF_NO_CSE_IN);
-            }
+            newTarget = jti.m_falseTarget;
         }
+
+        fgReplaceJumpTarget(predBlock, jti.m_block, newTarget);
+
+        if (setNoCseIn && !newTarget->HasFlag(BBF_NO_CSE_IN))
+        {
+            JITDUMP(FMT_BB " => BBF_NO_CSE_IN\n", newTarget->bbNum);
+            newTarget->SetFlags(BBF_NO_CSE_IN);
+        }
+
+        if (predBlock->hasProfileWeight())
+        {
+            newTarget->increaseBBProfileWeight(predEdge->getLikelyWeight());
+            modifiedProfile = true;
+        }
+    }
+
+    // jti.m_block is unreachable, but we won't remove it until the next flowgraph simplification pass.
+    // Mark the profile as inconsistent to pass the post-phase checks.
+    if (modifiedProfile)
+    {
+        JITDUMP("RBO: " FMT_BB
+                " is now unreachable, and flow into its successors needs to be removed. Data %s inconsistent.\n",
+                jti.m_block->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
     // If block didn't get fully optimized, and now has just one pred, see if

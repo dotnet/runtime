@@ -13192,6 +13192,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "swift self";
         case WellKnownArg::X86TailCallSpecialArg:
             return "tail call";
+        case WellKnownArg::StackArrayLocal:
+            return "&lcl arr";
         default:
             return nullptr;
     }
@@ -18244,6 +18246,26 @@ bool GenTree::isIndir() const
     return OperGet() == GT_IND || OperGet() == GT_STOREIND;
 }
 
+bool GenTreeIndir::IsAddressNotOnHeap(Compiler* comp)
+{
+    if (OperIs(GT_STOREIND, GT_STORE_BLK) && ((gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
+    {
+        return true;
+    }
+
+    if (HasBase() && Base()->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR))
+    {
+        return true;
+    }
+
+    if (OperIs(GT_STORE_BLK) && AsBlk()->GetLayout()->IsStackOnly(comp))
+    {
+        return true;
+    }
+
+    return false;
+}
+
 bool GenTreeIndir::HasBase()
 {
     return Base() != nullptr;
@@ -19814,7 +19836,10 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
 /* static */ void GenTreeArrAddr::ParseArrayAddressWork(
     GenTree* tree, Compiler* comp, target_ssize_t inputMul, GenTree** pArr, ValueNum* pInxVN, target_ssize_t* pOffset)
 {
-    if (tree->TypeIs(TYP_REF))
+    ValueNum  vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
+    VNFuncApp vnf;
+
+    if (tree->TypeIs(TYP_REF) || comp->GetValueNumStore()->IsVNNewArr(vn, &vnf))
     {
         // This must be the array pointer.
         assert(*pArr == nullptr);
@@ -19917,7 +19942,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
         // If we didn't return above, must be a contribution to the non-constant part of the index VN.
         // We don't get here for GT_CNS_INT, GT_ADD, or GT_SUB, or for GT_MUL by constant, or GT_LSH of
         // constant shift. Thus, the generated index VN does not include the parsed constant offset.
-        ValueNum vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
+        //
         if (inputMul != 1)
         {
             ValueNum mulVN = comp->GetValueNumStore()->VNForLongCon(inputMul);

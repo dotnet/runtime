@@ -2834,8 +2834,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_IsNormal: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		if (!type_enum_is_float(arg0_type))
-			return emit_not_xequal (cfg, klass, arg0_type, args [0], emit_xzero (cfg, klass));
+		if (!type_enum_is_float(arg0_type)) {
+			// TODO: This requires a centralized way for OnesComplement(x)
+			//
+			// x = UIntEqCmp(x, Zero)
+			// return OnesComplement(x)
+			return NULL;
+		}
 
 		// TODO: This requires a centralized way for Abs(x)
 		// and retyping from float to the same sized unsigned integer

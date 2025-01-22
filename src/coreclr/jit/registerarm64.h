@@ -124,6 +124,184 @@ REGDEF(FFR,   1+NBASE, 0x0000,    "ffr",  "na")
 // This must be last!
 REGDEF(STK,   2+NBASE, 0x0000,    "STK", "STK")
 
+// Ignore REG_* symbols defined in Android NDK
+#undef REG_R0
+#define REG_R0 JITREG_R0
+#undef REG_R1
+#define REG_R1 JITREG_R1
+#undef REG_R2
+#define REG_R2 JITREG_R2
+#undef REG_R3
+#define REG_R3 JITREG_R3
+#undef REG_R4
+#define REG_R4 JITREG_R4
+#undef REG_R5
+#define REG_R5 JITREG_R5
+#undef REG_R6
+#define REG_R6 JITREG_R6
+#undef REG_R7
+#define REG_R7 JITREG_R7
+#undef REG_R8
+#define REG_R8 JITREG_R8
+#undef REG_R9
+#define REG_R9 JITREG_R9
+#undef REG_R10
+#define REG_R10 JITREG_R10
+#undef REG_R11
+#define REG_R11 JITREG_R11
+#undef REG_R12
+#define REG_R12 JITREG_R12
+#undef REG_R13
+#define REG_R13 JITREG_R13
+#undef REG_R14
+#define REG_R14 JITREG_R14
+#undef REG_R15
+#define REG_R15 JITREG_R15
+#undef REG_IP0
+#define REG_IP0 JITREG_IP0
+#undef REG_IP1
+#define REG_IP1 JITREG_IP1
+#undef REG_PR
+#define REG_PR JITREG_PR
+#undef REG_R19
+#define REG_R19 JITREG_R19
+#undef REG_R20
+#define REG_R20 JITREG_R20
+#undef REG_R21
+#define REG_R21 JITREG_R21
+#undef REG_R22
+#define REG_R22 JITREG_R22
+#undef REG_R23
+#define REG_R23 JITREG_R23
+#undef REG_R24
+#define REG_R24 JITREG_R24
+#undef REG_R25
+#define REG_R25 JITREG_R25
+#undef REG_R26
+#define REG_R26 JITREG_R26
+#undef REG_R27
+#define REG_R27 JITREG_R27
+#undef REG_R28
+#define REG_R28 JITREG_R28
+#undef REG_FP
+#define REG_FP JITREG_FP
+#undef REG_LR
+#define REG_LR JITREG_LR
+#undef REG_ZR
+#define REG_ZR JITREG_ZR
+#undef REG_R16
+#define REG_R16 JITREG_R16
+#undef REG_R17
+#define REG_R17 JITREG_R17
+#undef REG_R18
+#define REG_R18 JITREG_R18
+#undef REG_R29
+#define REG_R29 JITREG_R29
+#undef REG_R30
+#define REG_R30 JITREG_R30
+#undef REG_V0
+#define REG_V0 JITREG_V0
+#undef REG_V1
+#define REG_V1 JITREG_V1
+#undef REG_V2
+#define REG_V2 JITREG_V2
+#undef REG_V3
+#define REG_V3 JITREG_V3
+#undef REG_V4
+#define REG_V4 JITREG_V4
+#undef REG_V5
+#define REG_V5 JITREG_V5
+#undef REG_V6
+#define REG_V6 JITREG_V6
+#undef REG_V7
+#define REG_V7 JITREG_V7
+#undef REG_V8
+#define REG_V8 JITREG_V8
+#undef REG_V9
+#define REG_V9 JITREG_V9
+#undef REG_V10
+#define REG_V10 JITREG_V10
+#undef REG_V11
+#define REG_V11 JITREG_V11
+#undef REG_V12
+#define REG_V12 JITREG_V12
+#undef REG_V13
+#define REG_V13 JITREG_V13
+#undef REG_V14
+#define REG_V14 JITREG_V14
+#undef REG_V15
+#define REG_V15 JITREG_V15
+#undef REG_V16
+#define REG_V16 JITREG_V16
+#undef REG_V17
+#define REG_V17 JITREG_V17
+#undef REG_V18
+#define REG_V18 JITREG_V18
+#undef REG_V19
+#define REG_V19 JITREG_V19
+#undef REG_V20
+#define REG_V20 JITREG_V20
+#undef REG_V21
+#define REG_V21 JITREG_V21
+#undef REG_V22
+#define REG_V22 JITREG_V22
+#undef REG_V23
+#define REG_V23 JITREG_V23
+#undef REG_V24
+#define REG_V24 JITREG_V24
+#undef REG_V25
+#define REG_V25 JITREG_V25
+#undef REG_V26
+#define REG_V26 JITREG_V26
+#undef REG_V27
+#define REG_V27 JITREG_V27
+#undef REG_V28
+#define REG_V28 JITREG_V28
+#undef REG_V29
+#define REG_V29 JITREG_V29
+#undef REG_V30
+#define REG_V30 JITREG_V30
+#undef REG_V31
+#define REG_V31 JITREG_V31
+#undef REG_P0
+#define REG_P0 JITREG_P0
+#undef REG_P1
+#define REG_P1 JITREG_P1
+#undef REG_P2
+#define REG_P2 JITREG_P2
+#undef REG_P3
+#define REG_P3 JITREG_P3
+#undef REG_P4
+#define REG_P4 JITREG_P4
+#undef REG_P5
+#define REG_P5 JITREG_P5
+#undef REG_P6
+#define REG_P6 JITREG_P6
+#undef REG_P7
+#define REG_P7 JITREG_P7
+#undef REG_P8
+#define REG_P8 JITREG_P8
+#undef REG_P9
+#define REG_P9 JITREG_P9
+#undef REG_P10
+#define REG_P10 JITREG_P10
+#undef REG_P11
+#define REG_P11 JITREG_P11
+#undef REG_P12
+#define REG_P12 JITREG_P12
+#undef REG_P13
+#define REG_P13 JITREG_P13
+#undef REG_P14
+#define REG_P14 JITREG_P14
+#undef REG_P15
+#define REG_P15 JITREG_P15
+#undef REG_SP
+#define REG_SP JITREG_SP
+#undef REG_FFR
+#define REG_FFR JITREG_FFR
+#undef REG_STK
+#define REG_STK JITREG_STK
+
 /*****************************************************************************/
 #undef  RMASK
 #undef  VMASK

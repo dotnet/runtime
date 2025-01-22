@@ -1197,6 +1197,18 @@ public:
     // getBBWeight -- get the normalized weight of this block
     weight_t getBBWeight(Compiler* comp) const;
 
+    // computeIncomingWeight -- sum the weights of the flow edges into this block
+    weight_t computeIncomingWeight() const
+    {
+        weight_t incomingWeight = BB_ZERO_WEIGHT;
+        for (FlowEdge* const predEdge : PredEdges())
+        {
+            incomingWeight += predEdge->getLikelyWeight();
+        }
+
+        return incomingWeight;
+    }
+
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
     {

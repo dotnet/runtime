@@ -159,7 +159,7 @@ protected:
 #endif // DACCESS_COMPILE
     }
 
-    virtual BOOL IsInRangeWorker(TADDR address, TADDR *pID = NULL)
+    virtual BOOL IsInRangeWorker(TADDR address)
     {
         WRAPPER_NO_CONTRACT;
         RangeSection *pRS = ExecutionManager::FindCodeRange(address, ExecutionManager::ScanReaderLock);
@@ -570,7 +570,7 @@ public:
 
     // This function may only be called while the runtime is suspended
     // As it does not lock around access to a RangeList
-    static PTR_LoaderAllocator GetAssociatedLoaderAllocator_Unsafe(TADDR ptr);
+    static void GcReportAssociatedLoaderAllocators_Unsafe(TADDR ptr, promote_func* fn, ScanContext* sc);
 
     static void AssociateMemoryWithLoaderAllocator(BYTE *start, const BYTE *end, LoaderAllocator* pLoaderAllocator);
     static void RemoveMemoryToLoaderAllocatorAssociation(LoaderAllocator* pLoaderAllocator);
