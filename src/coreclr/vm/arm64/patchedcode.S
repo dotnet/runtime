@@ -192,8 +192,8 @@ LOCAL_LABEL(CheckCardTableBounds):
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
     ldrb w12, [x15]  // w12 = [(RHS >> 11) + g_card_table]
-    cmp  w12, w17
-    beq  LOCAL_LABEL(Exit)
+    tst  w12, w17
+    bne  LOCAL_LABEL(Exit)
 
     // Update the card table
     // TODO: Is this correct? the AMD64 code is odd.
