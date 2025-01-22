@@ -1027,7 +1027,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (!bIntrinsicImported)
             {
                 // Keep track of the raw IL offset of the call
-                call->AsCall()->gtRawILOffset = rawILOffset;
+                INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1237,7 +1237,7 @@ DONE:
         }
 
         // Keep track of the raw IL offset of the call
-        call->AsCall()->gtRawILOffset = rawILOffset;
+        INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
