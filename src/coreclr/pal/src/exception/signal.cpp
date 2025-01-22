@@ -582,6 +582,7 @@ Parameters :
 Return :
     The return value from the signal handler
 --*/
+__attribute__((noinline))
 static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *context, size_t sp)
 {
     // Establish a return point in case the common_signal_handler returns
