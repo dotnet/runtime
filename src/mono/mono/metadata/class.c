@@ -354,14 +354,14 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 
 	switch (type->type) {
 	case MONO_TYPE_ARRAY: {
-		int i, rank = m_type_data_get_array (type)->rank;
+		int i, rank = m_type_data_get_array_unchecked (type)->rank;
 		MonoTypeNameFormat nested_format;
 
 		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			m_class_get_byval_arg (m_type_data_get_array (type)->eklass), str, FALSE, nested_format);
+			m_class_get_byval_arg (m_type_data_get_array_unchecked (type)->eklass), str, FALSE, nested_format);
 		g_string_append_c (str, '[');
 		if (rank == 1)
 			g_string_append_c (str, '*');
@@ -376,7 +376,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		mono_type_name_check_byref (type, str);
 
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (m_type_data_get_array (type)->eklass, str);
+			_mono_type_get_assembly_name (m_type_data_get_array_unchecked (type)->eklass, str);
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
@@ -386,13 +386,13 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			m_class_get_byval_arg (m_type_data_get_klass (type)), str, FALSE, nested_format);
+			m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)), str, FALSE, nested_format);
 		g_string_append (str, "[]");
 
 		mono_type_name_check_byref (type, str);
 
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (m_type_data_get_klass (type), str);
+			_mono_type_get_assembly_name (m_type_data_get_klass_unchecked (type), str);
 		break;
 	}
 	case MONO_TYPE_PTR: {
@@ -402,21 +402,21 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
 		mono_type_get_name_recurse (
-			m_type_data_get_type (type), str, FALSE, nested_format);
+			m_type_data_get_type_unchecked (type), str, FALSE, nested_format);
 		g_string_append_c (str, '*');
 
 		mono_type_name_check_byref (type, str);
 
 		if (format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED)
-			_mono_type_get_assembly_name (mono_class_from_mono_type_internal (m_type_data_get_type (type)), str);
+			_mono_type_get_assembly_name (mono_class_from_mono_type_internal (m_type_data_get_type_unchecked (type)), str);
 		break;
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (!mono_generic_param_name (m_type_data_get_generic_param (type)))
-			g_string_append_printf (str, "%s%d", type->type == MONO_TYPE_VAR ? "!" : "!!", m_type_data_get_generic_param (type)->num);
+		if (!mono_generic_param_name (m_type_data_get_generic_param_unchecked (type)))
+			g_string_append_printf (str, "%s%d", type->type == MONO_TYPE_VAR ? "!" : "!!", m_type_data_get_generic_param_unchecked (type)->num);
 		else
-			g_string_append (str, mono_generic_param_name (m_type_data_get_generic_param (type)));
+			g_string_append (str, mono_generic_param_name (m_type_data_get_generic_param_unchecked (type)));
 
 		mono_type_name_check_byref (type, str);
 
@@ -427,12 +427,12 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 		nested_format = format == MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED ?
 			MONO_TYPE_NAME_FORMAT_FULL_NAME : format;
 
-		mono_type_get_name_recurse (m_type_data_get_method (type)->ret, str, FALSE, nested_format);
+		mono_type_get_name_recurse (m_type_data_get_method_unchecked (type)->ret, str, FALSE, nested_format);
 
 		g_string_append_c (str, '(');
-		for (int i = 0; i < m_type_data_get_method (type)->param_count; ++i) {
-			mono_type_get_name_recurse (m_type_data_get_method (type)->params[i], str, FALSE, nested_format);
-			if (i != m_type_data_get_method (type)->param_count - 1)
+		for (int i = 0; i < m_type_data_get_method_unchecked (type)->param_count; ++i) {
+			mono_type_get_name_recurse (m_type_data_get_method_unchecked (type)->params[i], str, FALSE, nested_format);
+			if (i != m_type_data_get_method_unchecked (type)->param_count - 1)
 				g_string_append (str, ", ");
 		}
 		g_string_append_c (str, ')');
@@ -592,10 +592,10 @@ mono_type_get_name (MonoType *type)
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (type)) && !m_type_is_byref (type))
-		return mono_class_enum_basetype_internal (m_type_data_get_klass (type));
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_data_get_generic_class (type)->container_class) && !m_type_is_byref (type))
-		return mono_class_enum_basetype_internal (m_type_data_get_generic_class (type)->container_class);
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (type)) && !m_type_is_byref (type))
+		return mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_data_get_generic_class_unchecked (type)->container_class) && !m_type_is_byref (type))
+		return mono_class_enum_basetype_internal (m_type_data_get_generic_class_unchecked (type)->container_class);
 	return type;
 }
 
@@ -619,16 +619,16 @@ mono_class_is_open_constructed_type (MonoType *t)
 	case MONO_TYPE_MVAR:
 		return TRUE;
 	case MONO_TYPE_SZARRAY:
-		return mono_class_is_open_constructed_type (m_class_get_byval_arg (m_type_data_get_klass (t)));
+		return mono_class_is_open_constructed_type (m_class_get_byval_arg (m_type_data_get_klass_unchecked (t)));
 	case MONO_TYPE_ARRAY:
-		return mono_class_is_open_constructed_type (m_class_get_byval_arg (m_type_data_get_array (t)->eklass));
+		return mono_class_is_open_constructed_type (m_class_get_byval_arg (m_type_data_get_array_unchecked (t)->eklass));
 	case MONO_TYPE_PTR:
-		return mono_class_is_open_constructed_type (m_type_data_get_type (t));
+		return mono_class_is_open_constructed_type (m_type_data_get_type_unchecked (t));
 	case MONO_TYPE_GENERICINST:
-		return m_type_data_get_generic_class (t)->context.class_inst->is_open;
+		return m_type_data_get_generic_class_unchecked (t)->context.class_inst->is_open;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return mono_class_is_gtd (m_type_data_get_klass (t));
+		return mono_class_is_gtd (m_type_data_get_klass_unchecked (t));
 	default:
 		return FALSE;
 	}
@@ -659,7 +659,7 @@ can_inflate_gparam_with (MonoGenericParam *gparam, MonoType *type)
 	MonoGenericParamInfo *info = mono_generic_param_info (gparam);
 	if (info && (info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)) {
 		if (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) {
-			MonoGenericParam *inst_gparam = m_type_data_get_generic_param (type);
+			MonoGenericParam *inst_gparam = m_type_data_get_generic_param_unchecked (type);
 			if (inst_gparam->gshared_constraint && inst_gparam->gshared_constraint->type == MONO_TYPE_OBJECT)
 				return FALSE;
 		}
@@ -702,7 +702,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			else
 				return type;
 		}
-		MonoGenericParam *gparam = m_type_data_get_generic_param (type);
+		MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (type);
 		if (num >= inst->type_argc) {
 			const char *pname = mono_generic_param_name (gparam);
 			mono_error_set_bad_image (error, image, "MVAR %d (%s) cannot be expanded in this context with %d instantiations",
@@ -736,7 +736,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			else
 				return type;
 		}
-		MonoGenericParam *gparam = m_type_data_get_generic_param (type);
+		MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (type);
 		if (num >= inst->type_argc) {
 			const char *pname = mono_generic_param_name (gparam);
 			mono_error_set_bad_image (error, image, "VAR %hu (%s) cannot be expanded in this context with %d instantiations",
@@ -776,7 +776,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *eclass = m_type_data_get_klass (type);
+		MonoClass *eclass = m_type_data_get_klass_unchecked (type);
 		MonoType *nt, *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (eclass), context, error);
 		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
@@ -788,7 +788,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_ARRAY: {
-		MonoClass *eclass = m_type_data_get_array (type)->eklass;
+		MonoClass *eclass = m_type_data_get_array_unchecked (type)->eklass;
 		MonoType *nt, *inflated = inflate_generic_type (NULL, m_class_get_byval_arg (eclass), context, error);
 		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
@@ -800,7 +800,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_GENERICINST: {
-		MonoGenericClass *gclass = m_type_data_get_generic_class (type);
+		MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (type);
 		MonoGenericInst *inst;
 		MonoType *nt;
 		if (!gclass->context.class_inst->is_open) {
@@ -816,7 +816,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (inst != gclass->context.class_inst)
 			gclass = mono_metadata_lookup_generic_class (gclass->container_class, inst, gclass->is_dynamic);
 
-		if (gclass == m_type_data_get_generic_class (type)) {
+		if (gclass == m_type_data_get_generic_class_unchecked (type)) {
 			if (!changed)
 				return NULL;
 			else
@@ -829,7 +829,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 	}
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *klass = m_type_data_get_klass (type);
+		MonoClass *klass = m_type_data_get_klass_unchecked (type);
 		MonoGenericContainer *container = mono_class_try_get_generic_container (klass);
 		MonoGenericInst *inst;
 		MonoGenericClass *gclass = NULL;
@@ -861,7 +861,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_PTR: {
-		MonoType *nt, *inflated = inflate_generic_type (image, m_type_data_get_type (type), context, error);
+		MonoType *nt, *inflated = inflate_generic_type (image, m_type_data_get_type_unchecked (type), context, error);
 		if ((!inflated && !changed) || !is_ok (error))
 			return NULL;
 		if (!inflated && changed)
@@ -871,7 +871,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		return nt;
 	}
 	case MONO_TYPE_FNPTR: {
-		MonoMethodSignature *in_sig = m_type_data_get_method (type);
+		MonoMethodSignature *in_sig = m_type_data_get_method_unchecked (type);
 		// quick bail out - if there are no type variables anywhere in the signature,
 		// there's nothing that could get inflated.
 		if (!in_sig->has_type_parameters) {

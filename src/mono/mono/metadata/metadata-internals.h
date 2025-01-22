@@ -1299,12 +1299,18 @@ m_type_is_byref (const MonoType *type)
 MONO_NEVER_INLINE void
 m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type);
 
+/*
+ * You want mono_class_from_mono_type_internal unless you've already checked type->type.
+ */
 static inline MonoClass *
 m_type_data_get_klass_unchecked (const MonoType *type)
 {
 	return type->data.klass;
 }
 
+/*
+ * Legal for various types. You probably want mono_class_from_mono_type_internal unless you've already checked type->type.
+ */
 static inline MonoClass *
 m_type_data_get_klass (const MonoType *type)
 {
@@ -1338,13 +1344,8 @@ m_type_data_get_klass (const MonoType *type)
 	}
 }
 
-#define _DEFINE_TYPE_GETTER(field_type, field_name, predicate) \
-	static inline field_type \
-	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
-	{ \
-		return type->data.field_name; \
-	} \
-	\
+/* unfortunately there's no way to generate doc comments for these that gets picked up on by IDEs */
+#define DEFINE_TYPE_GETTER(field_type, field_name, predicate) \
 	static inline field_type \
 	m_type_data_get_ ## field_name (const MonoType *type) \
 	{ \
@@ -1353,14 +1354,35 @@ m_type_data_get_klass (const MonoType *type)
 		m_type_invalid_access (__func__, type->type); \
 		return NULL; \
 	} \
+	\
+	static inline field_type \
+	m_type_data_get_ ## field_name ## _unchecked (const MonoType *type) \
+	{ \
+		return type->data.field_name; \
+	}
 
-_DEFINE_TYPE_GETTER(MonoGenericParam *, generic_param, (type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR));
-_DEFINE_TYPE_GETTER(MonoArrayType *, array, type->type == MONO_TYPE_ARRAY);
-_DEFINE_TYPE_GETTER(MonoType *, type, type->type == MONO_TYPE_PTR);
-_DEFINE_TYPE_GETTER(MonoMethodSignature *, method, type->type == MONO_TYPE_FNPTR);
-_DEFINE_TYPE_GETTER(MonoGenericClass *, generic_class, type->type == MONO_TYPE_GENERICINST);
+/**
+ * legal for MONO_TYPE_VAR and MONO_TYPE_MVAR.
+ */
+DEFINE_TYPE_GETTER(MonoGenericParam *, generic_param, ((type->type == MONO_TYPE_VAR) || (type->type == MONO_TYPE_MVAR)));
+/**
+ * legal for MONO_TYPE_ARRAY but *not* MONO_TYPE_SZARRAY.
+ */
+DEFINE_TYPE_GETTER(MonoArrayType *, array, (type->type == MONO_TYPE_ARRAY));
+/**
+ * legal for MONO_TYPE_PTR.
+ */
+DEFINE_TYPE_GETTER(MonoType *, type, (type->type == MONO_TYPE_PTR));
+/**
+ * legal for MONO_TYPE_FNPTR.
+ */
+DEFINE_TYPE_GETTER(MonoMethodSignature *, method, (type->type == MONO_TYPE_FNPTR));
+/**
+ * legal for MONO_TYPE_GENERICINST.
+ */
+DEFINE_TYPE_GETTER(MonoGenericClass *, generic_class, (type->type == MONO_TYPE_GENERICINST));
 
-#undef _DEFINE_TYPE_GETTER
+#undef DEFINE_TYPE_GETTER
 
 /**
  * mono_type_get_class_internal:
