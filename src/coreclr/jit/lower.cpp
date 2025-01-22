@@ -1066,11 +1066,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         for (unsigned i = 0; i < jumpCnt - 1; ++i)
         {
             assert(currentBlock != nullptr);
-            BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            FlowEdge* const oldEdge = jumpTab[i];
+            FlowEdge* const   oldEdge     = jumpTab[i];
+            BasicBlock* const targetBlock = oldEdge->getDestinationBlock();
 
             // Compute the likelihood that this test is successful.
             // Divide by number of cases still sharing this edge (reduces likelihood)
@@ -1131,8 +1131,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 {
                     BasicBlock* const newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
                     FlowEdge* const   newEdge  = comp->fgAddRefPred(newBlock, currentBlock);
-                    currentBlock               = newBlock;
-                    currentBBRange             = &LIR::AsRange(currentBlock);
+                    newBlock->inheritWeight(currentBlock);
+                    currentBlock   = newBlock;
+                    currentBBRange = &LIR::AsRange(currentBlock);
                     afterDefaultCondBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
                 }
 
@@ -1206,6 +1207,25 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             currentBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             currentBlock->RemoveFlags(BBF_DONT_REMOVE);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
+        }
+
+        // Update flow into switch targets
+        if (afterDefaultCondBlock->hasProfileWeight())
+        {
+            bool profileInconsistent = false;
+            for (unsigned i = 0; i < jumpCnt - 1; i++)
+            {
+                BasicBlock* const targetBlock = jumpTab[i]->getDestinationBlock();
+                targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
+                profileInconsistent |= (targetBlock->NumSucc() > 0);
+            }
+
+            if (profileInconsistent)
+            {
+                JITDUMP("Switch lowering: Flow out of " FMT_BB " needs to be propagated. Data %s inconsistent.\n",
+                        afterDefaultCondBlock->bbNum, comp->fgPgoConsistent ? "is now" : "was already");
+                comp->fgPgoConsistent = false;
+            }
         }
     }
     else
