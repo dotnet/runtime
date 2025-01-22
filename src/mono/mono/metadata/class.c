@@ -2265,64 +2265,53 @@ mono_class_from_mono_type (MonoType *type)
 MonoClass *
 mono_class_from_mono_type_internal (MonoType *type)
 {
+
+#define CASE_KLASS_OR_DEFAULT_FOR_TYPE(enum_value, default_expr) \
+	case enum_value: \
+		return m_type_data_get_klass_unchecked (type) ? m_type_data_get_klass_unchecked (type) : default_expr;
+
 	g_assert (type);
 	switch (type->type) {
-	case MONO_TYPE_OBJECT:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.object_class;
-	case MONO_TYPE_VOID:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.void_class;
-	case MONO_TYPE_BOOLEAN:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.boolean_class;
-	case MONO_TYPE_CHAR:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.char_class;
-	case MONO_TYPE_I1:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.sbyte_class;
-	case MONO_TYPE_U1:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.byte_class;
-	case MONO_TYPE_I2:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.int16_class;
-	case MONO_TYPE_U2:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.uint16_class;
-	case MONO_TYPE_I4:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.int32_class;
-	case MONO_TYPE_U4:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.uint32_class;
-	case MONO_TYPE_I:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.int_class;
-	case MONO_TYPE_U:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.uint_class;
-	case MONO_TYPE_I8:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.int64_class;
-	case MONO_TYPE_U8:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.uint64_class;
-	case MONO_TYPE_R4:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.single_class;
-	case MONO_TYPE_R8:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.double_class;
-	case MONO_TYPE_STRING:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.string_class;
-	case MONO_TYPE_TYPEDBYREF:
-		return m_type_data_get_klass (type)? m_type_data_get_klass (type): mono_defaults.typed_reference_class;
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_OBJECT, mono_defaults.object_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_VOID, mono_defaults.void_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_BOOLEAN, mono_defaults.boolean_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_CHAR, mono_defaults.char_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_I1, mono_defaults.sbyte_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_U1, mono_defaults.byte_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_I2, mono_defaults.int16_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_U2, mono_defaults.uint16_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_I4, mono_defaults.int32_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_U4, mono_defaults.uint32_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_I, mono_defaults.int_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_U, mono_defaults.uint_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_I8, mono_defaults.int64_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_U8, mono_defaults.uint64_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_R4, mono_defaults.single_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_R8, mono_defaults.double_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_STRING, mono_defaults.string_class);
+	CASE_KLASS_OR_DEFAULT_FOR_TYPE(MONO_TYPE_TYPEDBYREF, mono_defaults.typed_reference_class);
 	case MONO_TYPE_ARRAY:
-		return mono_class_create_bounded_array (m_type_data_get_array (type)->eklass, m_type_data_get_array (type)->rank, TRUE);
+		return mono_class_create_bounded_array (m_type_data_get_array_unchecked (type)->eklass, m_type_data_get_array_unchecked (type)->rank, TRUE);
 	case MONO_TYPE_PTR:
-		return mono_class_create_ptr (m_type_data_get_type (type));
+		return mono_class_create_ptr (m_type_data_get_type_unchecked (type));
 	case MONO_TYPE_FNPTR:
-		return mono_class_create_fnptr (m_type_data_get_method (type));
+		return mono_class_create_fnptr (m_type_data_get_method_unchecked (type));
 	case MONO_TYPE_SZARRAY:
-		return mono_class_create_array (m_type_data_get_klass (type), 1);
+		return mono_class_create_array (m_type_data_get_klass_unchecked (type), 1);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		return m_type_data_get_klass (type);
+		return m_type_data_get_klass_unchecked (type);
 	case MONO_TYPE_GENERICINST:
-		return mono_class_create_generic_inst (m_type_data_get_generic_class (type));
+		return mono_class_create_generic_inst (m_type_data_get_generic_class_unchecked (type));
 	case MONO_TYPE_MVAR:
 	case MONO_TYPE_VAR:
-		return mono_class_create_generic_parameter (m_type_data_get_generic_param (type));
+		return mono_class_create_generic_parameter (m_type_data_get_generic_param_unchecked (type));
 	default:
 		g_warning ("mono_class_from_mono_type_internal: implement me 0x%02x\n", type->type);
 		g_assert_not_reached ();
 	}
+
+#undef CASE_KLASS_OR_DEFAULT_FOR_TYPE
 
 	// Yes, this returns NULL, even if it is documented as not doing so, but there
 	// is no way for the code to make it this far, due to the assert above.
