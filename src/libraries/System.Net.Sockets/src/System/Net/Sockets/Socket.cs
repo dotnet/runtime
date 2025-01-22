@@ -962,7 +962,7 @@ namespace System.Net.Sockets
                         lastex = null;
                         break;
                     }
-                    catch (Exception ex) when (!ExceptionCheck.IsFatal(ex))
+                    catch (Exception ex) when (CanProceedWithMultiConnect && !ExceptionCheck.IsFatal(ex))
                     {
                         lastex = ExceptionDispatchInfo.Capture(ex);
                     }

@@ -296,6 +296,80 @@ namespace System.Net.Sockets.Tests
                 Assert.True(c.NoDelay);
             });
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task MultiConnect_ExposeHandle_TerminatesAtFirstFailure(bool dnsConnect)
+        {
+            if (UsesEap && !dnsConnect)
+            {
+                throw new SkipTestException("EAP does not support IPAddress[] connect");
+            }
+
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
+            
+            // While most Unix environments are configured to resolve 'localhost' only to the ipv4 loopback address,
+            // on some CI machines it resolves to both ::1 and 127.0.0.1. This test is valid in those environments only.
+            bool testFailingConnect = addresses.Length > 1;
+            if (!testFailingConnect)
+            {
+                throw new SkipTestException("'localhost' should resolve to both IPv6 and IPv4 for this test to be valid.");
+            }
+
+            // PortBlocker's "shadow socket" will be the one addresses[0] is pointing to. The test will fail to connect to that socket.
+            IPAddress successAddress = addresses[1];
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(successAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(successAddress);
+                return s;
+            });
+            Socket listeningSocket = portBlocker.MainSocket;
+
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket c = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
+            _ = c.SafeHandle; // Expose the handle.
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(
+                async() => await (dnsConnect ? ConnectAsync(c, new DnsEndPoint("localhost", port)) : MultiConnectAsync(c, addresses, port)));
+            Assert.Equal(SocketError.ConnectionRefused, ex.SocketErrorCode);
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
+        {
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(IPAddress.Loopback);
+                return s;
+            });
+
+            using Socket c = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            _ = c.SafeHandle; // Expose the handle.
+
+            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, port);
+
+            // No listeners, the first connect should fail.
+            await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(c, ep));
+
+            // Start listening so connecting should be possible.
+            Socket listeningSocket = portBlocker.MainSocket;
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            // The second attempt throws PNSE on Unix.
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ConnectAsync(c, ep));
+        }
+
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task MultiConnect_DualMode_Preserved()
@@ -360,8 +434,6 @@ namespace System.Net.Sockets.Tests
             await (dnsConnect ? ConnectAsync(c, new DnsEndPoint("localhost", port)) : MultiConnectAsync(c, addresses, port));
 
             validateSocket(c);
-
-            listeningSocket.Dispose();
         }
     }
 

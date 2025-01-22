@@ -209,7 +209,7 @@ namespace System.Net.Sockets
                         await ConnectAsync(endPoint, cancellationToken).ConfigureAwait(false);
                         return;
                     }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    catch (Exception ex) when (CanProceedWithMultiConnect && ex is not OperationCanceledException)
                     {
                         lastException = ex;
                     }

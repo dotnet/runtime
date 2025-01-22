@@ -37,6 +37,8 @@ namespace System.Net.Sockets
             set => _handle.PreferInlineCompletions = value;
         }
 
+        internal bool CanProceedWithMultiConnect => !_handle.ExposedHandleOrUntrackedConfiguration;
+
         partial void ValidateForMultiConnect()
         {
             // ValidateForMultiConnect is called before any {Begin}Connect{Async} call,
