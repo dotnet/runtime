@@ -93,6 +93,9 @@ jobs:
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
 
+      - name: _SignType
+        value: $[ coalesce(variables.OfficialSignType, 'real') ]
+
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
           value: -os linux-bionic
@@ -126,7 +129,7 @@ jobs:
 
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
-          value: /p:OfficialBuildId=$(Build.BuildNumber) /p:DotNetPublishUsingPipelines=true
+          value: /p:OfficialBuildId=$(Build.BuildNumber) /p:DotNetPublishUsingPipelines=true /p:SignType=$(_SignType) /p:DotNetSignType=$(_SignType)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
