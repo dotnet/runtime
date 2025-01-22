@@ -609,8 +609,11 @@ private:
                                                 isLateDevirtualization, explicitTailCall);
                 if (context != nullptr)
                 {
-                    IL_OFFSET ilOffset = BAD_IL_OFFSET;
-                    INDEBUG(ilOffset = call->gtRawILOffset);
+#if defined(DEBUG)
+                    IL_OFFSET ilOffset = call->gtRawILOffset;
+#else
+                    IL_OFFSET ilOffset = m_curStmt->GetDebugInfo().GetLocation().GetOffset();
+#endif // defined(DEBUG)
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;

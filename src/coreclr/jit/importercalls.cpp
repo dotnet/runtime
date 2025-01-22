@@ -329,7 +329,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                            (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                    call = gtNewIndCallNode(stubAddr, callRetTyp);
+                    call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
                     call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
@@ -1027,7 +1027,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (!bIntrinsicImported)
             {
                 // Keep track of the raw IL offset of the call
-                INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
+                call->AsCall()->gtRawILOffset = rawILOffset;
 
                 // Is it an inline candidate?
                 impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
@@ -1237,7 +1237,7 @@ DONE:
         }
 
         // Keep track of the raw IL offset of the call
-        INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
+        call->AsCall()->gtRawILOffset = rawILOffset;
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
