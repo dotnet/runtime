@@ -9210,7 +9210,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
         // Return type
         //
-        var_types const fncRetType = pParam->call->gtReturnType;
+        var_types const fncRetType = genActualType(pParam->call->gtReturnType);
 
 #ifdef DEBUG
         var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
