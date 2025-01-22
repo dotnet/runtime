@@ -623,6 +623,9 @@ private:
                     {
                         CallArg* retBuffer = call->gtArgs.GetRetBufferArg();
 
+                        // If the call is the top-level expression in a statement, and it returns void,
+                        // there will be no use of its return value, and we can just inline it directly.
+                        // In this case we don't need to create a RET_EXPR node for it.
                         if (parent != nullptr || genActualType(call->TypeGet()) != TYP_VOID || retBuffer != nullptr)
                         {
                             Statement* stmt = m_compiler->gtNewStmt(call);
