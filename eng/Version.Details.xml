@@ -40,14 +40,14 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>317598aea216019b6164f599859c738f69595c60</Sha>
     </Dependency>
-    <Dependency Name="System.CommandLine" Version="2.0.0-beta4.24528.1">
+    <Dependency Name="System.CommandLine" Version="2.0.0-beta4.25071.2">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
-      <Sha>feb61c7f328a2401d74f4317b39d02126cfdfe24</Sha>
+      <Sha>3bbb940ceeb3254790899d751a8d418348563d40</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.command-line-api" Version="0.1.552801">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.command-line-api" Version="0.1.607102">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
-      <Sha>feb61c7f328a2401d74f4317b39d02126cfdfe24</Sha>
+      <Sha>3bbb940ceeb3254790899d751a8d418348563d40</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.5-alpha.25056.4">
