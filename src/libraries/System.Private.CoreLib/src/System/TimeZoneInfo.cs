@@ -60,6 +60,7 @@ namespace System
         private static readonly TimeZoneInfo s_utcTimeZone = CreateUtcTimeZone();
         private static CachedData s_cachedData = new CachedData();
 
+        [FeatureSwitchDefinition("System.TimeZoneInfo.Invariant")]
         internal static bool Invariant { get; } = AppContextConfigHelper.GetBooleanConfig("System.TimeZoneInfo.Invariant", "DOTNET_SYSTEM_TIMEZONE_INVARIANT");
 
         //
