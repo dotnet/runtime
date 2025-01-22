@@ -783,6 +783,8 @@ void VirtualCallStubManager::InitStatic()
 {
     STANDARD_VM_CONTRACT;
 
+    InterfaceDispatch_Initialize();
+
 #ifdef STUB_LOGGING
     // Note if you change these values using environment variables then you must use hex values :-(
     STUB_MISS_COUNT_VALUE  = (INT32) CLRConfig::GetConfigValue(CLRConfig::INTERNAL_VirtualCallStubMissCount);
@@ -1186,12 +1188,13 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
         BYTE** pBlockCur = pBlock;
         for (UINT32 i = 1; i < cellsPerBlock - 1; ++i)
         {
-            *pBlockCur = (BYTE *)&(pBlock[i+1]);
-            pBlockCur = (BYTE**)(((BYTE*)pBlockCur) + sizeOfIndCell);
+            BYTE** pBlockNext = (BYTE**)(((BYTE*)pBlockCur) + sizeOfIndCell);
+            *pBlockCur = (BYTE *)pBlockNext;
+            pBlockCur = (BYTE**)pBlockNext;
         }
 
         // insert the list into the free indcell list.
-        InsertIntoFreeIndCellList((BYTE *)&pBlock[1], (BYTE*)&pBlock[cellsPerBlock - 1]);
+        InsertIntoFreeIndCellList((((BYTE*)pBlock) + sizeOfIndCell), (((BYTE*)pBlock) + ((cellsPerBlock - 1) * sizeOfIndCell)));
     }
 
     if (UseCachedInterfaceDispatch())
