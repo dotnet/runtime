@@ -12,9 +12,16 @@ namespace System.Reflection
     {
         private static bool TryGetWellKnownInvokeFunc(MethodBase method, out Delegate? invokeFunc, out InvokerStrategy strategy)
         {
-            Type declaringType = method.DeclaringType!;
             invokeFunc = null;
 
+            if (!EventSource.IsSupported)
+            {
+                // Currently this method only checks for EventSource-related methods.
+                strategy = InvokerStrategy.Uninitialized;
+                return false;
+            }
+
+            Type declaringType = method.DeclaringType!;
             if (ReferenceEquals(declaringType, typeof(EventAttribute)))
             {
                 switch (method.Name)
