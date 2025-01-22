@@ -1301,6 +1301,7 @@ m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type);
 
 /*
  * You want mono_class_from_mono_type_internal unless you've already checked type->type.
+ * for MONO_TYPE_SZARRAY this returns the element klass for the array, not T[].
  */
 static inline MonoClass *
 m_type_data_get_klass_unchecked (const MonoType *type)
@@ -1309,7 +1310,10 @@ m_type_data_get_klass_unchecked (const MonoType *type)
 }
 
 /*
- * Legal for various types. You probably want mono_class_from_mono_type_internal unless you've already checked type->type.
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_CLASS or a
+ * \c MONO_TYPE_VALUETYPE . For more general functionality, use \c mono_class_from_mono_type_internal,
+ * instead.
+ * for MONO_TYPE_SZARRAY this returns the element klass for the array, not T[].
  */
 static inline MonoClass *
 m_type_data_get_klass (const MonoType *type)

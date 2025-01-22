@@ -1347,15 +1347,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return CEE_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_LDOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_ldind", type->type);
@@ -1401,15 +1401,15 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return CEE_STIND_R8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
 	case MONO_TYPE_TYPEDBYREF:
 		return CEE_STOBJ;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	default:
 		g_error ("unknown type 0x%02x in type_to_stind", type->type);
@@ -1602,7 +1602,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
-		if (m_type_data_get_klass (t) == mono_class_try_get_stringbuilder_class ()) {
+		if (m_type_data_get_klass_unchecked (t) == mono_class_try_get_stringbuilder_class ()) {
 			gboolean need_free;
 			mono_marshal_get_ptr_to_stringbuilder_conv (piinfo, spec, &need_free);
 			return need_free;
@@ -2495,8 +2495,8 @@ handle_enum:
 	case MONO_TYPE_U:
 		return mono_get_int_type ();
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (t))) {
-			t = mono_class_enum_basetype_internal (m_type_data_get_klass (t));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (t))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (t));
 			goto handle_enum;
 		}
 		return t;
@@ -6325,7 +6325,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
 
-		MonoClass *klass = m_type_data_get_klass (t);
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 
 		if (mono_class_is_auto_layout (klass))
 			break;
@@ -6349,7 +6349,8 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 	}
 	case MONO_TYPE_SZARRAY: {
 		//TODO: Implement structs and in-params for all value types
-		MonoClass *klass = m_type_data_get_klass (t);
+		// FIXME: This appears to be incorrect, t->data->klass is initialized to the eklass. -kg
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 
@@ -6412,7 +6413,7 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *klass = m_type_data_get_klass (t);
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 
 		if (m_class_is_valuetype (klass) && (mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass) || m_class_is_enumtype (klass)))
 			break;
@@ -6437,7 +6438,8 @@ mono_marshal_free_asany_impl (MonoObjectHandle o, gpointer ptr, MonoMarshalNativ
 		break;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *klass = m_type_data_get_klass (t);
+		// FIXME: t->data->klass should already be the eklass. -kg
+		MonoClass *klass = m_type_data_get_klass_unchecked (t);
 		MonoClass *eklass = m_class_get_element_class (klass);
 		MonoArray *arr = (MonoArray *) MONO_HANDLE_RAW (o);
 

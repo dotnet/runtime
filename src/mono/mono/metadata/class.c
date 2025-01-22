@@ -1671,11 +1671,11 @@ mono_type_has_exceptions (MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_SZARRAY:
-		return mono_class_has_failure (m_type_data_get_klass (type));
+		return mono_class_has_failure (m_type_data_get_klass_unchecked (type));
 	case MONO_TYPE_ARRAY:
-		return mono_class_has_failure (m_type_data_get_array (type)->eklass);
+		return mono_class_has_failure (m_type_data_get_array_unchecked (type)->eklass);
 	case MONO_TYPE_GENERICINST:
-		return mono_class_has_failure (mono_class_create_generic_inst (m_type_data_get_generic_class (type)));
+		return mono_class_has_failure (mono_class_create_generic_inst (m_type_data_get_generic_class_unchecked (type)));
 	default:
 		return FALSE;
 	}
@@ -3877,10 +3877,10 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 static MonoType*
 mono_type_get_underlying_type_ignore_byref (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (type)))
-		return mono_class_enum_basetype_internal (m_type_data_get_klass (type));
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_data_get_generic_class (type)->container_class))
-		return mono_class_enum_basetype_internal (m_type_data_get_generic_class (type)->container_class);
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (type)))
+		return mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_data_get_generic_class_unchecked (type)->container_class))
+		return mono_class_enum_basetype_internal (m_type_data_get_generic_class_unchecked (type)->container_class);
 	return type;
 }
 
@@ -3910,7 +3910,7 @@ mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean si
 	if (mono_type_is_primitive (t)) {
 		return mono_type_is_primitive (ot) && m_class_get_instance_size (klass) == m_class_get_instance_size (klassc);
 	} else if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {
-		return t->type == ot->type && m_type_data_get_generic_param (t)->num == m_type_data_get_generic_param (ot)->num;
+		return t->type == ot->type && m_type_data_get_generic_param_unchecked (t)->num == m_type_data_get_generic_param_unchecked (ot)->num;
 	} else if (t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR) {
 		return t->type == ot->type;
 	} else {
@@ -4815,14 +4815,14 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return 8;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			klass = m_class_get_element_class (klass);
 			goto handle_enum;
 		}
 		return mono_class_value_size (klass, NULL);
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR: {
@@ -6312,15 +6312,15 @@ can_access_instantiation (MonoClass *access_klass, MonoGenericInst *ginst)
 		MonoType *type = ginst->type_argv[i];
 		switch (type->type) {
 		case MONO_TYPE_SZARRAY:
-			if (!can_access_type (access_klass, m_type_data_get_klass (type)))
+			if (!can_access_type (access_klass, m_type_data_get_klass_unchecked (type)))
 				return FALSE;
 			break;
 		case MONO_TYPE_ARRAY:
-			if (!can_access_type (access_klass, m_type_data_get_array (type)->eklass))
+			if (!can_access_type (access_klass, m_type_data_get_array_unchecked (type)->eklass))
 				return FALSE;
 			break;
 		case MONO_TYPE_PTR:
-			if (!can_access_type (access_klass, mono_class_from_mono_type_internal (m_type_data_get_type (type))))
+			if (!can_access_type (access_klass, mono_class_from_mono_type_internal (m_type_data_get_type_unchecked (type))))
 				return FALSE;
 			break;
 		case MONO_TYPE_CLASS:
@@ -6919,7 +6919,7 @@ mono_method_get_base_method (MonoMethod *method, gboolean definition, MonoError 
 		 * up the class hierarchy. */
 		MonoType *ty = mono_class_gtd_get_canonical_inst (klass);
 		g_assert (ty->type == MONO_TYPE_GENERICINST);
-		MonoGenericClass *gklass = m_type_data_get_generic_class (ty);
+		MonoGenericClass *gklass = m_type_data_get_generic_class_unchecked (ty);
 		generic_inst = mono_generic_class_get_context (gklass);
 		klass = gklass->container_class;
 	} else if (mono_class_is_ginst (klass)) {
