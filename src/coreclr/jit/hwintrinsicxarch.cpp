@@ -3654,10 +3654,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // indices that might become possible to emit later (due to them becoming constant), this will be
             // indicated in canBecomeValidForShuffle; otherwise, it's just the same as validForShuffle.
             bool canBecomeValidForShuffle = false;
-            bool validForShuffle = !IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle);
+            bool validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle);
 
             // If the indices might become constant later, then we don't emit for now, delay until later.
-            if (canBecomeValidForShuffle && ((!validForShuffle && canBecomeValidForShuffle) || !indices->IsCnsVec()))
+            if (canBecomeValidForShuffle && (!validForShuffle || !indices->IsCnsVec()))
             {
                 assert(sig->numArgs == 2);
 
