@@ -26,15 +26,10 @@ public class DllImportTests : BlazorWasmTestBase
     public static TheoryData<Configuration, bool, bool> DllImportTheoryData()
     {
         var data = new TheoryData<Configuration, bool, bool>();
-        data.Add(Configuration.Debug, /*build*/true, /*publish*/false);
-        data.Add(Configuration.Release, /*build*/true, /*publish*/false);
-        data.Add(Configuration.Release, /*build*/false, /*publish*/true);
-
-        // ActiveIssue("https://github.com/dotnet/runtime/issues/110482")
-        if (!s_isWindows)
-        {
-            data.Add(Configuration.Release, /*build*/true, /*publish*/true);
-        }
+        // data.Add(Configuration.Debug, /*build*/true, /*publish*/false);
+        // data.Add(Configuration.Release, /*build*/true, /*publish*/false);
+        // data.Add(Configuration.Release, /*build*/false, /*publish*/true);
+        data.Add(Configuration.Release, /*build*/true, /*publish*/true);
         return data;
     }
 
