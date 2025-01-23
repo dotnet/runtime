@@ -212,9 +212,9 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
-#if _WIN32
 struct NATIVE_CONTEXT;
 
+#if _WIN32
 REDHAWK_PALIMPORT NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
@@ -245,9 +245,6 @@ EXTERN_C unsigned long __readfsdword(unsigned long Offset);
 #elif defined(HOST_AMD64)
 EXTERN_C unsigned __int64  __readgsqword(unsigned long Offset);
 #pragma intrinsic(__readgsqword)
-#elif defined(HOST_ARM)
-EXTERN_C unsigned int _MoveFromCoprocessor(unsigned int, unsigned int, unsigned int, unsigned int, unsigned int);
-#pragma intrinsic(_MoveFromCoprocessor)
 #elif defined(HOST_ARM64)
 EXTERN_C unsigned __int64 __getReg(int);
 #pragma intrinsic(__getReg)
@@ -262,8 +259,6 @@ inline uint8_t * PalNtCurrentTeb()
     return (uint8_t*)__readfsdword(0x18);
 #elif defined(HOST_AMD64)
     return (uint8_t*)__readgsqword(0x30);
-#elif defined(HOST_ARM)
-    return (uint8_t*)_MoveFromCoprocessor(15, 0, 13,  0, 2);
 #elif defined(HOST_ARM64)
     return (uint8_t*)__getReg(18);
 #else
@@ -278,28 +273,7 @@ inline uint8_t * PalNtCurrentTeb()
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
 #endif
 
-#else // _WIN32
-
-inline uint8_t * PalNtCurrentTeb()
-{
-    // UNIXTODO: Implement PalNtCurrentTeb
-    return NULL;
-}
-
-#define OFFSETOF__TEB__ThreadLocalStoragePointer 0
-
 #endif // _WIN32
-
-//
-// Compiler intrinsic definitions. In the interest of performance the PAL doesn't provide exports of these
-// (that would defeat the purpose of having an intrinsic in the first place). Instead we place the necessary
-// compiler linkage directly inline in this header. As a result this section may have platform specific
-// conditional compilation (upto and including defining an export of functionality that isn't a supported
-// intrinsic on that platform).
-//
-
-EXTERN_C void * __cdecl _alloca(size_t);
-#pragma intrinsic(_alloca)
 
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
@@ -311,8 +285,6 @@ REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
-
-struct NATIVE_CONTEXT;
 
 #ifdef TARGET_UNIX
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
