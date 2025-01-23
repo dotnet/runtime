@@ -991,7 +991,7 @@ namespace System
         // Helper function to get the standard display name for the UTC static time zone instance
         private static string GetUtcStandardDisplayName()
         {
-            if(Invariant)
+            if (Invariant)
             {
                 return InvariantUtcStandardDisplayName;
             }
