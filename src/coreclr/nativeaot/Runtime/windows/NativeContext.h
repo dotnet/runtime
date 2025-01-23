@@ -35,7 +35,7 @@ struct NATIVE_CONTEXT
     template <typename F>
     void ForEachPossibleObjectRef(F lambda)
     {
-        for (uint32_t* pReg = &ctx.Eax; pReg < &ctx.Eip; pReg++)
+        for (uint32_t* pReg = (uint32_t*)&ctx.Eax; pReg < (uint32_t*)&ctx.Eip; pReg++)
             lambda((size_t*)pReg);
     }
 #elif defined(TARGET_ARM64)
