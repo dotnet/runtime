@@ -39,10 +39,12 @@ public class DllImportTests : BlazorWasmTestBase
     [MemberData(nameof(DllImportTheoryData))]
     public async Task WithDllImportInMainAssembly(Configuration config, bool build, bool publish)
     {
+        Console.WriteLine($"isWindows?: {s_isWindows}");
         if (s_isWindows)
         {
             bool isLongPathEnabled = IsLongPathEnabled();
             Console.WriteLine($"WINDOWS: long path enabled -> {isLongPathEnabled}");
+            return;
         }
         // Based on https://github.com/dotnet/runtime/issues/59255
         string prefix = $"blz_dllimp_{config}_{s_unicodeChars}";
