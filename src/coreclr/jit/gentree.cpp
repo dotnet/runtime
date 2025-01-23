@@ -25419,8 +25419,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     {
         // Re-order it so the original definition of op2 is used in the mask
         GenTree* tmp = op2;
-        op2 = fgMakeMultiUse(&tmp);
-        op2DupSafe = tmp;
+        op2          = fgMakeMultiUse(&tmp);
+        op2DupSafe   = tmp;
     }
 
     // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, we could further optimise many cases
@@ -25521,7 +25521,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     else if (elementSize == 8 && simdSize == 16 &&
              compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL))
     {
-        GenTree* op1Copy         = fgMakeMultiUse(&op1); // just use op1 again for the other variable
+        GenTree*       op1Copy   = fgMakeMultiUse(&op1); // just use op1 again for the other variable
         NamedIntrinsic intrinsic = isV512Supported ? NI_AVX512F_VL_PermuteVar2x64x2 : NI_AVX10v1_PermuteVar2x64x2;
         retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, intrinsic, simdBaseJitType, simdSize);
     }
@@ -25836,8 +25836,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     {
         // Re-order it so the original definition of op2 is used in the mask
         GenTree* tmp = op2;
-        op2 = fgMakeMultiUse(&tmp);
-        op2DupSafe = tmp;
+        op2          = fgMakeMultiUse(&tmp);
+        op2DupSafe   = tmp;
     }
     if (elementSize > 1)
     {
@@ -25929,7 +25929,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
 #if defined(TARGET_XARCH)
         // check if we have hardware accelerated unsigned comparison
-        bool hardwareAcceleratedUnsignedComparison = simdSize == 64 ||
+        bool hardwareAcceleratedUnsignedComparison =
+            simdSize == 64 ||
             (elementSize < 4 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
             (elementSize >= 4 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL));
 
