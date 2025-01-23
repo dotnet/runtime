@@ -25577,13 +25577,14 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // shuffle & manipulate the long indices to int indices
             unsigned immediate = 0b10100000;
-            cnsNode = gtNewIconNode(immediate);
+            cnsNode            = gtNewIconNode(immediate);
             if (simdSize == 32)
             {
                 if (varTypeIsFloating(simdBaseType))
                 {
                     GenTree* op2Dup = fgMakeMultiUse(&op2);
-                    op2 = gtNewSimdHWIntrinsicNode(type, op2, op2Dup, cnsNode, NI_AVX_Shuffle, simdBaseJitType, simdSize);
+                    op2 =
+                        gtNewSimdHWIntrinsicNode(type, op2, op2Dup, cnsNode, NI_AVX_Shuffle, simdBaseJitType, simdSize);
                 }
                 else
                 {
@@ -25595,7 +25596,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 if (varTypeIsFloating(simdBaseType))
                 {
                     GenTree* op2Dup = fgMakeMultiUse(&op2);
-                    op2 = gtNewSimdHWIntrinsicNode(type, op2, op2Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize);
+                    op2 =
+                        gtNewSimdHWIntrinsicNode(type, op2, op2Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize);
                 }
                 else
                 {
@@ -26283,10 +26285,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 }
                 if (varTypeIsFloating(simdBaseType))
                 {
-                    op2 = gtNewIconNode(immediate);
+                    op2              = gtNewIconNode(immediate);
                     GenTree* op1Copy = fgMakeMultiUse(&op1);
-                    return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX_Shuffle, simdBaseJitType,
-                                                    simdSize);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX_Shuffle, simdBaseJitType, simdSize);
                 }
                 else
                 {
@@ -26355,7 +26356,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     value = op2->GetIntegralVectorConstElement(i, simdBaseType);
                     immediate |= static_cast<unsigned>((value & (uint64_t)1) << i);
                 }
-                op2 = gtNewIconNode(immediate);
+                op2              = gtNewIconNode(immediate);
                 GenTree* op1Copy = fgMakeMultiUse(&op1);
                 return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX_Shuffle, CORINFO_TYPE_DOUBLE, simdSize);
             }
@@ -26382,9 +26383,10 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     value = op2->GetIntegralVectorConstElement(i, simdBaseType);
                     immediate |= static_cast<unsigned>((value & (uint64_t)1) << i);
                 }
-                op2 = gtNewIconNode(immediate);
+                op2              = gtNewIconNode(immediate);
                 GenTree* op1Copy = fgMakeMultiUse(&op1);
-                return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX512F_Shuffle, CORINFO_TYPE_DOUBLE, simdSize);
+                return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX512F_Shuffle, CORINFO_TYPE_DOUBLE,
+                                                simdSize);
             }
 
             // if the element size is 32-bit, try to use vpshufd/vshufps instead of vpshufb,
@@ -26399,7 +26401,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 }
                 if (varTypeIsFloating(simdBaseType))
                 {
-                    op2 = gtNewIconNode(immediate);
+                    op2              = gtNewIconNode(immediate);
                     GenTree* op1Copy = fgMakeMultiUse(&op1);
                     return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX512F_Shuffle, simdBaseJitType,
                                                     simdSize);
