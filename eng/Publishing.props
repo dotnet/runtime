@@ -38,8 +38,7 @@
     For non-RID-specific packages, we have various rules:
 
     - A job can specify PublishAllPackages=true to publish all packages it produces. We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
-    - A job can specify PublishAdditionalSpecificPackages="Package1;Package2" to publish the specified packages. We use this for specific jobs were we produce the same package in multiple jobs,
-      but we don't produce the package in any jobs where we set PublishAllPackages.
+    - For some target RIDs, we also include specific RID-agnostic packages.
   -->
   <ItemGroup>
     <ThisRidPackages Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
@@ -49,16 +48,38 @@
     <PackagesToPublishFromThisJob Include="@(OtherPackages)" Condition="'$(PublishAllPackages)' == 'true'" />
 
     <PackagesToSkipFromThisJob Include="@(Artifact)" Exclude="@(PackagesToPublishFromThisJob)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageRID)' == 'ios-arm64'">
+    <PackagesToPublishFromThisJob
+      Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoAOTCompiler.Task.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PackageRID)' == 'android-arm64'">
+    <PackagesToPublishFromThisJob
+      Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.Android.Sample.Mono.*.nupkg" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PackageRID)' == 'wasi-wasm'">
+    <PackagesToPublishFromThisJob
+      Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PackageRID)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
+    <PackagesToPublishFromThisJob
+      Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Templates.net10.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Workload.Mono.ToolChain.*.nupkg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
       In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.
       In VMR builds, we need to publish them for upstack jobs to consume.
     -->
     <Artifact Update="@(PackagesToSkipFromThisJob)" SkipPublish="true" Condition="'$(DotNetBuildOrchestrator)' != 'true'" />
     <Artifact Update="@(PackagesToSkipFromThisJob)" Visibility="Vertical" Condition="'$(DotNetBuildOrchestrator)' == 'true'" />
-  </ItemGroup>
-
-  <ItemGroup>
-      <AdditionalSpecificPackagesToPublish Include="$(PublishAdditionalSpecificPackages)" />
   </ItemGroup>
 
   <!-- Include any additional packages specified by the job here. -->

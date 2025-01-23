@@ -70,6 +70,9 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
+          variables:
+          - name: PublishAllPackages
+            value: $[eq(variables.targetRid, 'win-x64')]
           jobParameters:
             templatePath: 'templates-official'
             buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
@@ -85,10 +88,8 @@ extends:
             # Now that we've signed the diagnostic files, do the rest of the build.
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true $(_PublishAdditionalPackagesArg)
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true /p:PublishAllPackages=$(PublishAllPackages)
                 displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
-            extraVariablesTemplates:
-            - template: /eng/pipelines/common/templates/packages-to-publish.yml
 
       #
       # Build all runtime packs
@@ -256,8 +257,6 @@ extends:
             buildArgs: -c $(_BuildConfig) -restore -build -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true  $(_PublishAdditionalPackagesArg)
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            extraVariablesTemplates:
-            - template: /eng/pipelines/common/templates/packages-to-publish.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -272,8 +271,6 @@ extends:
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) $(_PublishAdditionalPackagesArg)
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/packages-to-publish.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
