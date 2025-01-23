@@ -904,6 +904,14 @@ namespace System.Net.Http
                 {
                     httpVersion = "HTTP/1.1";
                 }
+                else if (state.RequestMessage.Version == HttpVersion20)
+                {
+                    httpVersion = "HTTP/2.0";
+                }
+                else if (state.RequestMessage.Version == HttpVersion30)
+                {
+                    httpVersion = "HTTP/3.0";
+                }
 
                 OpenRequestHandle(state, connectHandle, httpVersion, out WinHttpChunkMode chunkedModeForSend, out SafeWinHttpHandle requestHandle);
                 state.RequestHandle = requestHandle;
@@ -1524,6 +1532,19 @@ namespace System.Net.Http
             else
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/{requestVersion.Major} option not supported");
+                return;
+            }
+
+            if (optionData != 0)
+            {
+                uint protocolRequired = 1;
+                if (!Interop.WinHttp.WinHttpSetOption(
+                    requestHandle,
+                    Interop.WinHttp.WINHTTP_OPTION_HTTP_PROTOCOL_REQUIRED,
+                    ref protocolRequired))
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP protocol required option not supported");
+                }
             }
         }
 
