@@ -904,7 +904,7 @@ namespace System
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
             e = null;
-            if(Invariant)
+            if (Invariant)
             {
                 value = null;
                 return TimeZoneInfoResult.TimeZoneNotFoundException;
