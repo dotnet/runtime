@@ -162,6 +162,7 @@ internal static partial class Interop
         public const uint WINHTTP_PROTOCOL_FLAG_HTTP3 = 0x2;
         public const uint WINHTTP_HTTP2_PLUS_CLIENT_CERT_FLAG = 0x1;
         public const uint WINHTTP_OPTION_DISABLE_STREAM_QUEUE = 139;
+        public const uint WINHTTP_OPTION_HTTP_PROTOCOL_REQUIRED = 145;
 
         public const uint WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET = 114;
         public const uint WINHTTP_OPTION_WEB_SOCKET_CLOSE_TIMEOUT = 115;

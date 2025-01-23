@@ -903,17 +903,7 @@ namespace System.Net.Http
                 ThrowOnInvalidHandle(connectHandle, nameof(Interop.WinHttp.WinHttpConnect));
                 connectHandle.SetParentHandle(_sessionHandle);
 
-                // Try to use the requested version if a known/supported version was explicitly requested.
-                // Otherwise, we simply use winhttp's default.
-                string? httpVersion = null;
-                if (state.RequestMessage.Version == HttpVersion.Version10)
-                {
-                    httpVersion = "HTTP/1.0";
-                }
-                else if (state.RequestMessage.Version == HttpVersion.Version11)
-                {
-                    httpVersion = "HTTP/1.1";
-                }
+                string httpVersion = $"HTTP/{state.RequestMessage.Version.Major}.{state.RequestMessage.Version.Minor}";
 
                 OpenRequestHandle(state, connectHandle, httpVersion, out WinHttpChunkMode chunkedModeForSend, out SafeWinHttpHandle requestHandle);
                 state.RequestHandle = requestHandle;
@@ -1551,6 +1541,15 @@ namespace System.Net.Http
             else
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HTTP/{requestVersion.Major} option not supported");
+            }
+
+            uint protocolRequired = 1;
+            if (optionData != 0 && !Interop.WinHttp.WinHttpSetOption(
+                requestHandle,
+                Interop.WinHttp.WINHTTP_OPTION_HTTP_PROTOCOL_REQUIRED,
+                ref protocolRequired))
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP protocol required option not supported");
             }
         }
 
