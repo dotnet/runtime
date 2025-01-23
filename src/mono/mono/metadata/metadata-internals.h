@@ -1296,8 +1296,11 @@ m_type_is_byref (const MonoType *type)
 	return type->byref__;
 }
 
-MONO_NEVER_INLINE void
-m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type);
+static MONO_NEVER_INLINE void
+m_type_invalid_access (const char *fn_name, MonoTypeEnum actual_type)
+{
+	g_error ("MonoType with type %d accessed by %s", actual_type, fn_name);
+}
 
 /*
  * You want mono_class_from_mono_type_internal unless you've already checked type->type.

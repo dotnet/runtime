@@ -8114,10 +8114,3 @@ void
 dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
 	mono_assertion_message (file, line, condition);
 }
-
-MONO_NEVER_INLINE void
-m_type_invalid_access (const char * fn_name, MonoTypeEnum actual_type)
-{
-	g_error ("MonoType with type %d accessed by %s", actual_type, fn_name);
-	g_assert_not_reached ();
-}
