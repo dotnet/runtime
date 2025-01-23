@@ -855,7 +855,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(Thread* pThreadToHijack)
             // at the same place twice in a row, we run the risk of reading a bogus CONTEXT when we redirect
             // the second time.  This leads to access violations on x86 machines.  To fix the problem, we
             // never redirect at the same instruction pointer that we redirected at on the previous GC.
-            if ((pThreadToHijack->CheckPendingRedirect(win32ctx.Eip))
+            if (pThreadToHijack->CheckPendingRedirect(win32ctx.Eip))
             {
                 isSafeToRedirect = false;
             }
