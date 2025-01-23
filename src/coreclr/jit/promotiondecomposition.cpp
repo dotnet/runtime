@@ -529,6 +529,10 @@ private:
             flagsToPropagate |= GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP;
             addr       = m_store->AsIndir()->Addr();
             indirFlags = m_store->gtFlags & flagsToPropagate;
+            if (m_store->AsBlk()->GetLayout()->IsStackOnly(m_compiler))
+            {
+                indirFlags |= GTF_IND_TGT_NOT_HEAP;
+            }
         }
         else if (m_src->OperIs(GT_BLK))
         {
