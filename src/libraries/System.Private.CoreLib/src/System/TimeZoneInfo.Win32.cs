@@ -816,7 +816,7 @@ namespace System
         /// </summary>
         private static unsafe string GetLocalizedNameByNativeResource(string filePath, int resource)
         {
-            if(Invariant)
+            if (Invariant)
             {
                 return string.Empty;
             }
