@@ -471,6 +471,9 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
         static int ISimdVector<Vector128<T>, T>.Alignment => Vector128.Alignment;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ElementCount" />
+        static int ISimdVector<Vector128<T>, T>.ElementCount => Vector128<T>.Count;
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
         static bool ISimdVector<Vector128<T>, T>.IsHardwareAccelerated
         {
@@ -486,9 +489,25 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Add(Vector128<T> left, Vector128<T> right) => left + right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.All(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.All(Vector128<T> vector, T value) => Vector128.All(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AllWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.AllWhereAllBitsSet(Vector128<T> vector) => Vector128.AllWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
         [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.AndNot(Vector128<T> left, Vector128<T> right) => Vector128.AndNot(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Any(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.Any(Vector128<T> vector, T value) => Vector128.Any(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AnyWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.AnyWhereAllBitsSet(Vector128<T> vector) => Vector128.AnyWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
         [Intrinsic]
@@ -526,6 +545,14 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, Span{T})" />
         static void ISimdVector<Vector128<T>, T>.CopyTo(Vector128<T> vector, Span<T> destination) => vector.CopyTo(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector128<T>, T>.Count(Vector128<T> vector, T value) => Vector128.Count(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CountWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector128<T>, T>.CountWhereAllBitsSet(Vector128<T> vector) => Vector128.CountWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
         [Intrinsic]
@@ -603,6 +630,74 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
         [Intrinsic]
         static bool ISimdVector<Vector128<T>, T>.GreaterThanOrEqualAny(Vector128<T> left, Vector128<T> right) => Vector128.GreaterThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector128<T>, T>.IndexOf(Vector128<T> vector, T value) => Vector128.IndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector128<T>, T>.IndexOfWhereAllBitsSet(Vector128<T> vector) => Vector128.IndexOfWhereAllBitsSet(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsEvenInteger(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsEvenInteger(Vector128<T> vector) => Vector128.IsEvenInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsFinite(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsFinite(Vector128<T> vector) => Vector128.IsFinite(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsInfinity(Vector128<T> vector) => Vector128.IsInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInteger(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsInteger(Vector128<T> vector) => Vector128.IsInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNaN(Vector128<T> vector) => Vector128.IsNaN(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNegative(Vector128<T> vector) => Vector128.IsNegative(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegativeInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNegativeInfinity(Vector128<T> vector) => Vector128.IsNegativeInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNormal(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNormal(Vector128<T> vector) => Vector128.IsNormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsOddInteger(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsOddInteger(Vector128<T> vector) => Vector128.IsOddInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsPositive(Vector128<T> vector) => Vector128.IsPositive(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsPositiveInfinity(Vector128<T> vector) => Vector128.IsPositiveInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsSubnormal(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsSubnormal(Vector128<T> vector) => Vector128.IsSubnormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        [Intrinsic]
+        static Vector128<T> ISimdVector<Vector128<T>, T>.IsZero(Vector128<T> vector) => Vector128.IsZero(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector128<T>, T>.LastIndexOf(Vector128<T> vector, T value) => Vector128.LastIndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector128<T>, T>.LastIndexOfWhereAllBitsSet(Vector128<T> vector) => Vector128.LastIndexOfWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
         [Intrinsic]
@@ -704,6 +799,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Negate(Vector128<T> vector) => -vector;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.None(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.None(Vector128<T> vector, T value) => Vector128.None(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.NoneWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector128<T>, T>.NoneWhereAllBitsSet(Vector128<T> vector) => Vector128.NoneWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.OnesComplement(Vector128<T> vector) => ~vector;
@@ -774,34 +877,5 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
         [Intrinsic]
         static Vector128<T> ISimdVector<Vector128<T>, T>.Xor(Vector128<T> left, Vector128<T> right) => left ^ right;
-
-        //
-        // New Surface Area
-        //
-
-        static bool ISimdVector<Vector128<T>, T>.AnyWhereAllBitsSet(Vector128<T> vector) => Vector128.EqualsAny(vector, AllBitsSet);
-
-        static bool ISimdVector<Vector128<T>, T>.Any(Vector128<T> vector, T value) => Vector128.EqualsAny(vector, Vector128.Create(value));
-
-        static int ISimdVector<Vector128<T>, T>.IndexOfLastMatch(Vector128<T> vector)
-        {
-            uint mask = vector.ExtractMostSignificantBits();
-            return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-        }
-
-        [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNaN(Vector128<T> vector) => Vector128.IsNaN(vector);
-
-        [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.IsNegative(Vector128<T> vector) => Vector128.IsNegative(vector);
-
-        [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.IsPositive(Vector128<T> vector) => Vector128.IsPositive(vector);
-
-        [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.IsPositiveInfinity(Vector128<T> vector) => Vector128.IsPositiveInfinity(vector);
-
-        [Intrinsic]
-        static Vector128<T> ISimdVector<Vector128<T>, T>.IsZero(Vector128<T> vector) => Vector128.IsZero(vector);
     }
 }

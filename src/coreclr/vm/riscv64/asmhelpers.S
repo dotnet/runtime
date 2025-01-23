@@ -82,8 +82,8 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 
     beq  t0, zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  a5, zero, 0
-    addi  a6, zero, -1
+    li  a5, 0
+    li  a6, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
     lla  a7, g_lowest_address
@@ -253,7 +253,7 @@ LOCAL_LABEL(ShadowUpdateDisabled):
     lb  t0, 0(t6)
     bne  t0, zero, LOCAL_LABEL(CheckCardTable)
 
-    ori  t0, zero, 0xFF
+    li  t0, 0xFF
     sb  t0, 0(t6)
 
 LOCAL_LABEL(CheckCardTable):
@@ -277,7 +277,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     srli  t0, t3, 11
     add  t4, t6, t0
     lbu  t1, 0(t4)
-    ori  t0, zero, 0xFF
+    li   t0, 0xFF
     beq  t1, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
@@ -290,7 +290,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     add  t4, t6, t0
 
     lbu  t6, 0(t4)
-    ori  t0, zero, 0xFF
+    li   t0, 0xFF
     beq  t6, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
@@ -968,3 +968,14 @@ LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
     la.tls.ie   a0, t_ThreadStatics
     EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
+
+LEAF_ENTRY JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, t0
+        lw      t0, 0(t0)
+        bnez    t0, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, t0
+        ld      t0, 0(t0)
+        jr      t0
+LEAF_END JIT_PollGC, _TEXT
