@@ -5,15 +5,8 @@
 
 void InitializeMemoryDebug(void);
 
-typedef enum
-{
-    MallocOperation = 1,
-    ReallocOperation = 2,
-    FreeOperation = 3,
-} MemoryOperation;
+PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable);
 
-typedef void (*CRYPTO_allocation_cb)(MemoryOperation operation, void* ptr, void* oldPtr, int size, const char *file, int line);
-
-PALEXPORT int32_t CryptoNative_SetMemoryTracking(CRYPTO_allocation_cb callback);
+PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int size, const char* file, int line, void* ctx), void* ctx);
 
 PALEXPORT int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount);

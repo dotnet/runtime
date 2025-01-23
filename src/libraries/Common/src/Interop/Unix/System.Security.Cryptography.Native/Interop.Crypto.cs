@@ -11,6 +11,8 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
+using TrackedAllocationDelegate = System.Action<System.IntPtr, int, System.IntPtr, int>;
+
 internal static partial class Interop
 {
     internal static partial class Crypto
@@ -199,123 +201,51 @@ internal static partial class Interop
             {
                 Interop.Crypto.GetOpenSslAllocationCount();
                 Interop.Crypto.GetOpenSslAllocatedMemory();
+                Interop.Crypto.ForEachTrackedAllocation((a, b, c, d) => { });
                 Interop.Crypto.EnableTracking();
-                Interop.Crypto.GetIncrementalAllocations();
                 Interop.Crypto.DisableTracking();
             }
 
             return enabled == 1;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetMemoryTracking")]
-        private static unsafe partial int SetMemoryTracking(delegate* unmanaged<MemoryOperation, UIntPtr, UIntPtr, int, char*, int, void> trackingCallback);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnableMemoryTracking")]
+        internal static unsafe partial void EnableMemoryTracking(int enable);
 
-        [StructLayout(LayoutKind.Sequential)]
-        private unsafe struct MemoryEntry
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ForEachTrackedAllocation")]
+        private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, int, char*, int, IntPtr, void> callback, IntPtr ctx);
+
+
+        public static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
         {
-            public int Size;
-            public int Line;
-            public char* File;
-        }
-
-        private enum MemoryOperation
-        {
-            Malloc = 1,
-            Realloc = 2,
-            Free = 3,
-        }
-
-        private static readonly unsafe nuint Offset = (nuint)sizeof(MemoryEntry);
-        // We only need to store the keys but we use ConcurrentDictionary to avoid locking
-        private static ConcurrentDictionary<UIntPtr, UIntPtr>? _allocations;
-
-        // Even though ConcurrentDictionary is thread safe, it is not guaranteed that the
-        // enumeration will return a point-in-time snapshot of the dictionary. It is possible
-        // that a single element can be concurrently:
-        // - removed from the dictionary (and the pointed to-memory subsequently deallocated)
-        // - accessed via GetIncrementalAllocations (and the pointer getting dereferenced)
-        //
-        // To avoid this, we use the *readers* role of the RW-lock to secure insertion/deletion,
-        // and the *writer* role to secure enumeration. This allows concurrent modifications to
-        // the dictionary (which is safely handled internally) while preventing the above
-        // mentioned race and potential crash from access violation.
-        private static ReaderWriterLockSlim? _allocationsLock;
-
-        [UnmanagedCallersOnly]
-        private static unsafe void MemoryTrackingCallback(MemoryOperation operation, UIntPtr ptr, UIntPtr oldPtr, int size, char* file, int line)
-        {
-            ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
-
-            Debug.Assert(entry.File != null);
-            Debug.Assert(ptr != UIntPtr.Zero);
-
+            GCHandle pCallback = GCHandle.Alloc(callback);
             try
             {
-                // see comment at _allocationsLock for why Readl lock is used here
-                _allocationsLock!.EnterReadLock();
-                switch (operation)
-                {
-                    case MemoryOperation.Malloc:
-                        Debug.Assert(size == entry.Size);
-                        _allocations!.TryAdd(ptr, ptr);
-                        break;
-                    case MemoryOperation.Realloc:
-                        if ((IntPtr)oldPtr != IntPtr.Zero)
-                        {
-                            _allocations!.TryRemove(oldPtr, out _);
-                        }
-                        _allocations!.TryAdd(ptr, ptr);
-                        break;
-                    case MemoryOperation.Free:
-                        _allocations!.TryRemove(ptr, out _);
-                        break;
-                }
+                ForEachTrackedAllocation(&MemoryTrackingCallback, GCHandle.ToIntPtr(pCallback));
             }
             finally
             {
-                _allocationsLock!.ExitReadLock();
+                pCallback.Free();
             }
+
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MemoryTrackingCallback(IntPtr ptr, int size, char* file, int line, IntPtr ctx)
+        {
+            GCHandle handle = GCHandle.FromIntPtr((IntPtr)ctx);
+            Action<IntPtr, int, IntPtr, int> callback = (TrackedAllocationDelegate)handle.Target!;
+            callback(ptr, size, (IntPtr)file, line);
         }
 
         public static unsafe void EnableTracking()
         {
-            _allocationsLock ??= new ReaderWriterLockSlim();
-            _allocations ??= new ConcurrentDictionary<UIntPtr, UIntPtr>();
-            _allocations!.Clear();
-            SetMemoryTracking(&MemoryTrackingCallback);
+            EnableMemoryTracking(1);
         }
 
         public static unsafe void DisableTracking()
         {
-            SetMemoryTracking(null);
-            _allocations!.Clear();
-        }
-
-        public static unsafe (UIntPtr, int, string)[] GetIncrementalAllocations()
-        {
-            ConcurrentDictionary<UIntPtr, UIntPtr>? allocations = _allocations;
-
-            if (allocations == null || allocations.IsEmpty)
-            {
-                return Array.Empty<(UIntPtr, int, string)>();
-            }
-
-            try
-            {
-                // see comment at _allocationsLock for why Write lock is used here
-                _allocationsLock!.EnterWriteLock();
-
-                return allocations.Select(kvp =>
-                {
-                    (UIntPtr ptr, _) = kvp;
-                    ref MemoryEntry entry = ref *(MemoryEntry*)ptr;
-                    return (ptr + Offset, entry.Size, $"{Marshal.PtrToStringAnsi((IntPtr)entry.File)}:{entry.Line}");
-                }).ToArray();
-            }
-            finally
-            {
-                _allocationsLock!.ExitWriteLock();
-            }
+            EnableMemoryTracking(0);
         }
     }
 }
