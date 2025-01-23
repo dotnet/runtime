@@ -275,6 +275,40 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
+        public static void CanReadLargeCentralDirectoryHeader()
+        {
+            // A 19-character filename will result in a 65-byte central directory header. 64 of these will make the central directory
+            // read process stretch into two 4KB buffers.
+            int count = 64;
+            string entryNameFormat = "example/file-{0:00}.dat";
+
+            using (MemoryStream archiveStream = new MemoryStream())
+            {
+                using (ZipArchive creationArchive = new ZipArchive(archiveStream, ZipArchiveMode.Create, true))
+                {
+                    for (int i = 0; i < count; i++)
+                    {
+                        creationArchive.CreateEntry(string.Format(entryNameFormat, i));
+                    }
+                }
+
+                archiveStream.Seek(0, SeekOrigin.Begin);
+
+                using (ZipArchive readArchive = new ZipArchive(archiveStream, ZipArchiveMode.Read))
+                {
+                    Assert.Equal(count, readArchive.Entries.Count);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        Assert.Equal(string.Format(entryNameFormat, i), readArchive.Entries[i].FullName);
+                        Assert.Equal(0, readArchive.Entries[i].CompressedLength);
+                        Assert.Equal(0, readArchive.Entries[i].Length);
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public static void ArchivesInOffsetOrder_UpdateMode()
         {
             // When the ZipArchive which has been opened in Update mode is disposed of, its entries will be rewritten in order of their offset within the file.
