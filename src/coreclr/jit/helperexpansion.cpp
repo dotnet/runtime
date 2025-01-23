@@ -2551,11 +2551,18 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         trueEdge->setLikelihood(nullcheckTrueLikelihood);
     }
 
+    // Set nullcheckBb's weight here, so we can propagate it to its successors below
+    nullcheckBb->inheritWeight(firstBb);
+
     if (typeCheckNotNeeded)
     {
         FlowEdge* const falseEdge = fgAddRefPred(fallbackBb, nullcheckBb);
         nullcheckBb->SetFalseEdge(falseEdge);
         falseEdge->setLikelihood(nullcheckFalseLikelihood);
+        fallbackBb->inheritWeight(nullcheckBb);
+        fallbackBb->scaleBBWeight(nullcheckFalseLikelihood);
+        lastBb->inheritWeight(nullcheckBb);
+        lastBb->scaleBBWeight(nullcheckTrueLikelihood);
 
         typeCheckSucceedBb = nullptr;
     }
@@ -2631,7 +2638,6 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     // The same goes for inherited weights -- the block where we test for B will have
     // the weight of A times the likelihood that A's test fails, etc.
     //
-    nullcheckBb->inheritWeight(firstBb);
     weight_t sumOfPreviousLikelihood = 0;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
@@ -2666,13 +2672,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         sumOfPreviousLikelihood += likelihood;
     }
 
-    if (fallbackBb->KindIs(BBJ_THROW))
+    if (fallbackBb->KindIs(BBJ_ALWAYS))
     {
-        fallbackBb->bbSetRunRarely();
-    }
-    else
-    {
-        assert(fallbackBb->KindIs(BBJ_ALWAYS));
         FlowEdge* const newEdge = fgAddRefPred(lastBb, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
         fallbackBb->inheritWeight(lastTypeCheckBb);
@@ -2684,9 +2685,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     {
         typeCheckSucceedBb->inheritWeight(typeChecksBbs[0]);
         typeCheckSucceedBb->scaleBBWeight(sumOfPreviousLikelihood);
+        lastBb->inheritWeight(firstBb);
     }
-
-    lastBb->inheritWeight(firstBb);
 
     //
     // Validate EH regions
