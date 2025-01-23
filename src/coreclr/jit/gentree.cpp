@@ -25426,6 +25426,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, we could further optimise many cases
     // below
 
+    bool isV512Supported = false;
     if (simdSize == 64)
     {
         if (elementSize == 1)
@@ -25467,31 +25468,29 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
         // high bit on index gives 0 already
         canUseSignedComparisonHint = true;
     }
-    else if (elementSize == 1 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL))
+    else if (elementSize == 1 && simdSize == 32 &&
+             compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL))
     {
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
-    }
-    else if (elementSize == 1 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-    {
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar32x8, simdBaseJitType, simdSize);
-    }
-    else if (elementSize == 2 && compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
-    {
-        assert(simdSize == 16 || simdSize == 32);
+        NamedIntrinsic intrinsic = isV512Supported ? NI_AVX512VBMI_VL_PermuteVar32x8 : NI_AVX10v1_PermuteVar32x8;
 
         // swap the operands to match the encoding requirements
-        NamedIntrinsic intrinsic = simdSize == 16 ? NI_AVX512BW_VL_PermuteVar8x16 : NI_AVX512BW_VL_PermuteVar16x16;
-        retNode                  = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
     }
-    else if (elementSize == 2 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    else if (elementSize == 2 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL))
     {
         assert(simdSize == 16 || simdSize == 32);
+        NamedIntrinsic intrinsic;
+        if (isV512Supported)
+        {
+            intrinsic = simdSize == 16 ? NI_AVX512BW_VL_PermuteVar8x16 : NI_AVX512BW_VL_PermuteVar16x16;
+        }
+        else
+        {
+            intrinsic = simdSize == 16 ? NI_AVX10v1_PermuteVar8x16 : NI_AVX10v1_PermuteVar16x16;
+        }
 
         // swap the operands to match the encoding requirements
-        NamedIntrinsic intrinsic = simdSize == 16 ? NI_AVX10v1_PermuteVar8x16 : NI_AVX10v1_PermuteVar16x16;
-        retNode                  = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
     }
     else if (elementSize == 4 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
     {
@@ -25511,27 +25510,20 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
         }
     }
-    else if (elementSize == 8 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+    else if (elementSize == 8 && simdSize == 32 &&
+             compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL))
     {
+        NamedIntrinsic intrinsic = isV512Supported ? NI_AVX512F_VL_PermuteVar4x64 : NI_AVX10v1_PermuteVar4x64;
+
         // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_VL_PermuteVar4x64, simdBaseJitType, simdSize);
+        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
     }
-    else if (elementSize == 8 && simdSize == 32 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    else if (elementSize == 8 && simdSize == 16 &&
+             compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL))
     {
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar4x64, simdBaseJitType, simdSize);
-    }
-    else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-    {
-        GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
-        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, NI_AVX512F_VL_PermuteVar2x64x2, simdBaseJitType,
-                                           simdSize);
-    }
-    else if (elementSize == 8 && simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-    {
-        GenTree* op1Copy = fgMakeMultiUse(&op1); // just use op1 again for the other variable
-        retNode =
-            gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, NI_AVX10v1_PermuteVar2x64x2, simdBaseJitType, simdSize);
+        GenTree* op1Copy         = fgMakeMultiUse(&op1); // just use op1 again for the other variable
+        NamedIntrinsic intrinsic = isV512Supported ? NI_AVX512F_VL_PermuteVar2x64x2 : NI_AVX10v1_PermuteVar2x64x2;
+        retNode = gtNewSimdHWIntrinsicNode(type, op1, op2, op1Copy, intrinsic, simdBaseJitType, simdSize);
     }
     else
     {
@@ -25937,22 +25929,9 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
 #if defined(TARGET_XARCH)
         // check if we have hardware accelerated unsigned comparison
-        bool hardwareAcceleratedUnsignedComparison = simdSize == 64;
-        if (simdSize == 32 || simdSize == 16)
-        {
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-            {
-                hardwareAcceleratedUnsignedComparison = true;
-            }
-            if (elementSize < 4)
-            {
-                hardwareAcceleratedUnsignedComparison = compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL);
-            }
-            else
-            {
-                hardwareAcceleratedUnsignedComparison = compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL);
-            }
-        }
+        bool hardwareAcceleratedUnsignedComparison = simdSize == 64 ||
+            (elementSize < 4 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
+            (elementSize >= 4 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL));
 
         // if the hardware doesn't support direct unsigned comparison, we attempt to use signed comparison
         if (!hardwareAcceleratedUnsignedComparison)
