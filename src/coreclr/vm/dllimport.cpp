@@ -408,7 +408,7 @@ public:
 
         {
             // Convert to a module independent signature
-            SigPointer sigPtr(pStubMD->GetSig());
+            SigPointer sigPtr = pStubMD->GetSigPointer();
             sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, /* bSkipCustomModifier */ FALSE);
         }
 
@@ -469,7 +469,7 @@ public:
     {
         SigBuilder sigBuilder;
         _ASSERTE(pStubMD->IsNoMetadata());
-        SigPointer sigPtr(pStubMD->GetSig());
+        SigPointer sigPtr = pStubMD->GetSigPointer();
         sigPtr.ConvertToInternalSignature(pStubMD->GetModule(), NULL, &sigBuilder, /* bSkipCustomModifier */ FALSE);
 
         //
@@ -2277,30 +2277,28 @@ void NDirectStubLinker::EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNu
 
     if (SF_IsDelegateStub(dwStubFlags))
     {
-        pcsEmit->EmitLoadNullPtr();
         pcsEmit->EmitLoadThis();
+        pcsEmit->EmitCALL(METHOD__DELEGATE__GET_INVOKE_METHOD, 1, 1);
     }
     else if (SF_IsCALLIStub(dwStubFlags))
     {
         pcsEmit->EmitLoadNullPtr();
-        pcsEmit->EmitLDNULL();
     }
     else
     {
         // P/Invoke, CLR->COM
         EmitLoadStubContext(pcsEmit, dwStubFlags);
-        pcsEmit->EmitLDNULL();
     }
 
     if (fIsByref)
     {
-        // StubHelpers.ValidateByref(byref, pMD, pThis)
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_BYREF, 3, 0);
+        // StubHelpers.ValidateByref(byref, pMD)
+        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_BYREF, 2, 0);
     }
     else
     {
-        // StubHelpers.ValidateObject(obj, pMD, pThis)
-        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_OBJECT, 3, 0);
+        // StubHelpers.ValidateObject(obj, pMD)
+        pcsEmit->EmitCALL(METHOD__STUBHELPERS__VALIDATE_OBJECT, 2, 0);
     }
 }
 
@@ -3165,7 +3163,7 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 /*static*/
 BOOL NDirect::MarshalingRequired(
     _In_opt_ MethodDesc* pMD,
-    _In_opt_ PCCOR_SIGNATURE pSig,
+    _In_opt_ SigPointer sigPointer,
     _In_opt_ Module* pModule,
     _In_opt_ SigTypeContext* pTypeContext,
     _In_ bool unmanagedCallersOnlyRequiresMarshalling)
@@ -3173,7 +3171,7 @@ BOOL NDirect::MarshalingRequired(
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(pMD != NULL || (pSig != NULL && pModule != NULL));
+        PRECONDITION(pMD != NULL || (!sigPointer.IsNull() && pModule != NULL));
     }
     CONTRACTL_END;
 
@@ -3229,19 +3227,17 @@ BOOL NDirect::MarshalingRequired(
         callConv = sigInfo.GetCallConv();
     }
 
-    if (pSig == NULL)
+    if (sigPointer.IsNull())
     {
         PREFIX_ASSUME(pMD != NULL);
 
-        pSig = pMD->GetSig();
+        sigPointer = pMD->GetSigPointer();
         pModule = pMD->GetModule();
     }
 
     // Check to make certain that the signature only contains types that marshal trivially
-    SigPointer ptr(pSig);
-    IfFailThrow(ptr.GetCallingConvInfo(NULL));
     uint32_t numArgs;
-    IfFailThrow(ptr.GetData(&numArgs));
+    IfFailThrow(sigPointer.SkipMethodHeaderSignature(&numArgs, false /* skipReturnType */));
     numArgs++;   // +1 for return type
 
     // We'll need to parse parameter native types
@@ -3266,7 +3262,7 @@ BOOL NDirect::MarshalingRequired(
 
     for (ULONG i = 0; i < numArgs; i++)
     {
-        SigPointer arg = ptr;
+        SigPointer arg = sigPointer;
         CorElementType type;
         IfFailThrow(arg.PeekElemType(&type));
 
@@ -3394,7 +3390,7 @@ BOOL NDirect::MarshalingRequired(
             }
         }
 
-        IfFailThrow(ptr.SkipExactlyOne());
+        IfFailThrow(sigPointer.SkipExactlyOne());
     }
 
     if (!FitsInU2(dwStackSize))
@@ -5023,7 +5019,7 @@ namespace
                                     {
                                         // For generic calli, we only support blittable types
                                         if (SF_IsCALLIStub(dwStubFlags)
-                                            && NDirect::MarshalingRequired(NULL, pStubMD->GetSig(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
+                                            && NDirect::MarshalingRequired(NULL, pStubMD->GetSigPointer(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
                                         {
                                             COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
                                         }
@@ -5825,7 +5821,7 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 // is to ensure that the target DLL is fully loaded and ready to run.
 //
 // FUN FACTS: Though this function is actually entered in unmanaged mode,
-// it can reenter managed mode and throw a COM+ exception if the DLL linking
+// it can reenter managed mode and throw a CLR exception if the DLL linking
 // fails.
 //==========================================================================
 EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
@@ -6084,13 +6080,7 @@ namespace
     //-------------------------------------------------------------------------------------
     void FindCopyConstructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         *pMDOut = NULL;
 
@@ -6276,19 +6266,12 @@ namespace
         }
     }
 
-
     //-------------------------------------------------------------------------------------
     // Return the destructor for a VC class (if any exists)
     //-------------------------------------------------------------------------------------
     void FindDestructor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;    // CompareTypeTokens may trigger GC
-            MODE_ANY;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
 
         *pMDOut = NULL;
 
@@ -6415,8 +6398,19 @@ namespace
     }
 }
 
-bool GenerateCopyConstructorHelper(MethodDesc* ftn, TypeHandle type, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader, CORINFO_METHOD_INFO* methInfo)
+bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver, COR_ILMETHOD_DECODER** ppHeader)
 {
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(ftn != NULL);
+    _ASSERTE(ppResolver != NULL);
+    _ASSERTE(ppHeader != NULL);
+
+    _ASSERTE(ftn->HasMethodInstantiation());
+    Instantiation inst = ftn->GetMethodInstantiation();
+
+    _ASSERTE(inst.GetNumArgs() == 1);
+    TypeHandle type = inst[0];
+
     if (!type.IsValueType())
         return false;
 

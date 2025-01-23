@@ -32,6 +32,7 @@ namespace ILLink.RoslynAnalyzer
 
 		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
 		private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
+		private protected abstract DiagnosticDescriptor RequiresOnEntryPoint { get; }
 
 		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
 		private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
@@ -51,8 +52,15 @@ namespace ILLink.RoslynAnalyzer
 				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
-					if (methodSymbol.IsStaticConstructor () && methodSymbol.HasAttribute (RequiresAttributeName))
-						ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
+
+					if (methodSymbol.HasAttribute (RequiresAttributeName)) {
+						if (methodSymbol.IsStaticConstructor ())
+							ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
+
+						if (methodSymbol.IsEntryPoint (symbolAnalysisContext.Compilation) || methodSymbol.IsUnmanagedCallersOnlyEntryPoint ())
+							ReportRequiresOnEntryPointDiagnostic (symbolAnalysisContext, methodSymbol);
+					}
+
 					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
 				}, SymbolKind.Method);
 
@@ -99,7 +107,7 @@ namespace ILLink.RoslynAnalyzer
 								VerifyAttributeArguments (requiresAttribute)) {
 								syntaxNodeAnalysisContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
 									syntaxNodeAnalysisContext.Node.GetLocation (),
-									containingSymbol.GetDisplayName (),
+									instanceCtor.GetDisplayName (),
 									(string) requiresAttribute.ConstructorArguments[0].Value!,
 									GetUrlFromAttribute (requiresAttribute)));
 							}
@@ -236,6 +244,14 @@ namespace ILLink.RoslynAnalyzer
 				RequiresOnStaticCtor,
 				ctor.Locations[0],
 				ctor.GetDisplayName ()));
+		}
+
+		private void ReportRequiresOnEntryPointDiagnostic (SymbolAnalysisContext symbolAnalysisContext, IMethodSymbol entryPoint)
+		{
+			symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (
+				RequiresOnEntryPoint,
+				entryPoint.Locations[0],
+				entryPoint.GetDisplayName ()));
 		}
 
 		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false, ISymbol? origin = null)

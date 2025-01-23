@@ -1,6 +1,6 @@
 /* deflate_rle.c -- compress data using RLE strategy of deflation algorithm
  *
- * Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
+ * Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -60,7 +60,7 @@ Z_INTERNAL block_state deflate_rle(deflate_state *s, int flush) {
         if (match_len >= STD_MIN_MATCH) {
             Assert(s->strstart <= UINT16_MAX, "strstart should fit in uint16_t");
             Assert(s->match_start <= UINT16_MAX, "match_start should fit in uint16_t");
-            check_match(s, (Pos)s->strstart, (Pos)s->strstart - 1, match_len);
+            check_match(s, (Pos)s->strstart, (Pos)(s->strstart - 1), match_len);
 
             bflush = zng_tr_tally_dist(s, 1, match_len - STD_MIN_MATCH);
 

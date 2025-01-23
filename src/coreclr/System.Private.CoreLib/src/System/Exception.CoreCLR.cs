@@ -118,9 +118,6 @@ namespace System
         private static extern void PrepareForForeignExceptionRaise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object? GetFrozenStackTrace(Exception exception);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
 
         // This is invoked by ExceptionDispatchInfo.Throw to restore the exception stack trace, corresponding to the original throw of the
@@ -166,14 +163,14 @@ namespace System
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
-        private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
+        private readonly int _xcode = EXCEPTION_COMPLUS;             // Internal EE stuff
 #pragma warning restore CA1823, 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
         private int _HResult;       // HResult
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
-        private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
+        private const int EXCEPTION_COMPLUS = unchecked((int)0xe0434352);   // Win32 exception code for CLR exceptions
 
         private bool HasBeenThrown => _stackTrace != null;
 
@@ -226,9 +223,14 @@ namespace System
             }
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetFrozenStackTrace")]
+        private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace);
+
         internal DispatchState CaptureDispatchState()
         {
-            object? stackTrace = GetFrozenStackTrace(this);
+            Exception _this = this;
+            object? stackTrace = null;
+            GetFrozenStackTrace(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref stackTrace));
 
             return new DispatchState(stackTrace,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);

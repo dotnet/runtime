@@ -198,7 +198,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             signer.CheckSignature(new X509Certificate2Collection(), true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaMd5Signatures))]
         public static void CheckSignature_MD5WithRSA()
         {
             SignedCms cms = new SignedCms();

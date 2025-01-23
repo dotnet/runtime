@@ -330,7 +330,7 @@ namespace System
                 for (int i = 0; i < length; i++)
                 {
                     object? value = Unsafe.Add(ref refSourceArray, sourceIndex - i);
-                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(destinationElementEEType, value) == null)
+                    if (mustCastCheckEachElement && value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                     Unsafe.Add(ref refDestinationArray, destinationIndex - i) = value;
                 }
@@ -340,7 +340,7 @@ namespace System
                 for (int i = 0; i < length; i++)
                 {
                     object? value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
-                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(destinationElementEEType, value) == null)
+                    if (mustCastCheckEachElement && value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                     Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
                 }
@@ -370,7 +370,7 @@ namespace System
                 ref object refDestinationArray = ref Unsafe.As<byte, object>(ref MemoryMarshal.GetArrayDataReference(destinationArray));
                 for (int i = 0; i < length; i++)
                 {
-                    object boxedValue = RuntimeImports.RhBox(sourceElementEEType, ref *pElement);
+                    object boxedValue = RuntimeExports.RhBox(sourceElementEEType, ref *pElement);
                     Unsafe.Add(ref refDestinationArray, destinationIndex + i) = boxedValue;
                     pElement += sourceElementSize;
                 }
@@ -457,7 +457,7 @@ namespace System
                         pDestinationElement -= cbElementSize;
                     }
 
-                    object boxedValue = RuntimeImports.RhBox(sourceElementEEType, ref *pSourceElement);
+                    object boxedValue = RuntimeExports.RhBox(sourceElementEEType, ref *pSourceElement);
                     if (boxedElements != null)
                         boxedElements[i] = boxedValue;
                     else
@@ -727,7 +727,7 @@ namespace System
             return rawIndex;
         }
 
-        private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
+        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
             Debug.Assert(indices.Length == Rank);
@@ -768,7 +768,7 @@ namespace System
             MethodTable* pElementEEType = ElementMethodTable;
             if (pElementEEType->IsValueType)
             {
-                return RuntimeImports.RhBox(pElementEEType, ref element);
+                return RuntimeExports.RhBox(pElementEEType, ref element);
             }
             else
             {
@@ -897,6 +897,7 @@ namespace System
         // Prevent the C# compiler from generating a public default constructor
         private Array() { }
 
+        [Intrinsic]
         public new IEnumerator<T> GetEnumerator()
         {
             T[] @this = Unsafe.As<T[]>(this);

@@ -661,7 +661,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                             case configDiscovery:
                                 if (testLevelStack.Count == 0 || (string)testLevelStack.Peek() != concurrentConfigTest)
                                 {
-                                    throw new ArgumentException("The assembly tag can only appear as a child to the test tag (curent parent tag==" + (string)testLevelStack.Peek() + ").");
+                                    throw new ArgumentException("The assembly tag can only appear as a child to the test tag (current parent tag==" + (string)testLevelStack.Peek() + ").");
                                 }
 
 

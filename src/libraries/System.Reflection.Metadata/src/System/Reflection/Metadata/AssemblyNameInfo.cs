@@ -81,6 +81,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Gets the name of the culture associated with the assembly.
         /// </summary>
+        /// <remarks>
+        /// Do not create a <see cref="System.Globalization.CultureInfo"/> instance from this string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public string? CultureName { get; }
 
         /// <summary>
@@ -131,6 +135,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Initializes a new instance of the <seealso cref="AssemblyName"/> class based on the stored information.
         /// </summary>
+        /// <remarks>
+        /// Do not create an <see cref="AssemblyName"/> instance with <see cref="CultureName"/> string unless
+        /// you know the string has originated from a trustworthy source.
+        /// </remarks>
         public AssemblyName ToAssemblyName()
         {
             AssemblyName assemblyName = new();
@@ -193,7 +201,7 @@ namespace System.Reflection.Metadata
         public static bool TryParse(ReadOnlySpan<char> assemblyName, [NotNullWhen(true)] out AssemblyNameInfo? result)
         {
             AssemblyNameParser.AssemblyNameParts parts = default;
-            if (AssemblyNameParser.TryParse(assemblyName, ref parts))
+            if (!assemblyName.IsEmpty && AssemblyNameParser.TryParse(assemblyName, ref parts))
             {
                 result = new(parts);
                 return true;

@@ -109,8 +109,14 @@ inline bool compUnixX86Abi()
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 enum _regNumber_enum : unsigned
 {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+// LA64 and RV64 don't require JITREG_ workaround for Android (see register.h)
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
+#else
+#define REGDEF(name, rnum, mask, sname) JITREG_##name = rnum,
+#define REGALIAS(alias, realname)       JITREG_##alias = JITREG_##realname,
+#endif
 #include "register.h"
 
     REG_COUNT,
@@ -130,8 +136,8 @@ enum _regMask_enum : uint64_t
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
-#define REGALIAS(alias, realname)              REG_##alias = REG_##realname,
+#define REGDEF(name, rnum, mask, xname, wname) JITREG_##name = rnum,
+#define REGALIAS(alias, realname)              JITREG_##alias = JITREG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -151,8 +157,8 @@ enum _regMask_enum : uint64_t
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
+#define REGDEF(name, rnum, mask, sname) JITREG_##name = rnum,
+#define REGALIAS(alias, realname)       JITREG_##alias = JITREG_##realname,
 #include "register.h"
 
     REG_COUNT,
@@ -173,8 +179,8 @@ enum _regMask_enum : uint64_t
 
 enum _regNumber_enum : unsigned
 {
-#define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
-#define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
+#define REGDEF(name, rnum, mask, sname) JITREG_##name = rnum,
+#define REGALIAS(alias, realname)       JITREG_##alias = JITREG_##realname,
 #include "register.h"
 
     REG_COUNT,

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Marks a field or property to be enumerated, and each enumerated object to be validated.
+    /// Marks a field or property to be enumerated; each enumerated object is validated.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public sealed class ValidateEnumeratedItemsAttribute : Attribute
@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Options
         /// Initializes a new instance of the <see cref="ValidateEnumeratedItemsAttribute"/> class.
         /// </summary>
         /// <remarks>
-        /// Using this constructor for a field/property tells the code generator to
+        /// Using this constructor for a field or property tells the code generator to
         /// generate validation for the individual members of the enumerable's type.
         /// </remarks>
         public ValidateEnumeratedItemsAttribute()
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="validator">A type that implements <see cref="IValidateOptions{T}" /> for the enumerable's type.</param>
         /// <remarks>
-        /// Using this constructor for a field/property tells the code generator to use the given type to validate
+        /// Using this constructor for a field or property tells the code generator to use the given type to validate
         /// the object held by the enumerable.
         /// </remarks>
         public ValidateEnumeratedItemsAttribute(Type validator)

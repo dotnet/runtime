@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
 {
     public abstract class BuildTestBase : IClassFixture<SharedBuildPerTestClassFixture>, IDisposable
     {
-        public const string DefaultTargetFramework = "net9.0";
+        public const string DefaultTargetFramework = "net10.0";
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;
@@ -46,7 +46,7 @@ namespace Wasm.Build.Tests
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
-        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+        private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
         private static int s_testCounter;
@@ -55,8 +55,7 @@ namespace Wasm.Build.Tests
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
         public static string GetNuGetConfigPathFor(string targetFramework) =>
-            Path.Combine(BuildEnvironment.TestDataPath, "nuget9.config");
-                            // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
+            Path.Combine(BuildEnvironment.TestDataPath, "nuget10.config");
 
         static BuildTestBase()
         {
@@ -121,10 +120,19 @@ namespace Wasm.Build.Tests
         }
 
         [MemberNotNull(nameof(_projectDir), nameof(_logPath))]
-        protected void InitPaths(string id)
+        protected void InitPaths(string id, string? projectParentDir = null)
         {
             if (_projectDir == null)
-                _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+            {
+                if (projectParentDir == null)
+                {
+                    _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+                }
+                else
+                {
+                    _projectDir = Path.Combine(BuildEnvironment.TmpPath, projectParentDir, id);
+                }
+            }
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
             _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
@@ -289,9 +297,9 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true)
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, string? projectParentDir = null)
         {
-            InitPaths(id);
+            InitPaths(id, projectParentDir);
             InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
@@ -693,6 +701,16 @@ namespace Wasm.Build.Tests
             .MultiplyWithSingleArgs(true, false) /*aot*/
             .UnwrapItemsAsArrays();
 
+        public static IEnumerable<object?[]> TestDataForConsolePublishAndRunRelease() =>
+            new IEnumerable<object?>[]
+            {
+                new object?[] { true },
+                new object?[] { false }
+            }
+            .AsEnumerable()
+            .MultiplyWithSingleArgs(true, false) /*aot*/
+            .UnwrapItemsAsArrays();
+
         protected CommandResult RunWithoutBuild(string config, string id, bool enableHttp = false)
         {
             // wasmtime --wasi http is necessary because the default dotnet.wasm (without native rebuild depends on wasi:http world)
@@ -738,6 +756,13 @@ namespace Wasm.Build.Tests
         string? Label                     = null,
         string? TargetFramework           = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
+    );
+    
+    public record AssertBundleOptions(
+        BuildProjectOptions BuildOptions,
+        bool ExpectSymbolsFile = true,
+        bool AssertIcuAssets = true,
+        bool AssertSymbolsFile = true
     );
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

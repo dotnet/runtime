@@ -2533,7 +2533,7 @@ public:
     enum
     {
         c_fInOnly               = TRUE,
-        c_nativeSize            = sizeof(OLE_COLOR),
+        c_nativeSize            = sizeof(uint32_t),
     };
 
 protected:

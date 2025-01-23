@@ -38,8 +38,9 @@ namespace System.Runtime.Caching
         private readonly MemoryCache _memoryCache;
         private readonly PhysicalMemoryMonitor _physicalMemoryMonitor;
 #if NET
+        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
-        private static bool _configSupported => !OperatingSystem.IsBrowser();
+        private static bool _configSupported => !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
         private static bool _configSupported => true;
 #endif

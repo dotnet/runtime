@@ -115,7 +115,7 @@ namespace System.Collections
             _version = 0;
         }
 
-        public unsafe BitArray(bool[] values)
+        public BitArray(bool[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
 
@@ -312,7 +312,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray And(BitArray value)
+        public BitArray And(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -385,7 +385,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Or(BitArray value)
+        public BitArray Or(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -458,7 +458,7 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Xor(BitArray value)
+        public BitArray Xor(BitArray value)
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -531,7 +531,7 @@ namespace System.Collections
         ** off/false. Off/false bit values are turned on/true. The current instance
         ** is updated and returned.
         =========================================================================*/
-        public unsafe BitArray Not()
+        public BitArray Not()
         {
             // This method uses unsafe code to manipulate data in the BitArray.  To avoid issues with
             // buggy code concurrently mutating this instance in a way that could cause memory corruption,

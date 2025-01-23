@@ -102,6 +102,13 @@ struct OverrideProcArgs
         {
             UINT32 fixedStringLength;
         } fs;
+
+#ifdef FEATURE_COMINTEROP
+        struct
+        {
+            MethodTable* m_pColorType;
+        } color;
+#endif
     };
 };
 
@@ -188,45 +195,6 @@ BOOL ParseNativeTypeInfo(mdToken                    token,
 BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport* pInternalImport);
 #endif
 
-#ifdef FEATURE_COMINTEROP
-class OleColorMarshalingInfo
-{
-public:
-    // Constructor.
-    OleColorMarshalingInfo();
-
-    // OleColorMarshalingInfo's are always allocated on the loader heap so we need to redefine
-    // the new and delete operators to ensure this.
-    void *operator new(size_t size, LoaderHeap *pHeap);
-    void operator delete(void *pMem);
-
-    // Accessors.
-    TypeHandle GetColorType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_hndColorType;
-    }
-    MethodDesc *GetOleColorToSystemColorMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_OleColorToSystemColorMD;
-    }
-    MethodDesc *GetSystemColorToOleColorMD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SystemColorToOleColorMD;
-    }
-
-
-private:
-    TypeHandle  m_hndColorType;
-    MethodDesc* m_OleColorToSystemColorMD;
-    MethodDesc* m_SystemColorToOleColorMD;
-};
-
-#endif // FEATURE_COMINTEROP
-
-
 class EEMarshalingData
 {
 public:
@@ -258,27 +226,21 @@ public:
     void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
 #endif
 
-    // This method returns the custom marshaling helper associated with the name cookie pair. If the
+    // This method returns the custom marshaling info associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
-    CustomMarshalerHelper *GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
-
-    // This method returns the custom marshaling info associated with shared CM helper.
-    CustomMarshalerInfo *GetCustomMarshalerInfo(SharedCustomMarshalerHelper *pSharedCMHelper);
+    CustomMarshalerInfo *GetCustomMarshalerInfo(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
 
 #ifdef FEATURE_COMINTEROP
-    // This method retrieves OLE_COLOR marshaling info.
-    OleColorMarshalingInfo *GetOleColorMarshalingInfo();
+    CustomMarshalerInfo *GetIEnumeratorMarshalerInfo();
 #endif // FEATURE_COMINTEROP
 
 private:
     EEPtrHashTable                      m_structILStubCache;
-    EECMHelperHashTable                 m_CMHelperHashtable;
-    EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
+    EECMInfoHashTable                   m_CMInfoHashTable;
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
-    CMINFOLIST                          m_pCMInfoList;
 #ifdef FEATURE_COMINTEROP
-    OleColorMarshalingInfo*             m_pOleColorInfo;
+    CustomMarshalerInfo*                m_pIEnumeratorMarshalerInfo;
 #endif // FEATURE_COMINTEROP
     CrstBase*                           m_lock;
 };
@@ -543,7 +505,7 @@ private:
 #endif // FEATURE_COMINTEROP
 
     // Information used by NT_CUSTOMMARSHALER.
-    CustomMarshalerHelper* m_pCMHelper;
+    CustomMarshalerInfo* m_pCMInfo;
     VARTYPE         m_CMVt;
 
     OverrideProcArgs  m_args;

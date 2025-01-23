@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used to cache <typeparamref name="TOptions"/> instances.
+    /// Caches <typeparamref name="TOptions"/> instances.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
     public class OptionsCache<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Options
         /// Gets a named options instance, or adds a new instance created with <paramref name="createOptions"/>.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
-        /// <param name="createOptions">The func used to create the new instance.</param>
+        /// <param name="createOptions">The function used to create the new instance.</param>
         /// <returns>The options instance.</returns>
         public virtual TOptions GetOrAdd(string? name, Func<TOptions> createOptions)
         {
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>true if the options were retrieved; otherwise, false.</returns>
+        /// <returns><see langword="true"/> if the options were retrieved; otherwise, <see langword="false"/>.</returns>
         internal bool TryGetValue(string? name, [MaybeNullWhen(false)] out TOptions options)
         {
             if (_cache.TryGetValue(name ?? Options.DefaultName, out Lazy<TOptions>? lazy))
@@ -88,11 +88,11 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Tries to adds a new option to the cache, will return false if the name already exists.
+        /// Tries to adds a new option to the cache.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>Whether anything was added.</returns>
+        /// <returns><see langword="true"/> if the option was added; <see langword="false"/> if the name already exists.</returns>
         public virtual bool TryAdd(string? name, TOptions options)
         {
             ThrowHelper.ThrowIfNull(options);
@@ -105,10 +105,10 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Try to remove an options instance.
+        /// Tries to remove an options instance.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
-        /// <returns>Whether anything was removed.</returns>
+        /// <returns><see langword="true"/> if anything was removed; otherwise, <see langword="false"/>.</returns>
         public virtual bool TryRemove(string? name) =>
             _cache.TryRemove(name ?? Options.DefaultName, out _);
     }

@@ -104,7 +104,15 @@ namespace ILLink.Shared.TrimAnalysis
 
 		static bool ShouldWarnWhenAccessedForReflection (IFieldSymbol field)
 		{
-			return field.GetDynamicallyAccessedMemberTypes () != DynamicallyAccessedMemberTypes.None;
+			return GetFieldAnnotation (field) != DynamicallyAccessedMemberTypes.None;
+		}
+
+		internal static DynamicallyAccessedMemberTypes GetFieldAnnotation (IFieldSymbol field)
+		{
+			if (!field.OriginalDefinition.Type.IsTypeInterestingForDataflow (isByRef: field.RefKind is not RefKind.None))
+				return DynamicallyAccessedMemberTypes.None;
+
+			return field.GetDynamicallyAccessedMemberTypes ();
 		}
 
 		internal static DynamicallyAccessedMemberTypes GetTypeAnnotations (INamedTypeSymbol type)
@@ -128,11 +136,17 @@ namespace ILLink.Shared.TrimAnalysis
 
 		internal static DynamicallyAccessedMemberTypes GetMethodParameterAnnotation (ParameterProxy param)
 		{
-			IMethodSymbol method = param.Method.Method;
-			if (param.IsImplicitThis)
-				return method.GetDynamicallyAccessedMemberTypes ();
+			if (param.IsImplicitThis) {
+				if (!param.Method.Method.ContainingType.IsTypeInterestingForDataflow (isByRef: false))
+					return DynamicallyAccessedMemberTypes.None;
+				return param.Method.Method.GetDynamicallyAccessedMemberTypes ();
+			}
 
 			IParameterSymbol parameter = param.ParameterSymbol!;
+			bool isByRef = parameter.RefKind is not RefKind.None;
+			if (!parameter.OriginalDefinition.Type.IsTypeInterestingForDataflow (isByRef))
+				return DynamicallyAccessedMemberTypes.None;
+
 			var damt = parameter.GetDynamicallyAccessedMemberTypes ();
 
 			var parameterMethod = (IMethodSymbol) parameter.ContainingSymbol;
@@ -155,6 +169,9 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public static DynamicallyAccessedMemberTypes GetMethodReturnValueAnnotation (IMethodSymbol method)
 		{
+			if (!method.OriginalDefinition.ReturnType.IsTypeInterestingForDataflow (isByRef: method.ReturnsByRef))
+				return DynamicallyAccessedMemberTypes.None;
+
 			var returnDamt = method.GetDynamicallyAccessedMemberTypesOnReturnType ();
 
 			// Is this a property getter?

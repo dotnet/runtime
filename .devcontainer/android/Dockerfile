@@ -1,17 +1,18 @@
-ARG VARIANT="8.0-jammy"
+ARG VARIANT="8.0-noble"
 FROM mcr.microsoft.com/devcontainers/dotnet:${VARIANT}
 
 # Set up machine requirements to build the repo
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
-        cmake \
-        llvm \
         clang \
+        cmake \
+        cpio \
         build-essential \
         python3 \
         curl \
         git \
         lldb \
+        llvm \
         liblldb-dev \
         libunwind8 \
         libunwind8-dev \
@@ -20,6 +21,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
         liblttng-ust-dev \
         libssl-dev \
         libkrb5-dev \
+        zlib1g-dev \
+        ninja-build \
         zlib1g-dev \
         ninja-build \
         openjdk-17-jdk \

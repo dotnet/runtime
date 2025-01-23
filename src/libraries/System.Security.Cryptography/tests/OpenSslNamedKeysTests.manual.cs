@@ -100,7 +100,21 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(ProvidersNotSupported))]
         public static void ProvidersNotSupported_ThrowsPlatformNotSupported()
         {
-            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, AnyProviderKeyUri));
+            try
+            {
+                using SafeEvpPKeyHandle key = SafeEvpPKeyHandle.OpenKeyFromProvider("default", NonExistingEngineOrProviderKeyName);
+                Assert.Fail("We expected an exception to be thrown");
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Expected
+            }
+            catch (CryptographicException) when (PlatformDetection.IsApplePlatform)
+            {
+                // Our tests detect providers using PlatformDetection.IsOpenSsl3 which is always false for Apple platforms.
+                // Product on the other hand does feature detection and that might end up working
+                // in which case we should still throw any CryptographicException because the keyUri does not exist.
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
