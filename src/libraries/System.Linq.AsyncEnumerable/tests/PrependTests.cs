@@ -22,11 +22,11 @@ namespace System.Linq.Tests
         [InlineData(new int[] { 1 })]
         [InlineData(new int[] { 2, 4, 8 })]
         [InlineData(new int[] { -1, 2, 5, 6, 7, 8 })]
-        public void VariousValues_MatchesEnumerable(int[] values)
+        public async Task VariousValues_MatchesEnumerable(int[] values)
         {
             foreach (IAsyncEnumerable<int> source in CreateSources(values))
             {
-                Assert.Equal(
+                await AssertEqual(
                     values.Prepend(42),
                     source.Prepend(42));
             }
