@@ -25414,7 +25414,14 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     bool canUseSignedComparisonHint = false;
 
     // duplicate operand 2 for non-isUnsafe implementation later
-    GenTree* op2DupSafe = isUnsafe ? nullptr : fgMakeMultiUse(&op2);
+    GenTree* op2DupSafe = nullptr;
+    if (!isUnsafe)
+    {
+        // Re-order it so the original definition of op2 is used in the mask
+        GenTree* tmp = op2;
+        op2 = fgMakeMultiUse(&tmp);
+        op2DupSafe = tmp;
+    }
 
     // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, we could further optimise many cases
     // below
@@ -25830,7 +25837,14 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     // if we have short / int / long, then we want to VectorTableLookup the least-significant byte to all bytes of that
     // index element, and then shift left by the applicable amount, then or on the bits for the elements
     // if it's not isUnsafe, we also need to then fix-up the out-of-range indices
-    GenTree* op2DupSafe = (isUnsafe || elementSize == 1) ? nullptr : fgMakeMultiUse(&op2);
+    GenTree* op2DupSafe = nullptr;
+    if (!isUnsafe && elementSize != 1)
+    {
+        // Re-order it so the original definition of op2 is used in the mask
+        GenTree* tmp = op2;
+        op2 = fgMakeMultiUse(&tmp);
+        op2DupSafe = tmp;
+    }
     if (elementSize > 1)
     {
         // AdvSimd.ShiftLeftLogical is only valid on integral types, excluding Vector128<int>
