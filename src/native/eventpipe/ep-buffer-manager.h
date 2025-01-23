@@ -200,9 +200,7 @@ ep_buffer_manager_write_event (
 // finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
 // _Requires_lock_held (ep)
 void
-ep_buffer_manager_suspend_write_event (
-	EventPipeBufferManager *buffer_manager,
-	uint32_t session_index);
+ep_buffer_manager_suspend_write_event (EventPipeBufferManager *buffer_manager);
 
 // Write the contents of the managed buffers to the specified file.
 // The stop_timeStamp is used to determine when tracing was stopped to ensure that we

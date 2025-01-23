@@ -1049,9 +1049,7 @@ ep_on_error:
 }
 
 void
-ep_buffer_manager_suspend_write_event (
-	EventPipeBufferManager *buffer_manager,
-	uint32_t session_index)
+ep_buffer_manager_suspend_write_event (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
 
