@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -69,18 +70,25 @@ namespace System.Threading
                     AutoreleasePool.CreateAutoreleasePool();
 #endif
 
-                if (start is ThreadStart threadStart)
+                try
                 {
-                    threadStart();
+                    if (start is ThreadStart threadStart)
+                    {
+                        threadStart();
+                    }
+                    else
+                    {
+                        ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
+
+                        object? startArg = _startArg;
+                        _startArg = null;
+
+                        parameterizedThreadStart(startArg);
+                    }
                 }
-                else
+                catch (Exception ex) when (ExceptionHandling.IsHandledByGlobalHandler(ex))
                 {
-                    ParameterizedThreadStart parameterizedThreadStart = (ParameterizedThreadStart)start;
-
-                    object? startArg = _startArg;
-                    _startArg = null;
-
-                    parameterizedThreadStart(startArg);
+                    // the handler returned "true" means the exception is now "handled" and we should gracefully exit.
                 }
 
 #if FEATURE_OBJCMARSHAL
@@ -149,30 +157,18 @@ namespace System.Threading
         }
 
 #if (!TARGET_BROWSER && !TARGET_WASI) || FEATURE_WASM_MANAGED_THREADS
-        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => true;
-        internal static bool IsInternalThreadStartSupported => true;
-#elif FEATURE_WASM_PERFTRACING
-        [UnsupportedOSPlatformGuard("wasi")]
-        [UnsupportedOSPlatformGuard("browser")]
-        [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => true;
 #else
-        [UnsupportedOSPlatformGuard("wasi")]
         [UnsupportedOSPlatformGuard("browser")]
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool IsThreadStartSupported => false;
-        internal static bool IsInternalThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart(bool internalThread = false)
+        internal static void ThrowIfNoThreadStart()
         {
             if (IsThreadStartSupported)
-                return;
-            if (IsInternalThreadStartSupported && internalThread)
                 return;
             throw new PlatformNotSupportedException();
         }
@@ -201,12 +197,12 @@ namespace System.Threading
 #endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext, bool internalThread = false)
+        private void Start(object? parameter, bool captureContext)
         {
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
 
             StartHelper? startHelper = _startHelper;
 
@@ -247,11 +243,9 @@ namespace System.Threading
 #endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
-
-        private void Start(bool captureContext, bool internalThread = false)
+        private void Start(bool captureContext)
         {
-            ThrowIfNoThreadStart(internalThread);
+            ThrowIfNoThreadStart();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)

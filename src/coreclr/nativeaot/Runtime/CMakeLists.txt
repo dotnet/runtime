@@ -49,6 +49,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/handletablescan.cpp
     ${GC_DIR}/objecthandle.cpp
     ${GC_DIR}/softwarewritewatch.cpp
+    ${CLR_SRC_NATIVE_DIR}/minipal/xoshiro128pp.c
 )
 
 set(SERVER_GC_SOURCES
@@ -162,7 +163,7 @@ else()
   list(APPEND FULL_RUNTIME_SOURCES
     unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
-    unix/UnixContext.cpp
+    unix/NativeContext.cpp
     unix/UnixSignals.cpp
     unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp

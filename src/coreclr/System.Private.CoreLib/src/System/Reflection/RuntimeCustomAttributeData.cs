@@ -1085,7 +1085,7 @@ namespace System.Reflection
 
             if (encodedType == CustomAttributeEncoding.Array)
             {
-                parameterType = (RuntimeType)parameterType.GetElementType();
+                parameterType = (RuntimeType)parameterType.GetElementType()!;
                 encodedArrayType = RuntimeCustomAttributeData.TypeToCustomAttributeEncoding(parameterType);
             }
 

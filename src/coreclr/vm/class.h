@@ -1660,7 +1660,7 @@ private:
 #ifdef FEATURE_COMINTEROP
     union
     {
-        // For COM+ wrapper objects that extend an unmanaged class, this field
+        // For CLR wrapper objects that extend an unmanaged class, this field
         // may contain a delegate to be called to allocate the aggregated
         // unmanaged class (instead of using CoCreateInstance).
         OBJECTHANDLE    m_ohDelegate;

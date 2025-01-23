@@ -1369,17 +1369,13 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
@@ -1387,65 +1383,39 @@ namespace System
         {
             if (destination.Length >= sizeof(sbyte))
             {
-                sbyte exponent = Exponent;
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
+                destination[0] = (byte)Exponent;
                 bytesWritten = sizeof(sbyte);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ushort))
+            if (BinaryPrimitives.TryWriteUInt16BigEndian(destination, Significand))
             {
-                ushort significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ushort);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ushort))
+            if (BinaryPrimitives.TryWriteUInt16LittleEndian(destination, Significand))
             {
-                ushort significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ushort);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -1671,7 +1641,17 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
+        public static Half Clamp(Half value, Half min, Half max) => (Half)float.Clamp((float)value, (float)min, (float)max);
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static Half ClampNative(Half value, Half min, Half max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Half CopySign(Half value, Half sign)
@@ -1687,7 +1667,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
+        public static Half Max(Half x, Half y) => (Half)float.Max((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        public static Half MaxNative(Half x, Half y) => (x > y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         public static Half MaxNumber(Half x, Half y)
@@ -1712,7 +1695,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static Half Min(Half x, Half y) => (Half)MathF.Min((float)x, (float)y);
+        public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        public static Half MinNative(Half x, Half y) => (x < y) ? x : y;
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         public static Half MinNumber(Half x, Half y)

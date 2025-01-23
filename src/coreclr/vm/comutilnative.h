@@ -74,6 +74,10 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
 
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee);
+
 //
 // Buffer
 //
@@ -259,6 +263,7 @@ public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
     static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
+    static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);

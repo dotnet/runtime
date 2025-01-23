@@ -11,7 +11,7 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        internal static Assembly[] GetLoadedAssemblies() => ReflectionAugments.ReflectionCoreCallbacks.GetLoadedAssemblies();
+        internal static Assembly[] GetLoadedAssemblies() => ReflectionAugments.GetLoadedAssemblies();
 
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
@@ -45,14 +45,14 @@ namespace System.Runtime.Loader
         {
             // TODO: This is not passing down the AssemblyLoadContext,
             // so it won't actually work properly when multiple assemblies with the same identity get loaded.
-            return ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyPath);
+            return ReflectionAugments.Load(assemblyPath);
         }
 #pragma warning restore IDE0060
 
 #pragma warning disable CA1822
         internal Assembly InternalLoad(ReadOnlySpan<byte> arrAssembly, ReadOnlySpan<byte> arrSymbols)
         {
-            return ReflectionAugments.ReflectionCoreCallbacks.Load(arrAssembly, arrSymbols);
+            return ReflectionAugments.Load(arrAssembly, arrSymbols);
         }
 #pragma warning restore CA1822
 

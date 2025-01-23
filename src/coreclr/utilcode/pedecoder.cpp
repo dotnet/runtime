@@ -1018,7 +1018,7 @@ CHECK PEDecoder::CheckCorHeader() const
 
     //CHECK(((ULONGLONG)pCor & 0x3)==0);
 
-    // If the file is COM+ 1.0, which by definition has nothing the runtime can
+    // If the file is CLR 1.0, which by definition has nothing the runtime can
     // use, or if the file requires a newer version of this engine than us,
     // it cannot be run by this engine.
     if (!possiblyCompositeR2R)
@@ -2581,6 +2581,8 @@ ErrExit:
 MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
                                              const void *codeTable, SIZE_T codeTableSize)
 {
+    using namespace NibbleMap;
+
     //For DAC builds,we'll read the table one DWORD at a time.  Note that m_code IS
     //NOT a host pointer.
     m_codeTableStart = PTR_DWORD(TADDR(codeTable));
@@ -2595,6 +2597,11 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
     {
         m_dword = *m_codeTable++;
         m_index = 0;
+        while(m_codeTable < m_codeTableEnd && IsPointer(m_dword))
+        {
+            m_dword = *m_codeTable++;
+            m_code += BYTES_PER_DWORD;
+        }
     }
     else
     {
@@ -2604,6 +2611,8 @@ MethodSectionIterator::MethodSectionIterator(const void *code, SIZE_T codeSize,
 
 BOOL MethodSectionIterator::Next()
 {
+    using namespace NibbleMap;
+
     while (m_codeTable < m_codeTableEnd || m_index < (int)NIBBLES_PER_DWORD)
     {
         while (m_index++ < (int)NIBBLES_PER_DWORD)
@@ -2614,7 +2623,7 @@ BOOL MethodSectionIterator::Next()
             if (nibble != 0)
             {
                 // We have found a method start
-                m_current = m_code + ((nibble-1)*CODE_ALIGN);
+                m_current = m_code + ((nibble-1) << LOG2_CODE_ALIGN);
                 m_code += BYTES_PER_BUCKET;
                 return TRUE;
             }
@@ -2626,6 +2635,11 @@ BOOL MethodSectionIterator::Next()
         {
             m_dword = *m_codeTable++;
             m_index = 0;
+            while(m_codeTable < m_codeTableEnd && (IsPointer(m_dword) || m_dword == 0))
+            {
+                m_dword = *m_codeTable++;
+                m_code += BYTES_PER_DWORD;
+            }
         }
     }
     return FALSE;

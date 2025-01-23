@@ -502,8 +502,9 @@ mono_interp_get_imethod (MonoMethod *method)
 	imethod->is_invoke = (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp(method->name, "Invoke");
 	// always optimize code if tiering is disabled
 	// always optimize wrappers
-	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		imethod->optimized = TRUE;
+
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
@@ -3862,6 +3863,34 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
+// Equivalent of mono_get_addr_compiled_method
+static gpointer
+interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
+{
+	MonoMethod *virtual_method = del->method;
+	ERROR_DECL(error);
+
+	MonoClass *klass = del->object.vtable->klass;
+	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
+	MonoMethodSignature *invoke_sig = mono_method_signature_internal (invoke);
+
+	MonoClass *arg_class = NULL;
+	if (m_type_is_byref (invoke_sig->params [0])) {
+		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
+	} else {
+		MonoObject *object = (MonoObject*)arg;
+		arg_class = object->vtable->klass;
+	}
+
+	MonoMethod *res = mono_class_get_virtual_method (arg_class, virtual_method, error);
+	mono_error_assert_ok (error);
+
+	gboolean need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (virtual_method->klass);
+
+	InterpMethod *imethod = mono_interp_get_imethod (res);
+	return imethod_to_ftnptr (imethod, need_unbox);
+}
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -3916,6 +3945,7 @@ mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClause
 		if (method_entry_ex)
 			THROW_EX (method_entry_ex, NULL);
 		EXCEPTION_CHECKPOINT;
+		CHECK_RESUME_STATE (context);
 	}
 
 	if (!clause_args) {
@@ -4372,6 +4402,7 @@ interp_call:
 				if (call_ex)
 					THROW_EX (call_ex, NULL);
 				EXCEPTION_CHECKPOINT;
+				CHECK_RESUME_STATE (context);
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
@@ -7789,6 +7820,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			g_assert (del->interp_method);
 			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method, FALSE);
 			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDVIRTFTN_DELEGATE) {
+			gpointer arg = LOCAL_VAR (ip [2], gpointer);
+			MonoDelegate *del = LOCAL_VAR (ip [3], MonoDelegate*);
+			NULL_CHECK (arg);
+
+			LOCAL_VAR (ip [1], gpointer) = interp_ldvirtftn_delegate (arg, del);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 

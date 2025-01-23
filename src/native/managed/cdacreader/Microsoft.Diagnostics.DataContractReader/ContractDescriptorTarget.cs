@@ -519,6 +519,11 @@ internal sealed unsafe class ContractDescriptorTarget : Target
 
             return false;
         }
+
+        public void Clear()
+        {
+            _readDataByAddress.Clear();
+        }
     }
 
     private readonly struct Reader(ReadFromTargetDelegate readFromTarget)

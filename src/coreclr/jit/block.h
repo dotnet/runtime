@@ -23,7 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Defines VARSET_TP
 #include "varset.h"
 
-#include "blockset.h"
 #include "jitstd.h"
 #include "bitvec.h"
 #include "jithashtable.h"
@@ -205,42 +204,58 @@ struct allMemoryKinds
     }
 };
 
+// Base class for forward iterators over the predecessor edge linked list.
+// Subclasses decide what the iterator yields (edge, source block, etc.) by implementing the dereference operator.
+// The pred list cannot be modified during iteration unless allowEdits is true.
+//
+template <bool allowEdits>
+class BasePredIterator
+{
+private:
+    // When allowEdits=false, try to guard against the user of the iterator from modifying the predecessor list
+    // being traversed: cache the edge we think should be next, then check it when we actually do the `++`
+    // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
+    // this iterator implementation.
+    // When allowEdits=true, m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
+    FlowEdge* m_next;
+
+protected:
+    FlowEdge* m_pred;
+
+    BasePredIterator(FlowEdge* pred);
+
+public:
+    BasePredIterator& operator++();
+
+    bool operator!=(const BasePredIterator& i) const
+    {
+        return m_pred != i.m_pred;
+    }
+};
+
 // PredEdgeList: adapter class for forward iteration of the predecessor edge linked list using range-based `for`,
 // normally used via BasicBlock::PredEdges(), e.g.:
 //    for (FlowEdge* const edge : block->PredEdges()) ...
+// allowEdits controls whether the iterator should be resilient to changes to the predecessor list.
 //
+template <bool allowEdits>
 class PredEdgeList
 {
     FlowEdge* m_begin;
 
     // Forward iterator for the predecessor edges linked list.
-    // The caller can't make changes to the preds list when using this.
     //
-    class iterator
+    class PredEdgeIterator : public BasePredIterator<allowEdits>
     {
-        FlowEdge* m_pred;
-
-#ifdef DEBUG
-        // Try to guard against the user of the iterator from making changes to the IR that would invalidate
-        // the iterator: cache the edge we think should be next, then check it when we actually do the `++`
-        // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
-        // this iterator implementation.
-        FlowEdge* m_next;
-#endif
-
     public:
-        iterator(FlowEdge* pred);
+        PredEdgeIterator(FlowEdge* pred)
+            : BasePredIterator<allowEdits>(pred)
+        {
+        }
 
         FlowEdge* operator*() const
         {
-            return m_pred;
-        }
-
-        iterator& operator++();
-
-        bool operator!=(const iterator& i) const
-        {
-            return m_pred != i.m_pred;
+            return this->m_pred;
         }
     };
 
@@ -250,14 +265,14 @@ public:
     {
     }
 
-    iterator begin() const
+    PredEdgeIterator begin() const
     {
-        return iterator(m_begin);
+        return PredEdgeIterator(m_begin);
     }
 
-    iterator end() const
+    PredEdgeIterator end() const
     {
-        return iterator(nullptr);
+        return PredEdgeIterator(nullptr);
     }
 };
 
@@ -272,30 +287,16 @@ class PredBlockList
     FlowEdge* m_begin;
 
     // Forward iterator for the predecessor edges linked list, yielding the predecessor block, not the edge.
-    // The caller can't make changes to the preds list when using this.
     //
-    class iterator
+    class PredBlockIterator : public BasePredIterator<allowEdits>
     {
-        FlowEdge* m_pred;
-
-        // When allowEdits=false, try to guard against the user of the iterator from modifying the predecessor list
-        // being traversed: cache the edge we think should be next, then check it when we actually do the `++`
-        // operation. This is a bit conservative, but attempts to protect against callers assuming too much about
-        // this iterator implementation.
-        // When allowEdits=true, m_next is always used to update m_pred, so changes to m_pred don't break the iterator.
-        FlowEdge* m_next;
-
     public:
-        iterator(FlowEdge* pred);
+        PredBlockIterator(FlowEdge* pred)
+            : BasePredIterator<allowEdits>(pred)
+        {
+        }
 
         BasicBlock* operator*() const;
-
-        iterator& operator++();
-
-        bool operator!=(const iterator& i) const
-        {
-            return m_pred != i.m_pred;
-        }
     };
 
 public:
@@ -304,14 +305,14 @@ public:
     {
     }
 
-    iterator begin() const
+    PredBlockIterator begin() const
     {
-        return iterator(m_begin);
+        return PredBlockIterator(m_begin);
     }
 
-    iterator end() const
+    PredBlockIterator end() const
     {
-        return iterator(nullptr);
+        return PredBlockIterator(nullptr);
     }
 };
 
@@ -424,51 +425,52 @@ enum BasicBlockFlags : uint64_t
     BBF_DONT_REMOVE          = MAKE_BBFLAG( 3), // BB should not be removed during flow graph optimizations
     BBF_IMPORTED             = MAKE_BBFLAG( 4), // BB byte-code has been imported
     BBF_INTERNAL             = MAKE_BBFLAG( 5), // BB has been added by the compiler
-    BBF_FAILED_VERIFICATION  = MAKE_BBFLAG( 6), // BB has verification exception
-    BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 7), // BB may need a GC poll because it uses the slow tail call helper
-    BBF_FUNCLET_BEG          = MAKE_BBFLAG( 8), // BB is the beginning of a funclet
-    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 9), // First block of a cloned finally region
-    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG(10), // Last block of a cloned finally region
-    BBF_HAS_NULLCHECK        = MAKE_BBFLAG(11), // BB contains a null check
-    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(12), // BB contains a call to a method with SuppressGCTransitionAttribute
-    BBF_RUN_RARELY           = MAKE_BBFLAG(13), // BB is rarely run (catch clauses, blocks with throws etc)
-    BBF_LOOP_HEAD            = MAKE_BBFLAG(14), // BB is the head of a loop (can reach a predecessor)
-    BBF_HAS_LABEL            = MAKE_BBFLAG(15), // BB needs a label
-    BBF_LOOP_ALIGN           = MAKE_BBFLAG(16), // Block is lexically the first block in a loop we intend to align.
-    BBF_HAS_ALIGN            = MAKE_BBFLAG(17), // BB ends with 'align' instruction
-    BBF_HAS_JMP              = MAKE_BBFLAG(18), // BB executes a JMP instruction (instead of return)
-    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(19), // BB has a GC safe point (e.g. a call)
-    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(20), // BB contains simple index or length expressions on an SD array local var.
-    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(21), // BB contains simple index, length, or lower bound expressions on an MD array local var.
-    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(22), // Block has a multi-dimensional array reference
-    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(23), // BB contains 'new' of an object type.
+    BBF_NEEDS_GCPOLL         = MAKE_BBFLAG( 6), // BB may need a GC poll because it uses the slow tail call helper
+    BBF_FUNCLET_BEG          = MAKE_BBFLAG( 7), // BB is the beginning of a funclet
+    BBF_CLONED_FINALLY_BEGIN = MAKE_BBFLAG( 8), // First block of a cloned finally region
+    BBF_CLONED_FINALLY_END   = MAKE_BBFLAG( 9), // Last block of a cloned finally region
+    BBF_HAS_NULLCHECK        = MAKE_BBFLAG(10), // BB contains a null check
+    BBF_HAS_SUPPRESSGC_CALL  = MAKE_BBFLAG(11), // BB contains a call to a method with SuppressGCTransitionAttribute
+    BBF_RUN_RARELY           = MAKE_BBFLAG(12), // BB is rarely run (catch clauses, blocks with throws etc)
+    BBF_LOOP_HEAD            = MAKE_BBFLAG(13), // BB is the head of a loop (can reach a predecessor)
+    BBF_HAS_LABEL            = MAKE_BBFLAG(14), // BB needs a label
+    BBF_LOOP_ALIGN           = MAKE_BBFLAG(15), // Block is lexically the first block in a loop we intend to align.
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(16), // BB ends with 'align' instruction
+    BBF_HAS_JMP              = MAKE_BBFLAG(17), // BB executes a JMP instruction (instead of return)
+    BBF_GC_SAFE_POINT        = MAKE_BBFLAG(18), // BB has a GC safe point (e.g. a call)
+    BBF_HAS_IDX_LEN          = MAKE_BBFLAG(19), // BB contains simple index or length expressions on an SD array local var.
+    BBF_HAS_MD_IDX_LEN       = MAKE_BBFLAG(20), // BB contains simple index, length, or lower bound expressions on an MD array local var.
+    BBF_HAS_MDARRAYREF       = MAKE_BBFLAG(21), // Block has a multi-dimensional array reference
+    BBF_HAS_NEWOBJ           = MAKE_BBFLAG(22), // BB contains 'new' of an object type.
 
-    BBF_RETLESS_CALL                   = MAKE_BBFLAG(24), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
+    BBF_RETLESS_CALL                   = MAKE_BBFLAG(23), // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
                                                           // BBJ_CALLFINALLYRET); see isBBCallFinallyPair().
-    BBF_COLD                           = MAKE_BBFLAG(25), // BB is cold
-    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(26), // BB weight is computed from profile data
-    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(27), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
+    BBF_COLD                           = MAKE_BBFLAG(24), // BB is cold
+    BBF_PROF_WEIGHT                    = MAKE_BBFLAG(25), // BB weight is computed from profile data
+    BBF_KEEP_BBJ_ALWAYS                = MAKE_BBFLAG(26), // A special BBJ_ALWAYS block, used by EH code generation. Keep the jump kind
                                                           // as BBJ_ALWAYS. Used on x86 for the final step block out of a finally.
-    BBF_HAS_CALL                       = MAKE_BBFLAG(28), // BB contains a call
-    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(29), // Block is dominated by exceptional entry.
-    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(30), // BB is surrounded by a backward jump/switch arc
-    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(31), // Block is a source of a backward jump
-    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(32), // Block is a target of a backward jump
-    BBF_PATCHPOINT                     = MAKE_BBFLAG(33), // Block is a patchpoint
-    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(34), // Block is a partial compilation patchpoint
-    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(35), // BB contains a call needing a histogram profile
-    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(36), // BB has pred that has potential tail call
-    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(37), // Block has recursive tailcall that may turn into a loop
-    BBF_NO_CSE_IN                      = MAKE_BBFLAG(38), // Block should kill off any incoming CSE
-    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(39), // Ok to add pred edge to this block, even when "safe" edge creation disabled
-    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(40), // Block has a node that needs a value probing
+    BBF_HAS_CALL                       = MAKE_BBFLAG(27), // BB contains a call
+    BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY = MAKE_BBFLAG(28), // Block is dominated by exceptional entry.
+    BBF_BACKWARD_JUMP                  = MAKE_BBFLAG(29), // BB is surrounded by a backward jump/switch arc
+    BBF_BACKWARD_JUMP_SOURCE           = MAKE_BBFLAG(30), // Block is a source of a backward jump
+    BBF_BACKWARD_JUMP_TARGET           = MAKE_BBFLAG(31), // Block is a target of a backward jump
+    BBF_PATCHPOINT                     = MAKE_BBFLAG(32), // Block is a patchpoint
+    BBF_PARTIAL_COMPILATION_PATCHPOINT = MAKE_BBFLAG(33), // Block is a partial compilation patchpoint
+    BBF_HAS_HISTOGRAM_PROFILE          = MAKE_BBFLAG(34), // BB contains a call needing a histogram profile
+    BBF_TAILCALL_SUCCESSOR             = MAKE_BBFLAG(35), // BB has pred that has potential tail call
+    BBF_RECURSIVE_TAILCALL             = MAKE_BBFLAG(36), // Block has recursive tailcall that may turn into a loop
+    BBF_NO_CSE_IN                      = MAKE_BBFLAG(37), // Block should kill off any incoming CSE
+    BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(38), // Ok to add pred edge to this block, even when "safe" edge creation disabled
+    BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(39), // Block has a node that needs a value probing
+
+    BBF_HAS_NEWARR                     = MAKE_BBFLAG(40), // BB contains 'new' of an array type.
 
     // The following are sets of flags.
 
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_MDARRAYREF | BBF_LOOP_HEAD,
 
     // Flags a block should not have had before it is split.
 
@@ -486,7 +488,7 @@ enum BasicBlockFlags : uint64_t
     // For example, the bottom block might or might not have BBF_HAS_NULLCHECK, but we assume it has BBF_HAS_NULLCHECK.
     // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
-    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
+    BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | BBF_HAS_NEWARR | \
                        BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_VALUE_PROFILE | BBF_HAS_MDARRAYREF | BBF_NEEDS_GCPOLL,
 
     // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
@@ -494,7 +496,7 @@ enum BasicBlockFlags : uint64_t
     // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
     // we don't know (unless we actually pay close attention during the copy).
 
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
 };
 
 FORCEINLINE
@@ -594,6 +596,9 @@ private:
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
     unsigned m_dupCount;
 
+    // Convenience flag for phases that need to track edge visitation
+    bool m_visited;
+
     // True if likelihood has been set
     INDEBUG(bool m_likelihoodSet);
 
@@ -604,6 +609,7 @@ public:
         , m_destBlock(destBlock)
         , m_likelihood(0)
         , m_dupCount(0)
+        , m_visited(false)
 #ifdef DEBUG
         , m_likelihoodSet(false)
 #endif // DEBUG
@@ -687,6 +693,23 @@ public:
     {
         assert(m_dupCount >= 1);
         m_dupCount--;
+    }
+
+    bool visited() const
+    {
+        return m_visited;
+    }
+
+    void markVisited()
+    {
+        assert(!visited());
+        m_visited = true;
+    }
+
+    void markUnvisited()
+    {
+        assert(visited());
+        m_visited = false;
     }
 };
 
@@ -1174,6 +1197,18 @@ public:
     // getBBWeight -- get the normalized weight of this block
     weight_t getBBWeight(Compiler* comp) const;
 
+    // computeIncomingWeight -- sum the weights of the flow edges into this block
+    weight_t computeIncomingWeight() const
+    {
+        weight_t incomingWeight = BB_ZERO_WEIGHT;
+        for (FlowEdge* const predEdge : PredEdges())
+        {
+            incomingWeight += predEdge->getLikelyWeight();
+        }
+
+        return incomingWeight;
+    }
+
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
     {
@@ -1195,6 +1230,22 @@ public:
         {
             this->RemoveFlags(BBF_RUN_RARELY);
         }
+    }
+
+    // increaseBBProfileWeight -- Increase the profile-derived weight for a basic block
+    // and update the run rarely flag as appropriate.
+    void increaseBBProfileWeight(weight_t weight)
+    {
+        assert(weight >= BB_ZERO_WEIGHT);
+        setBBProfileWeight(bbWeight + weight);
+    }
+
+    // decreaseBBProfileWeight -- Decrease the profile-derived weight for a basic block,
+    // ensuring it remains non-negative, and update the run rarely flag as appropriate.
+    void decreaseBBProfileWeight(weight_t weight)
+    {
+        assert(weight >= BB_ZERO_WEIGHT);
+        setBBProfileWeight(max(BB_ZERO_WEIGHT, bbWeight - weight));
     }
 
     // this block will inherit the same weight and relevant bbFlags as bSrc
@@ -1515,9 +1566,18 @@ public:
     // PredEdges: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
     //    for (FlowEdge* const edge : block->PredEdges()) ...
     //
-    PredEdgeList PredEdges() const
+    PredEdgeList<false> PredEdges() const
     {
-        return PredEdgeList(bbPreds);
+        return PredEdgeList<false>(bbPreds);
+    }
+
+    // PredEdgesEditing: convenience method for enabling range-based `for` iteration over predecessor edges, e.g.:
+    //    for (FlowEdge* const edge : block->PredEdges()) ...
+    // This iterator tolerates modifications to bbPreds.
+    //
+    PredEdgeList<true> PredEdgesEditing() const
+    {
+        return PredEdgeList<true>(bbPreds);
     }
 
     // PredBlocks: convenience method for enabling range-based `for` iteration over predecessor blocks, e.g.:
@@ -1648,19 +1708,6 @@ public:
 
     bool bbFallsThrough() const;
 
-    // Our slop fraction is 1/50 of the block weight.
-    static weight_t GetSlopFraction(weight_t weightBlk)
-    {
-        return weightBlk / 50.0;
-    }
-
-    // Given an the edge b1 -> b2, calculate the slop fraction by
-    // using the higher of the two block weights
-    static weight_t GetSlopFraction(BasicBlock* b1, BasicBlock* b2)
-    {
-        return GetSlopFraction(max(b1->bbWeight, b2->bbWeight));
-    }
-
 #ifdef DEBUG
     unsigned        bbTgtStkDepth; // Native stack depth on entry (for throw-blocks)
     static unsigned s_nMaxTrees;   // The max # of tree nodes in any BB
@@ -1707,6 +1754,12 @@ public:
     {
         return StatementList(FirstNonPhiDef());
     }
+
+    // Simple "size" estimates
+    //
+    unsigned StatementCount();
+    bool     StatementCountExceeds(unsigned limit, unsigned* count = nullptr);
+    bool     ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* complexity = nullptr);
 
     GenTree* lastNode() const;
 
@@ -2184,6 +2237,8 @@ public:
     {
         return BasicBlockIterator(m_end->Next()); // walk until we see the block *following* the `m_end` block
     }
+
+    bool ComplexityExceeds(Compiler* comp, unsigned limit, unsigned* count = nullptr);
 };
 
 // BBswtDesc -- descriptor for a switch block
@@ -2408,30 +2463,8 @@ inline BasicBlock* BBArrayIterator::operator*() const
 
 // Pred list iterator implementations (that are required to be defined after the declaration of BasicBlock and FlowEdge)
 
-inline PredEdgeList::iterator::iterator(FlowEdge* pred)
-    : m_pred(pred)
-{
-#ifdef DEBUG
-    m_next = (m_pred == nullptr) ? nullptr : m_pred->getNextPredEdge();
-#endif
-}
-
-inline PredEdgeList::iterator& PredEdgeList::iterator::operator++()
-{
-    FlowEdge* next = m_pred->getNextPredEdge();
-
-#ifdef DEBUG
-    // Check that the next block is the one we expect to see.
-    assert(next == m_next);
-    m_next = (next == nullptr) ? nullptr : next->getNextPredEdge();
-#endif // DEBUG
-
-    m_pred = next;
-    return *this;
-}
-
 template <bool allowEdits>
-inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
+inline BasePredIterator<allowEdits>::BasePredIterator(FlowEdge* pred)
     : m_pred(pred)
 {
     bool initNextPointer = allowEdits;
@@ -2443,13 +2476,7 @@ inline PredBlockList<allowEdits>::iterator::iterator(FlowEdge* pred)
 }
 
 template <bool allowEdits>
-inline BasicBlock* PredBlockList<allowEdits>::iterator::operator*() const
-{
-    return m_pred->getSourceBlock();
-}
-
-template <bool allowEdits>
-inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::iterator::operator++()
+inline BasePredIterator<allowEdits>& BasePredIterator<allowEdits>::operator++()
 {
     if (allowEdits)
     {
@@ -2461,16 +2488,20 @@ inline typename PredBlockList<allowEdits>::iterator& PredBlockList<allowEdits>::
     {
         FlowEdge* next = m_pred->getNextPredEdge();
 
-#ifdef DEBUG
         // If allowEdits=false, check that the next block is the one we expect to see.
         assert(next == m_next);
-        m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge();
-#endif // DEBUG
+        INDEBUG(m_next = (m_next == nullptr) ? nullptr : m_next->getNextPredEdge());
 
         m_pred = next;
     }
 
     return *this;
+}
+
+template <bool allowEdits>
+inline BasicBlock* PredBlockList<allowEdits>::PredBlockIterator::operator*() const
+{
+    return this->m_pred->getSourceBlock();
 }
 
 /*****************************************************************************

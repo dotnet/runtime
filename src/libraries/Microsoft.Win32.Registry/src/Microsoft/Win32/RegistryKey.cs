@@ -1225,7 +1225,7 @@ namespace Microsoft.Win32
             SetValue(name, value, RegistryValueKind.Unknown);
         }
 
-        public unsafe void SetValue(string? name, object value, RegistryValueKind valueKind)
+        public void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
             ArgumentNullException.ThrowIfNull(value);
 

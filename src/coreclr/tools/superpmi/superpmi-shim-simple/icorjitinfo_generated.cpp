@@ -849,11 +849,6 @@ void interceptor_ICJI::getEEInfo(
     original_ICorJitInfo->getEEInfo(pEEInfoOut);
 }
 
-const char16_t* interceptor_ICJI::getJitTimeLogFilename()
-{
-    return original_ICorJitInfo->getJitTimeLogFilename();
-}
-
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {

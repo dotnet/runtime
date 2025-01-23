@@ -369,21 +369,13 @@ type SingleAssetBehaviors =
  */
  | "js-module-native"
 /**
- * The javascript module for hybrid globalization.
- */
- | "js-module-globalization"
-/**
  * Typically blazor.boot.json
  */
  | "manifest"
 /**
  * The debugging symbols
  */
- | "symbols"
-/**
- * Load segmentation rules file for Hybrid Globalization.
- */
- | "segmentation-rules";
+ | "symbols";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
@@ -429,11 +421,7 @@ declare const enum GlobalizationMode {
     /**
      * Use user defined icu file.
      */
-    Custom = "custom",
-    /**
-     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
-     */
-    Hybrid = "hybrid"
+    Custom = "custom"
 }
 type DotnetModuleConfig = {
     config?: MonoConfig;

@@ -3411,7 +3411,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
 //------------------------------------------------------------------------
 // LowerTailCallViaJitHelper: lower a call via the tailcall JIT helper. Morph
 // has already inserted tailcall helper special arguments. This function inserts
-// actual data for some placeholders. This function is only used on x86.
+// actual data for some placeholders. This function is only used on Windows x86.
 //
 // Lower
 //      tail.call(<function args>, int numberOfOldStackArgs, int dummyNumberOfNewStackArgs, int flags, void* dummyArg)
@@ -5856,9 +5856,6 @@ void Lowering::InsertPInvokeMethodProlog()
 
     JITDUMP("======= Inserting PInvoke method prolog\n");
 
-    // The first BB must be a scratch BB in order for us to be able to safely insert the P/Invoke prolog.
-    assert(comp->fgFirstBBisScratch());
-
     LIR::Range& firstBlockRange = LIR::AsRange(comp->fgFirstBB);
 
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
@@ -7853,6 +7850,11 @@ PhaseStatus Lowering::DoPhase()
         LowerBlock(block);
     }
 
+    if (comp->opts.OptimizationEnabled())
+    {
+        MapParameterRegisterLocals();
+    }
+
 #ifdef DEBUG
     JITDUMP("Lower has completed modifying nodes.\n");
     if (VERBOSE)
@@ -7885,9 +7887,7 @@ PhaseStatus Lowering::DoPhase()
 
         comp->fgLocalVarLiveness();
         // local var liveness can delete code, which may create empty blocks
-        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
-                                                /* doAggressiveCompaction */ false);
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
         if (modified)
         {
@@ -7905,6 +7905,84 @@ PhaseStatus Lowering::DoPhase()
     comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// Lowering::MapParameterRegisterLocals:
+//   Create mappings between parameter registers and locals corresponding to
+//   them.
+//
+void Lowering::MapParameterRegisterLocals()
+{
+    comp->m_paramRegLocalMappings =
+        new (comp, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(comp->getAllocator(CMK_ABI));
+
+    // Create initial mappings for promotions.
+    for (unsigned lclNum = 0; lclNum < comp->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lclDsc  = comp->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+
+        if (comp->lvaGetPromotionType(lclDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT)
+        {
+            // If not promoted, then we do not need to create any mappings.
+            // If dependently promoted then the fields are never enregistered
+            // by LSRA, so no reason to try to create any mappings.
+            continue;
+        }
+
+        if (!abiInfo.HasAnyRegisterSegment())
+        {
+            // If the parameter is not passed in any registers, then there are
+            // no mappings to create.
+            continue;
+        }
+
+        // Currently we do not support promotion of split parameters, so we
+        // should not see any split parameters here.
+        assert(!abiInfo.IsSplitAcrossRegistersAndStack());
+
+        for (int i = 0; i < lclDsc->lvFieldCnt; i++)
+        {
+            unsigned   fieldLclNum = lclDsc->lvFieldLclStart + i;
+            LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
+
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                if (segment.Offset + segment.Size <= fieldDsc->lvFldOffset)
+                {
+                    // This register does not map to this field (ends before the field starts)
+                    continue;
+                }
+
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
+                {
+                    // This register does not map to this field (starts after the field ends)
+                    continue;
+                }
+
+                comp->m_paramRegLocalMappings->Emplace(&segment, fieldLclNum, segment.Offset - fieldDsc->lvFldOffset);
+            }
+
+            LclVarDsc* fieldLclDsc = comp->lvaGetDesc(fieldLclNum);
+            assert(!fieldLclDsc->lvIsParamRegTarget);
+            fieldLclDsc->lvIsParamRegTarget = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (comp->verbose)
+    {
+        printf("%d parameter register to local mappings\n", comp->m_paramRegLocalMappings->Height());
+        for (int i = 0; i < comp->m_paramRegLocalMappings->Height(); i++)
+        {
+            const ParameterRegisterLocalMapping& mapping = comp->m_paramRegLocalMappings->BottomRef(i);
+            printf("  ");
+            mapping.RegisterSegment->Dump();
+            printf(" -> V%02u\n", mapping.LclNum);
+        }
+    }
+#endif
 }
 
 #ifdef DEBUG
@@ -9069,8 +9147,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
         }
 
         // Since we're merging two stores of the same type, the new type is twice wider.
-        var_types oldType = ind->TypeGet();
-        var_types newType;
+        var_types oldType             = ind->TypeGet();
+        var_types newType             = TYP_UNDEF;
+        bool      tryReusingPrevValue = false;
         switch (oldType)
         {
             case TYP_BYTE:
@@ -9122,7 +9201,8 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     newType = TYP_SIMD32;
                     break;
                 }
-                return;
+                tryReusingPrevValue = true;
+                break;
 
             case TYP_SIMD32:
                 if (comp->getPreferredVectorByteLength() >= 64)
@@ -9130,8 +9210,14 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
                     newType = TYP_SIMD64;
                     break;
                 }
-                return;
-#endif // TARGET_AMD64
+                tryReusingPrevValue = true;
+                break;
+#elif defined(TARGET_ARM64) // TARGET_AMD64
+            case TYP_SIMD16:
+                tryReusingPrevValue = true;
+                break;
+
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
 #endif // TARGET_64BIT
 
@@ -9143,6 +9229,27 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             default:
                 return;
         }
+
+        // If we can't merge these two stores into a single store, we can at least
+        // cache prevData.value to a local and reuse it in currData.
+        // Normally, LSRA is expected to do this for us, but it's not always the case for SIMD.
+        if (tryReusingPrevValue)
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            LIR::Use use;
+            if (currData.value->OperIs(GT_CNS_VEC) && GenTree::Compare(prevData.value, currData.value) &&
+                BlockRange().TryGetUse(prevData.value, &use))
+            {
+                GenTree* prevValueTmp = comp->gtNewLclvNode(use.ReplaceWithLclVar(comp), prevData.value->TypeGet());
+                BlockRange().InsertBefore(currData.value, prevValueTmp);
+                BlockRange().Remove(currData.value);
+                ind->Data() = prevValueTmp;
+            }
+#endif // FEATURE_HW_INTRINSICS
+            return;
+        }
+
+        assert(newType != TYP_UNDEF);
 
         // We should not be here for stores requiring write barriers.
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind->AsStoreInd()));

@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {
-            Debug.Assert(EnumConverterFactory.IsSupportedTypeCode(s_enumTypeCode));
+            Debug.Assert(EnumConverterFactory.Helpers.IsSupportedTypeCode(s_enumTypeCode));
 
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;

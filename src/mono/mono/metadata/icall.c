@@ -1705,7 +1705,7 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (char *name,
 
 	if (!(*res)) {
 		if (throwOnError) {
-			char *tname = info.name_space ? g_strdup_printf ("%s.%s", info.name_space, info.name) : g_strdup (info.name);
+			char *tname = (info.name_space && *info.name_space) ? g_strdup_printf ("%s.%s", info.name_space, info.name) : g_strdup (info.name);
 			char *aname;
 			if (info.assembly.name)
 				aname = mono_stringify_assembly_name (&info.assembly);
@@ -2909,7 +2909,7 @@ ves_icall_RuntimeTypeHandle_GetElementType (MonoQCallTypeHandle type_handle, Mon
 }
 
 void
-ves_icall_RuntimeTypeHandle_GetBaseType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
+ves_icall_RuntimeType_GetParentType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoType *type = type_handle.type;
 
