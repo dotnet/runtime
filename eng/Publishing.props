@@ -4,8 +4,6 @@
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
     <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
-    <!-- Set PlatformName to TargetArchitecture to create unique build manifest files. -->
-    <PlatformName Condition="'$(TargetArchitecture)' != ''">$(TargetArchitecture)</PlatformName>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />

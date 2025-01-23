@@ -33,7 +33,6 @@ parameters:
   postBuildSteps: []
   extraVariablesTemplates: []
   preBuildSteps: []
-  PublishRidAgnosticPackagesFromPlatform: windows_x64
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
@@ -92,6 +91,9 @@ jobs:
         value: -os ${{ parameters.osGroup }}
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
+      
+      - name: _AssetManifestName
+        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.nameSuffix }}
 
       - name: _SignType
         value: $[ coalesce(variables.OfficialSignType, 'real') ]
@@ -137,17 +139,6 @@ jobs:
         ${{ if in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: /p:BuildDarwinFrameworks=true
         ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
-          value: ''
-      
-      - name: _assetManifestFileNameParameter
-        ${{ if eq(parameters.isOfficialBuild, true) }}:
-          value: /p:AssetManifestFileName="${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{parameters.archType}}_${{parameters.nameSuffix }}.xml"
-        ${{ if ne(parameters.isOfficialBuild, true) }}:
-          value: ''
-      - name: _publishRidAgnosticArtifactsParameter
-        ${{ if and(eq(parameters.isOfficialBuild, true), eq(format('{0}{1}_{2}', parameters.osGroup, parameters.osSubGroup, parameters.archType), parameters.PublishRidAgnosticPackagesFromPlatform)) }}:
-          value: /p:PublishRidAgnosticPackages=true
-        ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
       # Set no native sanitizers by default
