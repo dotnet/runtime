@@ -1063,6 +1063,13 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
         g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+#if defined(HOST_ARM64)
+        // Only allow bitwise write barriers if LSE atomics are present
+        if (!g_arm64_atomics_present)
+        {
+            g_region_use_bitwise_write_barrier = false;
+        }
+#endif
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
         break;
     case WriteBarrierOp::Initialize:
@@ -1090,6 +1097,13 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
         g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+#if defined(HOST_ARM64)
+        // Only allow bitwise write barriers if LSE atomics are present
+        if (!g_arm64_atomics_present)
+        {
+            g_region_use_bitwise_write_barrier = false;
+        }
+#endif
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
 
         // StompWriteBarrierResize does not necessarily bash g_ephemeral_low
