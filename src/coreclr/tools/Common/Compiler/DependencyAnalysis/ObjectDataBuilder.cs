@@ -301,7 +301,6 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
 
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
-                case RelocType.IMAGE_REL_BASED_RISCV64_JALR:
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.

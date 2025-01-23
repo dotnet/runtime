@@ -691,8 +691,8 @@ public:
     unsigned char lvSingleDefDisqualifyReason = 'H';
 #endif
 
-    unsigned char lvAllDefsAreNoGc    : 1; // For pinned locals: true if all defs of this local are no-gc
-    unsigned char lvStackAllocatedBox : 1; // Local is a stack allocated box
+    unsigned char lvAllDefsAreNoGc       : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvStackAllocatedObject : 1; // Local is a stack allocated object (class, box, array, ...)
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
@@ -807,9 +807,9 @@ public:
         return lvIsMultiRegArg || lvIsMultiRegRet;
     }
 
-    bool IsStackAllocatedBox() const
+    bool IsStackAllocatedObject() const
     {
-        return lvStackAllocatedBox;
+        return lvStackAllocatedObject;
     }
 
 #if defined(DEBUG)
@@ -3377,6 +3377,26 @@ public:
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
 
+    GenTree* gtNewSimdIsEvenIntegerNode(var_types   type,
+                                        GenTree*    op1,
+                                        CorInfoType simdBaseJitType,
+                                        unsigned    simdSize);
+
+    GenTree* gtNewSimdIsFiniteNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize);
+
+    GenTree* gtNewSimdIsInfinityNode(var_types   type,
+                                     GenTree*    op1,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdIsIntegerNode(var_types   type,
+                                    GenTree*    op1,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdIsNaNNode(var_types   type,
                                 GenTree*    op1,
                                 CorInfoType simdBaseJitType,
@@ -3387,6 +3407,21 @@ public:
                                      CorInfoType simdBaseJitType,
                                      unsigned    simdSize);
 
+    GenTree* gtNewSimdIsNegativeInfinityNode(var_types   type,
+                                             GenTree*    op1,
+                                             CorInfoType simdBaseJitType,
+                                             unsigned    simdSize);
+
+    GenTree* gtNewSimdIsNormalNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize);
+
+    GenTree* gtNewSimdIsOddIntegerNode(var_types   type,
+                                       GenTree*    op1,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize);
+
     GenTree* gtNewSimdIsPositiveNode(var_types   type,
                                      GenTree*    op1,
                                      CorInfoType simdBaseJitType,
@@ -3396,6 +3431,11 @@ public:
                                              GenTree*    op1,
                                              CorInfoType simdBaseJitType,
                                              unsigned    simdSize);
+
+    GenTree* gtNewSimdIsSubnormalNode(var_types   type,
+                                      GenTree*    op1,
+                                      CorInfoType simdBaseJitType,
+                                      unsigned    simdSize);
 
     GenTree* gtNewSimdIsZeroNode(var_types   type,
                                  GenTree*    op1,
@@ -4284,6 +4324,8 @@ public:
 
 #ifdef TARGET_ARM
     int lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage);
+#elif TARGET_ARM64
+    int lvaFrameAddress(int varNum, bool* pFPbased, bool suppressFPtoSPRewrite = false);
 #else
     int lvaFrameAddress(int varNum, bool* pFPbased);
 #endif
@@ -6066,6 +6108,9 @@ public:
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
+    PhaseStatus fgExpandStackArrayAllocations();
+    bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
     bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -6276,7 +6321,6 @@ public:
 
         Compiler* compiler;
         PriorityQueue<FlowEdge*, decltype(&ThreeOptLayout::EdgeCmp)> cutPoints;
-        unsigned* ordinals;
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
@@ -7498,6 +7542,7 @@ public:
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
+#define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 
     // clang-format on
 
@@ -7586,6 +7631,16 @@ public:
     void setMethodHasRecursiveTailcall()
     {
         optMethodFlags |= OMF_HAS_RECURSIVE_TAILCALL;
+    }
+
+    bool doesMethodHaveStackAllocatedArray()
+    {
+        return (optMethodFlags & OMF_HAS_STACK_ARRAY) != 0;
+    }
+
+    void setMethodHasStackAllocatedArray()
+    {
+        optMethodFlags |= OMF_HAS_STACK_ARRAY;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -8091,6 +8146,7 @@ public:
     GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
@@ -10671,6 +10727,7 @@ public:
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
+        STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
