@@ -125,8 +125,6 @@ struct cdac_data<LazyMachState>
     static constexpr size_t InstructionPointer = offsetof(LazyMachState, m_Rip);
     static constexpr size_t StackPointer = offsetof(LazyMachState, m_Rsp);
     static constexpr size_t ReturnAddress = offsetof(LazyMachState, _pRetAddr);
-    static constexpr size_t CalleeSavedRegisters = offsetof(LazyMachState, m_Capture);
-    static constexpr size_t CalleeSavedRegistersPointers = offsetof(LazyMachState, m_Ptrs);
 };
 
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
