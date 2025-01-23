@@ -75,9 +75,9 @@ endif()
 # Include libraries native shims
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-    set(STATIC_LIBS_ONLY 1)
-    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
-endif(NOT CLR_CROSS_COMPONENTS_BUILD)
+  set(STATIC_LIBS_ONLY 1)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
+endif()
 
 #-----------------------------------------
 # Add Projects
@@ -170,10 +170,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
-if(FEATURE_STANDALONE_GC)
-  add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(gc)
-endif(FEATURE_STANDALONE_GC)
+add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
