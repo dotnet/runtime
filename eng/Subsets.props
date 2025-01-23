@@ -96,11 +96,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Necessary to avoid host/target confusion when building crossgen / ilcompiler on non-linux hosts -->
-    <CrossBuild Condition="'$(CrossBuild)' == '' and '$(TargetsAndroid)' == 'true' and $(HostOS.StartsWith('osx'))">true</CrossBuild>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(PackageRID)' == 'linux-armel'">clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
@@ -324,7 +319,7 @@
     However, these repositories only build on Windows, so we can limit this to only execute on Windows to avoid additional infrastructure work when not necessary.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
   </PropertyGroup>
