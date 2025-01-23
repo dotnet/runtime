@@ -2877,6 +2877,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
+    weight_t incomingWeight = BB_ZERO_WEIGHT;
     for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
@@ -2890,6 +2891,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 {
                     noway_assert(predBlock->TargetIs(block));
                     fgRedirectTargetEdge(predBlock, newHead);
+                    incomingWeight += predBlock->bbWeight;
                     break;
                 }
 
@@ -2910,7 +2912,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // Update flow into the header block
     if (block->hasProfileWeight())
     {
-        newHead->setBBProfileWeight(newHead->computeIncomingWeight());
+        newHead->setBBProfileWeight(incomingWeight);
     }
 }
 
