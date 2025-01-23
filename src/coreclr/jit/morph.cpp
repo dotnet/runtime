@@ -418,12 +418,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // all integers (except for longs on 32-bit of course) to floats.
     // On x64, we also have the option of widening uint -> long and
     // using the signed conversion instructions, and ulong -> float/double
-    // is handled directly in codegen, so we can allow all casts,
-    // regardless of hardware support.
+    // is handled directly in codegen, so we can allow all casts.
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && oper->OperIs(GT_CAST)
 #ifndef TARGET_64BIT
              && !varTypeIsLong(oper->AsCast()->CastOp())
-#endif // TARGET_64BIT
+#endif // !TARGET_64BIT
 #ifdef TARGET_X86
              && canUseEvexEncoding()
 #endif // TARGET_X86
@@ -496,7 +495,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
         }
     }
-    else if (((tree->gtFlags & GTF_UNSIGNED) == 0) && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
+    else if (!tree->IsUnsigned() && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
         oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
 
@@ -504,7 +503,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // we just use the one that converts to a TYP_DOUBLE
         // and then add a cast to TYP_FLOAT
         //
-        if ((dstType == TYP_FLOAT) && (oper->OperGet() == GT_CALL))
+        if ((dstType == TYP_FLOAT) && oper->OperIs(GT_CALL))
         {
             // Fix the return type to be TYP_DOUBLE
             //
@@ -563,7 +562,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         // the result of an AND is bound by its smaller operand, it may be
         // possible to prove that the cast won't overflow, which will in turn
         // allow the cast's operand to be transformed.
-        if (tree->gtOverflow() && (oper->OperGet() == GT_AND))
+        if (tree->gtOverflow() && oper->OperIs(GT_AND))
         {
             GenTree* andOp2 = oper->AsOp()->gtOp2;
 
@@ -571,7 +570,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // than 2^{31} for a cast to int.
             int maxWidth = (dstType == TYP_UINT) ? 32 : 31;
 
-            if ((andOp2->OperGet() == GT_CNS_NATIVELONG) && ((andOp2->AsIntConCommon()->LngValue() >> maxWidth) == 0))
+            if (andOp2->OperIs(GT_CNS_NATIVELONG) && ((andOp2->AsIntConCommon()->LngValue() >> maxWidth) == 0))
             {
                 tree->ClearOverflow();
                 tree->SetAllEffectsFlags(oper);

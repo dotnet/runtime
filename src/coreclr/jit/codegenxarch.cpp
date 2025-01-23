@@ -7247,7 +7247,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -7278,7 +7278,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // operation.
     if (srcType == TYP_BYREF)
     {
-        noway_assert(op1->OperGet() == GT_LCL_ADDR);
+        noway_assert(op1->OperIs(GT_LCL_ADDR));
         srcType = TYP_I_IMPL;
     }
 
@@ -7298,10 +7298,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
     noway_assert((srcSize == EA_ATTR(genTypeSize(TYP_INT))) || (srcSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
-    // Also we don't expect to see uint32 -> float/double here unless the EVEX unsigned conversion
-    // instructions are available, since they should have been lowered appropriately.
-    assert((srcType != TYP_UINT) || compiler->canUseEvexEncodingDebugOnly());
-
     // To convert integral type to floating, the cvt[u]si2ss/sd instruction is used
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
     // upper bytes unmodified.  If "cvt[u]si2ss/sd xmmReg, r32/r64" occurs inside a loop,
@@ -7312,23 +7308,13 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // cvt[u]si2ss/sd instruction.
 
     genConsumeOperands(treeNode->AsOp());
-    GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, treeNode->GetRegNum(), treeNode->GetRegNum(),
-                                     treeNode->GetRegNum(), INS_OPTS_NONE);
+    GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
 
     // Note that here we need to specify srcType that will determine
     // the size of source reg/mem operand and rex.w prefix.
     instruction ins = ins_FloatConv(dstType, srcType);
 
-    // integral to floating-point conversions all have RMW semantics if VEX support
-    // is not available
-
-    const bool isRMW = !compiler->canUseVexEncoding();
-
-    if (varTypeIsUnsigned(srcType) && compiler->canUseEvexEncoding())
-    {
-        GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
-    }
-    else if (srcType == TYP_ULONG)
+    if (srcType == TYP_ULONG && !compiler->canUseEvexEncoding())
     {
         assert(op1->isUsedFromReg());
 
@@ -7381,6 +7367,12 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     }
     else
     {
+        assert(varTypeIsIntOrI(srcType) || compiler->canUseEvexEncodingDebugOnly());
+
+        // integral to floating-point conversions all have RMW semantics if VEX support
+        // is not available
+
+        const bool isRMW = !compiler->canUseVexEncoding();
         inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
     genProduceReg(treeNode);
@@ -7406,7 +7398,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
     // we don't expect to see overflow detecting float/double --> int type conversions here
     // as they should have been converted into helper calls by front-end.
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
