@@ -85,8 +85,10 @@ extends:
             # Now that we've signed the diagnostic files, do the rest of the build.
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:DotNetBuildAllRuntimePacks=true $(_PublishAdditionalPackagesArg)
                 displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
+            extraVariablesTemplates:
+            - template: /eng/pipelines/common/templates/packages-to-publish.yml
 
       #
       # Build all runtime packs
@@ -183,7 +185,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath)
+            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:PublishAllPackages=true
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -251,9 +253,12 @@ extends:
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true  $(_PublishAdditionalPackagesArg)
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraVariablesTemplates:
+            - template: /eng/pipelines/common/templates/packages-to-publish.yml
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -264,9 +269,11 @@ extends:
           - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) $(_PublishAdditionalPackagesArg)
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/packages-to-publish.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -313,7 +320,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -restore -build -pack -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            buildArgs: -s tools+libs -restore -build -pack -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:PublishAllPackages=true
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 95
@@ -397,7 +404,7 @@ extends:
                   PackageArtifacts/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
                   PackageArtifacts/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:PublishAllPackages=true
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120

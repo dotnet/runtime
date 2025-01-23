@@ -1,0 +1,35 @@
+parameters:
+  # Parameters forwarded from global-build-job.yml
+  targetRid: ''
+  # Default artifact sets for specific RIDs
+  ios_arm64AdditionalPackages:
+    - Microsoft.NET.Runtime.iOS.Sample.Mono
+    - Microsoft.NET.Runtime.LibraryBuilder.Sdk
+    - Microsoft.NET.Runtime.MonoAOTCompiler.Task
+    - Microsoft.NET.Runtime.MonoTargets.Sdk
+  android_arm64AdditionalPackages:
+    - Microsoft.NET.Runtime.Android.Sample.Mono
+  wasi_wasmAdditionalPackages:
+    - Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk
+  browser_wasmAdditionalPackages:
+    - Microsoft.NET.Runtime.WebAssembly.Sdk
+    - Microsoft.NET.Runtime.WebAssembly.Templates.net10
+    - Microsoft.NET.Sdk.WebAssembly.Pack
+    - Microsoft.NET.Workload.Mono.ToolChain
+
+# TODO-Publish: Move this into Publishing.props except for the win-x64 case.
+
+variables:
+  - name: _PublishAdditionalPackagesArg
+    ${{ if eq(parameters.targetRid, 'ios-arm64') }}:
+      value: /p:PublishAdditionalSpecificPackages=${{ join(',', parameters.ios_arm64AdditionalPackages) }}
+    ${{ elif eq(parameters.targetRid, 'android-arm64') }}:
+      value: /p:PublishAdditionalSpecificPackages=${{ join(',', parameters.android_arm64AdditionalPackages) }}
+    ${{ elif eq(parameters.targetRid, 'wasi-wasm') }}:
+      value: /p:PublishAdditionalSpecificPackages=${{ join(',', parameters.wasi_wasmAdditionalPackages) }}
+    ${{ elif eq(parameters.targetRid, 'browser-wasm') }}:
+      value: /p:PublishAdditionalSpecificPackages=${{ join(',', parameters.browser_wasmAdditionalPackages) }}
+    ${{ if eq(parameters.targetRid, 'windows_x64') }}:
+      value: /p:PublishAllPackages=true
+    ${{ else }}:
+      value: ''

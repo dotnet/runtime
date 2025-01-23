@@ -8,6 +8,8 @@
     <PlatformName Condition="'$(TargetArchitecture)' != ''">$(TargetArchitecture)</PlatformName>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
+
   <!--
     Mark assets as Vertical visibility when building in the VMR
   -->
@@ -30,49 +32,43 @@
               IsShipping="false" />
   </ItemGroup>
 
-  <!-- Default to publishing only RID-specific assets -->
+  <!--
+    Filter out the RID-specific (Runtime) nupkgs for this RID.
+    Every job will publish their RID-specific packages.
+    For non-RID-specific packages, we have various rules:
+
+    - A job can specify PublishAllPackages=true to publish all packages it produces. We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
+    - A job can specify PublishAdditionalSpecificPackages="Package1;Package2" to publish the specified packages. We use this for specific jobs were we produce the same package in multiple jobs,
+      but we don't produce the package in any jobs where we set PublishAllPackages.
+  -->
   <ItemGroup>
-    <!--
-      Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
-      are published from every job. RID-agnostic nupkgs are built with the same ID/version by
-      every job, so one specific job's outputs must be picked to sign and publish.
-    -->
-    <RidSpecificPackages
-      Include="
-        $(ArtifactsPackagesDir)**\Microsoft.*.Runtime.*.nupkg;
-        $(ArtifactsPackagesDir)**\Microsoft.*.App.Host.*.nupkg;
-        $(ArtifactsPackagesDir)**\Microsoft.*.App.Crossgen2.*.nupkg;
-        $(ArtifactsPackagesDir)**\VS.Redist.Common.*.nupkg
-        $(ArtifactsPackagesDir)**\runtime.*.nupkg"
-      Exclude="
-        $(ArtifactsPackagesDir)**\runtime.native.*.nupkg
-        $(ArtifactsPackagesDir)**\*.Transport.*.nupkg" /> 
-    <RidAgnosticPackages Include="$(ArtifactsPackagesDir)\**\*.nupkg" Exclude="@(RidSpecificPackages)" />
+    <ThisRidPackages Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
+    <OtherPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(RidSpecificPackages)" />
+
+    <PackagesToPublishFromThisJob Include="@(ThisRidPackages)" />
+    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Condition="'$(PublishAllPackages)' == 'true'" />
+
+    <PackagesToSkipFromThisJob Include="@(Artifact)" Exclude="@(PackagesToPublishFromThisJob)" />
     <!--
       In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.
       In VMR builds, we need to publish them for upstack jobs to consume.
     -->
-    <Artifact Update="@(RidAgnosticPackages)" SkipPublish="true" Condition="'$(DotNetBuildOrchestrator)' != 'true' and '$(PublishRidAgnosticPackages)' != 'true'" />
-    <Artifact Update="@(RidAgnosticPackages)" Visibility="Vertical" Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(PublishRidAgnosticPackages)' != 'true'" />
-
-    <!--
-    TODO: Some packages aren't produced in the windows_x64 jobs. In particular, packages matching the following patterns:
-      - Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*
-      - Microsoft.NET.Sdk.WebAssembly.Pack.*
-
-    We need to determine where to ship these from and how to specify it in the official build.
-
-    Additionally, some packages matching the above RID-specific patterns aren't actually RID-specific and need to be deduplicated:
-      - Microsoft.NET.Runtime.*.Sample.Mono
-      - Microsoft.NET.Runtime.LibraryBuilder.Sdk
-      - Microsoft.NET.Runtime.MonoAOTCompiler.Task
-      - Microsoft.NET.Runtime.MonoTargets.Sdk
-      - Microsoft.NET.Runtime.WebAssembly.Sdk
-      - Microsoft.NET.Runtime.WebAssembly.Templates.net10
-      - Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk
-      - Microsoft.NET.Runtime.WorkloadTesting.Internal
-     -->
+    <Artifact Update="@(PackagesToSkipFromThisJob)" SkipPublish="true" Condition="'$(DotNetBuildOrchestrator)' != 'true'" />
+    <Artifact Update="@(PackagesToSkipFromThisJob)" Visibility="Vertical" Condition="'$(DotNetBuildOrchestrator)' == 'true'" />
   </ItemGroup>
+
+  <ItemGroup>
+      <AdditionalSpecificPackagesToPublish Include="$(PublishAdditionalSpecificPackages)" />
+  </ItemGroup>
+
+  <!-- Include any additional packages specified by the job here. -->
+  <Target Name="IncludeAdditionalSpecificPackages" BeforeTargets="BeforePublish" Inputs="@(AdditionalSpecificPackagesToPublish)" Outputs="@(AdditionalSpecificPackagesToPublish->'%(Identity).batching')">
+    <ItemGroup>
+      <Artifact Condition="$([System.String]::new('%(Filename)').StartsWith('%(AdditionalSpecificPackagesToPublish.Identity)'))"
+                SkipPublish="false"
+                Visibility="$(DefaultArtifactVisibility)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Set the subpath of workloads zip files -->
   <ItemGroup>
