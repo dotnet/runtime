@@ -685,5 +685,89 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(10)]
+        [InlineData(12)]
+        public void Update_PerformMinimalWritesWhenEntriesModifiedAndAdded(int entriesToCreate)
+        {
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = CreateZipFile(50, sampleEntryContents);
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
+                {
+                    // Open the archive in Update mode. Rewrite the data of the first entry and add five entries
+                    // to the end of the archive. Verify the correct number of writes performed as a result, then
+                    // reopen the same archive, get the entries, make sure that the right number of entries have
+                    // been found and that the entries have the correct contents.
+                    int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write));
+                    int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
+                    ZipArchive target = new ZipArchive(trackingStream, ZipArchiveMode.Update, leaveOpen: true);
+                    int totalEntries = target.Entries.Count;
+                    ZipArchiveEntry entryToRewrite = target.Entries[^1];
+                    string modifiedPath = entryToRewrite.FullName;
+
+                    using (Stream entryStream = entryToRewrite.Open())
+                    {
+                        entryStream.Seek(0, SeekOrigin.Begin);
+                        for (int i = 0; i < 100; i++)
+                        {
+                            entryStream.Write(sampleEntryContents);
+                        }
+                    }
+
+                    for (int i = 0; i < entriesToCreate; i++)
+                    {
+                        ZipArchiveEntry createdEntry = target.CreateEntry($"added/{i}.bin");
+
+                        using (Stream entryWriteStream = createdEntry.Open())
+                        {
+                            entryWriteStream.Write(sampleEntryContents);
+                            entryWriteStream.WriteByte((byte)((i + totalEntries) % byte.MaxValue));
+                        }
+                    }
+
+                    target.Dispose();
+
+                    writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write)) - writesCalled;
+                    writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
+
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 2 writes for the file data of the updated entry itself
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
+                    // All of the central directory headers must be rewritten after an entry's data has been modified.
+
+                    Assert.Equal(1 + ((2 + 2 + 2) * entriesToCreate) + (2 * (totalEntries - 1) + (2 + 2 + 2)), writesCalled + writeBytesCalled);
+
+                    trackingStream.Seek(0, SeekOrigin.Begin);
+                    target = new ZipArchive(trackingStream, ZipArchiveMode.Read);
+
+                    // Check 2: no other data has been corrupted as a result
+                    for (int i = 0; i < totalEntries + entriesToCreate; i++)
+                    {
+                        ZipArchiveEntry entry = target.Entries[i];
+                        byte[] expectedBuffer = entry.FullName == modifiedPath
+                            ? Enumerable.Repeat(sampleEntryContents, 100).SelectMany(x => x).ToArray()
+                            : [.. sampleEntryContents, (byte)(i % byte.MaxValue)];
+                        byte[] readBuffer = new byte[expectedBuffer.Length];
+
+                        using (Stream readStream = entry.Open())
+                        {
+                            readStream.Read(readBuffer.AsSpan());
+                        }
+
+                        Assert.Equal(expectedBuffer, readBuffer);
+                    }
+                }
+            }
+        }
     }
 }
