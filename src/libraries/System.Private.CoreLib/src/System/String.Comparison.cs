@@ -73,6 +73,56 @@ namespace System
             return Ordinal.EqualsIgnoreCase(ref strA.GetRawStringData(), ref strB.GetRawStringData(), strB.Length);
         }
 
+        private static unsafe int CompareOrdinalHelper(string strA, string strB)
+        {
+            Debug.Assert(strA != null);
+            Debug.Assert(strB != null);
+
+            // NOTE: This may be subject to change if eliminating the check
+            // in the callers makes them small enough to be inlined
+            Debug.Assert(strA._firstChar == strB._firstChar,
+                "For performance reasons, callers of this method should " +
+                "check/short-circuit beforehand if the first char is the same.");
+
+            // Check if the second chars are different here
+            // The reason we check if _firstChar is different is because
+            // it's the most common case and allows us to avoid a method call
+            // to here.
+            // The reason we check if the second char is different is because
+            // if the first two chars the same we can increment by 4 bytes,
+            // leaving us word-aligned on both 32-bit (12 bytes into the string)
+            // and 64-bit (16 bytes) platforms.
+
+            // For empty strings, the second char will be null due to padding.
+            // The start of the string is the type pointer + string length, which
+            // takes up 8 bytes on 32-bit, 12 on x64. For empty strings the null
+            // terminator immediately follows, leaving us with an object
+            // 10/14 bytes in size. Since everything needs to be a multiple
+            // of 4/8, this will get padded and zeroed out.
+
+            // For one-char strings the second char will be the null terminator.
+            if (Unsafe.Add(ref strA._firstChar, 1) != Unsafe.Add(ref strB._firstChar, 1)) goto DiffOffset1;
+
+            if (Math.Min(strA.Length, strB.Length) <= 2) goto NotLongerThan2;
+
+            // Since we know that the first two chars are the same,
+            // we can increment by 2 here and skip 4 bytes.
+            // This leaves us 8-byte aligned, which results
+            // on better perf for 64-bit platforms and SIMD.
+
+            return SpanHelpers.SequenceCompareTo(
+                ref Unsafe.Add(ref strA._firstChar, 2), strA.Length - 2,
+                ref Unsafe.Add(ref strB._firstChar, 2), strB.Length - 2);
+
+        NotLongerThan2:
+            // The first two chars are the same, and the shorter string is not longer
+            // than two chars, then the two strings can only differ by length.
+            return strA.Length - strB.Length;
+
+        DiffOffset1:
+            return Unsafe.Add(ref strA._firstChar, 1) - Unsafe.Add(ref strB._firstChar, 1);
+        }
+
         // Provides a culture-correct string comparison. StrA is compared to StrB
         // to determine whether it is lexicographically less, equal, or greater, and then returns
         // either a negative integer, 0, or a positive integer; respectively.
@@ -133,7 +183,7 @@ namespace System
                         return strA._firstChar - strB._firstChar;
                     }
 
-                    return SpanHelpers.SequenceCompareTo(ref strA._firstChar, strA.Length, ref strB._firstChar, strB.Length);
+                    return CompareOrdinalHelper(strA, strB);
 
                 case StringComparison.OrdinalIgnoreCase:
                     return Ordinal.CompareStringIgnoreCase(ref strA.GetRawStringData(), strA.Length, ref strB.GetRawStringData(), strB.Length);
@@ -329,7 +379,7 @@ namespace System
                 return strA._firstChar - strB._firstChar;
             }
 
-            return SpanHelpers.SequenceCompareTo(ref strA._firstChar, strA.Length, ref strB._firstChar, strB.Length);
+            return CompareOrdinalHelper(strA, strB);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
