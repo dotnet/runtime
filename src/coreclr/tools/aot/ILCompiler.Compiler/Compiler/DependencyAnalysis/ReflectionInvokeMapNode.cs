@@ -112,12 +112,9 @@ namespace ILCompiler.DependencyAnalysis
             if (type.IsPrimitive || type.IsVoid)
                 return;
 
-            // Reflection doesn't need the ability to generate MethodTables out of thin air for reference types.
-            // Skip generating the dependencies.
-            if (type.IsGCPointer)
-                return;
-
-            if (isOut)
+            // Reflection might need to create boxed instances of valuetypes as part of reflection invocation.
+            // Non-valuetypes are only needed for the purposes of casting/type checks.
+            if (isOut && !type.IsGCPointer)
                 dependencies.Add(factory.MaximallyConstructableType(type.NormalizeInstantiation()), reason);
             else
                 dependencies.Add(factory.NecessaryTypeSymbol(type.NormalizeInstantiation()), reason);
