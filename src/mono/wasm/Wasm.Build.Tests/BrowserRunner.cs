@@ -121,7 +121,7 @@ internal class BrowserRunner : IAsyncDisposable
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors", $"--lang={locale}" };
         if (headless)
-            chromeArgs = chromeArgs.Append("--headless=new").ToArray();
+            chromeArgs = chromeArgs.Append("--headless").ToArray();
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
         int attempt = 0;
