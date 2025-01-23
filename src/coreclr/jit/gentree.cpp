@@ -25569,23 +25569,31 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             }
 
             // shuffle & manipulate the long indices to int indices
-            simd_t shufCns = {};
-            for (size_t index = 0; index < simdSize / 4; index++)
-            {
-                shufCns.u32[index] = index & 6;
-            }
-
-            cnsNode                        = gtNewVconNode(type);
-            cnsNode->AsVecCon()->gtSimdVal = shufCns;
-
+            unsigned immediate = 0b10100000;
+            cnsNode = gtNewIconNode(immediate);
             if (simdSize == 32)
             {
-                // swap the operands to match the encoding requirements
-                op2 = gtNewSimdHWIntrinsicNode(type, cnsNode, op2, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+                    op2 = gtNewSimdHWIntrinsicNode(type, op2, op2Dup, cnsNode, NI_AVX_Shuffle, simdBaseJitType, simdSize);
+                }
+                else
+                {
+                    op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                }
             }
             else
             {
-                op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_AVX_PermuteVar, CORINFO_TYPE_FLOAT, simdSize);
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+                    op2 = gtNewSimdHWIntrinsicNode(type, op2, op2Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize);
+                }
+                else
+                {
+                    op2 = gtNewSimdHWIntrinsicNode(type, op2, cnsNode, NI_SSE2_Shuffle, simdBaseJitType, simdSize);
+                }
             }
 
             simd_t orCns = {};
@@ -26047,12 +26055,13 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     GenTreeIntConCommon* cnsNode = nullptr;
 
 #if defined(TARGET_XARCH)
-    uint8_t  control   = 0;
-    bool     crossLane = false;
-    bool     needsZero = varTypeIsSmall(simdBaseType) && (simdSize <= 16);
-    uint64_t value     = 0;
-    simd_t   vecCns    = {};
-    simd_t   mskCns    = {};
+    uint8_t  control       = 0;
+    bool     crossLane     = false;
+    bool     needsZero     = varTypeIsSmall(simdBaseType) && (simdSize <= 16);
+    bool     differsByLane = false;
+    uint64_t value         = 0;
+    simd_t   vecCns        = {};
+    simd_t   mskCns        = {};
 
     for (size_t index = 0; index < elementCount; index++)
     {
@@ -26063,8 +26072,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             // Most of the 256-bit shuffle/permute instructions operate as if
             // the inputs were 2x 128-bit values. If the selected indices cross
             // the respective 128-bit "lane" we may need to specialize the codegen.
-            // Also, for AVX-512: If we don't cross 128-bit lanes, then we can emit vpshufb
+            // Also, for Vector512: If we don't cross 128-bit lanes, then we can emit vpshufb
             // instead of vperm* - which has lower latency & allows zeroing in 1 step.
+            // We also do the same for Vector256.
 
             crossLane |= ((((uint64_t)index ^ value) * elementSize) & ~(uint64_t)15) != 0;
 
@@ -26108,6 +26118,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                 mskCns.u8[(index * elementSize) + i] = 0x00;
             }
         }
+
+        // Check if the value differs in this lane vs any other lane
+        if (index * elementSize >= 16)
+        {
+            differsByLane |= ((vecCns.u8[index * elementSize] ^ vecCns.u8[(index * elementSize) & 15]) & 15) != 0;
+        }
     }
 
     if (simdSize == 32)
@@ -26117,7 +26133,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         if ((varTypeIsByte(simdBaseType) &&
              !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL)) ||
             (varTypeIsShort(simdBaseType) &&
-             !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)))
+             !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
+            (!crossLane && (needsZero || elementSize < 4 || (elementSize == 4 && differsByLane))))
         {
             // if we have short, we want to treat it like byte here
             if (varTypeIsShort(simdBaseType))
@@ -26240,19 +26257,48 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 
         if (elementSize == 4)
         {
-            for (uint32_t i = 0; i < elementCount; i++)
+            // try to use vpshufd/vshufps instead of vpermd/vpermps.
+            if (!crossLane && !differsByLane)
             {
-                vecCns.u32[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+                assert(!needsZero);
+                unsigned immediate = (unsigned)0;
+                for (size_t i = 0; i < 4; i++)
+                {
+                    value = op2->GetIntegralVectorConstElement(i, simdBaseType);
+                    immediate |= static_cast<unsigned>((value & (uint64_t)3) << (i * 2));
+                }
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    op2 = gtNewIconNode(immediate);
+                    GenTree* op1Copy = fgMakeMultiUse(&op1);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX_Shuffle, simdBaseJitType,
+                                                    simdSize);
+                }
+                else
+                {
+                    op2 = gtNewIconNode(immediate);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                }
             }
 
-            op2                        = gtNewVconNode(type);
-            op2->AsVecCon()->gtSimdVal = vecCns;
+            // otherwise, use vpermd/vpermps.
+            else
+            {
+                for (uint32_t i = 0; i < elementCount; i++)
+                {
+                    vecCns.u32[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
+                }
 
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+                op2                        = gtNewVconNode(type);
+                op2->AsVecCon()->gtSimdVal = vecCns;
+
+                // swap the operands to match the encoding requirements
+                retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+            }
         }
         else if (elementSize == 2)
         {
+            assert(crossLane);
             assert(canUseEvexEncodingDebugOnly());
             for (uint32_t i = 0; i < elementCount; i++)
             {
@@ -26270,6 +26316,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         }
         else if (elementSize == 1)
         {
+            assert(crossLane);
             assert(IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512VBMI_VL));
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
@@ -26284,8 +26331,27 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         {
             assert(elementSize == 8);
 
-            cnsNode = gtNewIconNode(control);
-            retNode = gtNewSimdHWIntrinsicNode(type, op1, cnsNode, NI_AVX2_Permute4x64, simdBaseJitType, simdSize);
+            // try to use vshufpd instead of vpermpd.
+            if (!crossLane)
+            {
+                assert(!needsZero);
+                unsigned immediate = (unsigned)0;
+                for (size_t i = 0; i < elementCount; i++)
+                {
+                    value = op2->GetIntegralVectorConstElement(i, simdBaseType);
+                    immediate |= static_cast<unsigned>((value & (uint64_t)1) << i);
+                }
+                op2 = gtNewIconNode(immediate);
+                GenTree* op1Copy = fgMakeMultiUse(&op1);
+                return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX_Shuffle, CORINFO_TYPE_DOUBLE, simdSize);
+            }
+
+            // otherwise, use vpermpd.
+            else
+            {
+                cnsNode = gtNewIconNode(control);
+                retNode = gtNewSimdHWIntrinsicNode(type, op1, cnsNode, NI_AVX2_Permute4x64, simdBaseJitType, simdSize);
+            }
         }
     }
     else if (simdSize == 64)
@@ -26293,6 +26359,44 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         assert(IsBaselineVector512IsaSupportedDebugOnly());
         if (!crossLane)
         {
+            // if element size is 64-bit, try to use vshufpd instead of vpshufb.
+            if (elementSize == 8 && !needsZero)
+            {
+                unsigned immediate = (unsigned)0;
+                for (size_t i = 0; i < elementCount; i++)
+                {
+                    value = op2->GetIntegralVectorConstElement(i, simdBaseType);
+                    immediate |= static_cast<unsigned>((value & (uint64_t)1) << i);
+                }
+                op2 = gtNewIconNode(immediate);
+                GenTree* op1Copy = fgMakeMultiUse(&op1);
+                return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX512F_Shuffle, CORINFO_TYPE_DOUBLE, simdSize);
+            }
+
+            // if the element size is 32-bit, try to use vpshufd/vshufps instead of vpshufb,
+            // if the indices (when masked to within the lane) are the same for every lane.
+            if (elementSize == 4 && !needsZero && !differsByLane)
+            {
+                unsigned immediate = (unsigned)0;
+                for (size_t i = 0; i < 4; i++)
+                {
+                    value = op2->GetIntegralVectorConstElement(i, simdBaseType);
+                    immediate |= static_cast<unsigned>((value & (uint64_t)3) << (i * 2));
+                }
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    op2 = gtNewIconNode(immediate);
+                    GenTree* op1Copy = fgMakeMultiUse(&op1);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op1Copy, op2, NI_AVX512F_Shuffle, simdBaseJitType,
+                                                    simdSize);
+                }
+                else
+                {
+                    op2 = gtNewIconNode(immediate);
+                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_Shuffle, simdBaseJitType, simdSize);
+                }
+            }
+
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
 
