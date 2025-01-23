@@ -31,6 +31,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <DirectPInvoke Include="unwinder_cdac" />
+    <NativeLibrary Include="$(CoreCLRArtifactsPath)cdaclibs\unwinder_cdac.lib" Condition="'$(TargetsWindows)' == 'true'" />
+    <NativeLibrary Include="unwinder_cdac_static.a" Condition="'$(TargetsWindows)' != 'true'" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" />
   </ItemGroup>
 

@@ -8,6 +8,9 @@ using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
+/// <summary>
+/// AMD64-specific thread context.
+/// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
 public struct AMD64Context : IContext
 {
@@ -29,8 +32,8 @@ public struct AMD64Context : IContext
     public static uint Size => 0x4d0;
     public static uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
-    public TargetNUInt StackPointer => new TargetNUInt(Rsp);
-    public TargetNUInt InstructionPointer => new TargetNUInt(Rip);
+    public readonly TargetPointer StackPointer => new(Rsp);
+    public readonly TargetPointer InstructionPointer => new(Rip);
 
     public override string ToString()
     {

@@ -8,10 +8,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 public interface IContext
 {
-
     public static uint Size { get; }
     public static uint DefaultContextFlags { get; }
 
-    public TargetNUInt StackPointer { get; }
-    public TargetNUInt InstructionPointer { get; }
+    public TargetPointer StackPointer { get; }
+    public TargetPointer InstructionPointer { get; }
 }
