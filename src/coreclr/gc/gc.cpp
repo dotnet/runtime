@@ -2876,6 +2876,8 @@ size_t        gc_heap::last_gc_end_time_us = 0;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 #ifdef USE_REGIONS
 bool          gc_heap::enable_special_regions_p = false;
+int           gc_heap::large_region_factor = 0;
+int           gc_heap::min_regions_per_heap = 0;
 #else //USE_REGIONS
 size_t        gc_heap::min_segment_size = 0;
 size_t        gc_heap::min_uoh_segment_size = 0;
@@ -3286,6 +3288,31 @@ void gc_heap::fire_pevents()
     }
 #endif //FEATURE_LOH_COMPACTION
 #endif //FEATURE_EVENT_TRACE
+}
+
+void gc_heap::fire_fragmentation_measurement_event()
+{
+#if defined(FEATURE_EVENT_TRACE) && defined(USE_REGIONS)
+    if (!EVENT_ENABLED (GCMarkWithType)) return;
+
+    uint64_t total_reserved[total_generation_count] = {};
+    uint64_t total_allocated[total_generation_count] = {};
+    compute_fragmentation_measurement (total_reserved, total_allocated);
+    GCEventFireFragmentationMeasurement_V1 (
+        (uint64_t)(global_region_allocator.get_left_used_unsafe() - global_region_allocator.get_start()),
+        (uint64_t)global_region_allocator.get_used_region_count() * global_region_allocator.get_region_alignment(),
+        (uint64_t)total_reserved[0],
+        (uint64_t)total_allocated[0],
+        (uint64_t)total_reserved[1],
+        (uint64_t)total_allocated[1],
+        (uint64_t)total_reserved[2],
+        (uint64_t)total_allocated[2],
+        (uint64_t)total_reserved[3],
+        (uint64_t)total_allocated[3],
+        (uint64_t)total_reserved[4],
+        (uint64_t)total_allocated[4]
+    );
+#endif //FEATURE_EVENT_TRACE && USE_REGIONS
 }
 
 // This fires the amount of total committed in use, in free and on the decommit list.
@@ -3875,7 +3902,7 @@ bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uin
 {
     uint8_t* actual_start = start;
     region_alignment = alignment;
-    large_region_alignment = LARGE_REGION_FACTOR * alignment;
+    large_region_alignment = gc_heap::large_region_factor * alignment;
     global_region_start = (uint8_t*)align_region_up ((size_t)actual_start);
     uint8_t* actual_end = end;
     global_region_end = (uint8_t*)align_region_down ((size_t)actual_end);
@@ -13530,7 +13557,7 @@ void gc_heap::distribute_free_regions()
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
 
     ptrdiff_t num_regions_to_decommit[kind_count];
-    int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
+    int region_factor[kind_count] = { 1, large_region_factor };
 #ifdef TRACE_GC
     const char* kind_name[count_free_region_kinds] = { "basic", "large", "huge"};
 #endif // TRACE_GC
@@ -49096,6 +49123,8 @@ HRESULT GCHeap::Initialize()
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
+    gc_heap::large_region_factor = (int)GCConfig::GetGCLargeRegionFactor();
+    gc_heap::min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * gc_heap::large_region_factor));
 
     if (gc_region_size >= MAX_REGION_SIZE)
     {
@@ -49110,7 +49139,7 @@ HRESULT GCHeap::Initialize()
     {
         // We have a minimum amount of basic regions we have to fit per heap, and we'd like to have the initial
         // regions only take up half of the space.
-        size_t max_region_size = gc_heap::regions_range / 2 / nhp / min_regions_per_heap;
+        size_t max_region_size = gc_heap::regions_range / 2 / nhp / gc_heap::min_regions_per_heap;
         if (max_region_size >= (4 * 1024 * 1024))
         {
             gc_region_size = 4 * 1024 * 1024;
@@ -49125,7 +49154,7 @@ HRESULT GCHeap::Initialize()
         }
     }
 
-    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * min_regions_per_heap) > gc_heap::regions_range))
+    if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * gc_heap::min_regions_per_heap) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
     }
@@ -50598,6 +50627,7 @@ void gc_heap::do_pre_gc()
 
     GCHeap::UpdatePreGCCounters();
     fire_committed_usage_event();
+    fire_fragmentation_measurement_event();
 
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
@@ -51151,6 +51181,7 @@ void gc_heap::do_post_gc()
     if (!settings.concurrent)
     {
         fire_committed_usage_event ();
+        fire_fragmentation_measurement_event ();
     }
     GCHeap::UpdatePostGCCounters();
 
@@ -53492,6 +53523,35 @@ bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uin
 
     return true;
 }
+
+#ifdef USE_REGIONS
+void gc_heap::compute_fragmentation_measurement_per_heap(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count])
+{
+    for (int gen = 0; gen < total_generation_count; gen++)
+    {
+        heap_segment* seg = heap_segment_rw ( generation_start_segment (generation_of (gen)));
+        while (seg)
+        {
+            total_reserved[gen] += (heap_segment_reserved (seg) - get_region_start (seg));
+            total_allocated[gen] += (heap_segment_allocated (seg) - get_region_start (seg));
+            seg = heap_segment_next_rw (seg);
+        }
+    }
+}
+
+void gc_heap::compute_fragmentation_measurement(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count])
+{
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < n_heaps; i++)
+    {
+        gc_heap* hp = g_heaps[i];
+        hp->compute_fragmentation_measurement_per_heap (total_reserved, total_allocated);
+    }
+#else
+    compute_fragmentation_measurement_per_heap (total_reserved, total_allocated);
+#endif
+}
+#endif //USE_REGIONS
 
 size_t gc_heap::compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping)
 {

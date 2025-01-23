@@ -1634,6 +1634,8 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
 
+    PER_HEAP_ISOLATED_METHOD void fire_fragmentation_measurement_event();
+
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
 #endif
@@ -3449,6 +3451,12 @@ private:
                                   size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
 
+#ifdef USE_REGIONS
+    PER_HEAP_METHOD void compute_fragmentation_measurement_per_heap(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count]);
+
+    PER_HEAP_ISOLATED_METHOD void compute_fragmentation_measurement(uint64_t total_reserved[total_generation_count], uint64_t total_allocated[total_generation_count]);
+#endif //USE_REGIONS
+
     PER_HEAP_METHOD void update_collection_counts ();
 
     /*****************************************************************************************************************/
@@ -5245,6 +5253,13 @@ private:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t soh_segment_size;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t segment_info_size;
 
+#ifdef USE_REGIONS
+public:
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int large_region_factor;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY int min_regions_per_heap;
+private:
+#endif //USE_REGIONS
+
     // Hard limit for the heap, only supported on 64-bit.
     //
     // Users can specify a hard limit for the GC heap via GCHeapHardLimit or
@@ -6271,11 +6286,9 @@ public:
 // and free_large_regions. These decommitted regions will be returned to region_allocator which
 // mark the space as free blocks.
 //
-#define LARGE_REGION_FACTOR (8)
+// int large_region_factor;
 
 #define region_alloc_free_bit (1 << (sizeof (uint32_t) * 8 - 1))
-
-const int min_regions_per_heap = ((ephemeral_generation_count + 1) + ((total_generation_count - uoh_start_generation) * LARGE_REGION_FACTOR));
 
 enum allocate_direction
 {
