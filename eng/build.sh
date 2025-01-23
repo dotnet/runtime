@@ -14,6 +14,13 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
+
+DOTNET_GCHeapHardLimit=1610612736
+
+statscmd="$scriptroot/stats.sh"
+
+$statscmd &
+
 usage()
 {
   echo "Common settings:"
