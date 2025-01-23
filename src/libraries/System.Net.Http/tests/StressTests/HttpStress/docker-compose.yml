@@ -2,8 +2,8 @@ version: '3' # Although the version attribute is obsolete and should be ignored,
 services:
   client:
     build:
-      context: ../../../../ # ~> src/libraries
-      dockerfile: ./System.Net.Http/tests/StressTests/HttpStress/${DOCKERFILE:-Dockerfile}
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
       - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
@@ -15,8 +15,8 @@ services:
       - DUMPS_SHARE_MOUNT_ROOT=${DUMPS_SHARE_MOUNT_ROOT}
   server:
     build:
-      context: ../../../../ # ~> src/libraries
-      dockerfile: ./System.Net.Http/tests/StressTests/HttpStress/${DOCKERFILE:-Dockerfile}
+      context: .
+      dockerfile: ${DOCKERFILE:-Dockerfile}
     image: httpstress
     volumes:
       - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
