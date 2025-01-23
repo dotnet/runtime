@@ -47,7 +47,7 @@ public partial class UpdateChromeVersions : MBU.Task
     [Required, NotNull]
     public string EnvVarsForPRPath { get; set; } = string.Empty;
 
-    public MessageImportance OutputImportance { get; set; } = MessageImportance.High;
+    public MessageImportance OutputImportance { get; set; } = MessageImportance.Low;
 
     public int MaxMajorVersionsToCheck { get; set; } = 2;
 
