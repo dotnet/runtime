@@ -10,7 +10,7 @@
 #include "regdisplay.h"
 #include "config.h"
 
-#include "UnixContext.h"
+#include "NativeContext.h"
 
 #ifdef __APPLE__
 
@@ -742,150 +742,150 @@ uint64_t GetPC(void* context)
 
 #ifdef TARGET_ARM64
 
-    uint64_t& UNIX_CONTEXT::X0() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X1() { return (uint64_t&)MCREG_X1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X2() { return (uint64_t&)MCREG_X2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X3() { return (uint64_t&)MCREG_X3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X4() { return (uint64_t&)MCREG_X4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X5() { return (uint64_t&)MCREG_X5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X6() { return (uint64_t&)MCREG_X6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X7() { return (uint64_t&)MCREG_X7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X8() { return (uint64_t&)MCREG_X8(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X9() { return (uint64_t&)MCREG_X9(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X10() { return (uint64_t&)MCREG_X10(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X11() { return (uint64_t&)MCREG_X11(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X12() { return (uint64_t&)MCREG_X12(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X13() { return (uint64_t&)MCREG_X13(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X14() { return (uint64_t&)MCREG_X14(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X15() { return (uint64_t&)MCREG_X15(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X16() { return (uint64_t&)MCREG_X16(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X17() { return (uint64_t&)MCREG_X17(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X18() { return (uint64_t&)MCREG_X18(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X19() { return (uint64_t&)MCREG_X19(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X20() { return (uint64_t&)MCREG_X20(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X21() { return (uint64_t&)MCREG_X21(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X22() { return (uint64_t&)MCREG_X22(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X23() { return (uint64_t&)MCREG_X23(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X24() { return (uint64_t&)MCREG_X24(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X25() { return (uint64_t&)MCREG_X25(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X26() { return (uint64_t&)MCREG_X26(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X27() { return (uint64_t&)MCREG_X27(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::X28() { return (uint64_t&)MCREG_X28(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // X29
-    uint64_t& UNIX_CONTEXT::Lr() { return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); } // X30
-    uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X0() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X1() { return (uint64_t&)MCREG_X1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X2() { return (uint64_t&)MCREG_X2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X3() { return (uint64_t&)MCREG_X3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X4() { return (uint64_t&)MCREG_X4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X5() { return (uint64_t&)MCREG_X5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X6() { return (uint64_t&)MCREG_X6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X7() { return (uint64_t&)MCREG_X7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X8() { return (uint64_t&)MCREG_X8(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X9() { return (uint64_t&)MCREG_X9(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X10() { return (uint64_t&)MCREG_X10(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X11() { return (uint64_t&)MCREG_X11(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X12() { return (uint64_t&)MCREG_X12(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X13() { return (uint64_t&)MCREG_X13(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X14() { return (uint64_t&)MCREG_X14(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X15() { return (uint64_t&)MCREG_X15(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X16() { return (uint64_t&)MCREG_X16(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X17() { return (uint64_t&)MCREG_X17(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X18() { return (uint64_t&)MCREG_X18(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X19() { return (uint64_t&)MCREG_X19(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X20() { return (uint64_t&)MCREG_X20(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X21() { return (uint64_t&)MCREG_X21(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X22() { return (uint64_t&)MCREG_X22(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X23() { return (uint64_t&)MCREG_X23(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X24() { return (uint64_t&)MCREG_X24(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X25() { return (uint64_t&)MCREG_X25(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X26() { return (uint64_t&)MCREG_X26(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X27() { return (uint64_t&)MCREG_X27(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::X28() { return (uint64_t&)MCREG_X28(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // X29
+    uint64_t& NATIVE_CONTEXT::Lr() { return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); } // X30
+    uint64_t& NATIVE_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
 
 #elif defined(TARGET_AMD64)
-    uint64_t& UNIX_CONTEXT::Rax(){ return (uint64_t&)MCREG_Rax(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rcx(){ return (uint64_t&)MCREG_Rcx(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rdx(){ return (uint64_t&)MCREG_Rdx(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rbx(){ return (uint64_t&)MCREG_Rbx(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rsp(){ return (uint64_t&)MCREG_Rsp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rbp(){ return (uint64_t&)MCREG_Rbp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rsi(){ return (uint64_t&)MCREG_Rsi(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rdi(){ return (uint64_t&)MCREG_Rdi(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R13(){ return (uint64_t&)MCREG_R13(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R14(){ return (uint64_t&)MCREG_R14(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rax(){ return (uint64_t&)MCREG_Rax(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rcx(){ return (uint64_t&)MCREG_Rcx(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rdx(){ return (uint64_t&)MCREG_Rdx(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rbx(){ return (uint64_t&)MCREG_Rbx(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rsp(){ return (uint64_t&)MCREG_Rsp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rbp(){ return (uint64_t&)MCREG_Rbp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rsi(){ return (uint64_t&)MCREG_Rsi(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rdi(){ return (uint64_t&)MCREG_Rdi(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R13(){ return (uint64_t&)MCREG_R13(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R14(){ return (uint64_t&)MCREG_R14(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R15(){ return (uint64_t&)MCREG_R15(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Rip(){ return (uint64_t&)MCREG_Rip(ctx.uc_mcontext); }
 
 #elif defined(TARGET_ARM)
-    uint64_t& UNIX_CONTEXT::Pc(){ return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Sp(){ return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Lr(){ return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R0(){ return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R1(){ return (uint64_t&)MCREG_R1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R2(){ return (uint64_t&)MCREG_R2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R3(){ return (uint64_t&)MCREG_R3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R4(){ return (uint64_t&)MCREG_R4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R5(){ return (uint64_t&)MCREG_R5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R6(){ return (uint64_t&)MCREG_R6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R7(){ return (uint64_t&)MCREG_R7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Pc(){ return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Sp(){ return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Lr(){ return (uint64_t&)MCREG_Lr(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R0(){ return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R1(){ return (uint64_t&)MCREG_R1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R2(){ return (uint64_t&)MCREG_R2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R3(){ return (uint64_t&)MCREG_R3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R4(){ return (uint64_t&)MCREG_R4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R5(){ return (uint64_t&)MCREG_R5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R6(){ return (uint64_t&)MCREG_R6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R7(){ return (uint64_t&)MCREG_R7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R8(){ return (uint64_t&)MCREG_R8(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R9(){ return (uint64_t&)MCREG_R9(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
 
 #elif TARGET_LOONGARCH64
 
-    uint64_t& UNIX_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R2() { return (uint64_t&)MCREG_Tp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R4() { return (uint64_t&)MCREG_A0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R5() { return (uint64_t&)MCREG_A1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R6() { return (uint64_t&)MCREG_A2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R7() { return (uint64_t&)MCREG_A3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R8() { return (uint64_t&)MCREG_A4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R9() { return (uint64_t&)MCREG_A5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R10() { return (uint64_t&)MCREG_A6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R11() { return (uint64_t&)MCREG_A7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R12() { return (uint64_t&)MCREG_T0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R13() { return (uint64_t&)MCREG_T1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R14() { return (uint64_t&)MCREG_T2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R15() { return (uint64_t&)MCREG_T3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R16() { return (uint64_t&)MCREG_T4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R17() { return (uint64_t&)MCREG_T5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R18() { return (uint64_t&)MCREG_T6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R19() { return (uint64_t&)MCREG_T7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R20() { return (uint64_t&)MCREG_T8(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R21() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R23() { return (uint64_t&)MCREG_S0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R24() { return (uint64_t&)MCREG_S1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R25() { return (uint64_t&)MCREG_S2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R26() { return (uint64_t&)MCREG_S3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R27() { return (uint64_t&)MCREG_S4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R28() { return (uint64_t&)MCREG_S5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R29() { return (uint64_t&)MCREG_S6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R30() { return (uint64_t&)MCREG_S7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::R31() { return (uint64_t&)MCREG_S8(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // R22
-    uint64_t& UNIX_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); } // R1
-    uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); } // R3
-    uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R2() { return (uint64_t&)MCREG_Tp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R4() { return (uint64_t&)MCREG_A0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R5() { return (uint64_t&)MCREG_A1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R6() { return (uint64_t&)MCREG_A2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R7() { return (uint64_t&)MCREG_A3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R8() { return (uint64_t&)MCREG_A4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R9() { return (uint64_t&)MCREG_A5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R10() { return (uint64_t&)MCREG_A6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R11() { return (uint64_t&)MCREG_A7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R12() { return (uint64_t&)MCREG_T0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R13() { return (uint64_t&)MCREG_T1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R14() { return (uint64_t&)MCREG_T2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R15() { return (uint64_t&)MCREG_T3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R16() { return (uint64_t&)MCREG_T4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R17() { return (uint64_t&)MCREG_T5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R18() { return (uint64_t&)MCREG_T6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R19() { return (uint64_t&)MCREG_T7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R20() { return (uint64_t&)MCREG_T8(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R21() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R23() { return (uint64_t&)MCREG_S0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R24() { return (uint64_t&)MCREG_S1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R25() { return (uint64_t&)MCREG_S2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R26() { return (uint64_t&)MCREG_S3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R27() { return (uint64_t&)MCREG_S4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R28() { return (uint64_t&)MCREG_S5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R29() { return (uint64_t&)MCREG_S6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R30() { return (uint64_t&)MCREG_S7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R31() { return (uint64_t&)MCREG_S8(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // R22
+    uint64_t& NATIVE_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); } // R1
+    uint64_t& NATIVE_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); } // R3
+    uint64_t& NATIVE_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
 
 #elif TARGET_RISCV64
 
-    uint64_t& UNIX_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Gp() { return (uint64_t&)MCREG_Gp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Tp() { return (uint64_t&)MCREG_Tp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T0() { return (uint64_t&)MCREG_T0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T1() { return (uint64_t&)MCREG_T1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T2() { return (uint64_t&)MCREG_T2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S1() { return (uint64_t&)MCREG_S1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A0() { return (uint64_t&)MCREG_A0(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A1() { return (uint64_t&)MCREG_A1(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A2() { return (uint64_t&)MCREG_A2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A3() { return (uint64_t&)MCREG_A3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A4() { return (uint64_t&)MCREG_A4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A5() { return (uint64_t&)MCREG_A5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A6() { return (uint64_t&)MCREG_A6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::A7() { return (uint64_t&)MCREG_A7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S2() { return (uint64_t&)MCREG_S2(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S3() { return (uint64_t&)MCREG_S3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S4() { return (uint64_t&)MCREG_S4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S5() { return (uint64_t&)MCREG_S5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S6() { return (uint64_t&)MCREG_S6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S7() { return (uint64_t&)MCREG_S7(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S8() { return (uint64_t&)MCREG_S8(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S9() { return (uint64_t&)MCREG_S9(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S10() { return (uint64_t&)MCREG_S10(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::S11() { return (uint64_t&)MCREG_S11(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T3() { return (uint64_t&)MCREG_T3(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T4() { return (uint64_t&)MCREG_T4(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T5() { return (uint64_t&)MCREG_T5(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::T6() { return (uint64_t&)MCREG_T6(ctx.uc_mcontext); }
-    uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Gp() { return (uint64_t&)MCREG_Gp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Tp() { return (uint64_t&)MCREG_Tp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T0() { return (uint64_t&)MCREG_T0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T1() { return (uint64_t&)MCREG_T1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T2() { return (uint64_t&)MCREG_T2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S1() { return (uint64_t&)MCREG_S1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A0() { return (uint64_t&)MCREG_A0(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A1() { return (uint64_t&)MCREG_A1(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A2() { return (uint64_t&)MCREG_A2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A3() { return (uint64_t&)MCREG_A3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A4() { return (uint64_t&)MCREG_A4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A5() { return (uint64_t&)MCREG_A5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A6() { return (uint64_t&)MCREG_A6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::A7() { return (uint64_t&)MCREG_A7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S2() { return (uint64_t&)MCREG_S2(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S3() { return (uint64_t&)MCREG_S3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S4() { return (uint64_t&)MCREG_S4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S5() { return (uint64_t&)MCREG_S5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S6() { return (uint64_t&)MCREG_S6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S7() { return (uint64_t&)MCREG_S7(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S8() { return (uint64_t&)MCREG_S8(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S9() { return (uint64_t&)MCREG_S9(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S10() { return (uint64_t&)MCREG_S10(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::S11() { return (uint64_t&)MCREG_S11(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T3() { return (uint64_t&)MCREG_T3(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T4() { return (uint64_t&)MCREG_T4(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T5() { return (uint64_t&)MCREG_T5(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::T6() { return (uint64_t&)MCREG_T6(ctx.uc_mcontext); }
+    uint64_t& NATIVE_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
 
 #else
-    PORTABILITY_ASSERT("UNIX_CONTEXT");
+    PORTABILITY_ASSERT("NATIVE_CONTEXT");
 #endif // TARGET_ARM
 
