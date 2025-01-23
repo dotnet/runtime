@@ -47,7 +47,7 @@ public partial class UpdateChromeVersions : MBU.Task
     [Required, NotNull]
     public string EnvVarsForPRPath { get; set; } = string.Empty;
 
-    public MessageImportance OutputImportance { get; set; } = MessageImportance.Low;
+    public MessageImportance MessageImportance { get; set; } = MessageImportance.Low;
 
     public int MaxMajorVersionsToCheck { get; set; } = 2;
 
@@ -220,7 +220,7 @@ public partial class UpdateChromeVersions : MBU.Task
                 int minorForV8 = ver.Major % 10;
 
                 string lkgUrl = $"https://raw.githubusercontent.com/v8/v8/{majorForV8}.{minorForV8}-lkgr/include/v8-version.h";
-                Log.LogMessage(OutputImportance, $"Checking {lkgUrl} ...");
+                Log.LogMessage(MessageImportance, $"Checking {lkgUrl} ...");
                 string v8VersionHContents = await s_httpClient.GetStringAsync(lkgUrl).ConfigureAwait(false);
 
                 var m = V8BuildNumberRegex().Match(v8VersionHContents);
@@ -248,7 +248,7 @@ public partial class UpdateChromeVersions : MBU.Task
         if (File.Exists(filePath) &&
             (DateTime.UtcNow - File.GetLastWriteTimeUtc(filePath)).TotalDays < s_versionCheckThresholdDays)
         {
-            Log.LogMessage(OutputImportance,
+            Log.LogMessage(MessageImportance,
                                 $"{url} will not be downloaded again, as ${filePath} " +
                                 $"is less than {s_versionCheckThresholdDays} old.");
         }
@@ -256,7 +256,7 @@ public partial class UpdateChromeVersions : MBU.Task
         {
             try
             {
-                Log.LogMessage(OutputImportance, $"Downloading {url} ...");
+                Log.LogMessage(MessageImportance, $"Downloading {url} ...");
                 using Stream stream = await s_httpClient.GetStreamAsync(url).ConfigureAwait(false);
                 using FileStream fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
                 await stream.CopyToAsync(fs).ConfigureAwait(false);
@@ -280,13 +280,13 @@ public partial class UpdateChromeVersions : MBU.Task
             string branchUrl = $"{baseUrl}/{branchPosition}";
             string url = $"{branchUrl}/REVISIONS";
 
-            Log.LogMessage(OutputImportance, $"Checking if {url} exists ..");
+            Log.LogMessage(MessageImportance, $"Checking if {url} exists ..");
             HttpResponseMessage response = await s_httpClient
                                                     .GetAsync(url, HttpCompletionOption.ResponseHeadersRead)
                                                     .ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.OK)
             {
-                Log.LogMessage(OutputImportance, $"Found url = {url} with branchUrl = ${branchUrl}");
+                Log.LogMessage(MessageImportance, $"Found url = {url} with branchUrl = ${branchUrl}");
                 return branchUrl;
             }
 
@@ -300,7 +300,7 @@ public partial class UpdateChromeVersions : MBU.Task
         if (throwIfNotFound)
             throw new LogAsErrorException(message);
         else
-            Log.LogMessage(OutputImportance, message);
+            Log.LogMessage(MessageImportance, message);
 
         return null;
     }
