@@ -27,7 +27,11 @@
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <!-- Determine if the CoreCLR runtime can build/run for the specified target. -->
-    <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' or ('$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true')">true</_CoreCLRSupportedOS>
+    <_CoreCLRSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_CoreCLRSupportedOS>
+
+    <!-- Android 32-bit builds blocked by https://github.com/dotnet/runtime/issues/111665 -->
+    <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' and '$(TargetArchitecture)' != 'arm' and '$(TargetArchitecture)' != 'x86'">true</_CoreCLRSupportedOS>
+
     <_CoreCLRSupportedArch Condition="'$(TargetArchitecture)' != 'armv6' and '$(TargetArchitecture)' != 'ppc64le' and '$(TargetArchitecture)' != 's390x'">true</_CoreCLRSupportedArch>
     <CoreCLRSupported Condition="'$(_CoreCLRSupportedOS)' == 'true' and '$(_CoreCLRSupportedArch)' == 'true'">true</CoreCLRSupported>
 
@@ -89,6 +93,10 @@
     <RuntimeFlavor Condition="'$(TargetsAndroid)' == 'true' and $(_subset.Contains('+clr.'))">CoreCLR</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">$(PrimaryRuntimeFlavor)</RuntimeFlavor>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CrossBuild Condition="'$(CrossBuild)' == '' and '$(TargetsAndroid)' == 'true'">true</CrossBuild>
   </PropertyGroup>
 
   <PropertyGroup>
