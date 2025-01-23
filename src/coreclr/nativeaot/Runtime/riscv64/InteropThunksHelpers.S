@@ -25,8 +25,7 @@
         // If using TLS emulation, fetch the TLS data block address
         GETTHUNKDATA_ETLS_9
 #else
-        // Inline function to get TLS variable
-        INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData)
+        INLINE_GET_TLS_VAR t0, C_FUNC(tls_thunkData), t2
 #endif
 
         // t0 = base address of TLS data

@@ -22,7 +22,7 @@
 #ifdef FEATURE_EMULATED_TLS
         GETTHREAD_ETLS_1
 #else
-        INLINE_GETTHREAD  a1
+        INLINE_GETTHREAD  a1, t2
 #endif
 
         //
@@ -126,7 +126,7 @@ LOCAL_LABEL(NewOutOfMemory):
 #ifdef FEATURE_EMULATED_TLS
         GETTHREAD_ETLS_3
 #else
-        INLINE_GETTHREAD a3
+        INLINE_GETTHREAD a3, t2
 #endif
 
         // Load potential new object address into t3.
@@ -178,9 +178,9 @@ LOCAL_LABEL(RhNewString_Rare):
         li  a2, 0x7fffffff
         bltu  a2, a1, LOCAL_LABEL(ArraySizeOverflow)  // Branch if a2 < a1 (check for overflow)
 
-        ld   a2, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
+        lhu  a2, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
         mul  a2, a1, a2                // a2 = a1 * component size
-        ld   a3, OFFSETOF__MethodTable__m_uBaseSize(a0)       // Load base size
+        lw   a3, OFFSETOF__MethodTable__m_uBaseSize(a0)       // Load base size
         add  a2, a2, a3                // a2 = a2 + base size
         addi a2, a2, 7                 // a2 = a2 + 7
         andi a2, a2, ~0x7              // Clear the bits[2:0] of a2 (align to 8 bytes)
@@ -189,7 +189,11 @@ LOCAL_LABEL(RhNewString_Rare):
         // a1 == element count
         // a2 == array size
 
-        INLINE_GETTHREAD a3
+#ifdef FEATURE_EMULATED_TLS
+        GETTHREAD_ETLS_3
+#else
+        INLINE_GETTHREAD a3, t2
+#endif
 
         // Load potential new object address into t3.
         ld   t3, OFFSETOF__Thread__m_alloc_context__alloc_ptr(a3)

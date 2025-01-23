@@ -13,16 +13,16 @@
     .macro CHECK_CACHE_ENTRY entry
         // Load cache entry data into a temporary register
         ld    t6, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16))(t0)
-        
+
         // Compare with MethodTable* in t1
         bne   t1, t6, 0f
-        
+
         // Load the target address from the cache entry
         ld    t0, (OFFSETOF__InterfaceDispatchCache__m_rgEntries + (\entry * 16) + 8)(t0)
-        
+
         // Jump to the address in t6
         jr  t0
-        
+
     0:
     .endm
 
@@ -75,10 +75,10 @@
         // The exception handling infrastructure is aware of the fact that this is the first
         // instruction of RhpInitialInterfaceDispatch and uses it to translate an AV here
         // to a NullReferenceException at the callsite.
-        ld  zero, 0(a0)
+        lw zero, 0(a0)
 
         // Just tail call to the cache miss helper.
-        tail  C_FUNC(RhpInterfaceDispatchSlow)
+        tail       C_FUNC(RhpInterfaceDispatchSlow)
     LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
     //
@@ -105,12 +105,13 @@
     // Use universal transition helper to allow an exception to flow out of resolution.
     //
     LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
-        // t2 contains the interface dispatch cell address.
+        // a1 contains the interface dispatch cell address.
         // Calling convention of the universal thunk is:
-        //  t3: target address for the thunk to call
-        //  t4: parameter of the thunk's target
-        PREPARE_EXTERNAL_VAR RhpCidResolve, t3
-        tail  C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        //  a2: target address for the thunk to call
+        //  a1: parameter of the thunk's target
+        PREPARE_EXTERNAL_VAR RhpCidResolve, a2
+        mv t2, a1
+        tail       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
