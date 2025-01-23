@@ -2800,7 +2800,8 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     {
         JITDUMP("Will insert new blocks after allocation block " FMT_BB "\n", insertionPoint->bbNum);
     }
-    BasicBlock** insertAfter = &insertionPoint;
+    BasicBlock**      insertAfter = &insertionPoint;
+    BasicBlock* const oldLast     = insertionPoint;
 
     // Compute profile scale for the original blocks.
     //
@@ -2854,6 +2855,13 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
         assert(!newBlock->HasInitializedTarget());
         JITDUMP("Updating targets: " FMT_BB " mapped to " FMT_BB "\n", block->bbNum, newBlock->bbNum);
         comp->optSetMappedBlockTargets(block, newBlock, &map);
+    }
+
+    // Fix up any enclosing EH extents
+    //
+    if (enclosingEHRegion != 0)
+    {
+        comp->ehUpdateLastBlocks(oldLast, *insertAfter);
     }
 
     // Create a new local for the enumerator uses in the cloned code
