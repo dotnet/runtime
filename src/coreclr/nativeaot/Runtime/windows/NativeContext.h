@@ -41,6 +41,7 @@ struct NATIVE_CONTEXT
 #elif defined(TARGET_ARM64)
     uintptr_t GetIp() { return ctx.Pc; }
     uintptr_t GetSp() { return ctx.Sp; }
+    uintptr_t GetLr() { return ctx.Lr; }
     void SetIp(uintptr_t val) { ctx.Pc = val; }
     void SetSp(uintptr_t val) { ctx.Sp = val; }
     void SetArg0Reg(uintptr_t val) { ctx.X0 = val; }
@@ -53,7 +54,7 @@ struct NATIVE_CONTEXT
             lambda((size_t*)pReg);
 
         // Lr can be used as a scratch register
-        lambda((size_t*)&Lr);
+        lambda((size_t*)&ctx.Lr);
     }
 #endif
 };
