@@ -1610,7 +1610,7 @@ extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack targ
 
     MethodTable* pMTTarg = target.Get()->GetMethodTable();
 
-    MethodDesc *pMeth = Entry2MethodDesc(method, pMTTarg);
+    MethodDesc *pMeth = NonVirtualEntry2MethodDesc(method);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic());
 
@@ -1694,7 +1694,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         pMTTarg = target.Get()->GetMethodTable();
 
     MethodTable* pDelMT = refThis->GetMethodTable();
-    MethodDesc* pMethOrig = Entry2MethodDesc(method, pMTTarg);
+    MethodDesc* pMethOrig = NonVirtualEntry2MethodDesc(method);
     MethodDesc* pMeth = pMethOrig;
     _ASSERTE(pMeth != NULL);
 
@@ -1878,13 +1878,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
             // Must be a normal delegate
             code = thisDel->GetMethodPtr();
 
-            OBJECTREF orThis = thisDel->GetTarget();
-            if (orThis!=NULL)
-            {
-                pMT = orThis->GetMethodTable();
-            }
-
-            pMethodHandle = Entry2MethodDesc(code, pMT);
+            pMethodHandle = NonVirtualEntry2MethodDesc(code);
         }
     }
 
