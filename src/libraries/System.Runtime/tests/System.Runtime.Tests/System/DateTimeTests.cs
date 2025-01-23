@@ -2695,7 +2695,7 @@ namespace System.Tests
             DateTime utcNow2 = DateTime.UtcNow;
 
             // Ensure the parsed date part is in UTC.
-            Assert.True(utcNow1.Date <= dt.Date && dt.Date <= utcNow2.Date);
+            Assert.InRange(dt.Date, utcNow1.Date, utcNow2.Date);
         }
 
         [Fact]

@@ -3792,7 +3792,7 @@ namespace System
 
         private static DateTime GetDateTimeNow(scoped ref DateTimeResult result, scoped ref DateTimeStyles styles)
         {
-            if ((result.flags & ParseFlags.CaptureOffset) != 0 && (result.flags & ParseFlags.TimeZoneUsed) != 0)
+            if ((result.flags & (ParseFlags.CaptureOffset | ParseFlags.TimeZoneUsed)) == (ParseFlags.CaptureOffset | ParseFlags.TimeZoneUsed))
             {
                 // use the supplied offset to calculate 'Now'
                 return new DateTime(DateTime.UtcNow.Ticks + result.timeZoneOffset.Ticks, DateTimeKind.Unspecified);
