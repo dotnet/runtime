@@ -414,11 +414,11 @@ namespace System.IO.Compression.Tests
                     writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write)) - writesCalled;
                     writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
                     // As above, check 1: the number of writes performed should be minimal.
-                    // 11 writes per archive entry for the local file header.
-                    // 18 writes per archive entry for the central directory header.
-                    // 8 writes (sometimes 9, if there's a comment) for the end of central directory block.
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
                     // The EOCD block won't change as a result of our modifications, so is excluded from the counts.
-                    Assert.Equal(((11 + 18) * entriesToModify), writesCalled + writeBytesCalled);
+                    Assert.Equal(((2 + 2) * entriesToModify), writesCalled + writeBytesCalled);
 
                     trackingStream.Seek(0, SeekOrigin.Begin);
                     target = new ZipArchive(trackingStream, ZipArchiveMode.Read);
@@ -514,24 +514,24 @@ namespace System.IO.Compression.Tests
 
                     // If the data changed first, then every entry after it will be written in full. If the fixed-length
                     // metadata changed first, some entries which won't have been fully written - just updated in place.
-                    // 11 writes per archive entry for the local file header.
-                    // 18 writes per archive entry for the central directory header.
-                    // 4 writes for the file data of the updated entry itself
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 2 writes for the file data of the updated entry itself
                     // 1 write per archive entry for the file data of other entries after this in the file
-                    // 8 writes (sometimes 9, if there's a comment) for the end of central directory block.
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
                     // All of the central directory headers must be rewritten after an entry's data has been modified.
                     if (dataChangeIndex <= lastWriteTimeChangeIndex || lastWriteTimeChangeIndex == -1)
                     {
                         // dataChangeIndex -> totalEntries: rewrite in full
                         // all central directories headers
-                        Assert.Equal(8 + 3 + ((11 + 1) * expectedEntriesToWrite) + (18 * totalEntries), writesCalled + writeBytesCalled);
+                        Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * totalEntries), writesCalled + writeBytesCalled);
                     }
                     else
                     {
                         // lastWriteTimeChangeIndex: partial rewrite
                         // dataChangeIndex -> totalEntries: rewrite in full
                         // all central directory headers
-                        Assert.Equal(8 + 3 + ((11 + 1) * expectedEntriesToWrite) + (18 * totalEntries) + 11, writesCalled + writeBytesCalled);
+                        Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * totalEntries) + 2, writesCalled + writeBytesCalled);
                     }
 
                     trackingStream.Seek(0, SeekOrigin.Begin);
@@ -579,8 +579,8 @@ namespace System.IO.Compression.Tests
                 writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write)) - writesCalled;
                 writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
 
-                // We expect 9 writes for the end of central directory block - 8 for the EOCD, 1 for the comment.
-                Assert.Equal(9, writesCalled + writeBytesCalled);
+                // We expect 2 writes for the end of central directory block - 1 for the EOCD, 1 for the comment.
+                Assert.Equal(2, writesCalled + writeBytesCalled);
 
                 trackingStream.Seek(0, SeekOrigin.Begin);
 
@@ -644,19 +644,19 @@ namespace System.IO.Compression.Tests
                     writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write)) - writesCalled;
                     writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
 
-                    // 11 writes per archive entry for the local file header.
-                    // 18 writes per archive entry for the central directory header.
-                    // 4 writes for the file data of the updated entry itself
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 2 writes for the file data of the updated entry itself
                     // 1 write per archive entry for the file data of other entries after this in the file
-                    // 8 writes (sometimes 9, if there's a comment) for the end of central directory block.
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
                     // All of the central directory headers must be rewritten after an entry's data has been modified.
                     if (modifyIndex == -1)
                     {
-                        Assert.Equal(8 + ((11 + 1) * expectedEntriesToWrite) + (18 * (totalEntries - 1)), writesCalled + writeBytesCalled);
+                        Assert.Equal(1 + ((2 + 1) * expectedEntriesToWrite) + (2 * (totalEntries - 1)), writesCalled + writeBytesCalled);
                     }
                     else
                     {
-                        Assert.Equal(8 + 3 + ((11 + 1) * expectedEntriesToWrite) + (18 * (totalEntries - 1)), writesCalled + writeBytesCalled);
+                        Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * (totalEntries - 1)), writesCalled + writeBytesCalled);
                     }
 
                     trackingStream.Seek(0, SeekOrigin.Begin);
