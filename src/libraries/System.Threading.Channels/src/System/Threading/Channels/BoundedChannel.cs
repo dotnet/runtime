@@ -178,7 +178,7 @@ namespace System.Threading.Channels
                     // cancellation callback could end up running arbitrary code, including code that called back into the reader or
                     // writer and tried to take the same lock held by the thread running UnregisterCancellation... deadlock.  As such,
                     // we only allow synchronous continuations here if both a) the caller requested it and the token isn't cancelable.
-                    var reader = new AsyncOperation<T>(parent._runContinuationsAsynchronously | cancellationToken.CanBeCanceled, cancellationToken);
+                    var reader = new AsyncOperation<T>(parent._runContinuationsAsynchronously || cancellationToken.CanBeCanceled, cancellationToken);
                     parent._blockedReaders.EnqueueTail(reader);
                     return reader.ValueTaskOfT;
                 }
@@ -232,7 +232,7 @@ namespace System.Threading.Channels
                     // cancellation callback could end up running arbitrary code, including code that called back into the reader or
                     // writer and tried to take the same lock held by the thread running UnregisterCancellation... deadlock.  As such,
                     // we only allow synchronous continuations here if both a) the caller requested it and the token isn't cancelable.
-                    var waiter = new AsyncOperation<bool>(parent._runContinuationsAsynchronously | cancellationToken.CanBeCanceled, cancellationToken);
+                    var waiter = new AsyncOperation<bool>(parent._runContinuationsAsynchronously || cancellationToken.CanBeCanceled, cancellationToken);
                     ChannelUtilities.QueueWaiter(ref _parent._waitingReadersTail, waiter);
                     return waiter.ValueTaskOfT;
                 }
