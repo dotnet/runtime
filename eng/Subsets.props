@@ -96,7 +96,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CrossBuild Condition="'$(CrossBuild)' == '' and '$(TargetsAndroid)' == 'true'">true</CrossBuild>
+    <!-- Necessary to avoid host/target confusion when building crossgen / ilcompiler on non-linux hosts -->
+    <CrossBuild Condition="'$(CrossBuild)' == '' and '$(TargetsAndroid)' == 'true' and $(HostOS.StartsWith('osx'))">true</CrossBuild>
   </PropertyGroup>
 
   <PropertyGroup>
