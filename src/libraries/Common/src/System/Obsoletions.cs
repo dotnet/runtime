@@ -133,7 +133,7 @@ namespace System
         internal const string EncryptionPolicyMessage = "EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.";
         internal const string EncryptionPolicyDiagId = "SYSLIB0040";
 
-        // SYSLIB0041 is no longer used and superseded by SYSLIB0060.
+        // SYSLIB0041 is no longer used and is superseded by SYSLIB0060.
 
         internal const string EccXmlExportImportMessage = "ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.";
         internal const string EccXmlExportImportDiagId = "SYSLIB0042";
