@@ -1054,6 +1054,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_BOX:
                 isCopy = wasCopy;
+                ++parentIndex;
+                keepChecking = true;
                 break;
 
             case GT_INDEX_ADDR:
