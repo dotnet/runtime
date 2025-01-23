@@ -15,7 +15,7 @@ done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 
-DOTNET_GCHeapHardLimit=1610612736
+export DOTNET_GCHeapHardLimit=1610612736
 
 statscmd="$scriptroot/stats.sh"
 
