@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -377,11 +378,10 @@ namespace System.IO.Compression
             {
                 if (_storedOffsetOfCompressedData == null)
                 {
-                    Debug.Assert(_archive.ArchiveReader != null);
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                     // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
                     // to find start of data, but still using central directory size information
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
+                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                         throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
                     _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
                 }
@@ -469,11 +469,13 @@ namespace System.IO.Compression
         internal void WriteCentralDirectoryFileHeader()
         {
             // This part is simple, because we should definitely know the sizes by this time
-            BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
-            // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
+            // _storedEntryNameBytes only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
+            // _fileComment only gets set when we read in or set the FileComment property. This performs its own
+            // length check.
             Debug.Assert(_storedEntryNameBytes.Length <= ushort.MaxValue);
+            Debug.Assert(_fileComment.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:
             Zip64ExtraField zip64ExtraField = default;
@@ -536,28 +538,46 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);      // Central directory file header signature  (4 bytes)
-            writer.Write((byte)_versionMadeBySpecification);                    // Version made by Specification (version)  (1 byte)
-            writer.Write((byte)CurrentZipPlatform);                             // Version made by Compatibility (type)     (1 byte)
-            writer.Write((ushort)_versionToExtract);                            // Minimum version needed to extract        (2 bytes)
-            writer.Write((ushort)_generalPurposeBitFlag);                       // General Purpose bit flag                 (2 bytes)
-            writer.Write((ushort)CompressionMethod);                            // The Compression method                   (2 bytes)
-            writer.Write(ZipHelper.DateTimeToDosTime(_lastModified.DateTime));  // File last modification time and date     (4 bytes)
-            writer.Write(_crc32);                                               // CRC-32                                   (4 bytes)
-            writer.Write(compressedSizeTruncated);                              // Compressed Size                          (4 bytes)
-            writer.Write(uncompressedSizeTruncated);                            // Uncompressed Size                        (4 bytes)
-            writer.Write((ushort)_storedEntryNameBytes.Length);                 // File Name Length                         (2 bytes)
-            writer.Write(extraFieldLength);                                     // Extra Field Length                       (2 bytes)
+            // The central directory file header begins with the below constant-length structure:
+            // Central directory file header signature  (4 bytes)
+            // Version made by Specification (version)  (1 byte)
+            // Version made by Compatibility (type)     (1 byte)
+            // Minimum version needed to extract        (2 bytes)
+            // General Purpose bit flag                 (2 bytes)
+            // The Compression method                   (2 bytes)
+            // File last modification time and date     (4 bytes)
+            // CRC-32                                   (4 bytes)
+            // Compressed Size                          (4 bytes)
+            // Uncompressed Size                        (4 bytes)
+            // File Name Length                         (2 bytes)
+            // Extra Field Length                       (2 bytes)
+            // File Comment Length                      (2 bytes)
+            // Start Disk Number                        (2 bytes)
+            // Internal File Attributes                 (2 bytes)
+            // External File Attributes                 (4 bytes)
+            // Offset Of Local Header                   (4 bytes)
+            Span<byte> cdStaticHeader = stackalloc byte[ZipCentralDirectoryFileHeader.BlockConstantSectionSize];
 
-            Debug.Assert(_fileComment.Length <= ushort.MaxValue);
+            ZipCentralDirectoryFileHeader.SignatureConstantBytes.CopyTo(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.Signature..]);
+            cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.VersionMadeBySpecification] = (byte)_versionMadeBySpecification;
+            cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.VersionMadeByCompatibility] = (byte)CurrentZipPlatform;
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.VersionNeededToExtract..], (ushort)_versionToExtract);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.GeneralPurposeBitFlags..], (ushort)_generalPurposeBitFlag);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressionMethod..], (ushort)CompressionMethod);
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.Crc32..], _crc32);
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.FilenameLength..], (ushort)_storedEntryNameBytes.Length);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.ExtraFieldLength..], extraFieldLength);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.FileCommentLength..], (ushort)_fileComment.Length);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.DiskNumberStart..], 0);
+            BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.InternalFileAttributes..], 0);
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.ExternalFileAttributes..], _externalFileAttr);
+            BinaryPrimitives.WriteUInt32LittleEndian(cdStaticHeader[ZipCentralDirectoryFileHeader.FieldLocations.RelativeOffsetOfLocalHeader..], offsetOfLocalHeaderTruncated);
 
-            writer.Write((ushort)_fileComment.Length);
-            writer.Write((ushort)0); // disk number start
-            writer.Write((ushort)0); // internal file attributes
-            writer.Write(_externalFileAttr); // external file attributes
-            writer.Write(offsetOfLocalHeaderTruncated); // offset of local header
-
-            writer.Write(_storedEntryNameBytes);
+            _archive.ArchiveStream.Write(cdStaticHeader);
+            _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
             // write extra fields
             if (zip64Needed)
@@ -566,7 +586,7 @@ namespace System.IO.Compression
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
             if (_fileComment.Length > 0)
-                writer.Write(_fileComment);
+                _archive.ArchiveStream.Write(_fileComment);
         }
 
         // returns false if fails, will get called on every entry before closing in update mode
@@ -580,9 +600,7 @@ namespace System.IO.Compression
             if (_originallyInArchive)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-
-                Debug.Assert(_archive.ArchiveReader != null);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveReader);
+                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream);
             }
 
             if (!_everOpenedForWrite && _originallyInArchive)
@@ -776,9 +794,8 @@ namespace System.IO.Compression
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
-                Debug.Assert(_archive.ArchiveReader != null);
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
+                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                 {
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
@@ -858,7 +875,7 @@ namespace System.IO.Compression
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
         private bool WriteLocalFileHeader(bool isEmptyFile)
         {
-            BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
+            Span<byte> lfStaticHeader = stackalloc byte[ZipLocalFileHeader.SizeOfLocalHeader];
 
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
             // reading in should not be able to produce an entryname longer than ushort.MaxValue
@@ -870,7 +887,7 @@ namespace System.IO.Compression
             uint compressedSizeTruncated, uncompressedSizeTruncated;
 
             // save offset
-            _offsetOfLocalHeader = writer.BaseStream.Position;
+            _offsetOfLocalHeader = _archive.ArchiveStream.Position;
 
             // if we already know that we have an empty file don't worry about anything, just do a straight shot of the header
             if (isEmptyFile)
@@ -924,6 +941,9 @@ namespace System.IO.Compression
                 }
             }
 
+            // save offset
+            _offsetOfLocalHeader = _archive.ArchiveStream.Position;
+
             // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
             int bigExtraFieldLength = (zip64Used ? zip64ExtraField.TotalSize : 0)
                                       + (_lhUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_lhUnknownExtraFields) : 0);
@@ -938,19 +958,21 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            // write header
-            writer.Write(ZipLocalFileHeader.SignatureConstant);
-            writer.Write((ushort)_versionToExtract);
-            writer.Write((ushort)_generalPurposeBitFlag);
-            writer.Write((ushort)CompressionMethod);
-            writer.Write(ZipHelper.DateTimeToDosTime(_lastModified.DateTime)); // uint
-            writer.Write(_crc32); // uint
-            writer.Write(compressedSizeTruncated); // uint
-            writer.Write(uncompressedSizeTruncated); // uint
-            writer.Write((ushort)_storedEntryNameBytes.Length);
-            writer.Write(extraFieldLength); // ushort
+            ZipLocalFileHeader.SignatureConstantBytes.CopyTo(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Signature..]);
+            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.VersionNeededToExtract..], (ushort)_versionToExtract);
+            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags..], (ushort)_generalPurposeBitFlag);
+            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressionMethod..], (ushort)CompressionMethod);
+            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.LastModified..], ZipHelper.DateTimeToDosTime(_lastModified.DateTime));
+            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.Crc32..], _crc32);
+            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.CompressedSize..], compressedSizeTruncated);
+            BinaryPrimitives.WriteUInt32LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.UncompressedSize..], uncompressedSizeTruncated);
+            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.FilenameLength..], (ushort)_storedEntryNameBytes.Length);
+            BinaryPrimitives.WriteUInt16LittleEndian(lfStaticHeader[ZipLocalFileHeader.FieldLocations.ExtraFieldLength..], extraFieldLength);
 
-            writer.Write(_storedEntryNameBytes);
+            // write header
+            _archive.ArchiveStream.Write(lfStaticHeader);
+
+            _archive.ArchiveStream.Write(_storedEntryNameBytes);
 
             if (zip64Used)
                 zip64ExtraField.WriteBlock(_archive.ArchiveStream);
@@ -1017,8 +1039,15 @@ namespace System.IO.Compression
         // Assumes that the stream is currently at the end of the data
         private void WriteCrcAndSizesInLocalHeader(bool zip64HeaderUsed)
         {
+            const int MetadataBufferLength = ZipLocalFileHeader.FieldLengths.VersionNeededToExtract + ZipLocalFileHeader.FieldLengths.GeneralPurposeBitFlags;
+            const int CrcAndSizesBufferLength = ZipLocalFileHeader.FieldLengths.Crc32 + ZipLocalFileHeader.FieldLengths.CompressedSize + ZipLocalFileHeader.FieldLengths.UncompressedSize;
+            const int Zip64SizesBufferLength = Zip64ExtraField.FieldLengths.UncompressedSize + Zip64ExtraField.FieldLengths.CompressedSize;
+            const int Zip64DataDescriptorCrcAndSizesBufferLength = ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.Crc32
+                + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize;
+
             long finalPosition = _archive.ArchiveStream.Position;
-            BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
+            // Buffer has been sized to the largest data payload required: the 64-bit data descriptor.
+            Span<byte> writeBuffer = stackalloc byte[Zip64DataDescriptorCrcAndSizesBufferLength];
 
             bool zip64Needed = ShouldUseZIP64
 #if DEBUG_FORCE_ZIP64
@@ -1037,31 +1066,39 @@ namespace System.IO.Compression
             // and setting the version to Zip64 to indicate that descriptor contains 64-bit values
             if (pretendStreaming)
             {
+                int relativeVersionToExtractLocation = ZipLocalFileHeader.FieldLocations.VersionNeededToExtract - ZipLocalFileHeader.FieldLocations.VersionNeededToExtract;
+                int relativeGeneralPurposeBitFlagsLocation = ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags - ZipLocalFileHeader.FieldLocations.VersionNeededToExtract;
+
                 VersionToExtractAtLeast(ZipVersionNeededValues.Zip64);
                 _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
 
-                _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.OffsetToVersionFromHeaderStart,
+                _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.VersionNeededToExtract,
                                             SeekOrigin.Begin);
-                writer.Write((ushort)_versionToExtract);
-                writer.Write((ushort)_generalPurposeBitFlag);
+                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer[relativeVersionToExtractLocation..], (ushort)_versionToExtract);
+                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer[relativeGeneralPurposeBitFlagsLocation..], (ushort)_generalPurposeBitFlag);
+
+                _archive.ArchiveStream.Write(writeBuffer[..MetadataBufferLength]);
             }
 
             // next step is fill out the 32-bit size values in the normal header. we can't assume that
             // they are correct. we also write the CRC
-            _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.OffsetToCrcFromHeaderStart,
+            _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.Crc32,
                                             SeekOrigin.Begin);
             if (!pretendStreaming)
             {
-                writer.Write(_crc32);
-                writer.Write(compressedSizeTruncated);
-                writer.Write(uncompressedSizeTruncated);
+                int relativeCrc32Location = ZipLocalFileHeader.FieldLocations.Crc32 - ZipLocalFileHeader.FieldLocations.Crc32;
+                int relativeCompressedSizeLocation = ZipLocalFileHeader.FieldLocations.CompressedSize - ZipLocalFileHeader.FieldLocations.Crc32;
+                int relativeUncompressedSizeLocation = ZipLocalFileHeader.FieldLocations.UncompressedSize - ZipLocalFileHeader.FieldLocations.Crc32;
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCrc32Location..], _crc32);
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCompressedSizeLocation..], compressedSizeTruncated);
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeUncompressedSizeLocation..], uncompressedSizeTruncated);
             }
             else // but if we are pretending to stream, we want to fill in with zeroes
             {
-                writer.Write((uint)0);
-                writer.Write((uint)0);
-                writer.Write((uint)0);
+                writeBuffer[..CrcAndSizesBufferLength].Clear();
             }
+            _archive.ArchiveStream.Write(writeBuffer[..CrcAndSizesBufferLength]);
 
             // next step: if we wrote the 64 bit header initially, a different implementation might
             // try to read it, even if the 32-bit size values aren't masked. thus, we should always put the
@@ -1071,11 +1108,16 @@ namespace System.IO.Compression
             // is always the first extra field that is written
             if (zip64HeaderUsed)
             {
+                int relativeUncompressedSizeLocation = Zip64ExtraField.FieldLocations.UncompressedSize - Zip64ExtraField.FieldLocations.UncompressedSize;
+                int relativeCompressedSizeLocation = Zip64ExtraField.FieldLocations.CompressedSize - Zip64ExtraField.FieldLocations.UncompressedSize;
+
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader + ZipLocalFileHeader.SizeOfLocalHeader
                                             + _storedEntryNameBytes.Length + Zip64ExtraField.OffsetToFirstField,
                                             SeekOrigin.Begin);
-                writer.Write(_uncompressedSize);
-                writer.Write(_compressedSize);
+                BinaryPrimitives.WriteInt64LittleEndian(writeBuffer[relativeUncompressedSizeLocation..], _uncompressedSize);
+                BinaryPrimitives.WriteInt64LittleEndian(writeBuffer[relativeCompressedSizeLocation..], _compressedSize);
+
+                _archive.ArchiveStream.Write(writeBuffer[..Zip64SizesBufferLength]);
             }
 
             // now go to the where we were. assume that this is the end of the data
@@ -1086,9 +1128,15 @@ namespace System.IO.Compression
             // 64-bit sizes
             if (pretendStreaming)
             {
-                writer.Write(_crc32);
-                writer.Write(_compressedSize);
-                writer.Write(_uncompressedSize);
+                int relativeCrc32Location = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32 - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
+                int relativeCompressedSizeLocation = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
+                int relativeUncompressedSizeLocation = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize - ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.Crc32;
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer[relativeCrc32Location..], _crc32);
+                BinaryPrimitives.WriteInt64LittleEndian(writeBuffer[relativeCompressedSizeLocation..], _compressedSize);
+                BinaryPrimitives.WriteInt64LittleEndian(writeBuffer[relativeUncompressedSizeLocation..], _uncompressedSize);
+
+                _archive.ArchiveStream.Write(writeBuffer[..Zip64DataDescriptorCrcAndSizesBufferLength]);
             }
         }
 
@@ -1099,21 +1147,30 @@ namespace System.IO.Compression
 
             // data descriptor can be 32-bit or 64-bit sizes. 32-bit is more compatible, so use that if possible
             // signature is optional but recommended by the spec
+            const int MaxSizeOfDataDescriptor = 24;
 
-            BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
+            Span<byte> dataDescriptor = stackalloc byte[MaxSizeOfDataDescriptor];
+            int bytesToWrite;
 
-            writer.Write(ZipLocalFileHeader.DataDescriptorSignature);
-            writer.Write(_crc32);
+            ZipLocalFileHeader.DataDescriptorSignatureConstantBytes.CopyTo(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Signature..]);
+            BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.Crc32..], _crc32);
+
             if (AreSizesTooLarge)
             {
-                writer.Write(_compressedSize);
-                writer.Write(_uncompressedSize);
+                BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor[ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize..], _compressedSize);
+                BinaryPrimitives.WriteInt64LittleEndian(dataDescriptor[ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.UncompressedSize..], _uncompressedSize);
+
+                bytesToWrite = ZipLocalFileHeader.Zip64DataDescriptor.FieldLocations.CompressedSize + ZipLocalFileHeader.Zip64DataDescriptor.FieldLengths.UncompressedSize;
             }
             else
             {
-                writer.Write((uint)_compressedSize);
-                writer.Write((uint)_uncompressedSize);
+                BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.CompressedSize..], (uint)_compressedSize);
+                BinaryPrimitives.WriteUInt32LittleEndian(dataDescriptor[ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.UncompressedSize..], (uint)_uncompressedSize);
+
+                bytesToWrite = ZipLocalFileHeader.ZipDataDescriptor.FieldLocations.CompressedSize + ZipLocalFileHeader.ZipDataDescriptor.FieldLengths.UncompressedSize;
             }
+
+            _archive.ArchiveStream.Write(dataDescriptor[..bytesToWrite]);
         }
 
         private void UnloadStreams()
