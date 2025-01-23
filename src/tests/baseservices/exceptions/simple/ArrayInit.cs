@@ -40,6 +40,7 @@ public class ArrayInit {
         }
         catch (NotSupportedException)
         {
+            throw new NotSupportedException();
         }
         catch (Exception e)
         {

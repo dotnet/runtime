@@ -3,10 +3,12 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
-using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -58,17 +60,14 @@ internal readonly struct StackWalk_1 : IStackWalk
         Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
         CheckIP(new(context.InstructionPointer.Value));
 
-        foreach (Frame frame in FrameIterator.EnumerateFrames(_target, threadData.Frame))
+        foreach (Data.Frame frame in FrameIterator.EnumerateFrames(_target, threadData.Frame))
         {
             FrameIterator.PrintFrame(_target, frame);
             if (FrameIterator.TryGetContext(_target, frame, out TargetPointer? IP, out TargetPointer? SP))
             {
-                CheckIP(new(IP.Value));
+                UnwindUntilNative(IP.Value, SP.Value);
             }
         }
-
-
-        Console.WriteLine(context.ToString());
 
         writer.Flush();
     }
@@ -88,4 +87,62 @@ internal readonly struct StackWalk_1 : IStackWalk
             Console.WriteLine("IP is unmanaged");
         }
     }
-}
+
+    private void UnwindUntilNative(TargetPointer ip, TargetPointer sp)
+    {
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+        AMD64Context context = new AMD64Context()
+        {
+            Rsp = sp,
+            Rip = ip,
+        };
+        while (eman.GetCodeBlockHandle(new(context.Rip)) is CodeBlockHandle cbh)
+        {
+            TargetPointer methodDesc = eman.GetMethodDesc(cbh);
+            Console.WriteLine($"IP: {context.InstructionPointer.Value:x16} SP: {context.StackPointer.Value:x16} MethodDesc: {methodDesc.Value:x16}");
+            try
+            {
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine(ex);
+                throw;
+            }
+        }
+
+        Console.WriteLine($"IP: {context.InstructionPointer.Value:x16} SP: {context.StackPointer.Value:x16}");
+        Console.WriteLine($"IP is unmanaged, finishing unwind started at {sp.Value:x16}");
+    }
+
+    private void Unwind(TargetPointer ip, TargetPointer sp)
+    {
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+        if (eman.GetCodeBlockHandle(new(ip.Value)) is CodeBlockHandle cbh)
+        {
+            TargetPointer methodDesc = eman.GetMethodDesc(cbh);
+            TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
+            TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, new(ip.Value));
+            Console.WriteLine($"MethodDesc: {methodDesc.Value:x16} BaseAddress: {moduleBase.Value:x16} UnwindInfo: {unwindInfo.Value:x16}");
+            try
+            {
+                AMD64Context context = new AMD64Context()
+                {
+                    Rsp = sp,
+                    Rip = ip,
+                };
+                Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
+                Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+        else
+        {
+            Console.WriteLine("IP is unmanaged");
+        }
+    }
+};

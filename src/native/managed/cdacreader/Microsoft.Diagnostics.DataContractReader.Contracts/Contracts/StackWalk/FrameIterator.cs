@@ -39,6 +39,12 @@ internal sealed class FrameIterator
             case DataType.HelperMethodFrame_3OBJ:
             case DataType.HelperMethodFrame_PROTECTOBJ:
                 Data.HelperMethodFrame helperMethodFrame = target.ProcessedData.GetOrAdd<Data.HelperMethodFrame>(frame.Address);
+                if (helperMethodFrame.LazyMachState.StackPointer is null || helperMethodFrame.LazyMachState.InstructionPointer is null)
+                {
+                    IP = null;
+                    SP = null;
+                    return false;
+                }
                 IP = helperMethodFrame.LazyMachState.InstructionPointer;
                 SP = helperMethodFrame.LazyMachState.StackPointer;
                 return true;

@@ -602,16 +602,14 @@ DEFINE_FRAME_TYPE(HelperMethodFrame_3OBJ)
 DEFINE_FRAME_TYPE(HelperMethodFrame_PROTECTOBJ)
 #undef DEFINE_FRAME_TYPE
 
+#ifdef TARGET_AMD64
 CDAC_TYPE_BEGIN(LazyMachState)
 CDAC_TYPE_SIZE(sizeof(LazyMachState))
 CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, InstructionPointer, cdac_data<LazyMachState>::InstructionPointer)
 CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, StackPointer, cdac_data<LazyMachState>::StackPointer)
 CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, ReturnAddress, cdac_data<LazyMachState>::ReturnAddress)
-CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, CapturedInstructionPointer, offsetof(LazyMachState, m_CaptureRip))
-CDAC_TYPE_FIELD(LazyMachState, /*pointer*/, CapturedStackPointer, offsetof(LazyMachState, m_CaptureRsp))
-CDAC_TYPE_FIELD(LazyMachState, /*CalleeSavedRegisters*/, CalleeSavedRegisters, cdac_data<LazyMachState>::CalleeSavedRegisters)
-CDAC_TYPE_FIELD(LazyMachState, /*CalleeSavedRegistersPointers*/, CalleeSavedRegistersPointers, cdac_data<LazyMachState>::CalleeSavedRegistersPointers)
 CDAC_TYPE_END(LazyMachState)
+#endif // TARGET_AMD64
 
 CDAC_TYPES_END()
 
