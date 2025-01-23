@@ -33,8 +33,11 @@
 void
 Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
 
+void
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, long current_local_time);
+
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time);
+Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
 
 // called from C#
 void
@@ -221,8 +224,8 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
     free (user_data);
 }
 
-static int
-mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[], int local_date_time_offset)
+static void
+mono_droid_runtime_init (int local_date_time_offset)
 {
     // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
 
@@ -304,7 +307,11 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     mono_jit_set_aot_mode(MONO_AOT_MODE_NORMAL);
 #endif // FULL_AOT
 #endif // FORCE_INTERPRETER
+}
 
+static int 
+mono_droid_execute_assembly (const char *executable, int managed_argc, char* managed_argv[])
+{    
     MonoDomain *domain = mono_jit_init_version ("dotnet.android", "mobile");
     assert (domain);
 
@@ -340,29 +347,40 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
     (*env)->ReleaseStringUTFChars(env, j_value, val);
 }
 
-int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time)
+void
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, long current_local_time)
 {
     char file_dir[2048];
     char cache_dir[2048];
     char testresults_dir[2048];
-    char entryPointLibName[2048];
     strncpy_str (env, file_dir, j_files_dir, sizeof(file_dir));
     strncpy_str (env, cache_dir, j_cache_dir, sizeof(cache_dir));
     strncpy_str (env, testresults_dir, j_testresults_dir, sizeof(testresults_dir));
-    strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
 
     bundle_path = file_dir;
-    executable = entryPointLibName;
 
     setenv ("HOME", bundle_path, true);
     setenv ("TMPDIR", cache_dir, true);
     setenv ("TEST_RESULTS_DIR", testresults_dir, true);
 
+    mono_droid_runtime_init (current_local_time);
+}
+
+int
+Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args)
+{
+    char entryPointLibName[2048];
+    strncpy_str (env, entryPointLibName, j_entryPointLibName, sizeof(entryPointLibName));
+
+    executable = entryPointLibName;
+    assert (executable);
+
     int args_len = (*env)->GetArrayLength(env, j_args);
     int managed_argc = args_len + 1;
     char** managed_argv = (char**)malloc(managed_argc * sizeof(char*));
 
+    bundle_path = getenv ("HOME");
+    assert (bundle_path); // "HOME" env variable must be set by Java_net_dot_MonoRunner_initRuntime
     managed_argv[0] = bundle_path;
     for (int i = 0; i < args_len; ++i)
     {
@@ -370,7 +388,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
         managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
-    int res = mono_droid_runtime_init (executable, managed_argc, managed_argv, current_local_time);
+    int res = mono_droid_execute_assembly (executable, managed_argc, managed_argv);
 
     for (int i = 0; i < args_len; ++i)
     {
