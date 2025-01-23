@@ -413,7 +413,7 @@ namespace System
         /// </summary>
         private static string FindTimeZoneId(byte[] rawData)
         {
-            if(Invariant)
+            if (Invariant)
             {
                 return LocalId;
             }
