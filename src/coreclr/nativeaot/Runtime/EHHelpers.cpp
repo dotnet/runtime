@@ -179,47 +179,6 @@ FCDECL3(void, RhpFailFastForPInvokeExceptionCoop, intptr_t PInvokeCallsiteReturn
 
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 
-EXTERN_C int32_t __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExceptionRecord,
-                                                  uintptr_t              EstablisherFrame,
-                                                  PCONTEXT                pContextRecord,
-                                                  DISPATCHER_CONTEXT *    pDispatcherContext)
-{
-    UNREFERENCED_PARAMETER(EstablisherFrame);
-
-    Thread * pThread = ThreadStore::GetCurrentThread();
-
-    // A thread in DoNotTriggerGc mode has many restrictions that will become increasingly likely to be violated as
-    // exception dispatch kicks off. So we just address this as early as possible with a FailFast.
-    // The most likely case where this occurs is in GC-callouts -- in that case, we have
-    // managed code that runs on behalf of GC, which might have a bug that causes an AV.
-    if (pThread->IsDoNotTriggerGcSet())
-        RhFailFast();
-
-    // We promote exceptions that were not converted to managed exceptions to a FailFast.  However, we have to
-    // be careful because we got here via OS SEH infrastructure and, therefore, don't know what GC mode we're
-    // currently in.  As a result, since we're calling back into managed code to handle the FailFast, we must
-    // correctly call either a UnmanagedCallersOnly or a RuntimeExport version of the same method.
-    if (pThread->IsCurrentThreadInCooperativeMode())
-    {
-        // Cooperative mode -- Typically, RhpVectoredExceptionHandler will handle this because the faulting IP will be
-        // in managed code.  But sometimes we AV on a bad call indirect or something similar.  In that situation, we can
-        // use the dispatcher context or exception registration record to find the relevant classlib.
-#ifdef HOST_X86
-        intptr_t classlibBreadcrumb = ((EXCEPTION_REGISTRATION_RECORD*)EstablisherFrame)->Handler;
-#else
-        intptr_t classlibBreadcrumb = pDispatcherContext->ControlPc;
-#endif
-        RhpFailFastForPInvokeExceptionCoop(classlibBreadcrumb, pExceptionRecord, pContextRecord);
-    }
-    else
-    {
-        // Preemptive mode -- the classlib associated with the last pinvoke owns the fail fast behavior.
-        intptr_t pinvokeCallsiteReturnAddr = (intptr_t)pThread->GetCurrentThreadPInvokeReturnAddress();
-        RhpFailFastForPInvokeExceptionPreemp(pinvokeCallsiteReturnAddr, pExceptionRecord, pContextRecord);
-    }
-
-    return 0;
-}
 #endif // TARGET_WINDOWS
 
 FCDECL2(void, RhpThrowHwEx, int exceptionCode, TADDR faultingIP);
