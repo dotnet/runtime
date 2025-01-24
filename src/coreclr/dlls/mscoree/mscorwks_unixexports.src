@@ -1,3 +1,6 @@
+; Android hosting API
+android_coreclr_initialize
+
 ; Unix hosting API
 coreclr_create_delegate
 coreclr_execute_assembly

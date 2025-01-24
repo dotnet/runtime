@@ -53,4 +53,17 @@ struct host_runtime_contract
         const char* entry_point_name);
 };
 
+#if defined(TARGET_ANDROID)
+struct host_configuration_property
+{
+    const char16_t* name;
+    const char16_t* value;
+};
+
+struct host_configuration_properties
+{
+    size_t nitems;
+    const host_configuration_property* data;
+};
+#endif
 #endif // __HOST_RUNTIME_CONTRACT_H__

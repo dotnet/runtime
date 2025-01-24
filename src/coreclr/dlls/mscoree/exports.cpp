@@ -23,6 +23,10 @@
 #include <hostinformation.h>
 #include <corehost/host_runtime_contract.h>
 
+#if defined(TARGET_ANDROID)
+#include <android/log.h>
+#endif // TARGET_ANDROID
+
 #define ASSERTE_ALL_BUILDS(expr) _ASSERTE_ALL_BUILDS((expr))
 
 #ifdef TARGET_UNIX
@@ -73,6 +77,19 @@ public:
         }
     }
 };
+
+#if defined(TARGET_ANDROID)
+namespace {
+    constexpr static char ANDROID_LOGCAT_TAG[] { "CoreCLR" };
+    void LogErrorToLogcat(int priority, const char* format, ...) noexcept
+    {
+        va_list args;
+        va_start(args, format);
+        __android_log_vprint(priority, ANDROID_LOGCAT_TAG, format, args);
+        va_end(args);
+    }
+}
+#endif
 
 // Convert 8 bit string to unicode
 static LPCWSTR StringToUnicode(LPCSTR str)
@@ -129,6 +146,30 @@ static void InitializeStartupFlags(STARTUP_FLAGS* startupFlagsRef)
 
     *startupFlagsRef = startupFlags;
 }
+
+#if defined(TARGET_ANDROID)
+static void ConvertConfigPropertiesToUnicode(
+    const host_configuration_properties* properties,
+    LPCWSTR** propertyKeysWRef,
+    LPCWSTR** propertyValuesWRef)
+{
+    LPCWSTR* propertyKeysW = new (nothrow) LPCWSTR[properties->nitems];
+    ASSERTE_ALL_BUILDS(propertyKeysW != nullptr);
+
+    LPCWSTR* propertyValuesW = new (nothrow) LPCWSTR[properties->nitems];
+    ASSERTE_ALL_BUILDS(propertyValuesW != nullptr);
+
+    for (size_t propertyIndex = 0; propertyIndex < properties->nitems; ++propertyIndex)
+    {
+        host_configuration_property const& prop = properties->data[propertyIndex];
+        propertyKeysW[propertyIndex] = prop.name;
+        propertyValuesW[propertyIndex] = prop.value;
+    }
+
+    *propertyKeysWRef = propertyKeysW;
+    *propertyValuesWRef = propertyValuesW;
+}
+#endif
 
 static void ConvertConfigPropertiesToUnicode(
     const char** propertyKeys,
@@ -213,6 +254,102 @@ int coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer)
 GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
 extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const char*, const char*, void**);
 #endif //FEATURE_GDBJIT
+
+#if defined(TARGET_ANDROID)
+extern "C"
+NOINLINE
+DLLEXPORT
+int android_coreclr_initialize(
+    const char* appName,
+    const char16_t* appDomainFriendlyName,
+    host_runtime_contract* hostContract,
+    const host_configuration_properties* properties,
+    void **hostHandle,
+    unsigned int* domainId)
+{
+    HostingApiFrameHolder apiFrameHolder(_ReturnAddress());
+
+    if (properties == nullptr) { [[unlikely]]
+        LogErrorToLogcat(ANDROID_LOG_FATAL, "Initialization routine was not passed the required configuration properties pointer.");
+        return HOST_E_INVALIDOPERATION;
+    }
+
+    if (properties->data == nullptr) { [[unlikely]]
+        LogErrorToLogcat(ANDROID_LOG_FATAL, "Initialization routine was not passed valid configuration properties data.");
+        return HOST_E_INVALIDOPERATION;
+    }
+
+    if (hostContract == nullptr) { [[unlikely]]
+        LogErrorToLogcat(ANDROID_LOG_FATAL, "Initialization routine was not passed the required host contract pointer.");
+        return HOST_E_INVALIDOPERATION;
+    }
+
+    if (hostContract->pinvoke_override == nullptr) { [[unlikely]]
+        LogErrorToLogcat(ANDROID_LOG_FATAL, "Host contract isn't initialized properly: missing p/invoke override handler.");
+        return HOST_E_INVALIDOPERATION;
+    }
+
+    if (hostContract->bundle_probe == nullptr) { [[unlikely]]
+        LogErrorToLogcat(ANDROID_LOG_FATAL, "Host contract isn't initialized properly: missing bundle probe handler.");
+        return HOST_E_INVALIDOPERATION;
+    }
+
+    LPCWSTR* propertyKeysW = nullptr;
+    LPCWSTR* propertyValuesW = nullptr;
+    ConvertConfigPropertiesToUnicode (properties, &propertyKeysW, &propertyValuesW);
+
+    // Android doesn't have executables as such (at least as far as Android applications are concerned),
+    // so we will use application name (package name) as the "executable path" here.
+    DWORD error = PAL_InitializeCoreCLR(appName, g_coreclr_embedded);
+    HRESULT hr = HRESULT_FROM_WIN32(error);
+
+    // If PAL initialization failed, then we should return right away and avoid
+    // calling any other APIs because they can end up calling into the PAL layer again.
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    HostInformation::SetContract(hostContract);
+    PInvokeOverride::SetPInvokeOverride(hostContract->pinvoke_override, PInvokeOverride::Source::RuntimeConfiguration);
+
+    ReleaseHolder<ICLRRuntimeHost4> host;
+    hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
+    IfFailRet(hr);
+
+    static Bundle bundle(appName, hostContract->bundle_probe);
+    Bundle::AppBundle = &bundle;
+
+    // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
+    Configuration::InitializeConfigurationKnobs(static_cast<int>(properties->nitems), propertyKeysW, propertyValuesW);
+
+    STARTUP_FLAGS startupFlags;
+    InitializeStartupFlags(&startupFlags);
+
+    hr = host->SetStartupFlags(startupFlags);
+    IfFailRet(hr);
+
+    hr = host->Start();
+    IfFailRet(hr);
+
+    hr = host->CreateAppDomainWithManager(
+        appDomainFriendlyName,
+        APPDOMAIN_SECURITY_DEFAULT,
+        nullptr,                    // Name of the assembly that contains the AppDomainManager implementation
+        nullptr,                    // The AppDomainManager implementation type name
+        static_cast<int>(properties->nitems),
+        propertyKeysW,
+        propertyValuesW,
+        (DWORD *)domainId);
+
+    if (SUCCEEDED(hr))
+    {
+        host.SuppressRelease();
+        *hostHandle = host;
+    }
+    return hr;
+}
+#endif // TARGET_ANDROID
 
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain

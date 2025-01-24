@@ -22,6 +22,10 @@
 #define CORECLR_HOSTING_API_LINKAGE
 #endif
 
+#if defined(TARGET_ANDROID)
+#include "corehost/host_runtime_contract.h"
+#endif
+
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
@@ -29,6 +33,15 @@
     CORECLR_HOSTING_API_LINKAGE int CORECLR_CALLING_CONVENTION function(__VA_ARGS__); \
     typedef int (CORECLR_CALLING_CONVENTION *function##_ptr)(__VA_ARGS__)
 
+#if defined(TARGET_ANDROID)
+CORECLR_HOSTING_API(android_coreclr_initialize,
+            const char* appName,
+            const char16_t* appDomainFriendlyName,
+            host_runtime_contract* hostContract,
+            const host_configuration_properties* properties,
+            void **hostHandle,
+            unsigned int* domainId);
+#endif
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //

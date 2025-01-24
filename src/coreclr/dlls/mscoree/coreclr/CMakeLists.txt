@@ -187,6 +187,10 @@ endif()
 
 target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks ${FOUNDATION})
+if (CLR_CMAKE_TARGET_ANDROID)
+target_link_libraries(coreclr PUBLIC log)
+endif()
+
 target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
 target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
