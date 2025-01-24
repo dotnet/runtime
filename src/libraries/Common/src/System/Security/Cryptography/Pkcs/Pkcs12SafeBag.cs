@@ -9,7 +9,13 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public abstract class Pkcs12SafeBag
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    abstract class Pkcs12SafeBag
     {
         private readonly string _bagIdValue;
         private Oid? _bagOid;
@@ -77,7 +83,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (_attributes?.Count > 0)
             {
-                List<AttributeAsn> attrs = CmsSigner.BuildAttributes(_attributes);
+                List<AttributeAsn> attrs = PkcsHelpers.BuildAttributes(_attributes);
 
                 writer.PushSetOf();
 

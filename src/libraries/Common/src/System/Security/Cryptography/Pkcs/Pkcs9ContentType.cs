@@ -1,25 +1,32 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Formats.Asn1;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs9MessageDigest : Pkcs9AttributeObject
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs9ContentType : Pkcs9AttributeObject
     {
         //
         // Constructors.
         //
 
-        public Pkcs9MessageDigest()
-            : base(Oids.MessageDigestOid.CopyOid())
+        public Pkcs9ContentType()
+            : base(Oids.ContentTypeOid.CopyOid())
         {
         }
 
-        internal Pkcs9MessageDigest(ReadOnlySpan<byte> rawData)
-            : base(Oids.MessageDigestOid.CopyOid(), rawData)
+        internal Pkcs9ContentType(ReadOnlySpan<byte> rawData)
+            : base(Oids.ContentTypeOid.CopyOid(), rawData)
         {
         }
 
@@ -27,18 +34,18 @@ namespace System.Security.Cryptography.Pkcs
         // Public properties.
         //
 
-        public byte[] MessageDigest
+        public Oid ContentType
         {
             get
             {
-                return _lazyMessageDigest ??= Decode(RawData);
+                return _lazyContentType ??= Decode(RawData);
             }
         }
 
         public override void CopyFrom(AsnEncodedData asnEncodedData)
         {
             base.CopyFrom(asnEncodedData);
-            _lazyMessageDigest = null;
+            _lazyContentType = null;
         }
 
         //
@@ -46,14 +53,15 @@ namespace System.Security.Cryptography.Pkcs
         //
 
         [return: NotNullIfNotNull(nameof(rawData))]
-        private static byte[]? Decode(byte[]? rawData)
+        private static Oid? Decode(byte[]? rawData)
         {
             if (rawData == null)
                 return null;
 
-            return PkcsHelpers.DecodeOctetString(rawData);
+            string contentTypeValue = PkcsHelpers.DecodeOid(rawData);
+            return new Oid(contentTypeValue);
         }
 
-        private volatile byte[]? _lazyMessageDigest;
+        private volatile Oid? _lazyContentType;
     }
 }

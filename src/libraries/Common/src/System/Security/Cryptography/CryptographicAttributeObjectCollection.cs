@@ -10,7 +10,13 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public sealed class CryptographicAttributeObjectCollection : ICollection
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class CryptographicAttributeObjectCollection : ICollection
     {
         public CryptographicAttributeObjectCollection()
         {
