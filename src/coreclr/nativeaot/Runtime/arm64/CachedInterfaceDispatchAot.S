@@ -19,6 +19,7 @@
 
         // Load the MethodTable from the object instance in x0, and add it to the vtable offset
         // to get the address in the vtable of what we want to dereference
+    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         ldr     x13, [x0]
         add     x12, x12, x13
 

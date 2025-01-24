@@ -11,6 +11,7 @@
 // Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
         // UNIXTODO: Implement this function
+    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         int 3
 LEAF_END RhpVTableOffsetDispatch, _TEXT
 

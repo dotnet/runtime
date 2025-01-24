@@ -314,6 +314,7 @@ public:
 #endif // !DACCESS_COMPILE
 
     static bool isCachedInterfaceDispatchStub(PCODE addr);
+    static bool isCachedInterfaceDispatchStubAVLocation(PCODE addr);
 
     static BOOL isStubStatic(PCODE addr)
     {
@@ -784,6 +785,7 @@ class VirtualCallStubManagerManager : public StubManager
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     DPTR(PCODE) pCachedInterfaceDispatchHelpers;
+    DPTR(PCODE) pCachedInterfaceDispatchHelpersAVLocation;
     size_t countCachedInterfaceDispatchHelpers = 0;
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
@@ -822,6 +824,17 @@ class VirtualCallStubManagerManager : public StubManager
         for (size_t i = 0; i < countCachedInterfaceDispatchHelpers; i++)
         {
             if (pCachedInterfaceDispatchHelpers[i] == addr)
+                return true;
+        }
+        return false;
+    }
+
+    bool isCachedInterfaceDispatchStubAVLocation(PCODE addr)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        for (size_t i = 0; i < countCachedInterfaceDispatchHelpers; i++)
+        {
+            if (pCachedInterfaceDispatchHelpersAVLocation[i] == addr)
                 return true;
         }
         return false;
