@@ -25,6 +25,7 @@ using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -248,7 +249,7 @@ namespace ILCompiler
                 const string settingsBlobName = "g_compilerEmbeddedSettingsBlob";
                 const string knobsBlobName = "g_compilerEmbeddedKnobsBlob";
                 string[] runtimeOptions = Get(_command.RuntimeOptions);
-                string[] runtimeKnobs = Get(_command.RuntimeKnobs);
+                string[] runtimeKnobs = Get(_command.RuntimeKnobs).Concat(["System.Linq.Enumerable.IsSizeOptimized=true"]).ToArray();
                 if (nativeLib)
                 {
                     // Set owning module of generated native library startup method to compiler generated module,
