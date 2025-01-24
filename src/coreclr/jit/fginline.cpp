@@ -546,7 +546,8 @@ private:
     // Notes:
     //    We conservatively consider a call can be spilled without side effects
     //    when it's the root node, or the root node is STORE_LCL_VAR and the tree
-    //    is always the first operand of its parent along the path to the root.
+    //    is always the first operand of its parent in execution order along the
+    //    path to the root.
     //
     bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
     {
@@ -659,6 +660,7 @@ private:
 
                     if (call->IsInlineCandidate())
                     {
+                        bool tryInline = true;
                         // If the call is the top-level expression in a statement, and it returns void,
                         // there will be no use of its return value, and we can just inline it directly.
                         // In this case we don't need to create a RET_EXPR node for it. Otherwise, we
@@ -686,13 +688,20 @@ private:
 
                                 *pTree = retExpr;
                             }
+                            else
+                            {
+                                tryInline = false;
+                            }
                         }
 
-                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+                        if (tryInline)
+                        {
+                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
-                        JITDUMP("New inline candidate due to late devirtualization:\n");
-                        DISPTREE(call);
+                            JITDUMP("New inline candidate due to late devirtualization:\n");
+                            DISPTREE(call);
+                        }
                     }
                 }
                 m_madeChanges = true;
