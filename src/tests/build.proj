@@ -423,8 +423,7 @@
   </Task>
 </UsingTask>
 
-  <!-- This target builds a Native AOT iOS App -->
-  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
+  <Target Name="BuildCoreCLRiOSApp">
     <PropertyGroup>
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
@@ -443,7 +442,10 @@
       <RunAOTCompilation>false</RunAOTCompilation>
       <MonoForceInterpreter>false</MonoForceInterpreter>
     </PropertyGroup>
+  </Target>
 
+  <!-- This target builds a Native AOT iOS App -->
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="BuildCoreCLRiOSApp;SetupOSSpecificProps">
     <ItemGroup>
       <NativeDependencies Include="$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o" />
     </ItemGroup>
@@ -488,14 +490,21 @@
       Projects="@(RunProj)"
       Targets="BuildMonoiOSApp"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' != 'coreclr'"
+    />
+
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildCoreCLRiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
+      BuildInParallel="true"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'"
     />
 
     <MSBuild
       Projects="@(RunProj)"
       Targets="BuildNativeAOTiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' == 'nativeaot'"
     />
   </Target>
 

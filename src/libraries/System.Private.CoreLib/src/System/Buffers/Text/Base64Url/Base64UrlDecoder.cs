@@ -164,7 +164,7 @@ namespace System.Buffers.Text
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
 
-            Span<byte> destination = upperBound <= MaxStackallocThreshold
+            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
                 ? stackalloc byte[MaxStackallocThreshold]
                 : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
@@ -380,7 +380,7 @@ namespace System.Buffers.Text
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
 
-            Span<byte> destination = upperBound <= MaxStackallocThreshold
+            Span<byte> destination = (uint)upperBound <= MaxStackallocThreshold
                 ? stackalloc byte[MaxStackallocThreshold]
                 : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 

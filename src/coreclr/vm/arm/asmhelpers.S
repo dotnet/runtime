@@ -914,3 +914,26 @@ ProbeLoop:
     NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY JIT_PollGC, _TEXT
+#if defined(__clang__)
+        ldr     r2, =g_TrapReturningThreads-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_TrapReturningThreads
+#endif
+        ldr     r2, [r2]
+        cbnz    r2, LOCAL_LABEL(JIT_PollGCRarePath)
+        bx lr
+LOCAL_LABEL(JIT_PollGCRarePath):
+#if defined(__clang__)
+        ldr     r2, =g_pPollGC-(1f+4)
+1:
+        add     r2, pc
+#else
+        ldr     r2, =g_pPollGC
+#endif
+        ldr     r2, [r2]
+        EPILOG_BRANCH_REG r2
+    LEAF_END JIT_PollGC, _TEXT

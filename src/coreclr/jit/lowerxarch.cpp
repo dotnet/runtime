@@ -450,7 +450,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // No write barriers are needed on the stack.
             // If the layout is byref-like, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -477,7 +477,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = layout->GetSlotCount();
@@ -1330,49 +1330,29 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 {
     assert(node->GetHWIntrinsicId() == NI_FMA_MultiplyAddScalar);
-    GenTreeHWIntrinsic* createScalarOps[3];
+    assert(node->GetOperandCount() == 3);
 
+    bool negatedArgs[3] = {};
     for (size_t i = 1; i <= 3; i++)
     {
         GenTree* arg = node->Op(i);
-
-        if (!arg->OperIsHWIntrinsic() || (arg->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Vector128_CreateScalarUnsafe))
+        if (arg->OperIsHWIntrinsic(NI_Vector128_CreateScalarUnsafe))
         {
-            return;
+            GenTree*& argOp = arg->AsHWIntrinsic()->Op(1);
+            if (argOp->OperIs(GT_NEG))
+            {
+                BlockRange().Remove(argOp);
+                argOp = argOp->gtGetOp1();
+                argOp->ClearContained();
+                ContainCheckHWIntrinsic(arg->AsHWIntrinsic());
+                negatedArgs[i - 1] = true;
+            }
         }
-
-        createScalarOps[i - 1] = arg->AsHWIntrinsic();
     }
 
-    GenTree* argX = createScalarOps[0]->Op(1);
-    GenTree* argY = createScalarOps[1]->Op(1);
-    GenTree* argZ = createScalarOps[2]->Op(1);
-
-    const bool negMul = argX->OperIs(GT_NEG) != argY->OperIs(GT_NEG);
-    if (argX->OperIs(GT_NEG))
+    bool negMul = negatedArgs[0] ^ negatedArgs[1];
+    if (negatedArgs[2])
     {
-        createScalarOps[0]->Op(1) = argX->gtGetOp1();
-        BlockRange().Remove(argX);
-
-        createScalarOps[0]->Op(1)->ClearContained();
-        ContainCheckHWIntrinsic(createScalarOps[0]);
-    }
-    if (argY->OperIs(GT_NEG))
-    {
-        createScalarOps[1]->Op(1) = argY->gtGetOp1();
-        BlockRange().Remove(argY);
-
-        createScalarOps[1]->Op(1)->ClearContained();
-        ContainCheckHWIntrinsic(createScalarOps[1]);
-    }
-    if (argZ->OperIs(GT_NEG))
-    {
-        createScalarOps[2]->Op(1) = argZ->gtGetOp1();
-        BlockRange().Remove(argZ);
-
-        createScalarOps[2]->Op(1)->ClearContained();
-        ContainCheckHWIntrinsic(createScalarOps[2]);
-
         node->ChangeHWIntrinsicId(negMul ? NI_FMA_MultiplySubtractNegatedScalar : NI_FMA_MultiplySubtractScalar);
     }
     else

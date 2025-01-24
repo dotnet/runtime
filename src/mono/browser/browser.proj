@@ -554,7 +554,7 @@
 
   <Target Name="SetMonoRollupEnvironment">
     <!-- Retrieve the runtime pack product version. -->
-    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+    <MSBuild Projects="$(RepoRoot)src/installer/pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj"
              Targets="ReturnProductVersion"
              Properties="Crossgen2SdkOverridePropsPath=;
                          Crossgen2SdkOverrideTargetsPath=">

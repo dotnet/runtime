@@ -92,6 +92,7 @@ internal static class ReflectionTest
         TestAssemblyLoad.Run();
         TestBaseOnlyUsedFromCode.Run();
         TestEntryPoint.Run();
+        TestGenericAttributesOnEnum.Run();
 
         return 100;
     }
@@ -2697,6 +2698,24 @@ internal static class ReflectionTest
             ReflectionInLocalFunction();
             ReflectionInAsync();
             ReflectionInLambdaAsync();
+        }
+    }
+
+    // Regression test for https://github.com/dotnet/runtime/issues/111578
+    class TestGenericAttributesOnEnum
+    {
+        class MyAttribute<T> : Attribute { }
+
+        [My<int>]
+        enum MyEnum { A = 1, B = 2 }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetVal() => MyEnum.A | MyEnum.B;
+
+        public static void Run()
+        {
+            if (GetVal().ToString() != "3")
+                throw new Exception();
         }
     }
 

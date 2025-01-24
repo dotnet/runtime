@@ -37,7 +37,7 @@
     <!-- NativeAOT builds are short -->
     <ShortStack Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">true</ShortStack>
     <!-- Mono LLVM builds are short -->
-    <ShortStack Condition="'$(MonoEnableLLVM)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true'">true</ShortStack>
+    <ShortStack Condition="'$(DotNetBuildMonoEnableLLVM)' == 'true' or '$(DotNetBuildMonoAOTEnableLLVM)' == 'true'">true</ShortStack>
     <!-- Mono AOT cross compiler builds are short -->
     <ShortStack Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">true</ShortStack>
   </PropertyGroup>
@@ -77,6 +77,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
@@ -87,6 +88,7 @@
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ForceDryRunSigning)' != ''">$(InnerBuildArgs) /p:ForceDryRunSigning=$(ForceDryRunSigning)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
