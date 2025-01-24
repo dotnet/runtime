@@ -110,6 +110,9 @@ namespace System.Linq
         public static System.Linq.IOrderedAsyncEnumerable<T> Order<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Collections.Generic.IComparer<T>? comparer = null) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<TSource> Prepend<TSource>(this System.Collections.Generic.IAsyncEnumerable<TSource> source, TSource element) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<int> Range(int start, int count) { throw null; }
+#if NET7_0_OR_GREATER
+        public static System.Collections.Generic.IAsyncEnumerable<T> Range<T>(T start, int count) where T : System.Numerics.IBinaryInteger<T> { throw null; }
+#endif
         public static System.Collections.Generic.IAsyncEnumerable<TResult> Repeat<TResult>(TResult element, int count) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<TSource> Reverse<TSource>(this System.Collections.Generic.IAsyncEnumerable<TSource> source) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<TResult> RightJoin<TOuter, TInner, TKey, TResult>(this System.Collections.Generic.IAsyncEnumerable<TOuter> outer, System.Collections.Generic.IAsyncEnumerable<TInner> inner, System.Func<TOuter, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<TKey>> outerKeySelector, System.Func<TInner, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<TKey>> innerKeySelector, System.Func<TOuter?, TInner, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<TResult>> resultSelector, System.Collections.Generic.IEqualityComparer<TKey>? comparer = null) { throw null; }

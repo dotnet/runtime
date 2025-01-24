@@ -12,14 +12,28 @@ namespace System.Linq.Tests
         public void InvalidInputs_Throws()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range(-1, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range(-1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range(2, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range(int.MaxValue - 1, 3));
+
+#if NET7_0_OR_GREATER
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(-1, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(2, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(int.MaxValue - 1, 3));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(2, byte.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(byte.MaxValue - 1, 3));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(long.MaxValue - int.MaxValue + 2, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(long.MaxValue - 1, 3));
+#endif
         }
 
         [Fact]
         public async Task VariousValues_MatchesEnumerable()
         {
-            foreach (int start in new[] { int.MinValue, -1, 0, 1, 1_000_000 })
+            foreach (int start in new[] { int.MinValue, -1, 0, 1, int.MaxValue - 9 })
             {
                 foreach (int count in new[] { 0, 1, 3, 10 })
                 {
@@ -28,6 +42,38 @@ namespace System.Linq.Tests
                         AsyncEnumerable.Range(start, count));
                 }
             }
+
+#if NET7_0_OR_GREATER
+            foreach (int start in new[] { int.MinValue, -1, 0, 1, int.MaxValue - 9 })
+            {
+                foreach (int count in new[] { 0, 1, 3, 10 })
+                {
+                    await AssertEqual(
+                        Enumerable.Range<int>(start, count),
+                        AsyncEnumerable.Range<int>(start, count));
+                }
+            }
+
+            foreach (byte start in new[] { byte.MinValue, 1, byte.MaxValue - 9 })
+            {
+                foreach (int count in new[] { 0, 1, 3, 10 })
+                {
+                    await AssertEqual(
+                        Enumerable.Range<byte>(start, count),
+                        AsyncEnumerable.Range<byte>(start, count));
+                }
+            }
+
+            foreach (long start in new[] { long.MinValue, -1, 0, 1, long.MaxValue - 9 })
+            {
+                foreach (int count in new[] { 0, 1, 3, 10 })
+                {
+                    await AssertEqual(
+                        Enumerable.Range<long>(start, count),
+                        AsyncEnumerable.Range<long>(start, count));
+                }
+            }
+#endif
         }
     }
 }
