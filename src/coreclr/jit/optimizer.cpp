@@ -92,7 +92,7 @@ PhaseStatus Compiler::optSetBlockWeights()
     for (BasicBlock* const block : Blocks())
     {
         // Blocks that can't be reached via the first block are rarely executed
-        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely())
+        if (!m_reachabilitySets->CanReach(fgFirstBB, block) && !block->isRunRarely() && !block->hasProfileWeight())
         {
             madeChanges = true;
             block->bbSetRunRarely();

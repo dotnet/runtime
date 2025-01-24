@@ -2925,11 +2925,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
             {
-                op1     = impSIMDPopStack();
-                retNode = gtNewSimdIsIntegerNode(retType, op1, simdBaseJitType, simdSize);
+                break;
             }
+            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsIntegerNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 

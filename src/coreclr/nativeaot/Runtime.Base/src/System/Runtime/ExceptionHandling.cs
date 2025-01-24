@@ -133,16 +133,14 @@ namespace System.Runtime
             FallbackFailFast(reason, unhandledException);
         }
 
+#if TARGET_WINDOWS
+
 #if TARGET_AMD64
         [StructLayout(LayoutKind.Explicit, Size = 0x4d0)]
-#elif TARGET_ARM
-        [StructLayout(LayoutKind.Explicit, Size = 0x1a0)]
 #elif TARGET_X86
         [StructLayout(LayoutKind.Explicit, Size = 0x2cc)]
 #elif TARGET_ARM64
         [StructLayout(LayoutKind.Explicit, Size = 0x390)]
-#else
-        [StructLayout(LayoutKind.Explicit, Size = 0x10)] // this is small enough that it should trip an assert in RhpCopyContextFromExInfo
 #endif
         private struct OSCONTEXT
         {
@@ -151,12 +149,10 @@ namespace System.Runtime
         internal static void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
-#if TARGET_64BIT
-            return (void*)((((long)ptr) + alignMask) & ~alignMask);
-#else
-            return (void*)((((int)ptr) + alignMask) & ~alignMask);
-#endif
+            return (void*)((((nint)ptr) + alignMask) & ~alignMask);
         }
+
+#endif // TARGET_WINDOWS
 
 #if NATIVEAOT
         private static void OnFirstChanceExceptionViaClassLib(object exception)
@@ -220,12 +216,16 @@ namespace System.Runtime
                     classlibAddress);
             }
 
+#if TARGET_WINDOWS
             // 16-byte align the context.  This is overkill on x86 and ARM, but simplifies things slightly.
             const int contextAlignment = 16;
             byte* pbBuffer = stackalloc byte[sizeof(OSCONTEXT) + contextAlignment];
             void* pContext = PointerAlign(pbBuffer, contextAlignment);
 
             InternalCalls.RhpCopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
+#else
+            void* pContext = null; // Fatal crash handler does not use the context on non-Windows
+#endif
 
             try
             {

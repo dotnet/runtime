@@ -279,7 +279,7 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 # EXTERN_C void* GetThreadVarsAddress()
 # <NOTE>
 # Helper to calculate the address of relevant __thread_vars section that holds the address of symbol tlv_get_address for thread
@@ -291,9 +291,9 @@ LEAF_ENTRY GetThreadVarsAddress, _TEXT
         ret
 LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
 # EXTERN_C void* GetTlsIndexObjectDescOffset();
 
 #ifndef TARGET_ANDROID

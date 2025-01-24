@@ -78,7 +78,7 @@ if(CLR_CMAKE_HOST_UNIX)
         ###TODO: maybe add options for RISCV64
     endif()
 
-    if (CLR_CMAKE_HOST_OSX)
+    if (CLR_CMAKE_HOST_APPLE)
         add_definitions(-DUNW_REMOTE_ONLY)
         add_compile_options(-Wno-sometimes-uninitialized)
         add_compile_options(-Wno-implicit-function-declaration)
@@ -86,7 +86,7 @@ if(CLR_CMAKE_HOST_UNIX)
         # Our posix abstraction layer will provide these headers
         set(HAVE_ELF_H 1)
         set(HAVE_ENDIAN_H 1)
-    endif(CLR_CMAKE_HOST_OSX)
+    endif(CLR_CMAKE_HOST_APPLE)
 
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -146,7 +146,7 @@ if(CLR_CMAKE_HOST_WIN32)
     add_compile_options(-wd4311) # pointer truncation from 'unw_word_t *' to 'long'
     add_compile_options(-wd4475) # 'fprintf' : length modifier 'L' cannot be used
     add_compile_options(-wd4477) # fprintf argument type
-elseif(CLR_CMAKE_HOST_OSX)
+elseif(CLR_CMAKE_HOST_APPLE)
     include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote)
     include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/mac)
 endif (CLR_CMAKE_HOST_WIN32)
@@ -171,12 +171,11 @@ if(CLR_CMAKE_TARGET_ANDROID)
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_HOST_OSX)
+    if(CLR_CMAKE_HOST_APPLE)
         add_library(libunwind_dac OBJECT ${LIBUNWIND_SOURCES})
     else()
         add_library(libunwind OBJECT ${LIBUNWIND_SOURCES})
-    endif(CLR_CMAKE_HOST_OSX)
-
+    endif(CLR_CMAKE_HOST_APPLE)
 else(CLR_CMAKE_HOST_UNIX)
     set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)
 

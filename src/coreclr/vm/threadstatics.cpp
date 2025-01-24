@@ -806,7 +806,7 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
 static void* GetTlsIndexObjectAddress();
 
-#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && !defined(TARGET_ANDROID) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(TARGET_APPLE) && defined(TARGET_UNIX) && !defined(TARGET_ANDROID) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 extern "C" size_t GetTLSResolverAddress();
 
 // Check if the resolver address retrieval code is expected. We verify the exact
@@ -905,7 +905,7 @@ static bool IsValidTLSResolver()
 
     return false;
 }
-#endif // !TARGET_OSX && TARGET_UNIX && !defined(TARGET_ANDROID) && (TARGET_ARM64 || TARGET_LOONGARCH64)
+#endif // !TARGET_APPLE && TARGET_UNIX && !TARGET_ANDROID && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
 bool CanJITOptimizeTLSAccess()
 {
@@ -926,7 +926,7 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for FreeBSD/arm64
 #elif defined(TARGET_ANDROID)
     // Optimation is disabled for Android until emulated TLS is supported.
-#elif !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
+#elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
     bool tlsResolverValid = IsValidTLSResolver();
     if (tlsResolverValid)
     {
@@ -962,12 +962,12 @@ bool CanJITOptimizeTLSAccess()
     }
 #else
     optimizeThreadStaticAccess = true;
-#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
+#if !defined(TARGET_APPLE) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
     // For linux/x64, check if compiled coreclr as .so file and not single file.
     // For single file, the `tls_index` might not be accurate.
     // Do not perform this optimization in such case.
     optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
-#endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
+#endif // !TARGET_APPLE && TARGET_UNIX && TARGET_AMD64
 #endif
 
     return optimizeThreadStaticAccess;
@@ -989,7 +989,7 @@ static uint32_t ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
-#elif defined(TARGET_OSX)
+#elif defined(TARGET_APPLE)
 extern "C" void* GetThreadVarsAddress();
 
 static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
@@ -1085,7 +1085,7 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
 
-#elif defined(TARGET_OSX)
+#elif defined(TARGET_APPLE)
 
     pInfo->threadVarsSection = GetThreadVarsSectionAddress();
 
