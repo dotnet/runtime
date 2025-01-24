@@ -51,23 +51,43 @@ internal readonly struct StackWalk_1 : IStackWalk
         using StreamWriter writer = new StreamWriter(outputhPath);
         Console.SetOut(writer);
 
-        ThreadStoreData tsdata = _target.Contracts.Thread.GetThreadStoreData();
-        ThreadData threadData = _target.Contracts.Thread.GetThreadData(tsdata.FirstThread);
-
-        IExecutionManager eman = _target.Contracts.ExecutionManager;
-
-        AMD64Context context = GetThreadContext(threadData);
-        Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
-        CheckIP(new(context.InstructionPointer.Value));
-
-        foreach (Data.Frame frame in FrameIterator.EnumerateFrames(_target, threadData.Frame))
+        AMD64Context amd64Context = new AMD64Context()
         {
-            FrameIterator.PrintFrame(_target, frame);
-            if (FrameIterator.TryGetContext(_target, frame, out TargetPointer? IP, out TargetPointer? SP))
-            {
-                UnwindUntilNative(IP.Value, SP.Value);
-            }
+            Rsp = 0x0000000000000000,
+            Rip = 0x1,
+        };
+        ARM64Context arm64Context = new ARM64Context()
+        {
+            Sp = 0x0000000000000000,
+            Pc = 0x2,
+        };
+        try
+        {
+            Console.WriteLine(Unwinder.AMD64Unwind(ref amd64Context, _target));
+            Console.WriteLine(Unwinder.ARM64Unwind(ref arm64Context, _target));
         }
+        catch (System.Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+
+        // ThreadStoreData tsdata = _target.Contracts.Thread.GetThreadStoreData();
+        // ThreadData threadData = _target.Contracts.Thread.GetThreadData(tsdata.FirstThread);
+
+        // IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+        // AMD64Context context = GetThreadContext(threadData);
+        // Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
+        // CheckIP(new(context.InstructionPointer.Value));
+
+        // foreach (Data.Frame frame in FrameIterator.EnumerateFrames(_target, threadData.Frame))
+        // {
+        //     FrameIterator.PrintFrame(_target, frame);
+        //     if (FrameIterator.TryGetContext(_target, frame, out TargetPointer? IP, out TargetPointer? SP))
+        //     {
+        //         UnwindUntilNative(IP.Value, SP.Value);
+        //     }
+        // }
 
         writer.Flush();
     }
@@ -100,12 +120,10 @@ internal readonly struct StackWalk_1 : IStackWalk
         while (eman.GetCodeBlockHandle(new(context.Rip)) is CodeBlockHandle cbh)
         {
             TargetPointer methodDesc = eman.GetMethodDesc(cbh);
-            TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
-            TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, new(context.Rip));
             Console.WriteLine($"IP: {context.InstructionPointer.Value:x16} SP: {context.StackPointer.Value:x16} MethodDesc: {methodDesc.Value:x16}");
             try
             {
-                Unwinder.AMD64Unwind(ref context, moduleBase.Value, new IntPtr((long)unwindInfo.Value), _target);
+                Unwinder.AMD64Unwind(ref context, _target);
             }
             catch (System.Exception ex)
             {
@@ -136,7 +154,7 @@ internal readonly struct StackWalk_1 : IStackWalk
                     Rip = ip,
                 };
                 Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
-                Unwinder.AMD64Unwind(ref context, moduleBase.Value, new IntPtr((long)unwindInfo.Value), _target);
+                Unwinder.AMD64Unwind(ref context, _target);
                 Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");
             }
             catch (System.Exception ex)
@@ -153,9 +171,6 @@ internal readonly struct StackWalk_1 : IStackWalk
 
 internal static unsafe partial class Unwinder
 {
-    [LibraryImport("unwinder_cdac", EntryPoint = "timesTwo")]
-    public static partial int TimesTwo(int x);
-
     // ReadCallback allows the unwinder to read memory from the target process
     // into an allocated buffer. This buffer is either allocated by the unwinder
     // with its lifetime managed by the unwinder or allocated through GetAllocatedBuffer.
@@ -169,7 +184,14 @@ internal static unsafe partial class Unwinder
     // If the moduleBase or funcEntry can not be found, both will be 0.
     public delegate void GetStackWalkInfo(ulong controlPC, void* pModuleBase, void* pFuncEntry);
 
-    [LibraryImport("unwinder_cdac", EntryPoint = "amd64Unwind")]
+    [LibraryImport("unwinder_cdac_arm64", EntryPoint = "arm64Unwind")]
+    private static partial int ARM64Unwind(
+        ref ARM64Context context,
+        [MarshalAs(UnmanagedType.FunctionPtr)] ReadCallback readCallback,
+        [MarshalAs(UnmanagedType.FunctionPtr)] GetAllocatedBuffer getAllocatedBuffer,
+        [MarshalAs(UnmanagedType.FunctionPtr)] GetStackWalkInfo getStackWalkInfo);
+
+    [LibraryImport("unwinder_cdac_amd64", EntryPoint = "amd64Unwind")]
     private static partial int AMD64Unwind(
         ref AMD64Context context,
         [MarshalAs(UnmanagedType.FunctionPtr)] ReadCallback readCallback,
@@ -178,8 +200,6 @@ internal static unsafe partial class Unwinder
 
     public static int AMD64Unwind(
         ref AMD64Context context,
-        ulong moduleBase,
-        IntPtr functionEntry,
         Target target)
     {
         ReadCallback readCallback;
@@ -228,6 +248,66 @@ internal static unsafe partial class Unwinder
         };
 
         int ret = AMD64Unwind(ref context, readCallback, getAllocatedBuffer, getStackWalkInfo);
+
+        foreach (IntPtr ptr in allocatedRegions)
+        {
+            //Console.WriteLine($"Freeing buffer at {ptr:x16}");
+            NativeMemory.Free(ptr.ToPointer());
+        }
+
+        return ret;
+    }
+
+    public static int ARM64Unwind(
+        ref ARM64Context context,
+        Target target)
+    {
+        ReadCallback readCallback;
+        GetAllocatedBuffer getAllocatedBuffer;
+        GetStackWalkInfo getStackWalkInfo;
+
+        // Move to IDisposable for freeing
+        List<IntPtr> allocatedRegions = [];
+
+        readCallback = (address, pBuffer, bufferSize) =>
+        {
+            Span<byte> span = new Span<byte>(pBuffer, bufferSize);
+            target.ReadBuffer(address, span);
+            return 0;
+        };
+        getAllocatedBuffer = (bufferSize, ppBuffer) =>
+        {
+            *ppBuffer = NativeMemory.Alloc((nuint)bufferSize);
+            IntPtr pBuffer = new(*ppBuffer);
+            //Console.WriteLine($"Allocating buffer at {pBuffer:x16}");
+            allocatedRegions.Add(pBuffer);
+            return 0;
+        };
+        getStackWalkInfo = (controlPC, pModuleBase, pFuncEntry) =>
+        {
+            IExecutionManager eman = target.Contracts.ExecutionManager;
+
+            if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = 0;
+            if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = 0;
+
+            try
+            {
+                if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
+                {
+                    TargetPointer methodDesc = eman.GetMethodDesc(cbh);
+                    TargetPointer moduleBase = eman.GetModuleBaseAddress(cbh);
+                    TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
+                    if ((nuint)pModuleBase != 0) *(nuint*)pModuleBase = (nuint)moduleBase.Value;
+                    if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine($"GetStackWalkInfo failed: {ex}");
+            }
+        };
+
+        int ret = ARM64Unwind(ref context, readCallback, getAllocatedBuffer, getStackWalkInfo);
 
         foreach (IntPtr ptr in allocatedRegions)
         {

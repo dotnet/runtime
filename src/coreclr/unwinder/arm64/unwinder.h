@@ -8,6 +8,9 @@
 
 #include "baseunwinder.h"
 
+#ifdef FEATURE_CDAC_UNWINDER
+EXTERN_C __declspec(dllexport) BOOL arm64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo);
+#endif // FEATURE_CDAC_UNWINDER
 
 //---------------------------------------------------------------------------------------
 //
@@ -16,6 +19,13 @@
 
 class OOPStackUnwinderArm64 : public OOPStackUnwinder
 {
+#ifdef FEATURE_CDAC_UNWINDER
+public:
+    OOPStackUnwinderArm64(ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
+        : OOPStackUnwinder(readCallback, getAllocatedBuffer, getStackWalkInfo)
+    { }
+#endif // FEATURE_CDAC_UNWINDER
+
 public:
     // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.
     BOOL Unwind(T_CONTEXT * pContext);

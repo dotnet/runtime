@@ -4,7 +4,11 @@
 //
 
 #include "stdafx.h"
+
+#ifndef FEATURE_CDAC_UNWINDER
 #include "utilcode.h"
+#endif // FEATURE_CDAC_UNWINDER
+
 #include "crosscomp.h"
 
 #include "unwinder.h"
@@ -21,6 +25,12 @@
 #define RUNTIME_FUNCTION T_RUNTIME_FUNCTION
 #define PRUNTIME_FUNCTION PT_RUNTIME_FUNCTION
 #endif
+
+#ifndef FEATURE_CDAC_UNWINDER
+#define UNWINDER_ASSERT _ASSERTE
+#else // !FEATURE_CDAC_UNWINDER
+#define UNWINDER_ASSERT(x)
+#endif // FEATURE_CDAC_UNWINDER
 
 #ifndef __in
 #define __in _In_
@@ -823,7 +833,7 @@ RtlpExpandCompactToFull (
                 // !sav_predec_done can't even happen.
                 //
 
-                _ASSERTE(sav_predec_done);
+                UNWINDER_ASSERT(sav_predec_done);
 
                 DBG_OP("save_lrpair\t(%s, %i)\n", int_reg_names[intreg], sav_slot * 8);
                 emit_save_lrpair(&op_buffer, intreg, sav_slot * 8);
@@ -1063,7 +1073,7 @@ Return Value:
 --*/
 
 {
-    _ASSERTE(UnwindCode <= 0xFF);
+    UNWINDER_ASSERT(UnwindCode <= 0xFF);
 
     if (UnwindCode < 0xC0) {
         if (ARGUMENT_PRESENT(ScopeSize)) {
@@ -1621,7 +1631,7 @@ Return Value:
 
     case 0xeb:  // MSFT_OP_EC_CONTEXT:
         // NOTE: for .NET, the arm64ec context restoring is not implemented
-        _ASSERTE(FALSE);
+        UNWINDER_ASSERT(FALSE);
         return STATUS_UNSUCCESSFUL;
 
     case 0xec: // MSFT_OP_CLEAR_UNWOUND_TO_CALL
@@ -2335,7 +2345,7 @@ ExecuteCodes:
         }
 
         //
-        // pac (11111100): function has pointer authentication 
+        // pac (11111100): function has pointer authentication
         //
 
         else if (CurCode == 0xfc) {
@@ -2574,7 +2584,7 @@ Return Value:
 
     UNREFERENCED_PARAMETER(HandlerType);
 
-    _ASSERTE((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
+    UNWINDER_ASSERT((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
 
     if (FunctionEntry == NULL) {
 
@@ -2648,7 +2658,7 @@ Return Value:
                 FunctionEntry = (PRUNTIME_FUNCTION)(ImageBase + FunctionEntry->UnwindData - 3);
                 UnwindType = (FunctionEntry->UnwindData & 3);
 
-                _ASSERTE(UnwindType != 3);
+                UNWINDER_ASSERT(UnwindType != 3);
 
                 ControlPcRva = FunctionEntry->BeginAddress;
 
@@ -2759,6 +2769,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     return TRUE;
 }
 
+#ifdef DACCESS_COMPILE
 BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)
 {
     OOPStackUnwinderArm64 unwinder;
@@ -2774,6 +2785,21 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
+#endif // DACCESS_COMPILE
+
+#ifdef FEATURE_CDAC_UNWINDER
+BOOL arm64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
+{
+    HRESULT hr = E_FAIL;
+
+    return (long)((T_CONTEXT*)pContext)->Pc;
+
+    OOPStackUnwinderArm64 unwinder { readCallback, getAllocatedBuffer, getStackWalkInfo };
+    hr = unwinder.Unwind((T_CONTEXT*) pContext);
+
+    return (hr == S_OK);
+}
+#endif
 
 #if defined(HOST_UNIX)
 

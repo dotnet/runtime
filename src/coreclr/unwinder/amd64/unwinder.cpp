@@ -352,6 +352,8 @@ BOOL amd64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer g
 {
     HRESULT hr = E_FAIL;
 
+    return (long)((CONTEXT*)pContext)->Rip;
+
     OOPStackUnwinderAMD64 unwinder { readCallback, getAllocatedBuffer, getStackWalkInfo };
     hr = unwinder.Unwind((CONTEXT*) pContext);
 
