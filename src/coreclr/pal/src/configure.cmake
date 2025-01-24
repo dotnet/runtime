@@ -121,14 +121,14 @@ check_function_exists(thread_self HAVE_THREAD_SELF)
 check_function_exists(_lwp_self HAVE__LWP_SELF)
 check_function_exists(pthread_mach_thread_np HAVE_MACH_THREADS)
 check_cxx_source_compiles("
-#import <mach/mach.h>
+#include <mach/mach.h>
 int main(int argc, char **argv) {
   static mach_port_name_t port;
   thread_set_exception_ports(mach_thread_self(), EXC_MASK_BAD_ACCESS, port, EXCEPTION_DEFAULT, MACHINE_THREAD_STATE);
   return 0;
 }" HAVE_MACH_EXCEPTIONS)
 check_cxx_source_compiles("
-#import <signal.h>
+#include <signal.h>
 int main(int argc, char **argv) {
   sigaltstack(NULL, NULL);
   return 0;
