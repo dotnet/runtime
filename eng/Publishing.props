@@ -36,7 +36,9 @@
     Every job will publish their RID-specific packages.
     For non-RID-specific packages, we have various rules:
 
-    - A job can specify PublishAllPackages=true to publish all packages it produces. We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
+    - A job can specify PublishAllPackages=true to publish all packages it produces.
+      We have specific jobs that produce RID-agnostic packages or packages for multiple RIDs set this property.
+      In Source-Build scenarios, we want to publish all packages from here as source-build legs are fully self-contained.
     - For some target RIDs, we also include specific RID-agnostic packages.
   -->
   <ItemGroup>
@@ -44,7 +46,7 @@
     <OtherPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(RidSpecificPackages)" />
     
     <PackagesToPublishFromThisJob Include="@(ThisRidPackages)" />
-    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Condition="'$(PublishAllPackages)' == 'true'" />
+    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Condition="'$(PublishAllPackages)' == 'true' or '$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageRID)' == 'ios-arm64'">
