@@ -26146,11 +26146,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
              !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
             (!crossLane && (needsZero || elementSize < 4 || (elementSize == 4 && differsByLane))))
         {
-            // if we have short, we want to treat it like byte here
-            if (varTypeIsShort(simdBaseType))
-            {
-                simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
-            }
+            // we want to treat our type like byte here
+            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
             uint8_t leftWants  = 0; // result left lane wants which lanes bitfield (1 - left, 2 - right)
             uint8_t rightWants = 0; // result right lane wants which lanes bitfield (1 - left, 2 - right)
