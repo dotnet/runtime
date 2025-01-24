@@ -4680,9 +4680,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += (IsSimdInstruction(ins) || TakesApxExtendedEvexPrefix(id))
-                  ? emitInsSize(id, code, includeRexPrefixSize)
-                  : 5;
+        sz += (IsSimdInstruction(ins) || TakesApxExtendedEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize)
+                                                                         : 5;
     }
     else
     {
