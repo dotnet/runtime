@@ -3648,6 +3648,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
+            // The Unsafe variants are non-deterministic on xarch, so exit if we see that
+            bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe ||
+                            intrinsic == NI_Vector512_ShuffleUnsafe;
+            if (isUnsafe && BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
             GenTree* indices = impStackTop(0).val;
 
             // Check if the required intrinsics are available to emit now (validForShuffle). If we have variable
@@ -3686,8 +3694,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe ||
-                                intrinsic == NI_Vector512_ShuffleUnsafe;
                 if (indices->IsCnsVec())
                 {
                     retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);

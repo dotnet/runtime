@@ -2257,6 +2257,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 8) || (simdSize == 16));
 
+            // The Unsafe variants are non-deterministic on arm64 (for element size > 1), so exit if we see that
+            bool isUnsafe = intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe;
+            if (isUnsafe && genTypeSize(simdBaseType) > 1 && BlockNonDeterministicIntrinsics(mustExpand))
+            {
+                break;
+            }
+
             GenTree* indices = impStackTop(0).val;
 
             // Check if the required intrinsics to emit are available.
@@ -2289,7 +2296,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                bool isUnsafe = intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe;
                 if (indices->IsCnsVec())
                 {
                     retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);

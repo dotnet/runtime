@@ -3180,9 +3180,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
         [Intrinsic]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<byte> ShuffleUnsafe(Vector256<byte> vector, Vector256<byte> indices)
         {
             return Shuffle(vector, indices);
@@ -3196,9 +3193,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512Vbmi.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<sbyte> ShuffleUnsafe(Vector256<sbyte> vector, Vector256<sbyte> indices)
         {
             return Shuffle(vector, indices);
@@ -3259,9 +3253,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
         [Intrinsic]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512BW.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<short> ShuffleUnsafe(Vector256<short> vector, Vector256<short> indices)
         {
             return Shuffle(vector, indices);
@@ -3274,9 +3265,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512BW.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<ushort> ShuffleUnsafe(Vector256<ushort> vector, Vector256<ushort> indices)
         {
             return Shuffle(vector, indices);
@@ -3361,7 +3349,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
         [Intrinsic]
-        [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<int> ShuffleUnsafe(Vector256<int> vector, Vector256<int> indices)
         {
             return Shuffle(vector, indices);
@@ -3374,7 +3361,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<uint> ShuffleUnsafe(Vector256<uint> vector, Vector256<uint> indices)
         {
             return Shuffle(vector, indices);
@@ -3386,7 +3372,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
         [Intrinsic]
-        [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<float> ShuffleUnsafe(Vector256<float> vector, Vector256<int> indices)
         {
             return Shuffle(vector, indices);
@@ -3471,9 +3456,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
         [Intrinsic]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512F.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<long> ShuffleUnsafe(Vector256<long> vector, Vector256<long> indices)
         {
             return Shuffle(vector, indices);
@@ -3486,9 +3468,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512F.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<ulong> ShuffleUnsafe(Vector256<ulong> vector, Vector256<ulong> indices)
         {
             return Shuffle(vector, indices);
@@ -3500,9 +3479,6 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
         [Intrinsic]
-        [CompExactlyDependsOn(typeof(Avx2))]
-        [CompExactlyDependsOn(typeof(Avx512F.VL))]
-        [CompExactlyDependsOn(typeof(Avx10v1))]
         public static Vector256<double> ShuffleUnsafe(Vector256<double> vector, Vector256<long> indices)
         {
             return Shuffle(vector, indices);
