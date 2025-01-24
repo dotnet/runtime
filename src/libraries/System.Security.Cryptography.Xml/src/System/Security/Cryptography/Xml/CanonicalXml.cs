@@ -66,8 +66,8 @@ namespace System.Security.Cryptography.Xml
 
         private static void MarkInclusionStateForNodes(XmlNodeList nodeList, XmlDocument inputRoot, XmlDocument root)
         {
-            CanonicalXmlNodeList elementList = new CanonicalXmlNodeList();
-            CanonicalXmlNodeList elementListCanonical = new CanonicalXmlNodeList();
+            using CanonicalXmlNodeList elementList = new CanonicalXmlNodeList();
+            using CanonicalXmlNodeList elementListCanonical = new CanonicalXmlNodeList();
             elementList.Add(inputRoot);
             elementListCanonical.Add(root);
             int index = 0;
