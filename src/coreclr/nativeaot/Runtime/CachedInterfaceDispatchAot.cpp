@@ -4,11 +4,6 @@
 #include "common.h"
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
-#include "RedhawkWarnings.h"
-#include "TargetPtrs.h"
-#include "MethodTable.h"
-#include "Range.h"
-#include "allocheap.h"
 
 // The base memory allocator.
 static AllocHeap * g_pAllocHeap = NULL;

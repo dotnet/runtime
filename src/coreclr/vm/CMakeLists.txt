@@ -715,8 +715,20 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/Context.S
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
-            ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
         )
+
+        if(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+            list(APPEND VM_SOURCES_WKS_ARCH_ASM
+                ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
+            )
+        endif(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+
+        if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+            list(APPEND VM_SOURCES_WKS_ARCH_ASM
+                ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
+        )
+        endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/ehhelpers.S
@@ -743,6 +755,11 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
         )
+        if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
+            list(APPEND VM_SOURCES_WKS_ARCH_ASM
+                ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.S
+            )
+        endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         set(VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/asmhelpers.S

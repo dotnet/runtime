@@ -14,7 +14,18 @@
 #include "slist.h"
 #include "holder.h"
 #include "Crst.h"
+#include "RedhawkWarnings.h"
+#include "TargetPtrs.h"
+#include "MethodTable.h"
+#include "Range.h"
+#include "allocheap.h"
 #include "rhbinder.h"
+#include "ObjectLayout.h"
+#include "shash.h"
+#include "TypeManager.h"
+#include "RuntimeInstance.h"
+#include "MethodTable.inl"
+#include "CommonMacros.inl"
 
 bool InterfaceDispatch_InitializePal();
 
