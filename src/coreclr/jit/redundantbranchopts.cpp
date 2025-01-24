@@ -417,8 +417,10 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         const ValueNum relatedVN = vnStore->GetRelatedRelop(rii->domCmpNormVN, vnRelation);
         if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == rii->treeNormVN))
         {
-            rii->canInfer   = true;
-            rii->vnRelation = vnRelation;
+            rii->canInfer     = true;
+            rii->vnRelation   = vnRelation;
+            rii->reverseSense = (rii->vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Reverse) ||
+                                (rii->vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
             return;
         }
     }
@@ -543,21 +545,40 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                 // If dom predicate is wrapped in EQ(*,0) then a true dom
                 // predicate implies a false branch outcome, and vice versa.
                 //
-                // And if the dom predicate is GT_NOT we reverse yet again.
-                //
-                rii->reverseSense = (oper == GT_EQ) ^ (predOper == GT_NOT);
+                rii->reverseSense = (rii->vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Reverse) ||
+                                    (rii->vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
 
-                // We only get partial knowledge in these cases.
+                // We only get partial knowledge in the AND/OR cases.
                 //
                 //   AND(p1,p2) = true  ==> both p1 and p2 must be true
                 //   AND(p1,p2) = false ==> don't know p1 or p2
                 //    OR(p1,p2) = true  ==> don't know p1 or p2
                 //    OR(p1,p2) = false ==> both p1 and p2 must be false
                 //
-                if (predOper != GT_NOT)
+                if (predOper == GT_AND)
                 {
-                    rii->canInferFromFalse = rii->reverseSense ^ (predOper == GT_OR);
-                    rii->canInferFromTrue  = rii->reverseSense ^ (predOper == GT_AND);
+                    // EQ(AND, 0) false ==> AND true ==> AND operands true
+                    rii->canInferFromFalse = (oper == GT_EQ);
+                    // NE(AND, 0) true ==> AND true ==> AND operands true
+                    rii->canInferFromTrue = (oper == GT_NE);
+                    rii->reverseSense ^= (oper == GT_EQ);
+                }
+                else if (predOper == GT_OR)
+                {
+                    // NE(OR, 0) false ==> OR false ==> OR operands false
+                    rii->canInferFromFalse = (oper == GT_NE);
+                    // EQ(OR, 0) true ==> OR false ==> OR operands false
+                    rii->canInferFromTrue = (oper == GT_EQ);
+                    rii->reverseSense ^= (oper == GT_EQ);
+                }
+                else
+                {
+                    assert(predOper == GT_NOT);
+                    // NE(NOT(x), 0) ==> NOT(X)
+                    // EQ(NOT(x), 0) ==> X
+                    rii->canInferFromTrue  = true;
+                    rii->canInferFromFalse = true;
+                    rii->reverseSense ^= (oper == GT_NE);
                 }
 
                 JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
@@ -826,9 +847,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
 
-                    const bool domIsSameRelop = (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Same) ||
-                                                (rii.vnRelation == ValueNumStore::VN_RELATION_KIND::VRK_Swap);
-
                     BasicBlock* const trueSuccessor  = domBlock->GetTrueTarget();
                     BasicBlock* const falseSuccessor = domBlock->GetFalseTarget();
 
@@ -851,7 +869,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
                         //
-                        const bool wasThreaded = optJumpThreadDom(block, domBlock, domIsSameRelop);
+                        const bool wasThreaded = optJumpThreadDom(block, domBlock, !rii.reverseSense);
 
                         if (wasThreaded)
                         {
@@ -862,7 +880,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // True path in dominator reaches, false path doesn't; relop must be true/false.
                         //
-                        const bool relopIsTrue = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
+                        const bool relopIsTrue = !rii.reverseSense;
                         JITDUMP("True successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
                                 domBlock->GetTrueTarget()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsTrue ? "true" : "false");
@@ -873,7 +891,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // False path from dominator reaches, true path doesn't; relop must be false/true.
                         //
-                        const bool relopIsFalse = rii.reverseSense ^ (domIsSameRelop | domIsInferredRelop);
+                        const bool relopIsFalse = !rii.reverseSense;
                         JITDUMP("False successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
                                 domBlock->GetFalseTarget()->bbNum, domBlock->bbNum, dspTreeID(tree),
                                 relopIsFalse ? "false" : "true");
