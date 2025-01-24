@@ -574,7 +574,6 @@ private:
         {
             GenTreeCall* call          = tree->AsCall();
             bool         tryLateDevirt = call->IsVirtual() && (call->gtCallType == CT_USER_FUNC);
-            bool         canInline     = false;
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
