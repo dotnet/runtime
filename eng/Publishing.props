@@ -8,6 +8,8 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
     <!-- Except for jobs that set a specific asset manifest file name as a global property, set the manifest name based on the package RID. -->
     <AssetManifestFileName>$(PackageRID).xml</AssetManifestFileName>
+    <!-- Reset the file path now that we may have changed the name. -->
+    <AssetManifestFilePath>$(ArtifactsLogDir)AssetManifest\$(AssetManifestFileName)</AssetManifestFilePath>
   </PropertyGroup>
 
   <!--
