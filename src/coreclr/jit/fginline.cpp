@@ -544,9 +544,9 @@ private:
     //    True if we can spill the call without side effects.
     //
     // Notes:
-    //    We estimate a call that can be spilled without side effects when
-    //    it's root, or the root is STORE_LCL_VAR and the call is always
-    //    propagated through op1.
+    //    We conservatively consider a call can be spilled without side effects
+    //    when it's the root node, or the root node is STORE_LCL_VAR and the tree
+    //    is always the first operand of its parent along the path to the root.
     //
     bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
     {
