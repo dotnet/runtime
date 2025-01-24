@@ -4463,6 +4463,9 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
         madeChanges = true;
+        JITDUMP("fgComputeCalledCount: Modified method entry weight. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
 #if DEBUG

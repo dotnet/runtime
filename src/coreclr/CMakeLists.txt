@@ -170,10 +170,7 @@ endif(CLR_CMAKE_HOST_WIN32)
 #----------------------------------
 include(clrdefinitions.cmake)
 
-if(FEATURE_STANDALONE_GC)
-  add_definitions(-DFEATURE_STANDALONE_GC)
-  add_subdirectory(gc)
-endif(FEATURE_STANDALONE_GC)
+add_subdirectory(gc)
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")
@@ -268,11 +265,3 @@ if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_H
     add_subdirectory(hosts)
   endif(CLR_CMAKE_HOST_WIN32)
 endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
-
-#----------------------------------------------------
-# Cross target Component install configuration
-#----------------------------------------------------
-if(CLR_CROSS_COMPONENTS_BUILD)
-  include(crosscomponents.cmake)
-endif(CLR_CROSS_COMPONENTS_BUILD)
-

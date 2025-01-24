@@ -59,8 +59,8 @@
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
-    <!-- In source build, mono is only supported as primary runtime flavor. On Windows mono is supported for x86/x64 only. -->
-    <DefaultSubsets Condition="('$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+tools+host+packs</DefaultSubsets>
+    <!-- In source build, mono is only supported as primary runtime flavor. -->
+    <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">clr.nativeaotlibs+clr.nativeaotruntime+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">mono+packs</DefaultSubsets>
   </PropertyGroup>
@@ -96,11 +96,13 @@
 
     <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
+    <_MonoAotCrossSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">mono.aotcross</_MonoAotCrossSubsets>
+
     <DefaultMonoSubsets Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">mono.llvm+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'browser'">$(DefaultMonoSubsets)mono.wasmruntime+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetOS)' == 'wasi'">$(DefaultMonoSubsets)mono.wasiruntime+</DefaultMonoSubsets>
-    <DefaultMonoSubsets Condition="'$(MonoCrossAOTTargetOS)' != ''">$(DefaultMonoSubsets)mono.aotcross+</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(_MonoAotCrossSubsets)' != ''">$(DefaultMonoSubsets)$(_MonoAotCrossSubsets)+</DefaultMonoSubsets>
     <DefaultMonoSubsets>$(DefaultMonoSubsets)mono.runtime+mono.corelib+mono.packages+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' == 'true' or '$(ForceBuildMobileManifests)' == 'true'">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
     <DefaultMonoSubsets Condition="$(_subset.Contains('+mono.wasmworkload+'))">$(DefaultMonoSubsets)mono.manifests+</DefaultMonoSubsets>
@@ -108,7 +110,7 @@
     <DefaultMonoSubsets Condition="'$(TargetsMobile)' != 'true'">$(DefaultMonoSubsets)host.native+</DefaultMonoSubsets>
 
     <!-- If the Mono runtime isn't supported but the AOT compiler is, just build the AOT cross compiler -->
-    <DefaultMonoSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(MonoSupported)' != 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">mono.aotcross</DefaultMonoSubsets>
+    <DefaultMonoSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' == 'true' or ('$(MonoSupported)' != 'true' and '$(MonoAOTCrossCompilerSupported)' == 'true')">$(_MonoAotCrossSubsets)</DefaultMonoSubsets>
 
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
@@ -306,17 +308,24 @@
   <!--
     Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them.
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
-    Additionally, in a vertical orchestrated build, we need to produce an ilasm and ildasm for use by upstack repositories.
-    However, these repositories only build on Windows, so we can limit this to only execute on Windows to avoid additional infrastructure work when not necessary.
     -->
   <PropertyGroup>
     <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
+    <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
+    <_BuildCrossDebugComponents Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true' and '$(_CrossBitwidthBuild)' != 'true'">true</_BuildCrossDebugComponents>
   </PropertyGroup>
 
   <ItemGroup>
-    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrCrossComponentsSubset=true" />
+    <!-- When building cross components, always build the JITs. We will need them for running crossgen2 and ILC in the build. -->
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrAllJitsSubset=true" />
+    <!-- When targeting Windows, we need to build a copy of the diagnostic libraries that can run on the host to enable remote debugging of a local build. -->
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true'" Include="ClrDebugSubset=true" />
+    <!--
+    In a vertical orchestrated build, we need to produce an ilasm and ildasm for use by upstack repositories.
+      However, these repositories only build on Windows, so we can limit this to only execute on Windows to avoid additional infrastructure work when not necessary.
+    -->
     <_CrossToolSubset Condition="'$(BuildHostILTools)' == 'true'" Include="ClrILToolsSubset=true" />
   </ItemGroup>
 
@@ -329,6 +338,7 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
+                            BuildSubdirectory=$(BuildArchitecture);
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       UndefineProperties="EnableNativeSanitizers"
       Category="clr" />
@@ -364,7 +374,7 @@
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
+                            ClrDebugSubset=true;
                             HostArchitecture=$(CrossDacHostArch);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
@@ -376,7 +386,7 @@
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
+                            ClrDebugSubset=true;
                             HostArchitecture=$(CrossDacHostArch);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
