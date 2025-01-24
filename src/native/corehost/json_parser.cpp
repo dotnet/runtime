@@ -18,22 +18,23 @@
 namespace {
 
 // Try to match 0xEF 0xBB 0xBF byte sequence (no endianness here.)
-std::streampos get_utf8_bom_length(pal::istream_t& stream)
+int get_utf8_bom_length(FILE *stream)
 {
-    if (stream.eof())
+    if (feof(stream))
     {
         return 0;
     }
 
-    auto peeked = stream.peek();
+    auto peeked = fgetc(stream);
     if (peeked == EOF || ((peeked & 0xFF) != 0xEF))
     {
+        ungetc(peeked, stream);
         return 0;
     }
 
     unsigned char bytes[3];
-    stream.read(reinterpret_cast<char*>(bytes), 3);
-    if ((stream.gcount() < 3) || (bytes[1] != 0xBB) || (bytes[2] != 0xBF))
+    size_t ret = fread(reinterpret_cast<char*>(bytes), 1, 3, stream);
+    if ((ret < 3) || (bytes[1] != 0xBB) || (bytes[2] != 0xBF))
     {
         return 0;
     }
@@ -132,26 +133,34 @@ bool json_parser_t::parse_file(const pal::string_t& path)
         }
     }
 
-    pal::ifstream_t file{ path };
-    if (!file.good())
+    FILE *file = pal::file_open(path, _X("r"));
+    if (file == nullptr)
     {
         trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
         return false;
     }
 
     auto current_pos = ::get_utf8_bom_length(file);
-    file.seekg(0, file.end);
-    auto stream_size = file.tellg();
+    fseek(file, 0, SEEK_END);
+    auto stream_size = ftell(file);
     if (stream_size == -1)
     {
+        fclose(file);
         trace::error(_X("Failed to get size of file [%s]"), path.c_str());
         return false;
     }
 
-    file.seekg(current_pos, file.beg);
+    fseek(file, current_pos, SEEK_SET);
 
     realloc_buffer(static_cast<size_t>(stream_size - current_pos));
-    file.read(m_json.data(), stream_size - current_pos);
+    auto ret = fread(m_json.data(), 1, stream_size - current_pos, file);
+    fclose(file);
+
+    if (ret != (size_t)(stream_size - current_pos))
+    {
+        trace::error(_X("Failed to read contents of file [%s]"), path.c_str());
+        return false;
+    }
 
     return parse_raw_data(m_json.data(), m_json.size(), path);
 }
