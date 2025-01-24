@@ -6,6 +6,7 @@
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
   </PropertyGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" />
   <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
 
   <!--
