@@ -2861,7 +2861,28 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     //
     if (enclosingEHRegion != 0)
     {
-        comp->ehUpdateLastBlocks(oldLast, *insertAfter);
+        // Note enclosing region index may shift because of EH cloning, so refetch it.
+        //
+        bool     postCloneInTry             = false;
+        unsigned postCloneEnclosingEHRegion = comp->ehGetMostNestedRegionIndex(info->m_allocBlock, &postCloneInTry);
+        assert(postCloneEnclosingEHRegion >= enclosingEHRegion);
+        assert(inTry == postCloneInTry);
+
+        // Now update the extents
+        //
+        BasicBlock* const newLast = *insertAfter;
+        EHblkDsc* const   ebd     = comp->ehGetDsc(enclosingEHRegion - 1);
+        for (EHblkDsc* const HBtab : EHClauses(comp, ebd))
+        {
+            if (HBtab->ebdTryLast == oldLast)
+            {
+                comp->fgSetTryEnd(HBtab, newLast);
+            }
+            if (HBtab->ebdHndLast == oldLast)
+            {
+                comp->fgSetHndEnd(HBtab, newLast);
+            }
+        }
     }
 
     // Create a new local for the enumerator uses in the cloned code
