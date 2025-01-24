@@ -2964,21 +2964,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgSetProfileWeight: set profile weight for a block
-//
-// Arguments:
-//   block -- block in question
-//   profileWeight -- raw profile weight (not accounting for inlining)
-//
-// Notes:
-//   Does inlinee scaling.
-//
-void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
-{
-    block->setBBProfileWeight(profileWeight);
-}
-
-//------------------------------------------------------------------------
 // fgIncorporateBlockCounts: read block count based profile data
 //   and set block weights
 //
@@ -3006,7 +2991,7 @@ bool Compiler::fgIncorporateBlockCounts()
 
         if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
         {
-            fgSetProfileWeight(block, profileWeight);
+            block->setBBProfileWeight(profileWeight);
         }
     }
 
@@ -3784,7 +3769,7 @@ void EfficientEdgeCountReconstructor::Propagate()
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
-        m_comp->fgSetProfileWeight(block, info->m_weight);
+        block->setBBProfileWeight(info->m_weight);
 
         const unsigned nSucc = block->NumSucc(m_comp);
         if (nSucc == 0)
@@ -4474,10 +4459,13 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
 
     // If we allocated a scratch block as the first BB then we need
     // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBBisScratch())
+    if (fgFirstBB->HasFlag(BBF_INTERNAL))
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
         madeChanges = true;
+        JITDUMP("fgComputeCalledCount: Modified method entry weight. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
 #if DEBUG
@@ -5063,3 +5051,116 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// fgRepairProfileCondToUncond: attempt to repair profile after modifying
+//   a conditinal branch to an unconditional branch.
+//
+// Arguments:
+//   block        - block that was just altered
+//   retainedEdge - flow edge that remains
+//   removedEdge  - flow edge that was removed
+//   metric       - [in/out, optional] metric to update if profile becomes inconsistent
+//
+void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
+                                           FlowEdge*   retainedEdge,
+                                           FlowEdge*   removedEdge,
+                                           int*        metric /* = nullptr */)
+{
+    assert(block->KindIs(BBJ_ALWAYS));
+    assert(block->GetTargetEdge() == retainedEdge);
+
+    // If block does not have profile data, there's nothing to do.
+    //
+    if (!block->hasProfileWeight())
+    {
+        return;
+    }
+
+    // If the removed edge was not carrying away any profile, there's nothing to do.
+    //
+    weight_t const weight = removedEdge->getLikelyWeight();
+
+    if (weight == 0.0)
+    {
+        return;
+    }
+
+    // If the branch was degenerate, there is nothing to do
+    //
+    if (retainedEdge == removedEdge)
+    {
+        return;
+    }
+
+    // This flow graph change will affect profile transitively, so in general
+    // the profile will become inconsistent.
+    //
+    bool repairWasComplete  = false;
+    bool missingProfileData = false;
+
+    // Target block weight will increase.
+    //
+    BasicBlock* const target = block->GetTarget();
+
+    if (target->hasProfileWeight())
+    {
+        target->increaseBBProfileWeight(weight);
+    }
+    else
+    {
+        missingProfileData = true;
+    }
+
+    // Alternate weight will decrease
+    //
+    BasicBlock* const alternate = removedEdge->getDestinationBlock();
+
+    if (alternate->hasProfileWeight())
+    {
+        weight_t const alternateNewWeight = alternate->bbWeight - weight;
+
+        // If profile weights are consistent, expect at worst a slight underflow.
+        //
+        const bool checkProfileConsistency = hasFlag(activePhaseChecks, PhaseChecks::CHECK_PROFILE);
+        if (checkProfileConsistency && fgPgoConsistent && (alternateNewWeight < 0.0))
+        {
+            assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
+        }
+        alternate->setBBProfileWeight(max(0.0, alternateNewWeight));
+    }
+    else
+    {
+        missingProfileData = true;
+    }
+
+    // Check for the special case where the block's postdominator
+    // is target's target (simple if/then/else/join).
+    //
+    // TODO: try a bit harder to find a postdominator, if it's "nearby"
+    //
+    if (!missingProfileData && target->KindIs(BBJ_ALWAYS))
+    {
+        repairWasComplete = alternate->KindIs(BBJ_ALWAYS) && (alternate->GetTarget() == target->GetTarget());
+    }
+
+    if (missingProfileData)
+    {
+        JITDUMP("Profile data could not be locally repaired. Data was missing.\n");
+    }
+
+    if (!repairWasComplete)
+    {
+        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+
+        if (fgPgoConsistent)
+        {
+            if (metric != nullptr)
+            {
+                *metric++;
+            }
+            fgPgoConsistent = false;
+        }
+    }
+}

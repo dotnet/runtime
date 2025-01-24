@@ -844,7 +844,7 @@ namespace Internal.Runtime.TypeLoader
                     if (_moduleHandle != _moduleForMethodHandle)
                         return;
 
-                    Handle entryMethodHandle = (((uint)HandleType.Method << 24) | entryParser.GetUnsigned()).AsHandle();
+                    Handle entryMethodHandle = (((uint)HandleType.Method << 25) | entryParser.GetUnsigned()).AsHandle();
                     if (!_methodHandle.Equals(entryMethodHandle))
                         return;
                 }

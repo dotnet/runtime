@@ -2189,15 +2189,7 @@ VOID FixupOnRethrow(Thread* pCurThread, EXCEPTION_POINTERS* pExceptionPointers)
 
     ThreadExceptionState* pExState = pCurThread->GetExceptionState();
 
-#ifdef FEATURE_INTERPRETER
-    // Abort if we don't have any state from the original exception.
-    if (!pExState->IsExceptionInProgress())
-    {
-        return;
-    }
-#endif // FEATURE_INTERPRETER
-
-    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the COM+ exception.
+    // Don't allow rethrow of a STATUS_STACK_OVERFLOW -- it's a new throw of the CLR exception.
     if (pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW)
     {
         return;
@@ -2366,9 +2358,6 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
         pParam->throwable = pParam->pThread->SafeSetLastThrownObject(pParam->throwable);
 
         if (!pParam->isRethrown ||
-#ifdef FEATURE_INTERPRETER
-            !pParam->pExState->IsExceptionInProgress() ||
-#endif // FEATURE_INTERPRETER
              pParam->pExState->IsComPlusException() ||
             (pParam->pExState->GetExceptionCode() == STATUS_STACK_OVERFLOW))
         {
@@ -2422,7 +2411,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     {
     }
     PAL_ENDTRY
-    _ASSERTE(!"Cannot continue after COM+ exception");      // Debugger can bring you here.
+    _ASSERTE(!"Cannot continue after CLR exception");      // Debugger can bring you here.
     // For example,
     // Debugger breaks in due to second chance exception (unhandled)
     // User hits 'g'
@@ -2708,7 +2697,7 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 #endif // FEATURE_COMINTEROP
 
 //
-// Maps a Win32 fault to a COM+ Exception enumeration code
+// Maps a Win32 fault to a CLR Exception enumeration code
 //
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
 {
@@ -2805,7 +2794,7 @@ void CheckStackBarrier(EXCEPTION_REGISTRATION_RECORD *exRecord)
 // gc mode.  As we leave the EE, we fix a few things:
 //
 //      - the gc state must be set back to preemptive-operative
-//      - the COM+ frame chain must be rewound to what it was on entry
+//      - the CLR frame chain must be rewound to what it was on entry
 //      - ExInfo()->m_pSearchBoundary must be adjusted
 //        if we popped the frame that is identified as begnning the next
 //        crawl.
@@ -2834,9 +2823,9 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     CONSISTENCY_CHECK(pFrame == pThread->GetFrame());
 
 #ifndef FEATURE_EH_FUNCLETS
-    // An exception is being thrown through here.  The COM+ exception
+    // An exception is being thrown through here.  The CLR exception
     // info keeps a pointer to a frame that is used by the next
-    // COM+ Exception Handler as the starting point of its crawl.
+    // CLR Exception Handler as the starting point of its crawl.
     // We may have popped this marker -- in which case, we need to
     // update it to the current frame.
     //
@@ -5711,7 +5700,7 @@ void AdjustContextForThreadStop(Thread* pThread,
     }
 }
 
-// Create a COM+ exception , stick it in the thread.
+// Create a CLR exception , stick it in the thread.
 OBJECTREF
 CreateCOMPlusExceptionObject(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, BOOL bAsynchronousThreadStop)
 {
@@ -5979,7 +5968,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     }
 #endif // FEATURE_EMULATE_SINGLESTEP
 
-    // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there
+    // Is this exception really meant for the CLR Debugger? Note: we will let the debugger have a chance if there
     // is a debugger attached to any part of the process. It is incorrect to consider whether or not the debugger
     // is attached the thread's current app domain at this point.
 
@@ -6399,7 +6388,7 @@ bool ShouldHandleManagedFault(
     //
     //  The helper will push a frame for us, and then throw the correct managed exception.
     //
-    // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there is a
+    // Is this exception really meant for the CLR Debugger? Note: we will let the debugger have a chance if there is a
     // debugger attached to any part of the process. It is incorrect to consider whether or not the debugger is attached
     // the thread's current app domain at this point.
 

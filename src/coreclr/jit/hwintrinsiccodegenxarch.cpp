@@ -912,18 +912,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                         case NI_AVX2_BroadcastScalarToVector128:
                         case NI_AVX2_BroadcastScalarToVector256:
                         {
-                            if (varTypeIsSmall(node->GetSimdBaseType()))
-                            {
-                                if (compiler->canUseEvexEncoding())
-                                {
-                                    needsInstructionFixup = true;
-                                }
-                                else
-                                {
-                                    needsBroadcastFixup = true;
-                                }
-                            }
-                            else if (compiler->canUseEvexEncoding())
+                            if (compiler->canUseEvexEncoding())
                             {
                                 needsInstructionFixup = true;
                             }

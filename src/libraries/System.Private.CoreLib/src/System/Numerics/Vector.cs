@@ -62,6 +62,30 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<T> Add<T>(Vector<T> left, Vector<T> right) => left + right;
 
+        /// <inheritdoc cref="Vector128.All{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool All<T>(Vector<T> vector, T value) => vector == Create(value);
+
+        /// <inheritdoc cref="Vector128.AllWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AllWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return All(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return All(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return All(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to that is ones-complemented before being bitwise-and with <paramref name="left" />.</param>
@@ -69,6 +93,30 @@ namespace System.Numerics
         /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right) => left & ~right;
+
+        /// <inheritdoc cref="Vector128.Any{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Any<T>(Vector<T> vector, T value) => EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector128.AnyWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AnyWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Any(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Any(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return Any(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{U}" />.</summary>
         /// <typeparam name="TFrom">The type of the input vector.</typeparam>
@@ -279,7 +327,7 @@ namespace System.Numerics
             return result;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.Clamp{T}(Vector128{T}, Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector<T> Clamp<T>(Vector<T> value, Vector<T> min, Vector<T> max)
         {
@@ -287,7 +335,7 @@ namespace System.Numerics
             return Min(Max(value, min), max);
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.ClampNative{T}(Vector128{T}, Vector128{T}, Vector128{T})" />
         [Intrinsic]
         public static Vector<T> ClampNative<T>(Vector<T> value, Vector<T> min, Vector<T> max)
         {
@@ -328,14 +376,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<long> value)
         {
-            if (Avx2.IsSupported)
+            if (sizeof(Vector<double>) == sizeof(Vector512<double>))
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<double>) == sizeof(Vector256<double>))
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
             {
-                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                Debug.Assert(sizeof(Vector<double>) == sizeof(Vector128<double>));
                 return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
             }
         }
@@ -348,14 +399,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<ulong> value)
         {
-            if (Avx2.IsSupported)
+            if (sizeof(Vector<double>) == sizeof(Vector512<double>))
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<double>) == sizeof(Vector256<double>))
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
             {
-                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                Debug.Assert(sizeof(Vector<double>) == sizeof(Vector128<double>));
                 return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
             }
         }
@@ -453,14 +507,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> ConvertToSingle(Vector<uint> value)
         {
-            if (Avx2.IsSupported)
+            if (sizeof(Vector<float>) == sizeof(Vector512<float>))
             {
-                Debug.Assert(Vector<float>.Count == Vector256<float>.Count);
+                return Vector512.ConvertToSingle(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<float>) == sizeof(Vector256<float>))
+            {
                 return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
             }
             else
             {
-                Debug.Assert(Vector<float>.Count == Vector128<float>.Count);
+                Debug.Assert(sizeof(Vector<float>) == sizeof(Vector128<float>));
                 return Vector128.ConvertToSingle(value.AsVector128()).AsVector();
             }
         }
@@ -579,7 +636,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.CopySign{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CopySign<T>(Vector<T> value, Vector<T> sign)
@@ -607,6 +664,47 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+        }
+
+
+
+        /// <inheritdoc cref="Vector128.Count{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Count<T>(Vector<T> vector, T value)
+        {
+            if (sizeof(Vector<T>) == sizeof(Vector512<T>))
+            {
+                return Vector512.Count(vector.AsVector512(), value);
+            }
+            else if (sizeof(Vector<T>) == sizeof(Vector256<T>))
+            {
+                return Vector256.Count(vector.AsVector256(), value);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == sizeof(Vector128<T>));
+                return Vector128.Count(vector.AsVector128(), value);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.CountWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int CountWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Count(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Count(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return Count(vector, Scalar<T>.AllBitsSet);
             }
         }
 
@@ -1228,7 +1326,102 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        /// <inheritdoc cref="Vector128.IndexOf{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf<T>(Vector<T> vector, T value)
+        {
+            if (sizeof(Vector<T>) == sizeof(Vector512<T>))
+            {
+                return Vector512.IndexOf(vector.AsVector512(), value);
+            }
+            else if (sizeof(Vector<T>) == sizeof(Vector256<T>))
+            {
+                return Vector256.IndexOf(vector.AsVector256(), value);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == sizeof(Vector128<T>));
+                return Vector128.IndexOf(vector.AsVector128(), value);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IndexOfWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return IndexOf(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return IndexOf(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return IndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.IsEvenInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsEvenInteger<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsEvenIntegerSingle<Vector<float>, Vector<uint>>(vector.As<T, float>()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsEvenIntegerDouble<Vector<double>, Vector<ulong>>(vector.As<T, double>()).As<double, T>();
+            }
+            return IsZero(vector & Vector<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector128.IsFinite{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsFinite<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return ~IsZero(AndNot(Create<uint>(float.PositiveInfinityBits), vector.As<T, uint>())).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return ~IsZero(AndNot(Create<ulong>(double.PositiveInfinityBits), vector.As<T, ulong>())).As<ulong, T>();
+            }
+            return Vector<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector128.IsInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsInfinity<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsPositiveInfinity(Abs(vector));
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsInteger<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return IsFinite(vector) & Equals(vector, Truncate(vector));
+            }
+            return Vector<T>.AllBitsSet;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNaN{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsNaN<T>(Vector<T> vector)
@@ -1240,7 +1433,7 @@ namespace System.Numerics
             return Vector<T>.Zero;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsNegative{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsNegative<T>(Vector<T> vector)
@@ -1267,7 +1460,55 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsNegativeInfinity{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsNegativeInfinity<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsNormal{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsNormal<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).As<T, uint>() - Create<uint>(float.SmallestNormalBits), Create<uint>(float.PositiveInfinityBits - float.SmallestNormalBits)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).As<T, ulong>() - Create<ulong>(double.SmallestNormalBits), Create<ulong>(double.PositiveInfinityBits - double.SmallestNormalBits)).As<ulong, T>();
+            }
+            return ~IsZero(vector);
+        }
+
+        /// <inheritdoc cref="Vector128.IsOddInteger{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsOddInteger<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return VectorMath.IsOddIntegerSingle<Vector<float>, Vector<uint>>(vector.As<T, float>()).As<float, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return VectorMath.IsOddIntegerDouble<Vector<double>, Vector<ulong>>(vector.As<T, double>()).As<double, T>();
+            }
+            return ~IsZero(vector & Vector<T>.One);
+        }
+
+        /// <inheritdoc cref="Vector128.IsPositive{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsPositive<T>(Vector<T> vector)
@@ -1294,7 +1535,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsPositiveInfinity{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsPositiveInfinity<T>(Vector<T> vector)
@@ -1310,10 +1551,65 @@ namespace System.Numerics
             return Vector<T>.Zero;
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        /// <inheritdoc cref="Vector128.IsSubnormal{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> IsSubnormal<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LessThan(Abs(vector).As<T, uint>() - Vector<uint>.One, Create<uint>(float.MaxTrailingSignificand)).As<uint, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(Abs(vector).As<T, ulong>() - Vector<ulong>.One, Create<ulong>(double.MaxTrailingSignificand)).As<ulong, T>();
+            }
+            return Vector<T>.Zero;
+        }
+
+        /// <inheritdoc cref="Vector128.IsZero{T}(Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsZero<T>(Vector<T> vector) => Equals(vector, Vector<T>.Zero);
+
+        /// <inheritdoc cref="Vector128.LastIndexOf{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOf<T>(Vector<T> vector, T value)
+        {
+            if (sizeof(Vector<T>) == sizeof(Vector512<T>))
+            {
+                return Vector512.LastIndexOf(vector.AsVector512(), value);
+            }
+            else if (sizeof(Vector<T>) == sizeof(Vector256<T>))
+            {
+                return Vector256.LastIndexOf(vector.AsVector256(), value);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == sizeof(Vector128<T>));
+                return Vector128.LastIndexOf(vector.AsVector128(), value);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.LastIndexOfWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int LastIndexOfWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return LastIndexOf(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LastIndexOf(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return LastIndexOf(vector, Scalar<T>.AllBitsSet);
+            }
+        }
 
         internal static Vector<T> Lerp<T>(Vector<T> x, Vector<T> y, Vector<T> amount)
             where T : IFloatingPointIeee754<T>
@@ -1696,7 +1992,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.Max{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Max<T>(Vector<T> left, Vector<T> right)
@@ -1719,7 +2015,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxMagnitude{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MaxMagnitude<T>(Vector<T> left, Vector<T> right)
@@ -1742,7 +2038,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxMagnitudeNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MaxMagnitudeNumber<T>(Vector<T> left, Vector<T> right)
@@ -1765,7 +2061,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxNative{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MaxNative<T>(Vector<T> left, Vector<T> right)
@@ -1788,7 +2084,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MaxNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MaxNumber<T>(Vector<T> left, Vector<T> right)
@@ -1811,7 +2107,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.Min{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Min<T>(Vector<T> left, Vector<T> right)
@@ -1834,7 +2130,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinMagnitude{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MinMagnitude<T>(Vector<T> left, Vector<T> right)
@@ -1857,7 +2153,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinMagnitudeNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MinMagnitudeNumber<T>(Vector<T> left, Vector<T> right)
@@ -1880,7 +2176,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinNative{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MinNative<T>(Vector<T> left, Vector<T> right)
@@ -1903,7 +2199,7 @@ namespace System.Numerics
             }
         }
 
-        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        /// <inheritdoc cref="Vector128.MinNumber{T}(Vector128{T}, Vector128{T})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> MinNumber<T>(Vector<T> left, Vector<T> right)
@@ -2183,6 +2479,30 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector<T> Negate<T>(Vector<T> value) => -value;
 
+        /// <inheritdoc cref="Vector128.None{T}(Vector128{T}, T)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool None<T>(Vector<T> vector, T value) => !EqualsAny(vector, Create(value));
+
+        /// <inheritdoc cref="Vector128.NoneWhereAllBitsSet{T}(Vector128{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool NoneWhereAllBitsSet<T>(Vector<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return None(vector.As<T, int>(), -1);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return None(vector.As<T, long>(), -1);
+            }
+            else
+            {
+                return None(vector, Scalar<T>.AllBitsSet);
+            }
+        }
+
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="value">The vector whose ones-complement is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2346,6 +2666,24 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Vector<uint> ShiftLeft(Vector<uint> value, int shiftCount) => value << shiftCount;
 
+        [Intrinsic]
+        internal static Vector<uint> ShiftLeft(Vector<uint> vector, Vector<uint> shiftCount)
+        {
+            if (sizeof(Vector<uint>) == sizeof(Vector512<uint>))
+            {
+                return Vector512.ShiftLeft(vector.AsVector512(), shiftCount.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<uint>) == sizeof(Vector256<uint>))
+            {
+                return Vector256.ShiftLeft(vector.AsVector256(), shiftCount.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == sizeof(Vector128<uint>));
+                return Vector128.ShiftLeft(vector.AsVector128(), shiftCount.AsVector128()).AsVector();
+            }
+        }
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -2353,6 +2691,24 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<ulong> ShiftLeft(Vector<ulong> value, int shiftCount) => value << shiftCount;
+
+        [Intrinsic]
+        internal static Vector<ulong> ShiftLeft(Vector<ulong> vector, Vector<ulong> shiftCount)
+        {
+            if (sizeof(Vector<ulong>) == sizeof(Vector512<ulong>))
+            {
+                return Vector512.ShiftLeft(vector.AsVector512(), shiftCount.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<ulong>) == sizeof(Vector256<ulong>))
+            {
+                return Vector256.ShiftLeft(vector.AsVector256(), shiftCount.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ulong>) == sizeof(Vector128<ulong>));
+                return Vector128.ShiftLeft(vector.AsVector128(), shiftCount.AsVector128()).AsVector();
+            }
+        }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>

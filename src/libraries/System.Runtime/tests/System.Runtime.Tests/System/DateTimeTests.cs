@@ -2688,6 +2688,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public void TestParseTimeOnlyStringWithAssumeUtcOption()
+        {
+            DateTime utcNow1 = DateTime.UtcNow;
+            DateTime dt = DateTime.Parse("13:30", null, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            DateTime utcNow2 = DateTime.UtcNow;
+
+            // Ensure the parsed date part is in UTC.
+            Assert.InRange(dt.Date, utcNow1.Date, utcNow2.Date);
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void TestTimeSynchronizationWithTheSystem()
         {

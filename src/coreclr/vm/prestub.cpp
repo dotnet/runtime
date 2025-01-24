@@ -23,10 +23,6 @@
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif
-
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
@@ -822,37 +818,20 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     {
         SString namespaceOrClassName, methodName, methodSignature;
 
-        // Methods that may be interpreted defer this notification until it is certain
-        // we are jitting and not interpreting in CompileMethodWithEtwWrapper.
-        // Some further refactoring could consolidate the notification to always
-        // occur at the point the interpreter does it, but it might even better
-        // to fix the issues that cause us to avoid generating jit notifications
-        // for interpreted methods in the first place. The interpreter does generate
-        // a small stub of native code but no native-IL mapping.
-#ifndef FEATURE_INTERPRETER
         ETW::MethodLog::MethodJitting(this,
             pilHeader,
             &namespaceOrClassName,
             &methodName,
             &methodSignature);
-#endif
 
         pCode = JitCompileCodeLocked(pConfig, pilHeader, pEntry, &sizeOfCode);
 
-        // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-        if (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL)
-#endif
-        {
-            // Fire an ETW event to mark the end of JIT'ing
-            ETW::MethodLog::MethodJitted(this,
-                &namespaceOrClassName,
-                &methodName,
-                &methodSignature,
-                pCode,
-                pConfig);
-        }
-
+        ETW::MethodLog::MethodJitted(this,
+            &namespaceOrClassName,
+            &methodName,
+            &methodSignature,
+            pCode,
+            pConfig);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -897,28 +876,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_INTERPRETER
-    bool isJittedMethod = (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL);
-#endif
-
-    // Interpretted methods skip this notification
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
 #ifdef FEATURE_PERFMAP
-        // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
+    // Save the JIT'd method information so that perf can resolve JIT'd call frames.
+    PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
 #endif
-    }
 
-#ifdef FEATURE_INTERPRETER
-    if (isJittedMethod)
-#endif
-    {
-        // The notification will only occur if someone has registered for this method.
-        DACNotifyCompilationFinished(this, pCode);
-    }
+    // The notification will only occur if someone has registered for this method.
+    DACNotifyCompilationFinished(this, pCode);
 
     return pCode;
 }
@@ -1446,11 +1410,18 @@ namespace
 
         DWORD declArgCount;
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
-
-        // UnsafeAccessors for fields require return types be byref.
-        // This was explicitly checked in TryGenerateUnsafeAccessor().
         if (pSig1 >= pEndSig1)
             ThrowHR(META_E_BAD_SIGNATURE);
+
+        // UnsafeAccessors for fields require return types be byref. However, we first need to
+        // consume any custom modifiers which are prior to the expected ELEMENT_TYPE_BYREF in
+        // the RetType signature (II.23.2.11).
+        _ASSERTE(state.IgnoreCustomModifiers); // We should always ignore custom modifiers for field look-up.
+        MetaSig::ConsumeCustomModifiers(pSig1, pEndSig1);
+        if (pSig1 >= pEndSig1)
+            ThrowHR(META_E_BAD_SIGNATURE);
+
+        // The ELEMENT_TYPE_BYREF was explicitly checked in TryGenerateUnsafeAccessor().
         CorElementType byRefType = CorSigUncompressElementType(pSig1);
         _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
 

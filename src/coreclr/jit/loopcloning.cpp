@@ -1798,67 +1798,33 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
 //
 bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
-    // Compute loop size
+    // See if loop size exceeds the limit.
     //
-    unsigned loopSize = 0;
+    const int      sizeConfig = JitConfig.JitCloneLoopsSizeLimit();
+    unsigned const sizeLimit  = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
+    unsigned       size       = 0;
 
-    // For now we use a very simplistic model where each tree node
-    // has the same code size.
-    //
-    // CostSz is not available until later.
-    //
-    struct TreeCostWalker : GenTreeVisitor<TreeCostWalker>
-    {
-        enum
+    BasicBlockVisit result = loop->VisitLoopBlocks([&](BasicBlock* block) {
+        assert(sizeLimit >= size);
+        unsigned const slack     = sizeLimit - size;
+        unsigned       blockSize = 0;
+        if (block->ComplexityExceeds(this, slack, &blockSize))
         {
-            DoPreOrder = true,
-        };
-
-        unsigned m_nodeCount;
-
-        TreeCostWalker(Compiler* comp)
-            : GenTreeVisitor(comp)
-            , m_nodeCount(0)
-        {
+            return BasicBlockVisit::Abort;
         }
 
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            m_nodeCount++;
-            return WALK_CONTINUE;
-        }
-
-        void Reset()
-        {
-            m_nodeCount = 0;
-        }
-        unsigned Cost()
-        {
-            return m_nodeCount;
-        }
-    };
-
-    TreeCostWalker costWalker(this);
-
-    loop->VisitLoopBlocks([&](BasicBlock* block) {
-        weight_t normalizedWeight = block->getBBWeight(this);
-        for (Statement* const stmt : block->Statements())
-        {
-            costWalker.Reset();
-            costWalker.WalkTree(stmt->GetRootNodePointer(), nullptr);
-            loopSize += costWalker.Cost();
-        }
+        size += blockSize;
         return BasicBlockVisit::Continue;
     });
 
-    int const sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
-
-    if ((sizeLimit >= 0) && (loopSize >= (unsigned)sizeLimit))
+    if (result == BasicBlockVisit::Abort)
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP " of size %u, size limit %d\n", loop->GetIndex(), loopSize,
-                sizeLimit);
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
         return false;
     }
+
+    JITDUMP("Loop cloning: loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size,
+            sizeLimit);
 
     return true;
 }
@@ -1888,7 +1854,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
 
@@ -2042,24 +2008,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 #endif
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
-
-    // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned depth         = loop->GetDepth();
-    weight_t ambientWeight = 1;
-    for (unsigned j = 0; j < depth; j++)
-    {
-        weight_t lastWeight = ambientWeight;
-        ambientWeight *= BB_LOOP_WEIGHT_SCALE;
-        assert(ambientWeight > lastWeight);
-    }
 
     assert(loop->EntryEdges().size() == 1);
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-    // The ambient weight might be higher than we computed above. Be safe by
-    // taking the max with the head block's weight.
-    ambientWeight = max(ambientWeight, preheader->bbWeight);
 
     // We're going to transform this loop:
     //
@@ -2077,8 +2030,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight = preheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->CopyFlags(preheader, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    fastPreheader->inheritWeight(preheader);
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
@@ -2101,8 +2053,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomRedirBlk [BBJ_ALWAYS --> bottomNext]
     // ... slow cloned loop (not yet inserted)
     // bottomNext
-    BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
-    BasicBlock* newPred = bottom;
+    BasicBlock* bottom              = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* beforeSlowPreheader = bottom;
+
+    // Ensure the slow loop preheader ends up in the same EH region
+    // as the preheader.
+    //
+    bool           inTry           = false;
+    unsigned const enclosingRegion = ehGetMostNestedRegionIndex(preheader, &inTry);
+    if (!BasicBlock::sameEHRegion(beforeSlowPreheader, preheader))
+    {
+        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, bottom, /* endBlk */ nullptr,
+                                                /* nearBlk */ bottom, /* jumpBlk */ nullptr, /* runRarely */ false);
+    }
 
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
@@ -2112,22 +2075,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // The slow preheader needs to go in the same EH region as the preheader.
     //
     JITDUMP("Create unique preheader for slow path loop\n");
-    const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
-    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, extendRegion);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
-    slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    const bool  extendRegion  = BasicBlock::sameEHRegion(beforeSlowPreheader, preheader);
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, beforeSlowPreheader, extendRegion);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, beforeSlowPreheader->bbNum);
+    slowPreheader->inheritWeight(preheader);
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
 
-    // If we didn't extend the region above (because the last loop
+    // If we didn't extend the region above (because the beforeSlowPreheader
     // block was in some enclosed EH region), put the slow preheader
     // into the appropriate region, and make appropriate extent updates.
     //
     if (!extendRegion)
     {
         slowPreheader->copyEHRegion(preheader);
-        bool     isTry           = false;
-        unsigned enclosingRegion = ehGetMostNestedRegionIndex(slowPreheader, &isTry);
 
         if (enclosingRegion != 0)
         {
@@ -2145,11 +2105,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             }
         }
     }
-    newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
-
+    //
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
+    BasicBlock*      newPred  = slowPreheader;
 
     if (cloneLoopsWithEH)
     {
@@ -3115,6 +3075,13 @@ PhaseStatus Compiler::optCloneLoops()
             fgInvalidateDfsTree();
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        if (fgIsUsingProfileWeights())
+        {
+            JITDUMP("optCloneLoops: Profile data needs to be propagated through new loops. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 
