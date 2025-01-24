@@ -531,31 +531,6 @@ private:
 #endif // FEATURE_MULTIREG_RET
 
     //------------------------------------------------------------------------
-    // CanSpillCallWithoutSideEffect: Check if we can spill a call without
-    // side effects.
-    //
-    // Arguments:
-    //    call -- the call to check
-    //    parent -- the parent of the call
-    //
-    // Returns:
-    //    True if we can spill the call without side effects.
-    //
-    // Notes:
-    //    We conservatively consider a call can be spilled without side effects
-    //    when it's the root node, or the parent node is STORE_LCL_VAR.
-    //
-    bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
-    {
-        if (parent == nullptr || parent->OperIs(GT_STORE_LCL_VAR))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
     //
@@ -651,8 +626,8 @@ private:
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
                             // TODO-CQ: We should spill the call if it has side effects instead of
-                            // conservatively estimating whether it has side effects or not.
-                            if (CanSpillCallWithoutSideEffect(call, parent))
+                            // conservatively estimating it using its parent.
+                            if (parent == nullptr || parent->OperIs(GT_STORE_LCL_VAR))
                             {
                                 Statement* stmt = m_compiler->gtNewStmt(call);
                                 m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
