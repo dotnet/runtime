@@ -406,12 +406,6 @@
       <Uri>https://github.com/dotnet/sdk</Uri>
       <Sha>b324c2e074f7691705b85b6ed69be23d350164b8</Sha>
     </Dependency>
-    <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="10.0.100-alpha.1.24622.2">
-      <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>13330d5ded0b2b2bcd6459d6a410aa6220b11040</Sha>
-      <SourceBuild RepoName="sdk" ManagedOnly="true" />
-    </Dependency>
     <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.25053.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>0eb38b09e89e233cf7cd056fad672627ea2fa05a</Sha>
