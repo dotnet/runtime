@@ -1692,11 +1692,7 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
         switch (ins)
         {
             case INS_cvtss2si:
-            case INS_cvttss2si32:
-            case INS_cvttss2si64:
             case INS_cvtsd2si:
-            case INS_cvttsd2si32:
-            case INS_cvttsd2si64:
             case INS_movd:
             case INS_movnti:
             case INS_andn:
@@ -1709,11 +1705,9 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_pdep:
             case INS_pext:
             case INS_rorx:
-#if defined(TARGET_AMD64)
             case INS_sarx:
             case INS_shlx:
             case INS_shrx:
-#endif // TARGET_AMD64
             case INS_vcvtsd2usi:
             case INS_vcvtss2usi:
             {
@@ -2378,32 +2372,25 @@ emitter::code_t emitter::emitExtractVexPrefix(instruction ins, code_t& code) con
                             case INS_rorx:
                             case INS_pdep:
                             case INS_mulx:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_shrx:
-#endif
                             {
                                 vexPrefix |= 0x03;
                                 break;
                             }
 
                             case INS_pext:
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
                             case INS_sarx:
-#endif
                             {
                                 vexPrefix |= 0x02;
                                 break;
                             }
-// TODO: Unblock when enabled for x86
-#ifdef TARGET_AMD64
+
                             case INS_shlx:
                             {
                                 vexPrefix |= 0x01;
                                 break;
                             }
-#endif
+
                             default:
                             {
                                 vexPrefix |= 0x00;
@@ -3099,11 +3086,9 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrw:
         case INS_pextrw_sse41:
         case INS_rorx:
-#ifdef TARGET_AMD64
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
-#endif
         case INS_vcvtsd2usi:
         case INS_vcvtss2usi:
         case INS_vcvttsd2usi32:
@@ -3352,10 +3337,8 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
     switch (ins)
     {
         case INS_crc32:
-#if defined(TARGET_AMD64)
         case INS_sarx:
         case INS_shrx:
-#endif // TARGET_AMD64
         {
             // When the prefix is 0x0F38 or 0x0F3A, we must use the 3-byte encoding
             // These are special cases where the pp-bit is 0xF2 or 0xF3 and not 0x66
@@ -7708,7 +7691,7 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
 }
 
 //------------------------------------------------------------------------
-// emitIns_R_R_R_S: emits the code for a instruction that takes a register operand, a variable index +
+// emitIns_R_R_S_R: emits the code for a instruction that takes a register operand, a variable index +
 //                  offset, another register operand, and that returns a value in register
 //
 // Arguments:
@@ -11854,6 +11837,19 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_ARD:
         case IF_RWR_RWR_ARD:
         {
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
+            {
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They will appear here as IF_RWR_RRD_ARD but should actually
+                // display as if they were  IF_RWR_ARD_RRD.
+
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", sstr);
+                emitDispAddrMode(id);
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                break;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
@@ -12151,6 +12147,20 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_SRD:
         case IF_RWR_RWR_SRD:
         {
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
+            {
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They will appear here as IF_RWR_RRD_SRD but should actually
+                // display as if they were  IF_RWR_SRD_RRD.
+
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", sstr);
+                emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
+                                 id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                break;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
@@ -12355,17 +12365,12 @@ void emitter::emitDispIns(
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
 
-            if (ins == INS_bextr || ins == INS_bzhi
-#ifdef TARGET_AMD64
-                || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx
-#endif
-            )
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
             {
-                // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
-                // which is different from most of other instructions
-                regNumber tmp = reg2;
-                reg2          = reg3;
-                reg3          = tmp;
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They encode reg3 in VEX.vvvv and reg2 in modRM, which is opposite most instructions.
+                // We swap them back here so they will display in the correct order.
+                std::swap(reg2, reg3);
             }
 
             emitAttr attr3 = attr;
@@ -12699,6 +12704,20 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_MRD:
         case IF_RWR_RWR_MRD:
         {
+            if ((ins == INS_bextr) || (ins == INS_bzhi) || (ins == INS_sarx) || (ins == INS_shlx) || (ins == INS_shrx))
+            {
+                // These instructions have their operands swapped to simplify the emitter implementation.
+                // They will appear here as IF_RWR_RRD_MRD but should actually
+                // display as if they were  IF_RWR_MRD_RRD.
+
+                printf("%s", emitRegName(id->idReg1(), attr));
+                printf(", %s", sstr);
+                offs = emitGetInsDsp(id);
+                emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+                printf(", %s", emitRegName(id->idReg2(), attr));
+                break;
+            }
+
             printf("%s", emitRegName(id->idReg1(), attr));
             emitDispEmbMasking(id);
             printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
@@ -20541,7 +20560,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-#ifdef TARGET_AMD64
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
@@ -20550,7 +20568,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             break;
         }
-#endif
 
         case INS_vpmovb2m:
         case INS_vpmovw2m:
