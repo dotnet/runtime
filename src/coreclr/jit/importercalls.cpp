@@ -7690,19 +7690,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (!(methAttr & CORINFO_FLG_FORCEINLINE))
     {
-        if (compCurBB->HasFlag(BBF_INTERNAL) && ehGetBlockHndDsc(compCurBB) != nullptr)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nWill not inline blocks that have EH descriptor when IL offset may not be valid\n");
-            }
-
-#endif
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_NOT_CANDIDATE);
-            return;
-        }
-
         /* Don't bother inline blocks that are in the filter region */
         if (bbInCatchHandlerBBRange(compCurBB))
         {
