@@ -25408,20 +25408,23 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
+    // duplicate operand 2 for non-isUnsafe implementation later
+    GenTree* op2DupSafe = nullptr;
+#if defined(TARGET_XARCH)
+    if (!isUnsafe)
+#elif defined(TARGET_ARM64)
+    if (!isUnsafe && elementSize > 1)
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+    {
+        op2DupSafe = fgMakeMultiUse(&op2);
+    }
+
 #if defined(TARGET_XARCH)
     // on xarch, signed comparison is cheaper, so whenever we are able to use it in the
     // result & (indices < elementCount) step for Shuffle, we do.
     bool canUseSignedComparisonHint = false;
-
-    // duplicate operand 2 for non-isUnsafe implementation later
-    GenTree* op2DupSafe = nullptr;
-    if (!isUnsafe)
-    {
-        // Re-order it so the original definition of op2 is used in the mask
-        GenTree* tmp = op2;
-        op2          = fgMakeMultiUse(&tmp);
-        op2DupSafe   = tmp;
-    }
 
     // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, we could further optimise many cases
     // below
@@ -25435,6 +25438,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_PermuteVar64x8, simdBaseJitType, simdSize);
+            retNode->SetReverseOp();
         }
         else if (elementSize == 2)
         {
@@ -25442,6 +25446,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_PermuteVar32x16, simdBaseJitType, simdSize);
+            retNode->SetReverseOp();
         }
         else if (elementSize == 4)
         {
@@ -25449,6 +25454,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_PermuteVar16x32, simdBaseJitType, simdSize);
+            retNode->SetReverseOp();
         }
         else
         {
@@ -25457,6 +25463,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512F_PermuteVar8x64, simdBaseJitType, simdSize);
+            retNode->SetReverseOp();
         }
     }
     else if (elementSize == 1 && simdSize == 16)
@@ -25475,6 +25482,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
+        retNode->SetReverseOp();
     }
     else if (elementSize == 2 && compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL))
     {
@@ -25491,6 +25499,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
+        retNode->SetReverseOp();
     }
     else if (elementSize == 4 && (simdSize == 32 || compOpportunisticallyDependsOn(InstructionSet_AVX)))
     {
@@ -25502,6 +25511,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+            retNode->SetReverseOp();
         }
         else
         {
@@ -25517,6 +25527,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         // swap the operands to match the encoding requirements
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseJitType, simdSize);
+        retNode->SetReverseOp();
     }
     else if (elementSize == 8 && simdSize == 16 &&
              compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512F_VL))
@@ -25613,6 +25624,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             {
                 // swap the operands to match the encoding requirements
                 retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize);
+                retNode->SetReverseOp();
             }
             else
             {
@@ -25653,6 +25665,9 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 canUseSignedComparisonHint = true;
             }
 
+            // declare required clones of op2
+            GenTree *op2Dup1, *op2Dup2;
+
             // if we have elementSize > 1, we need to convert op2 (short indices) to byte indices
             if (elementSize > 1)
             {
@@ -25687,11 +25702,18 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 cnsNode->AsVecCon()->gtSimdVal = orCns;
 
                 op2 = gtNewSimdBinOpNode(GT_OR, type, op2, cnsNode, simdBaseJitType, simdSize);
+
+                // create required clones of op2
+                op2Dup1 = fgMakeMultiUse(&op2);
+                op2Dup2 = gtCloneExpr(op2Dup1);
             }
 
-            // create required clones of op2
-            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-            GenTree* op2Dup2 = fgMakeMultiUse(&op2Dup1);
+            else
+            {
+                // create required clones of op2
+                op2Dup1 = op2DupSafe != nullptr ? gtCloneExpr(op2DupSafe) : fgMakeMultiUse(&op2);
+                op2Dup2 = gtCloneExpr(op2Dup1);
+            }
 
             // swap the low and high 128-bit lanes
             // calculate swap before shuf1 so they can be computed in parallel
@@ -25700,7 +25722,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             if (!op1->IsCnsVec())
             {
                 GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-                GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+                GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
                 uint8_t control = 1;
                 cnsNode         = gtNewIconNode(control, TYP_INT);
@@ -25831,14 +25853,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     // if we have short / int / long, then we want to VectorTableLookup the least-significant byte to all bytes of that
     // index element, and then shift left by the applicable amount, then or on the bits for the elements
     // if it's not isUnsafe, we also need to then fix-up the out-of-range indices
-    GenTree* op2DupSafe = nullptr;
-    if (!isUnsafe && elementSize != 1)
-    {
-        // Re-order it so the original definition of op2 is used in the mask
-        GenTree* tmp = op2;
-        op2          = fgMakeMultiUse(&tmp);
-        op2DupSafe   = tmp;
-    }
     if (elementSize > 1)
     {
         // AdvSimd.ShiftLeftLogical is only valid on integral types, excluding Vector128<int>
@@ -25978,7 +25992,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         // create the mask node (op2 < comparand), and the result node (mask & unsafeResult)
         GenTree* mask = gtNewSimdCmpOpNode(GT_LT, type, op2DupSafe, comparand, corType, simdSize);
-        retNode       = gtNewSimdBinOpNode(GT_AND, type, mask, retNode, simdBaseJitType, simdSize);
+        retNode       = gtNewSimdBinOpNode(GT_AND, type, retNode, mask, simdBaseJitType, simdSize);
     }
     else
     {
