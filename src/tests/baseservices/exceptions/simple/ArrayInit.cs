@@ -47,6 +47,7 @@ public class ArrayInit {
             TestFramework.LogError("002", "Unexpected exception: " + e.ToString());
             retVal = false;
         }
+        throw new NotSupportedException();
         return retVal;
     }
 
