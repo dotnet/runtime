@@ -133,6 +133,178 @@ REGDEF(K7,     7+KBASE,    KMASK(7),     "k7"   )
 
 REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 
+// Ignore REG_* symbols defined in Android NDK
+#if defined(TARGET_X86)
+#undef REG_EAX
+#define REG_EAX JITREG_EAX
+#undef REG_ECX
+#define REG_ECX JITREG_ECX
+#undef REG_EDX
+#define REG_EDX JITREG_EDX
+#undef REG_EBX
+#define REG_EBX JITREG_EBX
+#undef REG_ESP
+#define REG_ESP JITREG_ESP
+#undef REG_EBP
+#define REG_EBP JITREG_EBP
+#undef REG_ESI
+#define REG_ESI JITREG_ESI
+#undef REG_EDI
+#define REG_EDI JITREG_EDI
+#undef REG_RAX
+#define REG_RAX JITREG_RAX
+#undef REG_RCX
+#define REG_RCX JITREG_RCX
+#undef REG_RDX
+#define REG_RDX JITREG_RDX
+#undef REG_RBX
+#define REG_RBX JITREG_RBX
+#undef REG_RSP
+#define REG_RSP JITREG_RSP
+#undef REG_RBP
+#define REG_RBP JITREG_RBP
+#undef REG_RSI
+#define REG_RSI JITREG_RSI
+#undef REG_RDI
+#define REG_RDI JITREG_RDI
+#else // defined(TARGET_X86)
+#undef REG_RAX
+#define REG_RAX JITREG_RAX
+#undef REG_RCX
+#define REG_RCX JITREG_RCX
+#undef REG_RDX
+#define REG_RDX JITREG_RDX
+#undef REG_RBX
+#define REG_RBX JITREG_RBX
+#undef REG_RSP
+#define REG_RSP JITREG_RSP
+#undef REG_RBP
+#define REG_RBP JITREG_RBP
+#undef REG_RSI
+#define REG_RSI JITREG_RSI
+#undef REG_RDI
+#define REG_RDI JITREG_RDI
+#undef REG_R8
+#define REG_R8 JITREG_R8
+#undef REG_R9
+#define REG_R9 JITREG_R9
+#undef REG_R10
+#define REG_R10 JITREG_R10
+#undef REG_R11
+#define REG_R11 JITREG_R11
+#undef REG_R12
+#define REG_R12 JITREG_R12
+#undef REG_R13
+#define REG_R13 JITREG_R13
+#undef REG_R14
+#define REG_R14 JITREG_R14
+#undef REG_R15
+#define REG_R15 JITREG_R15
+#undef REG_EAX
+#define REG_EAX JITREG_EAX
+#undef REG_ECX
+#define REG_ECX JITREG_ECX
+#undef REG_EDX
+#define REG_EDX JITREG_EDX
+#undef REG_EBX
+#define REG_EBX JITREG_EBX
+#undef REG_ESP
+#define REG_ESP JITREG_ESP
+#undef REG_EBP
+#define REG_EBP JITREG_EBP
+#undef REG_ESI
+#define REG_ESI JITREG_ESI
+#undef REG_EDI
+#define REG_EDI JITREG_EDI
+#endif // !defined(TARGET_X86)
+
+#undef REG_XMM0
+#define REG_XMM0 JITREG_XMM0
+#undef REG_XMM1
+#define REG_XMM1 JITREG_XMM1
+#undef REG_XMM2
+#define REG_XMM2 JITREG_XMM2
+#undef REG_XMM3
+#define REG_XMM3 JITREG_XMM3
+#undef REG_XMM4
+#define REG_XMM4 JITREG_XMM4
+#undef REG_XMM5
+#define REG_XMM5 JITREG_XMM5
+#undef REG_XMM6
+#define REG_XMM6 JITREG_XMM6
+#undef REG_XMM7
+#define REG_XMM7 JITREG_XMM7
+
+#ifdef TARGET_AMD64
+#undef REG_XMM8
+#define REG_XMM8 JITREG_XMM8
+#undef REG_XMM9
+#define REG_XMM9 JITREG_XMM9
+#undef REG_XMM10
+#define REG_XMM10 JITREG_XMM10
+#undef REG_XMM11
+#define REG_XMM11 JITREG_XMM11
+#undef REG_XMM12
+#define REG_XMM12 JITREG_XMM12
+#undef REG_XMM13
+#define REG_XMM13 JITREG_XMM13
+#undef REG_XMM14
+#define REG_XMM14 JITREG_XMM14
+#undef REG_XMM15
+#define REG_XMM15 JITREG_XMM15
+#undef REG_XMM16
+#define REG_XMM16 JITREG_XMM16
+#undef REG_XMM17
+#define REG_XMM17 JITREG_XMM17
+#undef REG_XMM18
+#define REG_XMM18 JITREG_XMM18
+#undef REG_XMM19
+#define REG_XMM19 JITREG_XMM19
+#undef REG_XMM20
+#define REG_XMM20 JITREG_XMM20
+#undef REG_XMM21
+#define REG_XMM21 JITREG_XMM21
+#undef REG_XMM22
+#define REG_XMM22 JITREG_XMM22
+#undef REG_XMM23
+#define REG_XMM23 JITREG_XMM23
+#undef REG_XMM24
+#define REG_XMM24 JITREG_XMM24
+#undef REG_XMM25
+#define REG_XMM25 JITREG_XMM25
+#undef REG_XMM26
+#define REG_XMM26 JITREG_XMM26
+#undef REG_XMM27
+#define REG_XMM27 JITREG_XMM27
+#undef REG_XMM28
+#define REG_XMM28 JITREG_XMM28
+#undef REG_XMM29
+#define REG_XMM29 JITREG_XMM29
+#undef REG_XMM30
+#define REG_XMM30 JITREG_XMM30
+#undef REG_XMM31
+#define REG_XMM31 JITREG_XMM31
+#endif // TARGET_AMD64
+
+#undef REG_K0
+#define REG_K0 JITREG_K0
+#undef REG_K1
+#define REG_K1 JITREG_K1
+#undef REG_K2
+#define REG_K2 JITREG_K2
+#undef REG_K3
+#define REG_K3 JITREG_K3
+#undef REG_K4
+#define REG_K4 JITREG_K4
+#undef REG_K5
+#define REG_K5 JITREG_K5
+#undef REG_K6
+#define REG_K6 JITREG_K6
+#undef REG_K7
+#define REG_K7 JITREG_K7
+#undef REG_STK
+#define REG_STK JITREG_STK
+
 #elif defined(TARGET_ARM)
  #include "registerarm.h"
 

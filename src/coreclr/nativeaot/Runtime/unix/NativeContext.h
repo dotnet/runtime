@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __UNIX_CONTEXT_H__
-#define __UNIX_CONTEXT_H__
+#ifndef __NATIVE_CONTEXT_H__
+#define __NATIVE_CONTEXT_H__
 
 #if HAVE_UCONTEXT_H
 #include <ucontext.h>
@@ -23,7 +23,7 @@ uint64_t GetRegisterValueByIndex(void* context, uint32_t index);
 uint64_t GetPC(void* context);
 #endif // HOST_AMD64
 
-struct UNIX_CONTEXT
+struct NATIVE_CONTEXT
 {
     ucontext_t ctx;
 
@@ -273,8 +273,8 @@ struct UNIX_CONTEXT
     }
 
 #else
-    PORTABILITY_ASSERT("UNIX_CONTEXT");
+    PORTABILITY_ASSERT("NATIVE_CONTEXT");
 #endif // TARGET_ARM
 };
 
-#endif // __UNIX_CONTEXT_H__
+#endif // __NATIVE_CONTEXT_H__
