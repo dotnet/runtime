@@ -71,7 +71,7 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: true
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:RunAnalyzers=false /p:UseSharedCompilation=false /p:UseRazorBuildServer=false
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnChrome
             - WasmTestOnFirefox

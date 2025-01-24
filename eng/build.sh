@@ -14,9 +14,6 @@ while [[ -h "$source" ]]; do
 done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
-
-export DOTNET_GCHeapHardLimit=1073741824
-
 statscmd="$scriptroot/stats.sh"
 
 $statscmd &
