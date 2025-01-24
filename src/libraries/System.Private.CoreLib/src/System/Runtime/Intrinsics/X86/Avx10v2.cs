@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.X86
 {
-    /// <summary>Provides access to X86 AVX10.1 hardware instructions via intrinsics</summary>
+    /// <summary>Provides access to X86 AVX10.2 hardware instructions via intrinsics</summary>
     [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Avx10v2 : Avx10v1

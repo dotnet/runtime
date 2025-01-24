@@ -180,7 +180,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVX;
             }
-            else if (strcmp(className + 3, "10v") == 0)
+            else if (strncmp(className + 3, "10v", 3) == 0)
             {
                 if (strcmp(className + 6, "1") == 0)
                 {
