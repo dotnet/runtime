@@ -3621,9 +3621,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
             }
             else
             {
-                // Check if the divisor is zero throw a DivideByZeroException
-                emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+                genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO, [&](BasicBlock* target, bool invert) {
+                    GenCondition::Code cond = invert ? GenCondition::NE : GenCondition::EQ;
+                    genCompareImmAndJump(cond, divisorReg, 0, size, target);
+                });
             }
         }
 
@@ -5061,6 +5062,34 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
     {
         inst_JMP(EJ_jmp, falseTarget);
+    }
+}
+
+void CodeGen::genCompareImmAndJump(
+    GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target)
+{
+    // For ARM64 we only expect equality comparisons.
+    assert((cond == GenCondition::EQ) || (cond == GenCondition::NE));
+
+    if (compareImm == 0)
+    {
+        // We can use cbz/cbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_cbz : INS_cbnz;
+        GetEmitter()->emitIns_J_R(ins, size, target, reg);
+    }
+    else if (isPow2(compareImm))
+    {
+        // We can use tbz/tbnz
+        instruction ins = (cond == GenCondition::EQ) ? INS_tbz : INS_tbnz;
+        int         imm = genLog2((size_t)compareImm);
+        GetEmitter()->emitIns_J_R_I(ins, size, target, reg, imm);
+    }
+    else
+    {
+        // Emit compare and branch pair default.
+        emitJumpKind jumpKind = (cond == GenCondition::EQ) ? EJ_eq : EJ_ne;
+        GetEmitter()->emitIns_R_I(INS_cmp, size, reg, compareImm);
+        inst_JMP(jumpKind, target);
     }
 }
 
