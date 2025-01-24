@@ -208,8 +208,6 @@ class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<Substi
     Statement* m_curStmt      = nullptr;
     Statement* m_firstNewStmt = nullptr;
 
-    GenTreeCall* m_prevNonInlineCandidateCall = nullptr;
-
 public:
     enum
     {
@@ -240,9 +238,8 @@ public:
     //
     Statement* WalkStatement(Statement* stmt)
     {
-        m_curStmt                    = stmt;
-        m_firstNewStmt               = nullptr;
-        m_prevNonInlineCandidateCall = nullptr;
+        m_curStmt      = stmt;
+        m_firstNewStmt = nullptr;
         WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
         return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
@@ -622,57 +619,39 @@ private:
 
                     if (call->IsInlineCandidate())
                     {
-                        canInline = true;
                         // If the call is the top-level expression in a statement, and it returns void,
                         // there will be no use of its return value, and we can just inline it directly.
                         // In this case we don't need to create a RET_EXPR node for it.
+                        // We currently spill calls aggressively in the importer, so this won't lead to
+                        // execution order changes.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            if (parent != nullptr && m_prevNonInlineCandidateCall != nullptr)
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            if (m_firstNewStmt == nullptr)
                             {
-                                // If any call in the sibling tree is not an inline candidate, we can't inline this
-                                // call. This shouldn't happen as we currently spill the call aggressively in the
-                                // importer.
-                                unreached();
-                                canInline = false;
+                                m_firstNewStmt = stmt;
                             }
-                            else
-                            {
-                                Statement* stmt = m_compiler->gtNewStmt(call);
-                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                                if (m_firstNewStmt == nullptr)
-                                {
-                                    m_firstNewStmt = stmt;
-                                }
 
-                                GenTreeRetExpr* retExpr =
-                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                               genActualType(call->TypeGet()));
-                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
+                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
 
-                                JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
-                                DISPTREE(retExpr);
+                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                            DISPTREE(retExpr);
 
-                                *pTree = retExpr;
-                            }
+                            *pTree = retExpr;
                         }
 
-                        if (canInline)
-                        {
-                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
-                            JITDUMP("New inline candidate due to late devirtualization:\n");
-                            DISPTREE(call);
-                        }
+                        JITDUMP("New inline candidate due to late devirtualization:\n");
+                        DISPTREE(call);
                     }
                 }
                 m_madeChanges = true;
-            }
-
-            if (!canInline)
-            {
-                m_prevNonInlineCandidateCall = call;
             }
         }
         else if (tree->OperIs(GT_STORE_LCL_VAR))
