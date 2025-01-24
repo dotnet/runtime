@@ -62,7 +62,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                     {
                         await stream.ReadAsync(new byte[5]);
                     }
-                    catch (InvalidOperationException) // Expected exception for concurrent IO
+                    catch (InvalidOperationException) when (ioe.Message.Contains("concurrent I/O")) // Expected exception for concurrent IO
                     { }
                 });
             }
