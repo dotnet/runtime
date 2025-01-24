@@ -1714,11 +1714,11 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 				result = mono_image_new0 (eclass->image, MonoType, 1);
 				if (rank == 0)  {
 					result->type = MONO_TYPE_SZARRAY;
-					result->data.klass = eclass;
+					m_type_data_set_klass_unchecked (result, eclass);
 				} else {
 					MonoArrayType *at = (MonoArrayType *)mono_image_alloc0 (eclass->image, sizeof (MonoArrayType));
 					result->type = MONO_TYPE_ARRAY;
-					result->data.array = at;
+					m_type_data_set_array_unchecked (result, at);
 					at->eklass = eclass;
 					at->rank = rank;
 				}
@@ -2727,7 +2727,7 @@ reflection_init_generic_class (MonoReflectionTypeBuilderHandle ref_tb, MonoError
 	MonoType *canonical_inst;
 	canonical_inst = &((MonoClassGtd*)klass)->canonical_inst;
 	canonical_inst->type = MONO_TYPE_GENERICINST;
-	canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
+	m_type_data_set_generic_class_unchecked (canonical_inst, mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE));
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
@@ -3005,7 +3005,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			container->type_params [i] = *param;
 			container->type_params [i].owner = container;
 
-			gp->type.type->data.generic_param = (MonoGenericParam*)&container->type_params [i];
+			m_type_data_set_generic_param (gp->type.type, (MonoGenericParam*)&container->type_params [i]);
 
 			MonoClass *gklass = mono_class_from_mono_type_internal (gp_type);
 			gklass->wastypebuilder = TRUE;
@@ -3022,7 +3022,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 				MonoGenericParam *gparam =  m_type_data_get_generic_param (t);
 				if (gparam->num < count) {
 					m->signature->params [i] = mono_metadata_type_dup (image, m->signature->params [i]);
-					m->signature->params [i]->data.generic_param = mono_generic_container_get_param (container, gparam->num);
+					m_type_data_set_generic_param (m->signature->params [i], mono_generic_container_get_param (container, gparam->num));
 				}
 
 			}

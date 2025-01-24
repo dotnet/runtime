@@ -53,8 +53,8 @@ handle_enum:
 	case MONO_TYPE_VOID:
 		return 'V';
 	case MONO_TYPE_VALUETYPE: {
-		if (m_class_is_enumtype (t->data.klass)) {
-			t = mono_class_enum_basetype_internal (t->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass (t))) {
+			t = mono_class_enum_basetype_internal (m_type_data_get_klass (t));
 			goto handle_enum;
 		}
 
@@ -72,7 +72,7 @@ handle_enum:
 		return 'I';
 	}
 	case MONO_TYPE_GENERICINST: {
-		if (m_class_is_valuetype (t->data.klass)) {
+		if (m_class_is_valuetype (m_type_data_get_klass (t))) {
 			MonoType *scalar_vtype;
 			if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
 				return type_to_c (scalar_vtype, NULL);
