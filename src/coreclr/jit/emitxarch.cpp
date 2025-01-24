@@ -1753,7 +1753,7 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return false;
     }
 
-    if (IsAvx512OrPriorInstruction(ins))
+    if (IsSimdInstruction(ins))
     {
         // This check should reject any instruction not from legacy map-0 or 1.
         return false;
