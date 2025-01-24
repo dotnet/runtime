@@ -5173,7 +5173,12 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     assert(dstPos < compiler->m_dfsTree->GetPostOrderCount());
 
     // Don't consider edges to or from outside the hot range (i.e. ordinal doesn't match 'blockOrder' position).
-    if ((srcBlk != blockOrder[srcPos]) || (dstBlk != blockOrder[dstPos]))
+    if ((srcPos >= numCandidateBlocks) || (srcBlk != blockOrder[srcPos]))
+    {
+        return;
+    }
+
+    if ((dstPos >= numCandidateBlocks) || (dstBlk != blockOrder[dstPos]))
     {
         return;
     }

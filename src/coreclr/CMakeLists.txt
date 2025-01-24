@@ -270,11 +270,3 @@ endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAK
 if(CLR_CMAKE_HOST_WIN32)
   add_subdirectory(hosts)
 endif(CLR_CMAKE_HOST_WIN32)
-
-#----------------------------------------------------
-# Cross target Component install configuration
-#----------------------------------------------------
-if(CLR_CROSS_COMPONENTS_BUILD)
-  include(crosscomponents.cmake)
-endif(CLR_CROSS_COMPONENTS_BUILD)
-

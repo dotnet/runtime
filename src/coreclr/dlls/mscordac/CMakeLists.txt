@@ -216,10 +216,6 @@ if(CLR_CMAKE_HOST_WIN32)
     # debuggers and the runtime. This long form supports postmortem cross-architecture diagnostic scenarios.
     # It doesn't make sense to complicate install_clr for this purpose, so keep it self-contained here.
     set(LONG_NAME_BASE mscordaccore_${LONG_NAME_HOST_ARCH}_${LONG_NAME_TARGET_ARCH}_${FILE_VERSION})
-    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT runtime)
-    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT runtime)
-    if (NOT FEATURE_CROSSBITNESS)
-        install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT crosscomponents)
-        install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT crosscomponents)
-    endif()
+    install(PROGRAMS $<TARGET_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.dll DESTINATION sharedFramework COMPONENT debug)
+    install(FILES $<TARGET_PDB_FILE:mscordaccore> RENAME ${LONG_NAME_BASE}.pdb DESTINATION sharedFramework/PDB COMPONENT debug)
 endif()
