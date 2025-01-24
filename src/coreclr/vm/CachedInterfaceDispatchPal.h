@@ -17,7 +17,7 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
     // But this emulation by libatomic doesn't satisfy requirements here which it must update two adjacent pointers atomically.
     // this is being discussed in https://github.com/dotnet/runtime/issues/109276.
     __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
-    PalInterlockedOperationBarrier();
+    PAL_InterlockedOperationBarrier();
     pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
     return iComparand == iResult;
 }
