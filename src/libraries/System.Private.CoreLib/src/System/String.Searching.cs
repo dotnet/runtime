@@ -39,8 +39,18 @@ namespace System
         public bool Contains(char value, StringComparison comparisonType)
         {
 #pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
-            return IndexOf(value, comparisonType) != -1;
+            return IndexOf(value, comparisonType) >= 0;
 #pragma warning restore CA2249
+        }
+
+        public bool Contains(Rune value)
+        {
+            return Contains(value, StringComparison.Ordinal);
+        }
+
+        public bool Contains(Rune value, StringComparison comparisonType)
+        {
+            return IndexOf(value, comparisonType) >= 0;
         }
 
         // Returns the index of the first occurrence of a specified character in the current instance.
@@ -262,6 +272,54 @@ namespace System
             };
         }
 
+        public int IndexOf(Rune value)
+        {
+            return IndexOf(value, StringComparison.Ordinal);
+        }
+
+        public int IndexOf(Rune value, int startIndex)
+        {
+            return IndexOf(value, startIndex, StringComparison.Ordinal);
+        }
+
+        public int IndexOf(Rune value, int startIndex, int count)
+        {
+            return IndexOf(value, startIndex, count, StringComparison.Ordinal);
+        }
+
+        public int IndexOf(Rune value, StringComparison comparisonType)
+        {
+            return IndexOf(value, 0, comparisonType);
+        }
+
+        public int IndexOf(Rune value, int startIndex, StringComparison comparisonType)
+        {
+            return IndexOf(value, startIndex, Length - startIndex, comparisonType);
+        }
+
+        public int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
+
+            int endIndex = startIndex + count;
+
+            for (int index = startIndex; index <= endIndex;)
+            {
+                if (Rune.DecodeFromUtf16(this.AsSpan(index..endIndex), out Rune rune, out int charsConsumed) is not OperationStatus.Done)
+                {
+                    return -1;
+                }
+                if (value.Equals(rune, comparisonType))
+                {
+                    return index;
+                }
+                index += charsConsumed;
+            }
+            return -1;
+        }
+
         // Returns the index of the last occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs backwards to startIndex - count + 1.
         // The character at position startIndex is included in the search.  startIndex is the larger
@@ -385,6 +443,49 @@ namespace System
                 StringComparison.Ordinal or StringComparison.OrdinalIgnoreCase => CompareInfo.Invariant.LastIndexOf(this, value, startIndex, count, GetCompareOptionsFromOrdinalStringComparison(comparisonType)),
                 _ => throw (value is null ? new ArgumentNullException(nameof(value)) : new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType))),
             };
+        }
+
+        public int LastIndexOf(Rune value)
+        {
+            return LastIndexOf(value, StringComparison.Ordinal);
+        }
+        public int LastIndexOf(Rune value, int startIndex)
+        {
+            return LastIndexOf(value, startIndex, StringComparison.Ordinal);
+        }
+        public int LastIndexOf(Rune value, int startIndex, int count)
+        {
+            return LastIndexOf(value, startIndex, count, StringComparison.Ordinal);
+        }
+        public int LastIndexOf(Rune value, StringComparison comparisonType)
+        {
+            return LastIndexOf(value, Length - 1, comparisonType);
+        }
+        public int LastIndexOf(Rune value, int startIndex, StringComparison comparisonType)
+        {
+            return LastIndexOf(value, startIndex, startIndex, comparisonType);
+        }
+        public int LastIndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
+            ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex - count, Length);
+
+            int endIndex = startIndex - count;
+
+            for (int index = startIndex; index >= endIndex;)
+            {
+                if (Rune.DecodeLastFromUtf16(this.AsSpan(endIndex..(index + 1)), out Rune rune, out int charsConsumed) is not OperationStatus.Done)
+                {
+                    return -1;
+                }
+                if (value.Equals(rune, comparisonType))
+                {
+                    return index - (charsConsumed - 1);
+                }
+                index -= charsConsumed;
+            }
+            return -1;
         }
     }
 }

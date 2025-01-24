@@ -534,6 +534,74 @@ namespace System.IO
             WriteLine(string.Format(FormatProvider, format, arg));
         }
 
+        public virtual void Write(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write span
+            Write(charsSlice);
+        }
+
+        public virtual Task WriteAsync(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write chars individually (can't use span with async)
+            if (charsSlice.Length == 2)
+            {
+                async Task WriteAsyncPair(char highSurrogate, char lowSurrogate)
+                {
+                    await WriteAsync(highSurrogate);
+                    await WriteAsync(lowSurrogate);
+                }
+                return WriteAsyncPair(charsSlice[0], charsSlice[1]);
+            }
+            else
+            {
+                return WriteAsync(charsSlice[0]);
+            }
+        }
+
+        public virtual void WriteLine(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write span
+            WriteLine(charsSlice);
+        }
+
+        public virtual Task WriteLineAsync(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Write chars individually (can't use span with async)
+            if (charsSlice.Length == 2)
+            {
+                async Task WriteLineAsyncPair(char highSurrogate, char lowSurrogate)
+                {
+                    await WriteAsync(highSurrogate);
+                    await WriteLineAsync(lowSurrogate);
+                }
+                return WriteLineAsyncPair(charsSlice[0], charsSlice[1]);
+            }
+            else
+            {
+                return WriteLineAsync(charsSlice[0]);
+            }
+        }
+
         #region Task based Async APIs
         public virtual Task WriteAsync(char value) =>
             Task.Factory.StartNew(static state =>
