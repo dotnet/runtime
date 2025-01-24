@@ -35,7 +35,7 @@ public class DllImportTests : BlazorWasmTestBase
 
     [Theory]
     [MemberData(nameof(DllImportTheoryData))]
-    public void WithDllImportInMainAssembly(Configuration config, bool build, bool publish)
+    public async Task WithDllImportInMainAssembly(Configuration config, bool build, bool publish)
     {
         // Based on https://github.com/dotnet/runtime/issues/59255
         string prefix = $"dllimp_{config}_{s_unicodeChars}";
@@ -74,26 +74,6 @@ public class DllImportTests : BlazorWasmTestBase
             var txt = await page.Locator("p[role='test']").InnerHTMLAsync();
             Assert.Equal("Output: 22", txt);
         }
-    }
-
-    public static bool IsLongPathEnabled()
-    {
-        const string keyPath = @"SYSTEM\CurrentControlSet\Control\FileSystem";
-        const string valueName = "LongPathsEnabled";
-
-        using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(keyPath))
-        {
-            if (key != null)
-            {
-                object? value = key?.GetValue(valueName);
-                if (value is int intValue)
-                {
-                    return intValue == 1;
-                }
-            }
-        }
-
-        return false;
     }
 
     private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test") =>
