@@ -644,13 +644,18 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/Context.asm
         ${ARCH_SOURCES_DIR}/ExternalMethodFixupThunk.asm
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
-        ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
     )
+
+    if(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
+        list(APPEND VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
+        )
+    endif(FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH)
 
     if(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
         list(APPEND VM_SOURCES_WKS_ARCH_ASM
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
-        )
+    )
     endif(FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH)
 
     set(VM_HEADERS_WKS_ARCH_ASM

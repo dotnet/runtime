@@ -8,7 +8,9 @@
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
+#endif
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -35,7 +37,9 @@
     IMPORT  g_lowest_address
     IMPORT  g_highest_address
     IMPORT  g_card_table
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
+#endif
     IMPORT  g_pGetGCStaticBase
     IMPORT  g_pGetNonGCStaticBase
 
@@ -831,6 +835,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
         GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
@@ -922,6 +927,7 @@ Fail
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
 

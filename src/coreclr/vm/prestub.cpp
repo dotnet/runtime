@@ -3294,22 +3294,49 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 COMPlusThrow(kNullReferenceException);
             }
 
-            DispatchToken token;
-            if (pMT->IsInterface())
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+            if (UseCachedInterfaceDispatch())
+#endif
+#if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
+                // We don't yet have a proper implementation for cached interface stubs in R2R code, so instead of finding stubs, simply do the resolution in pure C++
+                // and skip updating the indirection cell
+                DispatchToken token;
                 if (pMT->IsInterface())
+                {
                     token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                    MethodTable* objectType = (*protectedObj)->GetMethodTable();
+                    VirtualCallStubManager::Resolver(objectType, token, protectedObj, &pCode, TRUE /* throwOnConflict */);
+                }
                 else
-                    token = DispatchToken::CreateDispatchToken(slot);
-
-                StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
+                {
+                    pCode = (*protectedObj)->GetMethodTable()->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
+                }
             }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             else
+#endif
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
             {
-                pCode = pMgr->GetVTableCallStub(slot);
-                *(TADDR *)pIndirection = pCode;
+                DispatchToken token;
+                if (pMT->IsInterface())
+                {
+                    if (pMT->IsInterface())
+                        token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                    else
+                        token = DispatchToken::CreateDispatchToken(slot);
+
+                    StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                    pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
+                }
+                else
+                {
+                    pCode = pMgr->GetVTableCallStub(slot);
+                    *(TADDR *)pIndirection = pCode;
+                }
             }
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
             _ASSERTE(pCode != (PCODE)NULL);
         }
         else
