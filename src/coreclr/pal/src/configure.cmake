@@ -129,6 +129,7 @@ int main(int argc, char **argv) {
 }" HAVE_MACH_EXCEPTIONS)
 check_cxx_source_compiles("
 #include <signal.h>
+#include <stdlib.h>
 int main(int argc, char **argv) {
   sigaltstack(NULL, NULL);
   return 0;
