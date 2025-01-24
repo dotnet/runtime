@@ -778,7 +778,35 @@ namespace System.Text
 
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
-        public bool Equals(Rune other) => this == other;
+        public bool Equals(Rune other) => Equals(this, other);
+
+        public bool Equals(Rune other, StringComparison comparisonType) => Equals(this, other, comparisonType);
+
+        public static bool Equals(this Rune left, Rune right)
+        {
+            return left == right;
+        }
+
+        public static bool Equals(this Rune left, Rune right, StringComparison comparisonType)
+        {
+            if (comparisonType is StringComparison.Ordinal)
+            {
+                return left == right;
+            }
+
+            // Convert left to span
+            Span<char> leftChars = stackalloc char[2];
+            int leftCharsWritten = left.EncodeToUtf16(leftChars);
+            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
+
+            // Convert right to span
+            Span<char> rightChars = stackalloc char[2];
+            int rightCharsWritten = right.EncodeToUtf16(rightChars);
+            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
+
+            // Compare span equality
+            return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+        }
 
         public override int GetHashCode() => Value;
 

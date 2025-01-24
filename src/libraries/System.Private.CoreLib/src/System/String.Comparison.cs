@@ -589,6 +589,29 @@ namespace System
             return ((uint)lastPos < (uint)Length) && this[lastPos] == value;
         }
 
+        public bool EndsWith(Rune value)
+        {
+            return EndsWith(value, StringComparison.Ordinal);
+        }
+
+        public bool EndsWith(Rune value, StringComparison comparisonType)
+        {
+            if (Rune.DecodeLastFromUtf16(@this, out Rune result, out _) is OperationStatus.Done)
+            {
+                return result.Equals(value, comparisonType);
+            }
+            return false;
+        }
+
+        public bool EndsWith(char value, StringComparison comparisonType)
+        {
+            if (Length == 0)
+            {
+                return false;
+            }
+            return this[^1].Equals(value, comparisonType);
+        }
+
         // Determines whether two strings match.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -1160,6 +1183,29 @@ namespace System
             }
 
             return Length != 0 && _firstChar == value;
+        }
+
+        public bool StartsWith(Rune value)
+        {
+            return StartsWith(value, StringComparison.Ordinal);
+        }
+
+        public bool StartsWith(Rune value, StringComparison comparisonType)
+        {
+            if (Rune.DecodeFromUtf16(@this, out Rune result, out _) is OperationStatus.Done)
+            {
+                return result.Equals(value, comparisonType);
+            }
+            return false;
+        }
+
+        public bool StartsWith(char value, StringComparison comparisonType)
+        {
+            if (this.Length == 0)
+            {
+                return false;
+            }
+            return this[0].Equals(value, comparisonType);
         }
 
         internal static void CheckStringComparison(StringComparison comparisonType)

@@ -1447,6 +1447,35 @@ namespace System
             return dst;
         }
 
+        public string Replace(Rune oldRune, Rune newRune)
+        {
+            return Replace(oldRune, newRune, StringComparison.Ordinal);
+        }
+
+        public string Replace(Rune oldRune, Rune newRune, StringComparison stringComparison)
+        {
+            if (Length == 0)
+            {
+                return this;
+            }
+
+            Span<char> oldChars = stackalloc char[2];
+            int oldCharsWritten = oldRune.EncodeToUtf16(oldChars);
+            ReadOnlySpan<char> oldCharsSlice = oldChars[..oldCharsWritten];
+
+            Span<char> newChars = stackalloc char[2];
+            int newCharsWritten = newRune.EncodeToUtf16(newChars);
+            ReadOnlySpan<char> newCharsSlice = newChars[..newCharsWritten];
+
+            // TODO:
+            // We need an overload for string.Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) to avoid allocations.
+            // The overload is already available internally through ReplaceCore but not exposed publicly.
+            // When added, this method can look like the StringBuilder.Replace(Rune, Rune).
+            // For now we'll just convert the runes to strings.
+
+            return Replace(oldRune.ToString(), newRune.ToString(), stringComparison); // return Replace(oldCharsSlice, newCharsSlice, stringComparison);
+        }
+
         /// <summary>
         /// Replaces all newline sequences in the current string with <see cref="Environment.NewLine"/>.
         /// </summary>
@@ -1753,6 +1782,30 @@ namespace System
         public string[] Split(string[]? separator, int count, StringSplitOptions options)
         {
             return SplitInternal(null, separator, count, options);
+        }
+
+        public string[] Split(Rune separator, StringSplitOptions options = StringSplitOptions.None)
+        {
+            return Split(separator, int.MaxValue, options);
+        }
+
+        public string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
+        {
+            if (Length == 0)
+            {
+                return [];
+            }
+
+            Span<char> separatorChars = stackalloc char[2];
+            int separatorCharsWritten = separator.EncodeToUtf16(separatorChars);
+            ReadOnlySpan<char> separatorCharsSlice = separatorChars[..separatorCharsWritten];
+
+            // TODO:
+            // We need an overload for string.Split(ReadOnlySpan<char>, int, StringSplitOptions) to avoid copying the separator to a string.
+            // The overload is already available internally through SplitInternal but not exposed publicly.
+            // For now we'll just convert the separator to a string.
+
+            return Split(separator.ToString(), count, options); // return Split(separatorCharsSlice, count, options);
         }
 
         private string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
@@ -2377,6 +2430,109 @@ namespace System
             {
                 return TrimHelper(pTrimChars, trimChars.Length, TrimType.Both);
             }
+        }
+
+        public string Trim(Rune trimRune)
+        {
+            if (Length == 0)
+            {
+                return this;
+            }
+
+            // Convert trimRune to span
+            Span<char> trimChars = stackalloc char[2];
+            int trimCharsWritten = trimRune.EncodeToUtf16(trimChars);
+            ReadOnlySpan<char> trimCharsSlice = trimChars[..trimCharsWritten];
+
+            // Trim start
+            int index = 0;
+            while (true)
+            {
+                if (index > Length)
+                {
+                    return string.Empty;
+                }
+                if (!this.AsSpan(index).StartsWith(trimCharsSlice))
+                {
+                    break;
+                }
+                index += trimCharsSlice.Length;
+            }
+
+            // Trim end
+            int endIndex = this.Length - 1;
+            while (true)
+            {
+                if (endIndex < index)
+                {
+                    return string.Empty;
+                }
+                if (!this.AsSpan(..endIndex).EndsWith(trimCharsSlice))
+                {
+                    break;
+                }
+                endIndex -= trimCharsSlice.Length;
+            }
+
+            return this[index..endIndex];
+        }
+
+        public string TrimStart(Rune trimRune)
+        {
+            if (Length == 0)
+            {
+                return this;
+            }
+
+            // Convert trimRune to span
+            Span<char> trimChars = stackalloc char[2];
+            int trimCharsWritten = trimRune.EncodeToUtf16(trimChars);
+            ReadOnlySpan<char> trimCharsSlice = trimChars[..trimCharsWritten];
+
+            // Trim start
+            int index = 0;
+            while (true)
+            {
+                if (index > @this.Length)
+                {
+                    return string.Empty;
+                }
+                if (!this.AsSpan(index).StartsWith(trimCharsSlice))
+                {
+                    break;
+                }
+                index += trimCharsSlice.Length;
+            }
+            return this[index..];
+        }
+
+        public string TrimEnd(Rune trimRune)
+        {
+            if (Length == 0)
+            {
+                return this;
+            }
+
+            // Convert trimRune to span
+            Span<char> trimChars = stackalloc char[2];
+            int trimCharsWritten = trimRune.EncodeToUtf16(trimChars);
+            ReadOnlySpan<char> trimCharsSlice = trimChars[..trimCharsWritten];
+
+            // Trim end
+            int endIndex = Length - 1;
+            while (true)
+            {
+                if (endIndex < 0)
+                {
+                    return string.Empty;
+                }
+                if (!this.AsSpan(..endIndex).EndsWith(trimCharsSlice))
+                {
+                    break;
+                }
+                endIndex -= trimCharsSlice.Length;
+            }
+            return this[..endIndex];
         }
 
         // Removes a set of characters from the beginning of this string.

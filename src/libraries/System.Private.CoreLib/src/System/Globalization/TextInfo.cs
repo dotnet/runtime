@@ -461,6 +461,41 @@ namespace System.Globalization
             return c;
         }
 
+        public Rune ToLower(Rune r)
+        {
+            // Convert rune to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = r.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Change span to lower and convert to rune
+            if (charsSlice.Length == 2)
+            {
+                return new Rune(ToLower(charsSlice[0]), ToLower(charsSlice[1]));
+            }
+            else
+            {
+                return new Rune(ToLower(charsSlice[0]));
+            }
+        }
+        public Rune ToUpper(Rune r)
+        {
+            // Convert rune to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = r.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Change span to upper and convert to rune
+            if (charsSlice.Length == 2)
+            {
+                return new Rune(ToUpper(charsSlice[0]), ToUpper(charsSlice[1]));
+            }
+            else
+            {
+                return new Rune(ToUpper(charsSlice[0]));
+            }
+        }
+
         private bool IsAsciiCasingSameAsInvariant
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

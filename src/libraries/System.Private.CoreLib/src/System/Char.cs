@@ -129,6 +129,13 @@ namespace System
             return m_value == obj;
         }
 
+        public bool Equals(char left, char right, StringComparison comparisonType)
+        {
+            ReadOnlySpan<char> leftCharsSlice = [left];
+            ReadOnlySpan<char> rightCharsSlice = [right];
+            return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
+        }
+
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
         // Returns a value less than zero if this  object

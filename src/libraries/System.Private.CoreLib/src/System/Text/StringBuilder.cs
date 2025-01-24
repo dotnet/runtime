@@ -859,6 +859,17 @@ namespace System.Text
             return this;
         }
 
+        public StringBuilder Append(Rune value)
+        {
+            // Convert value to span
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            ReadOnlySpan<char> charsSlice = chars[..charsWritten];
+
+            // Append span
+            return Append(charsSlice);
+        }
+
         public StringBuilder AppendLine() => Append(Environment.NewLine);
 
         public StringBuilder AppendLine(string? value)
@@ -1409,6 +1420,13 @@ namespace System.Text
             return this;
         }
 
+        public StringBuilder Insert(int index, Rune value)
+        {
+            Span<char> chars = stackalloc char[2];
+            int charsWritten = value.EncodeToUtf16(chars);
+            return Insert(index, chars[..charsWritten]);
+        }
+
         private StringBuilder InsertSpanFormattable<T>(int index, T value) where T : ISpanFormattable
         {
             Debug.Assert(typeof(T).Assembly.Equals(typeof(object).Assembly), "Implementation trusts the results of TryFormat because T is expected to be something known");
@@ -1951,6 +1969,26 @@ namespace System.Text
         /// are removed from this builder.
         /// </remarks>
         public StringBuilder Replace(ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue) => Replace(oldValue, newValue, 0, Length);
+
+        public StringBuilder Replace(Rune oldRune, Rune newRune)
+        {
+            return Replace(oldRune, newRune, 0, Length);
+        }
+        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        {
+            // Convert oldRune to span
+            Span<char> leftChars = stackalloc char[2];
+            int leftCharsWritten = oldRune.EncodeToUtf16(leftChars);
+            ReadOnlySpan<char> leftCharsSlice = leftChars[..leftCharsWritten];
+
+            // Convert newRune to span
+            Span<char> rightChars = stackalloc char[2];
+            int rightCharsWritten = newRune.EncodeToUtf16(rightChars);
+            ReadOnlySpan<char> rightCharsSlice = rightChars[..rightCharsWritten];
+
+            // Replace span with span
+            return Replace(leftCharsSlice, rightCharsSlice, startIndex, count);
+        }
 
         /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
@@ -2796,6 +2834,38 @@ namespace System.Text
 
             Debug.Assert(chunk != null, "We fell off the beginning of the string!");
             AssertInvariants();
+        }
+
+        public Rune GetRuneAt(int index)
+        {
+            if (TryGetRuneAt(index, out Rune value))
+            {
+                return value;
+            }
+            throw new Exception($"Unable to get rune at {index}.");
+        }
+
+        public bool TryGetRuneAt(int index, out Rune value)
+        {
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
+
+            // Get span at StringBuilder index
+            bool twoCharsAvailable = index + 1 < Length;
+            Span<char> chars = twoCharsAvailable
+                ? [this[index], this[index + 1]]
+                : [this[index]];
+
+            OperationStatus status = Rune.DecodeFromUtf16(chars, out Rune result, out _);
+            if (status is OperationStatus.Done)
+            {
+                value = result;
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
         }
 
         /// <summary>Provides a handler used by the language compiler to append interpolated strings into <see cref="StringBuilder"/> instances.</summary>
