@@ -1847,6 +1847,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     //
     // Redirect prevBb to lengthCheckBb
     fgRedirectTargetEdge(prevBb, lengthCheckBb);
+    lengthCheckBb->inheritWeight(prevBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1859,6 +1860,11 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         // review: we assume length check always succeeds??
         trueEdge->setLikelihood(1.0);
         falseEdge->setLikelihood(0.0);
+
+        if (lengthCheckBb->hasProfileWeight())
+        {
+            fastpathBb->setBBProfileWeight(falseEdge->getLikelyWeight());
+        }
     }
 
     {
@@ -1869,10 +1875,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     //
-    // Re-distribute weights
+    // Ensure all flow out of prevBb converges into block
     //
-    lengthCheckBb->inheritWeight(prevBb);
-    fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
 
     // All blocks are expected to be in the same EH region
