@@ -241,6 +241,7 @@ public:
     {
         m_curStmt      = stmt;
         m_firstNewStmt = nullptr;
+        m_ancestors.Reset();
         WalkTree(m_curStmt->GetRootNodePointer(), nullptr);
         return m_firstNewStmt == nullptr ? m_curStmt : m_firstNewStmt;
     }
