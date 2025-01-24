@@ -1,13 +1,14 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" />
+  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
 
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
     <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
     <AutoGenerateSymbolPackages>false</AutoGenerateSymbolPackages>
+    <!-- Except for jobs that set a specific asset manifest file name as a global property, set the manifest name based on the package RID. -->
+    <AssetManifestFileName>$(PackageRID).xml</AssetManifestFileName>
   </PropertyGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" />
-  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
 
   <!--
     Mark assets as Vertical visibility when building in the VMR

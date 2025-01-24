@@ -186,7 +186,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:PublishAllPackages=true
+            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:PublishAllPackages=true /p:AssetManifestFileName=CrossDac.xml
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -254,7 +254,7 @@ extends:
           - linux_bionic_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true  $(_PublishAdditionalPackagesArg)
+            buildArgs: -c $(_BuildConfig) -restore -build -publish /p:BuildMonoAOTCrossCompiler=false /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
 
@@ -268,7 +268,7 @@ extends:
           - wasi_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) $(_PublishAdditionalPackagesArg)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
 
