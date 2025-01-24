@@ -1062,7 +1062,7 @@ namespace System
             }
             else
             {
-                Debug.Assert(!InFact(Flags.HasUnicode));
+                Debug.Assert(!InFact(Flags.HasUnicode) || otherUri.IsNotAbsoluteUri);
                 // Clone the other URI but develop own UriInfo member
                 // We cannot just reference otherUri._info as this UriInfo will be mutated later
                 // which could be happening concurrently and in a not thread safe manner.

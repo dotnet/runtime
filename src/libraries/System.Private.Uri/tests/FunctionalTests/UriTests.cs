@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -730,38 +731,22 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
-        [InlineData("http://bar/Testue/testImage.jpg")]
+        [InlineData("http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "bar")]
+        [InlineData(@"\\nas\Testue\testImage.jpg", @"file://nas/Testue/testImage.jpg", @"file://nas/Testue/testImage.jpg", "nas")]
         // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
-        [InlineData("http://bar/Testü/testImage.jpg")]
-        public static void Uri_CombineWithAbsoluteHttpUriResultInAbsoluteHttpSchema(string fileUri)
+        [InlineData("http://bar/Testü/testImage.jpg", "http://bar/Testü/testImage.jpg", "http://bar/Test%C3%BC/testImage.jpg", "bar")]
+        [InlineData(@"\\nas\Testü\testImage.jpg", @"file://nas/Testü/testImage.jpg", @"file://nas/Test%C3%BC/testImage.jpg", "nas")]
+        public static void Uri_CombineWithAbsoluteUriResultInAbsoluteSchemaIgnoringOriginalBase(string relativeUri, string expectedUri, string expectedAbsoluteUri, string expectedHost)
         {
             string baseUriString = "combine-scheme://foo";
 
             var baseUri = new Uri(baseUriString, UriKind.Absolute);
-            var uri = new Uri(fileUri);
+            var uri = new Uri(relativeUri);
             var resultUri = new Uri(baseUri, uri);
-            string resultUriString = resultUri.ToString();
 
-            Assert.DoesNotContain(baseUriString, resultUriString);
-            Assert.Contains("http://", resultUriString);
-            Assert.Equal(fileUri, resultUriString);
-        }
-
-        [Theory]
-        [InlineData(@"\\nas\Testue\testImage.jpg")]
-        // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
-        [InlineData(@"\\nas\Testü\testImage.jpg")]
-        public static void Uri_CombineWithAbsoluteFilePathResultInAbsoluteFileSchema(string fileUri)
-        {
-            string baseUriString = "combine-scheme://foo";
-
-            var baseUri = new Uri(baseUriString, UriKind.Absolute);
-            var uri = new Uri(fileUri);
-            var resultUri = new Uri(baseUri, uri);
-            string resultUriString = resultUri.ToString();
-
-            Assert.DoesNotContain(baseUriString, resultUriString);
-            Assert.Contains("file://", resultUriString);
+            Assert.Equal(expectedUri, resultUri.ToString());
+            Assert.Equal(expectedAbsoluteUri, resultUri.AbsoluteUri);
+            Assert.Equal(expectedHost, resultUri.Host);
         }
 
         [Fact]
