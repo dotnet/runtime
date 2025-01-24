@@ -865,7 +865,7 @@ void JIT_TailCall()
 }
 
 #if !defined(DACCESS_COMPILE)
-EXTERN_C void JIT_UpdateWriteBarrierState(size_t writeableOffset);
+EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
@@ -881,7 +881,14 @@ static void UpdateWriteBarrierState()
         writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
     }
 
-    JIT_UpdateWriteBarrierState(writeBarrierCodeStartRW - writeBarrierCodeStart);
+    // Skip ephemeral checks for regionless server GC
+    bool skipEphemeralCheck = false;
+    if (GCHeapUtilities::IsServerHeap() && g_region_to_generation_table == nullptr)
+    {
+        skipEphemeralCheck = true;
+    }
+
+    JIT_UpdateWriteBarrierState(skipEphemeralCheck, writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()

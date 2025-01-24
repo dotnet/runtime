@@ -1070,12 +1070,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             g_region_use_bitwise_write_barrier = false;
         }
-        // Skip ephemeral checks for regionless server GC
-        if (GCHeapUtilities::IsServerHeap() && g_region_to_generation_table == nullptr)
-        {
-            g_ephemeral_low = 0;
-            g_ephemeral_high = 0;
-        }
 #endif
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
         break;
@@ -1112,12 +1106,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (!g_arm64_atomics_present)
         {
             g_region_use_bitwise_write_barrier = false;
-        }
-        // Skip ephemeral checks for regionless server GC
-        if (GCHeapUtilities::IsServerHeap() && g_region_to_generation_table == nullptr)
-        {
-            g_ephemeral_low = 0;
-            g_ephemeral_high = 0;
         }
 #endif
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);

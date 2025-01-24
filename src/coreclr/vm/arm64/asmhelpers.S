@@ -180,7 +180,7 @@ PATCH_LABEL ThePreStubPatchLabel
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
-// void JIT_UpdateWriteBarrierState(size_t writeableOffset)
+// void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 //
 // Update shadow copies of the various state info required for barrier
 //
@@ -195,10 +195,12 @@ LEAF_ENTRY JIT_UpdateWriteBarrierState, _TEXT
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
 
     // x0-x7, x10-x11, x13-x14 will contain intended new state
+    // x8 will preserve skipEphemeralCheck
     // x9 will preserve writeableOffset
     // x12 will be used for pointers
 
-    mov x9, x0
+    mov x8, x0
+    mov x9, x1
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]
@@ -218,6 +220,11 @@ LEAF_ENTRY JIT_UpdateWriteBarrierState, _TEXT
 
     PREPARE_EXTERNAL_VAR g_ephemeral_high, x12
     ldr  x4, [x12]
+
+    cbz  x8, LOCAL_LABEL(EphemeralCheckEnabled)
+    movz x3, #0
+    movn x4, #0
+LOCAL_LABEL(EphemeralCheckEnabled):
 
     PREPARE_EXTERNAL_VAR g_lowest_address, x12
     ldr  x5, [x12]
