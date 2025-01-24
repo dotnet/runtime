@@ -10017,11 +10017,6 @@ public:
     //
     bool canUseApxEncoding() const
     {
-        if (JitConfig.EnableAPX() == 0)
-        {
-            return false;
-        }
-
         return compOpportunisticallyDependsOn(InstructionSet_APX);
     }
 

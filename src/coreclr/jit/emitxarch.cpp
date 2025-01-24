@@ -1896,13 +1896,13 @@ bool emitter::HasMaskReg(const instrDesc* id) const
 regNumber AbsRegNumber(regNumber reg)
 {
     assert(reg < REG_STK);
-    if ((reg >= XMMBASE) && (reg < KBASE))
+    if (reg >= KBASE)
     {
-        reg = (regNumber)(reg - XMMBASE);
+        return (regNumber)(reg - KBASE);
     }
-    else if (reg >= KBASE)
+    else if (reg >= XMMBASE)
     {
-        reg = (regNumber)(reg - KBASE);
+        return (regNumber)(reg - XMMBASE);
     }
     return reg;
 }
@@ -4461,7 +4461,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12 || base == REG_R20 /*|| base == REG_R28*/;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20;
 #else
     return base == REG_ESP;
 #endif
@@ -4470,7 +4470,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13 || base == REG_R21 /*|| base == REG_R29*/;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21;
 #else
     return base == REG_EBP;
 #endif

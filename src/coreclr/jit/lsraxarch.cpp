@@ -3115,8 +3115,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 #endif
             {
                 GenTree* data = indirTree->Data();
-                if (data->isContained() && (data->OperIs(GT_BSWAP, GT_BSWAP16) /* || data->OperIsHWIntrinsic()*/) &&
-                    (int)varTypeUsesIntReg(source))
+                if (data->isContained() && (data->OperIs(GT_BSWAP, GT_BSWAP16)) && (int)varTypeUsesIntReg(source))
                 {
                     /// movbe cannot use eGPR
                     srcCount += BuildOperandUses(source, BuildApxIncompatibleGPRMask(source, RBM_NONE, true));
@@ -3306,6 +3305,15 @@ inline SingleTypeRegSet LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 #endif
 }
 
+//------------------------------------------------------------------------------
+// DoesThisUseGPR: Tries to determine if this node needs a GPR.
+//
+// Arguments:
+//    op   - the GenTree node to check
+//
+// Return Value:
+//    true if certain that GPR is necessary.
+//
 inline bool LinearScan::DoesThisUseGPR(GenTree* op)
 {
     if (varTypeUsesIntReg(op->gtType))
