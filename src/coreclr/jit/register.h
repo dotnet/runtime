@@ -208,6 +208,22 @@ REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 #define REG_R14 JITREG_R14
 #undef REG_R15
 #define REG_R15 JITREG_R15
+#undef REG_R16
+#define REG_R16 JITREG_R16
+#undef REG_R17
+#define REG_R17 JITREG_R17
+#undef REG_R18
+#define REG_R18 JITREG_R18
+#undef REG_R19
+#define REG_R19 JITREG_R19
+#undef REG_R20
+#define REG_R20 JITREG_R20
+#undef REG_R21
+#define REG_R21 JITREG_R21
+#undef REG_R22
+#define REG_R22 JITREG_R22
+#undef REG_R23
+#define REG_R23 JITREG_R23
 #undef REG_EAX
 #define REG_EAX JITREG_EAX
 #undef REG_ECX
