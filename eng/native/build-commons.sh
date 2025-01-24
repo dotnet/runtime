@@ -87,8 +87,7 @@ build_native()
         fi
 
         # cmake cache scripts can't see command line args
-        ANDROID_BUILD=1
-        export ANDROID_BUILD
+        export ANDROID_BUILD=1
 
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun.cmake $cmakeArgs"
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} -DANDROID_NATIVE_API_LEVEL=${ANDROID_API_LEVEL} $cmakeArgs"
