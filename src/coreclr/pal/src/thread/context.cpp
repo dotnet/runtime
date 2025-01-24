@@ -314,6 +314,11 @@ typedef int __ptrace_request;
     ASSIGN_REG(R29)     \
     ASSIGN_REG(R30)
 
+#elif defined(HOST_WASM)
+#define ASSIGN_CONTROL_REGS  \
+    ASSERT("WASM does not have registers");
+#define ASSIGN_INTEGER_REGS  \
+    ASSERT("WASM does not have registers");
 #else
 #error "Don't know how to assign registers on this architecture"
 #endif
@@ -2181,6 +2186,9 @@ DBG_FlushInstructionCache(
 #endif
 
     syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
+#elif defined(HOST_WASM)
+    // No need to flush the instruction cache on WebAssembly?
+    ASSERT("llvm.clear_cache is not supported on wasm");
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif

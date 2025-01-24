@@ -420,7 +420,12 @@ Function:
 BOOL
 IsInDebugBreak(void *addr)
 {
+#if defined (__wasm__)
+    _ASSERT("IsInDebugBreak not implemented on wasm");
+    return false;
+#else
     return (addr >= (void *)DBG_DebugBreak) && (addr <= (void *)DBG_DebugBreak_End);
+#endif
 }
 
 /*++

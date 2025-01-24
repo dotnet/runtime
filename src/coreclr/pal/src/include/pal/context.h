@@ -209,6 +209,11 @@ struct sve_context {
 #define MCREG_Xer(mc)       ((mc).gp_regs[37])
 #define MCREG_Ccr(mc)       ((mc).gp_regs[38])
 
+#elif defined(HOST_WASM)
+
+#define MCREG_Sp(mc)      0
+#define MCREG_Pc(mc)      0
+
 #elif HAVE___GREGSET_T
 
 #ifdef HOST_64BIT
@@ -1389,6 +1394,9 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
+#elif defined(HOST_WASM) // wasm has no PC
+    _ASSERT(false);
+    return 0;
 #else
     return pContext->Pc;
 #endif
@@ -1404,6 +1412,8 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
+#elif defined(HOST_WASM) // wasm has no PC
+    _ASSERT(false);
 #else
     pContext->Pc = pc;
 #endif
@@ -1421,6 +1431,9 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
+#elif defined(HOST_WASM) // wasm has no PC
+    _ASSERT(false);
+    return 0;
 #else
     return pContext->Fp;
 #endif
