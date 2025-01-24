@@ -175,6 +175,12 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                     currentBlock->SetKind(BBJ_ALWAYS);
                     currentBlock->RemoveFlags(BBF_RETLESS_CALL); // no longer a BBJ_CALLFINALLY
 
+                    // Update profile data into postTryFinallyBlock
+                    if (currentBlock->hasProfileWeight())
+                    {
+                        postTryFinallyBlock->increaseBBProfileWeight(currentBlock->bbWeight);
+                    }
+
                     // Cleanup the postTryFinallyBlock
                     fgCleanupContinuation(postTryFinallyBlock);
 
@@ -608,9 +614,14 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             {
                 assert(block->isBBCallFinallyPair());
 
+                // In some cases we may have unreachable callfinallys.
+                // If so, skip the optimization; a later pass can catch this
+                // once unreachable blocks have been pruned.
+                //
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
+                    JITDUMP("EH#%u found unexpected (likely unreachable) callfinally " FMT_BB "; skipping.\n", XTnum,
+                            block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -621,7 +632,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         {
             JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
-            assert(verifiedSingleCallfinally);
             continue;
         }
 
@@ -667,12 +677,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // last block of the `try`, and that could affect the block iteration above.
         fgPrepareCallFinallyRetForRemoval(leave);
         fgRemoveBlock(leave, /* unreachable */ true);
-
-        // Remove profile weight into the continuation block
-        if (continuation->hasProfileWeight())
-        {
-            continuation->decreaseBBProfileWeight(leave->bbWeight);
-        }
 
         // (3) Convert the callfinally to a normal jump to the handler
         assert(callFinally->HasInitializedTarget());
@@ -1670,6 +1674,16 @@ PhaseStatus Compiler::fgCloneFinally()
             }
         }
 
+        // Update flow into normalCallFinallyReturn
+        if (normalCallFinallyReturn->hasProfileWeight())
+        {
+            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
+            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
+            {
+                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
+            }
+        }
+
         // Done!
         JITDUMP("\nDone with EH#%u\n\n", XTnum);
         cloneCount++;
@@ -2433,7 +2447,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
         if (canonicalBlock->hasProfileWeight())
         {
-            canonicalBlock->setBBProfileWeight(canonicalBlock->bbWeight + removedWeight);
+            canonicalBlock->increaseBBProfileWeight(removedWeight);
             modifiedProfile = true;
 
             // Don't bother updating flow into nonCanonicalBlock, since it is now unreachable
@@ -2458,12 +2472,6 @@ PhaseStatus Compiler::fgTailMergeThrows()
     assert(numCandidates < optNoReturnCallCount);
     optNoReturnCallCount -= numCandidates;
 
-    // If we altered flow, reset fgModified. Given where we sit in the
-    // phase list, flow-dependent side data hasn't been built yet, so
-    // nothing needs invalidation.
-    //
-    assert(fgModified);
-    fgModified = false;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 

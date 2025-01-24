@@ -711,8 +711,8 @@ namespace System
             long ticks = utcDateTime.Ticks + destinationOffset.Ticks;
 
             return
-                ticks > DateTimeOffset.MaxValue.Ticks ? DateTimeOffset.MaxValue :
-                ticks < DateTimeOffset.MinValue.Ticks ? DateTimeOffset.MinValue :
+                ticks > DateTime.MaxTicks ? DateTimeOffset.MaxValue :
+                ticks < DateTime.MinTicks ? DateTimeOffset.MinValue :
                 new DateTimeOffset(ticks, destinationOffset);
         }
 
@@ -836,10 +836,7 @@ namespace System
         /// </summary>
         internal static DateTime ConvertTimeToUtc(DateTime dateTime, TimeZoneInfoOptions flags)
         {
-            if (dateTime.Kind == DateTimeKind.Utc)
-            {
-                return dateTime;
-            }
+            Debug.Assert(dateTime.Kind != DateTimeKind.Utc);
             CachedData cachedData = s_cachedData;
             return ConvertTime(dateTime, cachedData.Local, s_utcTimeZone, flags, cachedData);
         }
@@ -1298,8 +1295,8 @@ namespace System
             long ticks = dateTime.Ticks + offset.Ticks;
 
             return
-                ticks > DateTime.MaxValue.Ticks ? DateTime.MaxValue :
-                ticks < DateTime.MinValue.Ticks ? DateTime.MinValue :
+                ticks > DateTime.MaxTicks ? DateTime.MaxValue :
+                ticks < DateTime.MinTicks ? DateTime.MinValue :
                 new DateTime(ticks);
         }
 
@@ -1312,8 +1309,8 @@ namespace System
         {
             // used to calculate the UTC offset in the destinationTimeZone
             DateTime utcConverted =
-                ticks > DateTime.MaxValue.Ticks ? DateTime.MaxValue :
-                ticks < DateTime.MinValue.Ticks ? DateTime.MinValue :
+                ticks > DateTime.MaxTicks ? DateTime.MaxValue :
+                ticks < DateTime.MinTicks ? DateTime.MinValue :
                 new DateTime(ticks);
 
             // verify the time is between MinValue and MaxValue in the new time zone
@@ -1321,8 +1318,8 @@ namespace System
             ticks += offset.Ticks;
 
             return
-                ticks > DateTime.MaxValue.Ticks ? DateTime.MaxValue :
-                ticks < DateTime.MinValue.Ticks ? DateTime.MinValue :
+                ticks > DateTime.MaxTicks ? DateTime.MaxValue :
+                ticks < DateTime.MinTicks ? DateTime.MinValue :
                 new DateTime(ticks);
         }
 
@@ -1373,11 +1370,11 @@ namespace System
                 // startTime and endTime represent the period from either the start of
                 // DST to the end and ***includes*** the potentially overlapped times
                 startTime = rule.IsStartDateMarkerForBeginningOfYear() ?
-                    new DateTime(daylightTime.Start.Year, 1, 1, 0, 0, 0) :
+                    new DateTime(daylightTime.Start.Year, 1, 1) :
                     daylightTime.Start + daylightTime.Delta;
 
                 endTime = rule.IsEndDateMarkerForEndOfYear() ?
-                    new DateTime(daylightTime.End.Year + 1, 1, 1, 0, 0, 0).AddTicks(-1) :
+                    new DateTime(daylightTime.End.Year + 1, 1, 1).AddTicks(-1) :
                     daylightTime.End;
             }
             else
@@ -1402,11 +1399,11 @@ namespace System
                 bool invalidAtStart = rule.DaylightDelta > TimeSpan.Zero;
 
                 startTime = rule.IsStartDateMarkerForBeginningOfYear() ?
-                    new DateTime(daylightTime.Start.Year, 1, 1, 0, 0, 0) :
+                    new DateTime(daylightTime.Start.Year, 1, 1) :
                     daylightTime.Start + (invalidAtStart ? rule.DaylightDelta : TimeSpan.Zero); /* FUTURE: - rule.StandardDelta; */
 
                 endTime = rule.IsEndDateMarkerForEndOfYear() ?
-                    new DateTime(daylightTime.End.Year + 1, 1, 1, 0, 0, 0).AddTicks(-1) :
+                    new DateTime(daylightTime.End.Year + 1, 1, 1).AddTicks(-1) :
                     daylightTime.End + (invalidAtStart ? -rule.DaylightDelta : TimeSpan.Zero);
             }
 
@@ -1484,15 +1481,15 @@ namespace System
             bool ignoreYearAdjustment = false;
             TimeSpan dstStartOffset = zone.GetDaylightSavingsStartOffsetFromUtc(utc, rule, ruleIndex);
             DateTime startTime;
-            if (rule.IsStartDateMarkerForBeginningOfYear() && daylightTime.Start.Year > DateTime.MinValue.Year)
+            if (rule.IsStartDateMarkerForBeginningOfYear() && daylightTime.Start.Year is > 1 and int startYear)
             {
-                if (TryGetStartOfDstIfYearEndWithDst(daylightTime.Start.Year - 1, utc, zone, out startTime))
+                if (TryGetStartOfDstIfYearEndWithDst(startYear - 1, utc, zone, out startTime))
                 {
                     ignoreYearAdjustment = true;
                 }
                 else
                 {
-                    startTime = new DateTime(daylightTime.Start.Year, 1, 1, 0, 0, 0) - dstStartOffset;
+                    startTime = new DateTime(startYear, 1, 1) - dstStartOffset;
                 }
             }
             else
@@ -1502,15 +1499,15 @@ namespace System
 
             TimeSpan dstEndOffset = GetDaylightSavingsEndOffsetFromUtc(utc, rule);
             DateTime endTime;
-            if (rule.IsEndDateMarkerForEndOfYear() && daylightTime.End.Year < DateTime.MaxValue.Year)
+            if (rule.IsEndDateMarkerForEndOfYear() && daylightTime.End.Year is < 9999 and int endYear)
             {
-                if (TryGetEndOfDstIfYearStartWithDst(daylightTime.End.Year + 1, utc, zone, out endTime))
+                if (TryGetEndOfDstIfYearStartWithDst(endYear + 1, utc, zone, out endTime))
                 {
                     ignoreYearAdjustment = true;
                 }
                 else
                 {
-                    endTime = new DateTime(daylightTime.End.Year + 1, 1, 1, 0, 0, 0).AddTicks(-1) - dstEndOffset;
+                    endTime = new DateTime(endYear + 1, 1, 1).AddTicks(-1) - dstEndOffset;
                 }
             }
             else
@@ -2190,8 +2187,8 @@ namespace System
             }
         }
 
-        private static readonly TimeSpan MaxOffset = TimeSpan.FromHours(14.0);
-        private static readonly TimeSpan MinOffset = -MaxOffset;
+        private static TimeSpan MaxOffset => TimeSpan.FromHours(14);
+        private static TimeSpan MinOffset => TimeSpan.FromHours(-14);
 
         /// <summary>
         /// Helper function that validates the TimeSpan is within +/- 14.0 hours
