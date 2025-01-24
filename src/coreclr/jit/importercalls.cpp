@@ -9194,12 +9194,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_CLASS_HANDLE clsHandle = compCompHnd->getMethodClass(ftn);
         unsigned const       clsAttr   = compCompHnd->getClassAttribs(clsHandle);
 
+#ifdef DEBUG
         // Return type
         //
-        var_types const fncRetType = genActualType(pParam->call->gtReturnType);
-
-#ifdef DEBUG
-        var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
+        var_types const fncRetType     = pParam->call->gtReturnType;
+        var_types const fncRealRetType = JITtype2varType(methInfo.args.retType);
 
         assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
                // <BUGNUM> VSW 288602 </BUGNUM>
@@ -9243,7 +9242,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->clsAttr                        = clsAttr;
         pInfo->methAttr                       = pParam->methAttr;
         pInfo->initClassResult                = initClassResult;
-        pInfo->fncRetType                     = genActualType(JITtype2varType(methInfo.args.retType));
         pInfo->exactContextNeedsRuntimeLookup = false;
         pInfo->inlinersContext                = pParam->pThis->compInlineContext;
 
