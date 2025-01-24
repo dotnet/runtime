@@ -30,3 +30,4 @@ target_compile_definitions(brotlicommon PRIVATE BROTLI_SHARED_COMPILATION BROTLI
 # Don't build the brotli command line tool unless explicitly requested
 # (which we never do)
 set_target_properties(brotli PROPERTIES EXCLUDE_FROM_ALL ON)
+set_property(TARGET brotlienc brotlidec brotlicommon PROPERTY INTERPROCEDURAL_OPTIMIZATION OFF)
