@@ -71,10 +71,13 @@ internal readonly struct StackWalk_1 : IStackWalk
             Console.WriteLine(ex);
         }
 
-        // ThreadStoreData tsdata = _target.Contracts.Thread.GetThreadStoreData();
-        // ThreadData threadData = _target.Contracts.Thread.GetThreadData(tsdata.FirstThread);
+        ThreadStoreData tsdata = _target.Contracts.Thread.GetThreadStoreData();
+        ThreadData threadData = _target.Contracts.Thread.GetThreadData(tsdata.FirstThread);
 
-        // IExecutionManager eman = _target.Contracts.ExecutionManager;
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+        _target.GetPlatform(out int platform);
+        Console.WriteLine($"Platform: {platform}");
 
         // AMD64Context context = GetThreadContext(threadData);
         // Console.WriteLine($"[AMD64Context: RIP={context.InstructionPointer.Value:x16} RSP={context.StackPointer.Value:x16}]");

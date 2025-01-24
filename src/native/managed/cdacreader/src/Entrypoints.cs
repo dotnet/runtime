@@ -16,6 +16,7 @@ internal static class Entrypoints
         ulong descriptor,
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<uint, uint, uint, byte*, void*, int> readThreadContext,
+        delegate* unmanaged<int*, void*, int> getPlatform,
         void* readContext,
         IntPtr* handle)
     {
@@ -34,6 +35,13 @@ internal static class Entrypoints
                 fixed (byte* bufferPtr = buffer)
                 {
                     return readThreadContext(threadId, contextFlags, contextSize, bufferPtr, readContext);
+                }
+            },
+            (out int platform) =>
+            {
+                fixed (int* platformPtr = &platform)
+                {
+                    return getPlatform(platformPtr, readContext);
                 }
             },
             out ContractDescriptorTarget? target))

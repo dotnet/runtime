@@ -51,6 +51,12 @@ namespace
 
         return S_OK;
     }
+
+    int GetPlatform(uint32_t* platform, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        return target->GetPlatform((CorDebugPlatform*)platform);
+    }
 }
 
 CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
@@ -63,7 +69,7 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     _ASSERTE(init != nullptr);
 
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &ReadThreadContext, &GetPlatform, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

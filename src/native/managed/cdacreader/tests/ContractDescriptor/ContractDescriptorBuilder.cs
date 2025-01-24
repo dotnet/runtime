@@ -168,6 +168,6 @@ internal class ContractDescriptorBuilder : MockMemorySpace.Builder
             throw new InvalidOperationException("Context already created");
         ulong contractDescriptorAddress = CreateDescriptorFragments();
         MockMemorySpace.ReadContext context = GetReadContext();
-        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, context.ReadFromTarget, null, out target);
+        return ContractDescriptorTarget.TryCreate(contractDescriptorAddress, context.ReadFromTarget, null, null, out target);
     }
 }
