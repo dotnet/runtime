@@ -1,5 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="../../coreclr/Directory.Build.props" />
+  <Import Condition="'$(RuntimeFlavor)' != 'Mono'" Project="../../coreclr/Directory.Build.props" />
+  <Import Condition="'$(RuntimeFlavor)' == 'Mono'" Project="../../mono/Directory.Build.props" />
 
   <!-- This file contains common build properties for projects under
        the test tree, and also generated test projects in
