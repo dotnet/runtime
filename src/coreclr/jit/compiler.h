@@ -8948,6 +8948,7 @@ public:
     void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset);           // stp reg1, reg2, [sp, #offset]
     void unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int offset); // stp reg1, reg2, [sp, #offset]!
     void unwindSaveNext();                                                        // unwind code: save_next
+    void unwindPacSignLR();                                                       // unwind code: pac_sign_lr
     void unwindReturn(regNumber reg);                                             // ret lr
 #endif                                                                            // defined(TARGET_ARM64)
 
