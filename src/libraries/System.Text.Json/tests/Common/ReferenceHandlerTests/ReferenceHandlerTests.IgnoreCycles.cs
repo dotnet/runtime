@@ -430,6 +430,48 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task IgnoreCycles_DerivedType_InArray()
+        {
+            var worker1 = new OfficeWorker
+            {
+                Office = new Office
+                {
+                    Dummy = new()
+                }
+            };
+
+            worker1.Office.Staff = [worker1, new RemoteWorker()];
+
+            await Test_Serialize_And_SerializeAsync(worker1, """{"Office":{"Staff":[null,{"$type":"remote"}],"Dummy":{}}}""", s_optionsIgnoreCycles);
+
+            worker1.Office.Staff = [worker1];
+
+            await Test_Serialize_And_SerializeAsync(worker1, """{"Office":{"Staff":[null],"Dummy":{}}}""", s_optionsIgnoreCycles);
+        }
+
+        [JsonDerivedType(typeof(OfficeWorker), "office")]
+        [JsonDerivedType(typeof(RemoteWorker), "remote")]
+        public abstract class Employee
+        {
+        }
+
+        public class OfficeWorker : Employee
+        {
+            public Office Office { get; set; }
+        }
+
+        public class RemoteWorker : Employee
+        {
+        }
+
+        public class Office
+        {
+            public Employee[] Staff { get; set; }
+
+            public EmptyClass Dummy { get; set; }
+        }
+
+        [Fact]
         public async Task CycleDetectionStatePersistsAcrossContinuations()
         {
             string expectedValueJson = @"{""LargePropertyName"":""A large-ish string to force continuations"",""Nested"":null}";
