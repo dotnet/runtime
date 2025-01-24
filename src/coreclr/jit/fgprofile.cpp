@@ -4571,6 +4571,12 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
     else if (hasFlag(checks, PhaseChecks::CHECK_PROFILE))
     {
         ProfileChecks profileChecks = ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT;
+
+        if (hasFlag(checks, PhaseChecks::CHECK_PROFILE_FLAGS))
+        {
+            profileChecks |= ProfileChecks::CHECK_FLAGS;
+        }
+
         fgDebugCheckProfileWeights(profileChecks);
     }
     else if (hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
@@ -4611,6 +4617,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool checkProfileFlag    = hasFlag(checks, ProfileChecks::CHECK_FLAGS) && fgIsUsingProfileWeights();
     const bool assertOnFailure     = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
     const bool checkAllBlocks      = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
@@ -4633,6 +4640,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
+    unsigned unflaggedBlocks  = 0;
     bool     entryProfiled    = false;
     bool     exitProfiled     = false;
     bool     hasTry           = false;
@@ -4643,10 +4651,20 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->hasProfileWeight() && !checkAllBlocks)
+        if (!block->hasProfileWeight())
         {
-            unprofiledBlocks++;
-            continue;
+            if (checkProfileFlag && (block->bbPreds != nullptr))
+            {
+                // Block has flow into it that isn't marked as profile-derived.
+                //
+                unflaggedBlocks++;
+            }
+
+            if (!checkAllBlocks)
+            {
+                unprofiledBlocks++;
+                continue;
+            }
         }
 
         // There is some profile data to check.
@@ -4829,6 +4847,12 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         {
             assert(!"Inconsistent profile data");
         }
+    }
+
+    if (unflaggedBlocks > 0)
+    {
+        JITDUMP("%d blocks are missing BBF_PROF_WEIGHT flag.\n", unflaggedBlocks);
+        assert(!"Missing BBF_PROF_WEIGHT flag");
     }
 
     return (problemBlocks == 0);

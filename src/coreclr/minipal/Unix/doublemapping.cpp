@@ -18,6 +18,9 @@
 #include <linux/memfd.h>
 #include <sys/syscall.h> // __NR_memfd_create
 #define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
+#elif defined(TARGET_ANDROID)
+#include <sys/syscall.h> // __NR_memfd_create
+#define memfd_create(...) syscall(__NR_memfd_create, __VA_ARGS__)
 #endif // TARGET_LINUX && !MFD_CLOEXEC
 #include "minipal.h"
 #include "minipal/cpufeatures.h"
@@ -48,12 +51,13 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX)
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #else
     int fd = -1;
-#endif
 
+#ifndef TARGET_ANDROID
+    // Bionic doesn't have shm_{open,unlink}
     // POSIX fallback
     if (fd == -1)
     {
@@ -64,11 +68,13 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
         shm_unlink(name);
     }
+#endif // !TARGET_ANDROID
 
     if (fd == -1)
     {
         return false;
     }
+#endif
 
     if (ftruncate(fd, MaxDoubleMappedSize) == -1)
     {

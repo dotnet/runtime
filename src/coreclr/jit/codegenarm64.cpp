@@ -2675,6 +2675,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                     break;
                 }
 
+                case GT_AND_NOT:
+                {
+                    ins = INS_bics;
+                    break;
+                }
+
                 default:
                 {
                     noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
