@@ -104,5 +104,5 @@ function(create_platform_unwinder)
   # target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
 endfunction()
 
-create_platform_unwinder(TARGET unwinder_cdac_amd64 ARCH x64 DESTINATIONS cdaclibs)
-create_platform_unwinder(TARGET unwinder_cdac_arm64 ARCH arm64 DESTINATIONS cdaclibs)
+# create_platform_unwinder(TARGET unwinder_cdac_amd64 ARCH x64 DESTINATIONS cdaclibs)
+# create_platform_unwinder(TARGET unwinder_cdac_arm64 ARCH arm64 DESTINATIONS cdaclibs)
