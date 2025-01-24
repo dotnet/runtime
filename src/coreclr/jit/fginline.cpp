@@ -536,6 +536,21 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
+    //------------------------------------------------------------------------
+    // CanSpillCallWithoutSideEffect: Check if we can spill a call without
+    // side effects.
+    //
+    // Arguments:
+    //    call -- the call to check
+    //    parent -- the parent of the call
+    //
+    // Returns:
+    //    True if we can spill the call without side effects.
+    //
+    // Notes:
+    //    A call can be spilled without side effects if it's top-level tree,
+    //    or all of its successive operands have been spilled.
+    //
     bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
     {
         if (parent == nullptr)
