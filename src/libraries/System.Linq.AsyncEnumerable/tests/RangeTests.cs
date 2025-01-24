@@ -15,7 +15,7 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range(2, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range(int.MaxValue - 1, 3));
 
-#if NET7_0_OR_GREATER
+#if NET
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(-1, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(2, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(int.MaxValue - 1, 3));
@@ -43,7 +43,7 @@ namespace System.Linq.Tests
                 }
             }
 
-#if NET7_0_OR_GREATER
+#if NET
             foreach (int start in new[] { int.MinValue, -1, 0, 1, int.MaxValue - 9 })
             {
                 foreach (int count in new[] { 0, 1, 3, 10 })
