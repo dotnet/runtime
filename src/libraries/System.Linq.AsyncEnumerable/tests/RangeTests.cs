@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -27,6 +28,8 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(long.MaxValue - int.MaxValue + 2, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(long.MaxValue - 1, 3));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<BigInteger>(0, -1));
 #endif
         }
 
@@ -71,6 +74,16 @@ namespace System.Linq.Tests
                     await AssertEqual(
                         Enumerable.Range<long>(start, count),
                         AsyncEnumerable.Range<long>(start, count));
+                }
+            }
+
+            foreach (BigInteger start in new[] { long.MinValue, -1, 0, 1, long.MaxValue })
+            {
+                foreach (int count in new[] { 0, 1, 3, 10 })
+                {
+                    await AssertEqual(
+                        Enumerable.Range<BigInteger>(start, count),
+                        AsyncEnumerable.Range<BigInteger>(start, count));
                 }
             }
 #endif
