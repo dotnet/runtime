@@ -861,6 +861,7 @@ public:
 #endif
     }
 
+#if !defined(TARGET_X86)
     static TADDR GetIndirectionCellArg(T_CONTEXT *pContext)
     {
 #if defined(TARGET_AMD64)
@@ -874,6 +875,7 @@ public:
         return (TADDR)NULL;
 #endif
     }
+#endif // !defined(TARGET_X86)
 };
 
 #endif // !__stubmgr_h__
