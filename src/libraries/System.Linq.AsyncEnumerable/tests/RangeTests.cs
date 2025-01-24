@@ -21,15 +21,15 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(2, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<int>(int.MaxValue - 1, 3));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(255, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(2, byte.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<byte>(byte.MaxValue - 1, 3));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(-1, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(long.MaxValue - int.MaxValue + 2, int.MaxValue));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<long>(long.MaxValue - 1, 3));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<BigInteger>(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => AsyncEnumerable.Range<BigInteger>(-1, -1));
 #endif
         }
 
