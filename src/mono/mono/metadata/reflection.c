@@ -392,7 +392,7 @@ mono_type_normalize (MonoType *type)
 	if (type->type != MONO_TYPE_GENERICINST)
 		return type;
 
-	gclass = type->data.generic_class;
+	gclass = m_type_data_get_generic_class (type);
 	ginst = gclass->context.class_inst;
 	if (!ginst->is_open)
 		return type;
@@ -403,7 +403,7 @@ mono_type_normalize (MonoType *type)
 
 	for (guint i = 0; i < ginst->type_argc; ++i) {
 		MonoType *t = ginst->type_argv [i], *norm;
-		if (t->type != MONO_TYPE_VAR || t->data.generic_param->num != i || t->data.generic_param->owner != gcontainer)
+		if (t->type != MONO_TYPE_VAR || m_type_data_get_generic_param (t)->num != i || m_type_data_get_generic_param (t)->owner != gcontainer)
 			is_denorm_gtd = FALSE;
 		norm = mono_type_normalize (t);
 		argv [i] = norm;
@@ -570,7 +570,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto leave;
 	}
 
-	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !m_class_was_typebuilder (type->data.generic_class->container_class)) {
+	if ((type->type == MONO_TYPE_GENERICINST) && m_type_data_get_generic_class (type)->is_dynamic && !m_class_was_typebuilder (m_type_data_get_generic_class (type)->container_class)) {
 		/* This can happen if a TypeBuilder for a generic class K<T,U>
 		 * had reflection_create_generic_class) called on it, but not
 		 * ves_icall_TypeBuilder_create_runtime_class.  This can happen
@@ -1033,16 +1033,16 @@ add_parameter_object_to_array (MonoMethod *method, MonoObjectHandle member, int 
 		MonoType blob_type;
 
 		blob_type.type = (MonoTypeEnum)blob_type_enum;
-		blob_type.data.klass = NULL;
+		m_type_data_set_klass_unchecked (&blob_type, NULL);
 		if (blob_type_enum == MONO_TYPE_CLASS)
-			blob_type.data.klass = mono_defaults.object_class;
-		else if ((sig_param->type == MONO_TYPE_VALUETYPE) && m_class_is_enumtype (sig_param->data.klass)) {
+			m_type_data_set_klass_unchecked (&blob_type, mono_defaults.object_class);
+		else if ((sig_param->type == MONO_TYPE_VALUETYPE) && m_class_is_enumtype (m_type_data_get_klass (sig_param))) {
 			/* For enums, types [i] contains the base type */
 
 			blob_type.type = MONO_TYPE_VALUETYPE;
-			blob_type.data.klass = mono_class_from_mono_type_internal (sig_param);
+			m_type_data_set_klass_unchecked (&blob_type, mono_class_from_mono_type_internal (sig_param));
 		} else
-			blob_type.data.klass = mono_class_from_mono_type_internal (&blob_type);
+			m_type_data_set_klass (&blob_type, mono_class_from_mono_type_internal (&blob_type));
 
 		def_value = mono_get_object_from_blob (&blob_type, blob, MONO_HANDLE_NEW (MonoString, NULL), error);
 		goto_if_nok (error, leave);

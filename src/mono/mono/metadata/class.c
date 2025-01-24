@@ -783,7 +783,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inflated)
 			return type;
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.klass = mono_class_from_mono_type_internal (inflated);
+		m_type_data_set_klass (nt, mono_class_from_mono_type_internal (inflated));
 		mono_metadata_free_type (inflated);
 		return nt;
 	}
@@ -795,7 +795,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inflated)
 			return type;
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.array->eklass = mono_class_from_mono_type_internal (inflated);
+		m_type_data_get_array (nt)->eklass = mono_class_from_mono_type_internal (inflated);
 		mono_metadata_free_type (inflated);
 		return nt;
 	}
@@ -824,7 +824,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		}
 
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.generic_class = gclass;
+		m_type_data_set_generic_class (nt, gclass);
 		return nt;
 	}
 	case MONO_TYPE_CLASS:
@@ -857,7 +857,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 
 		nt = mono_metadata_type_dup (image, type);
 		nt->type = MONO_TYPE_GENERICINST;
-		nt->data.generic_class = gclass;
+		m_type_data_set_generic_class (nt, gclass);
 		return nt;
 	}
 	case MONO_TYPE_PTR: {
@@ -867,7 +867,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		if (!inflated && changed)
 			return type;
 		nt = mono_metadata_type_dup (image, type);
-		nt->data.type = inflated;
+		m_type_data_set_type (nt, inflated);
 		return nt;
 	}
 	case MONO_TYPE_FNPTR: {
@@ -892,7 +892,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 				return type;
 		}
 		MonoType *nt = mono_metadata_type_dup (image, type);
-		nt->data.method = new_sig;
+		m_type_data_set_method (nt, new_sig);
 		return nt;
 	}
 	default:

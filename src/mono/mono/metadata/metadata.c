@@ -2103,8 +2103,8 @@ try_get_canonical_type (MonoType *type, MonoType **canonical_type)
 
 		   We ensure that the MonoClass is in a state that we can canonicalize to:
 
-		   klass->_byval_arg.data.klass == klass
-		   klass->this_arg.data.klass == klass
+		   klass->_byval_arg.data__.klass == klass
+		   klass->this_arg.data__.klass == klass
 
 		   If we can't canonicalize 'type', it doesn't matter, since later users of 'type' will do it.
 
@@ -3734,7 +3734,7 @@ do_mono_metadata_parse_generic_class (MonoType *type, MonoImage *m, MonoGenericC
 	if (rptr)
 		*rptr = ptr;
 
-	type->data.generic_class = mono_metadata_lookup_generic_class (gklass, inst, FALSE);
+	m_type_data_set_generic_class (type, mono_metadata_lookup_generic_class (gklass, inst, FALSE));
 	return TRUE;
 }
 
@@ -4100,7 +4100,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		MonoClass *klass;
 		token = mono_metadata_parse_typedef_or_ref (m, ptr, &ptr);
 		klass = mono_class_get_checked (m, token, error);
-		type->data.klass = klass;
+		m_type_data_set_klass_unchecked (type, klass);
 		if (!klass)
 			return FALSE;
 
@@ -4114,29 +4114,29 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (!etype)
 			return FALSE;
 
-		type->data.klass = mono_class_from_mono_type_internal (etype);
+		m_type_data_set_klass_unchecked (type, mono_class_from_mono_type_internal (etype));
 
 		if (transient)
 			mono_metadata_free_type (etype);
 
-		g_assert (type->data.klass); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
+		g_assert (m_type_data_get_klass (type)); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
 	case MONO_TYPE_PTR: {
-		type->data.type = mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error);
-		if (!type->data.type)
+		m_type_data_set_type_unchecked (type, mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error));
+		if (!m_type_data_get_type (type))
 			return FALSE;
 		break;
 	}
 	case MONO_TYPE_FNPTR: {
-		type->data.method = mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error);
-		if (!type->data.method)
+		m_type_data_set_method_unchecked (type, mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error));
+		if (!m_type_data_get_method (type))
 			return FALSE;
 		break;
 	}
 	case MONO_TYPE_ARRAY: {
-		type->data.array = mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, error);
-		if (!type->data.array)
+		m_type_data_set_array_unchecked (type, mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, error));
+		if (!m_type_data_get_array (type))
 			return FALSE;
 		break;
 	}
@@ -4145,8 +4145,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (container && !verify_var_type_and_container (m, type->type, container, error))
 			return FALSE;
 
-		type->data.generic_param = mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, error);
-		if (!type->data.generic_param)
+		m_type_data_set_generic_param_unchecked (type, mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, error));
+		if (!m_type_data_get_generic_param (type))
 			return FALSE;
 
 		break;
@@ -6273,12 +6273,12 @@ static void
 deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o)
 {
 	if (o->type == MONO_TYPE_PTR) {
-		r->data.type = mono_metadata_type_dup (image, o->data.type);
+		m_type_data_set_type (r, mono_metadata_type_dup (image, m_type_data_get_type (o)));
 	} else if (o->type == MONO_TYPE_ARRAY) {
-		r->data.array = mono_dup_array_type (image, o->data.array);
+		m_type_data_set_array (r, mono_dup_array_type (image, m_type_data_get_array (o)));
 	} else if (o->type == MONO_TYPE_FNPTR) {
 		/*FIXME the dup'ed signature is leaked mono_metadata_free_type*/
-		r->data.method = mono_metadata_signature_deep_dup (image, o->data.method);
+		m_type_data_set_method (r, mono_metadata_signature_deep_dup (image, m_type_data_get_method (o)));
 	}
 }
 
@@ -7530,7 +7530,7 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 		MonoType *t = &helper [i];
 
 		t->type = container->is_method ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
-		t->data.generic_param = mono_generic_container_get_param (container, i);
+		m_type_data_set_generic_param_unchecked (t, mono_generic_container_get_param (container, i));
 
 		type_argv [i] = t;
 	}
