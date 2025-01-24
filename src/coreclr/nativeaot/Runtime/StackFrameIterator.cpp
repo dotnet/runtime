@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#endif
 #include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -28,9 +31,7 @@
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
 
-#ifdef TARGET_UNIX
-#include "UnixContext.h"
-#endif
+#include "NativeContext.h"
 
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
@@ -610,7 +611,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
 #ifdef TARGET_UNIX
 #define PTR_TO_REG(ptr, reg) (&((ptr)->reg()))
 #else
-#define PTR_TO_REG(ptr, reg) (&((ptr)->reg))
+#define PTR_TO_REG(ptr, reg) (&((ptr)->ctx.reg))
 #endif
 
 #ifdef TARGET_ARM64

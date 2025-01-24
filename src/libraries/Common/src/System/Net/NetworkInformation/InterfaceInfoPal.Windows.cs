@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
 
             try
             {
-                nativeMemory = bufferSize <= StackAllocationThreshold ? null : (char*)NativeMemory.Alloc((nuint)(bufferSize * sizeof(char)));
+                nativeMemory = (uint)bufferSize <= StackAllocationThreshold ? null : (char*)NativeMemory.Alloc((nuint)(bufferSize * sizeof(char)));
 
                 Span<char> buffer = nativeMemory == null ? stackalloc char[StackAllocationThreshold].Slice(0, bufferSize) : new Span<char>(nativeMemory, bufferSize);
 

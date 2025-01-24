@@ -92,12 +92,10 @@ FixupHijackedCallstack macro
         mov         [rdx + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
 endm
 
-EXTERN RhpPInvokeExceptionGuard : PROC
-
 ;;
 ;; GC Probe Hijack target
 ;;
-NESTED_ENTRY RhpGcProbeHijack, _TEXT, RhpPInvokeExceptionGuard
+NESTED_ENTRY RhpGcProbeHijack, _TEXT
         END_PROLOGUE
         FixupHijackedCallstack
 
