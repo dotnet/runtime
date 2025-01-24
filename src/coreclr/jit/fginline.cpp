@@ -544,29 +544,20 @@ private:
         }
 
         unsigned* pOpIndex = m_genTreeOpIndexMap.LookupPointerOrAdd(parent, 0);
-        unsigned  opIndex  = *pOpIndex;
-        if (opIndex == BAD_VAR_NUM)
-        {
-            return false;
-        }
+        unsigned  opIndex  = *pOpIndex + 1;
 
         GenTree* nextOp = nullptr;
         for (GenTree* op : parent->Operands())
         {
-            if (opIndex-- == 0)
+            if (--opIndex == 0)
             {
-                nextOp = op;
+                nextOp    = op;
                 *pOpIndex = *pOpIndex + 1;
                 break;
             }
         }
 
-        if (nextOp == nullptr)
-        {
-            *pOpIndex = BAD_VAR_NUM;
-        }
-
-        return nextOp == call;
+        return opIndex == 0 && nextOp == call;
     }
 
     //------------------------------------------------------------------------
