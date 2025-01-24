@@ -204,13 +204,18 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> GenTreeOpIndexMap;
+
     bool       m_madeChanges  = false;
     Statement* m_curStmt      = nullptr;
     Statement* m_firstNewStmt = nullptr;
 
+    GenTreeOpIndexMap m_genTreeOpIndexMap;
+
 public:
     enum
     {
+        ComputeStack      = true,
         DoPreOrder        = true,
         DoPostOrder       = true,
         UseExecutionOrder = true,
@@ -218,6 +223,7 @@ public:
 
     SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp)
         : GenTreeVisitor(comp)
+        , m_genTreeOpIndexMap(comp->getAllocator(CMK_Inlining))
     {
     }
 
@@ -530,6 +536,39 @@ private:
     }
 #endif // FEATURE_MULTIREG_RET
 
+    bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
+    {
+        if (parent == nullptr)
+        {
+            return true;
+        }
+
+        unsigned* pOpIndex = m_genTreeOpIndexMap.LookupPointerOrAdd(parent, 0);
+        unsigned  opIndex  = *pOpIndex;
+        if (opIndex == BAD_VAR_NUM)
+        {
+            return false;
+        }
+
+        GenTree* nextOp = nullptr;
+        for (GenTree* op : parent->Operands())
+        {
+            if (opIndex-- == 0)
+            {
+                nextOp = op;
+                *pOpIndex = *pOpIndex + 1;
+                break;
+            }
+        }
+
+        if (nextOp == nullptr)
+        {
+            *pOpIndex = BAD_VAR_NUM;
+        }
+
+        return nextOp == call;
+    }
+
     //------------------------------------------------------------------------
     // LateDevirtualization: re-examine calls after inlining to see if we
     //   can do more devirtualization
@@ -620,27 +659,29 @@ private:
                     {
                         // If the call is the top-level expression in a statement, and it returns void,
                         // there will be no use of its return value, and we can just inline it directly.
-                        // In this case we don't need to create a RET_EXPR node for it.
-                        // We currently spill calls aggressively in the importer, so this won't lead to
-                        // execution order changes.
+                        // In this case we don't need to create a RET_EXPR node for it. Otherwise, we
+                        // need to create a RET_EXPR node for it.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                            if (m_firstNewStmt == nullptr)
+                            if (CanSpillCallWithoutSideEffect(call, parent))
                             {
-                                m_firstNewStmt = stmt;
+                                Statement* stmt = m_compiler->gtNewStmt(call);
+                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                                if (m_firstNewStmt == nullptr)
+                                {
+                                    m_firstNewStmt = stmt;
+                                }
+
+                                GenTreeRetExpr* retExpr =
+                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                               genActualType(call->TypeGet()));
+                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+
+                                JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                                DISPTREE(retExpr);
+
+                                *pTree = retExpr;
                             }
-
-                            GenTreeRetExpr* retExpr =
-                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                           genActualType(call->TypeGet()));
-                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-
-                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
-                            DISPTREE(retExpr);
-
-                            *pTree = retExpr;
                         }
 
                         call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
