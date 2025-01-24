@@ -204,13 +204,9 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
 {
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> GenTreeOpIndexMap;
-
     bool       m_madeChanges  = false;
     Statement* m_curStmt      = nullptr;
     Statement* m_firstNewStmt = nullptr;
-
-    GenTreeOpIndexMap m_genTreeOpIndexMap;
 
 public:
     enum
@@ -223,7 +219,6 @@ public:
 
     SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp)
         : GenTreeVisitor(comp)
-        , m_genTreeOpIndexMap(comp->getAllocator(CMK_Inlining))
     {
     }
 
@@ -548,31 +543,31 @@ private:
     //    True if we can spill the call without side effects.
     //
     // Notes:
-    //    A call can be spilled without side effects if it's top-level tree,
-    //    or all of its successive operands have been spilled.
+    //    We estimate a call that can be spilled without side effects when
+    //    it's root, or the root is STORE_LCL_VAR and the call is always
+    //    propagated through op1.
     //
     bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
     {
-        if (parent == nullptr)
+        if (parent == nullptr || parent->OperIs(GT_STORE_LCL_VAR))
         {
             return true;
         }
 
-        unsigned* pOpIndex = m_genTreeOpIndexMap.LookupPointerOrAdd(parent, 0);
-        unsigned  opIndex  = *pOpIndex + 1;
-
-        GenTree* nextOp = nullptr;
-        for (GenTree* op : parent->Operands())
+        if (m_ancestors.Bottom()->OperGet() != GT_STORE_LCL_VAR)
         {
-            if (--opIndex == 0)
+            return false;
+        }
+
+        for (int idx = 0; idx < m_ancestors.Height() - 1; idx++)
+        {
+            if (m_ancestors.Top(idx) != *m_ancestors.Top(idx + 1)->OperandsBegin())
             {
-                nextOp    = op;
-                *pOpIndex = *pOpIndex + 1;
-                break;
+                return false;
             }
         }
 
-        return opIndex == 0 && nextOp == call;
+        return true;
     }
 
     //------------------------------------------------------------------------
@@ -669,6 +664,8 @@ private:
                         // need to create a RET_EXPR node for it.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
+                            // TODO-CQ: We should spill the call if it has side effects instead of
+                            // conservatively estimating whether it has side effects or not.
                             if (CanSpillCallWithoutSideEffect(call, parent))
                             {
                                 Statement* stmt = m_compiler->gtNewStmt(call);
