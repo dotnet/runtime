@@ -77,7 +77,7 @@ namespace System.Linq.Tests
                 }
             }
 
-            foreach (BigInteger start in new[] { long.MinValue, -1, 0, 1, long.MaxValue })
+            foreach (BigInteger start in new[] { -BigInteger.Pow(2, 1024), -1, 0, 1, BigInteger.Pow(2, 1024) })
             {
                 foreach (int count in new[] { 0, 1, 3, 10 })
                 {
@@ -85,7 +85,12 @@ namespace System.Linq.Tests
                         Enumerable.Range<BigInteger>(start, count),
                         AsyncEnumerable.Range<BigInteger>(start, count));
                 }
+
+                await AssertEqual(
+                    Enumerable.Range<BigInteger>(start, int.MaxValue).Skip(10).Take(10),
+                    AsyncEnumerable.Range<BigInteger>(start, int.MaxValue).Skip(10).Take(10));
             }
+
 #endif
         }
     }
