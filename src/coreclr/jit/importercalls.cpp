@@ -7690,35 +7690,21 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (!(methAttr & CORINFO_FLG_FORCEINLINE))
     {
-        if (compCurBB->HasFlag(BBF_INTERNAL) && ehGetBlockHndDsc(compCurBB) != nullptr)
-        {
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nWill not inline blocks that have EH descriptor when IL offset may not be valid\n");
-            }
-
-#endif
-            inlineResult->NoteFatal(InlineObservation::CALLSITE_NOT_CANDIDATE);
-            return;
-        }
-
         /* Don't bother inline blocks that are in the filter region */
-        if (bbInCatchHandlerILRange(compCurBB))
+        if (bbInCatchHandlerBBRange(compCurBB))
         {
 #ifdef DEBUG
             if (verbose)
             {
                 printf("\nWill not inline blocks that are in the catch handler region\n");
             }
-
 #endif
 
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
             return;
         }
 
-        if (bbInFilterILRange(compCurBB))
+        if (bbInFilterBBRange(compCurBB))
         {
 #ifdef DEBUG
             if (verbose)
@@ -9257,7 +9243,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->clsAttr                        = clsAttr;
         pInfo->methAttr                       = pParam->methAttr;
         pInfo->initClassResult                = initClassResult;
-        pInfo->fncRetType                     = fncRetType;
+        pInfo->fncRetType                     = genActualType(JITtype2varType(methInfo.args.retType));
         pInfo->exactContextNeedsRuntimeLookup = false;
         pInfo->inlinersContext                = pParam->pThis->compInlineContext;
 

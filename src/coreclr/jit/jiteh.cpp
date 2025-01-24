@@ -355,6 +355,28 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
+// bbInCatchHandlerBBRange:
+//     Check if this block is part of a catch handler.
+//
+// Arguments:
+//    blk - The block
+//
+// Return Value:
+//    True if the block is part of a catch handler clause. Otherwise false.
+//
+bool Compiler::bbInCatchHandlerBBRange(BasicBlock* blk)
+{
+    EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
+
+    if (HBtab == nullptr)
+    {
+        return false;
+    }
+
+    return HBtab->HasCatchHandler() && HBtab->InHndRegionBBRange(blk);
+}
+
+//------------------------------------------------------------------------
 // bbInFilterBBRange:
 //     Check if this block is part of a filter.
 //
