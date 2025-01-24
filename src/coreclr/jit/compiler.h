@@ -2866,6 +2866,7 @@ public:
 
     bool bbInCatchHandlerILRange(BasicBlock* blk);
     bool bbInFilterILRange(BasicBlock* blk);
+    bool bbInCatchHandlerBBRange(BasicBlock* blk);
     bool bbInFilterBBRange(BasicBlock* blk);
     bool bbInTryRegions(unsigned regionIndex, BasicBlock* blk);
     bool bbInExnFlowRegions(unsigned regionIndex, BasicBlock* blk);

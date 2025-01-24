@@ -7704,21 +7704,20 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         }
 
         /* Don't bother inline blocks that are in the filter region */
-        if (bbInCatchHandlerILRange(compCurBB))
+        if (bbInCatchHandlerBBRange(compCurBB))
         {
 #ifdef DEBUG
             if (verbose)
             {
                 printf("\nWill not inline blocks that are in the catch handler region\n");
             }
-
 #endif
 
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
             return;
         }
 
-        if (bbInFilterILRange(compCurBB))
+        if (bbInFilterBBRange(compCurBB))
         {
 #ifdef DEBUG
             if (verbose)
@@ -9208,12 +9207,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_CLASS_HANDLE clsHandle = compCompHnd->getMethodClass(ftn);
         unsigned const       clsAttr   = compCompHnd->getClassAttribs(clsHandle);
 
+#ifdef DEBUG
         // Return type
         //
-        var_types const fncRetType = genActualType(pParam->call->gtReturnType);
-
-#ifdef DEBUG
-        var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
+        var_types const fncRetType     = pParam->call->gtReturnType;
+        var_types const fncRealRetType = JITtype2varType(methInfo.args.retType);
 
         assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
                // <BUGNUM> VSW 288602 </BUGNUM>
@@ -9257,7 +9255,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->clsAttr                        = clsAttr;
         pInfo->methAttr                       = pParam->methAttr;
         pInfo->initClassResult                = initClassResult;
-        pInfo->fncRetType                     = fncRetType;
         pInfo->exactContextNeedsRuntimeLookup = false;
         pInfo->inlinersContext                = pParam->pThis->compInlineContext;
 

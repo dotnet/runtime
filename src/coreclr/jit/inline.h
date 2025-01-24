@@ -623,7 +623,6 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned methAttr;
 
     CorInfoInitClassResult initClassResult;
-    var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
 };
