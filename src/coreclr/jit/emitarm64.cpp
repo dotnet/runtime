@@ -12311,12 +12311,12 @@ SKIP_GC_UPDATE:
 
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
-                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2, true);
+                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2, FPbased);
                 ofs2Dist = EA_SIZE_IN_BYTES(size);
 #ifdef DEBUG
+                assert(FPbased == FPbased2);
                 if (!FPbased)
                 {
-                    assert(FPbased == FPbased2);
                     assert(encodingZRtoSP(id->idReg3()) == REG_SP);
                 }
                 assert(varNum2 != -1);
