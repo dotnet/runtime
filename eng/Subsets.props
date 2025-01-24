@@ -82,8 +82,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
-    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true' and !$(_subset.Contains('+clr.nativeaotlibs+'))">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and $(_subset.Contains('+clr.nativeaotlibs+'))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and ($(_subset.Contains('+clr.nativeaotlibs+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and '$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">$(PrimaryRuntimeFlavor)</RuntimeFlavor>
   </PropertyGroup>
@@ -92,7 +92,7 @@
     <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(PackageRID)' == 'linux-armel'">clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
-    <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
@@ -308,17 +308,24 @@
   <!--
     Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them.
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
-    Additionally, in a vertical orchestrated build, we need to produce an ilasm and ildasm for use by upstack repositories.
-    However, these repositories only build on Windows, so we can limit this to only execute on Windows to avoid additional infrastructure work when not necessary.
     -->
   <PropertyGroup>
     <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
+    <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
+    <_BuildCrossDebugComponents Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true' and '$(_CrossBitwidthBuild)' != 'true'">true</_BuildCrossDebugComponents>
   </PropertyGroup>
 
   <ItemGroup>
-    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrCrossComponentsSubset=true" />
+    <!-- When building cross components, always build the JITs. We will need them for running crossgen2 and ILC in the build. -->
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true'" Include="ClrAllJitsSubset=true" />
+    <!-- When targeting Windows, we need to build a copy of the diagnostic libraries that can run on the host to enable remote debugging of a local build. -->
+    <_CrossToolSubset Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true'" Include="ClrDebugSubset=true" />
+    <!--
+    In a vertical orchestrated build, we need to produce an ilasm and ildasm for use by upstack repositories.
+      However, these repositories only build on Windows, so we can limit this to only execute on Windows to avoid additional infrastructure work when not necessary.
+    -->
     <_CrossToolSubset Condition="'$(BuildHostILTools)' == 'true'" Include="ClrILToolsSubset=true" />
   </ItemGroup>
 
@@ -331,6 +338,7 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
+                            BuildSubdirectory=$(BuildArchitecture);
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
       UndefineProperties="EnableNativeSanitizers"
       Category="clr" />
@@ -366,7 +374,7 @@
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
+                            ClrDebugSubset=true;
                             HostArchitecture=$(CrossDacHostArch);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
@@ -378,7 +386,7 @@
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
-                            ClrCrossComponentsSubset=true;
+                            ClrDebugSubset=true;
                             HostArchitecture=$(CrossDacHostArch);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
