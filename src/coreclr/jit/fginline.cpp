@@ -631,7 +631,8 @@ private:
                             if (parent != nullptr && m_prevNonInlineCandidateCall != nullptr)
                             {
                                 // If any call in the sibling tree is not an inline candidate, we can't inline this
-                                // call. This shouldn't happen as we currently spill the call aggressively in the importer.
+                                // call. This shouldn't happen as we currently spill the call aggressively in the
+                                // importer.
                                 unreached();
                                 canInline = false;
                             }
