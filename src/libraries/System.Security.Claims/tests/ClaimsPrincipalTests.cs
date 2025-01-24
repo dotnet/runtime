@@ -261,7 +261,7 @@ namespace System.Security.Claims
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void PrimaryIdentitySelector_DefaultDoesNotSpecialCaseInterfaceList()
+        public void PrimaryIdentitySelector_DefaultOnlySpecialCasesList()
         {
             RemoteExecutor.Invoke(static () =>
             {
@@ -269,44 +269,25 @@ namespace System.Security.Claims
                 ClaimsIdentity identity1 = new([new Claim("type", "value")]);
                 ClaimsIdentity identity2 = new([new Claim("type", "value")]);
                 ClaimsIdentityList identities = [identity0, identity1, identity2];
-                Func<IEnumerable<ClaimsIdentity>, ClaimsIdentity> selector = ClaimsPrincipal.PrimaryIdentitySelector;
+                Func<ClaimsIdentityList, ClaimsIdentity> selector = ClaimsPrincipal.PrimaryIdentitySelector;
 
                 Assert.Same(identity1, selector(identities));
-                Assert.True(identities.EnumeratedAtLeastOnce, nameof(identities.EnumeratedAtLeastOnce));
+                Assert.Equal(1, identities.GetEnumeratorCount);
                 Assert.Null(selector(new ClaimsIdentityList()));
             }).Dispose();
         }
 
-        private sealed class ClaimsIdentityList : IList<ClaimsIdentity>
+        private sealed class ClaimsIdentityList : List<ClaimsIdentity>, IEnumerable<ClaimsIdentity>
         {
             private readonly List<ClaimsIdentity> _claimsIdentities = [];
 
-            public bool EnumeratedAtLeastOnce { get; set; }
+            public int GetEnumeratorCount { get; private set; }
 
-            public ClaimsIdentity this[int index]
+            public new IEnumerator<ClaimsIdentity> GetEnumerator()
             {
-                get => _claimsIdentities[index];
-                set => _claimsIdentities[index] = value;
+                GetEnumeratorCount++;
+                return base.GetEnumerator();
             }
-
-            public int Count => _claimsIdentities.Count;
-            public bool IsReadOnly => ((ICollection<ClaimsIdentity>)_claimsIdentities).IsReadOnly;
-            public void Add(ClaimsIdentity item) => _claimsIdentities.Add(item);
-            public void Clear() => _claimsIdentities.Clear();
-            public bool Contains(ClaimsIdentity item) => _claimsIdentities.Contains(item);
-            public void CopyTo(ClaimsIdentity[] array, int arrayIndex) => _claimsIdentities.CopyTo(array, arrayIndex);
-            public int IndexOf(ClaimsIdentity item) => _claimsIdentities.IndexOf(item);
-            public void Insert(int index, ClaimsIdentity item) => _claimsIdentities.Insert(index, item);
-            public bool Remove(ClaimsIdentity item) => _claimsIdentities.Remove(item);
-            public void RemoveAt(int index) => _claimsIdentities.RemoveAt(index);
-
-            public IEnumerator<ClaimsIdentity> GetEnumerator()
-            {
-                EnumeratedAtLeastOnce = true;
-                return _claimsIdentities.GetEnumerator();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<ClaimsIdentity>)this).GetEnumerator();
         }
 
         private class NonClaimsPrincipal : IPrincipal
