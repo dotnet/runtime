@@ -88,7 +88,7 @@ namespace System.Net
             Interop.Winsock.EnsureInitialized();
 
             SocketAddress address = new IPEndPoint(addr, 0).Serialize();
-            Span<byte> addressBuffer = address.Size <= 64 ? stackalloc byte[64] : new byte[address.Size];
+            Span<byte> addressBuffer = (uint)address.Size <= 64 ? stackalloc byte[64] : new byte[address.Size];
             for (int i = 0; i < address.Size; i++)
             {
                 addressBuffer[i] = address[i];

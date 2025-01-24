@@ -11,7 +11,7 @@
 #include "stdafx.h"
 #include "filtermanager.h"
 
-#define IsGlobalTypeDef(td) ((td) == TokenFromRid(mdtTypeDef, 1))
+#define IsGlobalTypeDef(td) ((td) == COR_GLOBAL_PARENT_TOKEN)
 
 //*****************************************************************************
 // Walk up to the containing tree and

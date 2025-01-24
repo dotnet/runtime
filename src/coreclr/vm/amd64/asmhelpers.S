@@ -44,6 +44,14 @@
 #
 # ***********************************************************
 
+# EXTERN_C void JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
+# <NOTE>
+#
+# </NOTE>
+LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+  ret
+LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
+
 # EXTERN_C void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID, size_t profiledRsp);
 # <NOTE>
 #
@@ -271,7 +279,7 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 # EXTERN_C void* GetThreadVarsAddress()
 # <NOTE>
 # Helper to calculate the address of relevant __thread_vars section that holds the address of symbol tlv_get_address for thread
@@ -283,9 +291,9 @@ LEAF_ENTRY GetThreadVarsAddress, _TEXT
         ret
 LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
 # EXTERN_C void* GetTlsIndexObjectDescOffset();
 
 # <NOTE>
@@ -311,3 +319,14 @@ LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
         int 3
 LEAF_END GetTlsIndexObjectDescOffset, _TEXT
 #endif
+
+LEAF_ENTRY  JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, rax
+        cmp     dword ptr [rax], 0
+        jnz     LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, rax
+        mov     rax, [rax]
+        jmp     rax
+LEAF_END  JIT_PollGC, _TEXT

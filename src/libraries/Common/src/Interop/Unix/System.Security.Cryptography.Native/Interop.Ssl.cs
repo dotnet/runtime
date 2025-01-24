@@ -236,7 +236,7 @@ internal static partial class Interop
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> applicationProtocols)
         {
             int length = GetAlpnProtocolListSerializedLength(applicationProtocols);
-            Span<byte> buffer = length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
+            Span<byte> buffer = (uint)length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
             SerializeAlpnProtocolList(applicationProtocols, buffer);
             return SslSetAlpnProtos(ssl, buffer);
         }

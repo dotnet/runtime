@@ -988,7 +988,10 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.method  = CastHandle(method);
     key.context = CastHandle(context);
 
-    DWORD value = InitClass->Get(key);
+    DWORD value =
+        LookupByKeyOrMiss(InitClass, key, ": fld-%016" PRIX64 " meth-%016" PRIX64 " con-%016" PRIX64,
+                          key.field, key.method, key.context);
+
     DEBUG_REP(dmpInitClass(key, value));
     CorInfoInitClassResult result = (CorInfoInitClassResult)value;
     return result;

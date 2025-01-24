@@ -73,11 +73,6 @@ CObjectType CorUnix::otFile(
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
                 CFileProcessLocalDataCleanupRoutine,
-                GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
-                CObjectType::SecuritySupported,
-                CObjectType::OSPersistedSecurityInfo,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::UnwaitableObject,
                 CObjectType::SignalingNotApplicable,
                 CObjectType::ThreadReleaseNotApplicable,
