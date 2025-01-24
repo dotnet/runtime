@@ -211,7 +211,6 @@ class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<Substi
 public:
     enum
     {
-        ComputeStack      = true,
         DoPreOrder        = true,
         DoPostOrder       = true,
         UseExecutionOrder = true,
@@ -545,9 +544,7 @@ private:
     //
     // Notes:
     //    We conservatively consider a call can be spilled without side effects
-    //    when it's the root node, or the root node is STORE_LCL_VAR and the tree
-    //    is always the first operand of its parent in execution order along the
-    //    path to the root.
+    //    when it's the root node, or the parent node is STORE_LCL_VAR.
     //
     bool CanSpillCallWithoutSideEffect(GenTreeCall* call, GenTree* parent)
     {
@@ -556,20 +553,7 @@ private:
             return true;
         }
 
-        if (m_ancestors.Bottom()->OperGet() != GT_STORE_LCL_VAR)
-        {
-            return false;
-        }
-
-        for (int idx = 0; idx < m_ancestors.Height() - 1; idx++)
-        {
-            if (m_ancestors.Top(idx) != *m_ancestors.Top(idx + 1)->OperandsBegin())
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return false;
     }
 
     //------------------------------------------------------------------------
