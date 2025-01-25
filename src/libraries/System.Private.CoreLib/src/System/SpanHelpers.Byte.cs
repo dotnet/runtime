@@ -940,8 +940,8 @@ namespace System
                 else if (length >= (nuint)Vector128<byte>.Count)
                 {
 #if !MONO // Mono has performance issues with ISimdVector<T>
-                    if (((!Vector512.IsHardwareAccelerated && !Vector256.IsHardwareAccelerated) || 
-                        AdvSimd.Arm64.IsSupported) && length >= 64) // After this threshold, _LongInput will be faster
+                    if (((!Vector512.IsHardwareAccelerated && !Vector256.IsHardwareAccelerated) || AdvSimd.Arm64.IsSupported) &&
+                        length >= 64) // After this threshold, _LongInput will be faster
                     {
                         return SequenceEqual_LongInput<Vector128<byte>>(ref first, ref second, length);
                     }
