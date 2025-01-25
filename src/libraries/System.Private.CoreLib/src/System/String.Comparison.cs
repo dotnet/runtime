@@ -73,7 +73,7 @@ namespace System
             return Ordinal.EqualsIgnoreCase(ref strA.GetRawStringData(), ref strB.GetRawStringData(), strB.Length);
         }
 
-        private static unsafe int CompareOrdinalHelper(string strA, string strB)
+        private static int CompareOrdinalHelper(string strA, string strB)
         {
             Debug.Assert(strA != null);
             Debug.Assert(strB != null);
