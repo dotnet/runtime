@@ -2460,7 +2460,7 @@ namespace System
             }
 
             // Trim end
-            int endIndex = this.Length - 1;
+            int endIndex = Length - 1;
             while (true)
             {
                 if (endIndex < index)
@@ -2493,7 +2493,7 @@ namespace System
             int index = 0;
             while (true)
             {
-                if (index > @this.Length)
+                if (index > Length)
                 {
                     return string.Empty;
                 }
