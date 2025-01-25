@@ -392,6 +392,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
     bool didStackAllocate             = false;
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
+    const bool isReadyToRun           = comp->opts.IsReadyToRun() && !comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     for (BasicBlock* const block : comp->Blocks())
     {
@@ -419,7 +420,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     allocType = OAT_NEWOBJ;
                 }
-                else if (data->IsHelperCall())
+                else if (!isReadyToRun && data->IsHelperCall())
                 {
                     switch (data->AsCall()->GetHelperNum())
                     {
@@ -471,8 +472,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
                         // R2R not yet supported
                         //
-                        const bool isNativeAot = comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-                        assert(isNativeAot || !comp->opts.IsReadyToRun());
+                        assert(isReadyToRun);
 
                         //------------------------------------------------------------------------
                         // We expect the following expression tree at this point
