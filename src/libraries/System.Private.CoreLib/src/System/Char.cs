@@ -129,9 +129,9 @@ namespace System
             return m_value == obj;
         }
 
-        public bool Equals(char left, char right, StringComparison comparisonType)
+        public bool Equals(char right, StringComparison comparisonType)
         {
-            ReadOnlySpan<char> leftCharsSlice = [left];
+            ReadOnlySpan<char> leftCharsSlice = [this];
             ReadOnlySpan<char> rightCharsSlice = [right];
             return leftCharsSlice.Equals(rightCharsSlice, comparisonType);
         }

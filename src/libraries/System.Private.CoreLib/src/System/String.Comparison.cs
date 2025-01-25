@@ -597,7 +597,7 @@ namespace System
 
         public bool EndsWith(Rune value, StringComparison comparisonType)
         {
-            if (Rune.DecodeLastFromUtf16(@this, out Rune result, out _) is OperationStatus.Done)
+            if (Rune.DecodeLastFromUtf16(this, out Rune result, out _) is OperationStatus.Done)
             {
                 return result.Equals(value, comparisonType);
             }
@@ -1193,7 +1193,7 @@ namespace System
 
         public bool StartsWith(Rune value, StringComparison comparisonType)
         {
-            if (Rune.DecodeFromUtf16(@this, out Rune result, out _) is OperationStatus.Done)
+            if (Rune.DecodeFromUtf16(this, out Rune result, out _) is OperationStatus.Done)
             {
                 return result.Equals(value, comparisonType);
             }
