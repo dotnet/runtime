@@ -419,7 +419,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     allocType = OAT_NEWOBJ;
                 }
-                else if (!comp->opts.IsReadyToRun() && data->IsHelperCall())
+                else if (data->IsHelperCall())
                 {
                     switch (data->AsCall()->GetHelperNum())
                     {
@@ -468,10 +468,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     if (allocType == OAT_NEWARR)
                     {
                         assert(basicBlockHasNewArr);
-
-                        // R2R not yet supported
-                        //
-                        assert(!comp->opts.IsReadyToRun());
 
                         //------------------------------------------------------------------------
                         // We expect the following expression tree at this point
