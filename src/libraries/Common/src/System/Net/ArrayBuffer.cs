@@ -116,7 +116,10 @@ namespace System.Net
 
         public void Commit(int byteCount)
         {
-            ObjectDisposedException.ThrowIf(_bytes == null, this);
+            if (_bytes == null)
+            {
+                throw new ObjectDisposedException(nameof(ArrayBuffer));
+            }
             Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }
