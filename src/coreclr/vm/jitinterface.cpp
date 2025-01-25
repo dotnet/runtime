@@ -10150,7 +10150,7 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 
 CORINFO_OS getClrVmOs()
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return CORINFO_APPLE;
 #elif defined(TARGET_UNIX)
     return CORINFO_UNIX;

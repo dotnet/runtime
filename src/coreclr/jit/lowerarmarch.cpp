@@ -304,6 +304,11 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
+        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_AND_NOT))
+        {
+            return true;
+        }
+
         // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
         return false;
     }
@@ -762,7 +767,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the

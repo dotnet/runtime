@@ -4,4 +4,5 @@
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::NormalizePath($(RepositoryRoot), 'eng', 'testing', 'ForXHarness.Directory.Build.props'))" />
+  <Import Project="$([MSBuild]::NormalizePath($(RepositoryRoot), 'eng', 'Versions.props'))" />
 </Project>

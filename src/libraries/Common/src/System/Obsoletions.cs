@@ -133,8 +133,7 @@ namespace System
         internal const string EncryptionPolicyMessage = "EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.";
         internal const string EncryptionPolicyDiagId = "SYSLIB0040";
 
-        internal const string Rfc2898OutdatedCtorMessage = "The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.";
-        internal const string Rfc2898OutdatedCtorDiagId = "SYSLIB0041";
+        // SYSLIB0041 is no longer used and is superseded by SYSLIB0060.
 
         internal const string EccXmlExportImportMessage = "ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.";
         internal const string EccXmlExportImportDiagId = "SYSLIB0042";
@@ -189,6 +188,9 @@ namespace System
 
         internal const string SystemEventsEventsThreadShutdownMessage = "SystemEvents.EventsThreadShutdown callbacks are not run before the process exits. Use AppDomain.ProcessExit instead.";
         internal const string SystemEventsEventsThreadShutdownDiagId = "SYSLIB0059";
+
+        internal const string Rfc2898DeriveBytesCtorMessage = "The constructors on Rfc2898DeriveBytes are obsolete. Use the static Pbkdf2 method instead.";
+        internal const string Rfc2898DeriveBytesCtorDiagId = "SYSLIB0060";
 
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
