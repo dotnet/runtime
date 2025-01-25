@@ -591,8 +591,8 @@ namespace System.IO
             {
                 async Task WriteLineAsyncPair(char highSurrogate, char lowSurrogate)
                 {
-                    await WriteAsync(highSurrogate);
-                    await WriteLineAsync(lowSurrogate);
+                    await WriteAsync(highSurrogate).ConfigureAwait(false);
+                    await WriteLineAsync(lowSurrogate).ConfigureAwait(false);
                 }
                 return WriteLineAsyncPair(charsSlice[0], charsSlice[1]);
             }
