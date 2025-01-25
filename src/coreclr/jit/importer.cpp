@@ -10659,7 +10659,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // Ptr
                 assertImp(varTypeIsStruct(op2));
 
-                op1 = gtNewStoreValueNode(layout, op1, op2, impPrefixFlagsToIndirFlags(prefixFlags));
+                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
+                if (eeIsByrefLike(resolvedToken.hClass))
+                {
+                    indirFlags |= GTF_IND_TGT_NOT_HEAP;
+                }
+
+                op1 = gtNewStoreValueNode(layout, op1, op2, indirFlags);
+
                 op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
                 goto SPILL_APPEND;
             }
@@ -11026,7 +11033,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = inlCandInfo->fncRetType;
+            var_types originalCallType = genActualType(JITtype2varType(inlCandInfo->methInfo.args.retType));
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
                 originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);

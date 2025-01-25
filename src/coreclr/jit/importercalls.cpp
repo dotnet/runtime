@@ -1030,7 +1030,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
+                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
             }
 
             // append the call node.
@@ -1240,7 +1240,7 @@ DONE:
         INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, rawILOffset);
+        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
     }
 
     // Extra checks for tail calls and tail recursion.
@@ -7450,7 +7450,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
-//    ilOffset -- the actual IL offset of the instruction that produced this inline candidate
 //
 // Notes:
 //    Mostly a wrapper for impMarkInlineCandidateHelper that also undoes
@@ -7460,8 +7459,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
-                                      CORINFO_CALL_INFO*     callInfo,
-                                      IL_OFFSET              ilOffset)
+                                      CORINFO_CALL_INFO*     callInfo)
 {
     if (!opts.OptEnabled(CLFLG_INLINING))
     {
@@ -7484,7 +7482,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                         ilOffset, &inlineResult);
+                                         &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -7507,8 +7505,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, ilOffset,
-                                     &inlineResult);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -7541,7 +7538,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    exactContextHnd -- context handle for inlining
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
-//    ilOffset -- IL offset of instruction creating the inline candidate
 //
 // Notes:
 //    If callNode is an inline candidate, this method sets the flag
@@ -7558,7 +7554,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
                                             bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
-                                            IL_OFFSET              ilOffset,
                                             InlineResult*          inlineResult)
 {
     // Let the strategy know there's another call
@@ -7696,21 +7691,20 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (!(methAttr & CORINFO_FLG_FORCEINLINE))
     {
         /* Don't bother inline blocks that are in the filter region */
-        if (bbInCatchHandlerILRange(compCurBB))
+        if (bbInCatchHandlerBBRange(compCurBB))
         {
 #ifdef DEBUG
             if (verbose)
             {
                 printf("\nWill not inline blocks that are in the catch handler region\n");
             }
-
 #endif
 
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
             return;
         }
 
-        if (bbInFilterILRange(compCurBB))
+        if (bbInFilterBBRange(compCurBB))
         {
 #ifdef DEBUG
             if (verbose)
@@ -7767,7 +7761,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
     inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
-    inlineCandidateInfo->ilOffset                       = ilOffset;
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
     // is also a tail call candidate, it can use the same return spill temp.
@@ -9201,12 +9194,11 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_CLASS_HANDLE clsHandle = compCompHnd->getMethodClass(ftn);
         unsigned const       clsAttr   = compCompHnd->getClassAttribs(clsHandle);
 
+#ifdef DEBUG
         // Return type
         //
-        var_types const fncRetType = pParam->call->TypeGet();
-
-#ifdef DEBUG
-        var_types fncRealRetType = JITtype2varType(methInfo.args.retType);
+        var_types const fncRetType     = pParam->call->gtReturnType;
+        var_types const fncRealRetType = JITtype2varType(methInfo.args.retType);
 
         assert((genActualType(fncRealRetType) == genActualType(fncRetType)) ||
                // <BUGNUM> VSW 288602 </BUGNUM>
@@ -9250,7 +9242,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->clsAttr                        = clsAttr;
         pInfo->methAttr                       = pParam->methAttr;
         pInfo->initClassResult                = initClassResult;
-        pInfo->fncRetType                     = fncRetType;
         pInfo->exactContextNeedsRuntimeLookup = false;
         pInfo->inlinersContext                = pParam->pThis->compInlineContext;
 
