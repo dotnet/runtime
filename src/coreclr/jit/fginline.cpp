@@ -609,7 +609,9 @@ private:
                 context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
-                if (context != nullptr)
+                // TODO-CQ: We should spill the call if it has side effects instead of conservatively
+                // estimating the side effects using its parent and blocking inlining.
+                if (context != nullptr && (parent == nullptr || parent->OperIs(GT_STORE_LCL_VAR)))
                 {
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
@@ -618,48 +620,35 @@ private:
 
                     if (call->IsInlineCandidate())
                     {
-                        bool tryInline = true;
                         // If the call is the top-level expression in a statement, and it returns void,
                         // there will be no use of its return value, and we can just inline it directly.
                         // In this case we don't need to create a RET_EXPR node for it. Otherwise, we
                         // need to create a RET_EXPR node for it.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            // TODO-CQ: We should spill the call if it has side effects instead of
-                            // conservatively estimating it using its parent.
-                            if (parent == nullptr || parent->OperIs(GT_STORE_LCL_VAR))
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            if (m_firstNewStmt == nullptr)
                             {
-                                Statement* stmt = m_compiler->gtNewStmt(call);
-                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                                if (m_firstNewStmt == nullptr)
-                                {
-                                    m_firstNewStmt = stmt;
-                                }
-
-                                GenTreeRetExpr* retExpr =
-                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                               genActualType(call->TypeGet()));
-                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-
-                                JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
-                                DISPTREE(retExpr);
-
-                                *pTree = retExpr;
+                                m_firstNewStmt = stmt;
                             }
-                            else
-                            {
-                                tryInline = false;
-                            }
+
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
+                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+
+                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                            DISPTREE(retExpr);
+
+                            *pTree = retExpr;
                         }
 
-                        if (tryInline)
-                        {
-                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
-                            JITDUMP("New inline candidate due to late devirtualization:\n");
-                            DISPTREE(call);
-                        }
+                        JITDUMP("New inline candidate due to late devirtualization:\n");
+                        DISPTREE(call);
                     }
                 }
                 m_madeChanges = true;
