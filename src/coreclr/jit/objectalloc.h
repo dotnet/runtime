@@ -246,26 +246,28 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
 
         if (enableConditionalEscape && !isOSR)
         {
-        
-        #ifdef DEBUG
+
+#ifdef DEBUG
             static ConfigMethodRange JitObjectStackAllocationConditionalEscapeRange;
-    JitObjectStackAllocationConditionalEscapeRange.EnsureInit(JitConfig.JitObjectStackAllocationConditionalEscapeRange());
-    const unsigned hash    =  comp->impInlineRoot()->info.compMethodHash();
-    const bool     inRange = JitObjectStackAllocationConditionalEscapeRange.Contains(hash);
+            JitObjectStackAllocationConditionalEscapeRange.EnsureInit(
+                JitConfig.JitObjectStackAllocationConditionalEscapeRange());
+            const unsigned hash    = comp->impInlineRoot()->info.compMethodHash();
+            const bool     inRange = JitObjectStackAllocationConditionalEscapeRange.Contains(hash);
 #else
-    const bool inRange = true;
+            const bool inRange = true;
 #endif
 
-    if (inRange)
-    {
+            if (inRange)
+            {
 
-            m_maxPseudoLocals = enumeratorLocalCount;
-            m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount + 1, comp);
-            JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
-    }
-    else{
-        JITDUMP("Not enabling conditional escape analyiss (disabled by range)\n");
-    }
+                m_maxPseudoLocals = enumeratorLocalCount;
+                m_bitVecTraits    = BitVecTraits(comp->lvaCount + enumeratorLocalCount + 1, comp);
+                JITDUMP("Enabling conditional escape analysis [%u pseudo-vars]\n", enumeratorLocalCount);
+            }
+            else
+            {
+                JITDUMP("Not enabling conditional escape analyiss (disabled by range)\n");
+            }
         }
         else
         {

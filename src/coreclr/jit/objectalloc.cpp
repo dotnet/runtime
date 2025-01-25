@@ -3140,7 +3140,7 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
 void ObjectAllocator::CloneAndSpecialize()
 {
     unsigned numberOfClonedRegions = 0;
-    bool first = true;
+    bool     first                 = true;
 
     for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
     {
