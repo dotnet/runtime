@@ -13674,7 +13674,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(ownerType, slot);
 
             INTERFACE_DISPATCH_CACHED_OR_VSD(
-                return NULL; // R2R interface dispatch currently only supports fixups with a single pointer, return FALSE to skip using the method
+                return FALSE; // R2R interface dispatch currently only supports fixups with a single pointer, return FALSE to skip using the method
                 ,
                 result = pMgr->GetCallStub(token);
             );
