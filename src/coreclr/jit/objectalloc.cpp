@@ -469,6 +469,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     {
                         assert(basicBlockHasNewArr);
 
+                        // R2R not yet supported
+                        //
+                        const bool isNativeAot = comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+                        assert(isNativeAot || !comp->opts.IsReadyToRun());
+
                         //------------------------------------------------------------------------
                         // We expect the following expression tree at this point
                         // For non-ReadyToRun:
