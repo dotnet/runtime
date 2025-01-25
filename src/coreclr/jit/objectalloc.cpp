@@ -472,7 +472,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
                         // R2R not yet supported
                         //
-                        assert(isReadyToRun);
+                        assert(!isReadyToRun);
 
                         //------------------------------------------------------------------------
                         // We expect the following expression tree at this point
