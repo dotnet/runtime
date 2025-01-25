@@ -907,7 +907,7 @@ namespace System
                 {
                     if (!Vector512.IsHardwareAccelerated && length >= 256) // After this threshold, _LongInput will be faster
                     {
-                        return SequenceEqual_LongInput<Vector128<byte>>(ref first, ref second, length);
+                        return SequenceEqual_LongInput<Vector256<byte>>(ref first, ref second, length);
                     }
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector256<byte>.Count;
