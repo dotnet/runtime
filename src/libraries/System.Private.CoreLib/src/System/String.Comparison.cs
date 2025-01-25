@@ -26,7 +26,7 @@ namespace System
             Debug.Assert(strB != null);
             Debug.Assert(strA.Length == strB.Length);
 
-            nuint byteLength = (nuint)strA.Length * sizeof(char);
+            /*nuint byteLength = (nuint)strA.Length * sizeof(char);
             ref byte pStrA = ref Unsafe.As<char, byte>(ref strA.GetRawStringData());
             ref byte pStrB = ref Unsafe.As<char, byte>(ref strB.GetRawStringData());
 
@@ -43,7 +43,12 @@ namespace System
                 pStrB = ref Unsafe.Add(ref pStrB, sizeof(char) * 2);
                 byteLength -= sizeof(char) * 2;
             }
-            return SpanHelpers.SequenceEqual(ref pStrA, ref pStrB, byteLength);
+            return SpanHelpers.SequenceEqual(ref pStrA, ref pStrB, byteLength);*/
+
+            return SpanHelpers.SequenceEqual(
+                    ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
+                    ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
+                    ((uint)strA.Length) * sizeof(char));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
