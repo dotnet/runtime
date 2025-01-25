@@ -94,7 +94,11 @@ bool json_parser_t::parse_file(const pal::string_t& path)
         //  * The json file is mapped as copy-on-write.
         //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
         m_data = bundle::info_t::config_t::map(path, m_bundle_location);
-        m_size = (size_t)m_bundle_location->size;
+
+        if (m_data != nullptr)
+        {
+            m_size = (size_t)m_bundle_location->size;
+        }
     }
 
     if (m_data == nullptr)
@@ -119,7 +123,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     size_t size = m_size;
 
     // Skip over UTF-8 BOM, if present
-    if (size >= 3 && m_data[0] == 0xEF && m_data[1] == 0xBB && m_data[1] == 0xBF)
+    if (size >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[1] == 0xBF)
     {
         size -= 3;
         data += 3;
