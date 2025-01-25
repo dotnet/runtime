@@ -232,11 +232,11 @@ namespace System.Reflection.Metadata
                 {
                     char c = name[i++];
 
-                    if (c != EscapeCharacter)
+                    if (c != EscapeCharacter || i == name.Length)
                     {
                         sb.Append(c);
                     }
-                    else if (i < name.Length && name[i] == EscapeCharacter) // escaped escape character ;)
+                    else if (name[i] == EscapeCharacter) // escaped escape character ;)
                     {
                         sb.Append(c);
                         // Consume the escaped escape character, it's important for edge cases
