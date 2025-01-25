@@ -69,6 +69,9 @@ namespace System.Reflection.Metadata
             return new CustomAttributeHandleCollection(_reader, Handle);
         }
 
+        /// <summary>
+        /// Returns a handle to the type that declares this property.
+        /// </summary>
         public TypeDefinitionHandle GetDeclaringType()
         {
             return _reader.GetDeclaringType(Handle);
