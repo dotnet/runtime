@@ -870,7 +870,7 @@ namespace System
             {
                 if (Vector512.IsHardwareAccelerated && length >= (nuint)Vector512<byte>.Count)
                 {
-                    if (length >= 256)
+                    if (length >= 512) // After this threshold, _LongInput will be faster
                     {
                         return SequenceEqual_LongInput<Vector512<byte>>(ref first, ref second, length);
                     }
@@ -905,6 +905,10 @@ namespace System
                 }
                 else if (Vector256.IsHardwareAccelerated && length >= (nuint)Vector256<byte>.Count)
                 {
+                    if (!Vector512.IsHardwareAccelerated && length >= 256) // After this threshold, _LongInput will be faster
+                    {
+                        return SequenceEqual_LongInput<Vector128<byte>>(ref first, ref second, length);
+                    }
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector256<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
@@ -936,7 +940,8 @@ namespace System
                 else if (length >= (nuint)Vector128<byte>.Count)
                 {
 #if !MONO // Mono has performance issues with ISimdVector<T>
-                    if (AdvSimd.Arm64.IsSupported && length >= 64)
+                    if (((!Vector512.IsHardwareAccelerated && !Vector256.IsHardwareAccelerated) || 
+                        AdvSimd.Arm64.IsSupported) && length >= 64) // After this threshold, _LongInput will be faster
                     {
                         return SequenceEqual_LongInput<Vector128<byte>>(ref first, ref second, length);
                     }
