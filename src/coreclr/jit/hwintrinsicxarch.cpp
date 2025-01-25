@@ -3335,7 +3335,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
                 }
-                else
+                else if (simdSize != 64)
                 {
                     // Software fallback
                     break;
@@ -3393,7 +3393,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
                 }
-                else
+                else if (simdSize != 64)
                 {
                     // Software fallback
                     break;
