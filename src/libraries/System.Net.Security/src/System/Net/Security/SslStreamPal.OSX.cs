@@ -217,7 +217,7 @@ namespace System.Net.Security
                     {
                         securityContext.StartDecrypt();
                     }
-                    return new SecurityStatusPal(count > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinuePendig);
+                    return new SecurityStatusPal(count > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinuePending);
                 }
 
                 securityContext.Write(buffer);
@@ -317,7 +317,7 @@ namespace System.Net.Security
 
         public static Task<SecurityStatusPalErrorCode>? GetDecryptTask(SafeDeleteSslContext securityContext, int _)
         {
-            if (!securityContext.UseNwFramework )
+            if (!securityContext.UseNwFramework)
             {
                 return null;
             }

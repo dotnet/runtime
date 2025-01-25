@@ -34,7 +34,7 @@ namespace System.Net
         Renegotiate,
         TryAgain,
         HandshakeStarted,
-        ContinuePendig,
+        ContinuePending,
 
         // Errors
         OutOfMemory,

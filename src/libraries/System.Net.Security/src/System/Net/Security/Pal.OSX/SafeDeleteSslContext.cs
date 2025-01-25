@@ -24,7 +24,7 @@ namespace System.Net
         private const int OSStatus_writErr = -20;
         private const int OSStatus_readErr = -19;
 
-        private const int OSStatus_eofErr = - 39;
+        private const int OSStatus_eofErr = -39;
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
 
@@ -36,7 +36,7 @@ namespace System.Net
 
         public GCHandle gcHandle;
 
-        private  ManualResetEventSlim? _writeWaiter;
+        private ManualResetEventSlim? _writeWaiter;
         private int _writeStatus;
         public ManualResetEventSlim? _readWaiter;
         private int _readStatus;
@@ -63,7 +63,6 @@ namespace System.Net
                 {
                     case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
-
                     case EncryptionPolicy.AllowNoEncryption:
                         // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
                         // since AllowNoEncryption intersect OS-supported isn't nothing,
@@ -74,8 +73,8 @@ namespace System.Net
                         throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
                 }
 
-                // TBD make this opt-in
-                // NW freamewoprk still does not support all features and server side
+                // TODO: make this opt-in
+                // NW framework still does not support all features and server side
                 UseNwFramework = CanUseNwFramework && sslAuthenticationOptions.IsClient &&
                                     sslAuthenticationOptions.CipherSuitesPolicy == null &&
                                     sslAuthenticationOptions.ClientCertificates == null &&
@@ -293,10 +292,7 @@ namespace System.Net
 
         protected override bool ReleaseHandle()
         {
-            if (gcHandle.IsAllocated)
-            {
-                gcHandle.Free();
-            }
+            gcHandle.Free();
             return true;
         }
 
@@ -314,8 +310,8 @@ namespace System.Net
                 switch (status)
                 {
                     case PAL_NwStatusUpdates.FramerStart:
-                            context._framer = data1;
-                            break;
+                        context._framer = data1;
+                        break;
                     case PAL_NwStatusUpdates.HandshakeFinished:
                         context.Tcs!.TrySetResult(SecurityStatusPalErrorCode.OK);
                         context.Tcs = null;
@@ -326,7 +322,7 @@ namespace System.Net
                         context.Tcs!.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
                         context.Tcs = null;
                         context._handshakeDone = true;
-                        // this can happen also later and related to decryptin
+                        // this can happen also later and related to decryption
                         context._readStatus = osStatus;
                         break;
                     case PAL_NwStatusUpdates.ConnectionCancelled:
@@ -352,7 +348,7 @@ namespace System.Net
                             }
                             var tcs = context.Tcs;
                             // need to set it before signallig as the continuation may run before the next assigment
-                            context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                            context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>(TaskCreationOptions.RunContinuationsAsynchronously);
                             tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
                         }
 
@@ -407,22 +403,20 @@ namespace System.Net
 
                 if (context.UseNwFramework)
                 {
-                        lock (context._writeWaiter!)
+                    lock (context._writeWaiter!)
+                    {
+                        context._outputBuffer.EnsureAvailableSpace(toWrite);
+                        inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
+                        context._outputBuffer.Commit(toWrite);
+                        if (!context._handshakeDone)
                         {
-                            context._outputBuffer.EnsureAvailableSpace(toWrite);
-                            inputBuffer.CopyTo(context._outputBuffer.AvailableSpan);
-                            context._outputBuffer.Commit(toWrite);
-
-
-                             if (!context._handshakeDone)
-                            {
-                                // get new TCS before signalling completion to avoild race condition
-                                var Tcs = context.Tcs;
-                                context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
-                                Tcs!.TrySetResult(SecurityStatusPalErrorCode.ContinuePendig);
-                            }
+                            // get new TCS before signaling completion to avoid race condition
+                            var tcs = context.Tcs;
+                            context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                            tcs!.TrySetResult(SecurityStatusPalErrorCode.ContinuePending);
                         }
-                        context._writeWaiter!.Set();
+                    }
+                    context._writeWaiter!.Set();
                 }
                 else
                 {
@@ -439,7 +433,9 @@ namespace System.Net
             catch (Exception e)
             {
                 if (NetEventSource.Log.IsEnabled())
+                {
                     NetEventSource.Error(context, $"WritingToConnection failed: {e.Message}");
+                }
                 return OSStatus_writErr;
             }
         }
@@ -535,7 +531,7 @@ namespace System.Net
             return 0;
         }
 
-        internal unsafe void Encrypt(void*  buffer, int bufferLength, ref ProtocolToken token)
+        internal unsafe void Encrypt(void* buffer, int bufferLength, ref ProtocolToken token)
         {
             _writeWaiter!.Reset();
             Interop.AppleCrypto.NwSendToConnection(SslContext, GCHandle.ToIntPtr(gcHandle), buffer, bufferLength);
@@ -555,16 +551,18 @@ namespace System.Net
         }
 
         // returns of available decrypted bytes or -1 if EOF was reached
-        internal int BytesReadyFromConnection {
-            get {
+        internal int BytesReadyFromConnection
+        {
+            get
+            {
                 lock (this)
                 {
                     if (_inputBuffer.ActiveLength > 0)
                     {
-                        return  _inputBuffer.ActiveLength;
+                        return _inputBuffer.ActiveLength;
                     }
 
-                    return _readStatus == OSStatus_noErr ? 0 : -1 ;
+                    return _readStatus == OSStatus_noErr ? 0 : -1;
                 }
             }
         }
@@ -607,8 +605,8 @@ namespace System.Net
             }
         }
 
-        private static readonly SslProtocols[] s_orderedSslProtocols = new SslProtocols[5]
-        {
+        private static ReadOnlySpan<SslProtocols> OrderedSslProtocols =>
+        [
 #pragma warning disable 0618
             SslProtocols.Ssl2,
             SslProtocols.Ssl3,
@@ -618,10 +616,10 @@ namespace System.Net
             SslProtocols.Tls11,
 #pragma warning restore SYSLIB0039
             SslProtocols.Tls12
-        };
+        ];
 
-        private static readonly SslProtocols[] s_orderedSslProtocols13 = new SslProtocols[6]
-        {
+        private static ReadOnlySpan<SslProtocols> OrderedSslProtocols13 =>
+        [
 #pragma warning disable 0618
             SslProtocols.Ssl2,
             SslProtocols.Ssl3,
@@ -632,13 +630,13 @@ namespace System.Net
 #pragma warning restore SYSLIB0039
             SslProtocols.Tls12,
             SslProtocols.Tls13
-        };
+        ];
 
         private static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols, bool supportTls13 = false)
         {
-            (int minIndex, int maxIndex) = protocols.ValidateContiguous(supportTls13 ? s_orderedSslProtocols13 : s_orderedSslProtocols);
-            SslProtocols minProtocolId = s_orderedSslProtocols13[minIndex];
-            SslProtocols maxProtocolId = s_orderedSslProtocols13[maxIndex];
+            (int minIndex, int maxIndex) = protocols.ValidateContiguous(supportTls13 ? OrderedSslProtocols13 : OrderedSslProtocols);
+            SslProtocols minProtocolId = OrderedSslProtocols13[minIndex];
+            SslProtocols maxProtocolId = OrderedSslProtocols13[maxIndex];
 
             return (minProtocolId, maxProtocolId);
         }
@@ -714,7 +712,7 @@ namespace System.Net
                     Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, inputBuffer.Length);
                 }
 
-                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePending);
             }
 
             if (inputBuffer.Length == 0)
@@ -728,7 +726,7 @@ namespace System.Net
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 Interop.AppleCrypto.NwStartHandshake(SslContext, GCHandle.ToIntPtr(gcHandle));
             }
-            return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
+            return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePending);
         }
     }
 }

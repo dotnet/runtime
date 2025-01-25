@@ -61,10 +61,11 @@ namespace System.Net.Security
             CloseContext();
 
             // if we have background task eat any exceptions
-            _frameTask?.ContinueWith(t => {
-                     _ = t.Exception;
-                     _buffer.ReturnBuffer();
-                    },
+            _frameTask?.ContinueWith(t =>
+            {
+                _ = t.Exception;
+                _buffer.ReturnBuffer();
+            },
                     CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
 
             // Ensure a Read or Auth operation is not in progress,
@@ -333,8 +334,9 @@ namespace System.Net.Security
                         // We can finish renegotiation without doing any read.
                         handshakeCompleted = true;
                     }
-                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
+                    else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinuePending)
                     {
+                        // TODO: Propagate cancellationToken to handshakeTask
                         handshakeTask = SslStreamPal.GetHandshakeTask(_credentialsHandle!, _securityContext!);
                     }
                 }
@@ -351,20 +353,28 @@ namespace System.Net.Security
                     {
                         if (_lastFrame.Header.Type == TlsContentType.Alert)
                         {
-                            // This is optimization to consume and report alters insteads of throwing IO excceoption as
+                            // This is optimization to consume and report alters instead of throwing IO exception as
                             // the peer would typically close connection afterwards.
-                            // We don't want to thorw here, taht would be done later if needed
-                            Task.WaitAny(new Task[] { handshakeTask }, cancellationToken);
+                            // We don't want to throw here, that would be done later if needed
+                            if (isSync)
+                            {
+                                handshakeTask.Wait(cancellationToken);
+                            }
+                            else
+                            {
+                                await handshakeTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+                            }
                         }
                         else
                         {
                             if (isSync)
                             {
-                                _frameTask ??= Task<int>.Run(() => {
+                                _frameTask ??= Task<int>.Run(() =>
+                                {
                                     ValueTask<int> vt = ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken);
                                     Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
                                     return vt.GetAwaiter().GetResult();
-                                });
+                                }, cancellationToken);
                             }
                             else
                             {
@@ -373,12 +383,12 @@ namespace System.Net.Security
 
                             if (isSync)
                             {
-                                Task[] tasks = new Task[] { handshakeTask, _frameTask };
-                                int index = Task.WaitAny(tasks, cancellationToken);
+                                _ = Task.WaitAny(new Task[] { handshakeTask, _frameTask },
+                                    cancellationToken);
                             }
                             else
                             {
-                                await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
+                                await Task.WhenAny(handshakeTask, _frameTask).WaitAsync(cancellationToken).ConfigureAwait(false);
                             }
                         }
 
@@ -386,11 +396,11 @@ namespace System.Net.Security
                         {
                             if (handshakeTask.IsFaulted)
                             {
-                                 token.Status =  new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, handshakeTask.Exception);
+                                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, handshakeTask.Exception);
                             }
                             else
                             {
-                                token.Status =  new SecurityStatusPal(handshakeTask.Result);
+                                token.Status = new SecurityStatusPal(handshakeTask.Result);
                             }
                             SslStreamPal.GetPendingWriteData(_securityContext!, ref token);
                             handshakeTask = null;
@@ -401,7 +411,7 @@ namespace System.Net.Security
                                 // handshake completed successfully
                                 break;
                             }
-                            else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
+                            else if (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinuePending)
                             {
                                 handshakeTask = SslStreamPal.GetHandshakeTask(_credentialsHandle!, _securityContext!);
                             }
@@ -901,7 +911,7 @@ namespace System.Net.Security
 
                 status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
 
-                if (status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
+                if (status.ErrorCode == SecurityStatusPalErrorCode.ContinuePending)
                 {
                     _buffer.DiscardEncrypted(frameSize);
                     return status;
@@ -1011,7 +1021,8 @@ namespace System.Net.Security
                         {
                             if (isSync)
                             {
-                                _frameTask = Task<int>.Run(() => {
+                                _frameTask = Task<int>.Run(() =>
+                                {
                                     ValueTask<int> vt = EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize);
                                     Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
                                     return vt.GetAwaiter().GetResult();
@@ -1066,7 +1077,7 @@ namespace System.Net.Security
                         {
                             payloadBytes = await _frameTask.ConfigureAwait(false);
                         }
-                         _frameTask = null;
+                        _frameTask = null;
                     }
                     else
                     {
@@ -1086,7 +1097,7 @@ namespace System.Net.Security
                     }
 
                     SecurityStatusPal status = DecryptData(payloadBytes);
-                    if (status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
+                    if (status.ErrorCode == SecurityStatusPalErrorCode.ContinuePending)
                     {
                         decryptTask = SslStreamPal.GetDecryptTask(_securityContext!, 1);
                         continue;

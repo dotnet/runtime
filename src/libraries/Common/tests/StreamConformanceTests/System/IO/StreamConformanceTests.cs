@@ -2921,7 +2921,7 @@ namespace System.IO.Tests
                 Assert.Throws<ObjectDisposedException>(() => writeable.WriteByte(42));
             }
         }
-/*
+
         [Fact]
         public virtual async Task UseWrappedAfterClose_Success()
         {
@@ -2947,7 +2947,7 @@ namespace System.IO.Tests
                 readable.ReadByte();
             }
         }
-*/
+
         [Fact]
         public virtual async Task NestedWithinSelf_ReadWrite_Success()
         {

@@ -1333,7 +1333,7 @@ namespace System.Net.Security
         {
             get
             {
-                return ((Status.ErrorCode != SecurityStatusPalErrorCode.OK) && (Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded) && (Status.ErrorCode != SecurityStatusPalErrorCode.ContinuePendig));
+                return ((Status.ErrorCode != SecurityStatusPalErrorCode.OK) && (Status.ErrorCode != SecurityStatusPalErrorCode.ContinueNeeded) && (Status.ErrorCode != SecurityStatusPalErrorCode.ContinuePending));
             }
         }
 

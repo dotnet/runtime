@@ -162,17 +162,16 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCancelConnection")]
         internal static partial int NwCancelConnection(SafeSslHandle sslHandle);
 
-
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
         private static unsafe partial int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, Span<byte> alpn, int alpnLength, SslProtocols minTlsVersion, SslProtocols maxTlsVersion);
 
         internal static unsafe int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
         {
             int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
-             Span<byte> alpn = alpnLength <= 256 ? stackalloc byte[256].Slice(0, alpnLength) : new byte[alpnLength];
-             SerializeAlpnProtocolList(applicationProtocols, alpn);
+            Span<byte> alpn = alpnLength <= 256 ? stackalloc byte[256].Slice(0, alpnLength) : new byte[alpnLength];
+            SerializeAlpnProtocolList(applicationProtocols, alpn);
 
-             return NwSetTlsOptions(sslHandle, gcHandle, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+            return NwSetTlsOptions(sslHandle, gcHandle, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
         }
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
@@ -188,7 +187,7 @@ internal static partial class Interop
         internal static unsafe partial int NwGetConnectionInfo(SafeSslHandle sslHandle, out SslProtocols protocol, out TlsCipherSuite cipherSuite, ref IntPtr negotiatedAlpn, ref int alpnLength);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCopyCertChain")]
-        internal static partial int NwCopyCertChain( SafeSslHandle sslHandle, out SafeCFArrayHandle certificiates, out int count);
+        internal static partial int NwCopyCertChain(SafeSslHandle sslHandle, out SafeCFArrayHandle certificiates, out int count);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_SslSetAcceptClientCert(SafeSslHandle sslHandle);
@@ -578,8 +577,7 @@ internal static partial class Interop
                 return;
             }
 
-            Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length,
-                "GetAlpnProtocolListSerializedSize(applicationProtocols) == buffer.Length");
+            Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length);
 
             int offset = 0;
             foreach (SslApplicationProtocol protocol in applicationProtocols)

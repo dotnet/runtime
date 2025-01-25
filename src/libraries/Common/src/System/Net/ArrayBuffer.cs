@@ -60,7 +60,7 @@ namespace System.Net
 
         public void Dispose()
         {
-        _disposed = true;
+            _disposed = true;
             _activeStart = 0;
             _availableStart = 0;
 
