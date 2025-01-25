@@ -50,8 +50,65 @@ internal static partial class Interop
             return GetFormatInfoForMountPoint(name, out _, out type);
         }
 
+        /// <summary>
+        /// Retrieves format information for the specified mount point.
+        /// </summary>
+        /// <remarks>
+        /// This method uses a two-step approach to retrieve filesystem information:
+        /// 1. On Linux systems, it first attempts to read from `/proc/self/mountinfo`.
+        /// 2. If step 1 fails or on non-Linux systems, it falls back to a P/Invoke call.
+        ///
+        /// The `/proc/self/mountinfo` approach is preferred on Linux because
+        /// it's more reliable when procfs is available and functioning correctly.
+        ///
+        /// For other systems:
+        /// - SunOS and similar: procfs provides a binary interface, not suitable for this method.
+        /// - macOS: procfs is not available.
+        /// - FreeBSD: procfs is optional and not enabled by default.
+        ///
+        /// The method uses try/catch blocks to ensure robustness, even though `/proc/self/mountinfo`
+        /// should be specific to each process according to kernel documentation.
+        /// </remarks>
+        /// <param name="name">The mount point name to query.</param>
+        /// <param name="format">Output parameter for the filesystem format.</param>
+        /// <param name="type">Output parameter for the drive type.</param>
+        /// <returns>0 if successful, otherwise an error code.</returns>
         private static unsafe int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
         {
+#if TARGET_LINUX
+            try
+            {
+                using StreamReader reader = new("/proc/self/mountinfo");
+
+                string rawLine;
+                while ((rawLine = reader.ReadLine()) is not null)
+                {
+                    ReadOnlySpan<char> line = rawLine.AsSpan();
+                    MemoryExtensions.SpanSplitEnumerator<char> fields = line.Split(' ');
+
+                    // Skip fields we don't care about (Fields 1-4)
+                    fields.MoveNext(); // Skip Mount ID
+                    fields.MoveNext(); // Skip Parent ID
+                    fields.MoveNext(); // Skip Major:Minor
+                    fields.MoveNext(); // Skip Root
+                    fields.MoveNext(); // Skip to MountPoint field
+
+                    if (!MemoryExtensions.Equals(line[fields.Current], name, StringComparison.Ordinal)) continue;
+
+                    // Skip to the separator which is end of optional fields (Field 8)
+                    while (fields.MoveNext() && !MemoryExtensions.Equals(line[fields.Current], "-", StringComparison.Ordinal));
+
+                    fields.MoveNext();
+                    format = line[fields.Current].ToString();
+
+                    fields.MoveNext();
+                    type = GetDriveType(line[fields.Current].ToString());
+
+                    return 0;
+            }
+            catch { /* ignored */ }
+#endif
+
             byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
             long numericFormat;
             int result = GetFormatInfoForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &numericFormat);
