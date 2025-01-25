@@ -611,7 +611,8 @@ private:
                                                 isLateDevirtualization, explicitTailCall);
                 // TODO-CQ: We should spill the call if it has side effects instead of conservatively
                 // estimating the side effects using its parent and blocking inlining.
-                if (context != nullptr && (parent == nullptr || (parent->OperIs(GT_STORE_LCL_VAR) && (parent == m_curStmt->GetRootNode()))))
+                if (context != nullptr &&
+                    (parent == nullptr || (parent->OperIs(GT_STORE_LCL_VAR) && (parent == m_curStmt->GetRootNode()))))
                 {
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
