@@ -3140,12 +3140,18 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
 void ObjectAllocator::CloneAndSpecialize()
 {
     unsigned numberOfClonedRegions = 0;
+    bool first = true;
 
     for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
     {
         if (!c->m_willClone)
         {
             continue;
+        }
+
+        if (first)
+        {
+            printf("*** Conditional escape in 0x%08x %s\n", comp->info.compMethodHash(), comp->info.compFullName);
         }
 
         CloneAndSpecialize(c);
