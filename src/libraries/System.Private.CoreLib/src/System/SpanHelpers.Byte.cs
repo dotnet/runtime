@@ -775,50 +775,25 @@ namespace System
                 nuint lengthToExamine = length - offset - (nuint)TVector.ElementCount * 2;
                 do
                 {
-                    if (AdvSimd.Arm64.IsSupported)
+                    // Since pFirst is aligned, we may consider using NonTemporalAligned loads for it.
+                    TVector firstV1 = TVector.Load(pFirst + offset);
+                    TVector firstV2 = TVector.Load(pFirst + offset + (nuint)TVector.ElementCount);
+                    TVector second1 = TVector.Load(pSecond + offset);
+                    TVector second2 = TVector.Load(pSecond + offset + (nuint)TVector.ElementCount);
+                    if (!TVector.EqualsAll((firstV1 ^ second1) | (firstV2 ^ second2), TVector.Zero))
                     {
-                        // TODO: ideally, we shouldn't need this path for NEON, but it's a bit of work in JIT to do.
-                        Debug.Assert((nuint)TVector.ElementCount == 16);
-                        (Vector128<byte> v11, Vector128<byte> v12) = AdvSimd.Arm64.LoadPairVector128(pFirst + offset);
-                        (Vector128<byte> v21, Vector128<byte> v22) = AdvSimd.Arm64.LoadPairVector128(pSecond + offset);
-                        if (((v11 ^ v21) | (v12 ^ v22)) != Vector128<byte>.Zero)
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        // Since pFirst is aligned, we may consider using NonTemporalAligned loads for it.
-                        TVector v11 = TVector.Load(pFirst + offset);
-                        TVector v12 = TVector.Load(pFirst + offset + (nuint)TVector.ElementCount);
-                        TVector v21 = TVector.Load(pSecond + offset);
-                        TVector v22 = TVector.Load(pSecond + offset + (nuint)TVector.ElementCount);
-                        if (!TVector.EqualsAll((v11 ^ v21) | (v12 ^ v22), TVector.Zero))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                     offset += (nuint)TVector.ElementCount * 2;
                 } while (lengthToExamine > offset);
 
-                if (AdvSimd.Arm64.IsSupported)
+                // Trailing elements
                 {
-                    // TODO: ideally, we shouldn't need this path for NEON, but it's a bit of work in JIT to do.
-                    Debug.Assert((nuint)TVector.ElementCount == 16);
-                    (Vector128<byte> v11, Vector128<byte> v12) = AdvSimd.Arm64.LoadPairVector128(pFirst + lengthToExamine);
-                    (Vector128<byte> v21, Vector128<byte> v22) = AdvSimd.Arm64.LoadPairVector128(pSecond + lengthToExamine);
-                    if (((v11 ^ v21) | (v12 ^ v22)) == Vector128<byte>.Zero)
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    TVector v11 = TVector.Load(pFirst + lengthToExamine);
-                    TVector v12 = TVector.Load(pFirst + lengthToExamine + (nuint)TVector.ElementCount);
-                    TVector v21 = TVector.Load(pSecond + lengthToExamine);
-                    TVector v22 = TVector.Load(pSecond + lengthToExamine + (nuint)TVector.ElementCount);
-                    if (TVector.EqualsAll((v11 ^ v21) | (v12 ^ v22), TVector.Zero))
+                    TVector firstV1 = TVector.Load(pFirst + lengthToExamine);
+                    TVector firstV2 = TVector.Load(pFirst + lengthToExamine + (nuint)TVector.ElementCount);
+                    TVector second1 = TVector.Load(pSecond + lengthToExamine);
+                    TVector second2 = TVector.Load(pSecond + lengthToExamine + (nuint)TVector.ElementCount);
+                    if (TVector.EqualsAll((firstV1 ^ second1) | (firstV2 ^ second2), TVector.Zero))
                     {
                         return true;
                     }
@@ -960,10 +935,12 @@ namespace System
                 }
                 else if (length >= (nuint)Vector128<byte>.Count)
                 {
+#if !MONO // Mono has performance issues with ISimdVector<T>
                     if (AdvSimd.Arm64.IsSupported && length >= 64)
                     {
                         return SequenceEqual_LongInput<Vector128<byte>>(ref first, ref second, length);
                     }
+#endif
 
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector128<byte>.Count;
