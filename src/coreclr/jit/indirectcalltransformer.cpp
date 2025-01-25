@@ -754,8 +754,21 @@ private:
         //
         void SpillArgToTempBeforeGuard(CallArg* arg)
         {
-            unsigned   tmpNum    = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree*   store     = compiler->gtNewTempStore(tmpNum, arg->GetNode());
+            unsigned       tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree* const argNode = arg->GetNode();
+            GenTree*       store   = compiler->gtNewTempStore(tmpNum, argNode);
+
+            if (argNode->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
             Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
 
@@ -899,9 +912,18 @@ private:
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), block->bbNum);
 
             CORINFO_METHOD_HANDLE  methodHnd = inlineInfo->guardedMethodHandle;
-            CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHnd;
+            CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHandle;
             if (clsHnd != NO_CLASS_HANDLE)
             {
+                // If we devirtualized an array interface call,
+                // pass the original method handle and original context handle to the devirtualizer.
+                //
+                if (inlineInfo->arrayInterface)
+                {
+                    methodHnd = call->gtCallMethHnd;
+                    context   = inlineInfo->originalContextHandle;
+                }
+
                 // Then invoke impDevirtualizeCall to actually transform the call for us,
                 // given the original (base) method and the exact guarded class. It should succeed.
                 //
@@ -995,7 +1017,7 @@ private:
                 //
                 GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
-                inlineInfo->exactContextHnd      = context;
+                inlineInfo->exactContextHandle   = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
 

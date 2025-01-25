@@ -19,14 +19,16 @@ const char *GetTType( TraceType tt)
 
     switch( tt )
     {
-        case TRACE_ENTRY_STUB:      return "TRACE_ENTRY_STUB";
-        case TRACE_STUB:            return "TRACE_STUB";
-        case TRACE_UNMANAGED:       return "TRACE_UNMANAGED";
-        case TRACE_MANAGED:         return "TRACE_MANAGED";
-        case TRACE_FRAME_PUSH:      return "TRACE_FRAME_PUSH";
-        case TRACE_MGR_PUSH:        return "TRACE_MGR_PUSH";
-        case TRACE_OTHER:           return "TRACE_OTHER";
-        case TRACE_UNJITTED_METHOD: return "TRACE_UNJITTED_METHOD";
+        case TRACE_ENTRY_STUB:                return "TRACE_ENTRY_STUB";
+        case TRACE_STUB:                      return "TRACE_STUB";
+        case TRACE_UNMANAGED:                 return "TRACE_UNMANAGED";
+        case TRACE_MANAGED:                   return "TRACE_MANAGED";
+        case TRACE_FRAME_PUSH:                return "TRACE_FRAME_PUSH";
+        case TRACE_MGR_PUSH:                  return "TRACE_MGR_PUSH";
+        case TRACE_OTHER:                     return "TRACE_OTHER";
+        case TRACE_UNJITTED_METHOD:           return "TRACE_UNJITTED_METHOD";
+        case TRACE_MULTICAST_DELEGATE_HELPER: return "TRACE_MULTICAST_DELEGATE_HELPER";
+        case TRACE_EXTERNAL_METHOD_FIXUP:     return "TRACE_EXTERNAL_METHOD_FIXUP";
     }
     return "TRACE_REALLY_WACKED";
 }
@@ -116,6 +118,14 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
             case TRACE_MGR_PUSH:
                 buffer.Printf("TRACE_MGR_PUSH(addr=%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
                 pValue = buffer.GetUTF8();
+                break;
+
+            case TRACE_MULTICAST_DELEGATE_HELPER:
+                pValue = "TRACE_MULTICAST_DELEGATE_HELPER";
+                break;
+
+            case TRACE_EXTERNAL_METHOD_FIXUP:
+                pValue = "TRACE_EXTERNAL_METHOD_FIXUP";
                 break;
 
             case TRACE_OTHER:
@@ -729,7 +739,7 @@ bool StubManager::IsStubLoggingEnabled()
     // on the helper thread. (B/c it may deadlock. See SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE)
 
     // We avoid this by just not logging when native-debugging.
-    if (IsDebuggerPresent())
+    if (minipal_is_native_debugger_present())
     {
         return false;
     }
@@ -1232,15 +1242,6 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
 #endif // DACCESS_COMPILE
 
-void StubLinkStubManager::RemoveStubRange(BYTE* start, UINT length)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(start != NULL && length > 0);
-
-    BYTE* end = start + length;
-    GetRangeList()->RemoveRanges((LPVOID)start, start, end);
-}
-
 BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
@@ -1567,13 +1568,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 #ifdef DACCESS_COMPILE
         DacNotImpl();
 #else
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        // On ARM64 Mac, we cannot put a breakpoint inside of ExternalMethodFixupPatchLabel
-        LOG((LF_CORDB, LL_INFO10000, "RSM::DoTraceStub: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        trace->InitForManagerPush(GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel), this);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
+        trace->InitForExternalMethodFixup();
 #endif
         return TRUE;
 
@@ -1583,30 +1578,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     return FALSE;
 }
-
-#ifndef DACCESS_COMPILE
-BOOL RangeSectionStubManager::TraceManager(Thread *thread,
-                            TraceDestination *trace,
-                            CONTEXT *pContext,
-                            BYTE **pRetAddr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
-
-    *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
-
-    PCODE target = StubManagerHelpers::GetTailCallTarget(pContext);
-    trace->InitForStub(target);
-    return TRUE;
-}
-#endif
 
 #ifdef DACCESS_COMPILE
 LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
@@ -1711,21 +1682,14 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of MulticastDebuggerTraceHelper
-        LOG((LF_CORDB, LL_INFO10000, "ILSM::DoTraceStub: skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
+        trace->InitForMulticastDelegateHelper();
     }
     else
     {
         // This call is going out to unmanaged code, either through pinvoke or COM interop.
-        traceDestination = stubStartAddress;
+        trace->InitForManagerPush(stubStartAddress, this);
     }
 
-    trace->InitForManagerPush(traceDestination, this);
     LOG_TRACE_DESTINATION(trace, traceDestination, "ILStubManager::DoTraceStub");
 
     return TRUE;
@@ -1774,12 +1738,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
-    if (stubIP == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper))
-    {
-        stubIP = (PCODE)*pRetAddr;
-        *pRetAddr = (BYTE*)StubManagerHelpers::GetRetAddrFromMulticastILStubFrame(pContext);
-    }
-
     DynamicMethodDesc *pStubMD = Entry2MethodDesc(stubIP, NULL)->AsDynamicMethodDesc();
     TADDR arg = StubManagerHelpers::GetHiddenArg(pContext);
     Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
@@ -1788,29 +1746,10 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
     PCODE target = (PCODE)NULL;
-
     if (pStubMD->IsMulticastStub())
     {
-        _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper));
-
-        int delegateCount = (int)StubManagerHelpers::GetSecondArg(pContext);
-        int totalDelegateCount = (int)*(size_t*)((BYTE*)pThis + DelegateObject::GetOffsetOfInvocationCount());
-        if (delegateCount == totalDelegateCount)
-        {
-            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Fired all delegates\n"));
-            return FALSE;
-        }
-        else
-        {
-            // We're going to execute stub delegateCount next, so go and grab it.
-            BYTE *pbDelInvocationList = *(BYTE **)((BYTE*)pThis + DelegateObject::GetOffsetOfInvocationList());
-
-            BYTE* pbDel = *(BYTE**)( ((ArrayBase *)pbDelInvocationList)->GetDataPtr() +
-                               ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
-
-            _ASSERTE(pbDel);
-            return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
-        }
+        _ASSERTE(!"We should never get here. Multicast Delegates should not invoke TraceManager.");
+        return FALSE;
     }
     else if (pStubMD->IsReverseStub())
     {
@@ -1905,6 +1844,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Invoke Method\n"));
         return StubLinkStubManager::TraceDelegateObject((BYTE*)pThis, trace);
+    }
+    else if (pStubMD->IsDelegateShuffleThunk())
+    {
+        LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Delegate Shuffle Thunk\n"));
+        return TraceShuffleThunk(trace, pContext, pRetAddr);
     }
     else
     {
@@ -2304,4 +2248,3 @@ void TailCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #endif
 
 #endif // #ifdef DACCESS_COMPILE
-

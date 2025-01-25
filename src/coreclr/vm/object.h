@@ -3,7 +3,7 @@
 //
 // OBJECT.H
 //
-// Definitions of a Com+ Object
+// Definitions of a CLR Object
 //
 
 // See code:EEStartup#TableOfContents for overview
@@ -26,10 +26,10 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 
 /*
  #ObjectModel
- * COM+ Internal Object Model
+ * CLR Internal Object Model
  *
  *
- * Object              - This is the common base part to all COM+ objects
+ * Object              - This is the common base part to all CLR objects
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
@@ -462,7 +462,7 @@ class Object
  private:
     VOID ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<Object>;
 };
 
 template<>
@@ -512,7 +512,7 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 #include <pshpack4.h>
 
 
-// There are two basic kinds of array layouts in COM+
+// There are two basic kinds of array layouts in CLR
 //      ELEMENT_TYPE_ARRAY  - a multidimensional array with lower bounds on the dims
 //      ELMENNT_TYPE_SZARRAY - A zero based single dimensional array
 //
@@ -638,7 +638,7 @@ public:
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayBase>;
 };
 
 #ifndef DACCESS_COMPILE
@@ -950,7 +950,7 @@ private:
     static STRINGREF* EmptyStringRefPtr;
     static bool EmptyStringIsFrozen;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<StringObject>;
 };
 
 template<>
@@ -2437,7 +2437,7 @@ private:
     INT32       _xcode;
     INT32       _HResult;
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ExceptionObject>;
 };
 
 template<>
@@ -2545,14 +2545,12 @@ public:
     static void CheckFieldOffsets(TypeHandle nullableType);
     static BOOL IsNullableType(TypeHandle nullableType);
     static BOOL IsNullableForType(TypeHandle nullableType, MethodTable* paramMT);
-    static BOOL IsNullableForTypeNoGC(TypeHandle nullableType, MethodTable* paramMT);
 
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
-
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)
     static OBJECTREF NormalizeBox(OBJECTREF obj);
 
@@ -2572,7 +2570,6 @@ public:
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);
-    static BOOL IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT);
 
     CLR_BOOL* HasValueAddr(MethodTable* nullableMT);
     void* ValueAddr(MethodTable* nullableMT);

@@ -60,10 +60,6 @@
 #include "dynamicinterfacecastable.h"
 #include "frozenobjectheap.h"
 
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
-
 #ifndef DACCESS_COMPILE
 
 // Typedef for string comparison functions.
@@ -134,7 +130,7 @@ class MethodDataCache
     UINT32 m_iLastTouched;
 
 #ifdef HOST_64BIT
-    UINT32 pad;      // insures that we are a multiple of 8-bytes
+    UINT32 pad;      // ensures that we are a multiple of 8-bytes
 #endif
 };  // class MethodDataCache
 
@@ -361,9 +357,25 @@ BOOL MethodTable::ValidateWithPossibleAV()
     // for that. We need to do more sanity checking to
     // make sure that our pointer here is in fact a valid object.
     PTR_EEClass pEEClass = this->GetClassWithPossibleAV();
-    return ((pEEClass && (this == pEEClass->GetMethodTableWithPossibleAV())) ||
-        ((HasInstantiation() || IsArray()) &&
-        (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
+    if (pEEClass == NULL)
+    {
+        return FALSE;
+    }
+
+    PTR_MethodTable pEEClassFromMethodTable = pEEClass->GetMethodTableWithPossibleAV();
+    if (pEEClassFromMethodTable == NULL)
+    {
+        return FALSE;
+    }
+
+    // non-generic check
+    if (this == pEEClassFromMethodTable)
+    {
+        return TRUE;
+    }
+
+    // generic instantiation check
+    return (HasInstantiation() || IsArray()) && (pEEClassFromMethodTable->GetClassWithPossibleAV() == pEEClass);
 }
 
 
@@ -517,7 +529,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
     }
 
-    // Handle pure COM+ types.
+    // Handle pure CLR types.
     RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
 }
 
@@ -3940,18 +3952,17 @@ void MethodTable::CheckRunClassInitAsIfConstructingThrowing()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
+        PRECONDITION(HasPreciseInitCctors());
     }
     CONTRACTL_END;
-    if (HasPreciseInitCctors())
-    {
-        MethodTable *pMTCur = this;
-        while (pMTCur != NULL)
-        {
-            if (!pMTCur->GetClass()->IsBeforeFieldInit())
-                pMTCur->CheckRunClassInitThrowing();
 
-            pMTCur = pMTCur->GetParentMethodTable();
-        }
+    MethodTable *pMTCur = this;
+    while (pMTCur != NULL)
+    {
+        if (!pMTCur->GetClass()->IsBeforeFieldInit())
+            pMTCur->CheckRunClassInitThrowing();
+
+        pMTCur = pMTCur->GetParentMethodTable();
     }
 }
 
@@ -4317,7 +4328,10 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
     }
 
-    if ((level == CLASS_LOADED) && CORDisableJITOptimizations(this->GetModule()->GetDebuggerInfoBits()) && !HasInstantiation())
+    if ((level == CLASS_LOADED) && 
+        CORDisableJITOptimizations(this->GetModule()->GetDebuggerInfoBits()) &&
+        !HasInstantiation() &&
+        !GetModule()->GetAssembly()->IsLoading()) // Do not do this during the vtable fixup stage of C++/CLI assembly loading. See https://github.com/dotnet/runtime/issues/110365
     {
         if (g_fEEStarted)
         {
@@ -6013,7 +6027,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     GuidInfo *pInfo = GetClass()->GetGuidInfo();
 
     // First check to see if we have already cached the guid for this type.
-    // We currently only cache guids on interfaces and WinRT delegates.
+    // We currently only cache guids on interfaces.
     // In classic mode, though, ensure we don't retrieve the GuidInfo for redirected interfaces
     if ((IsInterface()) && pInfo != NULL
         && (!bClassic))
@@ -6182,19 +6196,6 @@ MethodDesc* MethodTable::GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculati
     {
         goto lExit;
     }
-
-#ifdef FEATURE_INTERPRETER
-    // I don't really know why this helps.  Figure it out.
-#ifndef DACCESS_COMPILE
-    // If we didn't find it above, try as an Interpretation stub...
-    pMethodDesc = Interpreter::InterpretationStubToMethodInfo(addr);
-
-    if (NULL != pMethodDesc)
-    {
-        goto lExit;
-    }
-#endif
-#endif // FEATURE_INTERPRETER
 
     // Is it an FCALL?
     pMethodDesc = ECall::MapTargetBackToMethod(addr);
@@ -7346,6 +7347,129 @@ CHECK MethodTable::CheckActivated()
 //==========================================================================================
 
 #ifndef DACCESS_COMPILE
+
+struct ShouldEnsureInstanceActiveBeRecorded
+{
+    bool ShouldRecord = true;
+    ShouldEnsureInstanceActiveBeRecorded *Next;
+
+    ShouldEnsureInstanceActiveBeRecorded();
+    ~ShouldEnsureInstanceActiveBeRecorded();
+};
+
+static thread_local ShouldEnsureInstanceActiveBeRecorded* t_shouldEnsureInstanceActiveBeRecorded = nullptr;
+
+ShouldEnsureInstanceActiveBeRecorded::ShouldEnsureInstanceActiveBeRecorded()
+{
+    Next = t_shouldEnsureInstanceActiveBeRecorded;
+    t_shouldEnsureInstanceActiveBeRecorded = this;
+}
+
+ShouldEnsureInstanceActiveBeRecorded::~ShouldEnsureInstanceActiveBeRecorded()
+{
+    if (ShouldRecord)
+    {
+        t_shouldEnsureInstanceActiveBeRecorded = Next;
+    }
+}
+
+struct EnsureInstanceActiveRecursionDetector
+{
+    MethodTable *pMTBeingEnsured;
+    EnsureInstanceActiveRecursionDetector *Next;
+
+    EnsureInstanceActiveRecursionDetector(MethodTable* pMT, EnsureInstanceActiveRecursionDetector* next)
+        : pMTBeingEnsured(pMT), Next(next)
+    {
+    }
+
+    bool IsMethodTableBeingEnsured(MethodTable *pMT)
+    {
+        EnsureInstanceActiveRecursionDetector* current = this;
+        while (current != NULL)
+        {
+            if (current->pMTBeingEnsured == pMT)
+            {
+                return true;
+            }
+            current = current->Next;
+        }
+        return false;
+    }
+};
+
+void DoNotRecordTheResultOfEnsureLoadLevel()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Mark all current ensure instance active calls on the stack as not to be recorded, and
+    // then remove them all from the stack, so that later calls to the this function don't need
+    // to walk the list.
+    ShouldEnsureInstanceActiveBeRecorded* current = t_shouldEnsureInstanceActiveBeRecorded;
+    while (current != NULL)
+    {
+        current->ShouldRecord = false;
+        current = current->Next;
+    }
+
+    t_shouldEnsureInstanceActiveBeRecorded = NULL;
+}
+
+void MethodTable_EnsureInstanceActiveHelper(MethodTable *pMT, EnsureInstanceActiveRecursionDetector* recursionDetectorInput)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pMT->GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        return;
+    }
+
+    if (recursionDetectorInput != NULL && recursionDetectorInput->IsMethodTableBeingEnsured(pMT))
+    {
+        return;
+    }
+
+    EnsureInstanceActiveRecursionDetector recursionDetector(pMT, recursionDetectorInput);
+    ShouldEnsureInstanceActiveBeRecorded shouldEnsureInstanceActiveBeRecorded;
+
+    Module * pModule = pMT->GetModule();
+    pModule->EnsureActive();
+
+    MethodTable * pMTInteritanceHierarchy = pMT->GetParentMethodTable();
+    while(pMTInteritanceHierarchy != NULL && !pMTInteritanceHierarchy->GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        MethodTable_EnsureInstanceActiveHelper(pMTInteritanceHierarchy, &recursionDetector);
+        pMTInteritanceHierarchy = pMTInteritanceHierarchy->GetParentMethodTable();
+    }
+
+    if (pMT->HasInstantiation())
+    {
+        Instantiation inst = pMT->GetInstantiation();
+        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+        {
+            TypeHandle thArg = inst[i];
+            if (!thArg.IsTypeDesc())
+            {
+                MethodTable_EnsureInstanceActiveHelper(thArg.AsMethodTable(), &recursionDetector);
+            }
+        }
+    }
+
+    // The EnsureInstanceActive function may be called during the final stage of assembly load in the module constructor
+    // in which case we are permitted to not actually raise the load level of an assembly all the way
+    // to FILE_ACTIVE. In that case, it isn't safe to record that the MethodTable instance is active.
+    if (shouldEnsureInstanceActiveBeRecorded.ShouldRecord)
+    {
+        pMT->GetAuxiliaryDataForWrite()->SetEnsuredInstanceActive();
+    }
+}
+
 VOID MethodTable::EnsureInstanceActive()
 {
     CONTRACTL
@@ -7356,38 +7480,7 @@ VOID MethodTable::EnsureInstanceActive()
     }
     CONTRACTL_END;
 
-    Module * pModule = GetModule();
-    pModule->EnsureActive();
-
-    MethodTable * pMT = this;
-    while (pMT->HasModuleDependencies())
-    {
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
-
-        Module * pParentModule = pMT->GetModule();
-        if (pParentModule != pModule)
-        {
-            pModule = pParentModule;
-            pModule->EnsureActive();
-        }
-    }
-
-    if (HasInstantiation())
-    {
-        {
-            Instantiation inst = GetInstantiation();
-            for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-            {
-                TypeHandle thArg = inst[i];
-                if (!thArg.IsTypeDesc())
-                {
-                    thArg.AsMethodTable()->EnsureInstanceActive();
-                }
-            }
-        }
-    }
-
+    MethodTable_EnsureInstanceActiveHelper(this, NULL);
 }
 #endif //!DACCESS_COMPILE
 
@@ -7413,20 +7506,32 @@ CHECK MethodTable::CheckInstanceActivated()
     if (IsArray())
         CHECK_OK;
 
-    Module * pModule = GetModule();
-    CHECK(pModule->CheckActivated());
 
     MethodTable * pMT = this;
-    while (pMT->HasModuleDependencies())
-    {
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
 
-        Module * pParentModule = pMT->GetModule();
-        if (pParentModule != pModule)
+    if (pMT->GetAuxiliaryData()->IsEnsuredInstanceActive())
+    {
+        CHECK_OK;
+    }
+    else
+    {
+        Module * pModule = GetModule();
+        CHECK(pModule->CheckActivated());
+
+        while (pMT->GetModule()->IsSystem())
         {
-            pModule = pParentModule;
-            CHECK(pModule->CheckActivated());
+            pMT = pMT->GetParentMethodTable();
+            if (pMT == NULL)
+            {
+                CHECK_OK;
+            }
+
+            Module * pParentModule = pMT->GetModule();
+            if (pParentModule != pModule)
+            {
+                pModule = pParentModule;
+                CHECK(pModule->CheckActivated());
+            }
         }
     }
 
@@ -7585,33 +7690,6 @@ BOOL MethodTable::ContainsGenericMethodVariables()
     }
 
     return FALSE;
-}
-
-//==========================================================================================
-Module *MethodTable::GetDefiningModuleForOpenType()
-{
-    CONTRACT(Module*)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        POSTCONDITION((ContainsGenericVariables() != 0) == (RETVAL != NULL));
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END
-
-    if (ContainsGenericVariables())
-    {
-        Instantiation inst = GetInstantiation();
-        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-        {
-            Module *pModule = inst[i].GetDefiningModuleForOpenType();
-            if (pModule != NULL)
-                RETURN pModule;
-        }
-    }
-
-    RETURN NULL;
 }
 
 //==========================================================================================

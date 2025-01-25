@@ -845,12 +845,19 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 
     for (int i = 0; i < regStack.Height(); ++i)
     {
-        RegPair regPair = regStack.Bottom(i);
+        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Top(i) : regStack.Bottom(i);
         if (regPair.reg2 != REG_NA)
         {
             // We can use a STP instruction.
-            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
-                                 nullptr);
+            if (genReverseAndPairCalleeSavedRegisters)
+            {
+                genPrologSaveRegPair(regPair.reg2, regPair.reg1, spOffset, spDelta, false, REG_IP0, nullptr);
+            }
+            else
+            {
+                genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, regPair.useSaveNextPair, REG_IP0,
+                                     nullptr);
+            }
 
             spOffset += 2 * slotSize;
         }
@@ -926,8 +933,9 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     // Save integer registers at higher addresses than floating-point registers.
 
+    regMaskTP maskSaveRegsFrame = regsToSaveMask & (RBM_FP | RBM_LR);
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat & ~maskSaveRegsFrame;
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
@@ -939,6 +947,13 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     if (maskSaveRegsInt != RBM_NONE)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, lowestCalleeSavedOffset);
+        spDelta = 0;
+        lowestCalleeSavedOffset += genCountBits(maskSaveRegsInt) * FPSAVE_REGSIZE_BYTES;
+    }
+
+    if (maskSaveRegsFrame != RBM_NONE)
+    {
+        genPrologSaveRegPair(REG_FP, REG_LR, lowestCalleeSavedOffset, spDelta, false, REG_IP0, nullptr);
         // No need to update spDelta, lowestCalleeSavedOffset since they're not used after this.
     }
 }
@@ -970,13 +985,20 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
             stackDelta = spDelta;
         }
 
-        RegPair regPair = regStack.Top(i);
+        RegPair regPair = genReverseAndPairCalleeSavedRegisters ? regStack.Bottom(i) : regStack.Top(i);
         if (regPair.reg2 != REG_NA)
         {
             spOffset -= 2 * slotSize;
 
-            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair, REG_IP1,
-                                    nullptr);
+            if (genReverseAndPairCalleeSavedRegisters)
+            {
+                genEpilogRestoreRegPair(regPair.reg2, regPair.reg1, spOffset, stackDelta, false, REG_IP1, nullptr);
+            }
+            else
+            {
+                genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, regPair.useSaveNextPair,
+                                        REG_IP1, nullptr);
+            }
         }
         else
         {
@@ -1043,10 +1065,18 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     // Save integer registers at higher addresses than floating-point registers.
 
+    regMaskTP maskRestoreRegsFrame = regsToRestoreMask & (RBM_FP | RBM_LR);
     regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat & ~maskRestoreRegsFrame;
 
     // Restore in the opposite order of saving.
+
+    if (maskRestoreRegsFrame != RBM_NONE)
+    {
+        int spFrameDelta = (maskRestoreRegsFloat != RBM_NONE || maskRestoreRegsInt != RBM_NONE) ? 0 : spDelta;
+        spOffset -= 2 * REGSIZE_BYTES;
+        genEpilogRestoreRegPair(REG_FP, REG_LR, spOffset, spFrameDelta, false, REG_IP1, nullptr);
+    }
 
     if (maskRestoreRegsInt != RBM_NONE)
     {
@@ -2405,6 +2435,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             GenTreeVecCon* vecCon = tree->AsVecCon();
@@ -2414,7 +2445,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             switch (tree->TypeGet())
             {
-#if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
@@ -2470,7 +2500,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     break;
                 }
-#endif // FEATURE_SIMD
 
                 default:
                 {
@@ -2480,6 +2509,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             break;
         }
+#endif // FEATURE_SIMD
 
         default:
             unreached();
@@ -2642,6 +2672,12 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
                 case GT_AND:
                 {
                     ins = INS_ands;
+                    break;
+                }
+
+                case GT_AND_NOT:
+                {
+                    ins = INS_bics;
                     break;
                 }
 
@@ -3665,8 +3701,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -3704,8 +3739,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 
     if (cpObjNode->IsVolatile())
     {
-        // issue a full memory barrier before a volatile CpObj operation
-        instGen_MemoryBarrier();
+        // issue a store barrier before a volatile CpObj operation
+        instGen_MemoryBarrier(BARRIER_STORE_ONLY);
     }
 
     emitter* emit = GetEmitter();
@@ -5179,10 +5214,17 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         callTarget = callTargetReg;
 
-        // adrp + add with relocations will be emitted
-        GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
-                                   (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
-                                       DEBUGARG(GTF_ICON_METHOD_HDL));
+        if (compiler->opts.compReloc)
+        {
+            // adrp + add with relocations will be emitted
+            GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
+                                       (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
+                                           DEBUGARG(GTF_ICON_METHOD_HDL));
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTarget, (ssize_t)addr);
+        }
         GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
         callType = emitter::EC_INDIR_R;
     }
@@ -5754,6 +5796,10 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
         return;
     }
 #endif // DEBUG
+
+    // We cannot emit BARRIER_STORE_ONLY better than BARRIER_FULL on arm64 today
+    if (barrierKind == BARRIER_STORE_ONLY)
+        barrierKind = BARRIER_FULL;
 
     // Avoid emitting redundant memory barriers on arm64 if they belong to the same IG
     // and there were no memory accesses in-between them

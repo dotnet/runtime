@@ -42,6 +42,11 @@ namespace System.Collections.Concurrent
         /// extra branch when using a custom comparer with a reference type key.
         /// </remarks>
         private readonly bool _comparerIsDefaultForClasses;
+        /// <summary>The initial size of the _buckets array.</summary>
+        /// <remarks>
+        /// We store this to retain the initially specified growing behavior of the _buckets array even after clearing the collection.
+        /// </remarks>
+        private readonly int _initialCapacity;
 
         /// <summary>The default capacity, i.e. the initial # of buckets.</summary>
         /// <remarks>
@@ -220,6 +225,7 @@ namespace System.Collections.Concurrent
 
             _tables = new Tables(buckets, locks, countPerLock, comparer);
             _growLockArray = growLockArray;
+            _initialCapacity = capacity;
             _budget = buckets.Length / locks.Length;
         }
 
@@ -716,7 +722,7 @@ namespace System.Collections.Concurrent
                 }
 
                 Tables tables = _tables;
-                var newTables = new Tables(new VolatileNode[HashHelpers.GetPrime(DefaultCapacity)], tables._locks, new int[tables._countPerLock.Length], tables._comparer);
+                var newTables = new Tables(new VolatileNode[HashHelpers.GetPrime(_initialCapacity)], tables._locks, new int[tables._countPerLock.Length], tables._comparer);
                 _tables = newTables;
                 _budget = Math.Max(1, newTables._buckets.Length / newTables._locks.Length);
             }

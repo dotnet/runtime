@@ -424,19 +424,15 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_MON_ENTER,
     CORINFO_HELP_MON_EXIT,
-    CORINFO_HELP_MON_ENTER_STATIC,
-    CORINFO_HELP_MON_EXIT_STATIC,
 
     CORINFO_HELP_GETCLASSFROMMETHODPARAM, // Given a generics method handle, returns a class handle
-    CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle, returns the sync monitor
-                                          // in its ManagedClassObject
+    CORINFO_HELP_GETSYNCFROMCLASSHANDLE,  // Given a generics class handle return the ManagedClassObject that is used to lock a static method
 
     /* GC support */
 
     CORINFO_HELP_STOP_FOR_GC,       // Call GC (force a GC)
     CORINFO_HELP_POLL_GC,           // Ask GC if it wants to collect
 
-    CORINFO_HELP_STRESS_GC,         // Force a GC, but then update the JITTED code to be a noop call
     CORINFO_HELP_CHECK_OBJ,         // confirm that ECX is a valid object pointer (debugging only)
 
     /* GC Write barrier support */
@@ -483,6 +479,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED,
     CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2,
+    CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT,
 
     /* Debugger */
 
@@ -1510,18 +1507,21 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-    // - requiresInstMethodTableArg is set to TRUE if the devirtualized method requires a type handle arg.
     // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
     // - details on the computation done by the jit host
     // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
     //   use it as the parameter to getCallInfo
+    // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
+    // - wasArrayInterfaceDevirt is set TRUE for array interface method devirtualization
+    //     (in which case the method handle and context will be a generic method)
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
-    bool                            requiresInstMethodTableArg;
     CORINFO_CONTEXT_HANDLE          exactContext;
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
+    bool                            isInstantiatingStub;
+    bool                            wasArrayInterfaceDevirt;
 };
 
 //----------------------------------------------------------------------------
@@ -2111,6 +2111,14 @@ public:
         bool*                 requiresInstMethodTableArg
         ) = 0;
 
+    // Get the wrapped entry point for an instantiating stub, if possible.
+    // Sets methodArg for method instantiations, classArg for class instantiations.
+    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
+        CORINFO_METHOD_HANDLE ftn,
+        CORINFO_METHOD_HANDLE* methodArg,
+        CORINFO_CLASS_HANDLE* classArg
+        ) = 0;
+
     // Given T, return the type of the default Comparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultComparerClass(
@@ -2120,6 +2128,12 @@ public:
     // Given T, return the type of the default EqualityComparer<T>.
     // Returns null if the type can't be determined exactly.
     virtual CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
+            CORINFO_CLASS_HANDLE elemType
+            ) = 0;
+
+    // Given T, return the type of the SZArrayHelper enumerator
+    // Returns null if the type can't be determined exactly.
+    virtual CORINFO_CLASS_HANDLE getSZArrayHelperEnumeratorClass(
             CORINFO_CLASS_HANDLE elemType
             ) = 0;
 
@@ -2286,6 +2300,13 @@ public:
             unsigned             index
             ) = 0;
 
+    // Return the type argument of the instantiated generic method,
+    // which is specified by the index
+    virtual CORINFO_CLASS_HANDLE getMethodInstantiationArgument(
+            CORINFO_METHOD_HANDLE ftn,
+            unsigned              index
+            ) = 0;
+
     // Prints the name for a specified class including namespaces and enclosing
     // classes.
     // See printObjectDescription for documentation for the parameters.
@@ -2304,7 +2325,7 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    // Returns the assembly name of the class "cls", or nullptr if there is none.    
+    // Returns the assembly name of the class "cls", or nullptr if there is none.
     virtual const char* getClassAssemblyName (
             CORINFO_CLASS_HANDLE cls
             ) = 0;
@@ -2355,10 +2376,10 @@ public:
             bool                        fDoubleAlignHint = false
             ) = 0;
 
-    // This is only called for Value classes.  It returns a boolean array
-    // in representing of 'cls' from a GC perspective.  The class is
-    // assumed to be an array of machine words
-    // (of length // getClassSize(cls) / TARGET_POINTER_SIZE),
+    // Returns a boolean array representing 'cls' from a GC perspective.
+    // The class is assumed to be an array of machine words
+    // (of length getClassSize(cls) / TARGET_POINTER_SIZE for value classes
+    // and getHeapClassSize(cls) / TARGET_POINTER_SIZE for reference types),
     // 'gcPtrs' is a pointer to an array of uint8_ts of this length.
     // getClassGClayout fills in this array so that gcPtrs[i] is set
     // to one of the CorInfoGCType values which is the GC type of
@@ -2939,9 +2960,6 @@ public:
     virtual void getEEInfo(
             CORINFO_EE_INFO            *pEEInfoOut
             ) = 0;
-
-    // Returns name of the JIT timer log
-    virtual const char16_t *getJitTimeLogFilename() = 0;
 
     /*********************************************************************************/
     //

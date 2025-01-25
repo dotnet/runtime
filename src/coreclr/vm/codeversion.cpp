@@ -549,7 +549,7 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_methodDef(0),
     m_rejitId(0),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
-    m_rejitState(ILCodeVersion::kStateRequested),
+    m_rejitState(RejitFlags::kStateRequested),
     m_pIL(),
     m_jitFlags(0),
     m_deoptimized(FALSE)
@@ -563,7 +563,7 @@ ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJ
     m_methodDef(methodDef),
     m_rejitId(id),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
-    m_rejitState(ILCodeVersion::kStateRequested),
+    m_rejitState(RejitFlags::kStateRequested),
     m_pIL(nullptr),
     m_jitFlags(0),
     m_deoptimized(isDeoptimized)
@@ -588,17 +588,17 @@ ReJITID ILCodeVersionNode::GetVersionId() const
     return m_rejitId;
 }
 
-ILCodeVersion::RejitFlags ILCodeVersionNode::GetRejitState() const
+RejitFlags ILCodeVersionNode::GetRejitState() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ILCodeVersion::kStateMask);
+    return m_rejitState.Load() & RejitFlags::kStateMask;
 }
 
 BOOL ILCodeVersionNode::GetEnableReJITCallback() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (m_rejitState.Load() & ILCodeVersion::kSuppressParams) == ILCodeVersion::kSuppressParams;
+    return (m_rejitState.Load() & RejitFlags::kSuppressParams) == RejitFlags::kSuppressParams;
 }
 
 PTR_COR_ILMETHOD ILCodeVersionNode::GetIL() const
@@ -632,15 +632,14 @@ BOOL ILCodeVersionNode::IsDeoptimized() const
 }
 
 #ifndef DACCESS_COMPILE
-void ILCodeVersionNode::SetRejitState(ILCodeVersion::RejitFlags newState)
+void ILCodeVersionNode::SetRejitState(RejitFlags newState)
 {
     LIMITED_METHOD_CONTRACT;
     // We're doing a non thread safe modification to m_rejitState
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
-    ILCodeVersion::RejitFlags oldNonMaskFlags =
-        static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ~ILCodeVersion::kStateMask);
-    m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(newState | oldNonMaskFlags));
+    RejitFlags oldNonMaskFlags = m_rejitState.Load() & ~RejitFlags::kStateMask;
+    m_rejitState.Store(static_cast<RejitFlags>(newState | oldNonMaskFlags));
 }
 
 void ILCodeVersionNode::SetEnableReJITCallback(BOOL state)
@@ -649,14 +648,14 @@ void ILCodeVersionNode::SetEnableReJITCallback(BOOL state)
     // We're doing a non thread safe modification to m_rejitState
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
 
-    ILCodeVersion::RejitFlags oldFlags = m_rejitState.Load();
+    RejitFlags oldFlags = m_rejitState.Load();
     if (state)
     {
-        m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(oldFlags | ILCodeVersion::kSuppressParams));
+        m_rejitState.Store(oldFlags | RejitFlags::kSuppressParams);
     }
     else
     {
-        m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(oldFlags & ~ILCodeVersion::kSuppressParams));
+        m_rejitState.Store(oldFlags & ~RejitFlags::kSuppressParams);
     }
 }
 
@@ -850,7 +849,7 @@ bool ILCodeVersion::HasAnyOptimizedNativeCodeVersion(NativeCodeVersion tier0Nati
 }
 #endif
 
-ILCodeVersion::RejitFlags ILCodeVersion::GetRejitState() const
+RejitFlags ILCodeVersion::GetRejitState() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     if (m_storageKind == StorageKind::Explicit)
@@ -859,7 +858,7 @@ ILCodeVersion::RejitFlags ILCodeVersion::GetRejitState() const
     }
     else
     {
-        return ILCodeVersion::kStateActive;
+        return RejitFlags::kStateActive;
     }
 }
 

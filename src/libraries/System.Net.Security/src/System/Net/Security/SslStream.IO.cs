@@ -506,6 +506,7 @@ namespace System.Net.Security
                 _localClientCertificateUsed = -1;
             }
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
             if (NetEventSource.Log.IsEnabled())
                 NetEventSource.Log.SspiSelectedCipherSuite(nameof(ForceAuthenticationAsync),
                                                                     SslProtocol,
@@ -515,7 +516,7 @@ namespace System.Net.Security
                                                                     HashStrength,
                                                                     KeyExchangeAlgorithm,
                                                                     KeyExchangeStrength);
-
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
         }
 
         // This method will make sure we have at least one full TLS frame buffered.

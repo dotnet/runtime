@@ -961,32 +961,6 @@ DWORD GetRuntimeId()
 #endif
 }
 
-//---------------------------------------------------------------------------
-// Creates new Thread for reverse p-invoke calls.
-//---------------------------------------------------------------------------
-Thread* WINAPI CreateThreadBlockThrow()
-{
-
-    WRAPPER_NO_CONTRACT;
-
-    // This is a workaround to disable our check for throwing exception in SetupThread.
-    // We want to throw an exception for reverse p-invoke, and our assertion may fire if
-    // a unmanaged caller does not setup an exception handler.
-    CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-
-    HRESULT hr = S_OK;
-    Thread* pThread = SetupThreadNoThrow(&hr);
-    if (pThread == NULL)
-    {
-        // Creating Thread failed, and we need to throw an exception to report status.
-        // It is misleading to use our COM+ exception code, since this is not a managed exception.
-        ULONG_PTR arg = hr;
-        RaiseException(EXCEPTION_EXX, 0, 1, &arg);
-    }
-
-    return pThread;
-}
-
 #ifdef _DEBUG
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
@@ -1462,10 +1436,6 @@ Thread::Thread()
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER
-    m_fPreemptiveGCDisabledForGCStress = false;
-#endif
-
 #ifdef _DEBUG
     m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
 #endif
@@ -1528,7 +1498,10 @@ Thread::Thread()
 #ifdef FEATURE_PERFTRACING
     memset(&m_activityId, 0, sizeof(m_activityId));
 #endif // FEATURE_PERFTRACING
+
+#ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+#endif
 
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
@@ -1559,7 +1532,7 @@ void Thread::InitThread()
         // This message actually serves a purpose (which is why it is always run)
         // The Stress log is run during hijacking, when other threads can be suspended
         // at arbitrary locations (including when holding a lock that NT uses to serialize
-        // all memory allocations).  By sending a message now, we insure that the stress
+        // all memory allocations).  By sending a message now, we ensure that the stress
         // log will not allocate memory at these critical times an avoid deadlock.
     STRESS_LOG2(LF_ALWAYS, LL_ALWAYS, "SetupThread  managed Thread %p Thread Id = %x\n", this, GetThreadId());
 
@@ -2045,10 +2018,13 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    SetThreadName(hThread, pName);
+    if (hThread != INVALID_HANDLE_VALUE)
+    {
+        SetThreadName(hThread, pName);
 
-    if (pThreadId)
-        *pThreadId = threadId;
+        if (pThreadId)
+            *pThreadId = threadId;
+    }
 
     return hThread;
 }
@@ -2187,19 +2163,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 // object.  We also place a reference count on it when we construct it, and we lose
 // that count when the thread finishes doing useful work (OnThreadTerminate).
 //
-// One way OnThreadTerminate() is called is when the thread finishes doing useful
-// work.  This case always happens on the correct thread.
-//
-// The other way OnThreadTerminate()  is called is during product shutdown.  We do
-// a "best effort" to eliminate all threads except the Main thread before shutdown
-// happens.  But there may be some background threads or external threads still
-// running.
+// OnThreadTerminate() is called is when the thread finishes doing useful
+// work.
 //
 // When the final reference count disappears, we destruct.  Until then, the thread
 // remains in the ThreadStore, but is marked as "Dead".
-//<TODO>
-// @TODO cwb: for a typical shutdown, only background threads are still around.
-// Should we interrupt them?  What about the non-typical shutdown?</TODO>
 
 int Thread::IncExternalCount()
 {
@@ -2755,11 +2723,12 @@ void Thread::CooperativeCleanup()
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
+        gc_alloc_context* gc_alloc_context = &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
         // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
         // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
         // however, there could be other threads terminating and doing the same Add.
-        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_runtime_thread_locals.alloc_context.alloc_limit - t_runtime_thread_locals.alloc_context.alloc_ptr);
-        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_runtime_thread_locals.alloc_context, NULL, NULL);
+        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, gc_alloc_context->alloc_limit - gc_alloc_context->alloc_ptr);
+        GCHeapUtilities::GetGCHeap()->FixAllocContext(gc_alloc_context, NULL, NULL);
         t_runtime_thread_locals.alloc_context.init(); // re-initialize the context.
 
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
@@ -6035,7 +6004,7 @@ BOOL Thread::UniqueStack(void* stackStart)
     size_t stackTrace[UniqueStackDepth+1] = {0};
 
         // stackTraceHash represents a hash of entire stack at the time we make the call,
-        // We insure at least GC per unique stackTrace.  What information is contained in
+        // We ensure at least GC per unique stackTrace.  What information is contained in
         // 'stackTrace' is somewhat arbitrary.  We choose it to mean all functions live
         // on the stack up to the first jitted function.
 
@@ -6054,7 +6023,7 @@ BOOL Thread::UniqueStack(void* stackStart)
         if (pFrame == 0 || pFrame == (Frame*) -1)
             break;
 
-        pFrame->GetFunction();      // This insures that helper frames are inited
+        pFrame->GetFunction();      // This ensures that helper frames are inited
 
         if (pFrame->GetReturnAddress() != 0)
         {
@@ -7297,13 +7266,10 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     PAL_ENDTRY;
 }
 
-
-// For the implementation, there are three variants of work possible:
-
-// 1.  Establish the base of a managed thread, and switch to the correct AppDomain.
-static void ManagedThreadBase_FullTransition(ADCallBackFcnType pTarget,
-                                                   LPVOID args,
-                                                   UnhandledExceptionLocation filterType)
+// Establish the base of a managed thread
+static void ManagedThreadBase_Dispatch(ADCallBackFcnType pTarget,
+                                       LPVOID args,
+                                       UnhandledExceptionLocation filterType)
 {
     CONTRACTL
     {
@@ -7317,47 +7283,20 @@ static void ManagedThreadBase_FullTransition(ADCallBackFcnType pTarget,
     ManagedThreadBase_DispatchOuter(&CallState);
 }
 
-// 2.  Establish the base of a managed thread, but the AppDomain transition must be
-//     deferred until later.
-void ManagedThreadBase_NoADTransition(ADCallBackFcnType pTarget,
-                                             UnhandledExceptionLocation filterType)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    AppDomain *pAppDomain = GetAppDomain();
-
-    ManagedThreadCallState CallState(pTarget, NULL, filterType);
-
-    // self-describing, to create a pTurnAround data for eventual delivery to a subsequent AppDomain
-    // transition.
-    CallState.args = &CallState;
-
-    ManagedThreadBase_DispatchOuter(&CallState);
-}
-
-
-
 // And here are the various exposed entrypoints for base thread behavior
 
 // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
 void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
 {
     WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
+    ManagedThreadBase_Dispatch(pTarget, args, ManagedThread);
 }
 
-// The Finalizer thread establishes exception handling at its base, but defers all the AppDomain
-// transitions.
+// The Finalizer thread establishes exception handling at its base
 void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
 {
     WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_NoADTransition(pTarget, FinalizerThread);
+    ManagedThreadBase_Dispatch(pTarget, NULL, FinalizerThread);
 }
 
 //+----------------------------------------------------------------------------

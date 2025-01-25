@@ -133,30 +133,26 @@ namespace System.Runtime
             FallbackFailFast(reason, unhandledException);
         }
 
+#if TARGET_WINDOWS
+
 #if TARGET_AMD64
         [StructLayout(LayoutKind.Explicit, Size = 0x4d0)]
-#elif TARGET_ARM
-        [StructLayout(LayoutKind.Explicit, Size = 0x1a0)]
 #elif TARGET_X86
         [StructLayout(LayoutKind.Explicit, Size = 0x2cc)]
 #elif TARGET_ARM64
         [StructLayout(LayoutKind.Explicit, Size = 0x390)]
-#else
-        [StructLayout(LayoutKind.Explicit, Size = 0x10)] // this is small enough that it should trip an assert in RhpCopyContextFromExInfo
 #endif
         private struct OSCONTEXT
         {
         }
 
-        internal static unsafe void* PointerAlign(void* ptr, int alignmentInBytes)
+        internal static void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
-#if TARGET_64BIT
-            return (void*)((((long)ptr) + alignMask) & ~alignMask);
-#else
-            return (void*)((((int)ptr) + alignMask) & ~alignMask);
-#endif
+            return (void*)((((nint)ptr) + alignMask) & ~alignMask);
         }
+
+#endif // TARGET_WINDOWS
 
 #if NATIVEAOT
         private static void OnFirstChanceExceptionViaClassLib(object exception)
@@ -205,7 +201,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void UnhandledExceptionFailFastViaClasslib(
+        internal static void UnhandledExceptionFailFastViaClasslib(
             RhFailFastReason reason, object unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -220,12 +216,16 @@ namespace System.Runtime
                     classlibAddress);
             }
 
+#if TARGET_WINDOWS
             // 16-byte align the context.  This is overkill on x86 and ARM, but simplifies things slightly.
             const int contextAlignment = 16;
             byte* pbBuffer = stackalloc byte[sizeof(OSCONTEXT) + contextAlignment];
             void* pContext = PointerAlign(pbBuffer, contextAlignment);
 
             InternalCalls.RhpCopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
+#else
+            void* pContext = null; // Fatal crash handler does not use the context on non-Windows
+#endif
 
             try
             {
@@ -558,6 +558,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
 #endif
+        [StackTraceHidden]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -644,6 +645,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
 #endif
+        [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -725,6 +727,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
 #endif
+        [StackTraceHidden]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -742,6 +745,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
+        [StackTraceHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -997,6 +1001,7 @@ namespace System.Runtime
             prevFramePtr = curFramePtr;
         }
 
+        [StackTraceHidden]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {
@@ -1154,6 +1159,7 @@ namespace System.Runtime
         {
             InvokeSecondPass(ref exInfo, idxStart, MaxTryRegionIdx);
         }
+
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;

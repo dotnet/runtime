@@ -724,15 +724,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
     }
     CONTRACTL_END;
 
-    BOOL res = FALSE;
-
-    BEGIN_QCALL;
-
-    res = thread->IsBackground();
-
-    END_QCALL;
-
-    return res;
+    return thread->IsBackground();
 }
 
 // Set whether or not this is a background thread.
@@ -855,6 +847,12 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
     thread->SetDisableComObjectEagerCleanup();
 }
 #endif //FEATURE_COMINTEROP
+
+extern "C" void QCALLTYPE ThreadNative_PollGC()
+{
+    // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
+    // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
+}
 
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 {

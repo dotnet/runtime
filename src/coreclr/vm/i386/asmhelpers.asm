@@ -425,7 +425,7 @@ donestack:
 ifdef _DEBUG
         nop     ; This is a tag that we use in an assert.  Fcalls expect to
                 ; be called from Jitted code or from certain blessed call sites like
-                ; this one.  (See HelperMethodFrame::InsureInit)
+                ; this one.  (See HelperMethodFrame::EnsureInit)
 endif
 
         ; Save FP return value if necessary
@@ -1097,9 +1097,6 @@ _DelayLoad_MethodCall@0 proc public
     ; From here on, mustn't trash eax
 
     STUB_EPILOG
-
-_ExternalMethodFixupPatchLabel@0:
-public _ExternalMethodFixupPatchLabel@0
 
     ; Tailcall target
     jmp eax

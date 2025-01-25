@@ -277,7 +277,7 @@
       "kind": "framework",
       "version": "${PackageVersionNet8}",
       "alias-to": {
-        "any": "Microsoft.NETCore.App.Runtime.Mono.osx-arm64"
+        "any": "Microsoft.NETCore.App.Runtime.osx-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.net8.osx-x64": {
@@ -312,8 +312,8 @@
       "kind": "Sdk",
       "version": "${PackageVersionNet8}",
       "alias-to": {
-        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.tvos-arm64",
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvos-arm64"
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvos-arm64",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.tvos-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net8.tvos-arm64" : {
