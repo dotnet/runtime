@@ -1943,6 +1943,28 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
 
     if (candidateAssertion.assertionKind == OAK_EQUAL)
     {
+        if (candidateAssertion.op1.kind == O1K_LCLVAR)
+        {
+            // "LCLVAR != CNS" is not a useful assertion (unless CNS is 0)
+            if ((candidateAssertion.op2.kind == O2K_CONST_INT || candidateAssertion.op2.kind == O2K_CONST_LONG) &&
+                (candidateAssertion.op2.u1.iconVal != 0) && (candidateAssertion.op2.u1.iconVal != 1))
+            {
+                return;
+            }
+
+            // "LCLVAR != LCLVAR_COPY"
+            if (candidateAssertion.op2.kind == O2K_LCLVAR_COPY)
+            {
+                return;
+            }
+        }
+
+        // "Object is not Class" is also not a useful assertion (at least for now)
+        if ((candidateAssertion.op1.kind == O1K_EXACT_TYPE) || (candidateAssertion.op1.kind == O1K_SUBTYPE))
+        {
+            return;
+        }
+
         AssertionIndex index = optCreateAssertion(op1, op2, OAK_NOT_EQUAL, helperCallArgs);
         optMapComplementary(index, assertionIndex);
     }
@@ -2238,18 +2260,24 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             if (con >= 0)
             {
                 AssertionDsc dsc;
-
-                // For arr.Length != 0, we know that 0 is a valid index
-                // For arr.Length == con, we know that con - 1 is the greatest valid index
+                bool         useNextEdge;
                 if (con == 0)
                 {
+                    // arr.Length != 0 -> Then: idx = 0        Else: no assertion
+                    // arr.Length == 0 -> Then: no assertion,  Else: idx = 0
+                    //
                     dsc.assertionKind = OAK_NOT_EQUAL;
                     dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(0);
+                    useNextEdge       = relop->OperIs(GT_EQ);
                 }
                 else
                 {
+                    // arr.Length == 10 -> Then: idx = [0..9],  Else: no assertion
+                    // arr.Length != 10 -> Then: no assertion,  Else: idx = [0..9]
+                    //
                     dsc.assertionKind = OAK_EQUAL;
                     dsc.op1.bnd.vnIdx = vnStore->VNForIntCon(con - 1);
+                    useNextEdge       = relop->OperIs(GT_NE);
                 }
 
                 dsc.op1.vn         = op1VN;
@@ -2263,14 +2291,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
                 // when con is not zero, create an assertion on the arr.Length == con edge
                 // when con is zero, create an assertion on the arr.Length != 0 edge
                 AssertionIndex index = optAddAssertion(&dsc);
-                if (relop->OperIs(GT_NE) != (con == 0))
-                {
-                    return AssertionInfo::ForNextEdge(index);
-                }
-                else
-                {
-                    return index;
-                }
+                return useNextEdge ? AssertionInfo::ForNextEdge(index) : index;
             }
         }
     }
