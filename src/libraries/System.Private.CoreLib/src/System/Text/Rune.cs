@@ -782,12 +782,12 @@ namespace System.Text
 
         public bool Equals(Rune other, StringComparison comparisonType) => Equals(this, other, comparisonType);
 
-        public static bool Equals(this Rune left, Rune right)
+        public static bool Equals(Rune left, Rune right)
         {
             return left == right;
         }
 
-        public static bool Equals(this Rune left, Rune right, StringComparison comparisonType)
+        public static bool Equals(Rune left, Rune right, StringComparison comparisonType)
         {
             if (comparisonType is StringComparison.Ordinal)
             {
