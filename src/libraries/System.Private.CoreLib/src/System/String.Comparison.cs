@@ -26,10 +26,24 @@ namespace System
             Debug.Assert(strB != null);
             Debug.Assert(strA.Length == strB.Length);
 
-            return SpanHelpers.SequenceEqual(
-                    ref Unsafe.As<char, byte>(ref strA.GetRawStringData()),
-                    ref Unsafe.As<char, byte>(ref strB.GetRawStringData()),
-                    ((uint)strA.Length) * sizeof(char));
+            nuint byteLength = (nuint)strA.Length * sizeof(char);
+            ref byte pStrA = ref Unsafe.As<char, byte>(ref strA.GetRawStringData());
+            ref byte pStrB = ref Unsafe.As<char, byte>(ref strB.GetRawStringData());
+
+            // Fast path: if the strings have more than 2 characters, we can use a fast path
+            // where we compare 4 bytes at a time, which gives us either an early mismatch or
+            // aligns pStrA and pStrB to pointer size since String._firstChar has only 4-byte alignment.
+            if (byteLength > (sizeof(char) * 2))
+            {
+                if (Unsafe.ReadUnaligned<uint>(ref pStrA) != Unsafe.ReadUnaligned<uint>(ref pStrB))
+                {
+                    return false;
+                }
+                pStrA = ref Unsafe.Add(ref pStrA, sizeof(char) * 2);
+                pStrB = ref Unsafe.Add(ref pStrB, sizeof(char) * 2);
+                byteLength -= sizeof(char) * 2;
+            }
+            return SpanHelpers.SequenceEqual(ref pStrA, ref pStrB, byteLength);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -4701,6 +4701,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_SpanHelpers_ClearWithoutReferences:
             case NI_System_SpanHelpers_Memmove:
             {
+                mustExpand = false; // It's fine for these intrinsics to call themselves recursively
                 if (sig->sigInst.methInstCount == 0)
                 {
                     // We'll try to unroll this in lower for constant input.

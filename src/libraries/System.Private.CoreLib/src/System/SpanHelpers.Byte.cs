@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -754,6 +755,78 @@ namespace System
             return (int)(offset + 7);
         }
 
+        private static unsafe bool SequenceEqual_LongInput<TVector>(ref byte first, ref byte second, nuint length)
+            where TVector : struct, ISimdVector<TVector, byte>
+        {
+            Debug.Assert(length >= (nuint)TVector.ElementCount * 3);
+            Debug.Assert(TVector.IsHardwareAccelerated);
+
+            fixed (byte* pFirst = &first, pSecond = &second)
+            {
+                // First, align pFirst to 64 bytes boundary
+                nuint offset = (nuint)TVector.ElementCount - (nuint)pFirst % (nuint)TVector.ElementCount;
+
+                // This SequenceEqual is expected to be unrolled by the JIT
+                if (!SequenceEqual(ref *pFirst, ref *pSecond, (nuint)TVector.ElementCount))
+                {
+                    return false;
+                }
+
+                nuint lengthToExamine = length - offset - (nuint)TVector.ElementCount * 2;
+                do
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        // TODO: ideally, we shouldn't need this path for NEON, but it's a bit of work in JIT to do.
+                        Debug.Assert((nuint)TVector.ElementCount == 16);
+                        (Vector128<byte> v11, Vector128<byte> v12) = AdvSimd.Arm64.LoadPairVector128(pFirst + offset);
+                        (Vector128<byte> v21, Vector128<byte> v22) = AdvSimd.Arm64.LoadPairVector128(pSecond + offset);
+                        if (((v11 ^ v21) | (v12 ^ v22)) != Vector128<byte>.Zero)
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // Since pFirst is aligned, we may consider using NonTemporalAligned loads for it.
+                        TVector v11 = TVector.Load(pFirst + offset);
+                        TVector v12 = TVector.Load(pFirst + offset + (nuint)TVector.ElementCount);
+                        TVector v21 = TVector.Load(pSecond + offset);
+                        TVector v22 = TVector.Load(pSecond + offset + (nuint)TVector.ElementCount);
+                        if (!TVector.EqualsAll((v11 ^ v21) | (v12 ^ v22), TVector.Zero))
+                        {
+                            return false;
+                        }
+                    }
+                    offset += (nuint)TVector.ElementCount * 2;
+                } while (lengthToExamine > offset);
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    // TODO: ideally, we shouldn't need this path for NEON, but it's a bit of work in JIT to do.
+                    Debug.Assert((nuint)TVector.ElementCount == 16);
+                    (Vector128<byte> v11, Vector128<byte> v12) = AdvSimd.Arm64.LoadPairVector128(pFirst + lengthToExamine);
+                    (Vector128<byte> v21, Vector128<byte> v22) = AdvSimd.Arm64.LoadPairVector128(pSecond + lengthToExamine);
+                    if (((v11 ^ v21) | (v12 ^ v22)) == Vector128<byte>.Zero)
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    TVector v11 = TVector.Load(pFirst + lengthToExamine);
+                    TVector v12 = TVector.Load(pFirst + lengthToExamine + (nuint)TVector.ElementCount);
+                    TVector v21 = TVector.Load(pSecond + lengthToExamine);
+                    TVector v22 = TVector.Load(pSecond + lengthToExamine + (nuint)TVector.ElementCount);
+                    if (TVector.EqualsAll((v11 ^ v21) | (v12 ^ v22), TVector.Zero))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         // Optimized byte-based SequenceEquals. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
         // where the length can exceed 2Gb once scaled by sizeof(T).
         [Intrinsic] // Unrolled for constant length
@@ -822,6 +895,11 @@ namespace System
             {
                 if (Vector512.IsHardwareAccelerated && length >= (nuint)Vector512<byte>.Count)
                 {
+                    if (length >= 256)
+                    {
+                        return SequenceEqual_LongInput<Vector512<byte>>(ref first, ref second, length);
+                    }
+
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector512<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
@@ -882,6 +960,11 @@ namespace System
                 }
                 else if (length >= (nuint)Vector128<byte>.Count)
                 {
+                    if (AdvSimd.Arm64.IsSupported && length >= 64)
+                    {
+                        return SequenceEqual_LongInput<Vector128<byte>>(ref first, ref second, length);
+                    }
+
                     nuint offset = 0;
                     nuint lengthToExamine = length - (nuint)Vector128<byte>.Count;
                     // Unsigned, so it shouldn't have overflowed larger than length (rather than negative)
