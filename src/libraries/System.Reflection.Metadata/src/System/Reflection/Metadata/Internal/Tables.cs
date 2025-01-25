@@ -1228,7 +1228,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (eventRowId <= numberOfEvents)
                 {
-                    return TypeDefinitionHandle.FromRowId(numOfRows);
+                    return GetParentType(numOfRows);
                 }
 
                 return default(TypeDefinitionHandle);
@@ -1252,7 +1252,7 @@ namespace System.Reflection.Metadata.Ecma335
                 }
             }
 
-            return TypeDefinitionHandle.FromRowId(row);
+            return GetParentType(row);
         }
     }
 
@@ -1399,7 +1399,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 if (propertyRowId <= numberOfProperties)
                 {
-                    return TypeDefinitionHandle.FromRowId(numOfRows);
+                    return GetParentType(numOfRows);
                 }
 
                 return default(TypeDefinitionHandle);
@@ -1423,7 +1423,7 @@ namespace System.Reflection.Metadata.Ecma335
                 }
             }
 
-            return TypeDefinitionHandle.FromRowId(row);
+            return GetParentType(row);
         }
     }
 
