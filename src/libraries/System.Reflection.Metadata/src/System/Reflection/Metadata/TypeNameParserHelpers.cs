@@ -108,16 +108,12 @@ namespace System.Reflection.Metadata
             return offset < 0 ? [] : fullName.Slice(0, offset);
         }
 
-        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
+        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName, bool isNested)
         {
             // If the type is nested, return the whole name after the plus sign.
-            int offset = LastIndexOfUnescaped(fullName, '+');
-
-            if (offset < 0)
-            {
-                // Look for dots only if the type is not nested.
-                offset = LastIndexOfUnescaped(fullName, '.');
-            }
+            int offset = isNested
+                ? LastIndexOfUnescaped(fullName, '+')
+                : fullName.LastIndexOf('.');
 
             return offset < 0 ? fullName : fullName.Slice(offset + 1);
         }

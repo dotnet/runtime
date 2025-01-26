@@ -263,7 +263,8 @@ namespace System.Reflection.Metadata
                 {
                     if (IsConstructedGenericType)
                     {
-                        _name = TypeNameParserHelpers.GetName(GetGenericTypeDefinition().FullName.AsSpan()).ToString();
+                        TypeName genericTypeDef = GetGenericTypeDefinition();
+                        _name = TypeNameParserHelpers.GetName(genericTypeDef.FullName.AsSpan(), genericTypeDef.IsNested).ToString();
                     }
                     else if (IsPointer || IsByRef || IsArray)
                     {
@@ -273,11 +274,11 @@ namespace System.Reflection.Metadata
                     }
                     else if (_nestedNameLength > 0 && _fullName is not null)
                     {
-                        _name = TypeNameParserHelpers.GetName(_fullName.AsSpan(0, _nestedNameLength)).ToString();
+                        _name = TypeNameParserHelpers.GetName(_fullName.AsSpan(0, _nestedNameLength), IsNested).ToString();
                     }
                     else
                     {
-                        _name = TypeNameParserHelpers.GetName(FullName.AsSpan()).ToString();
+                        _name = TypeNameParserHelpers.GetName(FullName.AsSpan(), IsNested).ToString();
                     }
                 }
 
