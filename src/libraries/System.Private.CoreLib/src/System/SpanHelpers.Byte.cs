@@ -758,41 +758,41 @@ namespace System
         private static unsafe bool SequenceEqual_LongInput<TVector>(ref byte first, ref byte second, nuint length)
             where TVector : struct, ISimdVector<TVector, byte>
         {
-            Debug.Assert(length >= (nuint)TVector.ElementCount * 3);
+            Debug.Assert(length >= (nuint)sizeof(TVector) * 3);
             Debug.Assert(TVector.IsHardwareAccelerated);
+            Debug.Assert(sizeof(TVector) >= 16);
 
             fixed (byte* pFirst = &first, pSecond = &second)
             {
-                // First, align pFirst to 64 bytes boundary
-                nuint offset = (nuint)TVector.ElementCount - (nuint)pFirst % (nuint)TVector.ElementCount;
-
-                // This SequenceEqual is expected to be unrolled by the JIT
-                if (!SequenceEqual(ref *pFirst, ref *pSecond, (nuint)TVector.ElementCount))
+                // First, align pFirst to sizeof(TVector) bytes boundary
+                if (!TVector.EqualsAll(TVector.Load(pFirst), TVector.Load(pSecond)))
                 {
                     return false;
                 }
 
-                nuint lengthToExamine = length - offset - (nuint)TVector.ElementCount * 2;
+                nuint misalignedElements = (nuint)pFirst % (nuint)sizeof(TVector);
+                nuint offset = (nuint)sizeof(TVector) - misalignedElements;
+                nuint lengthToExamine = length - offset - (nuint)sizeof(TVector) * 2;
                 do
                 {
                     // Since pFirst is aligned, we may consider using NonTemporalAligned loads for it.
                     TVector firstV1 = TVector.Load(pFirst + offset);
-                    TVector firstV2 = TVector.Load(pFirst + offset + (nuint)TVector.ElementCount);
+                    TVector firstV2 = TVector.Load(pFirst + offset + (nuint)sizeof(TVector));
                     TVector second1 = TVector.Load(pSecond + offset);
-                    TVector second2 = TVector.Load(pSecond + offset + (nuint)TVector.ElementCount);
+                    TVector second2 = TVector.Load(pSecond + offset + (nuint)sizeof(TVector));
                     if (!TVector.EqualsAll((firstV1 ^ second1) | (firstV2 ^ second2), TVector.Zero))
                     {
                         return false;
                     }
-                    offset += (nuint)TVector.ElementCount * 2;
+                    offset += (nuint)sizeof(TVector) * 2;
                 } while (lengthToExamine > offset);
 
-                // Trailing elements
+                // Last iteration
                 {
                     TVector firstV1 = TVector.Load(pFirst + lengthToExamine);
-                    TVector firstV2 = TVector.Load(pFirst + lengthToExamine + (nuint)TVector.ElementCount);
+                    TVector firstV2 = TVector.Load(pFirst + lengthToExamine + (nuint)sizeof(TVector));
                     TVector second1 = TVector.Load(pSecond + lengthToExamine);
-                    TVector second2 = TVector.Load(pSecond + lengthToExamine + (nuint)TVector.ElementCount);
+                    TVector second2 = TVector.Load(pSecond + lengthToExamine + (nuint)sizeof(TVector));
                     if (TVector.EqualsAll((firstV1 ^ second1) | (firstV2 ^ second2), TVector.Zero))
                     {
                         return true;
