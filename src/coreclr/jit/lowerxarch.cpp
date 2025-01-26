@@ -9602,10 +9602,6 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 {
     assert(!childNode->IsAllBitsSet());
     assert(!childNode->IsZero());
-    var_types   simdType            = parentNode->TypeGet();
-    var_types   simdBaseType        = parentNode->GetSimdBaseType();
-    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
-    bool        isCreatedFromScalar = true;
 
     if (!comp->canUseEmbeddedBroadcast())
     {
@@ -9613,10 +9609,16 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         return;
     }
 
-    if (simdType == TYP_MASK)
-    {
-        simdType = Compiler::getSIMDTypeForSize(parentNode->GetSimdSize());
-    }
+    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
+    // The containment check has already validated that the child is sufficiently large.
+    //
+    // We use the parent node's base type, because we must ensure that the constant repeats correctly for that size,
+    // regardless of how the constant vector was created.
+
+    var_types   simdType            = childNode->TypeGet();
+    var_types   simdBaseType        = parentNode->GetSimdBaseType();
+    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
+    bool        isCreatedFromScalar = true;
 
     if (varTypeIsSmall(simdBaseType))
     {
