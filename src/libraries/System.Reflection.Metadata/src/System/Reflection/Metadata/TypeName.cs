@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -288,10 +288,16 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// The namespace of this type; e.g., "System".
         /// </summary>
+        /// <exception cref="InvalidOperationException">This instance is a nested type.</exception>
         public string Namespace
         {
             get
             {
+                if (IsNested)
+                {
+                    TypeNameParserHelpers.ThrowInvalidOperation_NestedTypeNamespace();
+                }
+
                 if (_namespace is null)
                 {
                     TypeName rootTypeName = this;

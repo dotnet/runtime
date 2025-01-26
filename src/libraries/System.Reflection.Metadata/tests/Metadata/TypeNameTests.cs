@@ -14,13 +14,20 @@ namespace System.Reflection.Metadata.Tests
     {
         [Theory]
         [InlineData("  System.Int32", "System.Int32", "System", "Int32")]
-        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", "MyNamespace", "NestedType")]
-        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string expectedNamespace, string expectedName)
+        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", null, "NestedType")]
+        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string? expectedNamespace, string expectedName)
         {
             TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(expectedName, parsed.Name);
-            Assert.Equal(expectedNamespace, parsed.Namespace);
+            if (expectedNamespace is null)
+            {
+                Assert.Throws<InvalidOperationException>(() => parsed.Namespace);
+            }
+            else
+            {
+                Assert.Equal(expectedNamespace, parsed.Namespace);
+            }
             Assert.Equal(expectedFullName, parsed.FullName);
             Assert.Equal(expectedFullName, parsed.AssemblyQualifiedName);
         }
@@ -710,7 +717,14 @@ namespace System.Reflection.Metadata.Tests
             while (true)
             {
                 Assert.Equal(parsed.Name, made.Name);
-                Assert.Equal(parsed.Namespace, made.Namespace);
+                if (parsed.IsNested)
+                {
+                    Assert.Throws<InvalidOperationException>(() => made.Namespace);
+                }
+                else
+                {
+                    Assert.Equal(parsed.Namespace, made.Namespace);
+                }
                 Assert.Equal(parsed.FullName, made.FullName);
                 Assert.Equal(assemblyName, made.AssemblyName);
                 Assert.NotEqual(parsed.AssemblyQualifiedName, made.AssemblyQualifiedName);
@@ -805,7 +819,14 @@ namespace System.Reflection.Metadata.Tests
                 Type genericType = type.GetGenericTypeDefinition();
                 TypeName genericTypeName = parsed.GetGenericTypeDefinition();
                 Assert.Equal(genericType.Name, genericTypeName.Name);
-                Assert.Equal(genericType.Namespace ?? "", genericTypeName.Namespace);
+                if (genericType.IsNested)
+                {
+                    Assert.Throws<InvalidOperationException>(() => genericTypeName.Namespace);
+                }
+                else
+                {
+                    Assert.Equal(genericType.Namespace ?? "", genericTypeName.Namespace);
+                }
                 Assert.Equal(genericType.FullName, genericTypeName.FullName);
                 Assert.Equal(genericType.AssemblyQualifiedName, genericTypeName.AssemblyQualifiedName);
             }
@@ -914,7 +935,7 @@ namespace System.Reflection.Metadata.Tests
                 {
                     return Make(GetType(typeName.GetGenericTypeDefinition(), throwOnError, ignoreCase));
                 }
-                else if(typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+                else if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
                 {
                     return Make(GetType(typeName.GetElementType(), throwOnError, ignoreCase));
                 }
@@ -979,7 +1000,14 @@ namespace System.Reflection.Metadata.Tests
         {
             Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
             Assert.Equal(type.FullName, typeName.FullName);
-            Assert.Equal(type.Namespace ?? "", typeName.Namespace);
+            if (type.IsNested)
+            {
+                Assert.Throws<InvalidOperationException>(() => typeName.Namespace);
+            }
+            else
+            {
+                Assert.Equal(type.Namespace ?? "", typeName.Namespace);
+            }
             Assert.Equal(type.Name, typeName.Name);
 
 #if NET

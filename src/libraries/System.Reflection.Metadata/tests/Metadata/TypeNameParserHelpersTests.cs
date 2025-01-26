@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -41,21 +41,9 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("JustTypeName", "")]
         [InlineData("Namespace.TypeName", "Namespace")]
         [InlineData("Namespace1.Namespace2.TypeName", "Namespace1.Namespace2")]
-        [InlineData("Namespace.NotNamespace\\.TypeName", "Namespace")]
-        [InlineData("Namespace1.Namespace2.Containing+Nested", "Namespace1.Namespace2")]
         [InlineData("Namespace1.Namespace2.Not\\+Nested", "Namespace1.Namespace2")]
-        [InlineData("NotNamespace1\\.NotNamespace2\\.TypeName", "")]
-        [InlineData("NotNamespace1\\.NotNamespace2\\.Not\\+Nested", "")]
-        [InlineData("Namespace1.Not\\+NestedNamespace.MyInnerType", "Namespace1.Not\\+NestedNamespace")]
         public void GetNamespaceReturnsJustNamespace(string fullName, string expected)
             => Assert.Equal(expected, TypeNameParserHelpers.GetNamespace(fullName.AsSpan()).ToString());
-
-        [Theory]
-        [InlineData("Namespace1.MyOuterType+NestedNamespace.MyInnerType")]
-        [InlineData("Namespace1\\.MyOuterType+NestedNamespace.MyInnerType")]
-        [InlineData("Namespace1.MyOuterType+NestedNamespace.MyInnerType+MyInnermostType")]
-        public void GetNamespaceThrowsOnNestedNamespace(string fullName)
-            => Assert.Throws<InvalidOperationException>(() => TypeNameParserHelpers.GetNamespace(fullName.AsSpan()));
 
         [Theory]
         [InlineData("JustTypeName", "JustTypeName")]

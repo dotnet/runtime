@@ -430,7 +430,7 @@
     <value>This operation is only valid on arrays, pointers and references.</value>
   </data>
   <data name="InvalidOperation_NestedTypeNamespace" xml:space="preserve">
-    <value>Nested type name cannot have a namespace.</value>
+    <value>Cannot retrieve the namespace of a nested type.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
     <value>The given assembly name was invalid.</value>
