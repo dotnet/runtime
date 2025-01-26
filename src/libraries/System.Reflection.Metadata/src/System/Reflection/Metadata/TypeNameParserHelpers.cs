@@ -104,51 +104,24 @@ namespace System.Reflection.Metadata
 
         internal static ReadOnlySpan<char> GetNamespace(ReadOnlySpan<char> fullName)
         {
-            // A type name of a nested type can also contain a namespace.
-            // We want to return the namespace of the outermost type, so we need to split before the first unescaped '+',
-            // and then before the last unescaped '.' after that.
-            int offset = IndexOfAnyUnescaped(fullName, '+');
-
-            if (offset > 0)
+            // A nested type name can have a namespace itself. Iterate from the innermost type outwards,
+            // and return the first namespace we find.
+            int offset;
+            while (LastIndexOfUnescaped(fullName, '+') is int nestingBoundaryPos && nestingBoundaryPos > 0)
             {
-                fullName = fullName.Slice(0, offset);
+                ReadOnlySpan<char> nestedFullName = fullName.Slice(nestingBoundaryPos + 1);
+                offset = LastIndexOfUnescaped(nestedFullName, '.');
+                if (offset > 0)
+                {
+                    return nestedFullName.Slice(0, offset);
+                }
+                fullName = fullName.Slice(0, nestingBoundaryPos);
             }
-
-            offset = LastIndexOfAnyUnescaped(fullName, '.');
-
+            offset = LastIndexOfUnescaped(fullName, '.');
             return offset < 0 ? [] : fullName.Slice(0, offset);
         }
 
-        private static int IndexOfAnyUnescaped(ReadOnlySpan<char> str, char c)
-        {
-            int offset = str.IndexOf(c);
-
-            if (offset > 0 && str[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
-            {
-                offset = IndexOfAnyUnescapedSlow(str, c, startIndex: offset);
-            }
-
-            return offset;
-
-            static int IndexOfAnyUnescapedSlow(ReadOnlySpan<char> str, char c, int startIndex)
-            {
-                int offset = startIndex;
-                for (; offset < str.Length; offset++)
-                {
-                    if (str[offset] == c)
-                    {
-                        if (offset == 0 || str[offset - 1] != EscapeCharacter)
-                        {
-                            break;
-                        }
-                        offset++; // skip the escaping character
-                    }
-                }
-                return offset;
-            }
-        }
-
-        private static int LastIndexOfAnyUnescaped(ReadOnlySpan<char> str, char c)
+        private static int LastIndexOfUnescaped(ReadOnlySpan<char> str, char c)
         {
             int offset = str.LastIndexOf(c);
 
