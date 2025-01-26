@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -121,6 +121,20 @@ namespace System.Reflection.Metadata
             return offset < 0 ? [] : fullName.Slice(0, offset);
         }
 
+        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
+        {
+            // If the type is nested, return the whole name after the plus sign.
+            int offset = LastIndexOfUnescaped(fullName, '+');
+
+            if (offset < 0)
+            {
+                // Look for dots only if the type is not nested.
+                offset = LastIndexOfUnescaped(fullName, '.');
+            }
+
+            return offset < 0 ? fullName : fullName.Slice(offset + 1);
+        }
+
         private static int LastIndexOfUnescaped(ReadOnlySpan<char> str, char c)
         {
             int offset = str.LastIndexOf(c);
@@ -140,39 +154,6 @@ namespace System.Reflection.Metadata
                     if (str[offset] == c)
                     {
                         if (offset == 0 || str[offset - 1] != EscapeCharacter)
-                        {
-                            break;
-                        }
-                        offset--; // skip the escaping character
-                    }
-                }
-                return offset;
-            }
-        }
-
-        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
-        {
-            // The two-value form of MemoryExtensions.LastIndexOfAny does not suffer
-            // from the behavior mentioned in the comment at the top of GetFullTypeNameLength.
-            // It always takes O(m * i) worst-case time and is safe to use here.
-
-            int offset = fullName.LastIndexOfAny('.', '+');
-
-            if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
-            {
-                offset = GetUnescapedOffset(fullName, startIndex: offset);
-            }
-
-            return offset < 0 ? fullName : fullName.Slice(offset + 1);
-
-            static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
-            {
-                int offset = startIndex;
-                for (; offset >= 0; offset--)
-                {
-                    if (fullName[offset] is '.' or '+')
-                    {
-                        if (offset == 0 || fullName[offset - 1] != EscapeCharacter)
                         {
                             break;
                         }
