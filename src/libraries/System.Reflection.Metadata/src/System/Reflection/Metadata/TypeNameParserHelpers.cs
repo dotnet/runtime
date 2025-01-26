@@ -199,9 +199,7 @@ namespace System.Reflection.Metadata
                     }
                 }
 
-                string result = sb.ToString();
-                sb.Dispose();
-                return result;
+                return sb.ToString();
             }
         }
 
