@@ -14,8 +14,7 @@ namespace System.Diagnostics
         public static readonly bool IsHighResolution = true;
 
         // performance-counter frequency, in counts per ticks.
-        // This can speed up conversion from high frequency performance-counter
-        // to ticks.
+        // This can speed up conversion to ticks.
         private static readonly double s_tickFrequency = (double)TimeSpan.TicksPerSecond / Frequency;
 
         public Stopwatch()
@@ -34,7 +33,7 @@ namespace System.Diagnostics
 
         public static Stopwatch StartNew()
         {
-            Stopwatch s = new Stopwatch();
+            Stopwatch s = new();
             s.Start();
             return s;
         }
@@ -72,31 +71,29 @@ namespace System.Diagnostics
         /// </returns>
         public override string ToString() => Elapsed.ToString();
 
-        public bool IsRunning
-        {
-            get { return _isRunning; }
-        }
+        public bool IsRunning => _isRunning;
 
-        public TimeSpan Elapsed
-        {
-            get { return new TimeSpan(GetElapsedDateTimeTicks()); }
-        }
+        public TimeSpan Elapsed => new(ElapsedTimeSpanTicks);
 
-        public long ElapsedMilliseconds
-        {
-            get { return GetElapsedDateTimeTicks() / TimeSpan.TicksPerMillisecond; }
-        }
+        public long ElapsedMilliseconds => ElapsedTimeSpanTicks / TimeSpan.TicksPerMillisecond;
 
         public long ElapsedTicks
         {
-            get { return GetRawElapsedTicks(); }
+            get
+            {
+                long timeElapsed = _elapsed;
+
+                // If the Stopwatch is running, add elapsed time since the Stopwatch is started last time.
+                if (_isRunning)
+                {
+                    timeElapsed += GetTimestamp() - _startTimeStamp;
+                }
+
+                return timeElapsed;
+            }
         }
 
-        public static long GetTimestamp()
-        {
-            Debug.Assert(IsHighResolution);
-            return QueryPerformanceCounter();
-        }
+        public static long GetTimestamp() => QueryPerformanceCounter();
 
         /// <summary>Gets the elapsed time since the <paramref name="startingTimestamp"/> value retrieved using <see cref="GetTimestamp"/>.</summary>
         /// <param name="startingTimestamp">The timestamp marking the beginning of the time period.</param>
@@ -109,31 +106,9 @@ namespace System.Diagnostics
         /// <param name="endingTimestamp">The timestamp marking the end of the time period.</param>
         /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting and ending timestamps.</returns>
         public static TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) =>
-            new TimeSpan((long)((endingTimestamp - startingTimestamp) * s_tickFrequency));
+            new((long)((endingTimestamp - startingTimestamp) * s_tickFrequency));
 
-        // Get the elapsed ticks.
-        private long GetRawElapsedTicks()
-        {
-            long timeElapsed = _elapsed;
-
-            if (_isRunning)
-            {
-                // If the Stopwatch is running, add elapsed time since
-                // the Stopwatch is started last time.
-                long currentTimeStamp = GetTimestamp();
-                long elapsedUntilNow = currentTimeStamp - _startTimeStamp;
-                timeElapsed += elapsedUntilNow;
-            }
-            return timeElapsed;
-        }
-
-        // Get the elapsed ticks.
-        private long GetElapsedDateTimeTicks()
-        {
-            Debug.Assert(IsHighResolution);
-            // convert high resolution perf counter to DateTime ticks
-            return unchecked((long)(GetRawElapsedTicks() * s_tickFrequency));
-        }
+        private long ElapsedTimeSpanTicks => (long)(ElapsedTicks * s_tickFrequency);
 
         private string DebuggerDisplay => $"{Elapsed} (IsRunning = {_isRunning})";
     }
