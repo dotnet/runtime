@@ -40,8 +40,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					LocalWithWarning ();
 				}
 
+				// NativeAOT behavioral difference
+				[UnexpectedWarning ("IL2026", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85161")]
 				// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-				[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
+				[ExpectedWarning ("IL2026", Tool.Analyzer, "Analyzer cannot remove branch")]
 				void LocalWithWarning ()
 				{
 					// No warning
@@ -60,8 +62,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				LocalWithWarning ();
 			}
 
+			// NativeAOT behavioral difference
+			[ExpectedWarning ("IL2026", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85161")]
 			// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-			[ExpectedWarning ("IL2026", Tool.Analyzer, "")]
+			[ExpectedWarning ("IL2026", Tool.Analyzer, "Analyzer cannot remove branch")]
 			void LocalWithWarning ()
 			{
 				Requires ();
