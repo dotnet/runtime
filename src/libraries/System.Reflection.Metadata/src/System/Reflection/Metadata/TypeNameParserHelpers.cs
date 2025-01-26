@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -104,20 +104,16 @@ namespace System.Reflection.Metadata
 
         internal static ReadOnlySpan<char> GetNamespace(ReadOnlySpan<char> fullName)
         {
-            // A nested type name can have a namespace itself. Iterate from the innermost type outwards,
-            // and return the first namespace we find.
-            int offset;
+            // Detect if a nested type name has a namespace (e.g. "a.b+c") and throw if it does.
             while (LastIndexOfUnescaped(fullName, '+') is int nestingBoundaryPos && nestingBoundaryPos > 0)
             {
-                ReadOnlySpan<char> nestedFullName = fullName.Slice(nestingBoundaryPos + 1);
-                offset = LastIndexOfUnescaped(nestedFullName, '.');
-                if (offset > 0)
+                if (LastIndexOfUnescaped(fullName.Slice(nestingBoundaryPos + 1), '.') > 0)
                 {
-                    return nestedFullName.Slice(0, offset);
+                    ThrowInvalidOperation_NestedTypeNamespace();
                 }
                 fullName = fullName.Slice(0, nestingBoundaryPos);
             }
-            offset = LastIndexOfUnescaped(fullName, '.');
+            int offset = LastIndexOfUnescaped(fullName, '.');
             return offset < 0 ? [] : fullName.Slice(0, offset);
         }
 
@@ -479,6 +475,17 @@ namespace System.Reflection.Metadata
         {
 #if SYSTEM_REFLECTION_METADATA
             throw new InvalidOperationException(SR.Argument_HasToBeArrayClass);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
+#endif
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NestedTypeNamespace()
+        {
+#if SYSTEM_REFLECTION_METADATA
+            throw new InvalidOperationException(SR.InvalidOperation_NestedTypeNamespace);
 #else
             Debug.Fail("Expected to be unreachable");
             throw new InvalidOperationException();
