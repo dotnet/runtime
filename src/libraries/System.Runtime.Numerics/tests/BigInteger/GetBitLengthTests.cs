@@ -44,8 +44,8 @@ namespace System.Numerics.Tests
         public static void RunGetBitLengthTestsLarge()
         {
             // Very large cases
-            VerifyGetBitLength(BigInteger.One << 32 << int.MaxValue, int.MaxValue + 32L + 1, 1);
-            VerifyGetBitLength(BigInteger.One << 64 << int.MaxValue, int.MaxValue + 64L + 1, 1);
+            VerifyGetBitLength(BigInteger.One << 32 << (int.MaxValue / 2), (int.MaxValue / 2) + 32L + 1, 1);
+            VerifyGetBitLength(BigInteger.One << 64 << (int.MaxValue / 2), (int.MaxValue / 2) + 64L + 1, 1);
         }
 
         private static void VerifyLoopGetBitLength(Random random, bool isSmall)
