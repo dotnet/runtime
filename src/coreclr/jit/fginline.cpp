@@ -625,7 +625,7 @@ private:
                         if (call->IsInlineCandidate())
                         {
                             // If the call is the root expression in a statement, and it returns void,
-                            // and we can just inline it directly without creating a RET_EXPR.
+                            // we can inline it directly without creating a RET_EXPR.
                             if (parent != nullptr || call->gtReturnType != TYP_VOID)
                             {
                                 Statement* stmt = m_compiler->gtNewStmt(call);
