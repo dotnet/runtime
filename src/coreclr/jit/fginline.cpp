@@ -609,47 +609,56 @@ private:
                 context                             = nullptr;
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
-                // TODO-CQ: We should spill the call if it has side effects instead of conservatively
-                // estimating the side effects using its parent and blocking inlining.
-                if (context != nullptr &&
-                    (parent == nullptr || (parent->OperIs(GT_STORE_LCL_VAR) && (parent == m_curStmt->GetRootNode()))))
-                {
-                    CORINFO_CALL_INFO callInfo = {};
-                    callInfo.hMethod           = method;
-                    callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
 
-                    if (call->IsInlineCandidate())
+                if (context != nullptr)
+                {
+                    bool areSideEffectsFirstExecuted =
+                        m_compiler->gtSubTreeAndChildrenAreFirstExecutedEffects(m_curStmt->GetRootNode(), call);
+
+                    // The aggressive spilling in the importer guaranteed the subtree of a call is always
+                    // the first executed side effect.
+                    // See https://github.com/dotnet/runtime/issues/72323.
+                    assert(areSideEffectsFirstExecuted);
+
+                    if (areSideEffectsFirstExecuted)
                     {
-                        // If the call is the top-level expression in a statement, and it returns void,
-                        // there will be no use of its return value, and we can just inline it directly.
-                        // In this case we don't need to create a RET_EXPR node for it. Otherwise, we
-                        // need to create a RET_EXPR node for it.
-                        if (parent != nullptr || call->gtReturnType != TYP_VOID)
+                        CORINFO_CALL_INFO callInfo = {};
+                        callInfo.hMethod           = method;
+                        callInfo.methodFlags       = methodFlags;
+                        m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
+
+                        if (call->IsInlineCandidate())
                         {
-                            Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                            if (m_firstNewStmt == nullptr)
+                            // If the call is the top-level expression in a statement, and it returns void,
+                            // there will be no use of its return value, and we can just inline it directly.
+                            // In this case we don't need to create a RET_EXPR node for it. Otherwise, we
+                            // need to create a RET_EXPR node for it.
+                            if (parent != nullptr || call->gtReturnType != TYP_VOID)
                             {
-                                m_firstNewStmt = stmt;
+                                Statement* stmt = m_compiler->gtNewStmt(call);
+                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                                if (m_firstNewStmt == nullptr)
+                                {
+                                    m_firstNewStmt = stmt;
+                                }
+
+                                GenTreeRetExpr* retExpr =
+                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                               genActualType(call->TypeGet()));
+                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+
+                                JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                                DISPTREE(retExpr);
+
+                                *pTree = retExpr;
                             }
 
-                            GenTreeRetExpr* retExpr =
-                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                           genActualType(call->TypeGet()));
-                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
 
-                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
-                            DISPTREE(retExpr);
-
-                            *pTree = retExpr;
+                            JITDUMP("New inline candidate due to late devirtualization:\n");
+                            DISPTREE(call);
                         }
-
-                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
-
-                        JITDUMP("New inline candidate due to late devirtualization:\n");
-                        DISPTREE(call);
                     }
                 }
                 m_madeChanges = true;
