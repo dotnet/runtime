@@ -3,10 +3,6 @@
 
 namespace System.Diagnostics
 {
-    // This class uses high-resolution performance counter if the installed
-    // hardware supports it. Otherwise, the class will fall back to DateTime
-    // and uses ticks as a measurement.
-
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public partial class Stopwatch
     {
@@ -14,10 +10,6 @@ namespace System.Diagnostics
         private long _startTimeStamp;
         private bool _isRunning;
 
-        // "Frequency" stores the frequency of the high-resolution performance counter,
-        // if one exists. Otherwise it will store TicksPerSecond.
-        // The frequency cannot change while the system is running,
-        // so we only need to initialize it once.
         public static readonly long Frequency = QueryPerformanceFrequency();
         public static readonly bool IsHighResolution = true;
 
@@ -28,7 +20,6 @@ namespace System.Diagnostics
 
         public Stopwatch()
         {
-            Reset();
         }
 
         public void Start()
@@ -53,29 +44,16 @@ namespace System.Diagnostics
             // Calling stop on a stopped Stopwatch is a no-op.
             if (_isRunning)
             {
-                long endTimeStamp = GetTimestamp();
-                long elapsedThisPeriod = endTimeStamp - _startTimeStamp;
-                _elapsed += elapsedThisPeriod;
+                _elapsed += GetTimestamp() - _startTimeStamp;
                 _isRunning = false;
-
-                if (_elapsed < 0)
-                {
-                    // When measuring small time periods the Stopwatch.Elapsed*
-                    // properties can return negative values.  This is due to
-                    // bugs in the basic input/output system (BIOS) or the hardware
-                    // abstraction layer (HAL) on machines with variable-speed CPUs
-                    // (e.g. Intel SpeedStep).
-
-                    _elapsed = 0;
-                }
             }
         }
 
         public void Reset()
         {
             _elapsed = 0;
-            _isRunning = false;
             _startTimeStamp = 0;
+            _isRunning = false;
         }
 
         // Convenience method for replacing {sw.Reset(); sw.Start();} with a single sw.Restart()
