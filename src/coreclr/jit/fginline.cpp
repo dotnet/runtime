@@ -612,15 +612,10 @@ private:
 
                 if (context != nullptr)
                 {
-                    bool areSideEffectsFirstExecuted =
+                    bool isFirstExecutedEffect =
                         m_compiler->gtSubTreeAndChildrenAreFirstExecutedEffects(m_curStmt->GetRootNode(), call);
 
-                    // The aggressive spilling in the importer guaranteed the subtree of a call is always
-                    // the first executed side effect.
-                    // See https://github.com/dotnet/runtime/issues/72323.
-                    assert(areSideEffectsFirstExecuted);
-
-                    if (areSideEffectsFirstExecuted)
+                    if (isFirstExecutedEffect)
                     {
                         CORINFO_CALL_INFO callInfo = {};
                         callInfo.hMethod           = method;
@@ -629,10 +624,8 @@ private:
 
                         if (call->IsInlineCandidate())
                         {
-                            // If the call is the top-level expression in a statement, and it returns void,
-                            // there will be no use of its return value, and we can just inline it directly.
-                            // In this case we don't need to create a RET_EXPR node for it. Otherwise, we
-                            // need to create a RET_EXPR node for it.
+                            // If the call is the root expression in a statement, and it returns void,
+                            // and we can just inline it directly without creating a RET_EXPR.
                             if (parent != nullptr || call->gtReturnType != TYP_VOID)
                             {
                                 Statement* stmt = m_compiler->gtNewStmt(call);
@@ -659,6 +652,11 @@ private:
                             JITDUMP("New inline candidate due to late devirtualization:\n");
                             DISPTREE(call);
                         }
+                    }
+                    else
+                    {
+                        // TODO-CQ: Split the effects and enable inlining.
+                        JITDUMP("Give up inlining call [%06u] due to side effects\n", call->gtTreeID);
                     }
                 }
                 m_madeChanges = true;
