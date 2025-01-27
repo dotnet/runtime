@@ -46,16 +46,6 @@ namespace System.Reflection.Metadata.Tests
             => Assert.Equal(expected, TypeNameParserHelpers.GetNamespace(fullName.AsSpan()).ToString());
 
         [Theory]
-        [InlineData("JustTypeName", "JustTypeName")]
-        [InlineData("Namespace.TypeName", "TypeName")]
-        [InlineData("Namespace1.Namespace2.TypeName", "TypeName")]
-        [InlineData("Namespace1.Namespace2.Containing+Nested", "Nested", true)]
-        [InlineData("Namespace1.Namespace2.Not\\+Nested", "Not\\+Nested")]
-        [InlineData("Namespace1+Dotted.Name", "Dotted.Name", true)]
-        public void GetNameReturnsJustName(string fullName, string expected, bool isNested = false)
-            => Assert.Equal(expected, TypeNameParserHelpers.GetName(fullName.AsSpan(), isNested).ToString());
-
-        [Theory]
         [InlineData("simple", "simple")]
         [InlineData("simple]", "simple")]
         [InlineData("esc\\]aped", "esc\\]aped")]

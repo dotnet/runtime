@@ -108,45 +108,6 @@ namespace System.Reflection.Metadata
             return offset < 0 ? [] : fullName.Slice(0, offset);
         }
 
-        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName, bool isNested)
-        {
-            // If the type is nested, return the whole name after the plus sign.
-            int offset = isNested
-                ? LastIndexOfUnescaped(fullName, '+')
-                : fullName.LastIndexOf('.');
-
-            return offset < 0 ? fullName : fullName.Slice(offset + 1);
-        }
-
-        private static int LastIndexOfUnescaped(ReadOnlySpan<char> str, char c)
-        {
-            int offset = str.LastIndexOf(c);
-
-            if (offset > 0 && str[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
-            {
-                offset = LastIndexOfAnyUnescapedSlow(str, c, startIndex: offset);
-            }
-
-            return offset;
-
-            static int LastIndexOfAnyUnescapedSlow(ReadOnlySpan<char> str, char c, int startIndex)
-            {
-                int offset = startIndex;
-                for (; offset >= 0; offset--)
-                {
-                    if (str[offset] == c)
-                    {
-                        if (offset == 0 || str[offset - 1] != EscapeCharacter)
-                        {
-                            break;
-                        }
-                        offset--; // skip the escaping character
-                    }
-                }
-                return offset;
-            }
-        }
-
         internal static string Unescape(string input)
         {
             int indexOfEscapeCharacter = input.IndexOf(EscapeCharacter);

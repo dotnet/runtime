@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -93,6 +93,31 @@ namespace System.Reflection.Metadata.Tests
 #if NET
                 Assert.Throws<TypeLoadException>(() => Type.GetType(input));
 #endif
+            }
+        }
+
+        [Theory]
+        [InlineData("Type+InnerType", (string[])["Type", "InnerType"])]
+        [InlineData("Type+InnerType+InnermostType", (string[])["Type", "InnerType", "InnermostType"])]
+        [InlineData("NotNested\\+Name", (string[])["NotNested\\+Name"])]
+        [InlineData("NameEndingInBackSlash\\\\+NestedName", (string[])["NameEndingInBackSlash\\\\", "NestedName"])]
+        public void NestedName(string input, string[] expectedNames)
+        {
+            TypeName parsed = TypeName.Parse(input.AsSpan());
+            int i = expectedNames.Length - 1;
+            while (true)
+            {
+                Assert.Equal(expectedNames[i], parsed.Name);
+                // Caling FullName trims the _fullName value of the instance to just this type's full name.
+                // Test calling Name again to ensure it's still correct.
+                _ = parsed.FullName;
+                Assert.Equal(expectedNames[i], parsed.Name);
+                if (!parsed.IsNested)
+                {
+                    break;
+                }
+                parsed = parsed.DeclaringType;
+                i--;
             }
         }
 

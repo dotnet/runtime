@@ -230,6 +230,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this is a nested type (e.g., "Namespace.Declaring+Nested").
         /// For nested types <seealso cref="DeclaringType"/> returns their declaring type.
         /// </summary>
+        [MemberNotNullWhen(true, nameof(_declaringType))]
         public bool IsNested => _declaringType is not null;
 
         /// <summary>
@@ -263,8 +264,7 @@ namespace System.Reflection.Metadata
                 {
                     if (IsConstructedGenericType)
                     {
-                        TypeName genericTypeDef = GetGenericTypeDefinition();
-                        _name = TypeNameParserHelpers.GetName(genericTypeDef.FullName.AsSpan(), genericTypeDef.IsNested).ToString();
+                        _name = GetGenericTypeDefinition().Name;
                     }
                     else if (IsPointer || IsByRef || IsArray)
                     {
@@ -272,13 +272,27 @@ namespace System.Reflection.Metadata
                         builder.Append(GetElementType().Name);
                         _name = TypeNameParserHelpers.GetRankOrModifierStringRepresentation(_rankOrModifier, ref builder);
                     }
-                    else if (_nestedNameLength > 0 && _fullName is not null)
-                    {
-                        _name = TypeNameParserHelpers.GetName(_fullName.AsSpan(0, _nestedNameLength), IsNested).ToString();
-                    }
                     else
                     {
-                        _name = TypeNameParserHelpers.GetName(FullName.AsSpan(), IsNested).ToString();
+                        // _fullName can be null only in constructed generic or modified types, which we handled above.
+                        Debug.Assert(_fullName is not null);
+                        ReadOnlySpan<char> name = _fullName.AsSpan();
+                        if (_nestedNameLength > 0)
+                        {
+                            name = name.Slice(0, _nestedNameLength);
+                        }
+                        if (IsNested)
+                        {
+                            // If the type is nested, we know the length of the declaring type's full name.
+                            // Get the characters after that plus one for the '+' separator.
+                            name = name.Slice(_declaringType._nestedNameLength + 1);
+                        }
+                        else if (name.LastIndexOf('.') is int dotIndex && dotIndex >= 0)
+                        {
+                            // If the type is not nested, find the last dot in the full name and and return the substring after it.
+                            name = name.Slice(dotIndex + 1);
+                        }
+                        _name = name.ToString();
                     }
                 }
 
