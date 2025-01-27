@@ -7,20 +7,23 @@ The GC write barrier function (JIT_WriteBarrier) is generally the hottest functi
 JIT_WriteBarrier(Object **dst, Object *ref)
     Set *dst = ref
 
-    // Shadow Heap update:
+    // Shadow Heap update
     ifdef TARGET_ARM64:
-        if *wbs_GCShadow != 0:
-            if g_GCShadow + (dst - g_lowest_address) < wbs_GCShadowEnd:
-                *(g_GCShadow + (dst - g_lowest_address) = ref
+        if g_GCShadow != 0:
+            long *shadow_dst = g_GCShadow + (dst - g_lowest_address)
+            // Check shadow heap location is within shadow heap
+            if shadow_dst < g_GCShadowEnd:
+                *shadow_dst = ref
+                atomic: wait for stores to complete
                 if *dst != ref:
-                    *(g_GCShadow + (dst - g_lowest_address) = INVALIDGCVALUE
+                    *shadow_dst = INVALIDGCVALUE
 
-    // Write watch for GC Heap:
+    // Update the write watch table, if it's in use
     ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP:
         if g_sw_ww_table != 0:
-            if *(g_sw_ww_table + (dst>>11)) != 0:
-                *(g_sw_ww_table + (dst>>11)) =  0xff
-
+            char *ww_table_dst = g_sw_ww_table + (dst>>11)
+            if *ww_table_dst != 0:
+                *ww_table_dst =  0xff
 
     // Return if the reference is not in the heap
     if ref < g_ephemeral_low || reg >= g_ephemeral_high:
