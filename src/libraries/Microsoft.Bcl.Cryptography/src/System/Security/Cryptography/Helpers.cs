@@ -5,11 +5,27 @@ using System;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Internal.Cryptography
 {
     internal static partial class Helpers
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe ref readonly byte GetNonNullPinnableReference(ReadOnlySpan<byte> buffer)
+        {
+            // Based on the internal implementation from MemoryMarshal.
+            return ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe ref byte GetNonNullPinnableReference(Span<byte> buffer)
+        {
+            // Based on the internal implementation from MemoryMarshal.
+            return ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
+        }
+
         internal static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
         {
             try

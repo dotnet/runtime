@@ -5,11 +5,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
-             Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" /> 
+             Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AesGcmTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AesGcmTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\CommonAEADTests.cs"
+             Link="CommonTest\System\Security\Cryptography\CommonAEADTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
