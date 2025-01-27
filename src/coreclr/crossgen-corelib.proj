@@ -113,7 +113,9 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(TargetsAndroid)' != 'true'">$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
+      <!-- Unless and until Android requires R2R specific customizations, we're just dealing with another linux -->
+      <CrossGenDllCmd Condition="'$(TargetsAndroid)' == 'true'">$(CrossGenDllCmd) --targetos:linux</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
       <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>

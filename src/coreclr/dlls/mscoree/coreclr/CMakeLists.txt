@@ -58,10 +58,6 @@ else(CLR_CMAKE_HOST_WIN32)
 
     set_exports_linker_option(${EXPORTS_FILE})
 
-    if(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
-        set(EXPORTS_LINKER_OPTION "${EXPORTS_LINKER_OPTION} -Wl,--no-warn-shared-textrel")
-    endif(CLR_CMAKE_TARGET_ANDROID AND CLR_CMAKE_HOST_ARCH_ARM)
-
 endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
@@ -227,6 +223,9 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS)
+    install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
+endif()
 
 # Enable profile guided optimization
 add_pgo(coreclr)

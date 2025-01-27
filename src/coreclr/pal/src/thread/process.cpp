@@ -84,10 +84,8 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #endif
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <pwd.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -227,7 +225,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #if defined(__NetBSD__)
 #define CLR_SEM_MAX_NAMELEN 15
 #elif defined(__APPLE__)
-#define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
+#define CLR_SEM_MAX_NAMELEN 31
 #elif defined(NAME_MAX)
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
 #else
@@ -2212,6 +2210,9 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
+#if defined(TARGET_IOS)
+    return FALSE;
+#else
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
@@ -2339,6 +2340,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
+#endif // !TARGET_IOS
 }
 
 /*++
@@ -2609,7 +2611,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2639,7 +2641,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2689,7 +2691,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     else
     {
         mach_msg_type_number_t cThreads;
@@ -2718,7 +2720,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 /*++

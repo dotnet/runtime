@@ -691,8 +691,8 @@ public:
     unsigned char lvSingleDefDisqualifyReason = 'H';
 #endif
 
-    unsigned char lvAllDefsAreNoGc    : 1; // For pinned locals: true if all defs of this local are no-gc
-    unsigned char lvStackAllocatedBox : 1; // Local is a stack allocated box
+    unsigned char lvAllDefsAreNoGc       : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvStackAllocatedObject : 1; // Local is a stack allocated object (class, box, array, ...)
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
@@ -807,9 +807,9 @@ public:
         return lvIsMultiRegArg || lvIsMultiRegRet;
     }
 
-    bool IsStackAllocatedBox() const
+    bool IsStackAllocatedObject() const
     {
-        return lvStackAllocatedBox;
+        return lvStackAllocatedObject;
     }
 
 #if defined(DEBUG)
@@ -1542,8 +1542,9 @@ enum class PhaseChecks : unsigned int
     CHECK_LOOPS         = 1 << 4, // loop integrity/canonicalization
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
-    CHECK_LINKED_LOCALS = 1 << 7, // check linked list of locals
-    CHECK_FG_INIT_BLOCK = 1 << 8, // flow graph has an init block
+    CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
+    CHECK_LINKED_LOCALS = 1 << 8, // check linked list of locals
+    CHECK_FG_INIT_BLOCK = 1 << 9, // flow graph has an init block
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -1608,8 +1609,9 @@ enum class ProfileChecks : unsigned int
     CHECK_HASLIKELIHOOD = 1 << 0, // check all FlowEdges for hasLikelihood
     CHECK_LIKELIHOODSUM = 1 << 1, // check block succesor likelihoods sum to 1
     CHECK_LIKELY        = 1 << 2, // fully check likelihood based weights
-    RAISE_ASSERT        = 1 << 3, // assert on check failure
-    CHECK_ALL_BLOCKS    = 1 << 4, // check blocks even if bbHasProfileWeight is false
+    CHECK_FLAGS         = 1 << 3, // check blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
+    RAISE_ASSERT        = 1 << 4, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 5, // check blocks even if bbHasProfileWeight is false
 };
 
 inline constexpr ProfileChecks operator ~(ProfileChecks a)
@@ -2866,6 +2868,7 @@ public:
 
     bool bbInCatchHandlerILRange(BasicBlock* blk);
     bool bbInFilterILRange(BasicBlock* blk);
+    bool bbInCatchHandlerBBRange(BasicBlock* blk);
     bool bbInFilterBBRange(BasicBlock* blk);
     bool bbInTryRegions(unsigned regionIndex, BasicBlock* blk);
     bool bbInExnFlowRegions(unsigned regionIndex, BasicBlock* blk);
@@ -4324,6 +4327,8 @@ public:
 
 #ifdef TARGET_ARM
     int lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage);
+#elif TARGET_ARM64
+    int lvaFrameAddress(int varNum, bool* pFPbased, bool suppressFPtoSPRewrite = false);
 #else
     int lvaFrameAddress(int varNum, bool* pFPbased);
 #endif
@@ -5221,15 +5226,13 @@ private:
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
                                 bool                   exactContextNeedsRuntimeLookup,
-                                CORINFO_CALL_INFO*     callInfo,
-                                IL_OFFSET              ilOffset);
+                                CORINFO_CALL_INFO*     callInfo);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
-                                      IL_OFFSET              ilOffset,
                                       InlineResult*          inlineResult);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,
@@ -6105,6 +6108,9 @@ public:
 
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
+    PhaseStatus fgExpandStackArrayAllocations();
+    bool fgExpandStackArrayAllocation(BasicBlock* pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgVNBasedIntrinsicExpansion();
     bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -7537,6 +7543,7 @@ public:
 #define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 #define OMF_HAS_RECURSIVE_TAILCALL             0x00040000 // Method contains recursive tail call
 #define OMF_HAS_EXPANDABLE_CAST                0x00080000 // Method contains casts eligible for late expansion
+#define OMF_HAS_STACK_ARRAY                    0x00100000 // Method contains stack allocated arrays
 
     // clang-format on
 
@@ -7625,6 +7632,16 @@ public:
     void setMethodHasRecursiveTailcall()
     {
         optMethodFlags |= OMF_HAS_RECURSIVE_TAILCALL;
+    }
+
+    bool doesMethodHaveStackAllocatedArray()
+    {
+        return (optMethodFlags & OMF_HAS_STACK_ARRAY) != 0;
+    }
+
+    void setMethodHasStackAllocatedArray()
+    {
+        optMethodFlags |= OMF_HAS_STACK_ARRAY;
     }
 
     void pickGDV(GenTreeCall*           call,
