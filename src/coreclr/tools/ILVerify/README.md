@@ -76,7 +76,7 @@ In order to run the tests, execute:
 
 on Linux
 ```sh
-artifacts/tests/coreclr/(windows/linux).x64.Release/ilverify/ILVerificationTests.sh -coreroot=<repo_root>artifacts/tests/coreclr/(windows/linux).x64.Release/Tests/Core_Root
+artifacts/tests/coreclr//linux.x64.Release/ilverify/ILVerificationTests.sh -coreroot=<repo_root>artifacts/tests/coreclr/linux.x64.Release/Tests/Core_Root
 ```
 on Windows
 ```shell
