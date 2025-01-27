@@ -129,8 +129,11 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="SetupProperties" DependsOnTargets="$(IlcSetupPropertiesDependsOn)" BeforeTargets="Publish">
     <ItemGroup>
       <_NETCoreAppFrameworkReference Include="@(ResolvedFrameworkReference)" Condition="'%(ResolvedFrameworkReference.RuntimePackName)' == 'Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)'" />
-      <IlcUseNativeAOTRuntimePackLayout Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == ''">$(PublishAotUsingRuntimePack)</IlcUseNativeAOTRuntimePackLayout>
     </ItemGroup>
+
+    <PropertyGroup>
+      <IlcUseNativeAOTRuntimePackLayout Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == ''">$(PublishAotUsingRuntimePack)</IlcUseNativeAOTRuntimePackLayout>
+    </PropertyGroup>
 
     <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
       <!--
