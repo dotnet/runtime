@@ -672,7 +672,7 @@ LEAF_END JIT_PatchedWriteBarrierGroup, _TEXT
 .align 8
 LEAF_ENTRY JIT_WriteBarrier\rg, _TEXT
     // Just allocate space that will be filled in at runtime
-    .space 0xCC, 48
+    .space 48, 0xCC
 LEAF_END JIT_WriteBarrier\rg, _TEXT
 
 .endm
