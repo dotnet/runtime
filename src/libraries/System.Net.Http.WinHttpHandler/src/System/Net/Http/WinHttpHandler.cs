@@ -545,7 +545,7 @@ namespace System.Net.Http
 
                 if (disposing && _sessionHandle != null)
                 {
-                    SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
+                    _sessionHandle.Dispose();
                 }
             }
 
