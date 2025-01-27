@@ -806,7 +806,7 @@ void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator)
 
 static void* GetTlsIndexObjectAddress();
 
-#if !defined(TARGET_APPLE) && defined(TARGET_UNIX) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(TARGET_APPLE) && defined(TARGET_UNIX) && !defined(TARGET_ANDROID) && (defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 extern "C" size_t GetTLSResolverAddress();
 
 // Check if the resolver address retrieval code is expected. We verify the exact
@@ -905,7 +905,7 @@ static bool IsValidTLSResolver()
 
     return false;
 }
-#endif // !TARGET_APPLE && TARGET_UNIX && (TARGET_ARM64 || TARGET_LOONGARCH64)
+#endif // !TARGET_APPLE && TARGET_UNIX && !TARGET_ANDROID && (TARGET_ARM64 || TARGET_LOONGARCH64)
 
 bool CanJITOptimizeTLSAccess()
 {
@@ -924,6 +924,8 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for linux musl arm64
 #elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
     // Optimization is disabled for FreeBSD/arm64
+#elif defined(TARGET_ANDROID)
+    // Optimation is disabled for Android until emulated TLS is supported.
 #elif !defined(TARGET_APPLE) && defined(TARGET_UNIX) && defined(TARGET_ARM64)
     bool tlsResolverValid = IsValidTLSResolver();
     if (tlsResolverValid)
@@ -1062,15 +1064,17 @@ static void* GetTlsIndexObjectAddress()
     return GetThreadStaticDescriptor(p);
 }
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif !defined(TARGET_ANDROID) && defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 extern "C" size_t GetThreadStaticsVariableOffset();
 
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // !TARGET_ANDROID && TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 #endif // TARGET_WINDOWS
 
 void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
+
+#if !defined(TARGET_ANDROID)
     STANDARD_VM_CONTRACT;
     size_t threadStaticBaseOffset = 0;
 
@@ -1100,12 +1104,13 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     threadStaticBaseOffset = GetThreadStaticsVariableOffset();
 
 #else
-    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86 and Android");
 #endif // TARGET_WINDOWS
 
     pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, cNonCollectibleTlsData));
     pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadLocalData, pNonCollectibleTlsArrayData));
     pInfo->offsetOfBaseOfThreadLocalData = (uint32_t)threadStaticBaseOffset;
+#endif // !TARGET_ANDROID
 }
 #endif // !DACCESS_COMPILE
 

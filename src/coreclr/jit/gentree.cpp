@@ -20086,7 +20086,7 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 #endif
 #elif defined(TARGET_ARM64)
-    if (OperIs(GT_AND))
+    if (OperIs(GT_AND, GT_AND_NOT))
     {
         return true;
     }
