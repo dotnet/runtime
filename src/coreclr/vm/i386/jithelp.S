@@ -657,6 +657,7 @@ LEAF_END JIT_WriteBarrierReg_PostGrow,_TEXT
 // PatchedCodeStart and PatchedCodeEnd are used to determine bounds of patched code.
 //
 
+.align 4
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
     ret
 LEAF_END JIT_PatchedCodeStart, _TEXT
@@ -664,6 +665,7 @@ LEAF_END JIT_PatchedCodeStart, _TEXT
 // **********************************************************************
 // Write barriers generated at runtime
 
+.align 4
 LEAF_ENTRY JIT_PatchedWriteBarrierGroup, _TEXT
     ret
 LEAF_END JIT_PatchedWriteBarrierGroup, _TEXT
