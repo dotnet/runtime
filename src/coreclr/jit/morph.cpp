@@ -7755,14 +7755,23 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             break;
 
         case GT_STOREIND:
-            if (op1->OperIs(GT_FIELD_ADDR) && varTypeIsGC(tree))
+            if (varTypeIsGC(tree))
             {
-                CORINFO_FIELD_HANDLE fieldHandle = op1->AsFieldAddr()->gtFldHnd;
-                if (eeIsByrefLike(info.compCompHnd->getFieldClass(fieldHandle)))
+                GenTree* addr = op1;
+                // If we're storing a reference to a field (GT_FIELD_ADDR), let's check if the field's owner is a
+                // byref-like struct.
+                while ((addr != nullptr) && addr->OperIs(GT_FIELD_ADDR))
                 {
-                    JITDUMP("Marking [%06u] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n",
+                    CORINFO_FIELD_HANDLE fieldHandle = addr->AsFieldAddr()->gtFldHnd;
+                    if (eeIsByrefLike(info.compCompHnd->getFieldClass(fieldHandle)))
+                    {
+                        JITDUMP(
+                            "Marking [%06u] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n",
                             dspTreeID(tree));
-                    tree->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                        tree->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                        break;
+                    }
+                    addr = addr->AsFieldAddr()->GetFldObj();
                 }
             }
             break;

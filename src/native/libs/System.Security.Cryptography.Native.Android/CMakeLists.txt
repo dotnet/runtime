@@ -52,5 +52,8 @@ target_link_libraries(System.Security.Cryptography.Native.Android
 set_target_properties(System.Security.Cryptography.Native.Android PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME "System.Security.Cryptography.Native.Android")
 
-install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
-install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION .)
+if (GEN_SHARED_LIB)
+    install_with_stripped_symbols (System.Security.Cryptography.Native.Android PROGRAMS .)
+endif()
+
+install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
