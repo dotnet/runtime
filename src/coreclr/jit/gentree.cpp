@@ -21423,6 +21423,9 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else if (varTypeIsLong(simdBaseType))
             {
+                // This fallback path should only be used if the vpmullq instruction is not available.
+                assert(((simdSize == 16) || (simdSize == 32)) && !canUseEvexEncodingDebugOnly());
+
                 if ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
                     assert((simdSize == 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -21464,9 +21467,10 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 }
                 else
                 {
-                    // SSE2 implementation is simple decomposition using pmuludq,
+                    // This SSE2 implementation is a simple decomposition using pmuludq,
                     // which multiplies two uint32s and returns a uint64 result.
                     // aLo * bLo + ((aLo * bHi + aHi * bLo) << 32)
+
                     GenTree* op1Dup1 = fgMakeMultiUse(&op1);
                     GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
                     GenTree* op2Dup1 = fgMakeMultiUse(&op2);
