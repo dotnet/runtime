@@ -373,7 +373,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #else
 #if defined(TARGET_AMD64)
                 // Following nodes are handled when lowering the nodes
-                //     float  -> ulong/uint/int/long fro AVX10.2
+                //     float  -> ulong/uint/int/long for AVX10.2
                 //     double -> ulong/uint/int/long for AVX10.2
                 //     float  -> ulong/uint/int for AVX512F
                 //     double -> ulong/uint/long/int for AVX512F
