@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
     {
         internal static void CheckKeySize(int keySizeInBytes)
         {
-            if (keySizeInBytes is not 128 / 8 and not 192 / 8 and not 256 / 8)
+            if (keySizeInBytes is not (128 / 8 or 192 / 8 or 256 / 8))
             {
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);
             }
