@@ -1233,7 +1233,9 @@ namespace System.Diagnostics
                     activity._parentSpanId = parentContext.SpanId.ToString();
                 }
 
-                activity.ActivityTraceFlags = parentContext.TraceFlags;
+                // Note: Don't inherit Recorded from parent as it is set below
+                // based on sampling decision
+                activity.ActivityTraceFlags = parentContext.TraceFlags & ~ActivityTraceFlags.Recorded;
                 activity._parentTraceFlags = (byte)parentContext.TraceFlags;
                 activity.HasRemoteParent = parentContext.IsRemote;
             }

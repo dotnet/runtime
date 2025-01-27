@@ -523,16 +523,21 @@ private:
         target_ssize_t addrBaseOffs       = 0;
         FieldSeq*      addrBaseOffsFldSeq = nullptr;
         GenTreeFlags   indirFlags         = GTF_EMPTY;
-
+        GenTreeFlags   flagsToPropagate   = GTF_IND_COPYABLE_FLAGS;
         if (m_store->OperIs(GT_STORE_BLK))
         {
+            flagsToPropagate |= GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP;
             addr       = m_store->AsIndir()->Addr();
-            indirFlags = m_store->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            indirFlags = m_store->gtFlags & flagsToPropagate;
+            if (m_store->AsBlk()->GetLayout()->IsStackOnly(m_compiler))
+            {
+                indirFlags |= GTF_IND_TGT_NOT_HEAP;
+            }
         }
         else if (m_src->OperIs(GT_BLK))
         {
             addr       = m_src->AsIndir()->Addr();
-            indirFlags = m_src->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            indirFlags = m_src->gtFlags & flagsToPropagate;
         }
 
         int numAddrUses = 0;
