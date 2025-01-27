@@ -83,6 +83,7 @@ namespace HttpStress
                 int byteCount = encoding.GetBytes(message, buffer);
 
                 await _log.WriteAsync(buffer.AsMemory(0, byteCount));
+                await _log.FlushAsync();
             }
 
             async ValueTask RotateFiles()
