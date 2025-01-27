@@ -80,7 +80,7 @@ artifacts/tests/coreclr//linux.x64.Release/ilverify/ILVerificationTests.sh -core
 ```
 on Windows
 ```shell
-artifacts\tests\coreclr/\(windows/linux).x64.Release/ilverify/ILVerificationTests.cmd -coreroot=<repo_root>artifacts\tests\coreclr\(windows/linux).x64.Release\Tests\Core_Root
+artifacts\tests\coreclr/windows.x64.Release/ilverify/ILVerificationTests.cmd -coreroot=<repo_root>artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root
 ```
 
 
