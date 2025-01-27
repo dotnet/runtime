@@ -1131,10 +1131,11 @@ VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
 
-    for (X86Reg r = kEAX; r <= NumX86Regs; r = (X86Reg)(r+1))
+    for (X86Reg r = kEAX; regSet > 0; r = (X86Reg)(r+1))
         if (regSet & (1U<<r))
         {
             X86EmitPushReg(r);
+            regSet &= ~(1U<<r);
         }
 }
 
@@ -1143,9 +1144,12 @@ VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
 
-    for (X86Reg r = NumX86Regs; r >= kEAX; r = (X86Reg)(r-1))
+    for (X86Reg r = NumX86Regs; regSet > 0; r = (X86Reg)(r-1))
         if (regSet & (1U<<r))
+        {
             X86EmitPopReg(r);
+            regSet &= ~(1U<<r);
+        }
 }
 #endif // TARGET_X86
 
@@ -2157,7 +2161,7 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
     X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
 
     // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetThreadHelper), sizeof(void*));
+    X86EmitCall(NewExternalCodeLabel((LPVOID)GetThreadHelper), 0);
 
     // mov dstreg, eax
     X86EmitMovRegReg(dstreg, kEAX);
@@ -2219,7 +2223,7 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
     X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
 
     // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), sizeof(void*));
+    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), 0);
 
     // mov dstreg, eax
     X86EmitMovRegReg(dstreg, kEAX);
