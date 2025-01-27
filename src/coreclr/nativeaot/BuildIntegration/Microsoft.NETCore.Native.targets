@@ -138,7 +138,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup Condition="'$(IlcUseNativeAOTRuntimePackLayout)' == 'true'">
       <!--
         If we're actually using the runtime pack from the ResolvedFrameworkReference, pull the path from there.
-        Otherwise pull it from
+        Otherwise pull it from the RuntimePackagePath.
       -->
       <_NETCoreAppRuntimePackPath Condition="'$(PublishAotUsingRuntimePack)' == 'true'">%(_NETCoreAppFrameworkReference.RuntimePackPath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
       <_NETCoreAppRuntimePackPath Condition="'$(PublishAotUsingRuntimePack)' != 'true'">$(RuntimePackagePath)/runtimes/$(RuntimeIdentifier)/</_NETCoreAppRuntimePackPath>
