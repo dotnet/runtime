@@ -1,6 +1,5 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Condition="'$(RuntimeFlavor)' != 'Mono'" Project="../../coreclr/Directory.Build.props" />
-  <Import Condition="'$(RuntimeFlavor)' == 'Mono'" Project="../../mono/Directory.Build.props" />
+  <Import Project="..\..\..\Directory.Build.props" />
 
   <!-- This file contains common build properties for projects under
        the test tree, and also generated test projects in
@@ -13,7 +12,10 @@
   <PropertyGroup>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
 
-    <BaseOutputPath>$(ArtifactsDir)tests\coreclr</BaseOutputPath>
+    <_BaseOutputPathSubDir Condition="'$(RuntimeFlavor.ToLower())' != 'mono'">coreclr</_BaseOutputPathSubDir>
+    <_BaseOutputPathSubDir Condition="'$(RuntimeFlavor.ToLower())' == 'mono'">mono</_BaseOutputPathSubDir>
+
+    <BaseOutputPath>$(ArtifactsDir)tests\$(_BaseOutputPathSubDir)</BaseOutputPath>
     <BaseOutputPathWithConfig>$([MSBuild]::NormalizePath('$(BaseOutputPath)\$(OSPlatformConfig)\'))</BaseOutputPathWithConfig>
     <TestBinDir>$(BaseOutputPathWithConfig)</TestBinDir>
 
