@@ -432,7 +432,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task IgnoreCycles_DerivedType_InArray()
         {
-            var worker1 = new OfficeWorker
+            var worker = new OfficeWorker
             {
                 Office = new Office
                 {
@@ -440,13 +440,13 @@ namespace System.Text.Json.Serialization.Tests
                 }
             };
 
-            worker1.Office.Staff = [worker1, new RemoteWorker()];
+            worker.Office.Staff = [worker, new RemoteWorker()];
 
-            await Test_Serialize_And_SerializeAsync(worker1, """{"Office":{"Staff":[null,{"$type":"remote"}],"Dummy":{}}}""", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(worker, """{"Office":{"Staff":[null,{"$type":"remote"}],"Dummy":{}}}""", s_optionsIgnoreCycles);
 
-            worker1.Office.Staff = [worker1];
+            worker.Office.Staff = [worker];
 
-            await Test_Serialize_And_SerializeAsync(worker1, """{"Office":{"Staff":[null],"Dummy":{}}}""", s_optionsIgnoreCycles);
+            await Test_Serialize_And_SerializeAsync(worker, """{"Office":{"Staff":[null],"Dummy":{}}}""", s_optionsIgnoreCycles);
         }
 
         [JsonDerivedType(typeof(OfficeWorker), "office")]
