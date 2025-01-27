@@ -885,7 +885,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				{
 				}
 
-				[UnexpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 				public static void Test ()
 				{
 					var instance = new StringRefProperty ();
@@ -894,10 +893,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
+			[ExpectedWarning ("IL2099")]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			static object UnsupportedPropertyAnnotationMismatch {
+				[ExpectedWarning ("IL2106")]
+				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				get;
+				[ExpectedWarning ("IL2098")]
+				[param: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+				set;
+			}
+
 			public static void Test ()
 			{
 				_ = PropertyWithUnsupportedType;
 				StringRefProperty.Test ();
+				_ = UnsupportedPropertyAnnotationMismatch;
+				UnsupportedPropertyAnnotationMismatch = null;
 			}
 		}
 

@@ -2199,16 +2199,6 @@ gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *locati
 	return mono_atomic_cas_i32(location, value, comparand);
 }
 
-gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int_Success(gint32 *location, gint32 value, gint32 comparand, MonoBoolean *success)
-{
-	if (G_UNLIKELY (!location))
-		return (gint32)set_pending_null_reference_exception ();
-
-	gint32 r = mono_atomic_cas_i32(location, value, comparand);
-	*success = r == comparand;
-	return r;
-}
-
 void
 ves_icall_System_Threading_Interlocked_CompareExchange_Object (MonoObject *volatile*location, MonoObject *volatile*value, MonoObject *volatile*comparand, MonoObject *volatile* res)
 {

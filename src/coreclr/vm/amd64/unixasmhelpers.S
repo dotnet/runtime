@@ -182,23 +182,6 @@ NESTED_END OnHijackTripThread, _TEXT
 
 #endif // FEATURE_HIJACK
 
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-        test    rdi, rdi
-        jz      NullObject
-
-
-        mov     rax, [rdi + OFFSETOF__DelegateObject___methodPtr]
-        mov     rdi, [rdi + OFFSETOF__DelegateObject___target]  // replace "this" pointer
-
-        jmp     rax
-
-NullObject:
-        mov     rdi, CORINFO_NullReferenceException_ASM
-        jmp     C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 #ifdef FEATURE_TIERED_COMPILATION
 
 NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler

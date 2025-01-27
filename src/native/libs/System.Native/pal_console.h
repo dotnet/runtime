@@ -49,13 +49,6 @@ typedef struct
 PALEXPORT int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowsSize);
 
 /**
- * Sets the windows size of the terminal
- *
- * Returns 0 on success; otherwise, returns -1 and sets errno.
- */
-PALEXPORT int32_t SystemNative_SetWindowSize(WinSize* windowsSize);
-
-/**
  * Gets whether the specified file descriptor is for a terminal.
  *
  * Returns 1 if the file descriptor is referring to a terminal;
@@ -129,6 +122,11 @@ PALEXPORT int32_t SystemNative_GetSignalForBreak(void);
  * Returns 1 on success, 0 on failure, in which case errno is set.
  */
 PALEXPORT int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak);
+
+/**
+ * Resets the terminal to the state it was in before calling InitializeTerminalAndSignalHandling.
+ */
+PALEXPORT void SystemNative_UninitializeTerminal(void);
 
 typedef enum
 {

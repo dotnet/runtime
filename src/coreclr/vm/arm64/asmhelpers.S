@@ -176,8 +176,7 @@ NESTED_END ThePreStub, _TEXT
 
 LEAF_ENTRY ThePreStubPatch, _TEXT
     nop
-.globl C_FUNC(ThePreStubPatchLabel)
-C_FUNC(ThePreStubPatchLabel):
+PATCH_LABEL ThePreStubPatchLabel
     ret lr
 LEAF_END ThePreStubPatch, _TEXT
 
@@ -271,22 +270,6 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     ldr     x17, [x17]
     br      x17
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    cmp x0, #0
-    beq LOCAL_LABEL(LNullThis)
-
-    ldr x16, [x0, #DelegateObject___methodPtr]
-    ldr x0, [x0, #DelegateObject___target]
-
-    br x16
-
-LOCAL_LABEL(LNullThis):
-    mov x0, #CORINFO_NullReferenceException_ASM
-    b C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
 //
 // x12 = UMEntryThunk*
@@ -607,8 +590,12 @@ NESTED_END ResolveWorkerAsmStub, _TEXT
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
-C_FUNC(DelayLoad_MethodCall):
+#if defined(__APPLE__)
+    .alt_entry C_FUNC(DelayLoad_MethodCall)
+#endif
     .global C_FUNC(DelayLoad_MethodCall)
+C_FUNC(DelayLoad_MethodCall):
+
     PROLOG_WITH_TRANSITION_BLOCK
 
     add x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
@@ -619,7 +606,6 @@ C_FUNC(DelayLoad_MethodCall):
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   x12
 
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
@@ -627,8 +613,11 @@ NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
 .macro DynamicHelper frameFlags, suffix
 NESTED_ENTRY DelayLoad_Helper\suffix\()_FakeProlog, _TEXT, NoHandler
-C_FUNC(DelayLoad_Helper\suffix):
+#if defined(__APPLE__)
+    .alt_entry C_FUNC(DelayLoad_Helper\suffix)
+#endif
     .global C_FUNC(DelayLoad_Helper\suffix)
+C_FUNC(DelayLoad_Helper\suffix):
 
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -663,14 +652,18 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Object
 
 LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    ldar x1, [x1]
     tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
     mov x0, x1
     ret lr
 
 LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
-    b C_FUNC(JIT_GetDynamicNonGCStaticBase_Portable)
+    // Tail call GetNonGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, x1
+    ldr      x1, [x1]
+    br       x1
 LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
@@ -678,14 +671,18 @@ LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    ldar x1, [x1]
     tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
     mov x0, x1
     ret lr
 
 LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetDynamicGCStaticBase_Portable
-    b C_FUNC(JIT_GetDynamicGCStaticBase_Portable)
+    // Tail call GetGCStaticBase
+    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
+    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, x1
+    ldr      x1, [x1]
+    br       x1
 LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef PROFILING_SUPPORTED
@@ -760,7 +757,7 @@ LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
     br x9
 LEAF_END JIT_DispatchIndirectCall, _TEXT
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
 // ------------------------------------------------------------------
 // void* GetThreadVarsAddress()
 
@@ -774,12 +771,13 @@ LEAF_ENTRY GetThreadVarsAddress, _TEXT
         ret
 LEAF_END GetThreadVarsAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 
-#ifndef TARGET_OSX
+#ifndef TARGET_APPLE
 // ------------------------------------------------------------------
 // size_t GetThreadStaticsVariableOffset()
 
+#ifndef TARGET_ANDROID
 // Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
 // once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `x0` register.
 
@@ -808,4 +806,16 @@ LEAF_ENTRY GetTLSResolverAddress, _TEXT
         EPILOG_RETURN
 LEAF_END GetTLSResolverAddress, _TEXT
 // ------------------------------------------------------------------
-#endif // !TARGET_OSX
+#endif // TARGET_ANDROID
+#endif // !TARGET_APPLE
+
+LEAF_ENTRY  JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, x9
+        ldr     w9, [x9]
+        cbnz    w9, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, x9
+        ldr     x9, [x9]
+        br x9
+LEAF_END  JIT_PollGC, _TEXT

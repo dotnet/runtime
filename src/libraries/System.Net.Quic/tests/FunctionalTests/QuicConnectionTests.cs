@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,8 +51,17 @@ namespace System.Net.Quic.Tests
             }
             Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
             Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, clientConnection.TargetHostName);
             Assert.Equal(options.ClientAuthenticationOptions.TargetHost, serverConnection.TargetHostName);
+
+            Assert.Equal(clientConnection.NegotiatedCipherSuite, serverConnection.NegotiatedCipherSuite);
+            Assert.True(clientConnection.NegotiatedCipherSuite == TlsCipherSuite.TLS_AES_128_GCM_SHA256 ||
+                        clientConnection.NegotiatedCipherSuite == TlsCipherSuite.TLS_AES_256_GCM_SHA384 ||
+                        clientConnection.NegotiatedCipherSuite == TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256);
+
+            Assert.Equal(clientConnection.SslProtocol, serverConnection.SslProtocol);
+            Assert.Equal(SslProtocols.Tls13, clientConnection.SslProtocol); // only TLS 1.3 is defined for QUIC at the moment
         }
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
@@ -444,11 +455,13 @@ namespace System.Net.Quic.Tests
         {
             int maxStreamIndex = 0;
             const int Limit = 5;
+            SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
 
             var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
             clientOptions.StreamCapacityCallback = (connection, args) =>
             {
                 Interlocked.Add(ref maxStreamIndex, args.BidirectionalIncrement);
+                streamsAvailableFired.Release();
             };
 
             var listenerOptions = CreateQuicListenerOptions();
@@ -461,6 +474,10 @@ namespace System.Net.Quic.Tests
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
 
+            while (maxStreamIndex < Limit)
+            {
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
+            }
             Assert.Equal(Limit, maxStreamIndex);
 
             Queue<(QuicStream client, QuicStream server)> streams = new();
@@ -498,8 +515,11 @@ namespace System.Net.Quic.Tests
                 }
             }
 
-            // give time to update the count
-            await Task.Delay(1000);
+            // wait for the callback
+            while (maxStreamIndex < 3 * Limit)
+            {
+                await streamsAvailableFired.WaitAsync().WaitAsync(PassingTestTimeout);
+            }
 
             // by now, we opened and closed 2 * Limit, and expect a budget of 'Limit' more
             Assert.Equal(3 * Limit, maxStreamIndex);

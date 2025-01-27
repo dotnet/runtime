@@ -37,15 +37,10 @@ namespace System.Numerics
         /// <summary>Creates a new <see cref="Vector{T}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector{T}" /> with all elements initialized to <paramref name="value" />.</returns>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T value)
         {
-            Unsafe.SkipInit(out this);
-
-            for (int index = 0; index < Count; index++)
-            {
-                this.SetElementUnsafe(index, value);
-            }
+            this = Vector.Create(value);
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> from a given array.</summary>
@@ -124,6 +119,7 @@ namespace System.Numerics
         /// <param name="values">The span from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
+        [OverloadResolutionPriority(-1)]
         public Vector(Span<T> values) : this((ReadOnlySpan<T>)values)
         {
         }
@@ -243,7 +239,7 @@ namespace System.Numerics
         /// <summary>Computes the bitwise-and of two vectors.</summary>
         /// <param name="left">The vector to bitwise-and with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
-        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator &(Vector<T> left, Vector<T> right)
@@ -266,7 +262,7 @@ namespace System.Numerics
         /// <summary>Computes the bitwise-or of two vectors.</summary>
         /// <param name="left">The vector to bitwise-or with <paramref name="right" />.</param>
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
-        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
+        /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator |(Vector<T> left, Vector<T> right)
@@ -365,90 +361,90 @@ namespace System.Numerics
             return result.As<ulong, T>();
         }
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Byte&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Byte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<byte>(Vector<T> value) => value.As<T, byte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Double&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Double&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<double>(Vector<T> value) => value.As<T, double>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int16&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<short>(Vector<T> value) => value.As<T, short>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int32&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<int>(Vector<T> value) => value.As<T, int>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Int64&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Int64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<long>(Vector<T> value) => value.As<T, long>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;IntPtr&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;IntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<nint>(Vector<T> value) => value.As<T, nint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UIntPtr&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UIntPtr}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UIntPtr&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<nuint>(Vector<T> value) => value.As<T, nuint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;SByte&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{SByte}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;SByte&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<sbyte>(Vector<T> value) => value.As<T, sbyte>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;Single&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;Single&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static explicit operator Vector<float>(Vector<T> value) => value.As<T, float>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt16&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt16}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt16&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<ushort>(Vector<T> value) => value.As<T, ushort>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt32&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt32}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt32&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public static explicit operator Vector<uint>(Vector<T> value) => value.As<T, uint>();
 
-        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see langword="Vector&lt;UInt64&gt;" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{UInt64}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector&lt;UInt64&gt;" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
@@ -824,6 +820,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Alignment" />
         static int ISimdVector<Vector<T>, T>.Alignment => Vector.Alignment;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ElementCount" />
+        static int ISimdVector<Vector<T>, T>.ElementCount => Vector<T>.Count;
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
         static bool ISimdVector<Vector<T>, T>.IsHardwareAccelerated
         {
@@ -839,9 +838,25 @@ namespace System.Numerics
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.Add(Vector<T> left, Vector<T> right) => left + right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.All(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.All(Vector<T> vector, T value) => Vector.All(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AllWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.AllWhereAllBitsSet(Vector<T> vector) => Vector.AllWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.AndNot(TSelf, TSelf)" />
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.AndNot(Vector<T> left, Vector<T> right) => Vector.AndNot(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Any(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.Any(Vector<T> vector, T value) => Vector.Any(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.AnyWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.AnyWhereAllBitsSet(Vector<T> vector) => Vector.AnyWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.BitwiseAnd(TSelf, TSelf)" />
         [Intrinsic]
@@ -879,6 +894,14 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, Span{T})" />
         static void ISimdVector<Vector<T>, T>.CopyTo(Vector<T> vector, Span<T> destination) => vector.CopyTo(destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Count(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.Count(Vector<T> vector, T value) => Vector.Count(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CountWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.CountWhereAllBitsSet(Vector<T> vector) => Vector.CountWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
         [Intrinsic]
@@ -956,6 +979,73 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
         [Intrinsic]
         static bool ISimdVector<Vector<T>, T>.GreaterThanOrEqualAny(Vector<T> left, Vector<T> right) => Vector.GreaterThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.IndexOf(Vector<T> vector, T value) => Vector.IndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.IndexOfWhereAllBitsSet(Vector<T> vector) => Vector.IndexOfWhereAllBitsSet(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsEvenInteger(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsEvenInteger(Vector<T> vector) => Vector.IsEvenInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsFinite(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsFinite(Vector<T> vector) => Vector.IsFinite(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsInfinity(Vector<T> vector) => Vector.IsInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsInteger(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsInteger(Vector<T> vector) => Vector.IsInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNaN(Vector<T> vector) => Vector.IsNaN(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNegative(Vector<T> vector) => Vector.IsNegative(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegativeInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNegativeInfinity(Vector<T> vector) => Vector.IsNegativeInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNormal(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNormal(Vector<T> vector) => Vector.IsNormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsOddInteger(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsOddInteger(Vector<T> vector) => Vector.IsOddInteger(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositive(Vector<T> vector) => Vector.IsPositive(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositiveInfinity(Vector<T> vector) => Vector.IsPositiveInfinity(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsSubnormal(TSelf)" />
+        [Intrinsic]
+        static Vector<T> ISimdVector<Vector<T>, T>.IsSubnormal(Vector<T> vector) => Vector.IsSubnormal(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.IsZero(Vector<T> vector) => Vector.IsZero(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOf(TSelf, T)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.LastIndexOf(Vector<T> vector, T value) => Vector.LastIndexOf(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LastIndexOfWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static int ISimdVector<Vector<T>, T>.LastIndexOfWhereAllBitsSet(Vector<T> vector) => Vector.LastIndexOfWhereAllBitsSet(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
         [Intrinsic]
@@ -1057,6 +1147,14 @@ namespace System.Numerics
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.Negate(Vector<T> vector) => -vector;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.None(TSelf, T)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.None(Vector<T> vector, T value) => Vector.None(vector, value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.NoneWhereAllBitsSet(TSelf)" />
+        [Intrinsic]
+        static bool ISimdVector<Vector<T>, T>.NoneWhereAllBitsSet(Vector<T> vector) => Vector.NoneWhereAllBitsSet(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.OnesComplement(Vector<T> vector) => ~vector;
@@ -1127,48 +1225,5 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Xor" />
         [Intrinsic]
         static Vector<T> ISimdVector<Vector<T>, T>.Xor(Vector<T> left, Vector<T> right) => left ^ right;
-
-        //
-        // New Surface Area
-        //
-
-        static bool ISimdVector<Vector<T>, T>.AnyWhereAllBitsSet(Vector<T> vector) => Vector.EqualsAny(vector, AllBitsSet);
-
-        static bool ISimdVector<Vector<T>, T>.Any(Vector<T> vector, T value) => Vector.EqualsAny(vector, Vector.Create(value));
-
-        static int ISimdVector<Vector<T>, T>.IndexOfLastMatch(Vector<T> vector)
-        {
-            if (sizeof(Vector<T>) == 64)
-            {
-                ulong mask = vector.AsVector512().ExtractMostSignificantBits();
-                return 63 - BitOperations.LeadingZeroCount(mask); // 63 = 64 (bits in Int64) - 1 (indexing from zero)
-            }
-            else if (sizeof(Vector<T>) == 32)
-            {
-                uint mask = vector.AsVector256().ExtractMostSignificantBits();
-                return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            }
-            else
-            {
-                Debug.Assert(sizeof(Vector<T>) == 16);
-                uint mask = vector.AsVector128().ExtractMostSignificantBits();
-                return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            }
-        }
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsNaN(Vector<T> vector) => Vector.IsNaN(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsNegative(Vector<T> vector) => Vector.IsNegative(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsPositive(Vector<T> vector) => Vector.IsPositive(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsPositiveInfinity(Vector<T> vector) => Vector.IsPositiveInfinity(vector);
-
-        [Intrinsic]
-        static Vector<T> ISimdVector<Vector<T>, T>.IsZero(Vector<T> vector) => Vector.IsZero(vector);
     }
 }

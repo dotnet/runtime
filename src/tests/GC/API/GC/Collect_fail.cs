@@ -12,10 +12,12 @@
  */
 
 using System;
+using Xunit;
 
 public class Test_Collect_fail
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] array = new int[25];
         bool passed = false;

@@ -1,8 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
-    <NetCoreAppCurrentVersion>9.0</NetCoreAppCurrentVersion>
-    <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <ProductVersion>$(NetCoreAppCurrentVersion).0</ProductVersion>
-    <TestUtilities>..\..\Common\tests\TestUtilities</TestUtilities>
+    <IsTestSupportProject>true</IsTestSupportProject>
+	<TestUtilities>..\..\Common\tests\TestUtilities</TestUtilities>
   </PropertyGroup>
+  <Import Project="..\Directory.Build.props" />
 </Project>

@@ -35,12 +35,6 @@ PhaseStatus Compiler::gsPhase()
             gsCopyShadowParams();
         }
 
-        // If we needed to create any new BasicBlocks then renumber the blocks
-        if (fgBBcount > prevBBCount)
-        {
-            fgRenumberBlocks();
-        }
-
         madeChanges = true;
     }
     else
@@ -516,13 +510,101 @@ void Compiler::gsParamsToShadows()
             continue;
         }
 
-        GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
-        src->gtFlags |= GTF_DONT_CSE;
-        GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
+        {
+            JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
+                    shadowVarNum);
+            CORINFO_METHOD_HANDLE copyHelper =
+                info.compCompHnd->getSpecialCopyHelper(varDsc->GetLayout()->GetClassHandle());
+            GenTreeCall* call = gtNewCallNode(CT_USER_FUNC, copyHelper, TYP_VOID);
 
-        fgEnsureFirstBBisScratch();
-        compCurBB = fgFirstBB; // Needed by some morphing
-        (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+            GenTree* src = gtNewLclVarAddrNode(lclNum);
+            GenTree* dst = gtNewLclVarAddrNode(shadowVarNum);
+
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(dst));
+            call->gtArgs.PushBack(this, NewCallArg::Primitive(src));
+
+            compCurBB = fgFirstBB; // Needed by some morphing
+            if (opts.IsReversePInvoke())
+            {
+                // If we are in a reverse P/Invoke, then we need to insert
+                // the call at the end of the first block as we need to do the GC transition
+                // before we can call the helper.
+                //
+                // TODO-Cleanup: These gymnastics indicate that we are
+                // inserting reverse pinvoke transitions way too early in the
+                // JIT.
+
+                struct HasReversePInvokeEnterVisitor : GenTreeVisitor<HasReversePInvokeEnterVisitor>
+                {
+                    enum
+                    {
+                        DoPreOrder = true,
+                    };
+
+                    HasReversePInvokeEnterVisitor(Compiler* comp)
+                        : GenTreeVisitor(comp)
+                    {
+                    }
+
+                    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                    {
+                        if (((*use)->gtFlags & GTF_CALL) == 0)
+                        {
+                            return fgWalkResult::WALK_SKIP_SUBTREES;
+                        }
+
+                        if ((*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                            (*use)->IsHelperCall(m_compiler, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                        {
+                            return fgWalkResult::WALK_ABORT;
+                        }
+
+                        return fgWalkResult::WALK_CONTINUE;
+                    }
+                };
+
+                HasReversePInvokeEnterVisitor checker(this);
+
+                Statement* reversePInvokeStmt = nullptr;
+                for (Statement* const stmt : fgFirstBB->Statements())
+                {
+                    // assert that we don't have any uses of the local variable
+                    // at the point before we insert the shadow copy statement.
+                    assert(!gtHasRef(stmt->GetRootNode(), lclNum));
+
+                    if (checker.WalkTree(stmt->GetRootNodePointer(), nullptr) == fgWalkResult::WALK_ABORT)
+                    {
+                        reversePInvokeStmt = stmt;
+                        break;
+                    }
+                }
+
+                noway_assert(reversePInvokeStmt != nullptr);
+
+                JITDUMP("Inserting special copy helper call after Reverse P/Invoke transition " FMT_STMT "\n",
+                        reversePInvokeStmt->GetID());
+
+                (void)fgInsertStmtAfter(fgFirstBB, reversePInvokeStmt, gtNewStmt(fgMorphTree(call)));
+            }
+            else
+            {
+                JITDUMP("Inserting special copy helper call at the beginning of the first block\n");
+                (void)fgNewStmtAtBeg(fgFirstBB, fgMorphTree(call));
+            }
+        }
+        else
+#endif // TARGET_X86 && FEATURE_IJW
+        {
+            GenTree* src = gtNewLclvNode(lclNum, varDsc->TypeGet());
+            src->gtFlags |= GTF_DONT_CSE;
+
+            GenTree* store = gtNewStoreLclVarNode(shadowVarNum, src);
+
+            compCurBB = fgFirstBB; // Needed by some morphing
+            fgNewStmtAtBeg(fgFirstBB, fgMorphTree(store));
+        }
     }
     compCurBB = nullptr;
 

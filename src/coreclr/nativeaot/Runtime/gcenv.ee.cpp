@@ -136,7 +136,17 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
 {
     FOREACH_THREAD(thread)
     {
-        (*fn) (thread->GetAllocContext(), param);
+        ee_alloc_context* palloc_context = thread->GetEEAllocContext();
+        gc_alloc_context* ac = palloc_context->GetGCAllocContext();
+        (*fn) (ac, param);
+        // The GC may zero the alloc_ptr and alloc_limit fields of AC during enumeration and we need to keep
+        // combined_limit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
+        // with no synchronization. If you need to change this code think carefully about how that concurrency
+        // may affect the results.
+        if (ac->alloc_limit == 0 && palloc_context->combined_limit != 0)
+        {
+            palloc_context->combined_limit = 0;
+        }
     }
     END_FOREACH_THREAD
 }
@@ -534,18 +544,33 @@ struct ThreadStubArguments
     void (*m_pRealStartRoutine)(void*);
     void* m_pRealContext;
     CLREventStatic m_ThreadStartedEvent;
+    const char* m_name;
 };
 
 static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
 {
-    UNREFERENCED_PARAMETER(name);
-
     ThreadStubArguments* threadStubArgs = new (nothrow) ThreadStubArguments();
     if (!threadStubArgs)
         return false;
 
     threadStubArgs->m_pRealStartRoutine = threadStart;
     threadStubArgs->m_pRealContext = arg;
+    if (name == nullptr)
+    {
+        threadStubArgs->m_name = nullptr;
+    }
+    else
+    {
+        size_t name_length = strlen(name);
+        char* name_copy = new (nothrow) char[name_length + 1];
+        if (name_copy == nullptr)
+        {
+            delete threadStubArgs;
+            return false;
+        }
+        strcpy(name_copy, name);
+        threadStubArgs->m_name = name_copy;
+    }
 
     // Helper used to wrap the start routine of GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
@@ -554,6 +579,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
             ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
             ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
+            PalSetCurrentThreadName(pStartContext->m_name);
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
             delete pStartContext;
@@ -567,6 +593,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     if (!PalStartBackgroundGCThread(threadStub, threadStubArgs))
     {
+        delete[] threadStubArgs->m_name;
         delete threadStubArgs;
         return false;
     }
@@ -576,14 +603,13 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
-    UNREFERENCED_PARAMETER(name);
-
     if (!is_suspendable)
         return CreateNonSuspendableThread(threadStart, arg, name);
 
     ThreadStubArguments threadStubArgs;
     threadStubArgs.m_pRealStartRoutine = threadStart;
     threadStubArgs.m_pRealContext = arg;
+    threadStubArgs.m_name = name;
 
     if (!threadStubArgs.m_ThreadStartedEvent.CreateAutoEventNoThrow(false))
     {
@@ -608,7 +634,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
             auto realStartRoutine = pStartContext->m_pRealStartRoutine;
             void* realContext = pStartContext->m_pRealContext;
-
+            PalSetCurrentThreadName(pStartContext->m_name);
             pStartContext->m_ThreadStartedEvent.Set();
 
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
@@ -762,6 +788,11 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
 
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
+}
+
+uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    return (uint64_t)thread->GetPalThreadIdForLogging();
 }
 
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)

@@ -71,9 +71,6 @@ function deep_merge_resources (target: ResourceGroups, source: ResourceGroups): 
     if (providedResources.jsModuleNative !== undefined) {
         providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
     }
-    if (providedResources.jsModuleGlobalization !== undefined) {
-        providedResources.jsModuleGlobalization = { ...(target.jsModuleGlobalization || {}), ...(providedResources.jsModuleGlobalization || {}) };
-    }
     if (providedResources.jsModuleRuntime !== undefined) {
         providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
     }
@@ -124,7 +121,6 @@ export function normalizeConfig () {
     config.resources = config.resources || {
         assembly: {},
         jsModuleNative: {},
-        jsModuleGlobalization: {},
         jsModuleWorker: {},
         jsModuleRuntime: {},
         wasmNative: {},
@@ -164,9 +160,6 @@ export function normalizeConfig () {
                     break;
                 case "js-module-threads":
                     toMerge.jsModuleWorker = resource;
-                    break;
-                case "js-module-globalization":
-                    toMerge.jsModuleGlobalization = resource;
                     break;
                 case "js-module-runtime":
                     toMerge.jsModuleRuntime = resource;
@@ -276,6 +269,15 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         mono_exit(1, new Error(errMessage));
         throw err;
     }
+}
+
+export function isDebuggingSupported (): boolean {
+    // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
+    if (!globalThis.navigator) {
+        return false;
+    }
+
+    return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
 
 async function loadBootConfig (module: DotnetModuleInternal): Promise<void> {

@@ -12,6 +12,7 @@ class DeadCodeElimination
     public static int Run()
     {
         SanityTest.Run();
+        Test110932Regression.Run();
         TestInstanceMethodOptimization.Run();
         TestReflectionInvokeSignatures.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
@@ -49,6 +50,34 @@ class DeadCodeElimination
                 throw new Exception();
 
             ThrowIfPresent(typeof(SanityTest), nameof(NotPresentType));
+        }
+    }
+
+    class Test110932Regression
+    {
+        static bool s_trueConst = true;
+        static bool s_falseConst = false;
+
+        interface I
+        {
+            static virtual bool GetValue() => false;
+        }
+
+        class C : I
+        {
+            static bool I.GetValue() => true;
+        }
+
+        public static void Run()
+        {
+            if (!Call<C>())
+                throw new Exception();
+        }
+        static bool Call<T>() where T : I
+        {
+            if (T.GetValue())
+                return s_trueConst;
+            return s_falseConst;
         }
     }
 
@@ -529,12 +558,26 @@ class DeadCodeElimination
     {
         class NeverAllocated1 { }
         class NeverAllocated2 { }
+        class NeverAllocated3 { }
 
         class PossiblyAllocated1 { }
         class PossiblyAllocated2 { }
 
+        class MyAttribute : Attribute
+        {
+            public Type TheType;
+
+            public MyAttribute(Type t) => TheType = t;
+        }
+
+        [My(typeof(NeverAllocated3))]
+        class AttributeHolder { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static Type GetNeverObject() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetNeverAllocated3Type() => typeof(AttributeHolder).GetCustomAttribute<MyAttribute>().TheType;
 
         static volatile Type s_sink;
 
@@ -557,6 +600,15 @@ class DeadCodeElimination
             }
             if (Environment.GetEnvironmentVariable("SURETHING") != null)
                 s_sink = typeof(PossiblyAllocated1);
+
+            if (GetNeverAllocated3Type() == typeof(NeverAllocated3))
+            {
+                Console.WriteLine($"{nameof(NeverAllocated3)} check succeeded");
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
     }
 

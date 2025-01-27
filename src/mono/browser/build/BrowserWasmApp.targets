@@ -63,9 +63,16 @@
     <ProjectCapability Include="DotNetCoreWeb"/>
   </ItemGroup>
 
+  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
+  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
+    <ItemGroup>
+      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
+        <RootMode>all</RootMode>
+      </TrimmerRootAssembly>
+    </ItemGroup>
+  </Target>
+
   <Target Name="_GetWasmGenerateAppBundleDependencies">
-    <Warning Condition="'$(InvariantGlobalization)' == 'true' and '$(HybridGlobalization)' == 'true'" Text="%24(HybridGlobalization) has no effect when %24(InvariantGlobalization) is set to true." />
-    <Warning Condition="'$(WasmIcuDataFileName)' != '' and '$(HybridGlobalization)' == 'true'" Text="%24(WasmIcuDataFileName) has no effect when %24(HybridGlobalization) is set to true." />
     <Warning Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true' and '$(WasmIcuDataFileName)' != ''" Text="%24(WasmIcuDataFileName) has no effect when %24(WasmIncludeFullIcuData) is set to true." />
 
     <PropertyGroup>
@@ -73,10 +80,8 @@
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.mjs'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
-      <_HasDotnetGlobalizationJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.globalization.js'">true</_HasDotnetGlobalizationJs>
-      <HybridGlobalization Condition="'$(InvariantGlobalization)' == 'true'">false</HybridGlobalization>
-      <_WasmIcuDataFileName Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
-      <_WasmIcuDataFileName Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
+      <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and !Exists('$(WasmIcuDataFileName)')">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(WasmIcuDataFileName)</_WasmIcuDataFileName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -86,10 +91,6 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.globalization.js"
-                       Condition="'$(HybridGlobalization)' == 'true' and
-                                  '$(_HasDotnetGlobalizationJs)' != 'true' and
-                                  Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.globalization.js')" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
@@ -101,13 +102,10 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
-      <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_hybrid.dat"/>
-      <_HybridGlobalizationDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)segmentation-rules.json"/>
-      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*"  Exclude="@(_HybridGlobalizationDataFiles);$(_WasmIcuDataFileName)"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' == 'true'" Include="@(_HybridGlobalizationDataFiles)"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
-      <WasmIcuDataFileNames Condition="'$(HybridGlobalization)' != 'true' and '$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
+      <_IcuAvailableDataFiles Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_*" Exclude="$(_WasmIcuDataFileName)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' == 'true'" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' == ''" Include="@(_IcuAvailableDataFiles)"/>
+      <WasmIcuDataFileNames Condition="'$(WasmIncludeFullIcuData)' != 'true' and '$(_WasmIcuDataFileName)' != ''" Include="$(_WasmIcuDataFileName)"/>
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>
 
@@ -141,7 +139,6 @@
       RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"
       DefaultHostConfig="$(DefaultWasmHostConfig)"
       InvariantGlobalization="$(InvariantGlobalization)"
-      HybridGlobalization="$(HybridGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       IcuDataFileNames="@(WasmIcuDataFileNames)"
@@ -314,6 +311,7 @@
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
+      <_EmccCFlags Include="-DENABLE_LOG_PROFILER=1"           Condition="$(WasmProfilers.Contains('log'))" />
       <_EmccCFlags Include="-DENABLE_JS_INTEROP_BY_VALUE=1"    Condition="'$(WasmEnableJsInteropByValue)' == 'true'" />
 
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
@@ -368,6 +366,7 @@
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
       <EmscriptenEnvVars Include="ENABLE_BROWSER_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
+      <EmscriptenEnvVars Include="ENABLE_LOG_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('log'))))" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />
       <EmscriptenEnvVars Include="RUN_AOT_COMPILATION=0" Condition="'$(RunAOTCompilation)' != 'true'" />
 
@@ -478,6 +477,7 @@
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
 
       <_WasmLinkStepArgs Include="@(_EmccLinkStepArgs)" />
+      <_WasmLinkStepArgs Include="@(LinkerArg)" />
     </ItemGroup>
   </Target>
 
@@ -496,7 +496,6 @@
     <ItemGroup>
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
-      <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" Condition="'$(HybridGlobalization)' == 'true'" />
       <FileWrites Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true'" />
     </ItemGroup>
 
@@ -552,7 +551,6 @@
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.worker.mjs" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.native.worker.mjs')" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" Condition="'$(HybridGlobalization)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.globalization.js')" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
       <_WasmAssembliesInternal Remove="$(_WasmDedupAssembly)"/>
     </ItemGroup>

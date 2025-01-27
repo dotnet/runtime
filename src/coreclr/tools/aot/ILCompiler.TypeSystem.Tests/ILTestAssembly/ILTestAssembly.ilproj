@@ -19,6 +19,7 @@
     <Compile Include="Signature.il" />
     <Compile Include="MethodImplOverride1.il" />
     <Compile Include="MDArrayFunctionResolution.il" />
+    <Compile Include="PreserveBaseOverridesAttibuteTesting.il" />
   </ItemGroup>
 
 </Project>

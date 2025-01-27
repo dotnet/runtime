@@ -219,10 +219,12 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(params T[]? items) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(T[] items, int start, int length) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(params System.ReadOnlySpan<T> items) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static System.Collections.Immutable.ImmutableArray<T> Create<T>(System.Span<T> items) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TSource> ToImmutableArray<TSource>(this System.Collections.Generic.IEnumerable<TSource> items) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<TSource> ToImmutableArray<TSource>(this System.Collections.Immutable.ImmutableArray<TSource>.Builder builder) { throw null; }
         public static System.Collections.Immutable.ImmutableArray<T> ToImmutableArray<T>(this System.ReadOnlySpan<T> items) { throw null; }
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static System.Collections.Immutable.ImmutableArray<T> ToImmutableArray<T>(this System.Span<T> items) { throw null; }
     }
     [System.Runtime.CompilerServices.CollectionBuilderAttribute(typeof(System.Collections.Immutable.ImmutableArray), "Create")]

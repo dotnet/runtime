@@ -325,4 +325,16 @@ inline void GCToEEInterface::LogErrorToHost(const char *message)
     }
 }
 
+inline uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
+{
+    if (g_runtimeSupportedVersion.MajorVersion >= 3)
+    {
+        return g_theGCToCLR->GetThreadOSThreadId(thread);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 #endif // __GCTOENV_EE_STANDALONE_INL__

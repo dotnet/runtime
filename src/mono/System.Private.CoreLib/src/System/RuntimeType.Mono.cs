@@ -143,6 +143,19 @@ namespace System
 
         #region Internal
 
+        // Returns the type from which the current type directly inherits from (without reflection quirks).
+        // The parent type is null for interfaces, pointers, byrefs and generic parameters.
+        internal RuntimeType? GetParentType()
+        {
+            RuntimeType _this = this;
+            RuntimeType? res = null;
+            GetParentType(new QCallTypeHandle(ref _this), ObjectHandleOnStack.Create(ref res));
+            return res;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern void GetParentType(QCallTypeHandle type, ObjectHandleOnStack res);
+
         [RequiresUnreferencedCode("Types might be removed")]
         internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
@@ -1236,6 +1249,10 @@ namespace System
 
         #region Hierarchy
 
+        public override bool IsInstanceOfType([NotNullWhen(true)] object? o) => RuntimeTypeHandle.IsInstanceOfType(this, o);
+
+        protected override bool IsCOMObjectImpl() => false;
+
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo(Type? other)
         {
@@ -1246,9 +1263,7 @@ namespace System
             if (otherRtType == this)
                 return true;
 
-            // It's not worth trying to perform further checks in managed
-            // as they would lead to FCalls anyway.
-            return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
+            return false;
         }
 
         #endregion
@@ -1322,7 +1337,7 @@ namespace System
                 TypeCache cache = Cache;
                 if ((cache.Cached & (int)TypeCacheEntries.IsActualEnum) != 0)
                     return (cache.Flags & (int)TypeCacheEntries.IsActualEnum) != 0;
-                bool res = !IsGenericParameter && RuntimeTypeHandle.GetBaseType(this) == EnumType;
+                bool res = !IsGenericParameter && GetParentType() == EnumType;
                 CacheFlag(TypeCacheEntries.IsActualEnum, res);
                 return res;
             }
@@ -1547,13 +1562,18 @@ namespace System
                         }
 
                         MethodBase? invokeMethod;
-                        object? state = null;
+                        object? state;
 
                         try
                         {
                             invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
                         }
-                        catch (MissingMethodException) { invokeMethod = null; }
+                        catch (MissingMethodException innerMME)
+                        {
+                            // Rethrows to rewrite a message to include the class name.
+                            // Make sure the original exception is set as an inner exception.
+                            throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, FullName), innerMME);
+                        }
 
                         if (invokeMethod == null)
                         {
@@ -2086,7 +2106,7 @@ namespace System
                 }
 
                 if (HasElementType)
-                    return GetElementType().ContainsGenericParameters;
+                    return GetElementType()!.ContainsGenericParameters;
 
                 if (IsFunctionPointer)
                 {

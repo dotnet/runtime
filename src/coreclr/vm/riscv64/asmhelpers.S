@@ -82,8 +82,8 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 
     beq  t0, zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
-    ori  a5, zero, 0
-    addi  a6, zero, -1
+    li  a5, 0
+    li  a6, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
     lla  a7, g_lowest_address
@@ -253,7 +253,7 @@ LOCAL_LABEL(ShadowUpdateDisabled):
     lb  t0, 0(t6)
     bne  t0, zero, LOCAL_LABEL(CheckCardTable)
 
-    ori  t0, zero, 0xFF
+    li  t0, 0xFF
     sb  t0, 0(t6)
 
 LOCAL_LABEL(CheckCardTable):
@@ -277,7 +277,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     srli  t0, t3, 11
     add  t4, t6, t0
     lbu  t1, 0(t4)
-    ori  t0, zero, 0xFF
+    li   t0, 0xFF
     beq  t1, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
@@ -290,7 +290,7 @@ LOCAL_LABEL(SkipEphemeralCheck):
     add  t4, t6, t0
 
     lbu  t6, 0(t4)
-    ori  t0, zero, 0xFF
+    li   t0, 0xFF
     beq  t6, t0, LOCAL_LABEL(Exit)
 
     sb  t0, 0(t4)
@@ -476,19 +476,6 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
     // linked. Proceed to execute the original DLL call.
     EPILOG_BRANCH_REG  t4
 NESTED_END NDirectImportThunk, _TEXT
-
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    beq  a0, zero, LOCAL_LABEL(LNullThis)
-
-    ld  t4, (DelegateObject___methodPtr)(a0)
-    ld  a0, (DelegateObject___target)(a0)
-    jr  t4
-
-LOCAL_LABEL(LNullThis):
-    addi  a0, zero, CORINFO_NullReferenceException_ASM
-    tail JIT_InternalThrow
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
 // ------------------------------------------------------------------
 // ThePreStubPatch()
@@ -813,6 +800,44 @@ LEAF_END setFPReturn, _TEXT
 
 #endif // FEATURE_COMINTEROP
 
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
+    fence r,rw
+    bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
+    mv  a0, a1
+    ret
+
+LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call GetNonGCStaticBase
+    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
+    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, t4
+    ld t4, 0(t4)
+    EPILOG_BRANCH_REG        t4
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
+    fence r,rw
+    bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
+    mv  a0, a1
+    ret
+
+LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call GetGCStaticBase
+    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
+    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, t4
+    ld t4, 0(t4)
+    EPILOG_BRANCH_REG        t4
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
+
 #ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall_FakeProlog, _TEXT, NoHandler
@@ -829,7 +854,6 @@ C_FUNC(DelayLoad_MethodCall):
     addi  t4, a0, 0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
     EPILOG_BRANCH_REG   t4
 NESTED_END DelayLoad_MethodCall_FakeProlog, _TEXT
 
@@ -944,3 +968,14 @@ LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
     la.tls.ie   a0, t_ThreadStatics
     EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
+
+LEAF_ENTRY JIT_PollGC, _TEXT
+        PREPARE_EXTERNAL_VAR g_TrapReturningThreads, t0
+        lw      t0, 0(t0)
+        bnez    t0, LOCAL_LABEL(JIT_PollGCRarePath)
+        ret
+LOCAL_LABEL(JIT_PollGCRarePath):
+        PREPARE_EXTERNAL_VAR g_pPollGC, t0
+        ld      t0, 0(t0)
+        jr      t0
+LEAF_END JIT_PollGC, _TEXT

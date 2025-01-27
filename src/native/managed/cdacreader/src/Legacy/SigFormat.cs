@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy
@@ -227,9 +222,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
 
                     case CorElementType.Var:
                         int varIndex = signature.ReadCompressedInteger();
-                        if (methodInstantiation.Length > varIndex)
+                        if (typeInstantiation.Length > varIndex)
                         {
-                            AddType(target, stringBuilder, methodInstantiation[varIndex]);
+                            AddType(target, stringBuilder, typeInstantiation[varIndex]);
                         }
                         else
                         {
@@ -299,6 +294,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     case CorElementType.CModOpt:
                     case CorElementType.CModReqd:
                         _ = signature.ReadTypeHandle();
+                        break;
+
+                    case CorElementType.CModInternal:
+                        _ = signature.ReadByte();
+                        _ = signature.ReadBytes(target.PointerSize);
                         break;
 
                     default:

@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 10
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 11
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 10
+#define MINIMUM_READYTORUN_MAJOR_VERSION 11
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -36,8 +36,9 @@
 // R2R Version 9.2 adds MemZero and NativeMemSet helpers
 // R2R Version 9.3 adds BulkWriteBarrier helper
 //                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
-// R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis
+// R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis, disable support for LogMethodEnter helper
 // R2R Version 10.1 adds Unbox_TypeTest helper
+// R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset and does not track return kinds in GCInfo
 
 struct READYTORUN_CORE_HEADER
 {
@@ -346,7 +347,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GetString                 = 0x50,
 
     // Used by /Tuning for Profile optimizations
-    READYTORUN_HELPER_LogMethodEnter            = 0x51,
+    READYTORUN_HELPER_LogMethodEnter            = 0x51, // No longer supported as of READYTORUN_MAJOR_VERSION 10.0
 
     // Reflection helpers
     READYTORUN_HELPER_GetRuntimeTypeHandle      = 0x54,

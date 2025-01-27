@@ -40,9 +40,7 @@ class ExceptionNative
 public:
     static FCDECL1(FC_BOOL_RET, IsImmutableAgileException, Object* pExceptionUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
-    static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
-    static FCDECL1(Object *, GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
@@ -54,6 +52,8 @@ public:
     static FCDECL0(INT32, GetExceptionCode);
     static FCDECL0(UINT32, GetExceptionCount);
 };
+
+extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandleOnStack exception, QCall::ObjectHandleOnStack ret);
 
 enum class ExceptionMessageKind {
     ThreadAbort = 1,
@@ -73,6 +73,10 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowEntryPointNotFoundException(
     MethodTable* pTargetClass,
     MethodTable* pInterfaceMT,
     MethodDesc* pInterfaceMD);
+
+extern "C" void QCALLTYPE ExceptionNative_ThrowMethodAccessException(MethodDesc* caller, MethodDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowFieldAccessException(MethodDesc* caller, FieldDesc* callee);
+extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* caller, EnregisteredTypeHandle callee);
 
 //
 // Buffer
@@ -170,7 +174,7 @@ public:
     static FCDECL1(void,    SetLOHCompactionMode, int newLOHCompactionyMode);
     static FCDECL2(FC_BOOL_RET, RegisterForFullGCNotification, UINT32 gen2Percentage, UINT32 lohPercentage);
     static FCDECL0(FC_BOOL_RET, CancelFullGCNotification);
-    static FCDECL1(int,     GetGeneration, Object* objUNSAFE);
+    static FCDECL1(int,     GetGenerationInternal, Object* objUNSAFE);
     static FCDECL0(UINT64,  GetSegmentSize);
     static FCDECL0(int,     GetLastGCPercentTimeInGC);
     static FCDECL1(UINT64,  GetGenerationSize, int gen);
@@ -182,8 +186,6 @@ public:
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
     static FCDECL0(INT64,    GetTotalAllocatedBytesApproximate);
-
-    static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
 
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);
@@ -203,6 +205,8 @@ private:
 };
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise();
+
+extern "C" void QCALLTYPE GCInterface_AllocateNewArray(void* typeHandlePtr, INT32 length, INT32 flags, QCall::ObjectHandleOnStack ret);
 
 extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
@@ -258,19 +262,18 @@ class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
     static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
+    static FCDECL2(MethodTable*, GetMethodTableMatchingParentClass, MethodTable* mt, MethodTable* parent);
+    static FCDECL1(MethodTable*, InstantiationArg0, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
 extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+extern "C" INT32 QCALLTYPE TypeHandle_GetCorElementType(void* typeHnd);
 extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT);
 
-class StreamNative {
-public:
-    static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndRead, Object *stream);
-    static FCDECL1(FC_BOOL_RET, HasOverriddenBeginEndWrite, Object *stream);
-};
-
 BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
+
+extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead);
 
 #endif // _COMUTILNATIVE_H_

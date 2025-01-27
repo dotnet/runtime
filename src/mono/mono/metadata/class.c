@@ -870,6 +870,31 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		nt->data.type = inflated;
 		return nt;
 	}
+	case MONO_TYPE_FNPTR: {
+		MonoMethodSignature *in_sig = type->data.method;
+		// quick bail out - if there are no type variables anywhere in the signature,
+		// there's nothing that could get inflated.
+		if (!in_sig->has_type_parameters) {
+			if (!changed)
+				return NULL;
+			else
+				return type;
+		}
+		MonoMethodSignature *new_sig = mono_inflate_generic_signature (in_sig, context, error);
+		if ((!new_sig && !changed) || !is_ok (error)) {
+			return NULL;
+		} else if (!new_sig && changed)
+			return type;
+		if (new_sig == in_sig) {
+			if (!changed)
+				return NULL;
+			else
+				return type;
+		}
+		MonoType *nt = mono_metadata_type_dup (image, type);
+		nt->data.method = new_sig;
+		return nt;
+	}
 	default:
 		if (!changed)
 			return NULL;
@@ -2555,7 +2580,7 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 				MonoClassField *gfield = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
 				g_assert (gfield != NULL);
 				MonoType *field_type = gfield->type;
-				if (!mono_metadata_type_equal_full (type, field_type, TRUE))
+				if (!mono_metadata_type_equal_full (type, field_type, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 					continue;
 			}
 			return field;

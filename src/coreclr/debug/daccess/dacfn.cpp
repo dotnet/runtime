@@ -616,9 +616,10 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     // Sanity check that the object we're returning is big enough to fill the PTR type it's being
     // accessed with.
     // If this is not true, it means the type being marshalled isn't a sub-type (or the same type)
-    // as the PTR type it's being used as.  For example, trying to marshal an instance of a SystemDomain
-    // object into a PTR_AppDomain will cause this ASSERT to fire (because both SystemDomain and AppDomain
-    // derived from BaseDomain, and SystemDomain is smaller than AppDomain).
+    // as the PTR type it's being used as. For example, trying to marshal an AssemblyLoaderAllocator
+    // into a PTR_GlobalLoaderAllocator will cause this ASSERT to fire (because AssemblyLoaderAllocator
+    // and GlobalLoaderAllocator derived from LoaderAllocator and AssemblyLoaderAllocator is smaller
+    // than GlobalLoaderAllocator).
     _ASSERTE_MSG(size >= minSize, "DAC coding error: Attempt to instantiate a VPTR from an object that is too small");
 
     inst = g_dacImpl->m_instances.Alloc(addr, size, DAC_VPTR);

@@ -95,6 +95,10 @@ namespace System.Runtime
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
+        internal static extern unsafe int InterlockedCompareExchange(int* location1, int value, int comparand);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
         internal static extern long InterlockedCompareExchange(ref long location1, long value, long comparand);
 

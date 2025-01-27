@@ -666,13 +666,13 @@ namespace
         {
             // Framework dependent apps always know their frameworks
             if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->fx_versions_by_name))
-                return StatusCode::CoreHostIncompatibleConfig;
+                return StatusCode::HostIncompatibleConfig;
         }
         else if (!existing_context->included_fx_versions_by_name.empty())
         {
             // Self-contained apps can include information about their frameworks in `includedFrameworks` property in runtime config
             if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->included_fx_versions_by_name))
-                return StatusCode::CoreHostIncompatibleConfig;
+                return StatusCode::HostIncompatibleConfig;
         }
         else
         {
@@ -1062,12 +1062,12 @@ int fx_muxer_t::handle_cli(
         trace::error(
             _X("The command could not be loaded, possibly because:\n")
             _X("  * You intended to execute a .NET application:\n")
-            _X("      The application '%s' does not exist.\n")
+            _X("      The application '%s' does not exist or is not a managed .dll or .exe.\n")
             _X("  * You intended to execute a .NET SDK command:"),
             app_candidate.c_str());
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
-        return StatusCode::LibHostSdkFindFailure;
+        return StatusCode::SdkResolveFailure;
     }
 
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);

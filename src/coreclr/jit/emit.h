@@ -470,6 +470,7 @@ public:
 #ifdef TARGET_XARCH
         SetUseVEXEncoding(false);
         SetUseEvexEncoding(false);
+        SetUseRex2Encoding(false);
 #endif // TARGET_XARCH
 
         emitDataSecCur = nullptr;
@@ -1606,36 +1607,36 @@ protected:
 
         bool idIsBound() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idBound != 0;
         }
         void idSetIsBound()
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idBound = 1;
         }
 
 #ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idCallRegPtr != 0;
         }
         void idSetIsCallRegPtr()
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idCallRegPtr = 1;
         }
 #endif // !TARGET_ARMARCH
 
         bool idIsTlsGD() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idTlsGD != 0;
         }
         void idSetTlsGD()
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idTlsGD = 1;
         }
 
@@ -1644,12 +1645,12 @@ protected:
         // code, it is not necessary to generate GC info for a call so labeled.
         bool idIsNoGC() const
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             return _idNoGC != 0;
         }
         void idSetIsNoGC(bool val)
         {
-            assert(!IsAvx512OrPriorInstruction(_idIns));
+            assert(!IsSimdInstruction(_idIns));
             _idNoGC = val;
         }
 
@@ -1702,7 +1703,7 @@ protected:
 
         unsigned idGetEvexAaaContext() const
         {
-            assert(IsAvx512OrPriorInstruction(_idIns));
+            assert(IsSimdInstruction(_idIns));
             return _idEvexAaaContext;
         }
 
@@ -1718,7 +1719,7 @@ protected:
 
         bool idIsEvexZContextSet() const
         {
-            assert(IsAvx512OrPriorInstruction(_idIns));
+            assert(IsSimdInstruction(_idIns));
             return _idEvexZContext != 0;
         }
 
@@ -2249,8 +2250,7 @@ protected:
     ssize_t  emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
-    inline emitAttr emitGetMemOpSize(instrDesc* id) const;
-    inline emitAttr emitGetBaseMemOpSize(instrDesc*) const;
+    inline emitAttr emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast = false) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -3128,6 +3128,10 @@ public:
 #ifndef TARGET_LOONGARCH64
     void emitInsSanityCheck(instrDesc* id);
 #endif // TARGET_LOONGARCH64
+
+#ifdef TARGET_ARM64
+    void emitInsPairSanityCheck(instrDesc* prevId, instrDesc* id);
+#endif
 #endif // DEBUG
 
 #ifdef TARGET_ARMARCH
@@ -3958,51 +3962,11 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //-----------------------------------------------------------------------------
 // emitGetMemOpSize: Get the memory operand size of instrDesc.
 //
-//  Note: there are cases when embedded broadcast is enabled, so the memory operand
-//  size is different from the intrinsic simd size, we will check here if emitter is
-//  emiting a embedded broadcast enabled instruction.
-
 //  Arguments:
-//       id - Instruction descriptor
+//    id                      - Instruction descriptor
+//    ignoreEmbeddedBroadcast - true to get the non-embedded operand size; otherwise false
 //
-emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
-{
-    if (id->idIsEvexbContextSet())
-    {
-        // should have the assumption that Evex.b now stands for the embedded broadcast context.
-        // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
-        ssize_t inputSize = GetInputSizeInBytes(id);
-        switch (inputSize)
-        {
-            case 4:
-                return EA_4BYTE;
-            case 8:
-                return EA_8BYTE;
-
-            default:
-                unreached();
-        }
-    }
-    else
-    {
-        return emitGetBaseMemOpSize(id);
-    }
-}
-
-//-----------------------------------------------------------------------------
-// emitGetMemOpSize: Get the memory operand size of instrDesc.
-//
-// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
-// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
-// and a 128-bit input (register or memory).
-// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
-// This method is mainly used for such instructions to return the appropriate memory operand
-// size, otherwise returns the regular operand size of the instruction.
-
-//  Arguments:
-//       id - Instruction descriptor
-//
-emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
+emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) const
 {
     ssize_t memSize = 0;
 
@@ -4018,7 +3982,7 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
     else if (tupleType == INS_TT_FULL)
     {
         // Embedded broadcast supported, so either loading scalar or full vector
-        if (id->idIsEvexbContextSet())
+        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4040,7 +4004,7 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         {
             memSize = 16;
         }
-        else if (id->idIsEvexbContextSet())
+        else if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
         {
             memSize = GetInputSizeInBytes(id);
         }
@@ -4052,7 +4016,7 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
     else if (tupleType == INS_TT_HALF)
     {
         // Embedded broadcast supported, so either loading scalar or half vector
-        if (id->idIsEvexbContextSet())
+        if (id->idIsEvexbContextSet() && !ignoreEmbeddedBroadcast)
         {
             memSize = GetInputSizeInBytes(id);
         }

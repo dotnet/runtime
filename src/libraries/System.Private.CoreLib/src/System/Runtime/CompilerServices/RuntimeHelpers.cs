@@ -110,7 +110,14 @@ namespace System.Runtime.CompilerServices
             // COR_ELEMENT_TYPE_I1,I2,I4,I8,U1,U2,U4,U8,R4,R8,I,U,CHAR,BOOLEAN
             => ((1 << (int)et) & 0b_0011_0000_0000_0011_1111_1111_1100) != 0;
 
-        private static ReadOnlySpan<short> PrimitiveWidenTable =>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool CanPrimitiveWiden(CorElementType srcET, CorElementType dstET)
+        {
+            // The primitive widen table
+            //  The index represents source type. The value in the table is a bit vector of destination types.
+            //  If corresponding bit is set in the bit vector, source type can be widened into that type.
+            //  All types widen to themselves.
+            ReadOnlySpan<short> primitiveWidenTable =
             [
                 0x00,      // ELEMENT_TYPE_END
                 0x00,      // ELEMENT_TYPE_VOID
@@ -128,15 +135,13 @@ namespace System.Runtime.CompilerServices
                 0x2000,    // ELEMENT_TYPE_R8   (W = R8)
             ];
 
-        internal static bool CanPrimitiveWiden(CorElementType srcET, CorElementType dstET)
-        {
             Debug.Assert(srcET.IsPrimitiveType() && dstET.IsPrimitiveType());
-            if ((int)srcET >= PrimitiveWidenTable.Length)
+            if ((int)srcET >= primitiveWidenTable.Length)
             {
                 // I or U
                 return srcET == dstET;
             }
-            return (PrimitiveWidenTable[(int)srcET] & (1 << (int)dstET)) != 0;
+            return (primitiveWidenTable[(int)srcET] & (1 << (int)dstET)) != 0;
         }
 
         /// <summary>Provide a fast way to access constant data stored in a module as a ReadOnlySpan{T}</summary>
@@ -145,7 +150,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, bool, char, short, ushort, int, uint, long, ulong, float, or double.</remarks>
         [Intrinsic]
-        public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
 
 

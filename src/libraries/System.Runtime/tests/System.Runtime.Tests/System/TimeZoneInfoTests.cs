@@ -2434,14 +2434,31 @@ namespace System.Tests
             }
         }
 
-        private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
+        // In recent Linux distros like Ubuntu 24.04, removed the legacy Time Zone names and not mapping it any more. User can still have a way to install it if they need to.
+        // UCT is one of the legacy aliases for UTC which we use here to detect if the legacy names is support at the runtime.
+        // https://discourse.ubuntu.com/t/ubuntu-24-04-lts-noble-numbat-release-notes/39890#p-99950-tzdata-package-split
+        private static bool SupportLegacyTimeZoneNames { get; } = IsSupportedLegacyTimeZones();
+        private static bool IsSupportedLegacyTimeZones()
+        {
+            try
+            {
+                TimeZoneInfo.FindSystemTimeZoneById("UCT");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return false;
+            }
 
-        [GeneratedRegex(IanaAbbreviationPattern)]
-        private static partial Regex IanaAbbreviationRegex();
+            return true;
+        }
+
+        [GeneratedRegex(@"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$")]
+        private static partial Regex IanaAbbreviationRegex { get; }
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
         // (This list is not likely to change.)
-        private static readonly string[] s_UtcAliases = new[] {
+        private static readonly string[] s_UtcAliases = SupportLegacyTimeZoneNames ?
+        [
             "Etc/UTC",
             "Etc/UCT",
             "Etc/Universal",
@@ -2450,7 +2467,13 @@ namespace System.Tests
             "UTC",
             "Universal",
             "Zulu"
-        };
+        ] : [
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UTC"
+        ];
 
         // On Android GMT, GMT+0, and GMT-0 are values
         private static readonly string[] s_GMTAliases = new[] {
@@ -2487,10 +2510,10 @@ namespace System.Tests
                 else
                 {
                     // For other time zones, match any valid IANA time zone abbreviation, including numeric forms
-                    Assert.True(IanaAbbreviationRegex().IsMatch(timeZone.StandardName),
-                        $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual StandardName: \"{timeZone.StandardName}\"");
-                    Assert.True(IanaAbbreviationRegex().IsMatch(timeZone.DaylightName),
-                        $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationPattern}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
+                    Assert.True(IanaAbbreviationRegex.IsMatch(timeZone.StandardName),
+                        $"Id: \"{timeZone.Id}\", StandardName should have matched the pattern @\"{IanaAbbreviationRegex}\", Actual StandardName: \"{timeZone.StandardName}\"");
+                    Assert.True(IanaAbbreviationRegex.IsMatch(timeZone.DaylightName),
+                        $"Id: \"{timeZone.Id}\", DaylightName should have matched the pattern @\"{IanaAbbreviationRegex}\", Actual DaylightName: \"{timeZone.DaylightName}\"");
                 }
             }
             else if (isUtc)
@@ -2851,22 +2874,31 @@ namespace System.Tests
             Assert.True(ReferenceEquals(tz, TimeZoneInfo.Utc));
         }
 
+        public static IEnumerable<object[]> AlternativeName_TestData()
+        {
+            yield return new object[] { "Pacific Standard Time", "America/Los_Angeles" };
+            yield return new object[] { "AUS Eastern Standard Time", "Australia/Sydney" };
+            yield return new object[] { "GMT Standard Time", "Europe/London" };
+            yield return new object[] { "Tonga Standard Time", "Pacific/Tongatapu" };
+            yield return new object[] { "W. Australia Standard Time", "Australia/Perth" };
+            yield return new object[] { "E. South America Standard Time", "America/Sao_Paulo" };
+            yield return new object[] { "E. Africa Standard Time", "Africa/Nairobi" };
+            yield return new object[] { "W. Europe Standard Time", "Europe/Berlin" };
+            yield return new object[] { "Russian Standard Time", "Europe/Moscow" };
+            yield return new object[] { "Libya Standard Time", "Africa/Tripoli" };
+            yield return new object[] { "South Africa Standard Time", "Africa/Johannesburg" };
+            yield return new object[] { "Morocco Standard Time", "Africa/Casablanca" };
+            yield return new object[] { "Newfoundland Standard Time", "America/St_Johns" };
+            yield return new object[] { "Iran Standard Time", "Asia/Tehran" };
+
+            if (SupportLegacyTimeZoneNames)
+            {
+                yield return new object[] { "Argentina Standard Time", "America/Argentina/Catamarca" };
+            }
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [InlineData("Pacific Standard Time", "America/Los_Angeles")]
-        [InlineData("AUS Eastern Standard Time", "Australia/Sydney")]
-        [InlineData("GMT Standard Time", "Europe/London")]
-        [InlineData("Tonga Standard Time", "Pacific/Tongatapu")]
-        [InlineData("W. Australia Standard Time", "Australia/Perth")]
-        [InlineData("E. South America Standard Time", "America/Sao_Paulo")]
-        [InlineData("E. Africa Standard Time", "Africa/Nairobi")]
-        [InlineData("W. Europe Standard Time", "Europe/Berlin")]
-        [InlineData("Russian Standard Time", "Europe/Moscow")]
-        [InlineData("Libya Standard Time", "Africa/Tripoli")]
-        [InlineData("South Africa Standard Time", "Africa/Johannesburg")]
-        [InlineData("Morocco Standard Time", "Africa/Casablanca")]
-        [InlineData("Argentina Standard Time", "America/Argentina/Catamarca")]
-        [InlineData("Newfoundland Standard Time", "America/St_Johns")]
-        [InlineData("Iran Standard Time", "Asia/Tehran")]
+        [MemberData(nameof(AlternativeName_TestData))]
         public static void UsingAlternativeTimeZoneIdsTest(string windowsId, string ianaId)
         {
             if (PlatformDetection.ICUVersion.Major >= 52 && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
@@ -3169,7 +3201,7 @@ namespace System.Tests
             Assert.Equal(new TimeSpan(2, 0, 0), customTimeZone.GetUtcOffset(new DateTime(2021, 3, 10, 2, 0, 0)));
         }
 
-        [Fact]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         public static void NoBackwardTimeZones()
         {

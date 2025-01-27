@@ -453,6 +453,22 @@ namespace System.IO
             return result;
         }
 
+        /// <summary>
+        /// Reads bytes from the current stream and advances the position within the stream until the <paramref name="buffer" /> is filled.
+        /// </summary>
+        /// <remarks>
+        /// When <paramref name="buffer"/> is empty, this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
+        /// <exception cref="IOException">An I/O error occurred.</exception>
+        /// <exception cref="EndOfStreamException">The end of the stream is reached before filling the <paramref name="buffer" />.</exception>
+        public virtual void ReadExactly(Span<byte> buffer)
+        {
+            ThrowIfDisposed();
+            _stream.ReadExactly(buffer);
+        }
+
         private ReadOnlySpan<byte> InternalRead(Span<byte> buffer)
         {
             Debug.Assert(buffer.Length != 1, "length of 1 should use ReadByte.");

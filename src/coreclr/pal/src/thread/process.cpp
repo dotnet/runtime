@@ -65,29 +65,11 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
-// Ensure __NR_membarrier is defined for portable builds.
-# if !defined(__NR_membarrier)
-#  if defined(__amd64__)
-#   define __NR_membarrier  324
-#  elif defined(__i386__)
-#   define __NR_membarrier  375
-#  elif defined(__arm__)
-#   define __NR_membarrier  389
-#  elif defined(__aarch64__)
-#   define __NR_membarrier  283
-#  elif defined(__loongarch64)
-#   define __NR_membarrier  283
-#  else
-#   error Unknown architecture
-#  endif
-# endif
 #endif
 
 #ifdef __APPLE__
-#include <libproc.h>
 #include <pwd.h>
 #include <sys/sysctl.h>
-#include <sys/posix_sem.h>
 #include <mach/task.h>
 #include <mach/vm_map.h>
 extern "C"
@@ -119,6 +101,11 @@ extern "C"
 #include <sys/user.h>
 #endif
 
+#ifdef __HAIKU__
+#include <image.h>
+#include <OS.h>
+#endif
+
 extern char *g_szCoreCLRPath;
 extern bool g_running_in_exe;
 
@@ -127,18 +114,11 @@ using namespace CorUnix;
 CObjectType CorUnix::otProcess(
                 otiProcess,
                 NULL,   // No cleanup routine
-                NULL,   // No initialization routine
                 0,      // No immutable data
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // No shared data
-                PROCESS_ALL_ACCESS,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::CrossProcessDuplicationAllowed,
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
                 CObjectType::ThreadReleaseHasNoSideEffects,
@@ -229,7 +209,7 @@ PathCharString* gSharedFilesPath = nullptr;
 #if defined(__NetBSD__)
 #define CLR_SEM_MAX_NAMELEN 15
 #elif defined(__APPLE__)
-#define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
+#define CLR_SEM_MAX_NAMELEN 31
 #elif defined(NAME_MAX)
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
 #else
@@ -1397,7 +1377,7 @@ PALIMPORT
 VOID
 PALAPI
 PAL_SetCreateDumpCallback(
-    IN PCREATEDUMP_CALLBACK callback) 
+    IN PCREATEDUMP_CALLBACK callback)
 {
     _ASSERTE(g_createdumpCallback == nullptr);
     g_createdumpCallback = callback;
@@ -1679,6 +1659,23 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     *disambiguationKey = secondsSinceEpoch;
 
     return TRUE;
+
+#elif defined(__HAIKU__)
+
+    // On Haiku, we return the process start time expressed in microseconds since boot time.
+
+    team_info info;
+
+    if (get_team_info(processId, &info) == B_OK)
+    {
+        *disambiguationKey = info.start_time;
+        return TRUE;
+    }
+    else
+    {
+        WARN("Failed to get start time of a process.");
+        return FALSE;
+    }
 
 #elif HAVE_PROCFS_STAT
 
@@ -2197,6 +2194,9 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
+#if defined(TARGET_IOS)
+    return FALSE;
+#else
     _ASSERTE(argv.size() > 0);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
 
@@ -2206,8 +2206,11 @@ PROCCreateCrashDump(
         size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
         if (previousThreadId != 0)
         {
-            // Should never reenter or recurse
-            _ASSERTE(previousThreadId != currentThreadId);
+            // Return error if reenter this code
+            if (previousThreadId == currentThreadId)
+            {
+                return false;
+            }
 
             // The first thread generates the crash info and any other threads are blocked
             while (true)
@@ -2321,6 +2324,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
+#endif // !TARGET_IOS
 }
 
 /*++
@@ -2591,7 +2595,7 @@ InitializeFlushProcessWriteBuffers()
         }
     }
 
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     return TRUE;
 #else
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
@@ -2621,7 +2625,7 @@ InitializeFlushProcessWriteBuffers()
     }
 
     return status == 0;
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 #define FATAL_ASSERT(e, msg) \
@@ -2671,7 +2675,7 @@ FlushProcessWriteBuffers()
         status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
         FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
     }
-#ifdef TARGET_OSX
+#ifdef TARGET_APPLE
     else
     {
         mach_msg_type_number_t cThreads;
@@ -2700,7 +2704,7 @@ FlushProcessWriteBuffers()
         machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
         CHECK_MACH("vm_deallocate()", machret);
     }
-#endif // TARGET_OSX
+#endif // TARGET_APPLE
 }
 
 /*++
@@ -3630,10 +3634,16 @@ getFileName(
         wcEnd = *lpEnd;
         *lpEnd = 0x0000;
 
-        /* Convert to ASCII */
+        /* Convert to UTF-8 */
         int size = 0;
-        int length = (PAL_wcslen(lpCommandLine)+1) * sizeof(WCHAR);
-        lpFileName = lpFileNamePS.OpenStringBuffer(length);
+        int length = WideCharToMultiByte(CP_ACP, 0, lpCommandLine, -1, NULL, 0, NULL, NULL);
+        if (length == 0)
+        {
+            ERROR("Failed to calculate the required buffer length.\n");
+            return FALSE;
+        };
+
+        lpFileName = lpFileNamePS.OpenStringBuffer(length - 1);
         if (NULL == lpFileName)
         {
             ERROR("Not Enough Memory!\n");

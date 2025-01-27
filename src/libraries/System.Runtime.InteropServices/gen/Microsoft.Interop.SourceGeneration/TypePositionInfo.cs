@@ -80,6 +80,11 @@ namespace Microsoft.Interop
         public int NativeIndex { get; init; } = UnsetIndex;
         public bool IsExplicitThis { get; init; }
 
+        public bool PositionsEqual(TypePositionInfo other)
+        {
+            return ManagedIndex == other.ManagedIndex && NativeIndex == other.NativeIndex;
+        }
+
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, MarshallingInfo marshallingInfo, Compilation compilation)
         {
             var (byValueContentsMarshalKind, inLocation, outLocation) = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation);

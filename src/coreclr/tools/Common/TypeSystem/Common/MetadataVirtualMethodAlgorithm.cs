@@ -461,7 +461,26 @@ namespace Internal.TypeSystem
             // Unless the current type has a name/sig match for the group, look to the base type to define the unification group further
             if ((nameSigMatchMethod == null) && (baseType != null))
             {
+                // TODO! Consider if we should do this check even if the virtual name/sig match finds something.
+                // We may want to build up a unification group for the base just to check the further MethodImpl case here.
                 FindBaseUnificationGroup(baseType, unificationGroup);
+
+                // We should check to see if a the DefiningMethod on the base unification group is overridden via MethodImpl
+                // TODO! check to see if we need to check for MethodImpls affecting other members of the unification group
+                // other than the defining method
+                if (unificationGroup.DefiningMethod != null)
+                {
+                    methodImpl = FindImplFromDeclFromMethodImpls(currentType, unificationGroup.DefiningMethod);
+                    if (methodImpl != null)
+                    {
+                        if (methodImpl.RequiresSlotUnification())
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(unificationGroup.DefiningMethod);
+                            unificationGroup.AddMethodRequiringSlotUnification(methodImpl);
+                        }
+                        unificationGroup.SetDefiningMethod(methodImpl);
+                    }
+                }
             }
 
             Debug.Assert(unificationGroup.IsInGroupOrIsDefiningSlot(originalDefiningMethod));
@@ -610,7 +629,18 @@ namespace Internal.TypeSystem
         //    function returns null if the interface method implementation is not defined by the current type in
         //    the hierarchy.For variance to work correctly, this requires that interfaces be queried in correct order.
         //    See current interface call resolution for details on how that happens.
-        private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
+        //
+        //    The returnRecursive parameter is solely intended to optimize the recursion through
+        //    the ResolveInterfaceMethodToVirtualMethodOnTypeRecursive helper method and should not
+        //    be used for anything else. ResolveInterfaceMethodToVirtualMethodOnTypeRecursive walks
+        //    up the type hierarchy, calls ResolveInterfaceMethodToVirtualMethodOnType on each base
+        //    type, and bails out on a first successful match. Since we perform the same expansion in
+        //    the last branch of this method by calling ResolveInterfaceMethodToVirtualMethodOnTypeRecursive
+        //    for the base type, we allow the caller to specify that such computed value should be
+        //    returned instead of discarded. This allows short-circuiting the outer loop over type
+        //    hierarchy and avoids unnecessary exponential algorithmic complexity of the resolution
+        //    algorithm.
+        private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType, bool returnRecursive = false)
         {
             Debug.Assert(!interfaceMethod.Signature.IsStatic);
 
@@ -665,7 +695,7 @@ namespace Internal.TypeSystem
                 MethodDesc baseClassImplementationOfInterfaceMethod = ResolveInterfaceMethodToVirtualMethodOnTypeRecursive(interfaceMethod, baseType);
                 if (baseClassImplementationOfInterfaceMethod != null)
                 {
-                    return null;
+                    return returnRecursive ? baseClassImplementationOfInterfaceMethod : null;
                 }
                 else
                 {
@@ -729,7 +759,7 @@ namespace Internal.TypeSystem
                     return null;
                 }
 
-                MethodDesc currentTypeInterfaceResolution = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType);
+                MethodDesc currentTypeInterfaceResolution = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType, returnRecursive: true);
                 if (currentTypeInterfaceResolution != null)
                     return currentTypeInterfaceResolution;
 

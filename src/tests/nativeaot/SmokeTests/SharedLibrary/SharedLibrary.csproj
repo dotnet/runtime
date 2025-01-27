@@ -5,12 +5,15 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeLib>Shared</NativeLib>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <!-- Unable to compile a project with the Library output type for apple mobile devices -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
 
     <!-- Regression test for https://github.com/dotnet/runtime/issues/105330: make sure the UnmanagedCallersOnly are completely unreferenced,
          not even from stack trace mapping data -->
     <StackTraceSupport>false</StackTraceSupport>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <SkipInferOutputType>true</SkipInferOutputType>
   </PropertyGroup>
 
   <PropertyGroup>

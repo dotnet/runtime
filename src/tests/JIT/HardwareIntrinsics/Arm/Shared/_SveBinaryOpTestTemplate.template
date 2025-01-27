@@ -43,8 +43,14 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
+                // Validates using the same local multiple times works, using Unsafe.Read
+                test.RunSameLclVarScenario_UnsafeRead();
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                // Validates using the same instance member of a class multiple times works
+                test.RunSameClassFldScenario();
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
@@ -250,6 +256,19 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
         }
 
+        public void RunSameLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunSameLclVarScenario_UnsafeRead));
+
+            var op = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr);
+            var op1 = op;
+            var op2 = op;
+            var result = {Isa}.{Method}(op1, op2);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(op1, op2, _dataTable.outArrayPtr);
+        }
+
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
@@ -258,6 +277,16 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
+        }
+
+        public void RunSameClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunSameClassFldScenario));
+
+            var result = {Isa}.{Method}(_fld1, _fld1);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld1, _fld1, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()

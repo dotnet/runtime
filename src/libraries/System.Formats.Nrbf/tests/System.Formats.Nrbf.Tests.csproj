@@ -3,10 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- SYSLIB5005: System.Formats.Nrbf is experimental -->
+    <NoWarn>$(NoWarn);SYSLIB5005</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="..\src\System\Formats\Nrbf\BinaryArrayType.cs" Link="BinaryArrayType.cs" />
+    <Compile Include="..\src\System\Formats\Nrbf\BinaryType.cs" Link="BinaryType.cs" />
+    <Compile Include="..\src\System\Formats\Nrbf\PrimitiveType.cs" Link="PrimitiveType.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,11 +19,14 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
+    <!-- Reference the `NetCoreAppMinimum` build which has a functional BinaryFormatter and force a private copy to ensure it's not excluded -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
 
 </Project>

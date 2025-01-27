@@ -24,8 +24,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 
-#include <dn-u16.h> // for u16_strtod
-
 /*****************************************************************************/
 
 #define DECLARE_DATA
@@ -759,7 +757,7 @@ bool ConfigMethodRange::Contains(unsigned hash)
 //    because of bad characters or too many entries, or had values
 //    that were too large to represent.
 
-void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
+void ConfigMethodRange::InitRanges(const char* rangeStr, unsigned capacity)
 {
     // Make sure that the memory was zero initialized
     assert(m_inited == 0 || m_inited == 1);
@@ -781,34 +779,34 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
     m_ranges             = (Range*)jitHost->allocateMemory(capacity * sizeof(Range));
     m_entries            = capacity;
 
-    const WCHAR* p           = rangeStr;
-    unsigned     lastRange   = 0;
-    bool         setHighPart = false;
+    const char* p           = rangeStr;
+    unsigned    lastRange   = 0;
+    bool        setHighPart = false;
 
     while ((*p != 0) && (lastRange < m_entries))
     {
-        while ((*p == L' ') || (*p == L','))
+        while ((*p == ' ') || (*p == ','))
         {
             p++;
         }
 
         int i = 0;
 
-        while (((L'0' <= *p) && (*p <= L'9')) || ((L'A' <= *p) && (*p <= L'F')) || ((L'a' <= *p) && (*p <= L'f')))
+        while ((('0' <= *p) && (*p <= '9')) || (('A' <= *p) && (*p <= 'F')) || (('a' <= *p) && (*p <= 'f')))
         {
             int n = 0;
 
-            if ((L'0' <= *p) && (*p <= L'9'))
+            if (('0' <= *p) && (*p <= '9'))
             {
-                n = (*p++) - L'0';
+                n = (*p++) - '0';
             }
-            else if ((L'A' <= *p) && (*p <= L'F'))
+            else if (('A' <= *p) && (*p <= 'F'))
             {
-                n = (*p++) - L'A' + 10;
+                n = (*p++) - 'A' + 10;
             }
-            else if ((L'a' <= *p) && (*p <= L'f'))
+            else if (('a' <= *p) && (*p <= 'f'))
             {
-                n = (*p++) - L'a' + 10;
+                n = (*p++) - 'a' + 10;
             }
 
             int j = 16 * i + n;
@@ -842,13 +840,13 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
         // Must have been looking for the low part of a range
         m_ranges[lastRange].m_low = i;
 
-        while (*p == L' ')
+        while (*p == ' ')
         {
             p++;
         }
 
         // Was that the low part of a low-high pair?
-        if (*p == L'-')
+        if (*p == '-')
         {
             // Yep, skip the dash and set high part next time around.
             p++;
@@ -921,22 +919,22 @@ void ConfigMethodRange::Dump()
 //    Values are separated decimal with no whitespace.
 //    Separators are any digit not '-' or '0-9'
 //
-void ConfigIntArray::Init(const WCHAR* str)
+void ConfigIntArray::Init(const char* str)
 {
     // Count the number of values
     //
-    const WCHAR* p         = str;
-    unsigned     numValues = 0;
+    const char* p         = str;
+    unsigned    numValues = 0;
     while (*p != 0)
     {
-        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        if ((*p == '-') || (('0' <= *p) && (*p <= '9')))
         {
-            if (*p == L'-')
+            if (*p == '-')
             {
                 p++;
             }
 
-            while ((L'0' <= *p) && (*p <= L'9'))
+            while (('0' <= *p) && (*p <= '9'))
             {
                 p++;
             }
@@ -958,17 +956,17 @@ void ConfigIntArray::Init(const WCHAR* str)
     bool isNegative   = false;
     while (*p != 0)
     {
-        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        if ((*p == '-') || (('0' <= *p) && (*p <= '9')))
         {
-            if (*p == L'-')
+            if (*p == '-')
             {
                 isNegative = true;
                 p++;
             }
 
-            while ((L'0' <= *p) && (*p <= L'9'))
+            while (('0' <= *p) && (*p <= '9'))
             {
-                currentValue = currentValue * 10 + (*p++) - L'0';
+                currentValue = currentValue * 10 + (*p++) - '0';
             }
 
             if (isNegative)
@@ -1019,21 +1017,21 @@ void ConfigIntArray::Dump()
 //    Values are comma, tab or space separated.
 //    Consecutive separators are ignored
 //
-void ConfigDoubleArray::Init(const WCHAR* str)
+void ConfigDoubleArray::Init(const char* str)
 {
     // Count the number of values
     //
-    const WCHAR* p         = str;
-    unsigned     numValues = 0;
+    const char* p         = str;
+    unsigned    numValues = 0;
     while (*p != 0)
     {
-        if (*p == L',')
+        if (*p == ',')
         {
             p++;
             continue;
         }
-        WCHAR* pNext = nullptr;
-        u16_strtod(p, &pNext);
+        char* pNext = nullptr;
+        strtod(p, &pNext);
         if (errno == 0)
         {
             numValues++;
@@ -1047,14 +1045,14 @@ void ConfigDoubleArray::Init(const WCHAR* str)
     numValues = 0;
     while (*p != 0)
     {
-        if (*p == L',')
+        if (*p == ',')
         {
             p++;
             continue;
         }
 
-        WCHAR* pNext = nullptr;
-        double val   = u16_strtod(p, &pNext);
+        char*  pNext = nullptr;
+        double val   = strtod(p, &pNext);
         if (errno == 0)
         {
             m_values[numValues++] = val;
@@ -1626,8 +1624,6 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
             case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
-            case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
-            case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
             case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
                 // logging helpers are not technically pure but can be optimized away
                 isPure        = true;
@@ -1742,6 +1738,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
@@ -1804,10 +1801,6 @@ void HelperCallProperties::init()
                 alwaysThrow = true;
                 break;
 
-            // These helper calls may throw an exception
-            case CORINFO_HELP_MON_EXIT_STATIC:
-                break;
-
             // This is a debugging aid; it simply returns a constant address.
             case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
                 isPure  = true;
@@ -1820,13 +1813,10 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_DBG_IS_JUST_MY_CODE:
-            case CORINFO_HELP_BBT_FCN_ENTER:
             case CORINFO_HELP_POLL_GC:
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_EXIT:
-            case CORINFO_HELP_MON_ENTER_STATIC:
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-            case CORINFO_HELP_GETFIELDADDR:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
                 noThrow = true;
@@ -1870,18 +1860,18 @@ void HelperCallProperties::init()
 //
 // You must use ';' as a separator; whitespace no longer works
 
-AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
+AssemblyNamesList2::AssemblyNamesList2(const char* list, HostAllocator alloc)
     : m_alloc(alloc)
 {
-    WCHAR          prevChar   = '?';     // dummy
-    LPWSTR         nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
+    char           prevChar   = '?';     // dummy
+    const char*    nameStart  = nullptr; // start of the name currently being processed. nullptr if no current name
     AssemblyName** ppPrevLink = &m_pNames;
 
-    for (LPWSTR listWalk = const_cast<LPWSTR>(list); prevChar != '\0'; prevChar = *listWalk, listWalk++)
+    for (const char* listWalk = list; prevChar != '\0'; prevChar = *listWalk, listWalk++)
     {
-        WCHAR curChar = *listWalk;
+        char curChar = *listWalk;
 
-        if (curChar == W(';') || curChar == W('\0'))
+        if (curChar == ';' || curChar == '\0')
         {
             // Found separator or end of string
             if (nameStart)
@@ -1890,29 +1880,15 @@ AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
 
                 AssemblyName* newName = new (m_alloc) AssemblyName();
 
-                // Null out the current character so we can do zero-terminated string work; we'll restore it later.
-                *listWalk = W('\0');
+                ptrdiff_t nameLen       = listWalk - nameStart;
+                newName->m_assemblyName = new (m_alloc) char[nameLen + 1];
+                memcpy(newName->m_assemblyName, nameStart, nameLen * sizeof(char));
+                newName->m_assemblyName[nameLen] = '\0';
 
-                // How much space do we need?
-                int convertedNameLenBytes =
-                    WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
-                newName->m_assemblyName = new (m_alloc) char[convertedNameLenBytes]; // convertedNameLenBytes includes
-                                                                                     // the trailing null character
-                if (WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
-                                        nullptr, nullptr) != 0)
-                {
-                    *ppPrevLink = newName;
-                    ppPrevLink  = &newName->m_next;
-                }
-                else
-                {
-                    // Failed to convert the string. Ignore this string (and leak the memory).
-                }
+                *ppPrevLink = newName;
+                ppPrevLink  = &newName->m_next;
 
                 nameStart = nullptr;
-
-                // Restore the current character.
-                *listWalk = curChar;
             }
         }
         else if (!nameStart)
@@ -1958,11 +1934,11 @@ bool AssemblyNamesList2::IsInList(const char* assemblyName)
 // MethodSet
 //=============================================================================
 
-MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
+MethodSet::MethodSet(const char* filename, HostAllocator alloc)
     : m_pInfos(nullptr)
     , m_alloc(alloc)
 {
-    FILE* methodSetFile = _wfopen(filename, W("r"));
+    FILE* methodSetFile = fopen_utf8(filename, "r");
     if (methodSetFile == nullptr)
     {
         return;
@@ -2061,16 +2037,16 @@ MethodSet::MethodSet(const WCHAR* filename, HostAllocator alloc)
 
     if (fclose(methodSetFile))
     {
-        JITDUMP("Unable to close %ws\n", filename);
+        JITDUMP("Unable to close %s\n", filename);
     }
 
     if (m_pInfos == nullptr)
     {
-        JITDUMP("No methods read from %ws\n", filename);
+        JITDUMP("No methods read from %s\n", filename);
     }
     else
     {
-        JITDUMP("Methods read from %ws:\n", filename);
+        JITDUMP("Methods read from %s:\n", filename);
 
         int methodCount = 0;
         for (MethodInfo* pInfo = m_pInfos; pInfo != nullptr; pInfo = pInfo->m_next)
@@ -2272,8 +2248,7 @@ double FloatingPointUtils::convertUInt64ToDouble(uint64_t uIntVal)
 
 float FloatingPointUtils::convertUInt64ToFloat(uint64_t u64)
 {
-    double d = convertUInt64ToDouble(u64);
-    return (float)d;
+    return (float)u64;
 }
 
 uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
@@ -4262,3 +4237,81 @@ bool CastFromDoubleOverflows(double fromValue, var_types toType)
     }
 }
 } // namespace CheckedOps
+
+template <size_t bufferSize>
+class Utf16String
+{
+private:
+    WCHAR  m_bufferUnsafe[bufferSize];
+    WCHAR* m_pBuffer = nullptr;
+
+public:
+    Utf16String(const char* str)
+    {
+        int strBufferSize = MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+        if (strBufferSize == 0)
+        {
+            return;
+        }
+
+        if (strBufferSize > bufferSize)
+        {
+            m_pBuffer = new WCHAR[strBufferSize];
+        }
+        else
+        {
+            m_pBuffer = m_bufferUnsafe;
+        }
+
+        if (MultiByteToWideChar(CP_UTF8, 0, str, -1, m_pBuffer, strBufferSize) == 0)
+        {
+            if (m_pBuffer != m_bufferUnsafe)
+            {
+                delete[] m_pBuffer;
+            }
+
+            m_pBuffer = nullptr;
+        }
+    }
+
+    ~Utf16String()
+    {
+        if (m_pBuffer != m_bufferUnsafe)
+        {
+            delete[] m_pBuffer;
+            m_pBuffer = nullptr;
+        }
+    }
+
+    const WCHAR* Result()
+    {
+        return m_pBuffer;
+    }
+};
+
+//------------------------------------------------------------------------
+// fopen_utf8: Open the file at the specified UTF8 path with the specified mode.
+//
+// Arguments:
+//   path - UTF8 path
+//   mode - UTF8 mode
+//
+// Returns:
+//    Opened file handle
+//
+FILE* fopen_utf8(const char* path, const char* mode)
+{
+#ifdef HOST_WINDOWS
+    Utf16String<256> pathWide(path);
+    Utf16String<16>  modeWide(mode);
+
+    if ((pathWide.Result() == nullptr) || (modeWide.Result() == nullptr))
+    {
+        return nullptr;
+    }
+
+    return _wfopen(pathWide.Result(), modeWide.Result());
+#else
+    return fopen(path, mode);
+#endif
+}
