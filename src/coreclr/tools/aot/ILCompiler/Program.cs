@@ -784,10 +784,10 @@ namespace ILCompiler
             }
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new ILCompilerRootCommand(args)
+            new CommandLineConfiguration(new ILCompilerRootCommand(args)
                 .UseVersion()
                 .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
             {

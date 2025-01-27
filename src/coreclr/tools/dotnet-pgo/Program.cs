@@ -156,12 +156,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             _inputFilesToCompare = Get(command.InputFilesToCompare);
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
-        private bool IsSet<T>(CliOption<T> option) => _command.Result.GetResult(option) != null;
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
+        private bool IsSet<T>(Option<T> option) => _command.Result.GetResult(option) != null;
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new PgoRootCommand(args)
+            new CommandLineConfiguration(new PgoRootCommand(args)
                 .UseVersion()
                 .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
             {
