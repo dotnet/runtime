@@ -16,6 +16,10 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// Provides stateless methods for decoding .NET Remoting Binary Format (NRBF) encoded data.
 /// </summary>
+/// <remarks>
+/// NrbfDecoder is an implementation of an NRBF reader, but its behaviors don't strictly follow BinaryFormatter's implementation.
+/// Thus the output of NrbfDecoder shouldn't be used to determine whether a call to BinaryFormatter would be safe.
+/// </remarks>
 public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
