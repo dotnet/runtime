@@ -744,7 +744,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     fastPathBb->inheritWeight(prevBb);
 
     // fallback will just execute first time
-    fallbackBb->bbSetRunRarely();
+    fallbackBb->inheritWeightPercentage(tlsRootNullCondBB, 0);
 
     fgRedirectTargetEdge(prevBb, tlsRootNullCondBB);
 
@@ -1180,7 +1180,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         fastPathBb->inheritWeight(prevBb);
 
         // fallback will just execute first time
-        fallbackBb->bbSetRunRarely();
+        fallbackBb->inheritWeightPercentage(prevBb, 0);
 
         // All blocks are expected to be in the same EH region
         assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1545,7 +1545,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
-    helperCallBb->bbSetRunRarely();
+    helperCallBb->inheritWeightPercentage(isInitedBb, 0);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -2676,13 +2676,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         sumOfPreviousLikelihood += likelihood;
     }
 
+    fallbackBb->inheritWeight(lastTypeCheckBb);
+    fallbackBb->scaleBBWeight(lastTypeCheckBb->GetFalseEdge()->getLikelihood());
+
     if (fallbackBb->KindIs(BBJ_ALWAYS))
     {
         FlowEdge* const newEdge = fgAddRefPred(lastBb, fallbackBb);
         fallbackBb->SetTargetEdge(newEdge);
-        fallbackBb->inheritWeight(lastTypeCheckBb);
-        weight_t lastTypeCheckFailedLikelihood = lastTypeCheckBb->GetFalseEdge()->getLikelihood();
-        fallbackBb->scaleBBWeight(lastTypeCheckFailedLikelihood);
     }
 
     if (!typeCheckNotNeeded)
