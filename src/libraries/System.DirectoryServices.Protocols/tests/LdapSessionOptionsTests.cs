@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
+using System.Net;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    // To enable these tests locally for Mono, comment out this line in DirectoryServicesTestHelpers.cs:
+    //     [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35912", TestRuntimes.Mono)]
     [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class LdapSessionOptionsTests
     {
@@ -756,5 +761,53 @@ namespace System.DirectoryServices.Protocols.Tests
 
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.StopTransportLayerSecurity());
         }
+
+#if NET
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CertificateDirectoryProperty()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                options.CertificateDirectory = "CertificateDirectory";
+                Assert.Equal("CertificateDirectory", options.CertificateDirectory);
+            }
+        }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void StartNewTlsSessionContext()
+        {
+            string path = Path.Combine(AppContext.BaseDirectory, "Certs");
+            string filePath = Path.Combine(path, "server.key");
+
+            // Create the directory if it doesn't exist
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+            }
+
+            // Create the file and write the byte array to it
+            File.WriteAllBytes(filePath, TestData.CertificatePemBytes);
+
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                options.StartNewTlsSessionContext();
+
+                Environment.SetEnvironmentVariable("LDAPTLS_CACERTDIR", path);
+                connection.SessionOptions.ProtocolVersion = 3;
+                connection.SessionOptions.SecureSocketLayer = true;
+                connection.SessionOptions.CertificateDirectory = path;
+                connection.SessionOptions.StartNewTlsSessionContext();
+                connection.Bind();
+
+                var searchRequest = new SearchRequest("DC=example,DC=org", "(objectClass=*)", SearchScope.Subtree);
+                _ = (SearchResponse)connection.SendRequest(searchRequest);
+            }
+        }
+#endif
     }
 }
