@@ -613,7 +613,7 @@ private:
                 if (context != nullptr)
                 {
                     bool isFirstExecutedEffect =
-                        m_compiler->gtSubTreeAndChildrenAreFirstExecutedEffects(m_curStmt->GetRootNode(), call);
+                        m_compiler->gtSubTreeAndChildrenAreFirstExecutedEffects(m_curStmt->GetRootNode(), call, true);
 
                     if (isFirstExecutedEffect)
                     {

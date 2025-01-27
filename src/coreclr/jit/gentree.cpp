@@ -10215,16 +10215,18 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 
 //------------------------------------------------------------------------
 // gtSubTreeAndChildrenAreFirstExecutedEffects: Check whether the subtree is the first
-//                                              executed effect in a tree
+//                                              executed effect in a tree.
 //
 // Arguments:
 //    tree - Tree to check the side effects on
 //    subTree - The subtree to be the first executed effect
+//    beforeMorph - Whether the run is before morph, in which case we need to check
+//                  lvHasLdAddrOp as we don't have valid GTF_GLOB_REF yet
 //
 // Returns:
-//    A boolean that indicates whether the subtree is the first executed effect in a tree
+//    A boolean that indicates whether the subtree is the first executed effect in a tree.
 //
-bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree)
+bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool beforeMorph)
 {
     struct Visitor : GenTreeVisitor<Visitor>
     {
@@ -10235,9 +10237,10 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
             UseExecutionOrder = true,
         };
 
-        Visitor(Compiler* comp, GenTree* subTree)
+        Visitor(Compiler* comp, GenTree* subTree, bool checkLocal)
             : GenTreeVisitor(comp)
             , m_subTree(subTree)
+            , m_checkLocal(checkLocal)
         {
         }
 
@@ -10260,7 +10263,8 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
                 return WALK_ABORT;
             }
 
-            if ((*use)->OperIsAnyLocal() && m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp)
+            if (m_checkLocal && (*use)->OperIsAnyLocal() &&
+                m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp)
             {
                 Result = false;
                 return WALK_ABORT;
@@ -10272,9 +10276,10 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
         bool Result = false;
     private:
         GenTree* m_subTree;
+        bool     m_checkLocal;
     };
 
-    Visitor visitor(this, subTree);
+    Visitor visitor(this, subTree, beforeMorph);
     visitor.WalkTree(&tree, nullptr);
     return visitor.Result;
 }
