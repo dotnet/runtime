@@ -6308,8 +6308,7 @@ public:
     void fgPrintEdgeWeights();
 #endif
     PhaseStatus fgComputeBlockWeights();
-    bool fgComputeMissingBlockWeights(weight_t* returnWeight);
-    bool fgComputeCalledCount(weight_t returnWeight);
+    bool fgComputeMissingBlockWeights();
 
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
