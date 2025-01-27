@@ -211,7 +211,7 @@ public:
         {
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
 
-#if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
+#if !defined(TARGET_APPLE) || !defined(TARGET_ARM64)
             index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
@@ -2127,7 +2127,7 @@ extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d
 
     MethodDesc* pMD = COMDelegate::GetMethodDesc(d.Get());
     pMD = MethodDesc::FindOrCreateAssociatedMethodDescForReflection(pMD, TypeHandle(pMD->GetMethodTable()), pMD->GetMethodInstantiation());
-    retMethodInfo.Set(pMD->GetStubMethodInfo());
+    retMethodInfo.Set(pMD->AllocateStubMethodInfo());
 
     END_QCALL;
 }

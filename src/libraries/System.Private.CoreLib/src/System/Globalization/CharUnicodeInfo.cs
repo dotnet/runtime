@@ -443,6 +443,7 @@ namespace System.Globalization
         /// information is stored. Used for getting the Unicode category, bidi information,
         /// and whitespace information.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetCategoryCasingTableOffsetNoBoundsChecks(uint codePoint)
         {
             UnicodeDebug.AssertIsValidCodePoint(codePoint);

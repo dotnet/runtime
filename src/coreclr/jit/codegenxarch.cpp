@@ -96,37 +96,6 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
-#ifdef JIT32_GCENCODER
-    if (!pushReg)
-    {
-        // Make sure that EAX is reported as live GC-ref so that any GC that kicks in while
-        // executing GS cookie check will not collect the object pointed to by EAX.
-        if (compiler->compMethodReturnsRetBufAddr())
-        {
-            // This is for returning in an implicit RetBuf.
-            // If the address of the buffer is returned in REG_INTRET, mark the content of INTRET as ByRef.
-
-            // In case the return is in an implicit RetBuf, the native return type should be a struct
-            assert(varTypeIsStruct(compiler->info.compRetNativeType));
-
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
-        else
-        {
-            ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
-            const unsigned regCount    = retTypeDesc.GetReturnRegCount();
-
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                       retTypeDesc.GetReturnRegType(i));
-            }
-        }
-    }
-#else
-    assert(GetEmitter()->emitGCDisabled());
-#endif
-
     regNumber regGSCheck;
     regMaskTP regMaskGSCheck = RBM_NONE;
 
@@ -4249,8 +4218,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack =
-        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
+    bool      dstOnStack  = cpObjNode->IsAddressNotOnHeap(compiler);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -9051,6 +9019,377 @@ void CodeGen::genAmd64EmitterUnitTestsSse2()
     GetEmitter()->emitIns_R_R_R(INS_cvtss2sd, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivsd      xmm0,xmm1,xmm2
     GetEmitter()->emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+}
+
+/*****************************************************************************
+ * Unit tests for the APX instructions.
+ */
+
+void CodeGen::genAmd64EmitterUnitTestsApx()
+{
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // This test suite needs REX2 enabled.
+    if (!theEmitter->UseRex2Encoding() && !theEmitter->emitComp->DoJitStressRex2Encoding())
+    {
+        return;
+    }
+
+    theEmitter->emitIns_R_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_add, EA_8BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_test, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_bsf, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_bsr, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_R_R(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_Mov(INS_mov, EA_4BYTE, REG_EAX, REG_ECX, false);
+    theEmitter->emitIns_Mov(INS_movsx, EA_2BYTE, REG_EAX, REG_ECX, false);
+    theEmitter->emitIns_Mov(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, false);
+
+    theEmitter->emitIns_R_R(INS_popcnt, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_lzcnt, EA_4BYTE, REG_EAX, REG_ECX);
+    theEmitter->emitIns_R_R(INS_tzcnt, EA_4BYTE, REG_EAX, REG_ECX);
+
+    theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_add, EA_2BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_adc, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_sbb, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_cmp, EA_4BYTE, REG_EAX, 0x05);
+    theEmitter->emitIns_R_I(INS_test, EA_4BYTE, REG_EAX, 0x05);
+
+    theEmitter->emitIns_R_I(INS_mov, EA_4BYTE, REG_EAX, 0xE0);
+
+    // JIT tend to compress imm64 to imm32 if higher half is all-zero, make sure this test checks the path for imm64.
+    theEmitter->emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 0xFFFF000000000000);
+
+    // shf reg, cl
+    theEmitter->emitIns_R(INS_rol, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_ror, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcl, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcr, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shl, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shr, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_sar, EA_4BYTE, REG_EAX);
+
+    // shf reg, 1
+    theEmitter->emitIns_R(INS_rol_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_ror_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcl_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_rcr_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shl_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_shr_1, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_sar_1, EA_4BYTE, REG_EAX);
+
+    // shf reg, imm8
+    theEmitter->emitIns_R_I(INS_shl_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_shr_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_sar_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_rol_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_ror_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_rcl_N, EA_4BYTE, REG_ECX, 0x05);
+    theEmitter->emitIns_R_I(INS_rcr_N, EA_4BYTE, REG_ECX, 0x05);
+
+    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_EAX);
+    theEmitter->emitIns_R(INS_not, EA_2BYTE, REG_EAX);
+
+    theEmitter->emitIns_R_AR(INS_lea, EA_4BYTE, REG_ECX, REG_EAX, 4);
+
+    theEmitter->emitIns_R_AR(INS_mov, EA_1BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_mov, EA_2BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_mov, EA_4BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_mov, EA_8BYTE, REG_ECX, REG_EAX, 4);
+
+    theEmitter->emitIns_R_AR(INS_add, EA_1BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_add, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_add, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_add, EA_8BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_or, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_adc, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_and, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_sub, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_xor, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_test, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_bsf, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_bsr, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_popcnt, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_lzcnt, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_tzcnt, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_AR_R(INS_add, EA_1BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_add, EA_8BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_or, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_adc, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_sbb, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_and, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_sub, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_xor, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_AR_R(INS_test, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_R_AR(INS_movsx, EA_2BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_AR_R(INS_xadd, EA_4BYTE, REG_EAX, REG_EDX, 2);
+
+    theEmitter->emitIns_R_R_I(INS_shld, EA_4BYTE, REG_EAX, REG_ECX, 5);
+    theEmitter->emitIns_R_R_I(INS_shrd, EA_2BYTE, REG_EAX, REG_ECX, 5);
+    // TODO-XArch-apx: S_R_I path only accepts SEE or VEX instructions,
+    //                 so I assuem shld/shrd will not be taking the first argument from stack.
+    // theEmitter->emitIns_S_R_I(INS_shld, EA_2BYTE, 1, 2, REG_EAX, 5);
+    // theEmitter->emitIns_S_R_I(INS_shrd, EA_2BYTE, 1, 2, REG_EAX, 5);
+
+    theEmitter->emitIns_AR_R(INS_cmpxchg, EA_2BYTE, REG_EAX, REG_EDX, 2);
+
+    theEmitter->emitIns_R(INS_seto, EA_1BYTE, REG_EDX);
+
+    theEmitter->emitIns_R(INS_bswap, EA_8BYTE, REG_EDX);
+
+    // INS_bt only has reg-to-reg form.
+    theEmitter->emitIns_R_R(INS_bt, EA_2BYTE, REG_EAX, REG_EDX);
+
+    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_EDX);
+
+    theEmitter->emitIns_R_R(INS_xchg, EA_8BYTE, REG_EAX, REG_EDX);
+
+    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
+    theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
+
+    GenTreePhysReg physReg(REG_EDX);
+    physReg.SetRegNum(REG_EDX);
+    GenTreeIndir load = indirForm(TYP_INT, &physReg);
+
+    theEmitter->emitIns_R_A(INS_add, EA_1BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_2BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_add, EA_8BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_or, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_adc, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_sbb, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_and, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_sub, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_xor, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_cmp, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_test, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_bsf, EA_4BYTE, REG_EAX, &load);
+    theEmitter->emitIns_R_A(INS_bsr, EA_4BYTE, REG_EAX, &load);
+
+    // Note:
+    // All the tests below rely on the runtime status of the stack this unit tests attaching to,
+    // it might fail due to stack value unavailable/mismatch, since these tests are mainly for
+    // encoding correctness check, this kind of failures may be considered as not harmful.
+
+    theEmitter->emitIns_R_S(INS_add, EA_1BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_8BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_adc, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sbb, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmp, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_test, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_S_R(INS_xadd, EA_2BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
+    theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
+
+    theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 0, 0);
+    theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_pop_hide, EA_PTRSIZE, REG_EAX);
+    theEmitter->emitIns_R(INS_push_hide, EA_PTRSIZE, REG_EAX);
+
+    theEmitter->emitIns_S(INS_pop, EA_PTRSIZE, 0, 0);
+    theEmitter->emitIns_I(INS_push, EA_PTRSIZE, 50);
+
+    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_inc, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_inc, EA_2BYTE, 0, 0);
+    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_EAX);
+    theEmitter->emitIns_AR(INS_dec, EA_2BYTE, REG_EAX, 2);
+    theEmitter->emitIns_S(INS_dec, EA_2BYTE, 0, 0);
+
+    theEmitter->emitIns_S(INS_neg, EA_2BYTE, 0, 0);
+    theEmitter->emitIns_S(INS_not, EA_2BYTE, 0, 0);
+}
+
+void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
+{
+    // All the Avx10.2 instructions are evex and evex only has one size.
+    // Also, there is no specialized handling for XMM0 vs XMM9 vs XMM16
+
+    emitter* theEmitter = GetEmitter();
+
+    genDefineTempLabel(genCreateTempLabel());
+
+    // This test suite needs AVX10.2 enabled.
+    if (!theEmitter->emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2))
+    {
+        return;
+    }
+
+    // packed conversion instructions
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttps2dqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttps2udqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttpd2qqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_16BYTE, REG_XMM0, REG_XMM1);   // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_16BYTE, REG_XMM9, REG_XMM10);  // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_16BYTE, REG_XMM15, REG_XMM16); // xmm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_32BYTE, REG_XMM0, REG_XMM1);   // ymm
+    theEmitter->emitIns_R_R(INS_vcvttpd2uqqs, EA_64BYTE, REG_XMM0, REG_XMM1);   // zmm
+
+    // scalar conversion instructions
+    theEmitter->emitIns_R_R(INS_vcvttsd2sis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttsd2sis64, EA_8BYTE, REG_RAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttsd2usis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttsd2usis64, EA_8BYTE, REG_RAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2sis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2sis64, EA_8BYTE, REG_RAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2usis32, EA_4BYTE, REG_EAX, REG_XMM0);
+    theEmitter->emitIns_R_R(INS_vcvttss2usis64, EA_8BYTE, REG_RAX, REG_XMM0);
+
+    // minmax instruction
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxss, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxss, EA_16BYTE, REG_XMM8, REG_XMM9, REG_XMM10, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxss, EA_16BYTE, REG_XMM14, REG_XMM15, REG_XMM16, 0);
+
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxsd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxsd, EA_16BYTE, REG_XMM9, REG_XMM10, REG_XMM11, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxsd, EA_16BYTE, REG_XMM16, REG_XMM17, REG_XMM18, 0);
+
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxps, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+    theEmitter->emitIns_R_R_R_I(INS_vminmaxpd, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0);
+
+    // VCVT[,T]PS2I[,U]BS
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_ru);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_64BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2ibs, EA_64BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_ru);
+
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_rz);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_64BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvtps2iubs, EA_64BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_rz);
+
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_eb_er_rd);
+    theEmitter->emitIns_R_R(INS_vcvttps2ibs, EA_64BYTE, REG_XMM0, REG_XMM1);
+
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_32BYTE, REG_XMM0, REG_XMM1, INS_OPTS_EVEX_er_ru);
+    theEmitter->emitIns_R_R(INS_vcvttps2iubs, EA_64BYTE, REG_XMM0, REG_XMM1);
+
+    // VPDPW[SU,US,UU]D[,S]
+    theEmitter->emitIns_R_R_R(INS_vpdpwsud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwsuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpwusd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusd, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwusds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpwuud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpwuuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    // VPDPB[SU,UU,SS]D[,S]
+    theEmitter->emitIns_R_R_R(INS_vpdpbssd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssd, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbssds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpbsud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbsuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    theEmitter->emitIns_R_R_R(INS_vpdpbuud, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuud, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuud, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuuds, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuuds, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    theEmitter->emitIns_R_R_R(INS_vpdpbuuds, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+
+    // VMPSADBW
+    theEmitter->emitIns_R_R_R_I(INS_vmpsadbw, EA_64BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 0); // zmm
+
+    // VCOMXSD
+    theEmitter->emitIns_R_R(INS_vcomxsd, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VCOMXSS
+    theEmitter->emitIns_R_R(INS_vcomxss, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VUCOMXSD
+    theEmitter->emitIns_R_R(INS_vucomxsd, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VUCOMXSS
+    theEmitter->emitIns_R_R(INS_vucomxss, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VMOVD
+    theEmitter->emitIns_R_R(INS_vmovd, EA_16BYTE, REG_XMM0, REG_XMM1);
+
+    // VMOVW
+    theEmitter->emitIns_R_R(INS_vmovw, EA_16BYTE, REG_XMM0, REG_XMM1);
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)

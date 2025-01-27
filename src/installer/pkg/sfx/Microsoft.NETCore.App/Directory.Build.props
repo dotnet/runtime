@@ -101,6 +101,7 @@
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
@@ -224,7 +225,6 @@
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.globalization.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.worker.mjs" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
@@ -235,8 +235,6 @@
     <PlatformManifestFileEntry Include="icudt_EFIGS.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
-    <PlatformManifestFileEntry Include="icudt_hybrid.dat" IsNative="true" />
-    <PlatformManifestFileEntry Include="segmentation-rules.json" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
