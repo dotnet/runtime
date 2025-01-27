@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using static System.Linq.Utilities;
 
 namespace System.Linq
@@ -25,7 +26,7 @@ namespace System.Linq
 
             if (source is Iterator<TSource> iterator)
             {
-                return iterator.Select(selector);
+                return SelectImplementation(selector, iterator);
             }
 
             if (source is IList<TSource> ilist)
@@ -49,6 +50,26 @@ namespace System.Linq
             }
 
             return new IEnumerableSelectIterator<TSource, TResult>(source, selector);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static IEnumerable<TResult> SelectImplementation<TSource, TResult>(Func<TSource, TResult> selector, Iterator<TSource> iterator)
+        {
+            // With native AOT, calling into the `Select` generic virtual method results in NxM
+            // expansion of native code. If the option is enabled, we don't call the generic virtual
+            // for value types. We don't do the same for reference types because reference type
+            // expansion can happen lazily at runtime and the AOT compiler does postpone it (we
+            // don't need more code, just more data structures describing the new types).
+            if (ValueTypeTrimFriendlySelect && typeof(TResult).IsValueType)
+            {
+#if OPTIMIZE_FOR_SIZE
+                return new IEnumerableSelectIterator<TSource, TResult>(iterator, selector);
+#else
+                return new IteratorSelectIterator<TSource, TResult>(iterator, selector);
+#endif
+            }
+
+            return iterator.Select(selector);
         }
 
         public static IEnumerable<TResult> Select<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, int, TResult> selector)

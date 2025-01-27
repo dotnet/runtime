@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -63,5 +64,8 @@ namespace System.Linq
 
             return result;
         }
+
+        [FeatureSwitchDefinition("System.Linq.Enumerable.ValueTypeTrimFriendlySelect")]
+        internal static bool ValueTypeTrimFriendlySelect { get; } = AppContext.TryGetSwitch("System.Linq.Enumerable.ValueTypeTrimFriendlySelect", out bool isEnabled) ? isEnabled : false;
     }
 }
