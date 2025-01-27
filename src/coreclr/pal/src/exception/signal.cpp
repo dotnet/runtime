@@ -581,7 +581,13 @@ Parameters :
          If sp == 0, execute it on the original stack where the signal has occurred.
 Return :
     The return value from the signal handler
+
+Note:
+    This function is marked as noinline to reduce the stack frame space of the caller, the
+    sigsegv_handler. The sigsegv_handler is running on an alternate stack and we want to
+    avoid running out of stack space in case there are multiple PALs in the process.
 --*/
+__attribute__((noinline))
 static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *context, size_t sp)
 {
     // Establish a return point in case the common_signal_handler returns
