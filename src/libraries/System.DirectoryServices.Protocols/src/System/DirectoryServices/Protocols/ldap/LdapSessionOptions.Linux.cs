@@ -11,6 +11,16 @@ namespace System.DirectoryServices.Protocols
 
         private bool _secureSocketLayer;
 
+        /// <summary>
+        /// Specifies the path of the directory containing CA certificates.
+        /// </summary>
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public string CertificateDirectory
+        {
+            get => GetStringValueHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, releasePtr: true);
+            set => SetStringOptionHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, value);
+        }
+
         public bool SecureSocketLayer
         {
             get
@@ -52,6 +62,15 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
+        /// <summary>
+        /// Create a new TLS library context.
+        /// </summary>
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public void StartNewTlsSessionContext()
+        {
+            SetIntValueHelper(LdapOption.LDAP_OPT_X_TLS_NEWCTX, 0);
+        }
+
         private bool GetBoolValueHelper(LdapOption option)
         {
             if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
@@ -68,6 +87,15 @@ namespace System.DirectoryServices.Protocols
             if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
 
             int error = LdapPal.SetBoolOption(_connection._ldapHandle, option, value);
+
+            ErrorChecking.CheckAndSetLdapError(error);
+        }
+
+        private void SetStringOptionHelper(LdapOption option, string value)
+        {
+            if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
+
+            int error = LdapPal.SetStringOption(_connection._ldapHandle, option, value);
 
             ErrorChecking.CheckAndSetLdapError(error);
         }

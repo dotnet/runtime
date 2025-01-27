@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
-using System.Text;
-using System.Threading;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -706,6 +703,32 @@ namespace System.DirectoryServices.Protocols.Tests
             connection.Timeout = new TimeSpan(0, 3, 0);
         }
 
+#if NET
+        [ConditionalFact(nameof(LdapConfigurationExists))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void StartNewTlsSessionContext_ThrowsLdapException()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+
+                // To get this to not throw, we need to set CertificateDirectory and have a .crt file in that directory.
+                Assert.Throws<LdapException>(() => options.StartNewTlsSessionContext());
+            }
+        }
+
+        [ConditionalFact(nameof(LdapConfigurationExists))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void StartNewTlsSessionContext_ThrowsPlatformNotSupportedException()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<PlatformNotSupportedException>(() => options.StartNewTlsSessionContext());
+            }
+        }
+#endif
+
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)
         {
             string dn = entryDn + "," + LdapConfiguration.Configuration.SearchDn;
@@ -786,14 +809,14 @@ namespace System.DirectoryServices.Protocols.Tests
             return null;
         }
 
-        private LdapConnection GetConnection(string server)
+        private static LdapConnection GetConnection(string server)
         {
             LdapDirectoryIdentifier directoryIdentifier = new LdapDirectoryIdentifier(server, fullyQualifiedDnsHostName: true, connectionless: false);
 
             return GetConnection(directoryIdentifier);
         }
 
-        private LdapConnection GetConnection()
+        private static LdapConnection GetConnection()
         {
             LdapDirectoryIdentifier directoryIdentifier = string.IsNullOrEmpty(LdapConfiguration.Configuration.Port) ?
                                         new LdapDirectoryIdentifier(LdapConfiguration.Configuration.ServerName, fullyQualifiedDnsHostName: true, connectionless: false) :

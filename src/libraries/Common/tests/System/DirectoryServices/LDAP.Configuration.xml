@@ -6,11 +6,11 @@ To ship, we should test on both an Active Directory LDAP server, and at least on
 
 When testing with later of versions of LDAP, the ldapsearch commands below may need to use
 
-    -H ldap://localhost:<PORT>
+    -H ldap://localhost:YOURPORT
 
 instead of
 
-    -h localhost -p <PORT>
+    -h localhost -p YOURPORT
 
 OPENDJ SERVER
 =============

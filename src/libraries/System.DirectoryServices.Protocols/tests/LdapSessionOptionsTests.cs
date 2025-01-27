@@ -7,6 +7,8 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
+    // To enable these tests locally for Mono, comment out this line in DirectoryServicesTestHelpers.cs:
+    //     [assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/35912", TestRuntimes.Mono)]
     [ConditionalClass(typeof(DirectoryServicesTestHelpers), nameof(DirectoryServicesTestHelpers.IsWindowsOrLibLdapIsInstalled))]
     public class LdapSessionOptionsTests
     {
@@ -756,5 +758,30 @@ namespace System.DirectoryServices.Protocols.Tests
 
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.StopTransportLayerSecurity());
         }
+
+#if NET
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CertificateDirectoryProperty()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                options.CertificateDirectory = "CertificateDirectory";
+                Assert.Equal("CertificateDirectory", options.CertificateDirectory);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CertificateDirectoryProperty_ThrowsPlatformNotSupportedException()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<PlatformNotSupportedException>(() => options.CertificateDirectory = "CertificateDirectory");
+            }
+        }
+#endif
     }
 }
