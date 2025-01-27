@@ -95,7 +95,7 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal static unsafe bool IsValidStrict<TChar>(TChar* name, int start, ref int end)
+        internal static unsafe bool IsValidStrict<TChar>(TChar* name, int start, int end)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));

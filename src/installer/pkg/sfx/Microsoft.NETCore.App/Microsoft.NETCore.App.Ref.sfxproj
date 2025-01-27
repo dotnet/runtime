@@ -23,15 +23,4 @@
       <FilesToPackage Include="@(Analyzer)" ExcludeFromValidation="true" TargetPath="analyzers/%(RecursiveDir)" />
     </ItemGroup>
   </Target>
-
-  <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
-    <ItemGroup>
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Ref" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Ref/$(Version)" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Ref/$(Version)/data" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Ref/$(Version)/analyzers" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Ref/$(Version)/ref" />
-      <RpmOwnedDirectory Include="$(LinuxInstallRoot)/packs/Microsoft.NETCore.App.Ref/$(Version)/ref/$(TargetFramework)" />
-    </ItemGroup>
-  </Target>
 </Project>

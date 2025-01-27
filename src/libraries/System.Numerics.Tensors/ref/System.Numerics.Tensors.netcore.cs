@@ -774,9 +774,9 @@ namespace System.Numerics.Tensors
         public System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<System.Buffers.NRange> start) { throw null; }
         public System.Numerics.Tensors.TensorSpan<T> AsTensorSpan(params scoped System.ReadOnlySpan<nint> start) { throw null; }
         public void Clear() { }
-        public void CopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { }
+        public void CopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { }
         public void Fill(T value) { }
-        public void FlattenTo(System.Span<T> destination) { }
+        public void FlattenTo(scoped System.Span<T> destination) { }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -791,12 +791,12 @@ namespace System.Numerics.Tensors
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         ref readonly T System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>.GetPinnableReference() { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
-        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(System.ReadOnlySpan<nint> lengths, System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
+        static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         public string ToString(params scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
-        public bool TryCopyTo(System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
-        public bool TryFlattenTo(System.Span<T> destination) { throw null; }
+        public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
+        public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }
     }
 }

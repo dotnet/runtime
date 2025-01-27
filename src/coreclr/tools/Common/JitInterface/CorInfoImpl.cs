@@ -1117,9 +1117,9 @@ namespace Internal.JitInterface
             // TODO: Cache inlining hits
             // Check for an inlining directive.
 
-            if (method.IsNoInlining)
+            if (method.IsNoInlining || method.IsNoOptimization)
             {
-                /* Function marked as not inlineable */
+                // NoOptimization implies NoInlining.
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
             else if (method.IsAggressiveInlining)
@@ -2312,6 +2312,10 @@ namespace Internal.JitInterface
         private int GatherClassGCLayout(MetadataType type, byte* gcPtrs)
         {
             int result = 0;
+
+            if (type.MetadataBaseType is { ContainsGCPointers: true } baseType)
+                result += GatherClassGCLayout(baseType, gcPtrs);
+
             bool isInlineArray = type.IsInlineArray;
 
             foreach (var field in type.GetFields())

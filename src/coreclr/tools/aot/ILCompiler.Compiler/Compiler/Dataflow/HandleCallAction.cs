@@ -455,7 +455,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                                 if (annotation != default)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
+                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeCalled(closestMetadataType), "GetType called on this type");
                                 }
 
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node
@@ -711,7 +711,9 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
                 return list;
             }
         }
@@ -725,7 +727,9 @@ namespace ILLink.Shared.TrimAnalysis
             public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
+                TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;
             }
         }
