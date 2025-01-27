@@ -7264,11 +7264,6 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     var_types srcType = op1->TypeGet();
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
-#if !defined(TARGET_64BIT)
-    // We expect morph to replace long to float/double casts with helper calls
-    noway_assert(!varTypeIsLong(srcType));
-#endif // !defined(TARGET_64BIT)
-
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
     // ensure srcType of a cast is non gc-type.  Codegen should never see BYREF as source type except
     // for GT_LCL_ADDR that represent stack addresses and can be considered as TYP_I_IMPL. In all other
@@ -7281,21 +7276,14 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         srcType = TYP_I_IMPL;
     }
 
-    // force the srcType to unsigned if GT_UNSIGNED flag is set
-    if (treeNode->gtFlags & GTF_UNSIGNED)
-    {
-        srcType = varTypeToUnsigned(srcType);
-    }
-
-    noway_assert(!varTypeIsGC(srcType));
-
-    // We should never be seeing srcType whose size is not sizeof(int) nor sizeof(long).
+    // At this point, we should not see a srcType that is not int or long.
     // For conversions from byte/sbyte/int16/uint16 to float/double, we would expect
     // either the front-end or lowering phase to have generated two levels of cast.
     // The first one is for widening smaller int type to int32 and the second one is
     // to the float/double.
-    emitAttr srcSize = EA_ATTR(genTypeSize(srcType));
-    noway_assert((srcSize == EA_ATTR(genTypeSize(TYP_INT))) || (srcSize == EA_ATTR(genTypeSize(TYP_LONG))));
+    // On 32-bit, we expect morph to replace long to float/double casts with helper calls,
+    // so we should only see int here.
+    noway_assert(varTypeIsIntOrI(srcType));
 
     // To convert integral type to floating, the cvt[u]si2ss/sd instruction is used
     // which does a partial write to lower 4/8 bytes of xmm register keeping the other
@@ -7309,19 +7297,21 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     genConsumeOperands(treeNode->AsOp());
     GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
 
-    // Note that here we need to specify srcType that will determine
-    // the size of source reg/mem operand and rex.w prefix.
-    instruction ins = ins_FloatConv(dstType, srcType);
+    // force the srcType to unsigned if GT_UNSIGNED flag is set
+    if (treeNode->IsUnsigned())
+    {
+        srcType = varTypeToUnsigned(srcType);
+    }
 
     if (srcType == TYP_ULONG && !compiler->canUseEvexEncoding())
     {
         assert(op1->isUsedFromReg());
 
-        // We will have selected an unsigned conversion instruction above, but we
-        // can't use it here because we have no EVEX support. Switch to the signed
-        // equivalent, and add code to fix up the result.
+        // If we don't have the EVEX unsigned conversion instructions, use the signed
+        // long -> float/double conversion instruction instead and fix up the result.
 
-        ins = ins_FloatConv(dstType, genActualType(srcType));
+        instruction convIns = ins_FloatConv(dstType, TYP_LONG);
+        instruction addIns  = (dstType == TYP_FLOAT) ? INS_addss : INS_addsd;
 
         // The following LONG->DOUBLE cast machinery is based on clang's implementation
         // with "-ffp-model=strict" flag:
@@ -7349,24 +7339,18 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         GetEmitter()->emitIns_R_R(INS_or, EA_8BYTE, tmpReg2, tmpReg1);
         GetEmitter()->emitIns_R_R(INS_test, EA_8BYTE, argReg, argReg);
         GetEmitter()->emitIns_R_R(INS_cmovns, EA_8BYTE, tmpReg2, argReg);
-        GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, tmpReg2);
+        GetEmitter()->emitIns_R_R(convIns, EA_8BYTE, targetReg, tmpReg2);
 
         BasicBlock* label = genCreateTempLabel();
         inst_JMP(EJ_jns, label);
-        if (dstType == TYP_FLOAT)
-        {
-            GetEmitter()->emitIns_R_R(INS_addss, EA_4BYTE, targetReg, targetReg);
-        }
-        else
-        {
-            assert(dstType == TYP_DOUBLE);
-            GetEmitter()->emitIns_R_R(INS_addsd, EA_8BYTE, targetReg, targetReg);
-        }
+        GetEmitter()->emitIns_R_R(addIns, EA_ATTR(genTypeSize(dstType)), targetReg, targetReg);
         genDefineTempLabel(label);
     }
     else
     {
         assert(varTypeIsIntOrI(srcType) || compiler->canUseEvexEncodingDebugOnly());
+
+        instruction ins = ins_FloatConv(dstType, srcType);
 
         // integral to floating-point conversions all have RMW semantics if VEX support
         // is not available
