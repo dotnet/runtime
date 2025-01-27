@@ -71,7 +71,7 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             value = null;
             e = null;
@@ -412,7 +412,7 @@ namespace System
         /// </summary>
         private static string FindTimeZoneId(byte[] rawData)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             // default to "Local" if we can't find the right tzfile
             string id = LocalId;
@@ -454,7 +454,7 @@ namespace System
 
         private static bool TryLoadTzFile(string tzFilePath, [NotNullWhen(true)] ref byte[]? rawData, [NotNullWhen(true)] ref string? id)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             if (File.Exists(tzFilePath))
             {
@@ -482,7 +482,7 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
         private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
             if (bytes == IntPtr.Zero)
@@ -517,7 +517,7 @@ namespace System
         /// </summary>
         private static bool TryGetLocalTzFile([NotNullWhen(true)] out byte[]? rawData, [NotNullWhen(true)] out string? id)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             rawData = null;
             id = null;
@@ -591,7 +591,7 @@ namespace System
         /// </summary>
         private static TimeZoneInfo GetLocalTimeZoneFromTzFile()
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             byte[]? rawData;
             string? id;

@@ -146,7 +146,7 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             value = id == LocalId ? GetLocalTimeZoneCore() : GetTimeZone(id, id);
 

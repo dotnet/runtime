@@ -240,7 +240,7 @@ namespace System
         /// </summary>
         private static string? FindIdFromTimeZoneInformation(in TIME_ZONE_INFORMATION timeZone, out bool dstDisabled)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             dstDisabled = false;
 
@@ -513,7 +513,7 @@ namespace System
         /// </summary>
         private static bool TryCreateAdjustmentRules(string id, in REG_TZI_FORMAT defaultTimeZoneInformation, out AdjustmentRule[]? rules, out Exception? e, int defaultBaseUtcOffset)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             rules = null;
             e = null;
@@ -810,7 +810,7 @@ namespace System
         /// </summary>
         private static unsafe string GetLocalizedNameByNativeResource(string filePath, int resource)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             IntPtr handle = IntPtr.Zero;
             try
@@ -848,7 +848,7 @@ namespace System
         /// </summary>
         private static void GetLocalizedNamesByRegistryKey(RegistryKey key, out string? displayName, out string? standardName, out string? daylightName)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             displayName = string.Empty;
             standardName = string.Empty;
@@ -896,7 +896,7 @@ namespace System
         /// </summary>
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             e = null;
 

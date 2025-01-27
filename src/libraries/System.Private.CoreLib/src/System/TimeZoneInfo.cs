@@ -2120,7 +2120,7 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, bool dstDisabled, out TimeZoneInfo? value, out Exception? e, CachedData cachedData)
         {
-            if (Invariant) ThrowHelper.ThrowUnreachableException();
+            Debug.Assert(!Invariant);
 
             TimeZoneInfoResult result;
 
