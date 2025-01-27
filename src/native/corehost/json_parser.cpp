@@ -19,7 +19,7 @@ namespace {
 
 void get_line_column_from_offset(const char* data, uint64_t size, size_t offset, int *line, int *column)
 {
-    assert(offset < size);
+    assert(offset <= size);
 
     *line = *column = 1;
 
