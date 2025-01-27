@@ -12,8 +12,25 @@ using Xunit;
 namespace System.Xml.XmlWriterApiTests
 {
     //[TestCase(Name = "WriteFullEndElement")]
-    public class TCFullEndElement
+    public class TCFullEndElement : IAsyncLifetime
     {
+        public async Task InitializeAsync()
+        {
+            if (OperatingSystem.IsBrowser())
+            {
+                await Task.Yield();
+            }
+        }
+
+        public Task DisposeAsync()
+        {
+            if (OperatingSystem.IsBrowser())
+            {
+                GC.Collect();
+            }
+            return Task.CompletedTask;
+        }
+
         // Sanity test for WriteFullEndElement()
         [Theory]
         [XmlWriterInlineData]
