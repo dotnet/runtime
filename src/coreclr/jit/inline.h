@@ -233,10 +233,12 @@ public:
     {
         (void)context;
     }
+#ifdef DEBUG
     virtual void NoteOffset(IL_OFFSET offset)
     {
         (void)offset;
     }
+#endif
 
     // Policy determinations
     virtual void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) = 0;
@@ -345,7 +347,7 @@ public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
     InlineResult(
-        Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport = false);
+        Compiler* compiler, GenTreeCall* call, InlineContext* context, const char* description, bool doNotReport = false);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
@@ -586,6 +588,13 @@ struct HandleHistogramProfileCandidateInfo
     unsigned  probeIndex;
 };
 
+// TODO: move to InlineInfo
+struct InlineIRResult
+{
+    GenTree* substExpr;
+    BasicBlock* substBB;
+};
+
 // InlineCandidateInfo provides basic information about a particular
 // inline candidate.
 //
@@ -615,8 +624,7 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     //
     CORINFO_CONTEXT_HANDLE originalContextHandle;
 
-    // The GT_RET_EXPR node linking back to the inline candidate.
-    GenTreeRetExpr* retExpr;
+    InlineIRResult result;
 
     unsigned preexistingSpillTemp;
     unsigned clsAttr;
@@ -670,6 +678,23 @@ struct InlLclVarInfo
     unsigned char        lclIsPinned           : 1;
 };
 
+class StatementListBuilder
+{
+    Statement* m_head = nullptr;
+    Statement* m_tail = nullptr;
+
+public:
+    bool Empty()
+    {
+        return m_head == nullptr;
+    }
+
+    void Append(Statement* stmt);
+
+    void InsertIntoBlockAtBeginning(BasicBlock* block);
+    void InsertIntoBlockBefore(BasicBlock* block, Statement* before);
+};
+
 // InlineInfo provides detailed information about a particular inline candidate.
 
 struct InlineInfo
@@ -712,6 +737,9 @@ struct InlineInfo
     GenTreeCall* iciCall;  // The GT_CALL node to be inlined.
     Statement*   iciStmt;  // The statement iciCall is in.
     BasicBlock*  iciBlock; // The basic block iciStmt is in.
+
+    StatementListBuilder setupStatements;
+    StatementListBuilder teardownStatements;
 };
 
 // InlineContext tracks the inline history in a method.

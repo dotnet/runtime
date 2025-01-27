@@ -202,9 +202,13 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
     return false;
 }
 
-class SubstitutePlaceholdersAndDevirtualizeWalker : public GenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>
+class InlineAndDevirtualizeWalker : public GenTreeVisitor<InlineAndDevirtualizeWalker>
 {
     bool m_madeChanges = false;
+    BasicBlock* m_block = nullptr;
+    Statement* m_statement = nullptr;
+    BasicBlock* m_nextBlock = nullptr;
+    Statement* m_nextStatement = nullptr;
 
 public:
     enum
@@ -214,7 +218,7 @@ public:
         UseExecutionOrder = true,
     };
 
-    SubstitutePlaceholdersAndDevirtualizeWalker(Compiler* comp)
+    InlineAndDevirtualizeWalker(Compiler* comp)
         : GenTreeVisitor(comp)
     {
     }
@@ -224,208 +228,278 @@ public:
         return m_madeChanges;
     }
 
+    BasicBlock* NextBlock()
+    {
+        return m_nextBlock;
+    }
+
+    Statement* NextStatement()
+    {
+        return m_nextStatement;
+    }
+
+    void VisitStatement(BasicBlock* block, Statement* statement)
+    {
+        m_nextBlock = nullptr;
+        m_nextStatement = nullptr;
+        m_block = block;
+        m_statement = statement;
+        WalkTree(statement->GetRootNodePointer(), nullptr);
+    }
+
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* tree = *use;
 
-        // All the operations here and in the corresponding postorder
-        // callback (LateDevirtualization) are triggered by GT_CALL or
-        // GT_RET_EXPR trees, and these (should) have the call side
-        // effect flag.
-        //
-        // So bail out for any trees that don't have this flag.
+        // Inlining and late devirt are triggered by GT_CALL with the call
+        // side effect flag, so bail out for any trees that don't have this
+        // flag.
         if ((tree->gtFlags & GTF_CALL) == 0)
         {
             return fgWalkResult::WALK_SKIP_SUBTREES;
         }
 
-        if (tree->OperIs(GT_RET_EXPR))
+        while ((*use)->IsCall() && TryInline(use, user))
         {
-            UpdateInlineReturnExpressionPlaceHolder(use, user);
-        }
-
-#if FEATURE_MULTIREG_RET
-#if defined(DEBUG)
-
-        // Make sure we don't have a tree like so: V05 = (, , , retExpr);
-        // Since we only look one level above for the parent for '=' and
-        // do not check if there is a series of COMMAs. See above.
-        // Importer and FlowGraph will not generate such a tree, so just
-        // leaving an assert in here. This can be fixed by looking ahead
-        // when we visit stores similar to AttachStructInlineeToStore.
-        //
-        if (tree->OperIsStore())
-        {
-            GenTree* value = tree->Data();
-
-            if (value->OperGet() == GT_COMMA)
+            if (m_nextBlock != nullptr)
             {
-                GenTree* effectiveValue = value->gtEffectiveVal();
-
-                noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
-                             !effectiveValue->AsRetExpr()->gtInlineCandidate->HasMultiRegRetVal());
+                return fgWalkResult::WALK_ABORT;
             }
         }
 
-#endif // defined(DEBUG)
-#endif // FEATURE_MULTIREG_RET
         return fgWalkResult::WALK_CONTINUE;
     }
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         LateDevirtualization(use, user);
+
         return fgWalkResult::WALK_CONTINUE;
     }
 
 private:
-    //------------------------------------------------------------------------
-    // UpdateInlineReturnExpressionPlaceHolder: replace an
-    // inline return expression placeholder if there is one.
-    //
-    // Arguments:
-    //    use -- edge for the tree that is a GT_RET_EXPR node
-    //    parent -- node containing the edge
-    //
-    // Returns:
-    //    fgWalkResult indicating the walk should continue; that
-    //    is we wish to fully explore the tree.
-    //
-    // Notes:
-    //    Looks for GT_RET_EXPR nodes that arose from tree splitting done
-    //    during importation for inline candidates, and replaces them.
-    //
-    //    For successful inlines, substitutes the return value expression
-    //    from the inline body for the GT_RET_EXPR.
-    //
-    //    For failed inlines, rejoins the original call into the tree from
-    //    whence it was split during importation.
-    //
-    //    The code doesn't actually know if the corresponding inline
-    //    succeeded or not; it relies on the fact that gtInlineCandidate
-    //    initially points back at the call and is modified in place to
-    //    the inlinee return expression if the inline is successful (see
-    //    tail end of fgInsertInlineeBlocks for the update of iciCall).
-    //
-    //    If the return type is a struct type and we're on a platform
-    //    where structs can be returned in multiple registers, ensure the
-    //    call has a suitable parent.
-    //
-    //    If the original call type and the substitution type are different
-    //    the functions makes necessary updates. It could happen if there was
-    //    an implicit conversion in the inlinee body.
-    //
-    void UpdateInlineReturnExpressionPlaceHolder(GenTree** use, GenTree* parent)
+    bool TryInline(GenTree** use, GenTree* parent)
     {
-        while ((*use)->OperIs(GT_RET_EXPR))
+        GenTreeCall* call = (*use)->AsCall();
+
+        if (!call->IsInlineCandidate())
         {
-            GenTree* tree = *use;
-
-            // Skip through chains of GT_RET_EXPRs (say from nested inlines)
-            // to the actual tree to use.
-            //
-            BasicBlock* inlineeBB       = nullptr;
-            GenTree*    inlineCandidate = tree;
-            do
-            {
-                GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
-                inlineCandidate         = retExpr->gtSubstExpr;
-                inlineeBB               = retExpr->gtSubstBB;
-            } while (inlineCandidate->OperIs(GT_RET_EXPR));
-
-            // We might as well try and fold the return value. Eg returns of
-            // constant bools will have CASTS. This folding may uncover more
-            // GT_RET_EXPRs, so we loop around until we've got something distinct.
-            //
-            inlineCandidate   = m_compiler->gtFoldExpr(inlineCandidate);
-            var_types retType = tree->TypeGet();
-
-#ifdef DEBUG
-            if (m_compiler->verbose)
-            {
-                printf("\nReplacing the return expression placeholder ");
-                Compiler::printTreeID(tree);
-                printf(" with ");
-                Compiler::printTreeID(inlineCandidate);
-                printf("\n");
-                // Dump out the old return expression placeholder it will be overwritten by the ReplaceWith below
-                m_compiler->gtDispTree(tree);
-            }
-#endif // DEBUG
-
-            var_types newType = inlineCandidate->TypeGet();
-
-            // If we end up swapping type we may need to retype the tree:
-            if (retType != newType)
-            {
-                if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
-                {
-                    // - in an RVA static if we've reinterpreted it as a byref;
-                    assert(newType == TYP_I_IMPL);
-                    JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
-                    inlineCandidate->gtType = TYP_BYREF;
-                }
-            }
-
-            *use          = inlineCandidate;
-            m_madeChanges = true;
-
-            if (inlineeBB != nullptr)
-            {
-                // IR may potentially contain nodes that requires mandatory BB flags to be set.
-                // Propagate those flags from the containing BB.
-                m_compiler->compCurBB->CopyFlags(inlineeBB, BBF_COPY_PROPAGATE);
-            }
-
-#ifdef DEBUG
-            if (m_compiler->verbose)
-            {
-                printf("\nInserting the inline return expression\n");
-                m_compiler->gtDispTree(inlineCandidate);
-                printf("\n");
-            }
-#endif // DEBUG
+            return false;
         }
 
-        // If the inline was rejected and returns a retbuffer, then mark that
-        // local as DNER now so that promotion knows to leave it up to physical
-        // promotion.
-        if ((*use)->IsCall())
+        InlineResult inlineResult(m_compiler, call, call->gtInlineCandidateInfo->inlinersContext, "TryInline");
+
+        m_compiler->compCurBB = m_block;
+        m_compiler->fgMorphStmt = m_statement;
+
+        InlineInfo inlineInfo{};
+        m_compiler->fgMorphCallInline(inlineInfo, call, &inlineResult);
+
+        assert(inlineResult.IsSuccess() == call->IsInlineCandidate());
+        if (!inlineResult.IsSuccess())
         {
-            CallArg* retBuffer = (*use)->AsCall()->gtArgs.GetRetBufferArg();
+            // If the inline was rejected and returns a retbuffer, then mark that
+            // local as DNER now so that promotion knows to leave it up to physical
+            // promotion.
+            CallArg* retBuffer = call->gtArgs.GetRetBufferArg();
             if ((retBuffer != nullptr) && retBuffer->GetNode()->OperIs(GT_LCL_ADDR))
             {
                 m_compiler->lvaSetVarDoNotEnregister(retBuffer->GetNode()->AsLclVarCommon()->GetLclNum()
                                                          DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
             }
+
+            return false;
         }
 
-#if FEATURE_MULTIREG_RET
-        // If an inline was rejected and the call returns a struct, we may
-        // have deferred some work when importing call for cases where the
-        // struct is returned in multiple registers.
-        //
-        // See the bail-out clauses in impFixupCallStructReturn for inline
-        // candidates.
-        //
-        // Do the deferred work now.
-        if ((*use)->IsCall() && varTypeIsStruct(*use) && (*use)->AsCall()->HasMultiRegRetVal())
+        JITDUMP("Inlining candidate [%06u] in " FMT_STMT "\n", Compiler::dspTreeID(call), m_statement->GetID());
+        DISPSTMT(m_statement);
+
+        if (InsertMidStatement(inlineInfo, use))
         {
-            // See assert below, we only look one level above for a store parent.
-            if (parent->OperIsStore())
+            return true;
+        }
+
+        JITDUMP("Splitting is required\n");
+        BasicBlock* callBlock = m_compiler->compCurBB;
+        Statement* callStmt = m_compiler->fgMorphStmt;
+        Statement* newStmt = nullptr;
+        GenTree** use2 = nullptr;
+        m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false);
+        assert(use2 == use);
+
+        JITDUMP("After split:\n");
+        while ((newStmt != callStmt) && (newStmt != nullptr))
+        {
+            DISPSTMT(newStmt);
+            newStmt = newStmt->GetNextStmt();
+        }
+
+        DISPSTMT(callStmt);
+
+        Statement* predStmt = callStmt == callBlock->firstStmt() ? nullptr : callStmt->GetPrevStmt();
+
+        inlineInfo.setupStatements.InsertIntoBlockBefore(m_compiler->compCurBB, m_compiler->fgMorphStmt);
+        *use = call->gtInlineCandidateInfo->result.substExpr;
+
+        if (*use == nullptr)
+        {
+            *use = m_compiler->gtNewNothingNode();
+        }
+
+        if (call->gtInlineCandidateInfo->result.substBB != nullptr)
+        {
+            // IR may potentially contain nodes that requires mandatory BB flags to be set.
+            // Propagate those flags from the containing BB.
+            callBlock->CopyFlags(call->gtInlineCandidateInfo->result.substBB, BBF_COPY_PROPAGATE);
+        }
+
+        m_compiler->gtUpdateStmtSideEffects(callStmt);
+
+        if (InsertMidBlock(inlineInfo, callBlock, callStmt))
+        {
+            m_nextBlock = callBlock;
+            m_nextStatement = predStmt == nullptr ? callBlock->firstStmt() : predStmt->GetNextStmt();
+            return true;
+        }
+
+        BasicBlock* continueBlock = m_compiler->fgSplitBlockBeforeStatement(callBlock, callStmt);
+        unsigned const baseBBNum = m_compiler->fgBBNumMax;
+
+        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", callBlock->bbNum,
+                continueBlock->bbNum);
+
+        // The newly split block is not special so doesn't need to be kept.
+        //
+        continueBlock->RemoveFlags(BBF_DONT_REMOVE);
+
+        // Set the try and handler index and fix the jump types of inlinee's blocks.
+        //
+        for (BasicBlock* const block : m_compiler->InlineeCompiler->Blocks())
+        {
+            noway_assert(!block->hasTryIndex());
+            noway_assert(!block->hasHndIndex());
+            block->copyEHRegion(callBlock);
+            block->CopyFlags(callBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
+
+            // Update block nums appropriately
+            //
+            block->bbNum += baseBBNum;
+            m_compiler->fgBBNumMax = max(block->bbNum, m_compiler->fgBBNumMax);
+
+            DebugInfo di = callStmt->GetDebugInfo().GetRoot();
+            if (di.IsValid())
             {
-                // The inlinee can only be the value.
-                assert(parent->Data() == *use);
-                AttachStructInlineeToStore(parent, (*use)->AsCall()->gtRetClsHnd);
+                block->bbCodeOffs    = di.GetLocation().GetOffset();
+                block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
             }
             else
             {
-                // Just store the inlinee to a variable to keep it simple.
-                *use = StoreStructInlineeToVar(*use, (*use)->AsCall()->gtRetClsHnd);
+                block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
+                block->bbCodeOffsEnd = 0;
+                block->SetFlags(BBF_INTERNAL);
             }
-            m_madeChanges = true;
+
+            if (block->KindIs(BBJ_RETURN))
+            {
+                noway_assert(!block->HasFlag(BBF_HAS_JMP));
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
+                        continueBlock->bbNum);
+
+                FlowEdge* const newEdge = m_compiler->fgAddRefPred(continueBlock, block);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+            }
         }
-#endif
+
+        // Inlinee's top block will have an artificial ref count. Remove.
+        assert(m_compiler->InlineeCompiler->fgFirstBB->bbRefs > 0);
+        m_compiler->InlineeCompiler->fgFirstBB->bbRefs--;
+
+        // Insert inlinee's blocks into inliner's block list.
+        assert(callBlock->KindIs(BBJ_ALWAYS));
+        assert(callBlock->TargetIs(continueBlock));
+        m_compiler->fgRedirectTargetEdge(callBlock, m_compiler->InlineeCompiler->fgFirstBB);
+
+        callBlock->SetNext(m_compiler->InlineeCompiler->fgFirstBB);
+        m_compiler->InlineeCompiler->fgFirstBB->SetPrev(callBlock);
+        m_compiler->InlineeCompiler->fgLastBB->SetNext(continueBlock);
+        continueBlock->SetPrev(m_compiler->InlineeCompiler->fgLastBB);
+
+        //
+        // Add inlinee's block count to inliner's.
+        //
+        m_compiler->fgBBcount += m_compiler->InlineeCompiler->fgBBcount;
+
+        // Append statements to null out gc ref locals, if necessary.
+        inlineInfo.teardownStatements.InsertIntoBlockAtBeginning(continueBlock);
+        JITDUMPEXEC(m_compiler->fgDispBasicBlocks(m_compiler->InlineeCompiler->fgFirstBB, m_compiler->InlineeCompiler->fgLastBB, true));
+
+        m_nextBlock = callBlock;
+        m_nextStatement = predStmt == nullptr ? callBlock->firstStmt() : predStmt->GetNextStmt();
+
+        return true;
+    }
+
+    bool InsertMidStatement(InlineInfo& inlineInfo, GenTree** use)
+    {
+        Compiler* inlineeComp = m_compiler->InlineeCompiler;
+        if (inlineeComp->fgBBcount != 1)
+        {
+            return false;
+        }
+
+        if (!inlineeComp->fgFirstBB->KindIs(BBJ_RETURN))
+        {
+            return false;
+        }
+
+        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr) ||
+            !inlineInfo.setupStatements.Empty() ||
+            !inlineInfo.teardownStatements.Empty())
+        {
+            return false;
+        }
+
+        *use = inlineInfo.inlineCandidateInfo->result.substExpr;
+
+        if (*use == nullptr)
+        {
+            *use = m_compiler->gtNewNothingNode();
+        }
+
+        if (inlineInfo.inlineCandidateInfo->result.substBB != nullptr)
+        {
+            // IR may potentially contain nodes that requires mandatory BB flags to be set.
+            // Propagate those flags from the containing BB.
+            m_block->CopyFlags(inlineInfo.inlineCandidateInfo->result.substBB, BBF_COPY_PROPAGATE);
+        }
+
+        return true;
+    }
+
+    bool InsertMidBlock(InlineInfo& inlineInfo, BasicBlock* block, Statement* stmt)
+    {
+        Compiler* inlineeComp = m_compiler->InlineeCompiler;
+        if (inlineeComp->fgBBcount != 1)
+        {
+            return false;
+        }
+
+        if (!inlineeComp->fgFirstBB->KindIs(BBJ_RETURN))
+        {
+            return false;
+        }
+
+        m_compiler->fgInsertStmtListBefore(block, stmt, inlineeComp->fgFirstBB->bbStmtList);
+
+        const BasicBlockFlags inlineeBlockFlags = inlineeComp->fgFirstBB->GetFlagsRaw();
+        noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
+        noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
+
+        // Todo: we may want to exclude other flags here.
+        block->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
+
+        inlineInfo.teardownStatements.InsertIntoBlockBefore(block, stmt);
+        return true;
     }
 
 #if FEATURE_MULTIREG_RET
@@ -550,7 +624,7 @@ private:
             return;
         }
 
-        if (tree->OperGet() == GT_CALL)
+        if (tree->IsCall())
         {
             GenTreeCall* call          = tree->AsCall();
             bool         tryLateDevirt = call->IsVirtual() && (call->gtCallType == CT_USER_FUNC);
@@ -629,7 +703,7 @@ private:
         else if (tree->OperGet() == GT_JTRUE)
         {
             // See if this jtrue is now foldable.
-            BasicBlock* block    = m_compiler->compCurBB;
+            BasicBlock* block = m_block;
             GenTree*    condTree = tree->AsOp()->gtOp1;
             assert(tree == block->lastStmt()->GetRootNode());
 
@@ -723,79 +797,30 @@ PhaseStatus Compiler::fgInline()
 
     noway_assert(fgFirstBB != nullptr);
 
-    BasicBlock*                                 block = fgFirstBB;
-    SubstitutePlaceholdersAndDevirtualizeWalker walker(this);
+    InlineAndDevirtualizeWalker walker(this);
     bool                                        madeChanges = false;
+    BasicBlock* currentBlock = fgFirstBB;
 
-    do
+    while (currentBlock != nullptr)
     {
-        // Make the current basic block address available globally
-        compCurBB = block;
-
-        for (Statement* const stmt : block->Statements())
+        Statement* currentStmt = currentBlock->firstStmt();
+        while (currentStmt != nullptr)
         {
-
-#if defined(DEBUG)
             // In debug builds we want the inline tree to show all failed
             // inlines. Some inlines may fail very early and never make it to
             // candidate stage. So scan the tree looking for those early failures.
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
-#endif
-            // See if we need to replace some return value place holders.
-            // Also, see if this replacement enables further devirtualization.
-            //
-            // Note we are doing both preorder and postorder work in this walker.
-            //
-            // The preorder callback is responsible for replacing GT_RET_EXPRs
-            // with the appropriate expansion (call or inline result).
-            // Replacement may introduce subtrees with GT_RET_EXPR and so
-            // we rely on the preorder to recursively process those as well.
-            //
-            // On the way back up, the postorder callback then re-examines nodes for
-            // possible further optimization, as the (now complete) GT_RET_EXPR
-            // replacement may have enabled optimizations by providing more
-            // specific types for trees or variables.
-            walker.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            INDEBUG(fgWalkTreePre(currentStmt->GetRootNodePointer(), fgFindNonInlineCandidate, currentStmt));
 
-            GenTree* expr = stmt->GetRootNode();
+            walker.VisitStatement(currentBlock, currentStmt);
 
-            // The importer ensures that all inline candidates are
-            // statement expressions.  So see if we have a call.
-            if (expr->IsCall())
+            if (walker.NextBlock() != nullptr)
             {
-                GenTreeCall* call = expr->AsCall();
-
-                // We do. Is it an inline candidate?
-                //
-                // Note we also process GuardeDevirtualizationCandidates here as we've
-                // split off GT_RET_EXPRs for them even when they are not inline candidates
-                // as we need similar processing to ensure they get patched back to where
-                // they belong.
-                if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
-                {
-                    InlineResult inlineResult(this, call, stmt, "fgInline");
-
-                    fgMorphStmt = stmt;
-
-                    fgMorphCallInline(call, &inlineResult);
-
-                    // If there's a candidate to process, we will make changes
-                    madeChanges = true;
-
-                    // fgMorphCallInline may have updated the
-                    // statement expression to a GT_NOP if the
-                    // call returned a value, regardless of
-                    // whether the inline succeeded or failed.
-                    //
-                    // If so, remove the GT_NOP and continue
-                    // on with the next statement.
-                    if (stmt->GetRootNode()->IsNothingNode())
-                    {
-                        fgRemoveStmt(block, stmt);
-                        continue;
-                    }
-                }
+                currentBlock = walker.NextBlock();
+                currentStmt = walker.NextStatement();
+                continue;
             }
+
+            GenTree* expr = currentStmt->GetRootNode();
 
             // See if stmt is of the form GT_COMMA(call, nop)
             // If yes, we can get rid of GT_COMMA.
@@ -803,24 +828,22 @@ PhaseStatus Compiler::fgInline()
                 expr->AsOp()->gtOp2->OperGet() == GT_NOP)
             {
                 madeChanges = true;
-                stmt->SetRootNode(expr->AsOp()->gtOp1);
+                currentStmt->SetRootNode(expr->AsOp()->gtOp1);
             }
+
+            currentStmt = currentStmt->GetNextStmt();
         }
 
-        block = block->Next();
+        currentBlock = currentBlock->Next();
 
-    } while (block);
+    }
 
     madeChanges |= walker.MadeChanges();
 
 #ifdef DEBUG
 
-    // Check that we should not have any inline candidate or return value place holder left.
-
-    block = fgFirstBB;
-    noway_assert(block);
-
-    do
+    // Check that we should not have any inline candidates left.
+    for (BasicBlock* block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
@@ -828,9 +851,7 @@ PhaseStatus Compiler::fgInline()
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
         }
 
-        block = block->Next();
-
-    } while (block);
+    }
 
     fgVerifyHandlerTab();
 
@@ -871,7 +892,7 @@ PhaseStatus Compiler::fgInline()
 //    possible inline are undone, and the candidate flag on the call
 //    is cleared.
 //
-void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
+void Compiler::fgMorphCallInline(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* inlineResult)
 {
     bool inliningFailed = false;
 
@@ -882,7 +903,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
     {
         InlineContext* createdContext = nullptr;
         // Attempt the inline
-        fgMorphCallInlineHelper(call, inlineResult, &createdContext);
+        fgMorphCallInlineHelper(inlineInfo, call, inlineResult, &createdContext);
 
         // We should have made up our minds one way or another....
         assert(inlineResult->IsDecided());
@@ -928,16 +949,13 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
     {
         if (call->gtReturnType != TYP_VOID)
         {
-            JITDUMP("Inlining [%06u] failed, so bashing " FMT_STMT " to NOP\n", dspTreeID(call), fgMorphStmt->GetID());
+            JITDUMP("Inline [%06u] marked as failed\n", dspTreeID(call));
 
             // Detach the GT_CALL tree from the original statement by
             // hanging a "nothing" node to it. Later the "nothing" node will be removed
             // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
-            inlCandInfo->retExpr->gtSubstExpr = call;
-            inlCandInfo->retExpr->gtSubstBB   = compCurBB;
-
-            noway_assert(fgMorphStmt->GetRootNode() == call);
-            fgMorphStmt->SetRootNode(gtNewNothingNode());
+            inlCandInfo->result.substExpr = nullptr;
+            inlCandInfo->result.substBB = nullptr;
         }
 
         // Inlinee compiler may have determined call does not return; if so, update this compiler's state.
@@ -970,7 +988,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 //    If the inline succeeded, this context will already be marked as successful. If it failed and
 //    a context is returned, then it will not have been marked as success or failed.
 //
-void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext)
+void Compiler::fgMorphCallInlineHelper(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result, InlineContext** createdContext)
 {
     // Don't expect any surprises here.
     assert(result->IsCandidate());
@@ -1031,7 +1049,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     // Invoke the compiler to inline the call.
     //
 
-    fgInvokeInlineeCompiler(call, result, createdContext);
+    fgInvokeInlineeCompiler(inlineInfo, call, result, createdContext);
 
     if (result->IsFailure())
     {
@@ -1142,24 +1160,19 @@ Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, f
     {
         assert((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
     }
-    else
-    {
-        assert(tree->gtOper != GT_RET_EXPR);
-    }
 
     return WALK_CONTINUE;
 }
 
 #endif // DEBUG
 
-void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineResult, InlineContext** createdContext)
+void Compiler::fgInvokeInlineeCompiler(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* inlineResult, InlineContext** createdContext)
 {
     noway_assert(call->gtOper == GT_CALL);
     noway_assert(call->IsInlineCandidate());
     noway_assert(opts.OptEnabled(CLFLG_INLINING));
 
     // This is the InlineInfo struct representing a method to be inlined.
-    InlineInfo            inlineInfo{};
     CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;
 
     inlineInfo.fncHandle              = fncHandle;
@@ -1324,12 +1337,12 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // causes the BBJ_RETURN block not to be imported at all.)
     // Fail the inlining attempt
     if ((inlineCandidateInfo->methInfo.args.retType != CORINFO_TYPE_VOID) &&
-        (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
+        (inlineCandidateInfo->result.substExpr == nullptr))
     {
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nInlining failed because pInlineInfo->retExpr is not set in the inlinee method %s.\n",
+            printf("\nInlining failed because pInlineInfo->result.substExpr is not set in the inlinee method %s.\n",
                    eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
@@ -1342,8 +1355,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // We've successfully obtain the list of inlinee's basic blocks.
-    // Let's insert it to inliner's basic block list.
-    fgInsertInlineeBlocks(&inlineInfo);
+    fgFinalizeInlineeStatements(&inlineInfo);
 
 #ifdef DEBUG
 
@@ -1367,39 +1379,69 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineResult->NoteSuccess();
 }
 
-//------------------------------------------------------------------------
-// fgInsertInlineeBlocks: incorporate statements for an inline into the
-// root method.
-//
-// Arguments:
-//    inlineInfo -- info for the inline
-//
-// Notes:
-//    The inlining attempt cannot be failed once this method is called.
-//
-//    Adds all inlinee statements, plus any glue statements needed
-//    either before or after the inlined call.
-//
-//    Updates flow graph and assigns weights to inlinee
-//    blocks. Currently does not attempt to read IBC data for the
-//    inlinee.
-//
-//    Updates relevant root method status flags (eg optMethodFlags) to
-//    include information from the inlinee.
-//
-//    Marks newly added statements with an appropriate inline context.
-
-void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
+void StatementListBuilder::Append(Statement* stmt)
 {
-    GenTreeCall* iciCall  = pInlineInfo->iciCall;
-    Statement*   iciStmt  = pInlineInfo->iciStmt;
-    BasicBlock*  iciBlock = pInlineInfo->iciBlock;
+    if (m_head == nullptr)
+    {
+        m_head = m_tail = stmt;
+        stmt->SetPrevStmt(nullptr);
+        stmt->SetNextStmt(nullptr);
+        return;
+    }
 
-    noway_assert(iciBlock->bbStmtList != nullptr);
-    noway_assert(iciStmt->GetRootNode() != nullptr);
-    assert(iciStmt->GetRootNode() == iciCall);
-    noway_assert(iciCall->gtOper == GT_CALL);
+    stmt->SetPrevStmt(m_tail);
+    stmt->SetNextStmt(nullptr);
+    m_tail->SetNextStmt(stmt);
+    m_tail = stmt;
+}
 
+void StatementListBuilder::InsertIntoBlockAtBeginning(BasicBlock* block)
+{
+    if (m_head == nullptr)
+    {
+        return;
+    }
+
+    Statement* lastStmt = block->lastStmt();
+    if (lastStmt == nullptr)
+    {
+        lastStmt = m_tail;
+    }
+
+    if (block->bbStmtList != nullptr)
+    {
+        m_tail->SetNextStmt(block->bbStmtList);
+        block->bbStmtList->SetPrevStmt(m_tail);
+    }
+
+    block->bbStmtList = m_head;
+    m_head->SetPrevStmt(lastStmt);
+}
+
+void StatementListBuilder::InsertIntoBlockBefore(BasicBlock* block, Statement* before)
+{
+    assert(before != nullptr);
+
+    if (before == block->firstStmt())
+    {
+        InsertIntoBlockAtBeginning(block);
+        return;
+    }
+
+    if (m_head == nullptr)
+    {
+        return;
+    }
+
+    m_head->SetPrevStmt(before->GetPrevStmt());
+    m_tail->SetNextStmt(before);
+
+    m_head->GetPrevStmt()->SetNextStmt(m_head);
+    m_tail->GetNextStmt()->SetPrevStmt(m_tail);
+}
+
+void Compiler::fgFinalizeInlineeStatements(InlineInfo* pInlineInfo)
+{
 #ifdef DEBUG
 
     Statement* currentDumpStmt = nullptr;
@@ -1407,7 +1449,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     if (verbose)
     {
         printf("\n\n----------- Statements (and blocks) added due to the inlining of call ");
-        printTreeID(iciCall);
+        printTreeID(pInlineInfo->iciCall);
         printf(" -----------\n");
     }
 
@@ -1417,156 +1459,17 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     pInlineInfo->inlineContext->SetSucceeded(pInlineInfo);
 
     // Prepend statements
-    Statement* stmtAfter = fgInlinePrependStatements(pInlineInfo);
+    fgInlinePrependStatements(pInlineInfo);
 
 #ifdef DEBUG
     if (verbose)
     {
-        currentDumpStmt = stmtAfter;
+        //currentDumpStmt = stmtAfter;
         printf("\nInlinee method body:");
     }
 #endif // DEBUG
 
-    BasicBlock* topBlock            = iciBlock;
-    BasicBlock* bottomBlock         = nullptr;
-    bool        insertInlineeBlocks = true;
-
-    if (InlineeCompiler->fgBBcount == 1)
-    {
-        // When fgBBCount is 1 we will always have a non-NULL fgFirstBB
-        //
-        PREFAST_ASSUME(InlineeCompiler->fgFirstBB != nullptr);
-
-        // DDB 91389: Don't throw away the (only) inlinee block
-        // when its return type is not BBJ_RETURN.
-        // In other words, we need its BBJ_ to perform the right thing.
-        if (InlineeCompiler->fgFirstBB->KindIs(BBJ_RETURN))
-        {
-            // Inlinee contains just one BB. So just insert its statement list to topBlock.
-            if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
-            {
-                JITDUMP("\nInserting inlinee code into " FMT_BB "\n", iciBlock->bbNum);
-                stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
-            }
-            else
-            {
-                JITDUMP("\ninlinee was empty\n");
-            }
-
-            // Copy inlinee bbFlags to caller bbFlags.
-            const BasicBlockFlags inlineeBlockFlags = InlineeCompiler->fgFirstBB->GetFlagsRaw();
-            noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
-            noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
-
-            // Todo: we may want to exclude other flags here.
-            iciBlock->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                noway_assert(currentDumpStmt);
-
-                if (currentDumpStmt != stmtAfter)
-                {
-                    do
-                    {
-                        currentDumpStmt = currentDumpStmt->GetNextStmt();
-
-                        printf("\n");
-
-                        gtDispStmt(currentDumpStmt);
-                        printf("\n");
-
-                    } while (currentDumpStmt != stmtAfter);
-                }
-            }
-#endif // DEBUG
-
-            // Append statements to null out gc ref locals, if necessary.
-            fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
-            insertInlineeBlocks = false;
-        }
-        else
-        {
-            JITDUMP("\ninlinee was single-block, but not BBJ_RETURN\n");
-        }
-    }
-
-    //
-    // ======= Inserting inlinee's basic blocks ===============
-    //
-    if (insertInlineeBlocks)
-    {
-        JITDUMP("\nInserting inlinee blocks\n");
-        bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
-        unsigned const baseBBNum = fgBBNumMax;
-
-        JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", topBlock->bbNum,
-                bottomBlock->bbNum);
-
-        // The newly split block is not special so doesn't need to be kept.
-        //
-        bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
-
-        // Set the try and handler index and fix the jump types of inlinee's blocks.
-        //
-        for (BasicBlock* const block : InlineeCompiler->Blocks())
-        {
-            noway_assert(!block->hasTryIndex());
-            noway_assert(!block->hasHndIndex());
-            block->copyEHRegion(iciBlock);
-            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
-
-            // Update block nums appropriately
-            //
-            block->bbNum += baseBBNum;
-            fgBBNumMax = max(block->bbNum, fgBBNumMax);
-
-            DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
-            if (di.IsValid())
-            {
-                block->bbCodeOffs    = di.GetLocation().GetOffset();
-                block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
-            }
-            else
-            {
-                block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
-                block->bbCodeOffsEnd = 0;
-                block->SetFlags(BBF_INTERNAL);
-            }
-
-            if (block->KindIs(BBJ_RETURN))
-            {
-                noway_assert(!block->HasFlag(BBF_HAS_JMP));
-                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottom block " FMT_BB "\n", block->bbNum,
-                        bottomBlock->bbNum);
-
-                FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-            }
-        }
-
-        // Inlinee's top block will have an artificial ref count. Remove.
-        assert(InlineeCompiler->fgFirstBB->bbRefs > 0);
-        InlineeCompiler->fgFirstBB->bbRefs--;
-
-        // Insert inlinee's blocks into inliner's block list.
-        assert(topBlock->KindIs(BBJ_ALWAYS));
-        assert(topBlock->TargetIs(bottomBlock));
-        fgRedirectTargetEdge(topBlock, InlineeCompiler->fgFirstBB);
-
-        topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        InlineeCompiler->fgLastBB->SetNext(bottomBlock);
-
-        //
-        // Add inlinee's block count to inliner's.
-        //
-        fgBBcount += InlineeCompiler->fgBBcount;
-
-        // Append statements to null out gc ref locals, if necessary.
-        fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
-        JITDUMPEXEC(fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true));
-    }
+    fgInlineAppendStatements(pInlineInfo->teardownStatements, pInlineInfo);
 
     //
     // At this point, we have successfully inserted inlinee's code.
@@ -1669,6 +1572,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         }
     }
 
+    BasicBlock* iciBlock = pInlineInfo->iciBlock;
     // If we inline a no-return call at a site with profile weight,
     // we will introduce inconsistency.
     //
@@ -1735,12 +1639,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
         lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
     }
-
-    //
-    // Detach the GT_CALL node from the original statement by hanging a "nothing" node under it,
-    // so that fgMorphStmts can remove the statement once we return from here.
-    //
-    iciStmt->SetRootNode(gtNewNothingNode());
 }
 
 //------------------------------------------------------------------------
@@ -1753,14 +1651,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 //    newStmt   - updated with the new statement
 //    callDI    - debug info for the call
 //
-void Compiler::fgInsertInlineeArgument(
-    const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI)
+void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements, const InlArgInfo& argInfo, const DebugInfo& callDI)
 {
     const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
     CallArg*   arg            = argInfo.arg;
     GenTree*   argNode        = arg->GetNode();
-
-    assert(!argNode->OperIs(GT_RET_EXPR));
 
     if (argInfo.argHasTmp)
     {
@@ -1793,10 +1688,9 @@ void Compiler::fgInsertInlineeArgument(
             // We're going to assign the argument value to the temp we use for it in the inline body.
             GenTree* store = gtNewTempStore(argInfo.argTmpNum, argNode);
 
-            *newStmt = gtNewStmt(store, callDI);
-            fgInsertStmtAfter(block, *afterStmt, *newStmt);
-            *afterStmt = *newStmt;
-            DISPSTMT(*afterStmt);
+            Statement* newStmt = gtNewStmt(store, callDI);
+            statements.Append(newStmt);
+            DISPSTMT(newStmt);
         }
     }
     else if (argInfo.argIsByRefToStructLocal)
@@ -1815,7 +1709,7 @@ void Compiler::fgInsertInlineeArgument(
         if (argInfo.argHasSideEff)
         {
             noway_assert(argInfo.argIsUsed == false);
-            *newStmt    = nullptr;
+            Statement* newStmt = nullptr;
             bool append = true;
 
             if (argNode->gtOper == GT_BLK)
@@ -1823,7 +1717,7 @@ void Compiler::fgInsertInlineeArgument(
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.
                 // Just hang the address here in case there are side-effect.
-                *newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
+                newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
             }
             else
             {
@@ -1840,7 +1734,6 @@ void Compiler::fgInsertInlineeArgument(
                 // has no side effects, we can skip appending all
                 // together. This will help jit TP a bit.
                 //
-                assert(!argNode->OperIs(GT_RET_EXPR));
 
                 // For case (1)
                 //
@@ -1886,21 +1779,20 @@ void Compiler::fgInsertInlineeArgument(
 
             if (!append)
             {
-                assert(*newStmt == nullptr);
+                assert(newStmt == nullptr);
                 JITDUMP("Arg tree side effects were discardable, not appending anything for arg\n");
             }
             else
             {
                 // If we don't have something custom to append,
                 // just append the arg node as an unused value.
-                if (*newStmt == nullptr)
+                if (newStmt == nullptr)
                 {
-                    *newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
+                    newStmt = gtNewStmt(gtUnusedValNode(argNode), callDI);
                 }
 
-                fgInsertStmtAfter(block, *afterStmt, *newStmt);
-                *afterStmt = *newStmt;
-                DISPSTMT(*afterStmt);
+                statements.Append(newStmt);
+                DISPSTMT(newStmt);
             }
         }
         else if (argNode->IsBoxedValue())
@@ -1934,13 +1826,10 @@ void Compiler::fgInsertInlineeArgument(
 //    and are given the same inline context as the call any calls
 //    added here will appear to have been part of the immediate caller.
 //
-Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
+void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
-    BasicBlock*      block     = inlineInfo->iciBlock;
-    Statement*       callStmt  = inlineInfo->iciStmt;
-    const DebugInfo& callDI    = callStmt->GetDebugInfo();
-    Statement*       afterStmt = callStmt; // afterStmt is the place where the new statements should be inserted after.
-    Statement*       newStmt   = nullptr;
+    BasicBlock* block = inlineInfo->iciBlock;
+    const DebugInfo& callDI    = inlineInfo->iciStmt->GetDebugInfo();
     GenTreeCall*     call      = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->gtOper == GT_CALL);
@@ -1977,7 +1866,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     // Append the InstParam
     if (inlineInfo->inlInstParamArgInfo != nullptr)
     {
-        fgInsertInlineeArgument(*inlineInfo->inlInstParamArgInfo, block, &afterStmt, &newStmt, callDI);
+        fgInsertInlineeArgument(inlineInfo->setupStatements, *inlineInfo->inlInstParamArgInfo, callDI);
     }
 
     // Treat arguments that had to be assigned to temps
@@ -1986,7 +1875,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         JITDUMP("\nArguments setup:\n");
         for (unsigned argNum = 0; argNum < inlineInfo->argCnt; argNum++)
         {
-            fgInsertInlineeArgument(inlArgInfo[argNum], block, &afterStmt, &newStmt, callDI);
+            fgInsertInlineeArgument(inlineInfo->setupStatements, inlArgInfo[argNum], callDI);
         }
     }
 
@@ -2001,17 +1890,15 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHandle);
 
         tree    = fgGetSharedCCtor(exactClass);
-        newStmt = gtNewStmt(tree, callDI);
-        fgInsertStmtAfter(block, afterStmt, newStmt);
-        afterStmt = newStmt;
+        Statement* newStmt = gtNewStmt(tree, callDI);
+        inlineInfo->setupStatements.Append(newStmt);
     }
 
     // Insert the nullcheck statement now.
     if (nullcheck)
     {
-        newStmt = gtNewStmt(nullcheck, callDI);
-        fgInsertStmtAfter(block, afterStmt, newStmt);
-        afterStmt = newStmt;
+        Statement* newStmt = gtNewStmt(nullcheck, callDI);
+        inlineInfo->setupStatements.Append(newStmt);
     }
 
     //
@@ -2059,16 +1946,13 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 tree = gtNewTempStore(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclTyp));
 
-                newStmt = gtNewStmt(tree, callDI);
-                fgInsertStmtAfter(block, afterStmt, newStmt);
-                afterStmt = newStmt;
+                Statement* newStmt = gtNewStmt(tree, callDI);
+                inlineInfo->setupStatements.Append(newStmt);
 
-                DISPSTMT(afterStmt);
+                DISPSTMT(newStmt);
             }
         }
     }
-
-    return afterStmt;
 }
 
 //------------------------------------------------------------------------
@@ -2085,7 +1969,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    we skip nulling the locals, since it can interfere
 //    with tail calls introduced by the local.
 
-void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
+void Compiler::fgInlineAppendStatements(StatementListBuilder& statements, InlineInfo* inlineInfo)
 {
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
@@ -2145,9 +2029,9 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         // Does the local we're about to null out appear in the return
         // expression?  If so we somehow messed up and didn't properly
         // spill the return value. See impInlineFetchLocal.
-        if ((inlCandInfo->retExpr != nullptr) && (inlCandInfo->retExpr->gtSubstExpr != nullptr))
+        if (inlCandInfo->result.substExpr != nullptr)
         {
-            const bool interferesWithReturn = gtHasRef(inlCandInfo->retExpr->gtSubstExpr, tmpNum);
+            const bool interferesWithReturn = gtHasRef(inlCandInfo->result.substExpr, tmpNum);
             noway_assert(!interferesWithReturn);
         }
 
@@ -2155,15 +2039,7 @@ void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* bloc
         GenTree*   nullExpr = gtNewTempStore(tmpNum, gtNewZeroConNode(lclTyp));
         Statement* nullStmt = gtNewStmt(nullExpr, callDI);
 
-        if (stmtAfter == nullptr)
-        {
-            fgInsertStmtAtBeg(block, nullStmt);
-        }
-        else
-        {
-            fgInsertStmtAfter(block, stmtAfter, nullStmt);
-        }
-        stmtAfter = nullStmt;
+        statements.Append(nullStmt);
 
 #ifdef DEBUG
         if (verbose)

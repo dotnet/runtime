@@ -4677,6 +4677,16 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
     return newBlock;
 }
 
+BasicBlock* Compiler::fgSplitBlockBeforeStatement(BasicBlock* curr, Statement* stmt)
+{
+    if (stmt == curr->firstStmt())
+    {
+        return fgSplitBlockAtBeginning(curr);
+    }
+
+    return fgSplitBlockAfterStatement(curr, stmt->GetPrevStmt());
+}
+
 //------------------------------------------------------------------------------
 // fgSplitBlockBeforeTree : Split the given block right before the given tree
 //

@@ -634,7 +634,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   description   - string describing the context of the decision
 
 InlineResult::InlineResult(
-    Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
+    Compiler* compiler, GenTreeCall* call, InlineContext* context, const char* description, bool doNotReport)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
@@ -655,17 +655,12 @@ InlineResult::InlineResult(
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
     // Pass along some optional information to the policy.
-    if (stmt != nullptr)
-    {
-        m_InlineContext = stmt->GetDebugInfo().GetInlineContext();
-        m_Policy->NoteContext(m_InlineContext);
+    m_InlineContext = context;
+    m_Policy->NoteContext(m_InlineContext);
 
 #if defined(DEBUG)
-        m_Policy->NoteOffset(call->gtRawILOffset);
-#else
-        m_Policy->NoteOffset(stmt->GetDebugInfo().GetLocation().GetOffset());
+    m_Policy->NoteOffset(call->gtRawILOffset);
 #endif // defined(DEBUG)
-    }
 
     // Get method handle for caller. Note we use the
     // handle for the "immediate" caller here.
@@ -1290,13 +1285,6 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;
         context->m_RuntimeContext   = info->exactContextHandle;
-
-#ifdef DEBUG
-        // All inline candidates should get their own statements that have
-        // appropriate debug info (or no debug info).
-        InlineContext* diInlineContext = stmt->GetDebugInfo().GetInlineContext();
-        assert(diInlineContext == nullptr || diInlineContext == parentContext);
-#endif
     }
     else
     {
@@ -1305,7 +1293,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     }
 
     // We currently store both the statement location (used when reporting
-    // only-style mappings) and the actual call offset (used when reporting the
+    // old-style mappings) and the actual call offset (used when reporting the
     // inline tree for rich debug info).
     // These are not always the same, consider e.g.
     // ldarg.0
