@@ -949,6 +949,10 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
+#ifdef __wasm__
+    // WebAssembly cannot set limits
+    return TRUE;
+#endif
 #ifndef DONT_SET_RLIMIT_NOFILE
     struct rlimit rlp;
     int result;
