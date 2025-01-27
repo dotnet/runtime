@@ -21423,88 +21423,45 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             }
             else if (varTypeIsLong(simdBaseType))
             {
-                // This fallback path should only be used if the vpmullq instruction is not available.
-                assert(((simdSize == 16) || (simdSize == 32)) && !canUseEvexEncodingDebugOnly());
+                // This fallback path will be used only if the vpmullq instruction is not available.
+                // The implementation is a simple decomposition using pmuludq, which multiplies
+                // two uint32s and returns a uint64 result.
+                //
+                // aLo * bLo + ((aLo * bHi + aHi * bLo) << 32)
 
-                if ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_SSE41))
-                {
-                    assert((simdSize == 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                assert(!canUseEvexEncodingDebugOnly());
+                assert((simdSize == 16) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-                    // Make op1 and op2 multi-use:
-                    GenTree* op1Dup = fgMakeMultiUse(&op1);
-                    GenTree* op2Dup = fgMakeMultiUse(&op2);
+                NamedIntrinsic muludq = (simdSize == 16) ? NI_SSE2_Multiply : NI_AVX2_Multiply;
 
-                    const bool is256 = simdSize == 32;
+                GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+                GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+                GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+                GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
 
-                    // Vector256<ulong> tmp0 = Avx2.Multiply(left, right);
-                    GenTreeHWIntrinsic* tmp0 =
-                        gtNewSimdHWIntrinsicNode(type, op1, op2, is256 ? NI_AVX2_Multiply : NI_SSE2_Multiply,
-                                                 CORINFO_TYPE_ULONG, simdSize);
+                // Vector128<ulong> low = Sse2.Multiply(a.AsUInt32(), b.AsUInt32());
+                GenTree* low = gtNewSimdHWIntrinsicNode(type, op1, op2, muludq, CORINFO_TYPE_ULONG, simdSize);
 
-                    // Vector256<uint> tmp1 = Avx2.Shuffle(right.AsUInt32(), ZWXY);
-                    GenTree*            shuffleMask = gtNewIconNode(SHUFFLE_ZWXY, TYP_INT);
-                    GenTreeHWIntrinsic* tmp1 =
-                        gtNewSimdHWIntrinsicNode(type, op2Dup, shuffleMask, is256 ? NI_AVX2_Shuffle : NI_SSE2_Shuffle,
-                                                 CORINFO_TYPE_UINT, simdSize);
+                // Vector128<ulong> mid = (b >>> 32).AsUInt64();
+                GenTree* mid = gtNewSimdBinOpNode(GT_RSZ, type, op2Dup1, gtNewIconNode(32), simdBaseJitType, simdSize);
 
-                    // Vector256<uint> tmp2 = Avx2.MultiplyLow(left.AsUInt32(), tmp1);
-                    GenTree* tmp2 = gtNewSimdBinOpNode(GT_MUL, type, op1Dup, tmp1, CORINFO_TYPE_UINT, simdSize);
+                // mid = Sse2.Multiply(mid.AsUInt32(), a.AsUInt32());
+                mid = gtNewSimdHWIntrinsicNode(type, mid, op1Dup1, muludq, CORINFO_TYPE_ULONG, simdSize);
 
-                    // Vector256<int> tmp3 = Avx2.HorizontalAdd(tmp2.AsInt32(), Vector256<int>.Zero);
-                    GenTreeHWIntrinsic* tmp3 =
-                        gtNewSimdHWIntrinsicNode(type, tmp2, gtNewZeroConNode(type),
-                                                 is256 ? NI_AVX2_HorizontalAdd : NI_SSSE3_HorizontalAdd,
-                                                 CORINFO_TYPE_UINT, simdSize);
+                // Vector128<ulong> tmp = (a >>> 32).AsUInt64();
+                GenTree* tmp = gtNewSimdBinOpNode(GT_RSZ, type, op1Dup2, gtNewIconNode(32), simdBaseJitType, simdSize);
 
-                    // Vector256<int> tmp4 = Avx2.Shuffle(tmp3, YWXW);
-                    shuffleMask = gtNewIconNode(SHUFFLE_YWXW, TYP_INT);
-                    GenTreeHWIntrinsic* tmp4 =
-                        gtNewSimdHWIntrinsicNode(type, tmp3, shuffleMask, is256 ? NI_AVX2_Shuffle : NI_SSE2_Shuffle,
-                                                 CORINFO_TYPE_UINT, simdSize);
+                // tmp = Sse2.Multiply(tmp.AsUInt32(), b.AsUInt32());
+                tmp = gtNewSimdHWIntrinsicNode(type, tmp, op2Dup2, muludq, CORINFO_TYPE_ULONG, simdSize);
 
-                    // result = tmp0 + tmp4;
-                    return gtNewSimdBinOpNode(GT_ADD, type, tmp0, tmp4, simdBaseJitType, simdSize);
-                }
-                else
-                {
-                    // This SSE2 implementation is a simple decomposition using pmuludq,
-                    // which multiplies two uint32s and returns a uint64 result.
-                    // aLo * bLo + ((aLo * bHi + aHi * bLo) << 32)
+                // mid += tmp;
+                mid = gtNewSimdBinOpNode(GT_ADD, type, mid, tmp, simdBaseJitType, simdSize);
 
-                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-                    GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
-                    GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-                    GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
+                // mid <<= 32;
+                mid = gtNewSimdBinOpNode(GT_LSH, type, mid, gtNewIconNode(32), simdBaseJitType, simdSize);
 
-                    // Vector128<ulong> low = Sse2.Multiply(left.AsUInt32(), right.AsUInt32());
-                    GenTreeHWIntrinsic* low =
-                        gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSE2_Multiply, CORINFO_TYPE_ULONG, simdSize);
-
-                    // Vector128<uint> rightHi = (right >>> 32).AsUInt32();
-                    GenTree* rightHi =
-                        gtNewSimdBinOpNode(GT_RSZ, type, op2Dup1, gtNewIconNode(32), simdBaseJitType, simdSize);
-
-                    // Vector128<ulong> tmp0 = Sse2.Multiply(rightHi, left.AsUInt32());
-                    GenTreeHWIntrinsic* tmp0 = gtNewSimdHWIntrinsicNode(type, rightHi, op1Dup1, NI_SSE2_Multiply,
-                                                                        CORINFO_TYPE_ULONG, simdSize);
-
-                    // Vector128<uint> leftHi = (left >>> 32).AsUInt32();
-                    GenTree* leftHi =
-                        gtNewSimdBinOpNode(GT_RSZ, type, op1Dup2, gtNewIconNode(32), simdBaseJitType, simdSize);
-
-                    // Vector128<ulong> tmp1 = Sse2.Multiply(leftHi, right.AsUInt32());
-                    GenTreeHWIntrinsic* tmp1 =
-                        gtNewSimdHWIntrinsicNode(type, leftHi, op2Dup2, NI_SSE2_Multiply, CORINFO_TYPE_ULONG, simdSize);
-
-                    // Vector128<ulong> tmp2 = tmp0 + tmp1;
-                    GenTree* tmp2 = gtNewSimdBinOpNode(GT_ADD, type, tmp0, tmp1, simdBaseJitType, simdSize);
-
-                    // Vector128<ulong> mid = tmp2 << 32;
-                    GenTree* mid = gtNewSimdBinOpNode(GT_LSH, type, tmp2, gtNewIconNode(32), simdBaseJitType, simdSize);
-
-                    // return low + mid;
-                    return gtNewSimdBinOpNode(GT_ADD, type, low, mid, simdBaseJitType, simdSize);
-                }
+                // return low + mid;
+                return gtNewSimdBinOpNode(GT_ADD, type, low, mid, simdBaseJitType, simdSize);
             }
 #elif defined(TARGET_ARM64)
             if (varTypeIsLong(simdBaseType))
