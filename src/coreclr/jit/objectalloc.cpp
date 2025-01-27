@@ -435,6 +435,31 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
             }
         }
     }
+
+    JITDUMP("Definitely stack-pointing locals:");
+    {
+        BitVecOps::Iter iter(bitVecTraits, m_DefinitelyStackPointingPointers);
+        unsigned        lclNum = 0;
+        while (iter.NextElem(&lclNum))
+        {
+            JITDUMP(" V%02", lclNum);
+        }
+        JITDUMP("\n");
+    }
+
+    JITDUMP("Possibly stack-pointing locals:");
+    {
+        BitVecOps::Iter iter(bitVecTraits, m_PossiblyStackPointingPointers);
+        unsigned        lclNum = 0;
+        while (iter.NextElem(&lclNum))
+        {
+            if (!BitVecOps::IsMember(bitVecTraits, m_DefinitelyStackPointingPointers, lclNum))
+            {
+                JITDUMP(" V%02u", lclNum);
+            }
+        }
+        JITDUMP("\n");
+    }
 }
 
 //------------------------------------------------------------------------
@@ -656,6 +681,27 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // sets.
                     MarkLclVarAsDefinitelyStackPointing(lclNum);
                     MarkLclVarAsPossiblyStackPointing(lclNum);
+
+                    // If this was conditionally escaping enumerator, establish a connection between this local
+                    // and the enumeratorLocal we already allocated. This is needed because we do early rewriting
+                    // in the conditional clone.
+                    //
+                    unsigned pseudoLocal = BAD_VAR_NUM;
+                    if (m_EnumeratorLocalToPseudoLocalMap.TryGetValue(lclNum, &pseudoLocal))
+                    {
+                        CloneInfo* info = nullptr;
+                        if (m_CloneMap.Lookup(pseudoLocal, &info))
+                        {
+                            if (info->m_willClone)
+                            {
+                                JITDUMP("Connecting stack allocated enumerator V%02u to its address var V%02u\n",
+                                        lclNum, info->m_enumeratorLocal);
+                                AddConnGraphEdge(lclNum, info->m_enumeratorLocal);
+                                MarkLclVarAsPossiblyStackPointing(info->m_enumeratorLocal);
+                                MarkLclVarAsDefinitelyStackPointing(info->m_enumeratorLocal);
+                            }
+                        }
+                    }
 
                     if (bashCall)
                     {
@@ -2891,7 +2937,10 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
     // this variable as well.
     //
     unsigned const newEnumeratorLocal = comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("fast-path enumerator"));
+    info->m_enumeratorLocal           = newEnumeratorLocal;
 
+    // Type for now as TYP_REF; this will get rewritten later during RewriteUses
+    //
     comp->lvaTable[newEnumeratorLocal].lvType      = TYP_REF;
     comp->lvaTable[newEnumeratorLocal].lvSingleDef = 1;
     comp->lvaSetClass(newEnumeratorLocal, info->m_type, /* isExact */ true);
@@ -3140,18 +3189,12 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
 void ObjectAllocator::CloneAndSpecialize()
 {
     unsigned numberOfClonedRegions = 0;
-    bool     first                 = true;
 
     for (CloneInfo* const c : CloneMap::ValueIteration(&m_CloneMap))
     {
         if (!c->m_willClone)
         {
             continue;
-        }
-
-        if (first)
-        {
-            printf("*** Conditional escape in 0x%08x %s\n", comp->info.compMethodHash(), comp->info.compFullName);
         }
 
         CloneAndSpecialize(c);

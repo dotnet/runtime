@@ -78,8 +78,11 @@ struct CloneInfo : public GuardInfo
     // Pseudo-local tracking conditinal escapes
     unsigned m_pseudoLocal = BAD_VAR_NUM;
 
+    // Local allocated for the address of the enumerator
+    unsigned m_enumeratorLocal = BAD_VAR_NUM;
+
     // Locals that must be rewritten in the clone, and map
-    // to their rewritten locals
+    // to their appearances
     EnumeratorVarMap*         m_appearanceMap   = nullptr;
     unsigned                  m_appearanceCount = 0;
     jitstd::vector<unsigned>* m_allocTemps      = nullptr;
