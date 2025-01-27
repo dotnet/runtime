@@ -448,8 +448,8 @@ extends:
           - linux_x86
           jobParameters:
             testScope: innerloop
-            nameSuffix: CoreCLR_NoR2R
-            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib -c $(_BuildConfig)
+            nameSuffix: CoreCLR
+            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib+clr.nativecorelib -c $(_BuildConfig)
             timeoutInMinutes: 120
             condition: >-
               or(
