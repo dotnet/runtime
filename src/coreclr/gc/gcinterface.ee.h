@@ -381,6 +381,9 @@ public:
     bool GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value) PURE_VIRTUAL
 
     virtual
+    bool GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value) PURE_VIRTUAL
+
+    virtual
     bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value) PURE_VIRTUAL
 
     virtual

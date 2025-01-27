@@ -89,6 +89,17 @@ ULONGLONG Configuration::GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultVa
     return defaultValue;
 }
 
+DOUBLE Configuration::GetKnobDoubleValue(LPCWSTR name, DOUBLE defaultValue)
+{
+    LPCWSTR knobValue = GetConfigurationValue(name);
+    if (knobValue != nullptr)
+    {
+        return u16_strtod(knobValue, nullptr);
+    }
+
+    return defaultValue;
+}
+
 LPCWSTR Configuration::GetKnobStringValue(LPCWSTR name, const CLRConfig::ConfigStringInfo& stringInfo)
 {
     LPCWSTR value = CLRConfig::GetConfigValue(stringInfo);

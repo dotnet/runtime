@@ -174,6 +174,11 @@ namespace standalone
             return ::GCToEEInterface::GetIntConfigValue(privateKey, publicKey, value);
         }
 
+        bool GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value)
+        {
+            return ::GCToEEInterface::GetFloatingPointConfigValue(privateKey, publicKey, value);
+        }
+
         bool GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
         {
             return ::GCToEEInterface::GetStringConfigValue(privateKey, publicKey, value);

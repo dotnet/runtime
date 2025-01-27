@@ -897,6 +897,11 @@ namespace System
                 case GCConfigurationType.Boolean:
                     configurationDictionary[nameAsString] = data != 0;
                     break;
+
+                case GCConfigurationType.Double:
+                    double dataAsDouble = BitConverter.Int64BitsToDouble(data);
+                    configurationDictionary[nameAsString] = dataAsDouble;
+                    break;
             }
         }
 
@@ -921,7 +926,8 @@ namespace System
         {
             Int64,
             StringUtf8,
-            Boolean
+            Boolean,
+            Double
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EnumerateConfigurationValues")]

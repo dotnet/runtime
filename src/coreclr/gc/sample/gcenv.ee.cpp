@@ -284,6 +284,11 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     return false;
 }
 
+bool GCToEEInterface::GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value)
+{
+    return false;
+}
+
 bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
     return false;

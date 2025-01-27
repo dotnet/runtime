@@ -39,6 +39,11 @@ public:
     static ULONGLONG GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultValue);
 
     // Returns (in priority order):
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcstod)
+    //    - The default set in the ConfigFLOATINGPOINTInfo
+    static DOUBLE GetKnobDoubleValue(LPCWSTR name, DOUBLE defaultValue);
+
+    // Returns (in priority order):
     //    - The value of the ConfigStringInfo if it's set
     //    - The value of the ConfigurationKnob (searched by name) if it's set
     //    - nullptr

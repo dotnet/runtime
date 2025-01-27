@@ -96,6 +96,7 @@ public:
     STRING_CONFIG(GCHeapAffinitizeRanges,    "GCHeapAffinitizeRanges",    "System.GC.HeapAffinitizeRanges",                        "Specifies list of processors for Server GC threads. The format is a comma separated "     \
                                                                                                                                           "list of processor numbers or ranges of processor numbers. On Windows, each entry is "    \
                                                                                                                                           "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")    \
+    FLOATINGPOINT_CONFIG(GCTrimYoungestDividerValue, "GCTrimYoungestDividerValue", NULL,              10,                          "Specifies the divider of trim_youngest for low_memory. Example: 2.3")                     \
     INT_CONFIG   (GCHighMemPercent,          "GCHighMemPercent",          "System.GC.HighMemoryPercent",       0,                  "The percent for GC to consider as high memory")                                           \
     INT_CONFIG   (GCProvModeStress,          "GCProvModeStress",          NULL,                                0,                  "Stress the provisional modes")                                                           \
     INT_CONFIG   (GCGen0MaxBudget,           "GCGen0MaxBudget",           NULL,                                0,                  "Specifies the largest gen0 allocation budget")                                           \
@@ -168,11 +169,20 @@ class GCConfig
 #define STRING_CONFIG(name, unused_private_key, unused_public_key, unused_doc) \
   public: static GCConfigStringHolder Get##name();
 
+#define FLOATINGPOINT_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
+  public: static double Get##name();                             \
+  public: static double Get##name(double defaultValue);          \
+  public: static void Set##name(double value);                   \
+  private: static double s_##name;                               \
+  private: static bool s_##name##Provided;                       \
+  private: static double s_Updated##name;                        \
+
 GC_CONFIGURATION_KEYS
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
+#undef FLOATINGPOINT_CONFIG
 
 public:
 

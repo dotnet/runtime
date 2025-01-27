@@ -38,11 +38,23 @@
       return GCConfigStringHolder(resultStr);                                      \
   }
 
+#define FLOATINGPOINT_CONFIG(name, unused_private_key, unused_public_key, default, unused_doc)  \
+  double GCConfig::Get##name() { return s_##name; }                                   \
+  double GCConfig::Get##name(double defaultValue)                                     \
+  {                                                                                   \
+      return s_##name##Provided ? s_##name : defaultValue;                            \
+  }                                                                                   \
+  void GCConfig::Set##name(double value) { s_Updated##name = value; }                 \
+  double GCConfig::s_##name = default;                                                \
+  bool GCConfig::s_##name##Provided = false;                                          \
+  double GCConfig::s_Updated##name = default;
+
 GC_CONFIGURATION_KEYS
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
+#undef FLOATINGPOINT_CONFIG
 
 void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
 {
@@ -60,11 +72,20 @@ void GCConfig::EnumerateConfigurationValues(void* context, ConfigurationValueFun
 #define BOOL_CONFIG(name, unused_private_key, public_key, unused_default, unused_doc) \
     configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Boolean, static_cast<int64_t>(s_Updated##name));
 
+#define FLOATINGPOINT_CONFIG(name, unused_private_key, public_key, unused_default, unused_doc) \
+    {                                                                                          \
+        double resultDouble = s_Updated##name;                                                 \
+        int64_t int64Value;                                                                    \
+        memcpy(&int64Value, &resultDouble, sizeof(int64_t));                                   \
+        configurationValueFunc(context, (void*)(#name), (void*)(public_key), GCConfigurationType::Double, int64Value); \
+    }
+
 GC_CONFIGURATION_KEYS
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
+#undef FLOATINGPOINT_CONFIG
 }
 
 void GCConfig::RefreshHeapHardLimitSettings()
@@ -91,11 +112,16 @@ void GCConfig::Initialize()
 
 #define STRING_CONFIG(unused_name, unused_private_key, unused_public_key, unused_doc)
 
+#define FLOATINGPOINT_CONFIG(name, private_key, public_key, default, unused_doc)                           \
+    s_##name##Provided = GCToEEInterface::GetFloatingPointConfigValue(private_key, public_key, &s_##name); \
+    s_Updated##name = s_##name;                                                                            \
+
 GC_CONFIGURATION_KEYS
 
 #undef BOOL_CONFIG
 #undef INT_CONFIG
 #undef STRING_CONFIG
+#undef FLOATINGPOINT_CONFIG
 }
 
 // Parse an integer index or range of two indices separated by '-'.

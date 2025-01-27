@@ -44545,10 +44545,11 @@ void gc_heap::trim_youngest_desired_low_memory()
 {
     if (g_low_memory_status)
     {
+        double trim_divider = GCConfig::GetGCTrimYoungestDividerValue();
         size_t committed_mem = committed_size();
         dynamic_data* dd = dynamic_data_of (0);
         size_t current = dd_desired_allocation (dd);
-        size_t candidate = max (Align ((committed_mem / 10), get_alignment_constant(FALSE)), dd_min_size (dd));
+        size_t candidate = max (Align ((size_t)(committed_mem / trim_divider), get_alignment_constant(FALSE)), dd_min_size (dd));
 
         dd_desired_allocation (dd) = min (current, candidate);
     }

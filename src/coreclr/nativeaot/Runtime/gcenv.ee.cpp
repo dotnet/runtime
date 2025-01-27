@@ -786,6 +786,24 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     return false;
 }
 
+bool GCToEEInterface::GetFloatingPointConfigValue(const char* privateKey, const char* publicKey, double* value)
+{
+    double dValue;
+    if (g_pRhConfig->ReadConfigDoubleValue(privateKey, &dValue))
+    {
+        *value = dValue;
+        return true;
+    }
+
+    if (publicKey && g_pRhConfig->ReadKnobDoubleValue(publicKey, value))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+
 void GCToEEInterface::LogErrorToHost(const char *message)
 {
 }

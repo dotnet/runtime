@@ -88,6 +88,31 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
     return true;
 }
 
+bool RhConfig::Environment::TryGetDoubleValue(const char* name, double* value, bool decimal) {
+    TCHAR variableName[64];
+    GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
+
+    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a null character.
+    const uint32_t cchBuffer = ARRAY_SIZE(buffer);
+    uint32_t cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
+    if (cchResult == 0 || cchResult >= cchBuffer)
+        return false;
+
+    // Environment variable was set. Convert it to a double.
+#ifdef TARGET_WINDOWS
+    wchar_t* endptr;
+    *value = wcstod(buffer, &endptr);
+#else
+    char* endptr;
+    *value = strtod(buffer, &endptr);
+#endif
+    if (buffer == endptr) {
+        return false; // Parse error
+    }
+
+    return true;
+}
+
 bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
 {
     TCHAR variableName[64];
@@ -139,6 +164,25 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     return false;
 }
 
+bool RhConfig::ReadConfigDoubleValue(_In_z_ const char *name, double* pValue, bool decimal)
+{
+    if (Environment::TryGetDoubleValue(name, pValue, decimal))
+        return true;
+
+    // Check the embedded configuration
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedSettingsBlob, name, true, &embeddedValue))
+    {
+        char *endptr;
+        double val = strtod(embeddedValue, &endptr);
+        if (embeddedValue == endptr)
+            return false; // invalid input; no conversion was performed
+        return true;
+    }
+
+    return false;
+}
+
 bool RhConfig::ReadKnobUInt64Value(_In_z_ const char *name, uint64_t* pValue)
 {
     const char *embeddedValue = nullptr;
@@ -157,6 +201,22 @@ bool RhConfig::ReadKnobBooleanValue(_In_z_ const char *name, bool* pValue)
     if (GetEmbeddedVariable(&g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
     {
         *pValue = strcmp(embeddedValue, "true") == 0;
+        return true;
+    }
+
+    return false;
+}
+
+bool RhConfig::ReadKnobDoubleValue(_In_z_ const char *name, double* pValue)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
+    {
+        char *endptr;
+        double val = strtod(embeddedValue, &endptr);
+        if (embeddedValue == endptr)
+            return false; // invalid input; no conversion was performed
+        *pValue = val;
         return true;
     }
 

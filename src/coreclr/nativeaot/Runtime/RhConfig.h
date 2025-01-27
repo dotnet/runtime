@@ -39,14 +39,17 @@ public:
     public: // static
         static bool TryGetBooleanValue(const char* name, bool* value);
         static bool TryGetIntegerValue(const char* name, uint64_t* value, bool decimal = false);
+        static bool TryGetDoubleValue(const char* name, double* value, bool decimal = false);
 
         // Get environment variable configuration as a string. On success, the caller owns the returned string value.
         static bool TryGetStringValue(const char* name, char** value);
     };
 
     bool ReadConfigValue(_In_z_ const char* wszName, uint64_t* pValue, bool decimal = false);
+    bool ReadConfigDoubleValue(_In_z_ const char* wszName, double* pValue, bool decimal = false);
     bool ReadKnobUInt64Value(_In_z_ const char* wszName, uint64_t* pValue);
     bool ReadKnobBooleanValue(_In_z_ const char* wszName, bool* pValue);
+    bool ReadKnobDoubleValue(_In_z_ const char* wszName, double* pValue);
 
     char** GetKnobNames();
     char** GetKnobValues();
