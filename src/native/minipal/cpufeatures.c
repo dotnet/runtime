@@ -71,7 +71,7 @@ static uint32_t xmmYmmStateSupport()
       );
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
-#endif // UNIX_X86_ABI
+#endif // HOST_X86
 }
 
 #ifndef XSTATE_MASK_AVX512
