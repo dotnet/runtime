@@ -18,7 +18,8 @@ endif()
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
-  cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "" ${ARGN})
+  set(multiValueArgs DESTINATIONS)
+  cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
   if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
@@ -57,7 +58,11 @@ function(create_standalone_jit)
     clr_unknown_arch()
   endif()
 
-  add_jit(${TARGETDETAILS_TARGET})
+  if (TARGETDETAILS_DESTINATIONS STREQUAL "")
+    add_jit(${TARGETDETAILS_TARGET})
+  else()
+    add_jit(${TARGETDETAILS_TARGET} DESTINATIONS "${TARGETDETAILS_DESTINATIONS}")
+  endif()
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
   set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
@@ -559,6 +564,7 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
+# optional arguments: DESTINATIONS path
 function(add_jit jitName)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
@@ -610,7 +616,7 @@ function(add_jit jitName)
     endif()
 
     # add the install targets
-    install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
+    install_clr(TARGETS ${jitName} ${ARGN} COMPONENT alljits)
 endfunction()
 
 set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -626,38 +632,32 @@ else()
   set(TARGET_OS_NAME win)
 endif()
 
-create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
 install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
-
-if (NOT CLR_CROSS_COMPONENTS_BUILD)
-    # Install the clrjit into the sharedframework dir only when we're not doing a cross-components build.
-    # We never want to ship the cross-component JIT (it would never be used).
-    install_clr(TARGETS clrjit DESTINATIONS sharedFramework COMPONENT alljits)
-endif()
 
 # Enable profile guided optimization
 add_pgo(clrjit)
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-  create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64)
-  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64)
-  create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
+  create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
-  create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)
+  create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
 if (CLR_CMAKE_TARGET_ARCH_RISCV64)
-  create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64)
+  create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64 DESTINATIONS .)
 else()
-  create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm)
+  create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
   target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
-  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
+  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
-  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86)
+  create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 if (CLR_CMAKE_TARGET_UNIX)

@@ -13,6 +13,8 @@ add_component(debug)
 # iltools and paltests should be minimal subsets, so don't add a dependency on coreclr_misc
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME coreclr_misc)
 add_component(coreclr_misc)
+add_dependencies(jit coreclr_misc)
+add_dependencies(alljits coreclr_misc)
 add_dependencies(runtime coreclr_misc)
 
 # The runtime build requires the clrjit and iltools builds
@@ -22,3 +24,6 @@ add_dependencies(runtime jit iltools)
 add_dependencies(runtime debug)
 
 add_dependencies(runtime hosts)
+
+# The cross-components build is separate, so we don't need to add a dependency on coreclr_misc
+add_component(crosscomponents)
