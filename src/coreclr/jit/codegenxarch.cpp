@@ -402,12 +402,13 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             else
             {
                 // For section constant, the immediate will be relocatable
-                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm,
+                                          INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
             }
         }
         else
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
         }
     }
     regSet.verifyRegUsed(reg);
@@ -738,12 +739,18 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     {
         GenTree* operand = tree->gtGetOp1();
         assert(operand->isUsedFromReg());
-        regNumber operandReg = genConsumeReg(operand);
+        regNumber   operandReg = genConsumeReg(operand);
+        instruction ins        = genGetInsForOper(tree->OperGet(), targetType);
 
-        inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
-
-        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
-        inst_RV(ins, targetReg, targetType);
+        if (GetEmitter()->DoJitUseApxNDD(ins) && (targetReg != operandReg))
+        {
+            GetEmitter()->emitIns_R_R(ins, emitTypeSize(operand), targetReg, operandReg, INS_OPTS_EVEX_nd);
+        }
+        else
+        {
+            inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
+            inst_RV(ins, targetReg, targetType);
+        }
     }
 
     genProduceReg(tree);
@@ -1158,12 +1165,49 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // reg3 = reg3 op reg2
     else
     {
-        var_types op1Type = op1->TypeGet();
-        inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
-        regSet.verifyRegUsed(targetReg);
-        gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
-        dst = treeNode;
-        src = op2;
+        if (emit->DoJitUseApxNDD(ins) && !varTypeIsFloating(treeNode))
+        {
+            // TODO-xarch-apx:
+            // APX can provide optimal code gen in this case using NDD feature:
+            // reg3 = op1 op op2 without extra mov
+
+            // see if it can be optimized by inc/dec
+            if (oper == GT_ADD && op2->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
+            {
+                if (op2->IsIntegralConst(1))
+                {
+                    emit->emitIns_R_R(INS_inc, emitTypeSize(treeNode), targetReg, op1reg, INS_OPTS_EVEX_nd);
+                    genProduceReg(treeNode);
+                    return;
+                }
+                else if (op2->IsIntegralConst(-1))
+                {
+                    emit->emitIns_R_R(INS_dec, emitTypeSize(treeNode), targetReg, op1reg, INS_OPTS_EVEX_nd);
+                    genProduceReg(treeNode);
+                    return;
+                }
+            }
+
+            assert(op1reg != targetReg);
+            assert(op2reg != targetReg);
+            emit->emitInsBinary(ins, emitTypeSize(treeNode), op1, op2, targetReg);
+            if (treeNode->gtOverflowEx())
+            {
+                assert(oper == GT_ADD || oper == GT_SUB);
+                genCheckOverflow(treeNode);
+            }
+            genProduceReg(treeNode);
+            return;
+        }
+        else
+        {
+            var_types op1Type = op1->TypeGet();
+            inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
+            regSet.verifyRegUsed(targetReg);
+            gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
+            dst = treeNode;
+            src = op2;
+        }
     }
 
     // try to use an inc or dec
@@ -1182,6 +1226,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             return;
         }
     }
+
     regNumber r = emit->emitInsBinary(ins, emitTypeSize(treeNode), dst, src);
     noway_assert(r == targetReg);
 
@@ -1294,6 +1339,24 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             rmOp  = op1;
         }
         assert(regOp->isUsedFromReg());
+
+        if (emit->DoJitUseApxNDD(ins) && regOp->GetRegNum() != mulTargetReg)
+        {
+            // use NDD form to optimize this form:
+            // mov  targetReg, regOp
+            // imul targetReg, rmOp
+            // to imul targetReg, regOp rmOp.
+            emit->emitInsBinary(ins, size, regOp, rmOp, mulTargetReg);
+            if (requiresOverflowCheck)
+            {
+                // Overflow checking is only used for non-floating point types
+                noway_assert(!varTypeIsFloating(treeNode));
+
+                genCheckOverflow(treeNode);
+            }
+            genProduceReg(treeNode);
+            return;
+        }
 
         // Setup targetReg when neither of the source operands was a matching register
         inst_Mov(targetType, mulTargetReg, regOp->GetRegNum(), /* canSkip */ true);
@@ -4406,23 +4469,23 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
         if (imm == 1)
         {
             // inc [addr]
-            GetEmitter()->emitIns_AR(INS_inc, size, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR(INS_inc_no_evex, size, addr->GetRegNum(), 0);
         }
         else if (imm == -1)
         {
             // dec [addr]
-            GetEmitter()->emitIns_AR(INS_dec, size, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_AR(INS_dec_no_evex, size, addr->GetRegNum(), 0);
         }
         else
         {
             // add [addr], imm
-            GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->GetRegNum(), 0);
+            GetEmitter()->emitIns_I_AR(INS_add_no_evex, size, imm, addr->GetRegNum(), 0);
         }
     }
     else
     {
         // add [addr], data
-        GetEmitter()->emitIns_AR_R(INS_add, size, data->GetRegNum(), addr->GetRegNum(), 0);
+        GetEmitter()->emitIns_AR_R(INS_add_no_evex, size, data->GetRegNum(), addr->GetRegNum(), 0);
     }
 }
 
@@ -4449,7 +4512,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     if (node->OperIs(GT_XORR, GT_XAND))
     {
-        const instruction ins = node->OperIs(GT_XORR) ? INS_or : INS_and;
+        const instruction ins = node->OperIs(GT_XORR) ? INS_or_no_evex : INS_and_no_evex;
 
         if (node->IsUnusedValue())
         {
@@ -4841,6 +4904,24 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 genProduceReg(tree);
                 return;
             }
+
+            if (GetEmitter()->DoJitUseApxNDD(ins) && (tree->GetRegNum() != operandReg))
+            {
+                ins = genMapShiftInsToShiftByConstantIns(ins, shiftByValue);
+                // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
+                // this case might be rarely hit.
+                if (shiftByValue == 1)
+                {
+                    GetEmitter()->emitIns_R_R(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg, INS_OPTS_EVEX_nd);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg, shiftByValue,
+                                                INS_OPTS_EVEX_nd);
+                }
+                genProduceReg(tree);
+                return;
+            }
 #endif
             // First, move the operand to the destination register and
             // later on perform the shift in-place.
@@ -4886,6 +4967,15 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
         // The operand to be shifted must not be in ECX
         noway_assert(operandReg != REG_RCX);
+
+        if (GetEmitter()->DoJitUseApxNDD(ins) && (tree->GetRegNum() != operandReg))
+        {
+            // If APX is available, we can use NDD to optimize the case when LSRA failed to avoid explicit mov.
+            // this case might be rarely hit.
+            GetEmitter()->emitIns_R_R(ins, emitTypeSize(tree), tree->GetRegNum(), operandReg, INS_OPTS_EVEX_nd);
+            genProduceReg(tree);
+            return;
+        }
 
         inst_Mov(targetType, tree->GetRegNum(), operandReg, /* canSkip */ true);
         inst_RV(ins, tree->GetRegNum(), targetType);
@@ -9237,6 +9327,91 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_S(INS_neg, EA_2BYTE, 0, 0);
     theEmitter->emitIns_S(INS_not, EA_2BYTE, 0, 0);
+
+    // APX-EVEX
+
+    theEmitter->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_sub, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_or, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_and, EA_2BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_R(INS_xor, EA_1BYTE, REG_R10, REG_EAX, REG_ECX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R_I(INS_or, EA_2BYTE, REG_R10, REG_EAX, 10565, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_or, EA_8BYTE, REG_R10, REG_EAX, 10, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_S(INS_or, EA_8BYTE, REG_R10, REG_EAX, 0, 1, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_neg, EA_2BYTE, REG_R10, REG_ECX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_shl, EA_2BYTE, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R(INS_shl_1, EA_2BYTE, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_shl_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_shl_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_rcr_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_I(INS_rcl_N, EA_2BYTE, REG_R11, REG_ECX, 7, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_inc, EA_2BYTE, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R(INS_dec, EA_2BYTE, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R_R(INS_cmovo, EA_4BYTE, REG_R12, REG_R11, REG_EAX, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, REG_ECX, INS_OPTS_EVEX_nd);
+    theEmitter->emitIns_R_R_S(INS_imul, EA_4BYTE, REG_R12, REG_R11, 0, 1, INS_OPTS_EVEX_nd);
+
+    theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_sub, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_and, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_or, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_xor, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_inc, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_dec, EA_4BYTE, REG_R12, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_I(INS_add, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_sub, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_and, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_or, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_xor, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_or, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R(INS_neg, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_shl, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_shl_1, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_rcr_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_I(INS_rcl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_imul, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_I(INS_imul_15, EA_4BYTE, REG_R12, 5, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R(INS_imulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_R12, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R(INS_tzcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_lzcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_popcnt_evex, EA_8BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_S(INS_tzcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_lzcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_popcnt_evex, EA_8BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R_R(INS_add, EA_2BYTE, REG_R12, REG_R13, REG_R11,
+                              (insOpts)(INS_OPTS_EVEX_nf | INS_OPTS_EVEX_nd));
+
+    theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R_R(INS_bextr, EA_8BYTE, REG_R11, REG_R13, REG_R11, INS_OPTS_EVEX_nf);
+
+    theEmitter->emitIns_R_R(INS_blsi, EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_R(INS_blsmsk, EA_8BYTE, REG_R11, REG_R13, INS_OPTS_EVEX_nf);
+    theEmitter->emitIns_R_S(INS_blsr, EA_8BYTE, REG_R11, 0, 1);
 }
 
 void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
@@ -11434,7 +11609,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     if (barrierKind == BARRIER_FULL)
     {
         instGen(INS_lock);
-        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
+        GetEmitter()->emitIns_I_AR(INS_or_no_evex, EA_4BYTE, 0, REG_SPBASE, 0);
     }
 }
 

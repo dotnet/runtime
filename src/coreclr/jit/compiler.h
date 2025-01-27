@@ -4014,7 +4014,7 @@ public:
 
     // false: we can add new tracked variables.
     // true: We cannot add new 'tracked' variable
-    bool     lvaTrackedFixed = false; 
+    bool     lvaTrackedFixed = false;
 
     unsigned lvaCount;        // total number of locals, which includes function arguments,
                               // special arguments, IL local variables, and JIT temporary variables
@@ -6923,7 +6923,7 @@ public:
     unsigned acdCount = 0;
 
     // Get the index to use as part of the AddCodeDsc key for sharing throw blocks
-    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg); 
+    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg);
 
     struct AddCodeDscKey
     {
@@ -6931,7 +6931,7 @@ public:
         AddCodeDscKey(): acdKind(SCK_NONE), acdData(0) {}
         AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, Compiler* comp);
         AddCodeDscKey(AddCodeDsc* add);
-        
+
         static bool Equals(const AddCodeDscKey& x, const AddCodeDscKey& y)
         {
             return (x.acdData == y.acdData) && (x.acdKind == y.acdKind);
@@ -10082,12 +10082,29 @@ private:
     // JitStressEvexEncoding- Answer the question: Is Evex stress knob set
     //
     // Returns:
-    //    `true` if user requests REX2 encoding.
+    //    `true` if user requests EVEX encoding.
     //
     bool JitStressEvexEncoding() const
     {
 #ifdef DEBUG
         return JitConfig.JitStressEvexEncoding() || JitConfig.JitStressRex2Encoding();
+#endif // DEBUG
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressPromotedEvexEncoding- Answer the question: Do we force promoted EVEX encoding.
+    //
+    // Returns:
+    //    `true` if user requests promoted EVEX encoding.
+    //
+    bool DoJitStressPromotedEvexEncoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressPromotedEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        {
+            return true;
+        }
 #endif // DEBUG
 
         return false;
