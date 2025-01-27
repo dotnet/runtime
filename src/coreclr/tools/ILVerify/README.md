@@ -50,18 +50,13 @@ General instructions to build this library can be found [here](https://github.co
 
 As quick snippet which should be enough to build CoreCLR
 ```
-./build.cmd -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs -c release
+./build.cmd -s clr+libs -c release
 ```
 
 As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. For the initial build of priority=1 in release mode, run the following:
 
-```sh
-src/tests/build.(cmd/sh) release -priority=1
-```
-
-or significantly faster use only
-```
-src/tests/build.cmd release tree ilverify
+```shell
+src/tests/build.(cmd/sh) release tree ilverify
 ```
 
 It is important to not attempt to build the test project using `dotnet build` or `dotnet test`, as this will invalidate the state of the build and requires a full rebuild of both (see this [issue](https://github.com/dotnet/runtime/issues/43967)).
