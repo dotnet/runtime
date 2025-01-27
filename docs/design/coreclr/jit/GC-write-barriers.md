@@ -8,7 +8,7 @@ JIT_WriteBarrier(Object **dst, Object *ref)
     Set *dst = ref
 
     // Shadow Heap update
-    ifdef TARGET_ARM64:
+    ifdef WRITE_BARRIER_CHECK:
         if g_GCShadow != 0:
             long *shadow_dst = g_GCShadow + (dst - g_lowest_address)
             // Check shadow heap location is within shadow heap
