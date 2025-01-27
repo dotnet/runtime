@@ -141,9 +141,8 @@ PROBE_FRAME_SIZE    field 0
 ;;
 ;; GC Probe Hijack target
 ;;
-    EXTERN RhpPInvokeExceptionGuard
 
-    NESTED_ENTRY RhpGcProbeHijackWrapper, .text, RhpPInvokeExceptionGuard
+    NESTED_ENTRY RhpGcProbeHijackWrapper, .text
         HijackTargetFakeProlog
 
     LABELED_RETURN_ADDRESS RhpGcProbeHijack

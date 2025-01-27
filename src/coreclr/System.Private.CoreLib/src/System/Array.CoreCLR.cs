@@ -35,6 +35,20 @@ namespace System
             return retArray!;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstanceMDArray")]
+        private static unsafe partial void CreateInstanceMDArray(nint typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
+
+        // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe object CreateInstanceMDArray(nint typeHandle, uint dwNumArgs, void* pArgList)
+        {
+            Array? arr = null;
+            CreateInstanceMDArray(typeHandle, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
+            return arr!;
+        }
+
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             if (sourceArray == null)

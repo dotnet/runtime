@@ -31,7 +31,7 @@ namespace System
         /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
         public static RuntimeTypeHandle FromIntPtr(IntPtr value) =>
-            new RuntimeTypeHandle(value == IntPtr.Zero ? null : GetRuntimeTypeFromHandle(value));
+            new RuntimeTypeHandle(GetRuntimeTypeFromHandleMaybeNull(value));
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetRuntimeTypeFromHandleSlow")]
         private static partial void GetRuntimeTypeFromHandleSlow(
@@ -46,12 +46,24 @@ namespace System
             return typeObject!;
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeType? GetRuntimeTypeFromHandleIfExists(IntPtr handle);
-
-        private static RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
+        // implementation of CORINFO_HELP_GETSYNCFROMCLASSHANDLE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE
+        internal static unsafe RuntimeType GetRuntimeTypeFromHandle(IntPtr handle)
         {
-            return GetRuntimeTypeFromHandleIfExists(handle) ?? GetRuntimeTypeFromHandleSlow(handle);
+            TypeHandle h = new((void*)handle);
+            return (h.IsTypeDesc
+                ? h.AsTypeDesc()->ExposedClassObject
+                : h.AsMethodTable()->AuxiliaryData->ExposedClassObject) ?? GetRuntimeTypeFromHandleSlow(handle);
+        }
+
+        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
+        internal static RuntimeType? GetRuntimeTypeFromHandleMaybeNull(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            return GetRuntimeTypeFromHandle(handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -904,12 +916,6 @@ namespace System
             m_value = methodHandleValue;
         }
 
-        public RuntimeMethodInfoStub(IntPtr methodHandleValue, object keepalive)
-        {
-            m_keepalive = keepalive;
-            m_value = new RuntimeMethodHandleInternal(methodHandleValue);
-        }
-
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
@@ -927,6 +933,16 @@ namespace System
         public RuntimeMethodHandleInternal m_value;
 
         RuntimeMethodHandleInternal IRuntimeMethodInfo.Value => m_value;
+
+        // implementation of CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object FromPtr(IntPtr pMD)
+        {
+            RuntimeMethodHandleInternal handle = new(pMD);
+            return new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
+        }
     }
 
     internal interface IRuntimeMethodInfo
@@ -1385,6 +1401,16 @@ namespace System
 #pragma warning restore 414, 169, IDE0044
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
+
+        // implementation of CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static object FromPtr(IntPtr pFD)
+        {
+            RuntimeFieldHandleInternal handle = new(pFD);
+            return new RuntimeFieldInfoStub(handle, RuntimeFieldHandle.GetLoaderAllocator(handle));
+        }
     }
 
     [NonVersionable]
@@ -1657,6 +1683,34 @@ namespace System
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetEnCFieldAddr")]
+        private static partial void* GetEnCFieldAddr(ObjectHandleOnStack tgt, void* pFD);
+
+        // implementation of CORINFO_HELP_GETFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetFieldAddr(object tgt, void* pFD)
+        {
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref tgt), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
+        }
+
+        // implementation of CORINFO_HELP_GETSTATICFIELDADDR
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe void* GetStaticFieldAddr(void* pFD)
+        {
+            object? nullTarget = null;
+            void* addr = GetEnCFieldAddr(ObjectHandleOnStack.Create(ref nullTarget), pFD);
+            if (addr == null)
+                throw new NullReferenceException();
+            return addr;
         }
     }
 

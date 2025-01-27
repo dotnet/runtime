@@ -988,7 +988,10 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.method  = CastHandle(method);
     key.context = CastHandle(context);
 
-    DWORD value = InitClass->Get(key);
+    DWORD value =
+        LookupByKeyOrMiss(InitClass, key, ": fld-%016" PRIX64 " meth-%016" PRIX64 " con-%016" PRIX64,
+                          key.field, key.method, key.context);
+
     DEBUG_REP(dmpInitClass(key, value));
     CorInfoInitClassResult result = (CorInfoInitClassResult)value;
     return result;
@@ -1156,8 +1159,6 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_ALT_JIT";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
         return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
-    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MAKEFINALCODE:
-        return "CORJIT_FLAG_MAKEFINALCODE";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN:
         return "CORJIT_FLAG_READYTORUN";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:

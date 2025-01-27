@@ -12,7 +12,7 @@ Module Name:
 
 Abstract:
 
-    Wrapper to facilitate multiple JITcompiler support in the COM+ Runtime
+    Wrapper to facilitate multiple JITcompiler support in the CLR
 
     The ExecutionManager is responsible for managing the RangeSections.
     Given an IP, it can find the RangeSection which holds that IP.
