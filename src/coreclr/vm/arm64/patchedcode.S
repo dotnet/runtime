@@ -188,10 +188,10 @@ LOCAL_LABEL(CheckCardTableBounds):
     lsr w17, w14, 8
     and w17, w17, 7
     movz w15, 1
-    lsl w17, w15, w17  // w17 = 1 << (RHS >> 8 && 7)
+    lsl w17, w15, w17  // w17 = 1 << (LHS >> 8 && 7)
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
-    ldrb w12, [x15]  // w12 = [(RHS >> 11) + g_card_table]
+    ldrb w12, [x15]  // w12 = [(LHS >> 11) + g_card_table]
     tst  w12, w17
     bne  LOCAL_LABEL(Exit)
 
@@ -206,7 +206,7 @@ LOCAL_LABEL(CheckCardTable):
     // Check if we need to update the card table
     ldr  x12, LOCAL_LABEL(wbs_card_table)
     add  x15, x12, x14, lsr #11
-    ldrb w12, [x15]  // w12 = [(RHS >> 11) + g_card_table]
+    ldrb w12, [x15]  // w12 = [(LHS >> 11) + g_card_table]
     cmp  x12, 0xFF
     beq  LOCAL_LABEL(Exit)
 
