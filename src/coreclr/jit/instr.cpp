@@ -362,6 +362,31 @@ bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
 
     return (instInfo[ins] & INS_Flags_EmbeddedBroadcastSupported) != 0;
 }
+
+/*****************************************************************************
+ *
+ *  Returns the value of the given instruction's input size attribute, in bytes.
+ */
+
+unsigned CodeGenInterface::instInputSize(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+
+    insFlags inputSize = static_cast<insFlags>((instInfo[ins] & Input_Mask));
+    switch (inputSize)
+    {
+        case Input_8Bit:
+            return 1;
+        case Input_16Bit:
+            return 2;
+        case Input_32Bit:
+            return 4;
+        case Input_64Bit:
+            return 8;
+        default:
+            unreached();
+    }
+}
 #endif // TARGET_XARCH
 
 /*****************************************************************************
@@ -835,11 +860,12 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
+                case NI_SSE3_LoadAndDuplicateToVector128:
                 case NI_AVX_BroadcastScalarToVector128:
                 case NI_AVX_BroadcastScalarToVector256:
                 {
-                    // we have the assumption that AVX_BroadcastScalarToVector*
-                    // only take the memory address as the operand.
+                    // we have the assumption that these intrinsics
+                    // only take a memory address as the operand.
                     assert(hwintrinsic->isContained());
                     assert(hwintrinsic->OperIsMemoryLoad());
                     assert(hwintrinsic->GetOperandCount() == 1);
@@ -871,16 +897,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // If broadcast node is contained, should mean that we have some forms like
                     // Broadcast -> CreateScalarUnsafe -> Scalar.
                     // If so, directly emit scalar.
-                    // In the codes below, we specially handle the `Broadcast -> CNS_INT` form and
+                    // In the code below, we specially handle the `Broadcast -> CNS_INT/CNS_LNG` form and
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_CNS_INT))
+                    if (hwintrinsicChild->OperIs(GT_CNS_INT, GT_CNS_LNG))
                     {
-                        // a special case is when the operand of CreateScalarUnsafe is in integer type,
-                        // CreateScalarUnsafe node will be fold, so we directly match a pattern of
-                        // broadcast -> LCL_VAR(TYP_(U)INT)
-                        ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
+                        // a special case is when the operand of CreateScalarUnsafe is an integer type,
+                        // CreateScalarUnsafe node will be folded, so we directly match a pattern of
+                        // broadcast -> LCL_VAR(TYP_(U)INT/LONG)
+                        INT64          scalarValue = hwintrinsicChild->AsIntConCommon()->IntegralValue();
                         UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
                                                                          genTypeSize(simdBaseType), simdBaseType);
                         return OperandDesc(compiler->eeFindJitDataOffs(cnum));
@@ -893,6 +919,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
                     break;
                 }
+
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:

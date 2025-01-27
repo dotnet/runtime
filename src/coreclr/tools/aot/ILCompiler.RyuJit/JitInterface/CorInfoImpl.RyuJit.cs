@@ -833,8 +833,11 @@ namespace Internal.JitInterface
 
                 if (caller.IsNoInlining)
                 {
-                    // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
                     // to mean "I want to always see this method in stacktrace")
+                    //
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
                     result = false;
                 }
             }
@@ -1991,12 +1994,12 @@ namespace Internal.JitInterface
                 //  m_RIP (1)
                 //  m_FramePointer (1)
                 //  m_pThread
-                //  m_Flags + align (no align for ARM64/LoongArch64 that has 64 bit m_Flags)
+                //  m_Flags + align (no align for ARM64/LoongArch64/RiscV64 that has 64 bit m_Flags)
                 //  m_PreservedRegs - RSP / R9 (2)
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
                 //
-                // (1) On ARM32/ARM64/LoongArch64 the order of m_RIP and m_FramePointer is reverse
+                // (1) On ARM32/ARM64/LoongArch64/RiscV64 the order of m_RIP and m_FramePointer is reverse
                 // (2) R9 is saved for ARM32 because it needs to be preserved for methods with stackalloc
                 int size = 5 * this.PointerSize;
 
