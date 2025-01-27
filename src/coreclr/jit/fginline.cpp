@@ -1323,7 +1323,8 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // (This could happen for example for a BBJ_THROW block fall through a BBJ_RETURN block which
     // causes the BBJ_RETURN block not to be imported at all.)
     // Fail the inlining attempt
-    if ((inlineCandidateInfo->fncRetType != TYP_VOID) && (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
+    if ((inlineCandidateInfo->methInfo.args.retType != CORINFO_TYPE_VOID) &&
+        (inlineCandidateInfo->retExpr->gtSubstExpr == nullptr))
     {
 #ifdef DEBUG
         if (verbose)
@@ -1514,7 +1515,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert(!block->hasTryIndex());
             noway_assert(!block->hasHndIndex());
             block->copyEHRegion(iciBlock);
-            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP);
+            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
 
             // Update block nums appropriately
             //
