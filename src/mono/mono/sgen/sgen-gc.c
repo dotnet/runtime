@@ -2733,32 +2733,9 @@ gc_pump_callback (void)
 }
 #endif
 
-#if defined(HOST_BROWSER) || defined(HOST_WASI)
-extern gboolean mono_wasm_enable_gc;
-#endif
-
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
-	if (!mono_wasm_enable_gc) {
-		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
-		//we ignore forced_serial
-
-		//There's a window for racing where we're executing other bg jobs before the GC, they trigger a GC request and it overrides this one.
-		//I belive this case to be benign as it will, in the worst case, upgrade a minor to a major collection.
-		if (gc_request.generation_to_collect <= generation_to_collect) {
-			gc_request.requested_size = requested_size;
-			gc_request.generation_to_collect = generation_to_collect;
-			gc_request.reason = reason;
-			sgen_client_schedule_background_job (gc_pump_callback);
-		}
-
-		sgen_degraded_mode = 1; //enable degraded mode so allocation can continue
-		return;
-	}
-#endif
-
 	sgen_perform_collection_inner (requested_size, generation_to_collect, reason, forced_serial, stw);
 }
 /*

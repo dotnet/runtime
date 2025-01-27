@@ -136,8 +136,11 @@ namespace Microsoft.Win32.SafeHandles
                 int errorCode = Marshal.GetLastPInvokeError();
 
                 // Only throw for errors that indicate there is not enough space.
-                if (errorCode == Interop.Errors.ERROR_DISK_FULL ||
-                    errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
+                // SetFileInformationByHandle fails with ERROR_DISK_FULL in certain cases when the size is disallowed by filesystem,
+                // such as >4GB on FAT32 volume. We cannot distinguish them currently.
+                if (errorCode is Interop.Errors.ERROR_DISK_FULL or
+                    Interop.Errors.ERROR_FILE_TOO_LARGE or
+                    Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
                     fileHandle.Dispose();
 
@@ -147,7 +150,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL
                                                         ? SR.IO_DiskFull_Path_AllocationSize
                                                         : SR.IO_FileTooLarge_Path_AllocationSize,
-                                            fullPath, preallocationSize));
+                                            fullPath, preallocationSize), Win32Marshal.MakeHRFromErrorCode(errorCode));
                 }
             }
         }

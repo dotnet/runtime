@@ -96,6 +96,8 @@ public class AndroidAppBuilderTask : Task
 
     public bool StripDebugSymbols { get; set; }
 
+    public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+
     /// <summary>
     /// Path to a custom MainActivity.java with custom UI
     /// A default one is used if it's not set
@@ -138,6 +140,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.IsLibraryMode = IsLibraryMode;
         apkBuilder.NativeDependencies = NativeDependencies;
         apkBuilder.ExtraLinkerArguments = ExtraLinkerArguments;
+        apkBuilder.RuntimeFlavor = RuntimeFlavor;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(RuntimeIdentifier, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;

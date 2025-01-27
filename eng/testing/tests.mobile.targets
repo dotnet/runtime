@@ -24,24 +24,20 @@
     <DotnetPgoToolPath>$([MSBuild]::NormalizePath('$(DotnetPgoToolDir)', 'dotnet-pgo'))</DotnetPgoToolPath>
   </PropertyGroup>
 
-  <!-- When tests are built on Helix, we don't want to invoke ILLink on build machines -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' != 'true'">
+  <!-- Invoke ILLink on build machines to match ILLink features -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
 
     <!-- Reduce library test app size by trimming framework library features  -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>
     <EnableUnsafeUTF7Encoding Condition="'$(EnableUnsafeUTF7Encoding)' == ''">false</EnableUnsafeUTF7Encoding>
-    <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">false</EventSourceSupport>
-    <HttpActivityPropagationSupport Condition="'$(HttpActivityPropagationSupport)' == ''">false</HttpActivityPropagationSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
-    <UseNativeHttpHandler Condition="'$(UseNativeHttpHandler)' == ''">false</UseNativeHttpHandler>
   </PropertyGroup>
 
-  <!-- When tests are built on Helix, override default trimming switches  -->
-  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(BuildTestsOnHelix)' == 'true'">
+  <!-- Override default trimming switches for Apple mobile -->
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(TargetsAppleMobile)' == 'true'">
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == '' and '$(MonoForceInterpreter)' != 'true'">false</DynamicCodeSupport>
     <_DefaultValueAttributeSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DefaultValueAttributeSupport>
     <_DesignerHostSupport Condition="'$(OverrideDefaultValueAndDesignerHostSupport)' == 'true'">true</_DesignerHostSupport>

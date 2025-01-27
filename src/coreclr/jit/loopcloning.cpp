@@ -1854,7 +1854,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
         return false;
     }
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
     INDEBUG(const char* reason);
 
@@ -2008,24 +2008,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     }
 #endif
 
-    bool cloneLoopsWithEH = false;
+    bool cloneLoopsWithEH = true;
     INDEBUG(cloneLoopsWithEH = (JitConfig.JitCloneLoopsWithEH() > 0);)
-
-    // Determine the depth of the loop, so we can properly weight blocks added (outside the cloned loop blocks).
-    unsigned depth         = loop->GetDepth();
-    weight_t ambientWeight = 1;
-    for (unsigned j = 0; j < depth; j++)
-    {
-        weight_t lastWeight = ambientWeight;
-        ambientWeight *= BB_LOOP_WEIGHT_SCALE;
-        assert(ambientWeight > lastWeight);
-    }
 
     assert(loop->EntryEdges().size() == 1);
     BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-    // The ambient weight might be higher than we computed above. Be safe by
-    // taking the max with the head block's weight.
-    ambientWeight = max(ambientWeight, preheader->bbWeight);
 
     // We're going to transform this loop:
     //
@@ -2043,8 +2030,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     BasicBlock* fastPreheader = fgNewBBafter(BBJ_ALWAYS, preheader, /*extendRegion*/ true);
     JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", fastPreheader->bbNum, preheader->bbNum);
-    fastPreheader->bbWeight = preheader->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    fastPreheader->CopyFlags(preheader, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    fastPreheader->inheritWeight(preheader);
 
     assert(preheader->KindIs(BBJ_ALWAYS));
     assert(preheader->TargetIs(loop->GetHeader()));
@@ -2067,8 +2053,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomRedirBlk [BBJ_ALWAYS --> bottomNext]
     // ... slow cloned loop (not yet inserted)
     // bottomNext
-    BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
-    BasicBlock* newPred = bottom;
+    BasicBlock* bottom              = loop->GetLexicallyBottomMostBlock();
+    BasicBlock* beforeSlowPreheader = bottom;
+
+    // Ensure the slow loop preheader ends up in the same EH region
+    // as the preheader.
+    //
+    bool           inTry           = false;
+    unsigned const enclosingRegion = ehGetMostNestedRegionIndex(preheader, &inTry);
+    if (!BasicBlock::sameEHRegion(beforeSlowPreheader, preheader))
+    {
+        beforeSlowPreheader = fgFindInsertPoint(enclosingRegion, inTry, bottom, /* endBlk */ nullptr,
+                                                /* nearBlk */ bottom, /* jumpBlk */ nullptr, /* runRarely */ false);
+    }
 
     // Create a new preheader for the slow loop immediately before the slow
     // loop itself. All failed conditions will branch to the slow preheader.
@@ -2078,22 +2075,19 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // The slow preheader needs to go in the same EH region as the preheader.
     //
     JITDUMP("Create unique preheader for slow path loop\n");
-    const bool  extendRegion  = BasicBlock::sameEHRegion(bottom, preheader);
-    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, newPred, extendRegion);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, newPred->bbNum);
-    slowPreheader->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowPreheader->CopyFlags(newPred, (BBF_PROF_WEIGHT | BBF_RUN_RARELY));
+    const bool  extendRegion  = BasicBlock::sameEHRegion(beforeSlowPreheader, preheader);
+    BasicBlock* slowPreheader = fgNewBBafter(BBJ_ALWAYS, beforeSlowPreheader, extendRegion);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowPreheader->bbNum, beforeSlowPreheader->bbNum);
+    slowPreheader->inheritWeight(preheader);
     slowPreheader->scaleBBWeight(LoopCloneContext::slowPathWeightScaleFactor);
 
-    // If we didn't extend the region above (because the last loop
+    // If we didn't extend the region above (because the beforeSlowPreheader
     // block was in some enclosed EH region), put the slow preheader
     // into the appropriate region, and make appropriate extent updates.
     //
     if (!extendRegion)
     {
         slowPreheader->copyEHRegion(preheader);
-        bool     isTry           = false;
-        unsigned enclosingRegion = ehGetMostNestedRegionIndex(slowPreheader, &isTry);
 
         if (enclosingRegion != 0)
         {
@@ -2111,11 +2105,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
             }
         }
     }
-    newPred = slowPreheader;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
-
+    //
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
+    BasicBlock*      newPred  = slowPreheader;
 
     if (cloneLoopsWithEH)
     {
@@ -3081,6 +3075,13 @@ PhaseStatus Compiler::optCloneLoops()
             fgInvalidateDfsTree();
             m_dfsTree = fgComputeDfs();
             m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        if (fgIsUsingProfileWeights())
+        {
+            JITDUMP("optCloneLoops: Profile data needs to be propagated through new loops. Data %s inconsistent.\n",
+                    fgPgoConsistent ? "is now" : "was already");
+            fgPgoConsistent = false;
         }
     }
 
