@@ -53226,15 +53226,16 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 0;
+    gcDacVars->minor_version_number = 4;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
         gcDacVars->card_table_info_size = sizeof(card_table_info);
     }
 
+    g_build_variant = 0;
 #ifdef USE_REGIONS
-    gcDacVars->minor_version_number |= 1;
+    g_build_variant |= build_variant_use_region;
     if (v2)
     {
         gcDacVars->count_free_region_kinds = count_free_region_kinds;
@@ -53243,10 +53244,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     }
 #endif //USE_REGIONS
 #ifndef BACKGROUND_GC
-    gcDacVars->minor_version_number |= 2;
+    g_build_variant |= build_variant_background_gc;
 #endif //!BACKGROUND_GC
 #ifdef DYNAMIC_HEAP_COUNT
-    gcDacVars->minor_version_number |= 4;
+    g_build_variant |= build_variant_dynamic_heap_count;
 #endif //DYNAMIC_HEAP_COUNT
     gcDacVars->built_with_svr = &g_built_with_svr_gc;
     gcDacVars->build_variant = &g_build_variant;
