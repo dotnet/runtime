@@ -10981,7 +10981,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             // Make sure the type matches the original call.
 
             var_types returnType       = genActualType(op2->gtType);
-            var_types originalCallType = inlCandInfo->fncRetType;
+            var_types originalCallType = genActualType(JITtype2varType(inlCandInfo->methInfo.args.retType));
             if ((returnType != originalCallType) && (originalCallType == TYP_STRUCT))
             {
                 originalCallType = impNormStructType(inlCandInfo->methInfo.args.retTypeClass);
