@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -103,6 +103,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("System.Int32\\[\\]", "System.Int32[]")]
         [InlineData("System.Int32\\", "System.Int32\\")]
         [InlineData("System.Int32\\\\[]", "System.Int32\\[]")]
+        [InlineData("System\\.Int32", "System.Int32")]
         public void Unescape(string input, string expectedUnescaped)
             => Assert.Equal(expectedUnescaped, TypeName.Unescape(input));
 
@@ -155,7 +156,7 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(expectedNodeCount, parsed.GetNodeCount());
             validate(parsed);
 
-            // Specified MaxNodes is less than the actual node count 
+            // Specified MaxNodes is less than the actual node count
             TypeNameParseOptions less = new()
             {
                 MaxNodes = expectedNodeCount - 1
