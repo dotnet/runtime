@@ -72,7 +72,7 @@ extends:
           - windows_arm64
           variables:
           - name: PublishAllPackages
-            value: $[eq(variables.targetRid, 'win-x64')]
+            value: $[and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64'))]
           jobParameters:
             templatePath: 'templates-official'
             buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
@@ -301,7 +301,7 @@ extends:
           jobParameters:
             templatePath: 'templates-official'
             buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -publish /p:AssetManifestFileName=$(_AssetManifestName).xml
-                        /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true 
+                        /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: Mono_LLVMAOT
             runtimeVariant: LLVMAOT
             isOfficialBuild: ${{ variables.isOfficialBuild }}

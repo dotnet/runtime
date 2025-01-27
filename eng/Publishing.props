@@ -47,9 +47,8 @@
   <ItemGroup>
     <ThisRidPackages Include="$(ArtifactsPackagesDir)**\*.$(PackageRID).*.nupkg" />
     <OtherPackages Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(RidSpecificPackages)" />
-    
+
     <PackagesToPublishFromThisJob Include="@(ThisRidPackages)" />
-    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Condition="'$(PublishAllPackages)' == 'true' or '$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageRID)' == 'ios-arm64'">
@@ -74,8 +73,13 @@
                $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
                $(ArtifactsPackagesDir)**\Microsoft.NET.Workload.Mono.ToolChain.*.nupkg" />
   </ItemGroup>
+  <ItemGroup Condition="$(PackageRID.StartsWith('win-'))">
+    <PackagesToPublishFromThisJob
+      Include="VS.Redist.Common.NETCore.*.nupkg" />
+  </ItemGroup>
 
   <ItemGroup>
+    <PackagesToPublishFromThisJob Include="@(OtherPackages)" Exclude="@(PackagesToPublishFromThisJob)" Condition="'$(PublishAllPackages)' == 'true' or '$(DotNetBuildSourceOnly)' == 'true'" />
     <PackagesToSkipFromThisJob Include="@(Artifact)" Exclude="@(PackagesToPublishFromThisJob)" />
     <!--
       In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.
