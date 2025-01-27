@@ -91,7 +91,7 @@ namespace System.Runtime.Loader.Tests
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            public void CreateContextAndLoadAssembly(int contextIndex = 0)
+            public void CreateContextAndLoadAssembly(int contextIndex = 0, string testClassName = "TestClass")
             {
                 var asmName = new AssemblyName(TestAssembly);
                 _contexts[contextIndex] = new ResourceAssemblyLoadContext(true) { LoadBy = LoadBy.Path };
@@ -99,7 +99,7 @@ namespace System.Runtime.Loader.Tests
                 Assembly asm = _contexts[contextIndex].LoadFromAssemblyName(asmName);
 
                 Assert.NotNull(asm);
-                _testClassTypes[contextIndex] = asm.DefinedTypes.FirstOrDefault(t => t.Name == "TestClass");
+                _testClassTypes[contextIndex] = asm.DefinedTypes.FirstOrDefault(t => t.Name == testClassName);
                 Assert.NotNull(_testClassTypes[contextIndex]);
 
                 _checker.SetAssemblyLoadContext(contextIndex, _contexts[contextIndex]);
@@ -447,6 +447,70 @@ namespace System.Runtime.Loader.Tests
 
             test.ReleaseInstance();
 
+            test.CheckContextUnloaded2();
+
+            test.UnloadAndClearContext(0);
+            test.CheckContextUnloaded1();
+        }
+
+        class TwoCollectibleWithOneAssemblyAndOneInstanceReferencingAnotherThroughGenericStaticTest : TestBase
+        {
+            public TwoCollectibleWithOneAssemblyAndOneInstanceReferencingAnotherThroughGenericStaticTest() : base(2)
+            {
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void Execute()
+            {
+                // Make an instance in ALC2 and assign it to a static field in a generic type declared in ALC1,
+                // but with a genric parameter in ALC2 and thus instantiated in ALC2.
+                Type type = _testClassTypes[0].MakeGenericType(new [] {_testClassTypes[1]});
+                FieldInfo field = type.GetField("StaticObjectRef");
+                Assert.NotNull(field);
+
+                object instance = Activator.CreateInstance(_testClassTypes[1]);
+                field.SetValue(null, instance);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void CheckNotUnloaded()
+            {
+                // None of the AssemblyLoadContexts should be unloaded
+                _checker.GcAndCheck(0);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void CheckContextUnloaded1()
+            {
+                // The AssemblyLoadContext should now be unloaded
+                _checker.GcAndCheck();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public void CheckContextUnloaded2()
+            {
+                // The AssemblyLoadContext should now be unloaded
+                _checker.GcAndCheck(1);
+            }
+        }
+
+        // Test may fail when running on a different runtime
+        [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15142", TestRuntimes.Mono)]
+        public static void Unload_TwoCollectibleWithOneAssemblyAndOneInstanceReferencingAnotherThroughGenericStatic()
+        {
+            // We create 2 collectible ALC, load one assembly in each, create one instance in the ALC2,
+            // reference it from ALC1 to ALC2 using a generic static variable.
+            // unload ALC2 -> check that instance is not there and we receive one unload
+            // unload ALC1 -> we should receive 1 unload
+
+            var test = new TwoCollectibleWithOneAssemblyAndOneInstanceReferencingAnotherThroughGenericStaticTest();
+            test.CreateContextAndLoadAssembly(0, "GenericTestClass`1");
+            test.CreateContextAndLoadAssembly(1);
+
+            test.Execute();
+
+            test.UnloadAndClearContext(1);
             test.CheckContextUnloaded2();
 
             test.UnloadAndClearContext(0);
