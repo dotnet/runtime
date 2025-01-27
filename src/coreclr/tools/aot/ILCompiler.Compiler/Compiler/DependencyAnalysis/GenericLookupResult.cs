@@ -860,20 +860,28 @@ namespace ILCompiler.DependencyAnalysis
                 if (instantiatedConstrainedMethod.Signature.IsStatic)
                 {
                     implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(instantiatedConstrainedMethod);
-                    if (implMethod == null)
-                    {
-                        DefaultInterfaceMethodResolution resolution =
-                            instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
-                        if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
-                        {
-                            // TODO: diamond/reabstraction
-                            ThrowHelper.ThrowInvalidProgramException();
-                        }
-                    }
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    implMethod = instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToVirtualMethodOnType(instantiatedConstrainedMethod);
+
+                    // TODO: why this doesn't return an instantiated method?
+                    if (implMethod != null && implMethod.HasInstantiation)
+                    {
+                        Debug.Assert(implMethod.IsGenericMethodDefinition);
+                        implMethod = implMethod.MakeInstantiatedMethod(instantiatedConstrainedMethod.Instantiation);
+                    }
+                }
+
+                if (implMethod == null)
+                {
+                    DefaultInterfaceMethodResolution resolution =
+                        instantiatedConstraintType.GetClosestDefType().ResolveVariantInterfaceMethodToDefaultImplementationOnType(instantiatedConstrainedMethod, out implMethod);
+                    if (resolution != DefaultInterfaceMethodResolution.DefaultImplementation)
+                    {
+                        // TODO: diamond/reabstraction
+                        ThrowHelper.ThrowInvalidProgramException();
+                    }
                 }
             }
             else
@@ -887,21 +895,10 @@ namespace ILCompiler.DependencyAnalysis
             factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
 
             // TODO-SIZE: this is address taken only in the delegate target case
-            if (implMethod.Signature.IsStatic)
-            {
-                if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
-                    return factory.ExactCallableAddressTakenAddress(implMethod);
-                else
-                    return factory.AddressTakenMethodEntrypoint(implMethod);
-            }
-            else if (implMethod.HasInstantiation)
-            {
+            if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
                 return factory.ExactCallableAddressTakenAddress(implMethod);
-            }
             else
-            {
-                return factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
-            }
+                return factory.AddressTakenMethodEntrypoint(implMethod);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
