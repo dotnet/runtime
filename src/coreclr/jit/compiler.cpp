@@ -2222,13 +2222,6 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
 
-#if defined(UNIX_X86_ABI)
-    // We don't support saving XState context on linux-x86 platforms yet, so we
-    // need to disable any AVX support that uses the extended registers.
-    instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
-    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
-#endif // UNIX_X86_ABI
-
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
