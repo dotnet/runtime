@@ -10220,13 +10220,13 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 // Arguments:
 //    tree - Tree to check the side effects on
 //    subTree - The subtree to be the first executed effect
-//    beforeMorph - Whether the run is before morph, in which case we need to check
-//                  lvHasLdAddrOp as we don't have valid GTF_GLOB_REF yet
+//    early - Whether the run is early, in which case we need to check lvHasLdAddrOp as
+//            we don't have valid GTF_GLOB_REF yet
 //
 // Returns:
 //    A boolean that indicates whether the subtree is the first executed effect in a tree.
 //
-bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool beforeMorph)
+bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool early)
 {
     struct Visitor : GenTreeVisitor<Visitor>
     {
@@ -10279,7 +10279,7 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
         bool     m_checkLocal;
     };
 
-    Visitor visitor(this, subTree, beforeMorph);
+    Visitor visitor(this, subTree, early);
     visitor.WalkTree(&tree, nullptr);
     return visitor.Result;
 }

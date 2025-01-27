@@ -3727,7 +3727,7 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
-    bool gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool beforeMorph = false);
+    bool gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool early = false);
 
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
