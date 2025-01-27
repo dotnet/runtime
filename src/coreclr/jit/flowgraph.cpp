@@ -2880,6 +2880,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
+    weight_t incomingWeight = BB_ZERO_WEIGHT;
     for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
@@ -2893,6 +2894,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 {
                     noway_assert(predBlock->TargetIs(block));
                     fgRedirectTargetEdge(predBlock, newHead);
+                    incomingWeight += predBlock->bbWeight;
                     break;
                 }
 
@@ -2909,6 +2911,12 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     FlowEdge* const newEdge = fgAddRefPred(block, newHead);
     newHead->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     assert(newHead->JumpsToNext());
+
+    // Update flow into the header block
+    if (block->hasProfileWeight())
+    {
+        newHead->setBBProfileWeight(incomingWeight);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2991,6 +2999,18 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(UsesFunclets());
     assert(!fgFuncletsCreated);
+
+    // Allocate the PSPSym, if needed. PSPSym is not used by the NativeAOT ABI
+    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        if (ehNeedsPSPSym())
+        {
+            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
+            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
+            lclPSPSym->lvType    = TYP_I_IMPL;
+            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
+    }
 
     fgCreateFuncletPrologBlocks();
 
@@ -4394,6 +4414,18 @@ BasicBlock* FlowGraphNaturalLoop::GetPreheader() const
     }
 
     return preheader;
+}
+
+//------------------------------------------------------------------------
+// SetEntryEdge: Set the entry edge of a loop
+//
+// Arguments:
+//   entryEdge - The new entry edge
+//
+void FlowGraphNaturalLoop::SetEntryEdge(FlowEdge* entryEdge)
+{
+    m_entryEdges.clear();
+    m_entryEdges.push_back(entryEdge);
 }
 
 //------------------------------------------------------------------------
@@ -6215,7 +6247,7 @@ void FlowGraphNaturalLoop::DuplicateWithEH(BasicBlock** insertAfter, BlockToBloc
         //
         if (comp->bbIsTryBeg(blk))
         {
-            CloneTryInfo info(comp);
+            CloneTryInfo info(traits);
             info.Map          = map;
             info.AddEdges     = false;
             info.ProfileScale = weightScale;

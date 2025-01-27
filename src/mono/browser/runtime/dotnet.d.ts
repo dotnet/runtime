@@ -375,7 +375,7 @@ type SingleAssetBehaviors =
 /**
  * The debugging symbols
  */
- | "symbols"
+ | "symbols";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.

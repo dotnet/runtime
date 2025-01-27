@@ -936,8 +936,8 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
             iParam++;
         }
 
-        // Make sure that there are not more param def tokens then there are COM+ arguments.
-        _ASSERTE( usSequence == (USHORT)-1 && "There are more parameter information tokens then there are COM+ arguments" );
+        // Make sure that there are not more param def tokens then there are CLR arguments.
+        _ASSERTE( usSequence == (USHORT)-1 && "There are more parameter information tokens then there are CLR arguments" );
     }
 
     //
@@ -1826,7 +1826,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         }
     }
 
-    // Convert the return COM+ object to an OLE variant.
+    // Convert the return CLR object to an OLE variant.
     if (pVarRes)
         MarshalReturnValueManagedToNative(pDispMemberInfo, &pObjs->RetVal, pVarRes);
 }
