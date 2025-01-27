@@ -1267,8 +1267,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     INTERFACE_DISPATCH_CACHED_OR_VSD(
         InterfaceDispatchCell * pCell = (InterfaceDispatchCell *)ret;
         pCell->m_pStub = target;
-        pCell->m_pCache = InterfaceDispatchCell::InitialDispatchCacheCellValue();
-        pCell->m_token = token;
+        pCell->m_pCache = DispatchToken::ToCachedInterfaceDispatchToken(token);
         ret = (BYTE *)pCell;
         ,
         *((PCODE *)ret) = target;
@@ -1584,7 +1583,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
 
-    DispatchToken representativeToken(indirectionCell->m_token);
+    DispatchToken representativeToken(indirectionCell->GetDispatchCellInfo().Token);
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
@@ -1600,7 +1599,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
-    target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, indirectionCell->m_token);
+    target = CachedInterfaceDispatchResolveWorker(&callSite, protectedObj, representativeToken);
 
 #if _DEBUG
     if (pSDFrame->GetGCRefMap() != NULL)
