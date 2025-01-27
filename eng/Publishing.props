@@ -68,19 +68,22 @@
   </ItemGroup>
   <ItemGroup Condition="'$(PackageRID)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
     <PackagesToPublishFromThisJob
-      Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
+      Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NETCore.BrowserDebugHost.Transport.*.nupkg;
+               $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Sdk.*.nupkg;
                $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Templates.net10.*.nupkg;
                $(ArtifactsPackagesDir)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
                $(ArtifactsPackagesDir)**\Microsoft.NET.Workload.Mono.ToolChain.*.nupkg" />
   </ItemGroup>
   <ItemGroup Condition="$(PackageRID.StartsWith('win-'))">
     <PackagesToPublishFromThisJob
-      Include="VS.Redist.Common.NETCore.*.nupkg" />
+      Include="VS.Redist.Common.NetCore.*.nupkg" />
   </ItemGroup>
 
   <ItemGroup>
     <PackagesToPublishFromThisJob Include="@(OtherPackages)" Exclude="@(PackagesToPublishFromThisJob)" Condition="'$(PublishAllPackages)' == 'true' or '$(DotNetBuildSourceOnly)' == 'true'" />
-    <PackagesToSkipFromThisJob Include="@(Artifact)" Exclude="@(PackagesToPublishFromThisJob)" />
+    <PackagesToSkipFromThisJob Include="$(ArtifactsPackagesDir)**\*.nupkg" Exclude="@(PackagesToPublishFromThisJob)" />
     <!--
       In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.
       In VMR builds, we need to publish them for upstack jobs to consume.
