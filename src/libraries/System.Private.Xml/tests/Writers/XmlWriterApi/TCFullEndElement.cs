@@ -7,6 +7,8 @@ using System.IO;
 using System.Text;
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Xml.XmlWriterApiTests
