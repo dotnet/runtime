@@ -250,10 +250,15 @@ protected:
     // Parameter `target` gives a label to jump to, which is the throw block if
     // `isInline == false`, else the continuation.
     template <typename throwCodeFn>
-    void genJumpToThrowHlpBlk(SpecialCodeKind codeKind, throwCodeFn emitJumpCode)
+    void genJumpToThrowHlpBlk(SpecialCodeKind codeKind, throwCodeFn emitJumpCode, BasicBlock* throwBlock = nullptr)
     {
-        BasicBlock* target = genGetThrowHelper(codeKind);
-        if (target)
+        if (!throwBlock)
+        {
+            // If caller didn't supply a target block, then try to find a helper block.
+            throwBlock = genGetThrowHelper(codeKind);
+        }
+
+        if (throwBlock)
         {
             // check:
             //   if (checkPassed)
@@ -261,7 +266,7 @@ protected:
             //   ...
             // throw:
             //   throw();
-            emitJumpCode(target, false);
+            emitJumpCode(throwBlock, false);
         }
         else
         {
