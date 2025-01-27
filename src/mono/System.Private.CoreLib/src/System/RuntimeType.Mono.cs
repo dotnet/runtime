@@ -883,12 +883,12 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent([MaybeNull] string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             MemberListType listType;
-            FilterHelper(bindingAttr, ref name!, out _, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out listType);
 
             RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             EventInfo? match = null;
@@ -911,12 +911,12 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField([MaybeNull] string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             MemberListType listType;
-            FilterHelper(bindingAttr, ref name!, out _, out listType);
+            FilterHelper(bindingAttr, ref name, out _, out listType);
 
             RuntimeFieldInfo[] cache = GetFields_internal(name, bindingAttr, listType, this);
             FieldInfo? match = null;
@@ -1004,7 +1004,7 @@ namespace System
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
+        public override Type? GetNestedType([MaybeNull] string name, BindingFlags bindingAttr)
         {
             ArgumentNullException.ThrowIfNull(name);
 
