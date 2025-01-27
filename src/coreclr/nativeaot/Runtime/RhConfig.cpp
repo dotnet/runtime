@@ -139,6 +139,27 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     return false;
 }
 
+bool RhConfig::ReadConfigValue(_In_z_ const char* envName, _In_z_ const char* configName, uint64_t* pValue, bool decimal)
+{
+    uint64_t uiValue;
+    if (g_pRhConfig->ReadConfigValue(envName, &uiValue))
+    {
+        *pValue = uiValue;
+        return true;
+    }
+
+    if (configName)
+    {
+        if (g_pRhConfig->ReadKnobUInt64Value(configName, &uiValue))
+        {
+            *pValue = uiValue;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool RhConfig::ReadKnobUInt64Value(_In_z_ const char *name, uint64_t* pValue)
 {
     const char *embeddedValue = nullptr;
