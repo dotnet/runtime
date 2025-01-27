@@ -154,7 +154,7 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     if (FALSE)
     {
 ComputeCollectibleLoaderModule:
-        Module *pOldestLoaderModule = NULL;
+        Module *pLatestLoaderModule = NULL;
         UINT64 latestFoundNumber = 0;
         DWORD classArgsCount = classInst.GetNumArgs();
         DWORD totalArgsCount = classArgsCount + methodInst.GetNumArgs();
@@ -163,7 +163,7 @@ ComputeCollectibleLoaderModule:
         // and its creation number as the starting age.
         if (pDefinitionModule != NULL && pDefinitionModule->IsCollectible())
         {
-            pOldestLoaderModule = pDefinitionModule;
+            pLatestLoaderModule = pDefinitionModule;
             latestFoundNumber = pDefinitionModule->GetLoaderAllocator()->GetCreationNumber();
         }
 
@@ -182,15 +182,15 @@ ComputeCollectibleLoaderModule:
             if (pLoaderAllocatorCheck->IsCollectible() &&
                 pLoaderAllocatorCheck->GetCreationNumber() > latestFoundNumber)
             {
-                pOldestLoaderModule = pModuleCheck;
+                pLatestLoaderModule = pModuleCheck;
                 latestFoundNumber = pLoaderAllocatorCheck->GetCreationNumber();
             }
         }
 
         // Use the module of the latest found collectible loader allocator.
         // If nothing was found, then by default we use the defining module.
-        if (pOldestLoaderModule != NULL)
-            pLoaderModule = pOldestLoaderModule;
+        if (pLatestLoaderModule != NULL)
+            pLoaderModule = pLatestLoaderModule;
     }
     RETURN PTR_Module(pLoaderModule);
 }
