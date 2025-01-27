@@ -658,6 +658,9 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
         cache_entry_heap_reserve_size    = GetOsPageSize();
         cache_entry_heap_commit_size     = GetOsPageSize();
+#else
+        // If we don't support VSD, use a slightly bigger heap size to avoid wasting memory
+        indcell_heap_reserve_size        = 2 * GetOsPageSize();
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef _DEBUG
