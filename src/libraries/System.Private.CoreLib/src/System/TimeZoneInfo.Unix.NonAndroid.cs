@@ -25,6 +25,8 @@ namespace System
 
         private static TimeZoneInfo GetLocalTimeZoneCore()
         {
+            if (Invariant) return Utc;
+
             // Without Registry support, create the TimeZoneInfo from a TZ file
             return GetLocalTimeZoneFromTzFile();
         }
@@ -69,14 +71,11 @@ namespace System
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachineCore(string id, out TimeZoneInfo? value, out Exception? e)
         {
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             value = null;
             e = null;
 
-            if (Invariant)
-            {
-                e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
-                return TimeZoneInfoResult.TimeZoneNotFoundException;
-            }
             if (Path.IsPathRooted(id) || IdContainsAnyDisallowedChars(id))
             {
                 e = new TimeZoneNotFoundException(SR.Format(SR.InvalidTimeZone_InvalidId, id));
@@ -413,10 +412,7 @@ namespace System
         /// </summary>
         private static string FindTimeZoneId(byte[] rawData)
         {
-            if (Invariant)
-            {
-                return LocalId;
-            }
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
 
             // default to "Local" if we can't find the right tzfile
             string id = LocalId;
@@ -458,6 +454,8 @@ namespace System
 
         private static bool TryLoadTzFile(string tzFilePath, [NotNullWhen(true)] ref byte[]? rawData, [NotNullWhen(true)] ref string? id)
         {
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             if (File.Exists(tzFilePath))
             {
                 try
@@ -484,11 +482,8 @@ namespace System
 #if TARGET_WASI || TARGET_BROWSER
         private static bool TryLoadEmbeddedTzFile(string name, [NotNullWhen(true)] out byte[]? rawData)
         {
-            if (Invariant)
-            {
-                rawData = null;
-                return false;
-            }
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             IntPtr bytes = Interop.Sys.GetTimeZoneData(name, out int length);
             if (bytes == IntPtr.Zero)
             {
@@ -522,12 +517,11 @@ namespace System
         /// </summary>
         private static bool TryGetLocalTzFile([NotNullWhen(true)] out byte[]? rawData, [NotNullWhen(true)] out string? id)
         {
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             rawData = null;
             id = null;
-            if (Invariant)
-            {
-                return false;
-            }
+
             string? tzVariable = GetTzEnvironmentVariable();
 
             // If the env var is null, on iOS/tvOS, grab the default tz from the device.
@@ -597,10 +591,7 @@ namespace System
         /// </summary>
         private static TimeZoneInfo GetLocalTimeZoneFromTzFile()
         {
-            if (Invariant)
-            {
-                return Utc;
-            }
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
 
             byte[]? rawData;
             string? id;

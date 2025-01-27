@@ -240,12 +240,9 @@ namespace System
         /// </summary>
         private static string? FindIdFromTimeZoneInformation(in TIME_ZONE_INFORMATION timeZone, out bool dstDisabled)
         {
-            dstDisabled = false;
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
 
-            if (Invariant)
-            {
-                return null;
-            }
+            dstDisabled = false;
 
             using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
             {
@@ -516,13 +513,10 @@ namespace System
         /// </summary>
         private static bool TryCreateAdjustmentRules(string id, in REG_TZI_FORMAT defaultTimeZoneInformation, out AdjustmentRule[]? rules, out Exception? e, int defaultBaseUtcOffset)
         {
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             rules = null;
             e = null;
-
-            if (Invariant)
-            {
-                return false;
-            }
 
             try
             {
@@ -816,10 +810,7 @@ namespace System
         /// </summary>
         private static unsafe string GetLocalizedNameByNativeResource(string filePath, int resource)
         {
-            if (Invariant)
-            {
-                return string.Empty;
-            }
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
 
             IntPtr handle = IntPtr.Zero;
             try
@@ -857,6 +848,8 @@ namespace System
         /// </summary>
         private static void GetLocalizedNamesByRegistryKey(RegistryKey key, out string? displayName, out string? standardName, out string? daylightName)
         {
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             displayName = string.Empty;
             standardName = string.Empty;
             daylightName = string.Empty;
@@ -903,12 +896,9 @@ namespace System
         /// </summary>
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
+            if (Invariant) ThrowHelper.ThrowUnreachableException();
+
             e = null;
-            if (Invariant)
-            {
-                value = null;
-                return TimeZoneInfoResult.TimeZoneNotFoundException;
-            }
 
             // Standard Time Zone Registry Data
             // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
