@@ -732,10 +732,10 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [InlineData("http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "http://bar/Testue/testImage.jpg", "bar")]
-        [InlineData(@"\\nas\Testue\testImage.jpg", @"file://nas/Testue/testImage.jpg", @"file://nas/Testue/testImage.jpg", "nas")]
+        [InlineData(@"\\nas\Testue\testImage.jpg", "file://nas/Testue/testImage.jpg", "file://nas/Testue/testImage.jpg", "nas")]
         // Tests that internal Uri info were properly applied during a Combine operation when URI contains non-ascii character.
-        [InlineData("http://bar/Testü/testImage.jpg", "http://bar/Testü/testImage.jpg", "http://bar/Test%C3%BC/testImage.jpg", "bar")]
-        [InlineData(@"\\nas\Testü\testImage.jpg", @"file://nas/Testü/testImage.jpg", @"file://nas/Test%C3%BC/testImage.jpg", "nas")]
+        [InlineData("http://bar/Test\u00fc/testImage.jpg", "http://bar/Test\u00fc/testImage.jpg", "http://bar/Test%C3%BC/testImage.jpg", "bar")]
+        [InlineData("\\\\nas\\Test\u00fc\\testImage.jpg", "file://nas/Test\u00fc/testImage.jpg", "file://nas/Test%C3%BC/testImage.jpg", "nas")]
         public static void Uri_CombineWithAbsoluteUriResultInAbsoluteSchemaIgnoringOriginalBase(string relativeUri, string expectedUri, string expectedAbsoluteUri, string expectedHost)
         {
             string baseUriString = "combine-scheme://foo";
