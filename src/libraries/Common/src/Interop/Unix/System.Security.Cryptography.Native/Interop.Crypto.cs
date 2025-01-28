@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
 using TrackedAllocationDelegate = System.Action<System.IntPtr, int, System.IntPtr, int>;
