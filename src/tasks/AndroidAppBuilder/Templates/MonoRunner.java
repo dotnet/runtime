@@ -74,7 +74,7 @@ public class MonoRunner extends Instrumentation
         start();
     }
 
-    public static int initialize(String entryPointLibName, String[] args, Context context) {
+    public static void initializeRuntime(Context context) {
         String filesDir = context.getFilesDir().getAbsolutePath();
         String cacheDir = context.getCacheDir().getAbsolutePath();
 
@@ -90,9 +90,13 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
-        Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
+        Log.i("DOTNET", "MonoRunner initializeRuntime,, entryPointLibName=" + entryPointLibName);
         int localDateTimeOffset = getLocalDateTimeOffset();
-        return initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, args, localDateTimeOffset);
+        initRuntime(filesDir, cacheDir, testResultsDir, localDateTimeOffset);
+    }
+
+    public static int executeEntryPoint(String entryPointLibName, String[] args) {
+        return execEntryPoint(entryPointLibName, args);
     }
 
     @Override
@@ -104,7 +108,9 @@ public class MonoRunner extends Instrumentation
             finish(1, null);
             return;
         }
-        int retcode = initialize(entryPointLibName, argsToForward, getContext());
+
+        initializeRuntime(getContext());
+        int retcode = executeEntryPoint(entryPointLibName, argsToForward);
 
         Log.i("DOTNET", "MonoRunner finished, return-code=" + retcode);
         result.putInt("return-code", retcode);
@@ -162,7 +168,9 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    static native int initRuntime(String libsDir, String cacheDir, String testResultsDir, String entryPointLibName, String[] args, int local_date_time_offset);
+    static native void initRuntime(String libsDir, String cacheDir, String testResultsDir, int local_date_time_offset);
+
+    static native int execEntryPoint(String entryPointLibName, String[] args);
 
     static native int setEnv(String key, String value);
 }
