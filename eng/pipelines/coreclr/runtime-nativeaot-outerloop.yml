@@ -155,7 +155,7 @@ extends:
                   testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
 
       #
-      # CoreCLR NativeAOT checked build and Pri0 tests
+      # CoreCLR NativeAOT checked build and Pri1 tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -173,8 +173,8 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
-            nameSuffix: NativeAOT_Pri0
+            timeoutInMinutes: 480
+            nameSuffix: NativeAOT_Pri1
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
@@ -182,11 +182,11 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
                   liveLibrariesBuildConfig: Release
-            testRunNamePrefixSuffix: NativeAOT_Pri0_$(_BuildConfig)
+            testRunNamePrefixSuffix: NativeAOT_Pri1_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
-                  testGroup: innerloop
+                  testGroup: outerloop
                   liveLibrariesBuildConfig: Release
 
       #
