@@ -45,19 +45,19 @@ namespace Microsoft.Extensions.DependencyInjection
             _descriptors.Clear();
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICollection{T}.Contains(T)"/>
         public bool Contains(ServiceDescriptor item)
         {
             return _descriptors.Contains(item);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICollection{T}.CopyTo(T[], int)"/>
         public void CopyTo(ServiceDescriptor[] array, int arrayIndex)
         {
             _descriptors.CopyTo(array, arrayIndex);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICollection{T}.Remove(T)"/>
         public bool Remove(ServiceDescriptor item)
         {
             CheckReadOnly();
@@ -81,13 +81,13 @@ namespace Microsoft.Extensions.DependencyInjection
             return GetEnumerator();
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICollection{T}.IndexOf(T)"/>
         public int IndexOf(ServiceDescriptor item)
         {
             return _descriptors.IndexOf(item);
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="ICollection{T}.Insert(int, T)"/>
         public void Insert(int index, ServiceDescriptor item)
         {
             CheckReadOnly();

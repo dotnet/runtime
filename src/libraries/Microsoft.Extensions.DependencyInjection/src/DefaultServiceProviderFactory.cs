@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        /// <inheritdoc />
+        /// <inheritdoc cref="IServiceProviderFactory{TContainerBuilder}.CreateServiceProvider(TContainerBuilder)"/>
         public IServiceProvider CreateServiceProvider(IServiceCollection containerBuilder)
         {
             return containerBuilder.BuildServiceProvider(_options);
