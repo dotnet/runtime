@@ -228,7 +228,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!-- TODO: Unify this with AppleBuild.targets and use a common mechanism for selecting desired target runtime  -->
+      <!-- TODO: Revisit this.
+        We are using a private property to determine the target runtime, we should instead unify the resolution with Apple targets instead, (see: https://github.com/dotnet/runtime/issues/111923) -->
       <_RuntimeFlavor>Mono</_RuntimeFlavor>
       <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
     </PropertyGroup>

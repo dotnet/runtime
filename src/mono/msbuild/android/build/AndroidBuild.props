@@ -1,9 +1,8 @@
 <Project>
   <PropertyGroup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
-    <!-- We need to check for RuntimeFlavor setting as for runtime tests we always import coreCLR props which force UseMonoRuntime=false
-    Same rule applies for Apple builds and that should be cleaned up as well
-    TODO: add a tracking issue for this -->
+    <!-- TODO: Revisit this.
+      We need to check for RuntimeFlavor setting as for runtime tests we always import CoreCLR props which force UseMonoRuntime=false (see: https://github.com/dotnet/runtime/issues/111919) -->
     <UseMonoRuntime Condition="'$(RuntimeFlavor)' == 'coreclr'">false</UseMonoRuntime>
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' or '$(RuntimeFlavor)' == 'mono'">true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
