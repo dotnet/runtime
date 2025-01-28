@@ -850,7 +850,14 @@ HANDLE PEImage::GetFileHandle()
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
 #if !defined(DACCESS_COMPILE)
-        EEFileLoadException::Throw(GetPathToLoad(), hr);
+        EEFileLoadException::Throw(
+#if defined(TARGET_ANDROID)
+            AndroidGetAppName(),
+#else
+            GetPathToLoad(),
+#endif
+            hr
+        );
 #else // defined(DACCESS_COMPILE)
         ThrowHR(hr);
 #endif // !defined(DACCESS_COMPILE)
@@ -869,6 +876,9 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
         return S_OK;
 
     ErrorModeHolder mode{};
+#if defined(TARGET_ANDROID)
+    m_hFile = AndroidGetDataStart ();
+#else
     m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                           GENERIC_READ
 #if TARGET_WINDOWS
@@ -881,7 +891,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-
+#endif
     if (m_hFile != INVALID_HANDLE_VALUE)
             return S_OK;
 

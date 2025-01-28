@@ -32,12 +32,25 @@ inline const SString &PEImage::GetPath()
     return m_path;
 }
 
+#if defined(TARGET_ANDROID)
+inline const HANDLE PEImage::AndroidGetDataStart()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_bundleFileLocation.DataStart;
+}
+
+inline const SString& PEImage::AndroidGetAppName()
+{
+    return m_bundleFileLocation.AppName();
+}
+#else
 inline const SString& PEImage::GetPathToLoad()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
 }
+#endif // !TARGET_ANDROID
 
 inline INT64 PEImage::GetOffset() const
 {
@@ -98,8 +111,11 @@ inline const SString &PEImage::GetModuleFileNameHintForDAC()
 inline BOOL PEImage::IsFile()
 {
     WRAPPER_NO_CONTRACT;
-
+#if defined(TARGET_ANDROID)
+    return false;
+#else
     return !GetPathToLoad().IsEmpty();
+#endif
 }
 
 //

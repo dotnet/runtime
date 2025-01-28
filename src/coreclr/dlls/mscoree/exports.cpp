@@ -169,7 +169,8 @@ static void ConvertConfigPropertiesToUnicode(
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
 }
-#endif
+
+#else // TARGET_ANDROID
 
 static void ConvertConfigPropertiesToUnicode(
     const char** propertyKeys,
@@ -229,7 +230,7 @@ static void ConvertConfigPropertiesToUnicode(
     *propertyKeysWRef = propertyKeysW;
     *propertyValuesWRef = propertyValuesW;
 }
-
+#endif // !TARGET_ANDROID
 coreclr_error_writer_callback_fn g_errorWriter = nullptr;
 
 //
@@ -289,7 +290,7 @@ int android_coreclr_initialize(
         return HOST_E_INVALIDOPERATION;
     }
 
-    if (hostContract->bundle_probe == nullptr) { [[unlikely]]
+    if (hostContract->android_bundle_probe == nullptr) { [[unlikely]]
         LogErrorToLogcat(ANDROID_LOG_FATAL, "Host contract isn't initialized properly: missing bundle probe handler.");
         return HOST_E_INVALIDOPERATION;
     }
@@ -317,7 +318,7 @@ int android_coreclr_initialize(
     hr = CorHost2::CreateObject(IID_ICLRRuntimeHost4, (void**)&host);
     IfFailRet(hr);
 
-    static Bundle bundle(appName, hostContract->bundle_probe);
+    static Bundle bundle(appName, hostContract->android_bundle_probe);
     Bundle::AppBundle = &bundle;
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
@@ -349,6 +350,7 @@ int android_coreclr_initialize(
     }
     return hr;
 }
+
 #endif // TARGET_ANDROID
 
 //
@@ -378,6 +380,7 @@ int coreclr_initialize(
             void** hostHandle,
             unsigned int* domainId)
 {
+#if !defined(TARGET_ANDROID)
     HRESULT hr;
 
     LPCWSTR* propertyKeysW;
@@ -482,6 +485,9 @@ int coreclr_initialize(
 #endif
     }
     return hr;
+#else // TARGET_ANDROID
+    return HOST_E_INVALIDOPERATION;
+#endif
 }
 
 //

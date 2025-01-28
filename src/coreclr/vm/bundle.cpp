@@ -30,14 +30,28 @@ const SString &BundleFileLocation::Path() const
     return Bundle::AppBundle->Path();
 }
 
+#if defined(TARGET_ANDROID)
+const SString &BundleFileLocation::AppName() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsValid());
+    _ASSERTE(Bundle::AppBundle != nullptr);
+
+    return Bundle::AppBundle->Path();
+}
+#endif
+
 Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(probe != nullptr);
-
-    m_path.SetUTF8(bundlePath);
     m_probe = probe;
+#if defined(TARGET_ANDROID)
+    m_appName.SetUTF8(bundlePath);
+#else
+    m_path.SetUTF8(bundlePath);
 
     // The bundle-base path is the directory containing the single-file bundle.
     // When the Probe() function searches within the bundle, it masks out the basePath from the assembly-path (if found).
@@ -47,6 +61,7 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
     size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_A in m_basePath
     m_basePath.SetUTF8(bundlePath, (COUNT_T)baseLen);
     m_basePathLength = (COUNT_T)baseLen;
+#endif // !TARGET_ANDROID
 }
 
 BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative) const
@@ -64,6 +79,13 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
     pathBuffer.SetAndConvertToUTF8(path.GetUnicode());
     LPCSTR utf8Path(pathBuffer.GetUTF8());
 
+#if defined(TARGET_ANDROID)
+    // On Android we always strip away the assembly path, if any
+    LPCSTR pos = strrchr(utf8Path, DIRECTORY_SEPARATOR_CHAR_A);
+    if (pos != nullptr) {
+        utf8Path = pos + 1; // one past the last directory separator char
+    }
+#else // TARGET_ANDROID
     if (!pathIsBundleRelative)
     {
 #ifdef TARGET_UNIX
@@ -80,10 +102,13 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
             return loc;
         }
     }
-
+#endif // !TARGET_ANDROID
     INT64 fileSize = 0;
     INT64 compressedSize = 0;
 
+#if defined(TARGET_ANDROID)
+    m_probe(utf8Path, &loc.DataStart, &loc.Size);
+#else
     m_probe(utf8Path, &loc.Offset, &fileSize, &compressedSize);
 
     if (compressedSize)
@@ -96,7 +121,7 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
         loc.Size = fileSize;
         loc.UncompresedSize = 0;
     }
-
+#endif
     return loc;
 }
 

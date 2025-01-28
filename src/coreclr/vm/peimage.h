@@ -133,7 +133,12 @@ public:
     PTR_PEImageLayout GetFlatLayout();
 
     const SString& GetPath();
+#if defined(TARGET_ANDROID)
+    const HANDLE AndroidGetDataStart();
+    const SString& AndroidGetAppName();
+#else
     const SString& GetPathToLoad();
+#endif
     LPCWSTR GetPathForErrorMessages() { return GetPath(); }
 
     BOOL IsFile();

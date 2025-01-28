@@ -18,23 +18,37 @@ class Bundle;
 struct BundleFileLocation
 {
     INT64 Size;
+#if defined(TARGET_ANDROID)
+    void* DataStart;
+    constexpr static INT64 Offset = 0;
+    constexpr static INT64 UncompresedSize = 0;
+#else
     INT64 Offset;
     INT64 UncompresedSize;
+#endif
 
     BundleFileLocation()
-    { 
+    {
         LIMITED_METHOD_CONTRACT;
 
         Size = 0;
-        Offset = 0; 
+#if defined(TARGET_ANDROID)
+        DataStart = INVALID_HANDLE_VALUE;
+#else
+        Offset = 0;
         UncompresedSize = 0;
+#endif
     }
 
     static BundleFileLocation Invalid() { LIMITED_METHOD_CONTRACT; return BundleFileLocation(); }
 
     const SString &Path() const;
-
+#if defined(TARGET_ANDROID)
+    const SString &AppName() const;
+    bool IsValid() const { LIMITED_METHOD_CONTRACT; return DataStart != nullptr; }
+#else // TARGET_ANDROID
     bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
+#endif // !TARGET_ANDROID
 };
 
 class Bundle
@@ -51,12 +65,14 @@ public:
     static BundleFileLocation ProbeAppBundle(const SString& path, bool pathIsBundleRelative = false);
 
 private:
-
+#if defined(TARGET_ANDROID)
+    SString m_appName;
+#endif
     SString m_path; // The path to single-file executable
     BundleProbeFn *m_probe;
 
     SString m_basePath; // The prefix to denote a path within the bundle
-    COUNT_T m_basePathLength;
+    COUNT_T m_basePathLength = 0;
 };
 
 #endif // _BUNDLE_H_

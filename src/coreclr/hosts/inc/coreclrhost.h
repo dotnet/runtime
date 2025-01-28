@@ -163,7 +163,11 @@ CORECLR_HOSTING_API(coreclr_execute_assembly,
 //
 // Callback types used by the hosts
 //
+#if defined(TARGET_ANDROID)
+using BundleProbeFn = bool(const char* path, void** data_start, int64_t* size);
+#else
 typedef bool(CORECLR_CALLING_CONVENTION BundleProbeFn)(const char* path, int64_t* offset, int64_t* size, int64_t* compressedSize);
+#endif
 typedef const void* (CORECLR_CALLING_CONVENTION PInvokeOverrideFn)(const char* libraryName, const char* entrypointName);
 
 
