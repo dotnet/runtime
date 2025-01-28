@@ -69,6 +69,8 @@ extern void ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *pro
 extern void ep_rt_mono_init_providers_and_events (void);
 extern bool ep_rt_mono_providers_validate_all_disabled (void);
 extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
+extern void ep_rt_mono_sample_profiler_enabled (void);
+extern void ep_rt_mono_sample_profiler_disabled (void);
 extern void ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 extern int64_t ep_rt_mono_perf_counter_query (void);
 extern int64_t ep_rt_mono_perf_frequency_query (void);
@@ -638,6 +640,22 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 }
 
 static
+inline
+void
+ep_rt_sample_profiler_enabled (void)
+{
+	ep_rt_mono_sample_profiler_enabled ();
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+	ep_rt_mono_sample_profiler_disabled ();
+}
+
+static
 void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
@@ -714,7 +732,11 @@ ep_rt_wait_event_wait (
 {
 	//TODO, replace with low level PAL implementation.
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
+#if defined(PERFTRACING_MULTI_THREADED)
 	return (int32_t)mono_w32handle_wait_one (wait_event->event, timeout, alertable);
+#else
+	return (int32_t)0;
+#endif
 }
 
 static
@@ -830,6 +852,7 @@ typedef struct _rt_mono_thread_params_internal_t {
 #undef EP_RT_DEFINE_THREAD_FUNC
 #define EP_RT_DEFINE_THREAD_FUNC(name) static mono_thread_start_return_t WINAPI name (gpointer data)
 
+#if defined(PERFTRACING_MULTI_THREADED)
 EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
@@ -845,6 +868,26 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 
 	return result;
 }
+#else // PERFTRACING_MULTI_THREADED
+// in single-threaded OS like browser, this is not wrapper for long running method
+// it's rather self sustaining callback, called from browser event loop
+EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
+{
+	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
+
+	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);
+
+	if (result == 0) {
+		// self schedule again
+		mono_main_thread_schedule_ds_job ((ds_job_cb)ep_rt_thread_mono_start_func, (void*)thread_params);
+	}
+	else {
+		g_free (thread_params);
+	}
+
+	return result;
+}
+#endif // PERFTRACING_MULTI_THREADED
 
 static
 inline
@@ -861,7 +904,13 @@ ep_rt_thread_create (
 		thread_params->thread_params.thread_func = (ep_rt_thread_start_func)thread_func;
 		thread_params->thread_params.thread_params = params;
 		thread_params->background_thread = true;
+#if defined(PERFTRACING_MULTI_THREADED)
 		return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
+#else
+		// in single-threaded, it will run the callback inline and re-schedule itself if necessary
+		ep_rt_thread_mono_start_func (thread_params);
+		return true;
+#endif
 	}
 
 	return false;
@@ -880,6 +929,7 @@ inline
 void
 ep_rt_thread_sleep (uint64_t ns)
 {
+#if defined(PERFTRACING_MULTI_THREADED)
 	MONO_REQ_GC_UNSAFE_MODE;
 	if (ns == 0) {
 		mono_thread_info_yield ();
@@ -888,6 +938,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
+#endif
 }
 
 static
@@ -1969,6 +2020,8 @@ extern void ep_rt_mono_runtime_provider_init (void);
 extern void ep_rt_mono_runtime_provider_fini (void);
 extern void ep_rt_mono_runtime_provider_thread_started_callback (MonoProfiler *prof, uintptr_t tid);
 extern void ep_rt_mono_runtime_provider_thread_stopped_callback (MonoProfiler *prof, uintptr_t tid);
+
+extern void ep_rt_mono_sampling_provider_component_init (void);
 
 extern void ep_rt_mono_profiler_provider_component_init (void);
 extern void ep_rt_mono_profiler_provider_init (void);

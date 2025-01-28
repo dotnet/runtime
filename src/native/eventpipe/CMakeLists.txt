@@ -17,6 +17,13 @@ if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
   set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
 endif()
 
+# Use WebSocket for EventPipe on mobile browser
+if (CLR_CMAKE_HOST_BROWSER)
+  set(FEATURE_PERFTRACING_PAL_WS 1)
+  set(FEATURE_PERFTRACING_SINGLE_THREADED 1)
+  set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
+endif()
+
 configure_file(${CLR_SRC_NATIVE_DIR}/eventpipe/ep-shared-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/ep-shared-config.h)
 
 # Define the DiagnosticsServer and EventPipe as interface libraries.
@@ -44,7 +51,11 @@ add_library(dn-diagnosticserver-pal INTERFACE)
 target_include_directories(dn-diagnosticserver-pal INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(dn-diagnosticserver-pal INTERFACE dn-containers)
 
-if (FEATURE_PERFTRACING_PAL_TCP)
+if (FEATURE_PERFTRACING_PAL_WS)
+    target_sources(dn-diagnosticserver-pal INTERFACE
+        ds-ipc-pal-websocket.c
+    )
+elseif (FEATURE_PERFTRACING_PAL_TCP)
     target_sources(dn-diagnosticserver-pal INTERFACE
         ds-ipc-pal-socket.c
     )
