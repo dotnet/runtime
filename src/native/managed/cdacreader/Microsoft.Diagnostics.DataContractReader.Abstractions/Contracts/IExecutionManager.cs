@@ -17,6 +17,8 @@ internal interface IExecutionManager : IContract
     CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => throw new NotImplementedException();
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetModuleBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip) => throw new NotImplementedException();
 }
 
 internal readonly struct ExecutionManager : IExecutionManager

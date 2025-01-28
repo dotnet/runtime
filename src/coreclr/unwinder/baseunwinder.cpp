@@ -6,9 +6,11 @@
 #include "stdafx.h"
 #include "baseunwinder.h"
 
+#ifndef FEATURE_CDAC_UNWINDER
 EXTERN_C void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
                                       OUT UINT_PTR* pModuleBase,
                                       OUT UINT_PTR* pFuncEntry);
+#endif // FEATURE_CDAC_UNWINDER
 
 //---------------------------------------------------------------------------------------
 //
@@ -27,7 +29,11 @@ EXTERN_C void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
                                           _Out_ PDWORD64 pdwBase)
 {
+#ifndef FEATURE_CDAC_UNWINDER
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
+#else // FEATURE_CDAC_UNWINDER
+    getStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
+#endif // FEATURE_CDAC_UNWINDER
     return ((*pdwBase == 0) ? E_FAIL : S_OK);
 }
 
@@ -56,6 +62,7 @@ HRESULT OOPStackUnwinder::GetFunctionEntry(                       DWORD64 addres
     }
 
     PVOID pFuncEntry = NULL;
+#ifndef FEATURE_CDAC_UNWINDER
     GetRuntimeStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry));
     if (pFuncEntry == NULL)
     {
@@ -64,4 +71,17 @@ HRESULT OOPStackUnwinder::GetFunctionEntry(                       DWORD64 addres
 
     memcpy(pBuffer, pFuncEntry, cbBuffer);
     return S_OK;
+#else // FEATURE_CDAC_UNWINDER
+    getStackWalkInfo(address, NULL, reinterpret_cast<UINT_PTR *>(&pFuncEntry));
+    if (pFuncEntry == NULL)
+    {
+        return E_FAIL;
+    }
+    if (readCallback((DWORD64)pFuncEntry, pBuffer, cbBuffer) != S_OK)
+    {
+        return E_FAIL;
+    }
+
+    return S_OK;
+#endif
 }

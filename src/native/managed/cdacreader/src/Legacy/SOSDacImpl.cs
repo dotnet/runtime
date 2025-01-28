@@ -569,7 +569,21 @@ internal sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, ppMD) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodDescPtrFromIP(ulong ip, ulong* ppMD)
-        => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromIP(ip, ppMD) : HResults.E_NOTIMPL;
+    {
+        try
+        {
+            if (ip == 1)
+            {
+                _target.Contracts.StackWalk.TestEntry();
+            }
+        }
+        catch
+        {
+            Console.WriteLine("uh oh");
+        }
+
+        return _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromIP(ip, ppMD) : HResults.E_NOTIMPL;
+    }
     int ISOSDacInterface.GetMethodDescTransparencyData(ulong methodDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescTransparencyData(methodDesc, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetMethodTableData(ulong mt, DacpMethodTableData* data)

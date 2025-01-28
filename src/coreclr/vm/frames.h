@@ -759,8 +759,15 @@ protected:
 
     void PopIfChained();
 #endif // TARGET_UNIX && !DACCESS_COMPILE
+
+    friend struct ::cdac_data<Frame>;
 };
 
+template<>
+struct cdac_data<Frame>
+{
+    static constexpr size_t Next = offsetof(Frame, m_Next);
+};
 
 //-----------------------------------------------------------------------------
 // This frame provides a context for a code location at which
@@ -1199,10 +1206,18 @@ public:
 
     virtual void UpdateRegDisplay(const PREGDISPLAY, bool updateFloats = false);
 
+    friend struct ::cdac_data<SoftwareExceptionFrame>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_DTOR(SoftwareExceptionFrame)
 };
 
+template<>
+struct cdac_data<SoftwareExceptionFrame>
+{
+    static constexpr size_t TargetContext = offsetof(SoftwareExceptionFrame, m_Context);
+    static constexpr size_t ReturnAddress = offsetof(SoftwareExceptionFrame, m_ReturnAddress);
+};
 #endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
@@ -1438,8 +1453,18 @@ protected:
 
     LazyMachState m_MachState;       // pRetAddr points to the return address and the stack arguments
 
+    friend struct ::cdac_data<HelperMethodFrame>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame)
+};
+
+template<>
+struct cdac_data<HelperMethodFrame>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame, m_MachState);
 };
 
 // Restores registers saved in m_MachState
@@ -1523,8 +1548,18 @@ public:
 private:
     PTR_OBJECTREF gcPtrs[1];
 
+    friend struct ::cdac_data<HelperMethodFrame_1OBJ>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_1OBJ)
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_1OBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_1OBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_1OBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_1OBJ, m_MachState);
 };
 
 
@@ -1584,8 +1619,18 @@ public:
 private:
     PTR_OBJECTREF gcPtrs[2];
 
+    friend struct ::cdac_data<HelperMethodFrame_2OBJ>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_2OBJ)
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_2OBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_2OBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_2OBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_2OBJ, m_MachState);
 };
 
 //-----------------------------------------------------------------------------
@@ -1650,8 +1695,18 @@ public:
 private:
     PTR_OBJECTREF gcPtrs[3];
 
+    friend struct ::cdac_data<HelperMethodFrame_3OBJ>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_3OBJ)
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_3OBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_3OBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_3OBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_3OBJ, m_MachState);
 };
 
 
@@ -1716,8 +1771,18 @@ private:
     PTR_OBJECTREF m_pObjRefs;
     UINT       m_numObjRefs;
 
+    friend struct ::cdac_data<HelperMethodFrame_PROTECTOBJ>;
+
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_PROTECTOBJ)
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_PROTECTOBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_PROTECTOBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_PROTECTOBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_PROTECTOBJ, m_MachState);
 };
 
 class FramedMethodFrame : public TransitionFrame
