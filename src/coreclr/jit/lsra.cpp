@@ -275,6 +275,22 @@ SingleTypeRegSet LinearScan::lowSIMDRegs()
 #endif
 }
 
+//------------------------------------------------------------------------
+// lowGPRRegs(): Return the set of GPR registers associated with non APX
+// encoding only, i.e., remove the eGPR registers from the available
+// set.
+//
+// Return Value:
+// Register mask of non APX GPR registers.
+SingleTypeRegSet LinearScan::lowGPRRegs()
+{
+#if defined(TARGET_AMD64)
+    return (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    return availableIntRegs;
+#endif
+}
+
 void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
 {
     LsraLocation nextLocation = nextRefPosition == nullptr ? MaxLocation : nextRefPosition->nodeLocation;
@@ -535,6 +551,8 @@ static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | R
 static const regMaskTP LsraLimitUpperSimdSet =
     (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
      RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
+static const regMaskTP LsraLimitExtGprSet =
+    (RBM_R16 | RBM_R17 | RBM_R18 | RBM_R19 | RBM_R20 | RBM_R21 | RBM_R22 | RBM_R23 | RBM_ETW_FRAMED_EBP);
 #elif defined(TARGET_ARM)
 // On ARM, we may need two registers to set up the target register for a virtual call, so we need
 // to have at least the maximum number of arg registers, plus 2.
@@ -625,6 +643,13 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
                 {
                     mask = getConstrainedRegMask(refPosition, regType, mask,
                                                  LsraLimitUpperSimdSet.GetRegSetForType(regType), minRegCount);
+                }
+                break;
+            case LSRA_LIMIT_EXT_GPR_SET:
+                if ((mask & LsraLimitExtGprSet) != RBM_NONE)
+                {
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitExtGprSet.GetRegSetForType(regType), minRegCount);
                 }
                 break;
 #endif
@@ -787,6 +812,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
+    rbmAllInt         = compiler->rbmAllInt;
+    rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
+    regIntLast        = compiler->regIntLast;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
