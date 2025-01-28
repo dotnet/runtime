@@ -2688,8 +2688,14 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                     GenTree* nestedOp2 = op1Intrinsic->Op(2);
 
                     assert(!nestedOp1->isContained());
-                    bool isEmbeddedBroadcast = nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic();
+                    bool isEmbeddedBroadcast = false;
 
+                    if (nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic())
+                    {
+                        GenTreeHWIntrinsic* nestedOp2Intrinsic = nestedOp2->AsHWIntrinsic();
+                        isEmbeddedBroadcast = nestedOp2Intrinsic->GetHWIntrinsicId() != NI_AVX_LoadAlignedVector256;
+                    }
+                    
                     bool       isScalar = false;
                     genTreeOps oper     = op1Intrinsic->GetOperForHWIntrinsicId(&isScalar);
 
