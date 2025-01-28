@@ -403,6 +403,7 @@ g_Framework_Assemblies = [
     'System.Net.WebSockets.Client.dll',
     'System.Net.WebSockets.dll',
     'System.Numerics.dll',
+    'System.Numerics.Colors.dll',
     'System.Numerics.Tensors.dll',
     'System.Numerics.Vectors.dll',
     'System.ObjectModel.dll',
