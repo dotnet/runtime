@@ -226,6 +226,13 @@ internal class TestPlaceholderTarget : Target
         throw new NotImplementedException();
     }
 
+    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill)
+    {
+        throw new InvalidOperationException("GetThreadContext is not available");
+    }
+
+    public override int GetPlatform(out int platform) => throw new NotImplementedException();
+
     public override Target.IDataCache ProcessedData => _dataCache;
     public override ContractRegistry Contracts => _contractRegistry;
 

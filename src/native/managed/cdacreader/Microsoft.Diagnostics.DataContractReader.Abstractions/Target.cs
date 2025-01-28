@@ -27,6 +27,9 @@ internal abstract class Target
     /// </summary>
     public abstract bool IsLittleEndian { get; }
 
+    public abstract int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
+    public abstract int GetPlatform(out int platform);
+
     /// <summary>
     /// Reads a well-known global pointer value from the target process
     /// </summary>

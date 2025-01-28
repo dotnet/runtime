@@ -43,13 +43,30 @@ internal sealed unsafe class ContractDescriptorTarget : Target
     public override DataCache ProcessedData { get; }
 
     public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+    public delegate int GetTargetThreadContextDelegate(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
+    public delegate int GetTargetPlatform(out int platform);
 
-    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out ContractDescriptorTarget? target)
+    public GetTargetThreadContextDelegate? getThreadContext;
+    public GetTargetPlatform? getTargetPlatform;
+
+    public static bool TryCreate(
+        ulong contractDescriptor,
+        ReadFromTargetDelegate readFromTarget,
+        GetTargetThreadContextDelegate getThreadContext,
+        GetTargetPlatform getTargetPlatform,
+        out ContractDescriptorTarget? target)
     {
         Reader reader = new Reader(readFromTarget);
-        if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
+        if (TryReadContractDescriptor(
+            contractDescriptor,
+            reader,
+            out Configuration config,
+            out ContractDescriptorParser.ContractDescriptor? descriptor,
+            out TargetPointer[] pointerData))
         {
             target = new ContractDescriptorTarget(config, descriptor!, pointerData, reader);
+            target.getThreadContext = getThreadContext;
+            target.getTargetPlatform = getTargetPlatform;
             return true;
         }
 
@@ -212,6 +229,24 @@ internal sealed unsafe class ContractDescriptorTarget : Target
 
     public override int PointerSize => _config.PointerSize;
     public override bool IsLittleEndian => _config.IsLittleEndian;
+
+    public override int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill)
+    {
+        if (getThreadContext is null)
+            throw new InvalidOperationException("GetThreadContext is not available");
+
+        int hr = getThreadContext(threadId, contextFlags, contextSize, bufferToFill);
+        return hr;
+    }
+
+    public override int GetPlatform(out int platform)
+    {
+        if (getTargetPlatform is null)
+            throw new InvalidOperationException("GetTargetPlatform is not available");
+
+        int hr = getTargetPlatform(out platform);
+        return hr;
+    }
 
     /// <summary>
     /// Read a value from the target in target endianness

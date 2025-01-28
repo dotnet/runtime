@@ -8,6 +8,9 @@
 
 #include "baseunwinder.h"
 
+#ifdef FEATURE_CDAC_UNWINDER
+EXTERN_C __declspec(dllexport) BOOL amd64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo);
+#endif // FEATURE_CDAC_UNWINDER
 
 //---------------------------------------------------------------------------------------
 //
@@ -16,15 +19,22 @@
 
 class OOPStackUnwinderAMD64 : public OOPStackUnwinder
 {
+#ifdef FEATURE_CDAC_UNWINDER
+public:
+    OOPStackUnwinderAMD64(ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
+        : OOPStackUnwinder(readCallback, getAllocatedBuffer, getStackWalkInfo)
+    { }
+#endif // FEATURE_CDAC_UNWINDER
+
 public:
     // Unwind the given CONTEXT to the caller CONTEXT.  The CONTEXT will be overwritten.
-    static BOOL Unwind(CONTEXT * pContext);
+    BOOL Unwind(CONTEXT * pContext);
 
     //
     // Everything below comes from dbghelp.dll.
     //
 
-    static HRESULT VirtualUnwind(_In_ DWORD HandlerType,
+    HRESULT VirtualUnwind(_In_ DWORD HandlerType,
         _In_ DWORD64 ImageBase,
         _In_ DWORD64 ControlPc,
         _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
@@ -36,16 +46,16 @@ public:
 
 protected:
 
-    static ULONG UnwindOpSlots(_In_ UNWIND_CODE UnwindCode);
+    ULONG UnwindOpSlots(_In_ UNWIND_CODE UnwindCode);
 
-    static HRESULT UnwindEpilogue(_In_ ULONG64 ImageBase,
+    HRESULT UnwindEpilogue(_In_ ULONG64 ImageBase,
                                   _In_ ULONG64 ControlPc,
                                   _In_ ULONG EpilogueOffset,
                                   _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
                                   __inout PCONTEXT ContextRecord,
                                   __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers);
 
-    static HRESULT UnwindPrologue(_In_ DWORD64 ImageBase,
+    HRESULT UnwindPrologue(_In_ DWORD64 ImageBase,
                                   _In_ DWORD64 ControlPc,
                                   _In_ DWORD64 FrameBase,
                                   _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
@@ -53,16 +63,20 @@ protected:
                                   __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
                                   _Outptr_ _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry);
 
-    static _PIMAGE_RUNTIME_FUNCTION_ENTRY LookupPrimaryFunctionEntry
+    _PIMAGE_RUNTIME_FUNCTION_ENTRY LookupPrimaryFunctionEntry
         (_In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
          _In_ DWORD64 ImageBase);
 
-    static _PIMAGE_RUNTIME_FUNCTION_ENTRY SameFunction
+    _PIMAGE_RUNTIME_FUNCTION_ENTRY SameFunction
         (_In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
          _In_ DWORD64 ImageBase,
          _In_ DWORD64 ControlPc);
 
-    static UNWIND_INFO * GetUnwindInfo(TADDR taUnwindInfo);
+    UNWIND_INFO * GetUnwindInfo(TADDR taUnwindInfo);
+
+public:
+    ULONG64 MemoryRead64(PULONG64 addr);
+    M128A MemoryRead128(PM128A addr);
 };
 
 #endif // __unwinder_amd64_h__

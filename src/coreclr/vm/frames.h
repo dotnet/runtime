@@ -759,8 +759,15 @@ protected:
 
     void PopIfChained();
 #endif // TARGET_UNIX && !DACCESS_COMPILE
+
+    friend struct ::cdac_data<Frame>;
 };
 
+template<>
+struct cdac_data<Frame>
+{
+    static constexpr size_t Next = offsetof(Frame, m_Next);
+};
 
 //-----------------------------------------------------------------------------
 // This frame provides a context for a code location at which
@@ -1440,6 +1447,16 @@ protected:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame)
+
+    friend struct ::cdac_data<HelperMethodFrame>;
+};
+
+template<>
+struct cdac_data<HelperMethodFrame>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame, m_MachState);
 };
 
 // Restores registers saved in m_MachState
@@ -1525,6 +1542,16 @@ private:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_1OBJ)
+
+    friend struct ::cdac_data<HelperMethodFrame_1OBJ>;
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_1OBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_1OBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_1OBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_1OBJ, m_MachState);
 };
 
 
@@ -1586,6 +1613,16 @@ private:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_2OBJ)
+
+    friend struct ::cdac_data<HelperMethodFrame_2OBJ>;
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_2OBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_2OBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_2OBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_2OBJ, m_MachState);
 };
 
 //-----------------------------------------------------------------------------
@@ -1652,6 +1689,16 @@ private:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_3OBJ)
+
+    friend struct ::cdac_data<HelperMethodFrame_3OBJ>;
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_3OBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_3OBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_3OBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_3OBJ, m_MachState);
 };
 
 
@@ -1718,6 +1765,16 @@ private:
 
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(HelperMethodFrame_PROTECTOBJ)
+
+    friend struct ::cdac_data<HelperMethodFrame_PROTECTOBJ>;
+};
+
+template<>
+struct cdac_data<HelperMethodFrame_PROTECTOBJ>
+{
+    static constexpr size_t FrameAttributes = offsetof(HelperMethodFrame_PROTECTOBJ, m_Attribs);
+    static constexpr size_t FCallEntry = offsetof(HelperMethodFrame_PROTECTOBJ, m_FCallEntry);
+    static constexpr size_t LazyMachState = offsetof(HelperMethodFrame_PROTECTOBJ, m_MachState);
 };
 
 class FramedMethodFrame : public TransitionFrame
