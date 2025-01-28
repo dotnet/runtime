@@ -5154,6 +5154,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Conditional to Switch conversion
         //
         DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
+
+        // Run profile repair
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
     }
 
     // Drop back to just checking profile likelihoods.

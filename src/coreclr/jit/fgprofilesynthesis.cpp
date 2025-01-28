@@ -30,9 +30,16 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree             = m_comp->fgComputeDfs();
-    m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
-    m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree             = m_comp->fgComputeDfs();
+        m_loops               = FlowGraphNaturalLoops::Find(m_dfsTree);
+        m_improperLoopHeaders = m_loops->ImproperLoopHeaders();
+    }
+    else
+    {
+        assert(m_loops != nullptr);
+    }
 
     // Retain or compute edge likelihood information
     //
@@ -990,8 +997,9 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 {
     // Determine input weight for method entry
     //
-    BasicBlock* const entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-    weight_t          entryWeight = BB_UNITY_WEIGHT;
+    BasicBlock* const entryBlock =
+        (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    weight_t entryWeight = BB_UNITY_WEIGHT;
 
     switch (option)
     {
@@ -1212,7 +1220,8 @@ void ProfileSynthesis::GaussSeidelSolver()
 
     // Remember the entry block
     //
-    BasicBlock* const entryBlock = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    BasicBlock* const entryBlock =
+        (m_comp->opts.IsOSR() && (m_comp->fgEntryBB != nullptr)) ? m_comp->fgEntryBB : m_comp->fgFirstBB;
     JITDUMP("Synthesis solver: flow graph has %u improper loop headers\n", m_improperLoopHeaders);
 
     // This is an iterative solver, and it may require a lot of iterations
