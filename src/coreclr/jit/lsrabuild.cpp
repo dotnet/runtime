@@ -3794,21 +3794,50 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2IfPresent();
-
 #ifdef TARGET_XARCH
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
         assert(op2 != nullptr);
-        return BuildRMWUses(node, op1, op2, candidates);
+        if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
+        {
+            if (op1->isContainedIndir())
+            {
+                return BuildRMWUses(node, op1, op2, lowGPRRegs(), candidates);
+            }
+            else
+            {
+                return BuildRMWUses(node, op1, op2, candidates, lowGPRRegs());
+            }
+        }
+        return BuildRMWUses(node, op1, op2, candidates, candidates);
     }
 #endif // TARGET_XARCH
     int srcCount = 0;
     if (op1 != nullptr)
     {
-        srcCount += BuildOperandUses(op1, candidates);
+#ifdef TARGET_XARCH
+        // BSWAP creates movbe
+        if (op1->isContainedIndir() &&
+            ((varTypeUsesFloatReg(node) || node->OperGet() == GT_BSWAP || node->OperGet() == GT_BSWAP16)) &&
+            candidates == RBM_NONE)
+        {
+            srcCount += BuildOperandUses(op1, lowGPRRegs());
+        }
+        else
+#endif
+        {
+            srcCount += BuildOperandUses(op1, candidates);
+        }
     }
     if (op2 != nullptr)
     {
+
+#ifdef TARGET_XARCH
+        if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && candidates == RBM_NONE)
+        {
+            candidates = lowGPRRegs();
+        }
+#endif
         srcCount += BuildOperandUses(op2, candidates);
     }
     return srcCount;
@@ -3865,6 +3894,8 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     assert(varDsc->lvTracked);
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
+
+    GenTree* op1 = storeLoc->gtGetOp1();
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
@@ -3904,6 +3935,14 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 #else
     defCandidates = allRegs(type);
 #endif // TARGET_X86
+
+#ifdef TARGET_AMD64
+    if (op1->isContained() && op1->OperIs(GT_BITCAST) && varTypeUsesIntReg(varDsc->GetRegisterType(storeLoc)))
+    {
+        defCandidates = lowGPRRegs();
+    }
+
+#endif // TARGET_AMD64
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
@@ -3987,6 +4026,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
         }
         assert(isCandidateVar(fieldVarDsc));
         BuildStoreLocDef(storeLoc, fieldVarDsc, singleUseRef, i);
+
         if (isMultiRegSrc && (i < (dstCount - 1)))
         {
             currentLoc += 2;
@@ -4067,9 +4107,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = regType(bitCastSrc->TypeGet());
-        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
+        GenTree*         bitCastSrc   = op1->gtGetOp1();
+        RegisterType     registerType = regType(bitCastSrc->TypeGet());
+        SingleTypeRegSet candidates   = RBM_NONE;
+#ifdef TARGET_AMD64
+        if (registerType == IntRegisterType)
+        {
+            candidates = lowGPRRegs();
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            candidates = allRegs(registerType);
+        }
+        singleUseRef = BuildUse(bitCastSrc, candidates);
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4151,7 +4202,16 @@ int LinearScan::BuildSimple(GenTree* tree)
     }
     if (tree->IsValue())
     {
-        BuildDef(tree);
+#ifdef TARGET_AMD64
+        if ((tree->OperGet() == GT_BSWAP || tree->OperGet() == GT_BSWAP16) && varTypeUsesIntReg(tree))
+        {
+            BuildDef(tree, lowGPRRegs());
+        }
+        else
+#endif // TARGET_AMD64
+        {
+            BuildDef(tree);
+        }
     }
     return srcCount;
 }
@@ -4568,6 +4628,19 @@ int LinearScan::BuildCmpOperands(GenTree* tree)
         }
     }
 #endif // TARGET_X86
+
+#ifdef TARGET_AMD64
+    if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && op2Candidates == RBM_NONE)
+    {
+        // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
+        op2Candidates = lowGPRRegs();
+    }
+    if (op1->isContainedIndir() && varTypeUsesFloatReg(op2) && op1Candidates == RBM_NONE)
+    {
+        // We only use RSI and RDI for EnC code, so we don't want to favor callee-save regs.
+        op1Candidates = lowGPRRegs();
+    }
+#endif // TARGET_AMD64
 
     int srcCount = BuildOperandUses(op1, op1Candidates);
     srcCount += BuildOperandUses(op2, op2Candidates);
