@@ -118,6 +118,7 @@ namespace Explicit
 
     ref struct ByRefStruct
     {
+        public ref int R;
     }
 }
 
