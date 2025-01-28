@@ -311,6 +311,8 @@
     <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(Configuration)' == 'Release' or '$(Configuration)' == 'Checked')">true</EnableNgenOptimization>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <!-- Enable framework package pruning -->
+    <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <!-- Turn off workload support until we support them. -->
@@ -379,9 +381,9 @@
   <!-- Language configuration -->
   <PropertyGroup>
     <!-- default to allowing all language features -->
-    <LangVersion>preview</LangVersion>
+    <LangVersion>latest</LangVersion>
     <!-- default to max warnlevel -->
-    <AnalysisLevel Condition="'$(MSBuildProjectExtension)' == '.csproj'">preview</AnalysisLevel>
+    <AnalysisLevel Condition="'$(MSBuildProjectExtension)' == '.csproj'">latest</AnalysisLevel>
     <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
