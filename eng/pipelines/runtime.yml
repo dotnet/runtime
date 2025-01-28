@@ -1747,9 +1747,6 @@ extends:
       #
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
         parameters:
-          isExtraPlatformsBuild: false
-          isiOSLikeOnlyBuild: true
-          isRollingBuild: false
           condition: >-
             and(
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true),
