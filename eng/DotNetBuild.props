@@ -78,6 +78,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildPass)' != ''">$(InnerBuildArgs) /p:DotNetBuildPass=$(DotNetBuildPass)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
@@ -110,12 +111,6 @@
 
       <!-- Needed until https://github.com/dotnet/runtime/issues/109329 is fixed. -->
       <InnerBuildArgs Condition="'$(NetCoreAppToolCurrentVersion)' != ''">$(InnerBuildArgs) /p:NetCoreAppToolCurrentVersion=$(NetCoreAppToolCurrentVersion)</InnerBuildArgs>
-    </PropertyGroup>
-
-    <!-- For BuildPass>1, we need to specify which subset/subsets to build. -->
-    <PropertyGroup Condition="'$(DotNetBuildPass)' == '2'">
-      <!-- We will build the cross-os DACs in the win-x86 join job. -->
-      <InnerBuildArgs Condition="'$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86'">-subset crossdacpack</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
