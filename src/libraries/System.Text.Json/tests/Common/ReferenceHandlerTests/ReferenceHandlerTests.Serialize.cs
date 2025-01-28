@@ -252,20 +252,20 @@ namespace System.Text.Json.Serialization.Tests
         public abstract class EmployeeLocation
         {
         }
-        
+
         public class OfficeWorker : EmployeeLocation
         {
             public Office Office { get; set; }
         }
-        
+
         public class RemoteWorker : EmployeeLocation
         {
         }
-        
+
         public class Office
         {
             public EmployeeLocation[] Staff { get; set; }
-        
+
             public EmptyClass Dummy { get; set; }
         }
     }

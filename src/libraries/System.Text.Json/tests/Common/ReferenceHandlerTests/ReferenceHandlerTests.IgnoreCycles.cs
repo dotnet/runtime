@@ -451,22 +451,22 @@ namespace System.Text.Json.Serialization.Tests
 
         [JsonDerivedType(typeof(OfficeWorker), "office")]
         [JsonDerivedType(typeof(RemoteWorker), "remote")]
-        public abstract class Employee
+        public abstract class EmployeeLocation
         {
         }
 
-        public class OfficeWorker : Employee
+        public class OfficeWorker : EmployeeLocation
         {
             public Office Office { get; set; }
         }
 
-        public class RemoteWorker : Employee
+        public class RemoteWorker : EmployeeLocation
         {
         }
 
         public class Office
         {
-            public Employee[] Staff { get; set; }
+            public EmployeeLocation[] Staff { get; set; }
 
             public EmptyClass Dummy { get; set; }
         }
