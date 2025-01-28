@@ -11,8 +11,8 @@
     <PackageVersionNet8>8.0.8</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet8)').Build),25))</PackageVersionNet6>
-    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
+    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>2</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
@@ -44,9 +44,9 @@
       Any tools that contribute to the design-time experience should use the MicrosoftCodeAnalysisVersion_LatestVS property above to ensure
       they do not break the local dev experience.
     -->
-    <MicrosoftCodeAnalysisCSharpVersion>4.13.0-3.25057.3</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>4.13.0-3.25057.3</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.13.0-3.25057.3</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.14.0-1.25077.5</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>4.14.0-1.25077.5</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.14.0-1.25077.5</MicrosoftNetCompilersToolsetVersion>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
@@ -164,12 +164,12 @@
     <!-- hotreload-utils dependencies -->
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.24627.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25053.1</optimizationwindows_ntx64MIBCRuntimeVersion>
-    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25053.1</optimizationwindows_ntx86MIBCRuntimeVersion>
-    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.25053.1</optimizationwindows_ntarm64MIBCRuntimeVersion>
-    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.25053.1</optimizationlinuxx64MIBCRuntimeVersion>
-    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.25053.1</optimizationlinuxarm64MIBCRuntimeVersion>
-    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.25053.1</optimizationPGOCoreCLRVersion>
+    <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25067.2</optimizationwindows_ntx64MIBCRuntimeVersion>
+    <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25067.2</optimizationwindows_ntx86MIBCRuntimeVersion>
+    <optimizationwindows_ntarm64MIBCRuntimeVersion>1.0.0-prerelease.25067.2</optimizationwindows_ntarm64MIBCRuntimeVersion>
+    <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.25067.2</optimizationlinuxx64MIBCRuntimeVersion>
+    <optimizationlinuxarm64MIBCRuntimeVersion>1.0.0-prerelease.25067.2</optimizationlinuxarm64MIBCRuntimeVersion>
+    <optimizationPGOCoreCLRVersion>1.0.0-prerelease.25067.2</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftDiaSymReaderVersion>2.0.0</MicrosoftDiaSymReaderVersion>
     <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>

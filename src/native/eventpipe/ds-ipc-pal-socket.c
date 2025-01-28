@@ -123,6 +123,27 @@ ep_rt_object_array_free (void *ptr)
 	if (ptr)
 		free (ptr);
 }
+
+static
+inline
+ep_char8_t *
+ep_rt_utf8_string_dup (const ep_char8_t *str)
+{
+	if (!str)
+		return NULL;
+
+	return strdup (str);
+}
+
+static
+inline
+void
+ep_rt_utf8_string_free (ep_char8_t *str)
+{
+	if (str)
+		free (str);
+}
+
 #endif
 
 static bool _ipc_pal_socket_init = false;

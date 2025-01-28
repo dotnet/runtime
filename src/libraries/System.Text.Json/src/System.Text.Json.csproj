@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
@@ -21,6 +21,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
@@ -382,6 +383,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />

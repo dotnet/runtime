@@ -291,8 +291,7 @@
   </Target>
 
 
-  <!-- This target builds a Native AOT iOS App -->
-  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
+  <Target Name="BuildCoreCLRiOSApp">
     <PropertyGroup>
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
@@ -311,7 +310,10 @@
       <RunAOTCompilation>false</RunAOTCompilation>
       <MonoForceInterpreter>false</MonoForceInterpreter>
     </PropertyGroup>
+  </Target>
 
+  <!-- This target builds a Native AOT iOS App -->
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="BuildCoreCLRiOSApp;SetupOSSpecificProps">
     <ItemGroup>
       <NativeDependencies Include="$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o" />
     </ItemGroup>
@@ -357,7 +359,7 @@
       Projects="@(RunProj)"
       Targets="BuildNativeAOTiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
+      Condition="'@(TestDirectories)' != '' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' == 'nativeaot'"
     />
   </Target>
 
@@ -545,7 +547,8 @@
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
       <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
-      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2.dll"</CrossgenCmd>
+      <CrossgenCmd Condition="'$(RunningOnUnix)' == 'true'">$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2"</CrossgenCmd>
+      <CrossgenCmd Condition="'$(RunningOnUnix)' != 'true'">$(CrossgenCmd) --crossgen2-path "$(__BinDir)\$(BuildArchitecture)\crossgen2\crossgen2.exe"</CrossgenCmd>
     </PropertyGroup>
 
     <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />
