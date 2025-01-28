@@ -45,6 +45,16 @@ int PrintTests(int argc, char *argv[])
 
 int __cdecl main(int argc, char *argv[])
 {
+#if defined(__wasm__)
+    argc = 2;
+    argv = (char**)malloc(2 * sizeof(char*));
+    argv[0] = "paltests";
+    argv[1] = "PrintPalTests";
+    argv[1] = "samples/test1/paltest_samples_test1";
+    //argv[1] = "c_runtime/isdigit/test1/paltest_isdigit_test1";
+    //argv[1] = "c_runtime/atof/test1/paltest_atof_test1";
+#endif
+
     if (argc < 2)
     {
         return PrintUsage(argc, argv);
