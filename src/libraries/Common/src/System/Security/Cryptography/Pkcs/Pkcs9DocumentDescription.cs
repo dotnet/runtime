@@ -8,7 +8,13 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs9DocumentDescription : Pkcs9AttributeObject
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs9DocumentDescription : Pkcs9AttributeObject
     {
         //
         // Constructors.

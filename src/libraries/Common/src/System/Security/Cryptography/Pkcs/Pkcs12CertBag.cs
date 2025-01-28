@@ -8,7 +8,13 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs12CertBag : Pkcs12SafeBag
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs12CertBag : Pkcs12SafeBag
     {
         private Oid? _certTypeOid;
         private readonly CertBagAsn _decoded;

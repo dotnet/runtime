@@ -7,7 +7,13 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
-    public sealed class CryptographicAttributeObjectEnumerator : IEnumerator
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class CryptographicAttributeObjectEnumerator : IEnumerator
     {
         internal CryptographicAttributeObjectEnumerator(CryptographicAttributeObjectCollection attributes)
         {
