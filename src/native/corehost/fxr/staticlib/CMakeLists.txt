@@ -49,4 +49,4 @@ else()
     install(TARGETS libhostfxr DESTINATION corehost)
 endif(WIN32)
 
-target_link_libraries(libhostfxr PRIVATE hostmisc)
+target_link_libraries(libhostfxr PRIVATE hostmisc::public)
