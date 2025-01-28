@@ -2,10 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using Microsoft.Win32.SafeHandles;
+
+using TrackedAllocationDelegate = System.Action<System.IntPtr, int, System.IntPtr, int>;
 
 internal static partial class Interop
 {
@@ -163,6 +169,83 @@ internal static partial class Interop
             }
 
             return bytes;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
+        internal static partial int GetMemoryUse(ref int memoryUse, ref int allocationCount);
+
+        public static int GetOpenSslAllocatedMemory()
+        {
+            int used = 0;
+            int count = 0;
+            GetMemoryUse(ref used, ref count);
+            return used;
+        }
+
+        public static int GetOpenSslAllocationCount()
+        {
+            int used = 0;
+            int count = 0;
+            GetMemoryUse(ref used, ref count);
+            return count;
+        }
+
+#pragma warning disable CA1823
+        private static readonly bool MemoryDebug = GetMemoryDebug();
+#pragma warning restore CA1823
+
+        private static bool GetMemoryDebug()
+        {
+            string? value = Environment.GetEnvironmentVariable(Interop.OpenSsl.OpenSslDebugEnvironmentVariable);
+            if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
+            {
+                Interop.Crypto.GetOpenSslAllocationCount();
+                Interop.Crypto.GetOpenSslAllocatedMemory();
+                Interop.Crypto.ForEachTrackedAllocation((a, b, c, d) => { });
+                Interop.Crypto.EnableTracking();
+                Interop.Crypto.DisableTracking();
+            }
+
+            return enabled == 1;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnableMemoryTracking")]
+        internal static unsafe partial void EnableMemoryTracking(int enable);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ForEachTrackedAllocation")]
+        private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, int, char*, int, IntPtr, void> callback, IntPtr ctx);
+
+
+        public static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
+        {
+            GCHandle pCallback = GCHandle.Alloc(callback);
+            try
+            {
+                ForEachTrackedAllocation(&MemoryTrackingCallback, GCHandle.ToIntPtr(pCallback));
+            }
+            finally
+            {
+                pCallback.Free();
+            }
+
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void MemoryTrackingCallback(IntPtr ptr, int size, char* file, int line, IntPtr ctx)
+        {
+            GCHandle handle = GCHandle.FromIntPtr((IntPtr)ctx);
+            Action<IntPtr, int, IntPtr, int> callback = (TrackedAllocationDelegate)handle.Target!;
+            callback(ptr, size, (IntPtr)file, line);
+        }
+
+        public static unsafe void EnableTracking()
+        {
+            EnableMemoryTracking(1);
+        }
+
+        public static unsafe void DisableTracking()
+        {
+            EnableMemoryTracking(0);
         }
     }
 }
