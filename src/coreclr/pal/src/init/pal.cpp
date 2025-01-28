@@ -607,6 +607,7 @@ Initialize(
             }
         }
 
+#ifndef __wasm__
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -619,7 +620,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-
+#endif
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
