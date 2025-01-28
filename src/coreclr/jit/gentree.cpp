@@ -26057,7 +26057,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     {
         // allOutOfRange represents indices that are always "out of range" which means zero should be
         // selected for every element. We can special-case this down to just returning a zero node
-        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTG_ALL_EFFECT);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
     }
 
     if (op2->IsVectorZero())
@@ -26236,7 +26236,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             else
             {
                 GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-                GenTree* op1Dup2 = glCloneExpr(op1Dup1);
+                GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
                 // create the control for swapping
                 uint8_t control = 1; // 0b00000001
