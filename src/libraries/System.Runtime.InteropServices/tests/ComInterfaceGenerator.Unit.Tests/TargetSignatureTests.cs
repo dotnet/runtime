@@ -371,7 +371,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                 }
 
                 [GeneratedComInterface]
-                [Guid("0A617667-4961-4F93-B74F-6DC368E9817A")]
+                [Guid("0951f7b7-a700-4de4-930e-0b1fbc4684a9")]
                 partial interface {|#2:IComInterface3|} : IComInterface
                 {
                     void DerivedMethod();
