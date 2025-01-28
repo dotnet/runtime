@@ -614,7 +614,7 @@ private:
                 {
                     Statement* newStmt = nullptr;
                     GenTree**  callUse = nullptr;
-                    if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse))
+                    if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse, true))
                     {
                         if (m_firstNewStmt == nullptr)
                         {
