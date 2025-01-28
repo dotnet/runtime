@@ -50,6 +50,7 @@
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+    <ProjectReference Include="$(RepoRoot)src\mono\wasm\tools\wa-info\wa-lib\wa-lib.csproj" />
     <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
     <None Include="$(BrowserProjectRoot)\test-main.js" CopyToOutputDirectory="PreserveNewest" />
