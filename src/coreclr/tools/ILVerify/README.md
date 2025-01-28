@@ -53,7 +53,7 @@ As quick snippet which should be enough to build CoreCLR
 ./build.cmd -s clr+libs -c release
 ```
 
-As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. For the initial build of priority=1 in release mode, run the following:
+As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. Run the following to build ilverify tests:
 
 ```shell
 src/tests/build.(cmd/sh) release tree ilverify
