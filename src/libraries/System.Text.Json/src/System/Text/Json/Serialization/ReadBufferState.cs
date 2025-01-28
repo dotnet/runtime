@@ -70,13 +70,7 @@ namespace System.Text.Json.Serialization
             int minBufferCount = fillBuffer || _unsuccessfulReadCount > UnsuccessfulReadCountThreshold ? bufferState._buffer.Length : 0;
             do
             {
-                int bytesRead = await utf8Json.ReadAsync(
-#if NET
-                    bufferState._buffer.AsMemory(bufferState._count),
-#else
-                    bufferState._buffer, bufferState._count, bufferState._buffer.Length - bufferState._count,
-#endif
-                    cancellationToken).ConfigureAwait(false);
+                int bytesRead = await utf8Json.ReadAsync(bufferState._buffer.AsMemory(bufferState._count), cancellationToken).ConfigureAwait(false);
 
                 if (bytesRead == 0)
                 {
