@@ -20,8 +20,10 @@ endif()
 # Use WebSocket for EventPipe on mobile browser
 if (CLR_CMAKE_HOST_BROWSER)
   set(FEATURE_PERFTRACING_PAL_WS 1)
-  set(FEATURE_PERFTRACING_SINGLE_THREADED 1)
   set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
+  if (DISABLE_THREADS)
+    set(FEATURE_PERFTRACING_SINGLE_THREADED 1)
+  endif()
 endif()
 
 configure_file(${CLR_SRC_NATIVE_DIR}/eventpipe/ep-shared-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/ep-shared-config.h)
@@ -67,7 +69,7 @@ else()
     target_sources(dn-diagnosticserver-pal INTERFACE
         ds-ipc-pal-socket.c
     )
-endif (FEATURE_PERFTRACING_PAL_TCP)
+endif (FEATURE_PERFTRACING_PAL_WS)
 
 
 add_library(dn-eventpipe INTERFACE)

@@ -216,6 +216,15 @@ endif()
 if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST components_to_build)
     # Build EventPipe and DiagnosticServer with the Mono runtime implementation as unity-builds.
     add_library(eventpipe-mono-objects OBJECT)
+
+    if (DISABLE_THREADS)
+        set_target_properties(
+            eventpipe-mono-objects
+            PROPERTIES
+            DISABLE_THREADS ON
+        )
+    endif()
+
     set_target_properties(
         eventpipe-mono-objects
         PROPERTIES

@@ -112,7 +112,7 @@ server_warning_callback (
 	DS_LOG_WARNING_2 ("warning (%d): %s.", code, message);
 }
 
-static size_t server_loop_tick () {
+static size_t server_loop_tick (void) {
 	if (server_volatile_load_shutting_down_state ())
 		return 1; // done
 	DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
