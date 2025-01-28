@@ -1515,7 +1515,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert(!block->hasTryIndex());
             noway_assert(!block->hasHndIndex());
             block->copyEHRegion(iciBlock);
-            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP);
+            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
 
             // Update block nums appropriately
             //
