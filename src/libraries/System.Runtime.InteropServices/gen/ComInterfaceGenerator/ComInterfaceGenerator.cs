@@ -53,7 +53,7 @@ namespace Microsoft.Interop
             var externalInterfaceSymbols = attributedInterfaces.SelectMany(static (data, ct) =>
             {
                 return ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(data.Symbol);
-            });
+            }).Collect().SelectMany(static (data, ct) => data.Distinct(ComInterfaceInfo.EqualityComparerForExternalIfaces.Instance));
 
             var interfaceSymbolsWithoutDiagnostics = interfaceSymbolsToGenerateWithoutDiagnostics.Concat(externalInterfaceSymbols);
 
