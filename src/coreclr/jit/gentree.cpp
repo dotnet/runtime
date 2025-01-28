@@ -25387,7 +25387,7 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType 
 }
 
 GenTree* Compiler::gtNewSimdShuffleNodeVariable(
-    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isUnsafe)
+    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -25400,7 +25400,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(op2 != nullptr);
     assert(op2->TypeIs(type));
-    assert(!op2->IsCnsVec() || isUnsafe);
+    assert(!op2->IsCnsVec() || isShuffleNative);
 
     GenTree* retNode = nullptr;
     GenTree* cnsNode = nullptr;
@@ -25408,12 +25408,13 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
-    // duplicate operand 2 for non-isUnsafe implementation later
+    // duplicate operand 2 for non-ShuffleNative implementation later
+    // (also, on arm64, byte ShuffleNative is same as Shuffle)
     GenTree* op2DupSafe = nullptr;
 #if defined(TARGET_XARCH)
-    if (!isUnsafe)
+    if (!isShuffleNative)
 #elif defined(TARGET_ARM64)
-    if (!isUnsafe && elementSize > 1)
+    if (!isShuffleNative && elementSize > 1)
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -25423,11 +25424,13 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
 #if defined(TARGET_XARCH)
     // on xarch, signed comparison is cheaper, so whenever we are able to use it in the
-    // result & (indices < elementCount) step for Shuffle, we do.
+    // result & (indices < elementCount) step for Shuffle, we do. Specifically, we are
+    // able to use it when the top bit causes zeroing (then we can compare indices as
+    // if they were signed, since negative cases are already handled).
     bool canUseSignedComparisonHint = false;
 
-    // TODO-XARCH-CQ: If we have known min/max or set/unset bits for the indices, we could further optimise many cases
-    // below
+    // TODO-XARCH-CQ: If we have known set/unset bits for the indices, we could further optimise many cases
+    // below.
 
     bool isV512Supported = false;
     if (simdSize == 64)
@@ -25557,10 +25560,10 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             if (varTypeIsFloating(simdBaseType))
             {
                 assert(elementSize == 8);
-                simdBaseJitType = CORINFO_TYPE_ULONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
             }
 
-            // shift all indices to the left by 1 (long to int index)
+            // shift all indices to the left by 1 (long to int index, first step of converting long->int indices)
             cnsNode = gtNewIconNode(1, TYP_INT);
             if (simdSize == 32)
             {
@@ -25578,7 +25581,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 simdBaseJitType = CORINFO_TYPE_FLOAT;
             }
 
-            // shuffle & manipulate the long indices to int indices
+            // shuffle & manipulate the long indices to int indices (e.g., 3 2 1 0 -> 6 7 4 5 2 3 0 1)
             unsigned immediate = 0b10100000;
             cnsNode            = gtNewIconNode(immediate);
             if (simdSize == 32)
@@ -25637,11 +25640,11 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             assert(elementSize <= 2);
 
             // the idea is the following (for bytes, short indices are first converted to byte indices):
-            // 1. we have vector, and we create a vectorSwapped from it (which the 128-bit lanes are swapped)
-            // 2. we then shuffle each using Avx2.Shuffle (which masks with 0x0F for index, or 0x80 for zeroing)
+            // 1. we have vector, and we create a vectorSwapped from it (for which the 128-bit lanes are swapped)
+            // 2. we then shuffle each using Avx2.Shuffle
             // 3. we now have vector and vectorSwapped shuffled with Avx2.Shuffle - which only shuffles within the lane
             // 4. for Shuffle, invalid indices are explicitly zeroed later, so no need to worry about anything outside
-            //        [0, 31], and for ShuffleUnsafe, we don't guarantee any particular value.
+            //        [0, 31], and for ShuffleNative, we don't guarantee any particular index (or 0 value) is selected.
             // 5. since we only care about [0, 31], notably we have that for each element either vector or vectorSwapped
             //        (not both) will have the value we actually want, since one is effectively index A = i & 0x0F, and
             //        the other is effectively B = (i & 0x0F) | 0x10. (vector is A for left lane and B for right lane,
@@ -25649,15 +25652,11 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             // 6. we can use a conditional select to get the appropriate value if we know what mask to use.
             // 7. we can use the following mask:
             //        (indices ^ V256.Create(V128.Create((byte)0), V128.Create((byte)0x10))) > V256.Create((byte)0x0F)
-            //        since this detects whether the index value is in the same lane as V256.Create((byte)0, 1, ..., 31)
+            //        since this detects whether the index value is in the same lane as V256<byte>.Idices
             //        would be (which we know we can always use vector for). this is because it normalises the 0x10 bit
             //        to mean '0 = in vector, 1 = in vectorSwapped', and then we can use > 0x0F to detect when this is
             //        the case (we use > on sbyte, since it is the primitive operation on x86/x64 avx2 hardware).
-            // 8. since we use Avx2.Shuffle with the indices, we get that any with the 0x80 bit set automatically get 0.
-            // 9. for other out of range cases, we will have (indices ^ ...) > 0x0F will always be true, meaning we
-            //        always select from vectorSwapped in the case of out-of-bounds (but no 0x80). we normalise
-            //        explicitly for Shuffle always anyway, and for ShuffleUnsafe, this behaviour is fine (since it's
-            //        out of bounds).
+            // 8. for Shuffle, we explicitly normalise the out of range indices later, so we are done.
 
             // high bit on index gives 0 already
             if (elementSize == 1)
@@ -25716,7 +25715,6 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             }
 
             // swap the low and high 128-bit lanes
-            // calculate swap before shuf1 so they can be computed in parallel
             // Vector256<byte> swap = Avx2.Permute2x128(vector, vector, 0b00000001);
             GenTree* swap;
             if (!op1->IsCnsVec())
@@ -25736,12 +25734,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 swap             = op1Dup1;
 
                 simd_t*  cnsPtr = &op1Dup1->AsVecCon()->gtSimdVal;
-                uint64_t tmp    = cnsPtr->u64[0];
-                cnsPtr->u64[0]  = cnsPtr->u64[2];
-                cnsPtr->u64[2]  = tmp;
-                tmp             = cnsPtr->u64[1];
-                cnsPtr->u64[1]  = cnsPtr->u64[3];
-                cnsPtr->u64[3]  = tmp;
+                std::swap(cnsPtr->u64[0], cnsPtr->u64[2]);
+                std::swap(cnsPtr->u64[1], cnsPtr->u64[3]);
             }
 
             // shuffle with both the normal and swapped values
@@ -25763,7 +25757,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             GenTree* indicesXord = gtNewSimdBinOpNode(GT_XOR, type, op2Dup2, cnsNode, simdBaseJitType, simdSize);
 
             // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping
-            // lane and 0x00 otherwise
+            // lane and 0x00 otherwise. we will also get "swapping lane" also when index is more than 32 (but no high bit),
+            // but this is normalised later for Shuffle, and acceptable for ShuffleNative.
             // V256<byte> selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), V256.Create((sbyte)0x0F)).AsByte();
             simd_t comparandCnd            = {};
             comparandCnd.u64[0]            = 0x0F0F0F0F0F0F0F0F;
@@ -25852,7 +25847,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     // fix-up indices for non-byte sized element types:
     // if we have short / int / long, then we want to VectorTableLookup the least-significant byte to all bytes of that
     // index element, and then shift left by the applicable amount, then or on the bits for the elements
-    // if it's not isUnsafe, we also need to then fix-up the out-of-range indices
+    // if it's not ShuffleNative, we also need to then fix-up the out-of-range indices (only for non-byte though)
     if (elementSize > 1)
     {
         // AdvSimd.ShiftLeftLogical is only valid on integral types, excluding Vector128<int>
@@ -25913,9 +25908,9 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
     assert(retNode != nullptr);
 
 #if defined(TARGET_XARCH)
-    if (!isUnsafe)
+    if (!isShuffleNative)
 #elif defined(TARGET_ARM64)
-    if (!isUnsafe && elementSize > 1)
+    if (!isShuffleNative && elementSize > 1)
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -25939,6 +25934,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             corType = CORINFO_TYPE_ULONG;
         }
 
+        // track whether we need to xor the high bit from the comparand
         bool subComparandNode = false;
 
 #if defined(TARGET_XARCH)
@@ -25990,7 +25986,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 
         assert(genTypeSize(JitType2PreciseVarType(corType)) == elementSize);
 
-        // create the mask node (op2 < comparand), and the result node (mask & unsafeResult)
+        // create the mask node (op2 < comparand), and the result node (mask & nativeResult)
         GenTree* mask = gtNewSimdCmpOpNode(GT_LT, type, op2DupSafe, comparand, corType, simdSize);
         retNode       = gtNewSimdBinOpNode(GT_AND, type, retNode, mask, simdBaseJitType, simdSize);
     }
@@ -26003,7 +25999,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
 }
 
 GenTree* Compiler::gtNewSimdShuffleNode(
-    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isUnsafe)
+    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -26023,41 +26019,50 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     size_t elementSize  = genTypeSize(simdBaseType);
     size_t elementCount = simdSize / elementSize;
 
-    if (isUnsafe)
+    // For ShuffleNative, delegate to the variable implementation to get the same behaviour for
+    // ShuffleNative with constant vs variable indices for free.
+    // We want ShuffleNative to be at least as good as Shuffle (at least in non out-of-range cases),
+    // so if we have all values in range, then just treat it like Shuffle.
+    // We may as well also track whether we have the identity shuffle and all out-of-range here.
+    bool gotInvalidIndex = false;
+    bool hasIdentityShuffle = true;
+    bool allOutOfRange = true;
+    for (size_t index = 0; index < elementCount; index++)
     {
-        // For ShuffleUnsafe, delegate to the variable implementation to get the same behaviour for
-        // ShuffleUnsafe with constant vs variable indices for free.
-
-        // We want ShuffleUnsafe to be at least as good as Shuffle (at least in non out-of-range cases),
-        // so if we have all values in range, then just treat it like Shuffle.
-        bool gotInvalidIndex = false;
-        for (size_t index = 0; index < elementCount; index++)
+        uint64_t value = op2->GetIntegralVectorConstElement(index, simdBaseType);
+        if (value >= elementCount)
         {
-            uint64_t value = op2->GetIntegralVectorConstElement(index, simdBaseType);
-            if (value >= elementCount)
-            {
-                gotInvalidIndex = true;
-                break;
-            }
+            gotInvalidIndex = true;
         }
-
-        if (gotInvalidIndex)
+        else
         {
-            // Call variable implementation.
-            return gtNewSimdShuffleNodeVariable(type, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+            allOutOfRange = false;
+        }
+        if (value != static_cast<uint64_t>(index))
+        {
+            hasIdentityShuffle = false;
         }
     }
-
-    if (op2->IsVectorAllBitsSet())
+    if (isShuffleNative && gotInvalidIndex)
     {
-        // AllBitsSet represents indices that are always "out of range" which means zero should be
+        // Call variable implementation.
+        return gtNewSimdShuffleNodeVariable(type, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
+    }
+    if (hasIdentityShuffle)
+    {
+        // We have 0 1 2 ... for our indices, so just return op1
+        return op1;
+    }
+    if (allOutOfRange)
+    {
+        // allOutOfRange represents indices that are always "out of range" which means zero should be
         // selected for every element. We can special-case this down to just returning a zero node
-        return gtNewZeroConNode(type);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTG_ALL_EFFECT);
     }
 
     if (op2->IsVectorZero())
     {
-        // TODO-XARCH-CQ: Zero represents indices that select the first  element of op1 each time. We can simplify
+        // TODO-XARCH-CQ: Zero represents indices that select the first element of op1 each time. We can simplify
         // this down to basically a broadcast equivalent.
     }
 
@@ -26144,6 +26149,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
              !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL)) ||
             (varTypeIsShort(simdBaseType) &&
              !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)) ||
+            // This condition is the condition for when we'd have to emit something slower than what we can do with
+            // NI_AVX2_Shuffle directly:
             (!crossLane && (needsZero || elementSize < 4 || (elementSize == 4 && differsByLane))))
         {
             // we want to treat our type like byte here
@@ -26229,12 +26236,12 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             else
             {
                 GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-                GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
+                GenTree* op1Dup2 = glCloneExpr(op1Dup1);
 
                 // create the control for swapping
                 uint8_t control = 1; // 0b00000001
                 cnsNode         = gtNewIconNode(control);
-                GenTree* swap   = gtNewSimdHWIntrinsicNode(type, op1, op1Dup1, cnsNode, NI_AVX2_Permute2x128,
+                GenTree* swap   = gtNewSimdHWIntrinsicNode(type, op1Dup1, op1Dup2, cnsNode, NI_AVX2_Permute2x128,
                                                            simdBaseJitType, simdSize);
 
                 // if we have non-default shuffle mask
@@ -26247,7 +26254,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
                     GenTree* op2Dup = fgMakeMultiUse(&op2);
 
                     // shuffle both op1 and swap(op1)
-                    op1  = gtNewSimdHWIntrinsicNode(type, op1Dup2, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
+                    op1  = gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
                     swap = gtNewSimdHWIntrinsicNode(type, swap, op2Dup, NI_AVX2_Shuffle, simdBaseJitType, simdSize);
                 }
 
@@ -26530,18 +26537,6 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     uint64_t value  = 0;
     simd_t   vecCns = {};
 
-    if (simdSize == 16)
-    {
-        // Vector128.Shuffle(a, Vector128.Create(2, 3, 0, 1)) -> ExtractVector128(v.AsUInt64(), v.AsUInt64(), 1)
-        if ((op2->GetIntegralVectorConstElement(0, TYP_ULONG) == 0x300000002) &&
-            (op2->GetIntegralVectorConstElement(1, TYP_ULONG) == 0x100000000))
-        {
-            GenTree* op1Clone = fgMakeMultiUse(&op1);
-            return gtNewSimdHWIntrinsicNode(type, op1, op1Clone, gtNewIconNode(1), NI_AdvSimd_ExtractVector128,
-                                            CORINFO_TYPE_ULONG, simdSize);
-        }
-    }
-
     for (size_t index = 0; index < elementCount; index++)
     {
         value = op2->GetIntegralVectorConstElement(index, simdBaseType);
@@ -26559,6 +26554,17 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             {
                 vecCns.u8[(index * elementSize) + i] = 0xFF;
             }
+        }
+    }
+
+    if (simdSize == 16)
+    {
+        // Vector128.Shuffle(a, Vector128.Create(2, 3, 0, 1)) -> ExtractVector128(v.AsUInt64(), v.AsUInt64(), 1)
+        if ((vecCns.u64[0] == 0x0F0E0D0C0B0A0908) && (vecCns.u64[1] == 0x0706050403020100))
+        {
+            GenTree* op1Clone = fgMakeMultiUse(&op1);
+            return gtNewSimdHWIntrinsicNode(type, op1, op1Clone, gtNewIconNode(1), NI_AdvSimd_ExtractVector128,
+                                            CORINFO_TYPE_ULONG, simdSize);
         }
     }
 
@@ -30873,15 +30879,15 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
 #endif // TARGET_XARCH
 
         case NI_Vector128_Shuffle:
-        case NI_Vector128_ShuffleUnsafe:
+        case NI_Vector128_ShuffleNative:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Shuffle:
-        case NI_Vector256_ShuffleUnsafe:
+        case NI_Vector256_ShuffleNative:
         case NI_Vector512_Shuffle:
-        case NI_Vector512_ShuffleUnsafe:
+        case NI_Vector512_ShuffleNative:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Shuffle:
-        case NI_Vector64_ShuffleUnsafe:
+        case NI_Vector64_ShuffleNative:
 #endif
         {
             // The shuffle indices ideally are constant so we can get the best

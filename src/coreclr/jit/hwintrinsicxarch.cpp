@@ -3641,17 +3641,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
         case NI_Vector512_Shuffle:
-        case NI_Vector128_ShuffleUnsafe:
-        case NI_Vector256_ShuffleUnsafe:
-        case NI_Vector512_ShuffleUnsafe:
+        case NI_Vector128_ShuffleNative:
+        case NI_Vector256_ShuffleNative:
+        case NI_Vector512_ShuffleNative:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
-            // The Unsafe variants are non-deterministic on xarch, so exit if we see that
-            bool isUnsafe = intrinsic == NI_Vector128_ShuffleUnsafe || intrinsic == NI_Vector256_ShuffleUnsafe ||
-                            intrinsic == NI_Vector512_ShuffleUnsafe;
-            if (isUnsafe && BlockNonDeterministicIntrinsics(mustExpand))
+            // The Native variants are non-deterministic on xarch
+            bool isShuffleNative = intrinsic == NI_Vector128_ShuffleNative || intrinsic == NI_Vector256_ShuffleNative ||
+                                   intrinsic == NI_Vector512_ShuffleNative;
+            if (isShuffleNative && BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
             }
@@ -3696,11 +3696,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (indices->IsCnsVec())
                 {
-                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
                 }
                 else
                 {
-                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
                 }
             }
             break;

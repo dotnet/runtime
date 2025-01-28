@@ -323,15 +323,15 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
     switch (intrinsicId)
     {
         case NI_Vector128_Shuffle:
-        case NI_Vector128_ShuffleUnsafe:
+        case NI_Vector128_ShuffleNative:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Shuffle:
-        case NI_Vector256_ShuffleUnsafe:
+        case NI_Vector256_ShuffleNative:
         case NI_Vector512_Shuffle:
-        case NI_Vector512_ShuffleUnsafe:
+        case NI_Vector512_ShuffleNative:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Shuffle:
-        case NI_Vector64_ShuffleUnsafe:
+        case NI_Vector64_ShuffleNative:
 #endif
         {
             assert(operandCount == 2);
@@ -350,21 +350,21 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                 break;
             }
 
-            bool isUnsafe = intrinsicId == NI_Vector128_ShuffleUnsafe;
+            bool isShuffleNative = intrinsicId == NI_Vector128_ShuffleNative;
 #if defined(TARGET_XARCH)
-            isUnsafe =
-                isUnsafe || intrinsicId == NI_Vector256_ShuffleUnsafe || intrinsicId == NI_Vector512_ShuffleUnsafe;
+            isShuffleNative =
+                isShuffleNative || intrinsicId == NI_Vector256_ShuffleNative || intrinsicId == NI_Vector512_ShuffleNative;
 #elif defined(TARGET_ARM64)
-            isUnsafe = isUnsafe || intrinsicId == NI_Vector64_ShuffleUnsafe;
+            isShuffleNative = isShuffleNative || intrinsicId == NI_Vector64_ShuffleNative;
 #endif
 
             if (op2->IsCnsVec())
             {
-                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             else
             {
-                result = comp->gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                result = comp->gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;
         }

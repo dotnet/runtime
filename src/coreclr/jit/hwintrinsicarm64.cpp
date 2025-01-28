@@ -2251,15 +2251,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_Shuffle:
         case NI_Vector128_Shuffle:
-        case NI_Vector64_ShuffleUnsafe:
-        case NI_Vector128_ShuffleUnsafe:
+        case NI_Vector64_ShuffleNative:
+        case NI_Vector128_ShuffleNative:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
             assert((simdSize == 8) || (simdSize == 16));
 
-            // The Unsafe variants are non-deterministic on arm64 (for element size > 1), so exit if we see that
-            bool isUnsafe = intrinsic == NI_Vector64_ShuffleUnsafe || intrinsic == NI_Vector128_ShuffleUnsafe;
-            if (isUnsafe && genTypeSize(simdBaseType) > 1 && BlockNonDeterministicIntrinsics(mustExpand))
+            // The Native variants are non-deterministic on arm64 (for element size > 1)
+            bool isShuffleNative = intrinsic == NI_Vector64_ShuffleNative || intrinsic == NI_Vector128_ShuffleNative;
+            if (isShuffleNative && genTypeSize(simdBaseType) > 1 && BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
             }
@@ -2267,10 +2267,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* indices = impStackTop(0).val;
 
             // Check if the required intrinsics to emit are available.
-            if (!IsValidForShuffle(indices, simdSize, simdBaseType, nullptr))
+            bool canBecomeValidForShuffle = false;
+            if (!IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle))
             {
                 break;
             }
+
+            // All cases on arm64 are either valid or invalid, they cannot become valid later
+            assert (!canBecomeValidForShuffle);
 
             // If the indices might become constant later, then we don't emit for now, delay until later.
             if (!indices->IsCnsVec())
@@ -2298,11 +2302,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (indices->IsCnsVec())
                 {
-                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                    retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
                 }
                 else
                 {
-                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isUnsafe);
+                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
                 }
             }
             break;

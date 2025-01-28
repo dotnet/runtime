@@ -3489,14 +3489,14 @@ public:
                                           GenTree*    op2,
                                           CorInfoType simdBaseJitType,
                                           unsigned    simdSize,
-                                          bool        isUnsafe);
+                                          bool        isShuffleNative);
 
     GenTree* gtNewSimdShuffleNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
                                   CorInfoType simdBaseJitType,
                                   unsigned    simdSize,
-                                  bool        isUnsafe);
+                                  bool        isShuffleNative);
 
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);

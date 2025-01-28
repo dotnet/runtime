@@ -3091,7 +3091,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
         [Intrinsic]
-        public static Vector128<byte> ShuffleUnsafe(Vector128<byte> vector, Vector128<byte> indices)
+        public static Vector128<byte> ShuffleNative(Vector128<byte> vector, Vector128<byte> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3104,7 +3104,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector128<sbyte> ShuffleUnsafe(Vector128<sbyte> vector, Vector128<sbyte> indices)
+        public static Vector128<sbyte> ShuffleNative(Vector128<sbyte> vector, Vector128<sbyte> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3164,7 +3164,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
         [Intrinsic]
-        public static Vector128<short> ShuffleUnsafe(Vector128<short> vector, Vector128<short> indices)
+        public static Vector128<short> ShuffleNative(Vector128<short> vector, Vector128<short> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3176,7 +3176,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector128<ushort> ShuffleUnsafe(Vector128<ushort> vector, Vector128<ushort> indices)
+        public static Vector128<ushort> ShuffleNative(Vector128<ushort> vector, Vector128<ushort> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3260,7 +3260,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
         [Intrinsic]
-        public static Vector128<int> ShuffleUnsafe(Vector128<int> vector, Vector128<int> indices)
+        public static Vector128<int> ShuffleNative(Vector128<int> vector, Vector128<int> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3272,7 +3272,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector128<uint> ShuffleUnsafe(Vector128<uint> vector, Vector128<uint> indices)
+        public static Vector128<uint> ShuffleNative(Vector128<uint> vector, Vector128<uint> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3283,7 +3283,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
         [Intrinsic]
-        public static Vector128<float> ShuffleUnsafe(Vector128<float> vector, Vector128<int> indices)
+        public static Vector128<float> ShuffleNative(Vector128<float> vector, Vector128<int> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3367,7 +3367,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
         [Intrinsic]
-        public static Vector128<long> ShuffleUnsafe(Vector128<long> vector, Vector128<long> indices)
+        public static Vector128<long> ShuffleNative(Vector128<long> vector, Vector128<long> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3379,7 +3379,7 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector128<ulong> ShuffleUnsafe(Vector128<ulong> vector, Vector128<ulong> indices)
+        public static Vector128<ulong> ShuffleNative(Vector128<ulong> vector, Vector128<ulong> indices)
         {
             return Shuffle(vector, indices);
         }
@@ -3390,7 +3390,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
         [Intrinsic]
-        public static Vector128<double> ShuffleUnsafe(Vector128<double> vector, Vector128<long> indices)
+        public static Vector128<double> ShuffleNative(Vector128<double> vector, Vector128<long> indices)
         {
             return Shuffle(vector, indices);
         }

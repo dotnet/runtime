@@ -2777,10 +2777,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128ByteShuffleUnsafeOneInputTest()
+        public void Vector128ByteShuffleNativeOneInputTest()
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<byte> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<byte> result = Vector128.ShuffleNative(vector, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
@@ -2789,10 +2789,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128DoubleShuffleUnsafeOneInputTest()
+        public void Vector128DoubleShuffleNativeOneInputTest()
         {
             Vector128<double> vector = Vector128.Create((double)1, 2);
-            Vector128<double> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((long)1, 0));
+            Vector128<double> result = Vector128.ShuffleNative(vector, Vector128.Create((long)1, 0));
 
             for (int index = 0; index < Vector128<double>.Count; index++)
             {
@@ -2801,10 +2801,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int16ShuffleUnsafeOneInputTest()
+        public void Vector128Int16ShuffleNativeOneInputTest()
         {
             Vector128<short> vector = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector128<short> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<short> result = Vector128.ShuffleNative(vector, Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<short>.Count; index++)
             {
@@ -2813,10 +2813,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int32ShuffleUnsafeOneInputTest()
+        public void Vector128Int32ShuffleNativeOneInputTest()
         {
             Vector128<int> vector = Vector128.Create((int)1, 2, 3, 4);
-            Vector128<int> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((int)3, 2, 1, 0));
+            Vector128<int> result = Vector128.ShuffleNative(vector, Vector128.Create((int)3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<int>.Count; index++)
             {
@@ -2825,10 +2825,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int64ShuffleUnsafeOneInputTest()
+        public void Vector128Int64ShuffleNativeOneInputTest()
         {
             Vector128<long> vector = Vector128.Create((long)1, 2);
-            Vector128<long> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((long)1, 0));
+            Vector128<long> result = Vector128.ShuffleNative(vector, Vector128.Create((long)1, 0));
 
             for (int index = 0; index < Vector128<long>.Count; index++)
             {
@@ -2837,10 +2837,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SByteShuffleUnsafeOneInputTest()
+        public void Vector128SByteShuffleNativeOneInputTest()
         {
             Vector128<sbyte> vector = Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<sbyte> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<sbyte> result = Vector128.ShuffleNative(vector, Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<sbyte>.Count; index++)
             {
@@ -2849,10 +2849,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SingleShuffleUnsafeOneInputTest()
+        public void Vector128SingleShuffleNativeOneInputTest()
         {
             Vector128<float> vector = Vector128.Create((float)1, 2, 3, 4);
-            Vector128<float> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((int)3, 2, 1, 0));
+            Vector128<float> result = Vector128.ShuffleNative(vector, Vector128.Create((int)3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<float>.Count; index++)
             {
@@ -2861,10 +2861,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt16ShuffleUnsafeOneInputTest()
+        public void Vector128UInt16ShuffleNativeOneInputTest()
         {
             Vector128<ushort> vector = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector128<ushort> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<ushort> result = Vector128.ShuffleNative(vector, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<ushort>.Count; index++)
             {
@@ -2873,10 +2873,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt32ShuffleUnsafeOneInputTest()
+        public void Vector128UInt32ShuffleNativeOneInputTest()
         {
             Vector128<uint> vector = Vector128.Create((uint)1, 2, 3, 4);
-            Vector128<uint> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((uint)3, 2, 1, 0));
+            Vector128<uint> result = Vector128.ShuffleNative(vector, Vector128.Create((uint)3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<uint>.Count; index++)
             {
@@ -2885,10 +2885,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt64ShuffleUnsafeOneInputTest()
+        public void Vector128UInt64ShuffleNativeOneInputTest()
         {
             Vector128<ulong> vector = Vector128.Create((ulong)1, 2);
-            Vector128<ulong> result = Vector128.ShuffleUnsafe(vector, Vector128.Create((ulong)1, 0));
+            Vector128<ulong> result = Vector128.ShuffleNative(vector, Vector128.Create((ulong)1, 0));
 
             for (int index = 0; index < Vector128<ulong>.Count; index++)
             {
@@ -2897,9 +2897,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128ByteShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128ByteShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<byte> result = Vector128.ShuffleUnsafe(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<byte> result = Vector128.ShuffleNative(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
@@ -2908,9 +2908,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128DoubleShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128DoubleShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<double> result = Vector128.ShuffleUnsafe(Vector128.Create((double)1, 2), Vector128.Create((long)1, 0));
+            Vector128<double> result = Vector128.ShuffleNative(Vector128.Create((double)1, 2), Vector128.Create((long)1, 0));
 
             for (int index = 0; index < Vector128<double>.Count; index++)
             {
@@ -2919,9 +2919,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int16ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128Int16ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<short> result = Vector128.ShuffleUnsafe(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8), Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<short> result = Vector128.ShuffleNative(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8), Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<short>.Count; index++)
             {
@@ -2930,9 +2930,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int32ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128Int32ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<int> result = Vector128.ShuffleUnsafe(Vector128.Create((int)1, 2, 3, 4), Vector128.Create((int)3, 2, 1, 0));
+            Vector128<int> result = Vector128.ShuffleNative(Vector128.Create((int)1, 2, 3, 4), Vector128.Create((int)3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<int>.Count; index++)
             {
@@ -2941,9 +2941,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int64ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128Int64ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<long> result = Vector128.ShuffleUnsafe(Vector128.Create((long)1, 2), Vector128.Create((long)1, 0));
+            Vector128<long> result = Vector128.ShuffleNative(Vector128.Create((long)1, 2), Vector128.Create((long)1, 0));
 
             for (int index = 0; index < Vector128<long>.Count; index++)
             {
@@ -2952,9 +2952,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SByteShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128SByteShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<sbyte> result = Vector128.ShuffleUnsafe(Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<sbyte> result = Vector128.ShuffleNative(Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<sbyte>.Count; index++)
             {
@@ -2963,9 +2963,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SingleShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128SingleShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<float> result = Vector128.ShuffleUnsafe(Vector128.Create((float)1, 2, 3, 4), Vector128.Create((int)3, 2, 1, 0));
+            Vector128<float> result = Vector128.ShuffleNative(Vector128.Create((float)1, 2, 3, 4), Vector128.Create((int)3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<float>.Count; index++)
             {
@@ -2974,9 +2974,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt16ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128UInt16ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<ushort> result = Vector128.ShuffleUnsafe(Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8), Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector128<ushort> result = Vector128.ShuffleNative(Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8), Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<ushort>.Count; index++)
             {
@@ -2985,9 +2985,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt32ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128UInt32ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<uint> result = Vector128.ShuffleUnsafe(Vector128.Create((uint)1, 2, 3, 4), Vector128.Create((uint)3, 2, 1, 0));
+            Vector128<uint> result = Vector128.ShuffleNative(Vector128.Create((uint)1, 2, 3, 4), Vector128.Create((uint)3, 2, 1, 0));
 
             for (int index = 0; index < Vector128<uint>.Count; index++)
             {
@@ -2996,9 +2996,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt64ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector128UInt64ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector128<ulong> result = Vector128.ShuffleUnsafe(Vector128.Create((ulong)1, 2), Vector128.Create((ulong)1, 0));
+            Vector128<ulong> result = Vector128.ShuffleNative(Vector128.Create((ulong)1, 2), Vector128.Create((ulong)1, 0));
 
             for (int index = 0; index < Vector128<ulong>.Count; index++)
             {
@@ -3007,11 +3007,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128ByteShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128ByteShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector128<byte> indices = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector128<byte> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<byte> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
@@ -3020,11 +3020,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128DoubleShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128DoubleShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<double> vector = Vector128.Create((double)1, 2);
             Vector128<long> indices = Vector128.Create((long)1, 0);
-            Vector128<double> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<double> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<double>.Count; index++)
             {
@@ -3033,11 +3033,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int16ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128Int16ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<short> vector = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
             Vector128<short> indices = Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector128<short> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<short> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<short>.Count; index++)
             {
@@ -3046,11 +3046,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int32ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128Int32ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<int> vector = Vector128.Create((int)1, 2, 3, 4);
             Vector128<int> indices = Vector128.Create((int)3, 2, 1, 0);
-            Vector128<int> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<int> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<int>.Count; index++)
             {
@@ -3059,11 +3059,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int64ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128Int64ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<long> vector = Vector128.Create((long)1, 2);
             Vector128<long> indices = Vector128.Create((long)1, 0);
-            Vector128<long> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<long> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<long>.Count; index++)
             {
@@ -3072,11 +3072,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SByteShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128SByteShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<sbyte> vector = Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector128<sbyte> indices = Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector128<sbyte> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<sbyte> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<sbyte>.Count; index++)
             {
@@ -3085,11 +3085,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SingleShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128SingleShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<float> vector = Vector128.Create((float)1, 2, 3, 4);
             Vector128<int> indices = Vector128.Create((int)3, 2, 1, 0);
-            Vector128<float> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<float> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<float>.Count; index++)
             {
@@ -3098,11 +3098,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt16ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128UInt16ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<ushort> vector = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
             Vector128<ushort> indices = Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector128<ushort> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<ushort> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<ushort>.Count; index++)
             {
@@ -3111,11 +3111,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt32ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128UInt32ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<uint> vector = Vector128.Create((uint)1, 2, 3, 4);
             Vector128<uint> indices = Vector128.Create((uint)3, 2, 1, 0);
-            Vector128<uint> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<uint> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<uint>.Count; index++)
             {
@@ -3124,11 +3124,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt64ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector128UInt64ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector128<ulong> vector = Vector128.Create((ulong)1, 2);
             Vector128<ulong> indices = Vector128.Create((ulong)1, 0);
-            Vector128<ulong> result = Vector128.ShuffleUnsafe(vector, indices);
+            Vector128<ulong> result = Vector128.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector128<ulong>.Count; index++)
             {
@@ -3137,10 +3137,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128ByteShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128ByteShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<byte> result = Vector128.ShuffleUnsafe(vector, Vector128<byte>.Zero);
+            Vector128<byte> result = Vector128.ShuffleNative(vector, Vector128<byte>.Zero);
 
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
@@ -3149,10 +3149,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128DoubleShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128DoubleShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<double> vector = Vector128.Create((double)1, 2);
-            Vector128<double> result = Vector128.ShuffleUnsafe(vector, Vector128<long>.Zero);
+            Vector128<double> result = Vector128.ShuffleNative(vector, Vector128<long>.Zero);
 
             for (int index = 0; index < Vector128<double>.Count; index++)
             {
@@ -3161,10 +3161,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int16ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128Int16ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<short> vector = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector128<short> result = Vector128.ShuffleUnsafe(vector, Vector128<short>.Zero);
+            Vector128<short> result = Vector128.ShuffleNative(vector, Vector128<short>.Zero);
 
             for (int index = 0; index < Vector128<short>.Count; index++)
             {
@@ -3173,10 +3173,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int32ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128Int32ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<int> vector = Vector128.Create((int)1, 2, 3, 4);
-            Vector128<int> result = Vector128.ShuffleUnsafe(vector, Vector128<int>.Zero);
+            Vector128<int> result = Vector128.ShuffleNative(vector, Vector128<int>.Zero);
 
             for (int index = 0; index < Vector128<int>.Count; index++)
             {
@@ -3185,10 +3185,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128Int64ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128Int64ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<long> vector = Vector128.Create((long)1, 2);
-            Vector128<long> result = Vector128.ShuffleUnsafe(vector, Vector128<long>.Zero);
+            Vector128<long> result = Vector128.ShuffleNative(vector, Vector128<long>.Zero);
 
             for (int index = 0; index < Vector128<long>.Count; index++)
             {
@@ -3197,10 +3197,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SByteShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128SByteShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<sbyte> vector = Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<sbyte> result = Vector128.ShuffleUnsafe(vector, Vector128<sbyte>.Zero);
+            Vector128<sbyte> result = Vector128.ShuffleNative(vector, Vector128<sbyte>.Zero);
 
             for (int index = 0; index < Vector128<sbyte>.Count; index++)
             {
@@ -3209,10 +3209,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128SingleShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128SingleShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<float> vector = Vector128.Create((float)1, 2, 3, 4);
-            Vector128<float> result = Vector128.ShuffleUnsafe(vector, Vector128<int>.Zero);
+            Vector128<float> result = Vector128.ShuffleNative(vector, Vector128<int>.Zero);
 
             for (int index = 0; index < Vector128<float>.Count; index++)
             {
@@ -3221,10 +3221,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt16ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128UInt16ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<ushort> vector = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector128<ushort> result = Vector128.ShuffleUnsafe(vector, Vector128<ushort>.Zero);
+            Vector128<ushort> result = Vector128.ShuffleNative(vector, Vector128<ushort>.Zero);
 
             for (int index = 0; index < Vector128<ushort>.Count; index++)
             {
@@ -3233,10 +3233,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt32ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128UInt32ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<uint> vector = Vector128.Create((uint)1, 2, 3, 4);
-            Vector128<uint> result = Vector128.ShuffleUnsafe(vector, Vector128<uint>.Zero);
+            Vector128<uint> result = Vector128.ShuffleNative(vector, Vector128<uint>.Zero);
 
             for (int index = 0; index < Vector128<uint>.Count; index++)
             {
@@ -3245,10 +3245,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector128UInt64ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector128UInt64ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector128<ulong> vector = Vector128.Create((ulong)1, 2);
-            Vector128<ulong> result = Vector128.ShuffleUnsafe(vector, Vector128<ulong>.Zero);
+            Vector128<ulong> result = Vector128.ShuffleNative(vector, Vector128<ulong>.Zero);
 
             for (int index = 0; index < Vector128<ulong>.Count; index++)
             {

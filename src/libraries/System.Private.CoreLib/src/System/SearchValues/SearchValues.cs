@@ -295,10 +295,10 @@ namespace System.Buffers
             public static bool Value => false;
         }
 
-        // same as ShuffleUnsafe, except that we guarantee that if the high bit is set, it gives 0
+        // same as ShuffleNative, except that we guarantee that if the high bit is set, it gives 0
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
-        internal static Vector128<byte> ShuffleUnsafeModified(Vector128<byte> vector, Vector128<byte> indices)
+        internal static Vector128<byte> ShuffleNativeModified(Vector128<byte> vector, Vector128<byte> indices)
         {
             if (Ssse3.IsSupported)
             {

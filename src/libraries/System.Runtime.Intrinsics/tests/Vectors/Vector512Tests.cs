@@ -3395,10 +3395,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512ByteShuffleUnsafeOneInputTest()
+        public void Vector512ByteShuffleNativeOneInputTest()
         {
             Vector512<byte> vector = Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
-            Vector512<byte> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<byte> result = Vector512.ShuffleNative(vector, Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<byte>.Count; index++)
             {
@@ -3407,10 +3407,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512DoubleShuffleUnsafeOneInputTest()
+        public void Vector512DoubleShuffleNativeOneInputTest()
         {
             Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector512<double> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<double> result = Vector512.ShuffleNative(vector, Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<double>.Count; index++)
             {
@@ -3419,10 +3419,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int16ShuffleUnsafeOneInputTest()
+        public void Vector512Int16ShuffleNativeOneInputTest()
         {
             Vector512<short> vector = Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector512<short> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<short> result = Vector512.ShuffleNative(vector, Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<short>.Count; index++)
             {
@@ -3431,10 +3431,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int32ShuffleUnsafeOneInputTest()
+        public void Vector512Int32ShuffleNativeOneInputTest()
         {
             Vector512<int> vector = Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector512<int> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<int> result = Vector512.ShuffleNative(vector, Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<int>.Count; index++)
             {
@@ -3443,10 +3443,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int64ShuffleUnsafeOneInputTest()
+        public void Vector512Int64ShuffleNativeOneInputTest()
         {
             Vector512<long> vector = Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector512<long> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<long> result = Vector512.ShuffleNative(vector, Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<long>.Count; index++)
             {
@@ -3455,10 +3455,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SByteShuffleUnsafeOneInputTest()
+        public void Vector512SByteShuffleNativeOneInputTest()
         {
             Vector512<sbyte> vector = Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
-            Vector512<sbyte> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<sbyte> result = Vector512.ShuffleNative(vector, Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<sbyte>.Count; index++)
             {
@@ -3467,10 +3467,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SingleShuffleUnsafeOneInputTest()
+        public void Vector512SingleShuffleNativeOneInputTest()
         {
             Vector512<float> vector = Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector512<float> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<float> result = Vector512.ShuffleNative(vector, Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<float>.Count; index++)
             {
@@ -3479,10 +3479,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt16ShuffleUnsafeOneInputTest()
+        public void Vector512UInt16ShuffleNativeOneInputTest()
         {
             Vector512<ushort> vector = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector512<ushort> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<ushort> result = Vector512.ShuffleNative(vector, Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<ushort>.Count; index++)
             {
@@ -3491,10 +3491,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt32ShuffleUnsafeOneInputTest()
+        public void Vector512UInt32ShuffleNativeOneInputTest()
         {
             Vector512<uint> vector = Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector512<uint> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<uint> result = Vector512.ShuffleNative(vector, Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<uint>.Count; index++)
             {
@@ -3503,10 +3503,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt64ShuffleUnsafeOneInputTest()
+        public void Vector512UInt64ShuffleNativeOneInputTest()
         {
             Vector512<ulong> vector = Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector512<ulong> result = Vector512.ShuffleUnsafe(vector, Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector512<ulong> result = Vector512.ShuffleNative(vector, Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector512<ulong>.Count; index++)
             {
@@ -3515,9 +3515,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512ByteShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512ByteShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<byte> result = Vector512.ShuffleUnsafe(
+            Vector512<byte> result = Vector512.ShuffleNative(
                 Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
                 Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3529,9 +3529,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512DoubleShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512DoubleShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<double> result = Vector512.ShuffleUnsafe(
+            Vector512<double> result = Vector512.ShuffleNative(
                 Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3543,9 +3543,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int16ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512Int16ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<short> result = Vector512.ShuffleUnsafe(
+            Vector512<short> result = Vector512.ShuffleNative(
                 Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
                 Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3557,9 +3557,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int32ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512Int32ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<int> result = Vector512.ShuffleUnsafe(
+            Vector512<int> result = Vector512.ShuffleNative(
                 Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3571,9 +3571,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int64ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512Int64ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<long> result = Vector512.ShuffleUnsafe(
+            Vector512<long> result = Vector512.ShuffleNative(
                 Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3585,9 +3585,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SByteShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512SByteShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<sbyte> result = Vector512.ShuffleUnsafe(
+            Vector512<sbyte> result = Vector512.ShuffleNative(
                 Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
                 Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3599,9 +3599,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SingleShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512SingleShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<float> result = Vector512.ShuffleUnsafe(
+            Vector512<float> result = Vector512.ShuffleNative(
                 Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3613,9 +3613,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt16ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512UInt16ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<ushort> result = Vector512.ShuffleUnsafe(
+            Vector512<ushort> result = Vector512.ShuffleNative(
                 Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
                 Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3627,9 +3627,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt32ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512UInt32ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<uint> result = Vector512.ShuffleUnsafe(
+            Vector512<uint> result = Vector512.ShuffleNative(
                 Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3641,9 +3641,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt64ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector512UInt64ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector512<ulong> result = Vector512.ShuffleUnsafe(
+            Vector512<ulong> result = Vector512.ShuffleNative(
                 Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0)
             );
@@ -3655,9 +3655,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512ByteShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512ByteShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<byte> result = Vector512.ShuffleUnsafe(
+            Vector512<byte> result = Vector512.ShuffleNative(
                 Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
                 Vector512.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48)
             );
@@ -3684,9 +3684,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512DoubleShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512DoubleShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<double> result = Vector512.ShuffleUnsafe(
+            Vector512<double> result = Vector512.ShuffleNative(
                 Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((long)1, 0, 3, 2, 5, 4, 7, 6)
             );
@@ -3713,9 +3713,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int16ShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512Int16ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<short> result = Vector512.ShuffleUnsafe(
+            Vector512<short> result = Vector512.ShuffleNative(
                 Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
                 Vector512.Create((short)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24)
             );
@@ -3742,9 +3742,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int32ShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512Int32ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<int> result = Vector512.ShuffleUnsafe(
+            Vector512<int> result = Vector512.ShuffleNative(
                 Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((int)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)
             );
@@ -3771,9 +3771,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int64ShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512Int64ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<long> result = Vector512.ShuffleUnsafe(
+            Vector512<long> result = Vector512.ShuffleNative(
                 Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((long)1, 0, 3, 2, 5, 4, 7, 6)
             );
@@ -3800,9 +3800,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SByteShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512SByteShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<sbyte> result = Vector512.ShuffleUnsafe(
+            Vector512<sbyte> result = Vector512.ShuffleNative(
                 Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
                 Vector512.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48)
             );
@@ -3829,9 +3829,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SingleShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512SingleShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<float> result = Vector512.ShuffleUnsafe(
+            Vector512<float> result = Vector512.ShuffleNative(
                 Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((int)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)
             );
@@ -3858,9 +3858,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt16ShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512UInt16ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<ushort> result = Vector512.ShuffleUnsafe(
+            Vector512<ushort> result = Vector512.ShuffleNative(
                 Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
                 Vector512.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24)
             );
@@ -3887,9 +3887,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt32ShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512UInt32ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<uint> result = Vector512.ShuffleUnsafe(
+            Vector512<uint> result = Vector512.ShuffleNative(
                 Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((uint)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12)
             );
@@ -3916,9 +3916,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt64ShuffleUnsafeOneInputWithDirectVectorAndNoCross128BitLaneTest()
+        public void Vector512UInt64ShuffleNativeOneInputWithDirectVectorAndNoCross128BitLaneTest()
         {
-            Vector512<ulong> result = Vector512.ShuffleUnsafe(
+            Vector512<ulong> result = Vector512.ShuffleNative(
                 Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((ulong)1, 0, 3, 2, 5, 4, 7, 6)
             );
@@ -3945,9 +3945,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512ByteShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512ByteShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<byte> result = Vector512.ShuffleUnsafe(
+            Vector512<byte> result = Vector512.ShuffleNative(
                 Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
                 Vector512.Create((byte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32)
             );
@@ -3964,9 +3964,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512DoubleShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512DoubleShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<double> result = Vector512.ShuffleUnsafe(
+            Vector512<double> result = Vector512.ShuffleNative(
                 Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((long)3, 2, 1, 0, 7, 6, 5, 4)
             );
@@ -3983,9 +3983,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int16ShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512Int16ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<short> result = Vector512.ShuffleUnsafe(
+            Vector512<short> result = Vector512.ShuffleNative(
                 Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
                 Vector512.Create((short)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16)
             );
@@ -4002,9 +4002,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int32ShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512Int32ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<int> result = Vector512.ShuffleUnsafe(
+            Vector512<int> result = Vector512.ShuffleNative(
                 Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((int)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
             );
@@ -4021,9 +4021,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int64ShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512Int64ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<long> result = Vector512.ShuffleUnsafe(
+            Vector512<long> result = Vector512.ShuffleNative(
                 Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((long)3, 2, 1, 0, 7, 6, 5, 4)
             );
@@ -4040,9 +4040,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SByteShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512SByteShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<sbyte> result = Vector512.ShuffleUnsafe(
+            Vector512<sbyte> result = Vector512.ShuffleNative(
                 Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64),
                 Vector512.Create((sbyte)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32)
             );
@@ -4059,9 +4059,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SingleShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512SingleShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<float> result = Vector512.ShuffleUnsafe(
+            Vector512<float> result = Vector512.ShuffleNative(
                 Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((int)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
             );
@@ -4078,9 +4078,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt16ShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512UInt16ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<ushort> result = Vector512.ShuffleUnsafe(
+            Vector512<ushort> result = Vector512.ShuffleNative(
                 Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32),
                 Vector512.Create((ushort)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16)
             );
@@ -4097,9 +4097,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt32ShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512UInt32ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<uint> result = Vector512.ShuffleUnsafe(
+            Vector512<uint> result = Vector512.ShuffleNative(
                 Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16),
                 Vector512.Create((uint)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
             );
@@ -4116,9 +4116,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt64ShuffleUnsafeOneInputWithDirectVectorAndNoCross256BitLaneTest()
+        public void Vector512UInt64ShuffleNativeOneInputWithDirectVectorAndNoCross256BitLaneTest()
         {
-            Vector512<ulong> result = Vector512.ShuffleUnsafe(
+            Vector512<ulong> result = Vector512.ShuffleNative(
                 Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8),
                 Vector512.Create((ulong)3, 2, 1, 0, 7, 6, 5, 4)
             );
@@ -4135,11 +4135,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512ByteShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512ByteShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<byte> vector = Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
             Vector512<byte> indices = Vector512.Create((byte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<byte> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<byte> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<byte>.Count; index++)
             {
@@ -4148,11 +4148,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512DoubleShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512DoubleShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
             Vector512<long> indices = Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<double> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<double> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<double>.Count; index++)
             {
@@ -4161,11 +4161,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int16ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512Int16ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<short> vector = Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
             Vector512<short> indices = Vector512.Create((short)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<short> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<short> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<short>.Count; index++)
             {
@@ -4174,11 +4174,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int32ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512Int32ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<int> vector = Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector512<int> indices = Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<int> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<int> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<int>.Count; index++)
             {
@@ -4187,11 +4187,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int64ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512Int64ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<long> vector = Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8);
             Vector512<long> indices = Vector512.Create((long)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<long> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<long> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<long>.Count; index++)
             {
@@ -4200,11 +4200,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SByteShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512SByteShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<sbyte> vector = Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
             Vector512<sbyte> indices = Vector512.Create((sbyte)63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<sbyte> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<sbyte> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<sbyte>.Count; index++)
             {
@@ -4213,11 +4213,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SingleShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512SingleShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<float> vector = Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector512<int> indices = Vector512.Create((int)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<float> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<float> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<float>.Count; index++)
             {
@@ -4226,11 +4226,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt16ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512UInt16ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<ushort> vector = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
             Vector512<ushort> indices = Vector512.Create((ushort)31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<ushort> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<ushort> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<ushort>.Count; index++)
             {
@@ -4239,11 +4239,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt32ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512UInt32ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<uint> vector = Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector512<uint> indices = Vector512.Create((uint)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<uint> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<uint> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<uint>.Count; index++)
             {
@@ -4252,11 +4252,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt64ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector512UInt64ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector512<ulong> vector = Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8);
             Vector512<ulong> indices = Vector512.Create((ulong)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector512<ulong> result = Vector512.ShuffleUnsafe(vector, indices);
+            Vector512<ulong> result = Vector512.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector512<ulong>.Count; index++)
             {
@@ -4265,10 +4265,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512ByteShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512ByteShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<byte> vector = Vector512.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
-            Vector512<byte> result = Vector512.ShuffleUnsafe(vector, Vector512<byte>.Zero);
+            Vector512<byte> result = Vector512.ShuffleNative(vector, Vector512<byte>.Zero);
 
             for (int index = 0; index < Vector512<byte>.Count; index++)
             {
@@ -4277,10 +4277,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512DoubleShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512DoubleShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector512<double> result = Vector512.ShuffleUnsafe(vector, Vector512<long>.Zero);
+            Vector512<double> result = Vector512.ShuffleNative(vector, Vector512<long>.Zero);
 
             for (int index = 0; index < Vector512<double>.Count; index++)
             {
@@ -4289,10 +4289,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int16ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512Int16ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<short> vector = Vector512.Create((short)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector512<short> result = Vector512.ShuffleUnsafe(vector, Vector512<short>.Zero);
+            Vector512<short> result = Vector512.ShuffleNative(vector, Vector512<short>.Zero);
 
             for (int index = 0; index < Vector512<short>.Count; index++)
             {
@@ -4301,10 +4301,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int32ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512Int32ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<int> vector = Vector512.Create((int)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector512<int> result = Vector512.ShuffleUnsafe(vector, Vector512<int>.Zero);
+            Vector512<int> result = Vector512.ShuffleNative(vector, Vector512<int>.Zero);
 
             for (int index = 0; index < Vector512<int>.Count; index++)
             {
@@ -4313,10 +4313,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512Int64ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512Int64ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<long> vector = Vector512.Create((long)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector512<long> result = Vector512.ShuffleUnsafe(vector, Vector512<long>.Zero);
+            Vector512<long> result = Vector512.ShuffleNative(vector, Vector512<long>.Zero);
 
             for (int index = 0; index < Vector512<long>.Count; index++)
             {
@@ -4325,10 +4325,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SByteShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512SByteShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<sbyte> vector = Vector512.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
-            Vector512<sbyte> result = Vector512.ShuffleUnsafe(vector, Vector512<sbyte>.Zero);
+            Vector512<sbyte> result = Vector512.ShuffleNative(vector, Vector512<sbyte>.Zero);
 
             for (int index = 0; index < Vector512<sbyte>.Count; index++)
             {
@@ -4337,10 +4337,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512SingleShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512SingleShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<float> vector = Vector512.Create((float)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector512<float> result = Vector512.ShuffleUnsafe(vector, Vector512<int>.Zero);
+            Vector512<float> result = Vector512.ShuffleNative(vector, Vector512<int>.Zero);
 
             for (int index = 0; index < Vector512<float>.Count; index++)
             {
@@ -4349,10 +4349,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt16ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512UInt16ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<ushort> vector = Vector512.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
-            Vector512<ushort> result = Vector512.ShuffleUnsafe(vector, Vector512<ushort>.Zero);
+            Vector512<ushort> result = Vector512.ShuffleNative(vector, Vector512<ushort>.Zero);
 
             for (int index = 0; index < Vector512<ushort>.Count; index++)
             {
@@ -4361,10 +4361,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt32ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512UInt32ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<uint> vector = Vector512.Create((uint)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector512<uint> result = Vector512.ShuffleUnsafe(vector, Vector512<uint>.Zero);
+            Vector512<uint> result = Vector512.ShuffleNative(vector, Vector512<uint>.Zero);
 
             for (int index = 0; index < Vector512<uint>.Count; index++)
             {
@@ -4373,10 +4373,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector512UInt64ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector512UInt64ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector512<ulong> vector = Vector512.Create((ulong)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector512<ulong> result = Vector512.ShuffleUnsafe(vector, Vector512<ulong>.Zero);
+            Vector512<ulong> result = Vector512.ShuffleNative(vector, Vector512<ulong>.Zero);
 
             for (int index = 0; index < Vector512<ulong>.Count; index++)
             {

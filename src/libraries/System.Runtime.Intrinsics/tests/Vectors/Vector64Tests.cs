@@ -2400,10 +2400,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64ByteShuffleUnsafeOneInputTest()
+        public void Vector64ByteShuffleNativeOneInputTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<byte> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<byte> result = Vector64.ShuffleNative(vector, Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
@@ -2412,10 +2412,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int16ShuffleUnsafeOneInputTest()
+        public void Vector64Int16ShuffleNativeOneInputTest()
         {
             Vector64<short> vector = Vector64.Create((short)1, 2, 3, 4);
-            Vector64<short> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((short)3, 2, 1, 0));
+            Vector64<short> result = Vector64.ShuffleNative(vector, Vector64.Create((short)3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
@@ -2424,10 +2424,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int32ShuffleUnsafeOneInputTest()
+        public void Vector64Int32ShuffleNativeOneInputTest()
         {
             Vector64<int> vector = Vector64.Create((int)1, 2);
-            Vector64<int> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((int)1, 0));
+            Vector64<int> result = Vector64.ShuffleNative(vector, Vector64.Create((int)1, 0));
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
@@ -2436,10 +2436,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SByteShuffleUnsafeOneInputTest()
+        public void Vector64SByteShuffleNativeOneInputTest()
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<sbyte> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<sbyte> result = Vector64.ShuffleNative(vector, Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2448,10 +2448,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SingleShuffleUnsafeOneInputTest()
+        public void Vector64SingleShuffleNativeOneInputTest()
         {
             Vector64<float> vector = Vector64.Create((float)1, 2);
-            Vector64<float> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((int)1, 0));
+            Vector64<float> result = Vector64.ShuffleNative(vector, Vector64.Create((int)1, 0));
 
             for (int index = 0; index < Vector64<float>.Count; index++)
             {
@@ -2460,10 +2460,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt16ShuffleUnsafeOneInputTest()
+        public void Vector64UInt16ShuffleNativeOneInputTest()
         {
             Vector64<ushort> vector = Vector64.Create((ushort)1, 2, 3, 4);
-            Vector64<ushort> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((ushort)3, 2, 1, 0));
+            Vector64<ushort> result = Vector64.ShuffleNative(vector, Vector64.Create((ushort)3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<ushort>.Count; index++)
             {
@@ -2472,10 +2472,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt32ShuffleUnsafeOneInputTest()
+        public void Vector64UInt32ShuffleNativeOneInputTest()
         {
             Vector64<uint> vector = Vector64.Create((uint)1, 2);
-            Vector64<uint> result = Vector64.ShuffleUnsafe(vector, Vector64.Create((uint)1, 0));
+            Vector64<uint> result = Vector64.ShuffleNative(vector, Vector64.Create((uint)1, 0));
 
             for (int index = 0; index < Vector64<uint>.Count; index++)
             {
@@ -2484,9 +2484,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64ByteShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64ByteShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<byte> result = Vector64.ShuffleUnsafe(Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<byte> result = Vector64.ShuffleNative(Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
@@ -2495,9 +2495,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int16ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64Int16ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<short> result = Vector64.ShuffleUnsafe(Vector64.Create((short)1, 2, 3, 4), Vector64.Create((short)3, 2, 1, 0));
+            Vector64<short> result = Vector64.ShuffleNative(Vector64.Create((short)1, 2, 3, 4), Vector64.Create((short)3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
@@ -2506,9 +2506,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int32ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64Int32ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<int> result = Vector64.ShuffleUnsafe(Vector64.Create((int)1, 2), Vector64.Create((int)1, 0));
+            Vector64<int> result = Vector64.ShuffleNative(Vector64.Create((int)1, 2), Vector64.Create((int)1, 0));
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
@@ -2517,9 +2517,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SByteShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64SByteShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<sbyte> result = Vector64.ShuffleUnsafe(Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
+            Vector64<sbyte> result = Vector64.ShuffleNative(Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8), Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2528,9 +2528,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SingleShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64SingleShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<float> result = Vector64.ShuffleUnsafe(Vector64.Create((float)1, 2), Vector64.Create((int)1, 0));
+            Vector64<float> result = Vector64.ShuffleNative(Vector64.Create((float)1, 2), Vector64.Create((int)1, 0));
 
             for (int index = 0; index < Vector64<float>.Count; index++)
             {
@@ -2539,9 +2539,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt16ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64UInt16ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<ushort> result = Vector64.ShuffleUnsafe(Vector64.Create((ushort)1, 2, 3, 4), Vector64.Create((ushort)3, 2, 1, 0));
+            Vector64<ushort> result = Vector64.ShuffleNative(Vector64.Create((ushort)1, 2, 3, 4), Vector64.Create((ushort)3, 2, 1, 0));
 
             for (int index = 0; index < Vector64<ushort>.Count; index++)
             {
@@ -2550,9 +2550,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt32ShuffleUnsafeOneInputWithDirectVectorTest()
+        public void Vector64UInt32ShuffleNativeOneInputWithDirectVectorTest()
         {
-            Vector64<uint> result = Vector64.ShuffleUnsafe(Vector64.Create((uint)1, 2), Vector64.Create((uint)1, 0));
+            Vector64<uint> result = Vector64.ShuffleNative(Vector64.Create((uint)1, 2), Vector64.Create((uint)1, 0));
 
             for (int index = 0; index < Vector64<uint>.Count; index++)
             {
@@ -2561,11 +2561,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64ByteShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64ByteShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
             Vector64<byte> indices = Vector64.Create((byte)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector64<byte> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<byte> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
@@ -2574,11 +2574,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int16ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64Int16ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<short> vector = Vector64.Create((short)1, 2, 3, 4);
             Vector64<short> indices = Vector64.Create((short)3, 2, 1, 0);
-            Vector64<short> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<short> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
@@ -2587,11 +2587,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int32ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64Int32ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<int> vector = Vector64.Create((int)1, 2);
             Vector64<int> indices = Vector64.Create((int)1, 0);
-            Vector64<int> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<int> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
@@ -2600,11 +2600,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SByteShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64SByteShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
             Vector64<sbyte> indices = Vector64.Create((sbyte)7, 6, 5, 4, 3, 2, 1, 0);
-            Vector64<sbyte> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<sbyte> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2613,11 +2613,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SingleShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64SingleShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<float> vector = Vector64.Create((float)1, 2);
             Vector64<int> indices = Vector64.Create((int)1, 0);
-            Vector64<float> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<float> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<float>.Count; index++)
             {
@@ -2626,11 +2626,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt16ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64UInt16ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<ushort> vector = Vector64.Create((ushort)1, 2, 3, 4);
             Vector64<ushort> indices = Vector64.Create((ushort)3, 2, 1, 0);
-            Vector64<ushort> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<ushort> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<ushort>.Count; index++)
             {
@@ -2639,11 +2639,11 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt32ShuffleUnsafeOneInputWithLocalIndicesTest()
+        public void Vector64UInt32ShuffleNativeOneInputWithLocalIndicesTest()
         {
             Vector64<uint> vector = Vector64.Create((uint)1, 2);
             Vector64<uint> indices = Vector64.Create((uint)1, 0);
-            Vector64<uint> result = Vector64.ShuffleUnsafe(vector, indices);
+            Vector64<uint> result = Vector64.ShuffleNative(vector, indices);
 
             for (int index = 0; index < Vector64<uint>.Count; index++)
             {
@@ -2652,10 +2652,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64ByteShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64ByteShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<byte> vector = Vector64.Create((byte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<byte> result = Vector64.ShuffleUnsafe(vector, Vector64<byte>.Zero);
+            Vector64<byte> result = Vector64.ShuffleNative(vector, Vector64<byte>.Zero);
 
             for (int index = 0; index < Vector64<byte>.Count; index++)
             {
@@ -2664,10 +2664,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int16ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64Int16ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<short> vector = Vector64.Create((short)1, 2, 3, 4);
-            Vector64<short> result = Vector64.ShuffleUnsafe(vector, Vector64<short>.Zero);
+            Vector64<short> result = Vector64.ShuffleNative(vector, Vector64<short>.Zero);
 
             for (int index = 0; index < Vector64<short>.Count; index++)
             {
@@ -2676,10 +2676,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64Int32ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64Int32ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<int> vector = Vector64.Create((int)1, 2);
-            Vector64<int> result = Vector64.ShuffleUnsafe(vector, Vector64<int>.Zero);
+            Vector64<int> result = Vector64.ShuffleNative(vector, Vector64<int>.Zero);
 
             for (int index = 0; index < Vector64<int>.Count; index++)
             {
@@ -2688,10 +2688,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SByteShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64SByteShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<sbyte> vector = Vector64.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8);
-            Vector64<sbyte> result = Vector64.ShuffleUnsafe(vector, Vector64<sbyte>.Zero);
+            Vector64<sbyte> result = Vector64.ShuffleNative(vector, Vector64<sbyte>.Zero);
 
             for (int index = 0; index < Vector64<sbyte>.Count; index++)
             {
@@ -2700,10 +2700,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64SingleShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64SingleShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<float> vector = Vector64.Create((float)1, 2);
-            Vector64<float> result = Vector64.ShuffleUnsafe(vector, Vector64<int>.Zero);
+            Vector64<float> result = Vector64.ShuffleNative(vector, Vector64<int>.Zero);
 
             for (int index = 0; index < Vector64<float>.Count; index++)
             {
@@ -2712,10 +2712,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt16ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64UInt16ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<ushort> vector = Vector64.Create((ushort)1, 2, 3, 4);
-            Vector64<ushort> result = Vector64.ShuffleUnsafe(vector, Vector64<ushort>.Zero);
+            Vector64<ushort> result = Vector64.ShuffleNative(vector, Vector64<ushort>.Zero);
 
             for (int index = 0; index < Vector64<ushort>.Count; index++)
             {
@@ -2724,10 +2724,10 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
-        public void Vector64UInt32ShuffleUnsafeOneInputWithZeroIndicesTest()
+        public void Vector64UInt32ShuffleNativeOneInputWithZeroIndicesTest()
         {
             Vector64<uint> vector = Vector64.Create((uint)1, 2);
-            Vector64<uint> result = Vector64.ShuffleUnsafe(vector, Vector64<uint>.Zero);
+            Vector64<uint> result = Vector64.ShuffleNative(vector, Vector64<uint>.Zero);
 
             for (int index = 0; index < Vector64<uint>.Count; index++)
             {
