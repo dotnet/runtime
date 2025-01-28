@@ -715,6 +715,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.EntityHandle Type { get { throw null; } }
         public System.Reflection.Metadata.EventAccessors GetAccessors() { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
+        public System.Reflection.Metadata.TypeDefinitionHandle GetDeclaringType() { throw null; }
     }
     public readonly partial struct EventDefinitionHandle : System.IEquatable<System.Reflection.Metadata.EventDefinitionHandle>
     {
@@ -2135,6 +2136,7 @@ namespace System.Reflection.Metadata
         public System.Reflection.Metadata.MethodSignature<TType> DecodeSignature<TType, TGenericContext>(System.Reflection.Metadata.ISignatureTypeProvider<TType, TGenericContext> provider, TGenericContext genericContext) { throw null; }
         public System.Reflection.Metadata.PropertyAccessors GetAccessors() { throw null; }
         public System.Reflection.Metadata.CustomAttributeHandleCollection GetCustomAttributes() { throw null; }
+        public System.Reflection.Metadata.TypeDefinitionHandle GetDeclaringType() { throw null; }
         public System.Reflection.Metadata.ConstantHandle GetDefaultValue() { throw null; }
     }
     public readonly partial struct PropertyDefinitionHandle : System.IEquatable<System.Reflection.Metadata.PropertyDefinitionHandle>
