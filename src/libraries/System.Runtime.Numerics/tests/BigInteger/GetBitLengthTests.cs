@@ -46,8 +46,8 @@ namespace System.Numerics.Tests
             // Very large cases
             // Values which are large but beneath the upper bound of
             // (2^31) - 1 bits and which should not cause OOM in CI.
-            VerifyGetBitLength(BigInteger.One << 32 << (1 << 27), (1 << 27) + 32L + 1, 1);
-            VerifyGetBitLength(BigInteger.One << 64 << (1 << 27), (1 << 27) + 64L + 1, 1);
+            VerifyGetBitLength(BigInteger.One << 32 << (1 << 24), (1 << 24) + 32L + 1, 1);
+            VerifyGetBitLength(BigInteger.One << 64 << (1 << 24), (1 << 24) + 64L + 1, 1);
         }
 
         private static void VerifyLoopGetBitLength(Random random, bool isSmall)
