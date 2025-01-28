@@ -527,6 +527,9 @@ CorUnix::InternalCreateProcess(
     LPPROCESS_INFORMATION lpProcessInformation
     )
 {
+#ifdef TARGET_TVOS
+    return ERROR_NOT_SUPPORTED;
+#else
     PAL_ERROR palError = NO_ERROR;
     IPalObject *pobjProcess = NULL;
     IPalObject *pobjProcessRegistered = NULL;
@@ -1063,6 +1066,7 @@ InternalCreateProcessExit:
     }
 
     return palError;
+#endif // !TARGET_TVOS
 }
 
 
@@ -2194,7 +2198,7 @@ PROCCreateCrashDump(
     INT cbErrorMessageBuffer,
     bool serialize)
 {
-#if defined(TARGET_IOS)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
     return FALSE;
 #else
     _ASSERTE(argv.size() > 0);
@@ -2324,7 +2328,7 @@ PROCCreateCrashDump(
         }
     }
     return true;
-#endif // !TARGET_IOS
+#endif // !TARGET_IOS && !TARGET_TVOS
 }
 
 /*++
