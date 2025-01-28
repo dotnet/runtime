@@ -47,14 +47,22 @@ typedef struct list_t
 } list_t;
 
 // Whether outstanding allocations should be tracked, UINT_MAX if tracking is disabled.
-static uint32_t g_trackingEnabledSince = 0;
+static uint32_t g_trackingEnabledSince = UINT_MAX;
 // Static lists of tracked allocations.
 static list_t* g_trackedMemory = NULL;
 // Number of partitions (distinct lists in g_trackedMemory) to track outstanding allocations in.
 static uint32_t kPartitionCount = 32;
+// Lock to protect the above globals. We are using rwlock reduce contention. Practically, we
+// need to exclude { EnableMemoryTracking, ForEachTrackedAllocation } and { mallocFunction,
+// reallocFunction, freeFunction } from running concurrently. Specifically, prevent race between
+// disabling tracking and inserting an allocation that would not be considered tracked.
+// 
+// Since memory hooks can run in parallel (due to locks on individual lists), we can use the
+// reader side for them, and writer side of the lock for EnableMemoryTracking and ForEachTrackedAllocation.
+static pthread_rwlock_t g_trackedMemoryLock;
 
 // header for each tracked allocation
-typedef struct memoryEntry
+typedef struct header_t
 {
     // link for the circular list
     struct link_t link;
@@ -73,7 +81,7 @@ typedef struct memoryEntry
 
     // the actual allocated memory
     __attribute__((aligned(8))) uint8_t data[];
-} memoryEntry;
+} header_t;
 
 static CRYPTO_RWLOCK* g_allocLock = NULL;
 static int g_allocatedMemory;
@@ -90,9 +98,14 @@ static void list_init(list_t* list)
 
 static list_t* get_item_bucket(link_t* item)
 {
-    memoryEntry* entry = container_of(item, memoryEntry, link);
+    header_t* entry = container_of(item, header_t, link);
     uint32_t index = entry->index % kPartitionCount;
     return &g_trackedMemory[index];
+}
+
+static int32_t should_be_tracked(header_t* entry)
+{
+    return entry->index > g_trackingEnabledSince;
 }
 
 static void track_item(link_t* item)
@@ -139,7 +152,7 @@ static void untrack_item(link_t* item)
     item->prev = item;
 }
 
-static void init_memory_entry(memoryEntry* entry, size_t size, const char* file, int32_t line, uint32_t index)
+static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line, uint32_t index)
 {
     entry->size = (int32_t)size;
     entry->line = line;
@@ -151,7 +164,9 @@ static void init_memory_entry(memoryEntry* entry, size_t size, const char* file,
 
 static void* mallocFunction(size_t size, const char *file, int line)
 {
-    memoryEntry* entry = malloc(size + sizeof(struct memoryEntry));
+    pthread_rwlock_rdlock(&g_trackedMemoryLock);
+
+    header_t* entry = malloc(size + sizeof(header_t));
     if (entry != NULL)
     {
         int newCount;
@@ -159,79 +174,80 @@ static void* mallocFunction(size_t size, const char *file, int line)
         CRYPTO_atomic_add(&g_allocationCount, 1, &newCount, g_allocLock);
         init_memory_entry(entry, size, file, line, (uint32_t)newCount);
 
-        if (g_trackingEnabledSince != UINT_MAX)
+        if (should_be_tracked(entry))
         {
             track_item(&entry->link);
         }
     }
+
+    pthread_rwlock_unlock(&g_trackedMemoryLock);
 
     return (void*)(&entry->data);
 }
 
 static void* reallocFunction (void *ptr, size_t size, const char *file, int line)
 {
-    struct memoryEntry* entry = NULL;
+    pthread_rwlock_rdlock(&g_trackedMemoryLock);
+
+    struct header_t* entry = NULL;
     int newCount;
 
     if (ptr != NULL)
     {
-        ptr = (void*)((char*)ptr - sizeof(struct memoryEntry));
-        entry = (struct memoryEntry*)ptr;
+        entry = container_of(ptr, header_t, data);
         CRYPTO_atomic_add(&g_allocatedMemory, (int)(-entry->size), &newCount, g_allocLock);
 
         // untrack the item as realloc will change ptrs and we will need to put it to correct bucket
-        if (g_trackingEnabledSince < entry->index)
+        if (should_be_tracked(entry))
         {
             untrack_item(&entry->link);
         }
     }
 
-    void* newPtr = realloc(ptr, size + sizeof(struct memoryEntry));
+    void* toReturn = NULL;
+    void* newPtr = realloc((void*)entry, size + sizeof(header_t));
     if (newPtr != NULL)
     {
         CRYPTO_atomic_add(&g_allocatedMemory, (int)size, &newCount, g_allocLock);
         CRYPTO_atomic_add(&g_allocationCount, 1, &newCount, g_allocLock);
 
-        // no need to lock a specific list lock, as we don't change pointers
-        entry = (struct memoryEntry*)newPtr;
+        entry = (struct header_t*)newPtr;
         init_memory_entry(entry, size, file, line, (uint32_t)newCount);
-
-        if (g_trackingEnabledSince != UINT_MAX)
-        {
-            track_item(&entry->link);
-        }
-
-        return (void*)(&entry->data);
+        toReturn = (void*)(&entry->data);
     }
 
-    if (entry && g_trackingEnabledSince < entry->index)
+    if (entry && should_be_tracked(entry))
     {
-        track_item(&entry->link); // put back the original entry as the original pointer is still live
+        track_item(&entry->link);
     }
 
-    return NULL;
+    pthread_rwlock_unlock(&g_trackedMemoryLock);
+
+    return toReturn;
 }
 
 static void freeFunction(void *ptr, const char *file, int line)
 {
+    pthread_rwlock_rdlock(&g_trackedMemoryLock);
+
     (void)file;
     (void)line;
 
     if (ptr != NULL)
     {
         int newCount;
-        memoryEntry* entry = container_of(ptr, memoryEntry, data);
+        header_t* entry = container_of(ptr, header_t, data);
         CRYPTO_atomic_add(&g_allocatedMemory, (int)-entry->size, &newCount, g_allocLock);
 
-        // untrack item only if we are currently tracking and the tracking wasn't started
-        // after this allocation
-        if (g_trackingEnabledSince < entry->index)
+        if (should_be_tracked(entry))
         {
             untrack_item(&entry->link);
         }
 
         free(entry);
     }
+
+    pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
 int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount)
@@ -248,6 +264,8 @@ int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount)
 
 PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable)
 {
+    pthread_rwlock_wrlock(&g_trackedMemoryLock);
+
     if (g_trackedMemory == NULL)
     {
         // initialize the list
@@ -275,12 +293,16 @@ PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable)
     }
 
     g_trackingEnabledSince = enable ? (uint32_t)g_allocationCount : UINT_MAX;
+
+    pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
 PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int size, const char* file, int line, void* ctx), void* ctx)
 {
     if (g_trackedMemory != NULL)
     {
+        pthread_rwlock_wrlock(&g_trackedMemoryLock);
+
         for (uint32_t i = 0; i < kPartitionCount; i++)
         {
             list_t* list = &g_trackedMemory[i];
@@ -288,11 +310,13 @@ PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr,
             pthread_mutex_lock(&list->lock);
             for (link_t* node = list->head.next; node != &list->head; node = node->next)
             {
-                memoryEntry* entry = (memoryEntry*)node;
+                header_t* entry = (header_t*)node;
                 callback(entry->data, entry->size, entry->file, entry->line, ctx);
             }
             pthread_mutex_unlock(&list->lock);
         }
+
+        pthread_rwlock_unlock(&g_trackedMemoryLock);
     }
 }
 
@@ -326,5 +350,6 @@ void InitializeMemoryDebug(void)
         CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
         g_allocLock = CRYPTO_THREAD_lock_new();
 #endif
+        pthread_rwlock_init(&g_trackedMemoryLock, NULL);
     }
 }
