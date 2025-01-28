@@ -3727,6 +3727,8 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
+    bool gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool early = false);
+
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
@@ -5113,6 +5115,8 @@ private:
         SpillCliquePred,
         SpillCliqueSucc
     };
+
+    friend class SubstitutePlaceholdersAndDevirtualizeWalker;
 
     // Abstract class for receiving a callback while walking a spill clique
     class SpillCliqueWalker

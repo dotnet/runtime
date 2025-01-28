@@ -10213,6 +10213,77 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
     });
 }
 
+//------------------------------------------------------------------------
+// gtSubTreeAndChildrenAreFirstExecutedEffects: Check whether the subtree is the first
+//                                              executed effect in a tree.
+//
+// Arguments:
+//    tree - Tree to check the side effects on
+//    subTree - The subtree to be the first executed effect
+//    early - Whether the run is early, in which case we need to check lvHasLdAddrOp as
+//            we don't have valid GTF_GLOB_REF yet
+//
+// Returns:
+//    A boolean that indicates whether the subtree is the first executed effect in a tree.
+//
+bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool early)
+{
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPreOrder        = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        Visitor(Compiler* comp, GenTree* subTree, bool checkLocal)
+            : GenTreeVisitor(comp)
+            , m_subTree(subTree)
+            , m_checkLocal(checkLocal)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (*use == m_subTree)
+            {
+                Result = true;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            if (((*use)->gtFlags & GTF_ALL_EFFECT) != GTF_EMPTY)
+            {
+                Result = false;
+                return WALK_ABORT;
+            }
+
+            if (m_checkLocal && (*use)->OperIsAnyLocal() &&
+                m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp)
+            {
+                Result = false;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+
+        bool Result = false;
+    private:
+        GenTree* m_subTree;
+        bool     m_checkLocal;
+    };
+
+    Visitor visitor(this, subTree, early);
+    visitor.WalkTree(&tree, nullptr);
+    return visitor.Result;
+}
+
 bool GenTree::gtSetFlags() const
 {
     return (gtFlags & GTF_SET_FLAGS) != 0;
