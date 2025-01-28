@@ -78,7 +78,7 @@
   </ItemGroup>
   <ItemGroup Condition="$(PackageRID.StartsWith('win-'))">
     <PackagesToPublishFromThisJob
-      Include="VS.Redist.Common.NetCore.*.nupkg" />
+      Include="$(ArtifactsPackagesDir)**\VS.Redist.Common.NetCore.*.nupkg" />
   </ItemGroup>
 
   <ItemGroup>
