@@ -1004,7 +1004,8 @@ void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumber reg);
 
-void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs, insOpts instOptions = INS_OPTS_NONE);
+void emitIns_I_AR(
+    instruction ins, emitAttr attr, int val, regNumber reg, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_I_AI(instruction ins, emitAttr attr, int val, ssize_t disp);
 
@@ -1015,7 +1016,12 @@ void emitIns_R_AI(instruction  ins,
                   regNumber    ireg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp, insOpts instOptions = INS_OPTS_NONE);
+void emitIns_AR_R(instruction    ins,
+                  emitAttr       attr,
+                  regNumber      reg,
+                  regNumber      base,
+                  cnsval_ssize_t disp,
+                  insOpts        instOptions = INS_OPTS_NONE);
 
 void emitIns_AI_R(instruction ins, emitAttr attr, regNumber ireg, ssize_t disp);
 
@@ -1189,7 +1195,8 @@ void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumbe
 
 void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival);
 
-regNumber emitIns_BASE_R_R_RM(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
+regNumber emitIns_BASE_R_R_RM(
+    instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
 
 enum EmitCallType
 {

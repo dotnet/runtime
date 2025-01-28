@@ -804,9 +804,10 @@ protected:
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
 
         // In certian cases, we do not allow instructions to be promoted to APX-EVEX.
-        // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and EVEX together.
+        // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and
+        // EVEX together.
         unsigned _idNoApxEvexXPromotion : 1;
-#endif                              //  TARGET_XARCH
+#endif //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         unsigned _idLclVar     : 1; // access a local on stack
@@ -1742,7 +1743,7 @@ protected:
             _idEvexNfContext = 1;
         }
 
-         bool idIsNoApxEvexPromotion() const
+        bool idIsNoApxEvexPromotion() const
         {
             return _idNoApxEvexXPromotion != 0;
         }

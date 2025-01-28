@@ -2768,10 +2768,12 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //      1. the byte in position 11 must be an escape byte.
         //      2. the byte in position 11 must be a map number from 0 to 7.
 
-        // APX promoted EVEX instructions might also go onto this path, so the opcode can also be 1-byte in the form of 0x0000RM11.
+        // APX promoted EVEX instructions might also go onto this path, so the opcode can also be 1-byte in the form of
+        // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
-        assert(leadingBytes == 0x0F || 
-               (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 && leadingBytes <= 0x07) ||
+        assert(leadingBytes == 0x0F ||
+               (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 &&
+                leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
     }
@@ -8952,7 +8954,8 @@ void emitter::emitIns_R_AI(instruction  ins,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp, insOpts instOptions)
+void emitter::emitIns_AR_R(
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp, insOpts instOptions)
 {
     emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp, instOptions);
 }
@@ -9237,8 +9240,14 @@ void emitter::emitIns_R_ARX(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp, insOpts instOptions)
+void emitter::emitIns_ARX_R(instruction    ins,
+                            emitAttr       attr,
+                            regNumber      reg,
+                            regNumber      base,
+                            regNumber      index,
+                            unsigned       scale,
+                            cnsval_ssize_t disp,
+                            insOpts        instOptions)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -10300,10 +10309,11 @@ void emitter::emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Re
     }
 }
 
-regNumber emitter::emitIns_BASE_R_R_RM(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp)
+regNumber emitter::emitIns_BASE_R_R_RM(
+    instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp)
 {
-    bool requiresOverflowCheck = treeNode->gtOverflowEx();
-    regNumber r = REG_NA;
+    bool      requiresOverflowCheck = treeNode->gtOverflowEx();
+    regNumber r                     = REG_NA;
     assert(regOp->isUsedFromReg());
 
     if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg)
