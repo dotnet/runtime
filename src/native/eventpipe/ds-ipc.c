@@ -371,7 +371,7 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 	dn_vector_t ipc_poll_handles;
 	ep_raise_error_if_nok (dn_vector_custom_init_t (&ipc_poll_handles, &params, DiagnosticsIpcPollHandle));
 
-	while (!stream) {
+	do {
 		connect_success = true;
 		DN_VECTOR_PTR_FOREACH_BEGIN (DiagnosticsPort *, port, _ds_port_array) {
 			DiagnosticsIpcPollHandle ipc_poll_handle;
@@ -455,6 +455,11 @@ ds_ipc_stream_factory_get_next_available_stream (ds_ipc_error_callback_func call
 		// clear the view.
 		dn_vector_clear (&ipc_poll_handles);
 	}
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+	while (false);
+#else
+	while (!stream);
+#endif
 
 ep_on_exit:
 	DS_LOG_DEBUG_2 ("ds_ipc_stream_factory_get_next_available_stream - EXIT :: Poll attempt: %d, stream using handle %d.", poll_attempts, stream ? ds_ipc_stream_get_handle_int32_t (stream) : -1);

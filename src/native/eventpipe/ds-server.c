@@ -125,7 +125,10 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 		return 1;
 	}
 
-	while (!server_volatile_load_shutting_down_state ()) {
+	do {
+		if (server_volatile_load_shutting_down_state ())
+			return 1; // finish the thread
+
 		DiagnosticsIpcStream *stream = ds_ipc_stream_factory_get_next_available_stream (server_warning_callback);
 		if (!stream)
 			continue;
@@ -175,6 +178,11 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 
 		ds_ipc_message_fini (&message);
 	}
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+	while (false);
+#else
+	while (true);
+#endif
 
 	return (ep_rt_thread_start_func_return_t)0;
 }
@@ -264,11 +272,15 @@ ds_server_pause_for_diagnostics_monitor (void)
 		EP_ASSERT (ep_rt_wait_event_is_valid (&_server_resume_runtime_startup_event));
 		DS_LOG_ALWAYS_0 ("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command.");
 
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+		// TODO Pavel - paused startup is probably out of scope for the browser
+#else
 		if (ep_rt_wait_event_wait (&_server_resume_runtime_startup_event, 5000, false) != 0) {
 			ds_rt_server_log_pause_message ();
 			DS_LOG_ALWAYS_0 ("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command and has waited 5 seconds.");
 			ep_rt_wait_event_wait (&_server_resume_runtime_startup_event, EP_INFINITE_WAIT, false);
 		}
+#endif
 	}
 
 	// allow wait failures to fall through and the runtime to continue coming up

@@ -570,6 +570,26 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	STATIC_CONTRACT_NOTHROW;

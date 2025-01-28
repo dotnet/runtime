@@ -271,6 +271,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	mono_component_event_pipe ()->add_rundown_execution_checkpoint ("RuntimeSuspend");
 
+	// TODO Pavel - paused startup is probably out of scope for the browser
 	mono_component_diagnostics_server ()->pause_for_diagnostics_monitor ();
 
 	mono_component_event_pipe ()->add_rundown_execution_checkpoint ("RuntimeResumed");

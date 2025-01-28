@@ -25,8 +25,14 @@ extern EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_
 #define NUM_NANOSECONDS_IN_1_MS 1000000
 
 // Sample profiler.
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+MonoProfilerHandle _ep_rt_mono_sampling_profiler_provider;
+static EventPipeEvent *_sampling_event = NULL;
+static ep_rt_thread_handle_t _sampling_thread = NULL;
+#else
 static GArray * _sampled_thread_callstacks = NULL;
 static uint32_t _max_sampled_thread_count = 32;
+#endif
 
 // Mono profilers.
 extern MonoProfilerHandle _ep_rt_mono_default_profiler_provider;
@@ -1212,6 +1218,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	ep_rt_thread_handle_t sampling_thread,
 	EventPipeEvent *sampling_event)
 {
+#if !defined(HOST_BROWSER) || !defined(DISABLE_THREADS)
 	// Follows CoreClr implementation of sample profiler. Generic invasive/expensive way to do CPU sample profiling relying on STW and stackwalks.
 	// TODO: Investigate alternatives on platforms supporting Signals/SuspendThread (see Mono profiler) or CPU PMU's (see ETW/perf_event_open).
 
@@ -1302,8 +1309,99 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	// Current thread count will be our next maximum sampled threads.
 	_max_sampled_thread_count = filtered_thread_count;
+#else
+	_sampling_event = sampling_event;
+	_sampling_thread = sampling_thread;
+#endif
 
 	return true;
+}
+
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+
+static void
+method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
+{
+	MonoThreadInfo *thread_info = mono_thread_info_current ();
+	SampleProfileStackWalkData stack_walk_data;
+	SampleProfileStackWalkData *data= &stack_walk_data;
+	THREAD_INFO_TYPE adapter = { { 0 } };
+
+	data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
+	data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&ctx->context);
+	data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
+	data->stack_walk_data.stack_contents = &data->stack_contents;
+	data->stack_walk_data.top_frame = true;
+	data->stack_walk_data.async_frame = false;
+	data->stack_walk_data.safe_point_frame = false;
+	data->stack_walk_data.runtime_invoke_frame = false;
+	ep_stack_contents_reset (&data->stack_contents);
+
+	// mono_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data)
+	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (sample_profiler_walk_managed_stack_for_thread_callback, &ctx->context, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+	if (data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL && (data->stack_walk_data.safe_point_frame || data->stack_walk_data.runtime_invoke_frame)) {
+		// If classified as external code (managed->native frame on top of stack), but have a safe point or runtime invoke frame
+		// as second, re-classify current callstack to be executing managed code.
+		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
+	}
+	if (data->stack_walk_data.top_frame && ep_stack_contents_get_length (&data->stack_contents) == 0) {
+		// If no managed frames (including helper frames) are located on stack, mark sample as beginning in external code.
+		// This can happen on attached embedding threads returning to native code between runtime invokes.
+		// Make sure sample is still written into EventPipe for all attached threads even if they are currently not having
+		// any managed frames on stack. Prevents some tools applying thread time heuristics to prolong duration of last sample
+		// when embedding thread returns to native code. It also opens ability to visualize number of samples in unmanaged code
+		// on attached threads when executing outside of runtime. If tooling is not interested in these sample events, they are easy
+		// to identify and filter out.
+		data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+	}
+
+	if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
+		// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
+		// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
+		// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
+		if (data->stack_walk_data.async_frame) {
+			for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
+				mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
+		}
+		mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
+		uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+		ep_write_sample_profile_event (_sampling_thread, _sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
+	}
+}
+
+static MonoProfilerCallInstrumentationFlags
+method_filter (MonoProfiler *prof, MonoMethod *method)
+{
+	// TODO Pavel: add more
+	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER;
+}
+
+#endif
+
+void
+ep_rt_mono_sampling_provider_component_init (void)
+{
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+	_ep_rt_mono_sampling_profiler_provider = mono_profiler_create (NULL);
+	// this has performance impact even when the EP client is not connected!
+	mono_profiler_set_call_instrumentation_filter_callback (_ep_rt_mono_sampling_profiler_provider, method_filter);
+#endif
+}
+
+void
+ep_rt_mono_sample_profiler_enabled (void)
+{
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, method_enter);
+#endif
+}
+
+void
+ep_rt_mono_sample_profiler_disabled (void)
+{
+#if defined(HOST_BROWSER) && defined(DISABLE_THREADS)
+	mono_profiler_set_method_enter_callback (_ep_rt_mono_sampling_profiler_provider, NULL);
+#endif
 }
 
 void

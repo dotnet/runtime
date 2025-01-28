@@ -206,6 +206,14 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 
 static
 void
+ep_rt_sample_profiler_enabled (void);
+
+static
+void
+ep_rt_sample_profiler_disabled (void);
+
+static
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider);
 
 /*

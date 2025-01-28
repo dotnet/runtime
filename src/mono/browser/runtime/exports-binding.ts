@@ -25,6 +25,7 @@ import {
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
 import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
 import { mono_wasm_js_globalization_imports } from "./globalization";
+import { ds_rt_websocket_create, ds_rt_websocket_send, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_close } from "./diag";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -60,6 +61,13 @@ export const mono_wasm_imports = [
     mono_wasm_fire_debugger_agent_message_with_data_to_pause,
     // mono-threads-wasm.c
     schedule_background_exec,
+
+    //event pipe
+    ds_rt_websocket_create,
+    ds_rt_websocket_send,
+    ds_rt_websocket_poll,
+    ds_rt_websocket_recv,
+    ds_rt_websocket_close,
 
     // interp.c and jiterpreter.c
     mono_interp_tier_prepare_jiterpreter,
