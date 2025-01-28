@@ -101,11 +101,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- Set the subpath of workloads zip files -->
-  <ItemGroup>
-    <Artifact Update="$(ArtifactsDir)VSSetup\**\*.zip" SubBlobFolder="workloads" />
-  </ItemGroup>
-
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
          Don't stabilize the package version in order to retrieve the VersionSuffix. -->
