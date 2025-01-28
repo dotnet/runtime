@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.DirectoryServices.Tests;
 using System.Globalization;
 using System.Net;
-using System.Text;
-using System.Threading;
 using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
@@ -786,14 +783,14 @@ namespace System.DirectoryServices.Protocols.Tests
             return null;
         }
 
-        private LdapConnection GetConnection(string server)
+        private static LdapConnection GetConnection(string server)
         {
             LdapDirectoryIdentifier directoryIdentifier = new LdapDirectoryIdentifier(server, fullyQualifiedDnsHostName: true, connectionless: false);
 
             return GetConnection(directoryIdentifier);
         }
 
-        private LdapConnection GetConnection()
+        private static LdapConnection GetConnection()
         {
             LdapDirectoryIdentifier directoryIdentifier = string.IsNullOrEmpty(LdapConfiguration.Configuration.Port) ?
                                         new LdapDirectoryIdentifier(LdapConfiguration.Configuration.ServerName, fullyQualifiedDnsHostName: true, connectionless: false) :
