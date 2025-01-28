@@ -1738,7 +1738,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
-    DynamicMethodDesc *pStubMD = Entry2MethodDesc(stubIP, NULL)->AsDynamicMethodDesc();
+    DynamicMethodDesc *pStubMD = NonVirtualEntry2MethodDesc(stubIP)->AsDynamicMethodDesc();
     TADDR arg = StubManagerHelpers::GetHiddenArg(pContext);
     Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
     LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Enter: StubMD 0x%p, HiddenArg 0x%p, ThisPtr 0x%p\n",
