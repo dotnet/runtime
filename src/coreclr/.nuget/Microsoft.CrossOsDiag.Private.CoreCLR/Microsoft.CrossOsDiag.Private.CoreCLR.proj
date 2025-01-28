@@ -13,12 +13,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <SupportedRid Include="linux-x64" CrossDacOutputDir="linux.x64.$(Configuration)/x64" />
-    <SupportedRid Include="linux-musl-x64" CrossDacOutputDir="linux_musl.x64.$(Configuration)/x64" />
-    <SupportedRid Include="linux-arm64" CrossDacOutputDir="linux.arm64.$(Configuration)/x64" />
-    <SupportedRid Include="linux-musl-arm64" CrossDacOutputDir="linux_musl.arm64.$(Configuration)/x64" />
-    <SupportedRid Include="linux-arm" CrossDacOutputDir="linux.arm.$(Configuration)/x86" />
-    <SupportedRid Include="linux-musl-arm" CrossDacOutputDir="linux_musl.arm.$(Configuration)/x86" />
+    <SupportedRid Include="linux-x64" TargetOS="linux" TargetArchitecture="x64" HostArch="x64" CrossDacOutputDir="linux.x64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-musl-x64" TargetOS="alpine" TargetArchitecture="x64" HostArch="x64" CrossDacOutputDir="linux_musl.x64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-arm64" TargetOS="linux" TargetArchitecture="arm64" HostArch="x64" CrossDacOutputDir="linux.arm64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-musl-arm64" TargetOS="alpine" TargetArchitecture="arm64" HostArch="x64" CrossDacOutputDir="linux_musl.arm64.$(Configuration)/x64" />
+    <SupportedRid Include="linux-arm" TargetOS="linux" TargetArchitecture="arm" HostArch="x86" CrossDacOutputDir="linux.arm.$(Configuration)/x86" />
+    <SupportedRid Include="linux-musl-arm" TargetOS="alpine" TargetArchitecture="arm" HostArch="x86" CrossDacOutputDir="linux_musl.arm.$(Configuration)/x86" />
 
     <SupportedRid Update="@(SupportedRid)" Rid="%(Identity)" />
 
@@ -27,7 +27,35 @@
     <PackageDownload Condition="'$(DotNetBuildOrchestrator)' == 'true'" Include="@(TargetRuntimePacks)" Version="[$(Version)]" />
   </ItemGroup>
 
-  <Target Name="FilterSupportedCrossOsDacPackages" BeforeTargets="Build;Pack">
+  <Target Name="BuildCrossOSDacs">
+    <ItemGroup>
+      <_CrossOSDacProject Include="@(SupportedRid->'$(CoreClrProjectRoot)runtime.proj')"
+                          AdditionalProperties="TargetOS=%(TargetOS);
+                                                TargetArchitecture=%(TargetArchitecture);
+                                                ClrDebugSubset=true;
+                                                HostArchitecture=%(HostArch);
+                                                NoPgoOptimize=true;
+                                                CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" />
+      <_RuntimePrereqsProject Include="$(CoreClrProjectRoot)runtime-prereqs.proj" />
+    </ItemGroup>
+
+    <!--
+      Manually restore and then build the runtime-prereqs project first so we do it exactly once
+      (and runtime.proj won't over-build it)
+    -->
+    <MSBuild Projects="@(_RuntimePrereqsProject)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="@(_RuntimePrereqsProject)" />
+
+    <!-- Now build the runtime projects. -->
+    <MSBuild Projects="@(_CrossOSDacProject)"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
+    <MSBuild Projects="@(_CrossOSDacProject)" />
+  </Target>
+
+  <Target Name="FilterSupportedCrossOsDacPackages" DependsOnTargets="BuildCrossOSDacs" BeforeTargets="Build;Pack">
 
     <JoinItems
       Left="@(Project)"
