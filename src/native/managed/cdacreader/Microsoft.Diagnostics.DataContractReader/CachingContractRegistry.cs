@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// <summary>
 /// Contract registry that caches contracts for a target
 /// </summary>
-public sealed class CachingContractRegistry : ContractRegistry
+internal sealed class CachingContractRegistry : ContractRegistry
 {
     public delegate bool TryGetContractVersionDelegate(string contractName, out int version);
     // Contracts that have already been created for a target.

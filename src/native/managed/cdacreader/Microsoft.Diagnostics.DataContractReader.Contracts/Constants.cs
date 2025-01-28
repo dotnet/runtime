@@ -47,4 +47,16 @@ public static class Constants
         public const string HashMapSlotsPerBucket = nameof(HashMapSlotsPerBucket);
         public const string HashMapValueMask = nameof(HashMapValueMask);
     }
+    public static class FieldNames
+    {
+        public static class Array
+        {
+            public const string NumComponents = $"m_{nameof(NumComponents)}";
+        }
+
+        public static class ModuleLookupMap
+        {
+            public const string TableData = nameof(TableData);
+        }
+    }
 }

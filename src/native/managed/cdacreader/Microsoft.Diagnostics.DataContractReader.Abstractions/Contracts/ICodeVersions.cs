@@ -29,6 +29,7 @@ public interface ICodeVersions : IContract
 
 public readonly struct ILCodeVersionHandle
 {
+    // TODO-Layering: These members should be accessible only to contract implementations.
     public readonly TargetPointer Module;
     public readonly uint MethodDefinition;
     public readonly TargetPointer ILCodeVersionNode;
@@ -64,6 +65,7 @@ public readonly struct ILCodeVersionHandle
 public readonly struct NativeCodeVersionHandle
 {
     // no public constructors
+    // TODO-Layering: These members should be accessible only to contract implementations.
     public readonly TargetPointer MethodDescAddress;
     public readonly TargetPointer CodeVersionNodeAddress;
     private NativeCodeVersionHandle(TargetPointer methodDescAddress, TargetPointer codeVersionNodeAddress)

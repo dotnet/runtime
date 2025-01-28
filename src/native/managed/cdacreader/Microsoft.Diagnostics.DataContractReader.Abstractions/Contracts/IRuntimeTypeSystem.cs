@@ -8,6 +8,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 // an opaque handle to a type handle.  See IMetadata.GetMethodTableData
 public readonly struct TypeHandle
 {
+    // TODO-Layering: These members should be accessible only to contract implementations.
     public TypeHandle(TargetPointer address)
     {
         Address = address;
@@ -57,6 +58,7 @@ public enum CorElementType
 
 public readonly struct MethodDescHandle
 {
+    // TODO-Layering: These members should be accessible only to contract implementations.
     public MethodDescHandle(TargetPointer address)
     {
         Address = address;

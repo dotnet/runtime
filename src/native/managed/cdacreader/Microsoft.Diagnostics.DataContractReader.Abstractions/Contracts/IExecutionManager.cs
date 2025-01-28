@@ -7,6 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 public struct CodeBlockHandle
 {
+    // TODO-Layering: These members should be accessible only to contract implementations.
     public readonly TargetPointer Address;
     public CodeBlockHandle(TargetPointer address) => Address = address;
 }
