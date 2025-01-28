@@ -37,10 +37,11 @@
       <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AndroidBundleDir>
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
-      <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
+      <RuntimeHeaders>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</RuntimeHeaders>
+      <RuntimeHeaders Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">$(CoreClrProjectRoot)hosts\inc</RuntimeHeaders>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+    <ItemGroup Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)" />
       <!-- Make sure marshal-ilgen is included in the components list. -->
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false" />
@@ -218,8 +219,7 @@
   </Target>
 
 
-  <Target
-    Name="_AndroidGenerateAppBundle"
+  <Target Name="_AndroidGenerateAppBundle"
     Condition="$(AndroidGenerateAppBundle) == 'true'"
     DependsOnTargets="_AndroidGenerateRuntimeConfig">
 
@@ -227,7 +227,14 @@
       <_NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- TODO: Unify this with AppleBuild.targets and use a common mechanism for selecting desired target runtime  -->
+      <_RuntimeFlavor>Mono</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
+    </PropertyGroup>
+
     <AndroidAppBuilderTask
+        RuntimeFlavor="$(_RuntimeFlavor)"
         AppDir="$(AndroidBuildDir)"
         Assemblies="@(_AssembliesToBundleInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
@@ -238,7 +245,7 @@
         ForceInterpreter="$(MonoForceInterpreter)"
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
-        MonoRuntimeHeaders="$(_MonoHeaderPath)"
+        MonoRuntimeHeaders="$(RuntimeHeaders)"
         NativeDependencies="@(_NativeDependencies)"
         OutputDir="$(AndroidBundleDir)"
         ProjectName="$(AppName)"

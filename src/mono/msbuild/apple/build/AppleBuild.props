@@ -12,7 +12,7 @@
   <PropertyGroup>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == '' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</iOSLikeDedup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
-    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' or '$(RuntimeFlavor.ToLower())' == 'mono'">true</UseMonoRuntime>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">true</UseMonoRuntime>
     <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''" >false</StripDebugSymbols>
@@ -44,7 +44,7 @@
     <_CommonTargetsDir Condition="'$(_CommonTargetsDir)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', '..', 'common'))</_CommonTargetsDir>
   </PropertyGroup>
 
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' == 'true'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
-  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(UseMonoRuntime)' == 'true' and '$(RunAOTCompilation)' == 'true')" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)CommonMobileBuild.props" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and '$(UseMonoRuntime)' != 'false'" Project="$(_CommonTargetsDir)RuntimeComponentManifest.targets" />
+  <Import Condition="'$(UseNativeAOTRuntime)' != 'true' and ('$(UseMonoRuntime)' != 'false' and '$(RunAOTCompilation)' == 'true')" Project="$(_CommonTargetsDir)MonoAOTCompiler.props" />
 </Project>
