@@ -7,8 +7,8 @@
     <UsagePattern IdentityGlob="System.Composition*/*6.*" />
     <UsagePattern IdentityGlob="System.Composition*/*7.*" />
     <UsagePattern IdentityGlob="System.Composition*/*8.*" />
-    <UsagePattern IdentityGlob="Microsoft.CodeAnalysis*/*4.4.*" />
-    <UsagePattern IdentityGlob="Microsoft.CodeAnalysis*/*4.8.*" />
+    <UsagePattern IdentityGlob="Microsoft.CodeAnalysis*/*4.*" />
+    <UsagePattern IdentityGlob="Microsoft.Net.Compilers*/*4.*" />
 
     <!-- Allowed and pinned to major version due to https://github.com/dotnet/source-build/issues/3228 -->
     <UsagePattern IdentityGlob="Microsoft.NETCore.App.Crossgen2.linux-x64/*10.*" />
