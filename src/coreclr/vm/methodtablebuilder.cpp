@@ -8865,6 +8865,14 @@ MethodTableBuilder::HandleExplicitLayout(
     // If the type contains pointers fill it out from the GC data and validate OREF alignment.
     if (pMT->ContainsGCPointers())
     {
+        // If the type contains pointers, it has to start at an aligned offset.
+        // The alignment of the pointer series itself was checked earlier.
+        if (fieldBaseOffset % TARGET_POINTER_SIZE != 0)
+        {
+            // If we got here, then an OREF is misaligned.
+            return ExplicitFieldTrust::kNone;
+        }
+
         // Use pointer series to locate the OREFs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries *pSeries = map->GetLowestSeries();
@@ -8874,14 +8882,7 @@ MethodTableBuilder::HandleExplicitLayout(
             CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
 
             // Get offset into the value class of the first pointer field (includes a +Object)
-            size_t offset = pSeries->GetSeriesOffset() - OBJECT_SIZE;
-            if ((fieldBaseOffset + offset) % TARGET_POINTER_SIZE != 0)
-            {
-                // If we got here, then an OREF is misaligned.
-                return ExplicitFieldTrust::kNone;
-            }
-
-            memset((void*)&vcLayout[offset], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
+            memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
             pSeries++;
         }
     }
