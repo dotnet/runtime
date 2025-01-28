@@ -103,7 +103,7 @@
 
   <!-- Set the subpath of workloads zip files -->
   <ItemGroup>
-    <Artifact Update="$(ArtifactsPackagesDir)**\Workload.VSDrop.*.zip" SubBlobFolder="workloads" />
+    <Artifact Update="$(ArtifactsDir)VSSetup\**\*.zip" SubBlobFolder="workloads" />
   </ItemGroup>
 
   <Target Name="GetNonStableProductVersion">
