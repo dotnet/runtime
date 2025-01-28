@@ -44,8 +44,10 @@ namespace System.Numerics.Tests
         public static void RunGetBitLengthTestsLarge()
         {
             // Very large cases
-            VerifyGetBitLength(BigInteger.One << 32 << (int.MaxValue / 2), (int.MaxValue / 2) + 32L + 1, 1);
-            VerifyGetBitLength(BigInteger.One << 64 << (int.MaxValue / 2), (int.MaxValue / 2) + 64L + 1, 1);
+            // Values which are large but beneath the upper bound of
+            // (2^31) - 1 bits and which should not cause OOM in CI.
+            VerifyGetBitLength(BigInteger.One << 32 << (1 << 27), (1 << 27) + 32L + 1, 1);
+            VerifyGetBitLength(BigInteger.One << 64 << (1 << 27), (1 << 27) + 64L + 1, 1);
         }
 
         private static void VerifyLoopGetBitLength(Random random, bool isSmall)
