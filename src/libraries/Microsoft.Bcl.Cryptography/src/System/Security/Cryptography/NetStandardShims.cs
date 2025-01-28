@@ -102,11 +102,11 @@ namespace System.Security.Cryptography
         {
             int hashSize = hash.AlgorithmName.Name switch
             {
-                nameof(HashAlgorithmName.MD5) => 128 >> 3,
-                nameof(HashAlgorithmName.SHA1) => 160 >> 3,
-                nameof(HashAlgorithmName.SHA256) => 256 >> 3,
-                nameof(HashAlgorithmName.SHA384) => 384 >> 3,
-                nameof(HashAlgorithmName.SHA512) => 512 >> 3,
+                nameof(HashAlgorithmName.MD5) or "HMACMD5" => 128 >> 3,
+                nameof(HashAlgorithmName.SHA1) or "HMACSHA1" => 160 >> 3,
+                nameof(HashAlgorithmName.SHA256) or "HMACSHA256" => 256 >> 3,
+                nameof(HashAlgorithmName.SHA384) or "HMACSHA384" => 384 >> 3,
+                nameof(HashAlgorithmName.SHA512) or "HMACSHA512" => 512 >> 3,
                 _ => throw new CryptographicException(),
             };
 
