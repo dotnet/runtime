@@ -4166,14 +4166,14 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         changed = true;
     }
 
-    if (((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) == 0) && op2IsNotZero)
+    if (op2IsNotZero)
     {
         JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         changed = true;
     }
 
-    if (((tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW) == 0) && (op1IsNotNegative || op2IsNotNegative))
+    if (op1IsNotNegative || op2IsNotNegative)
     {
         JITDUMP("DIV/MOD is proven to never overflow...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
