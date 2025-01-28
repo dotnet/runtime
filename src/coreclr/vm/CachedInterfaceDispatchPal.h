@@ -8,32 +8,6 @@
 
 extern "C" void RhpInitialInterfaceDispatch();
 
-#ifndef HOST_WINDOWS
-#if defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
-FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
-{
-    __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
-    // TODO-LOONGARCH64: for LoongArch64, it supports 128bits atomic from 3A6000-CPU which is ISA1.1's version.
-    // The LA64's compiler will translate the `__sync_val_compare_and_swap` into calling the libatomic's library interface to emulate
-    // the 128-bit CAS by mutex_lock if the target processor doesn't support the ISA1.1.
-    // But this emulation by libatomic doesn't satisfy requirements here which it must update two adjacent pointers atomically.
-    // this is being discussed in https://github.com/dotnet/runtime/issues/109276.
-    __int128_t iResult = __sync_val_compare_and_swap((__int128_t volatile*)pDst, iComparand, ((__int128_t)iValueHigh << 64) + (uint64_t)iValueLow);
-    PAL_InterlockedOperationBarrier();
-    pComparandAndResult[0] = (int64_t)iResult; pComparandAndResult[1] = (int64_t)(iResult >> 64);
-    return iComparand == iResult;
-}
-#endif // HOST_AMD64 || HOST_ARM64 || HOST_LOONGARCH64
-#else // HOST_WINDOWS
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
-EXTERN_C uint8_t _InterlockedCompareExchange128(int64_t volatile *, int64_t, int64_t, int64_t *);
-#pragma intrinsic(_InterlockedCompareExchange128)
-FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
-{
-    return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComparandAndResult);
-}
-#endif // HOST_AMD64 || HOST_ARM64
-#endif // HOST_WINDOWS
 
 bool InterfaceDispatch_InitializePal();
 
