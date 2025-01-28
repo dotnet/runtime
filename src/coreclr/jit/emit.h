@@ -802,6 +802,10 @@ protected:
                                      */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+
+        // In certian cases, we do not allow instructions to be promoted to APX-EVEX.
+        // e.g. instructions like add/and/or/inc/dec can be used with LOCK prefix, but cannot be prefixed by LOCK and EVEX together.
+        unsigned _idNoApxEvexXPromotion : 1;
 #endif                              //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
@@ -834,8 +838,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
-        // x86:         48 bits
-        // amd64:       48 bits
+        // x86:         49 bits
+        // amd64:       49 bits
         // arm:         48 bits
         // arm64:       55 bits
         // loongarch64: 46 bits
@@ -853,7 +857,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
-#define ID_EXTRA_BITFIELD_BITS (16)
+#define ID_EXTRA_BITFIELD_BITS (17)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -887,8 +891,8 @@ protected:
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here (with/without prev offset, assuming host==target):
-        // x86:         54/50 bits
-        // amd64:       55/50 bits
+        // x86:         55/51 bits
+        // amd64:       56/51 bits
         // arm:         54/50 bits
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
@@ -1736,6 +1740,17 @@ protected:
         {
             assert(!idIsEvexNfContextSet());
             _idEvexNfContext = 1;
+        }
+
+         bool idIsNoApxEvexPromotion() const
+        {
+            return _idNoApxEvexXPromotion != 0;
+        }
+
+        void idSetNoApxEvexPromotion()
+        {
+            assert(!idIsNoApxEvexPromotion());
+            _idNoApxEvexXPromotion = 1;
         }
 #endif
 

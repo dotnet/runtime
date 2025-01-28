@@ -276,6 +276,8 @@ enum insOpts: unsigned
 
     INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
 
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 8,    // Do not promote to APX-EVEX
+
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)

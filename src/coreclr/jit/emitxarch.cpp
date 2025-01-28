@@ -298,8 +298,6 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 //
 bool emitter::IsRex2EncodableInstruction(instruction ins) const
 {
-    // TODO-Xarch-apx: we have special stress mode for REX2 on non-compatible machine, that will
-    //                 force UseRex2Encoding return true regardless of the CPUID results.
     if (!UseRex2Encoding())
     {
         return false;
@@ -1759,6 +1757,11 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
         return false;
     }
 
+    if (id->idIsNoApxEvexPromotion())
+    {
+        return false;
+    }
+
     if (id->idIsEvexNdContextSet())
     {
         return true;
@@ -2764,9 +2767,12 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 2-byte opcode with the bytes ordered as 0x0011RM22. There are 2 posibilities here:
         //      1. the byte in position 11 must be an escape byte.
         //      2. the byte in position 11 must be a map number from 0 to 7.
+
+        // APX promoted EVEX instructions might also go onto this path, so the opcode can also be 1-byte in the form of 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
-        assert(leadingBytes == 0x0F || (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) &&
-                                        leadingBytes >= 0x00 && leadingBytes <= 0x07));
+        assert(leadingBytes == 0x0F || 
+               (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 && leadingBytes <= 0x07) ||
+               (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
     }
 
@@ -7681,6 +7687,8 @@ void emitter::emitIns_R_R_I(
             case INS_sar_N:
             case INS_ror_N:
             case INS_rol_N:
+            case INS_rcr_N:
+            case INS_rcl_N:
                 fmt = IF_RWR_RRD_SHF;
                 break;
 
@@ -7698,10 +7706,10 @@ void emitter::emitIns_R_R_I(
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs)
+void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int offs, insOpts instOptions)
 {
     assert(ins == INS_prefetcht0 || ins == INS_prefetcht1 || ins == INS_prefetcht2 || ins == INS_prefetchnta ||
-           ins == INS_inc || ins == INS_dec || ins == INS_inc_no_evex || ins == INS_dec_no_evex);
+           ins == INS_inc || ins == INS_dec);
 
     instrDesc* id = emitNewInstrAmd(attr, offs);
 
@@ -7710,6 +7718,11 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
     id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+
+    if ((instOptions & INS_OPTS_EVEX_NoApxPromotion) != 0)
+    {
+        id->idSetNoApxEvexPromotion();
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
     id->idCodeSize(sz);
@@ -8781,7 +8794,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *  The following adds instructions referencing address modes.
  */
 
-void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp)
+void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp, insOpts instOptions)
 {
     assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
@@ -8827,6 +8840,10 @@ void emitter::emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber re
 
     id->idAddr()->iiaAddrMode.amBaseReg = reg;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+    if ((instOptions & INS_OPTS_EVEX_NoApxPromotion) != 0)
+    {
+        id->idSetNoApxEvexPromotion();
+    }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
@@ -8935,9 +8952,9 @@ void emitter::emitIns_R_AI(instruction  ins,
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp)
+void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber base, cnsval_ssize_t disp, insOpts instOptions)
 {
-    emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp);
+    emitIns_ARX_R(ins, attr, reg, base, REG_NA, 1, disp, instOptions);
 }
 
 //------------------------------------------------------------------------
@@ -9221,7 +9238,7 @@ void emitter::emitIns_R_ARX(
 }
 
 void emitter::emitIns_ARX_R(
-    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp)
+    instruction ins, emitAttr attr, regNumber reg, regNumber base, regNumber index, unsigned scale, cnsval_ssize_t disp, insOpts instOptions)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id = emitNewInstrAmd(attr, disp);
@@ -9247,6 +9264,10 @@ void emitter::emitIns_ARX_R(
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = index;
     id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(scale);
+    if ((instOptions & INS_OPTS_EVEX_NoApxPromotion) != 0)
+    {
+        id->idSetNoApxEvexPromotion();
+    }
 
     assert(emitGetInsAmdAny(id) == disp); // make sure "disp" is stored properly
 
@@ -10229,6 +10250,73 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     emitCurIGsize += sz;
 
     emitAdjustStackDepthPushPop(ins);
+}
+
+void emitter::emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg)
+{
+    if (DoJitUseApxNDD(ins) && (op1Reg != op2Reg))
+    {
+        // If APX-EVEX-NDD is available and needed, emit instructions in:
+        // ins dst, src
+        emitIns_R_R(ins, attr, op1Reg, op2Reg, INS_OPTS_EVEX_nd);
+    }
+    else
+    {
+        // mov dst, src
+        // ins dst
+        emitIns_Mov(INS_mov, attr, op1Reg, op2Reg, /*canSkip*/ true);
+        emitIns_R(ins, attr, op1Reg);
+    }
+}
+
+void emitter::emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival)
+{
+    if (DoJitUseApxNDD(ins) && (op1Reg != op2Reg))
+    {
+        // If APX-EVEX-NDD is available and needed, emit instructions in:
+        // ins dst, src, cns
+        if (IsShiftInstruction(ins) && ival == 1)
+        {
+            emitIns_R_R(ins, attr, op1Reg, op2Reg, INS_OPTS_EVEX_nd);
+        }
+        else
+        {
+            emitIns_R_R_I(ins, attr, op1Reg, op2Reg, ival, INS_OPTS_EVEX_nd);
+        }
+    }
+    else
+    {
+        // mov dst, src
+        // ins dst, cns
+        emitIns_Mov(INS_mov, attr, op1Reg, op2Reg, /*canSkip*/ true);
+        if (IsShiftInstruction(ins) && ival == 1)
+        {
+            emitIns_R(ins, attr, op1Reg);
+        }
+        else
+        {
+            emitIns_R_I(ins, attr, op1Reg, ival);
+        }
+    }
+}
+
+regNumber emitter::emitIns_BASE_R_R_RM(instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp)
+{
+    bool requiresOverflowCheck = treeNode->gtOverflowEx();
+    regNumber r = REG_NA;
+    assert(regOp->isUsedFromReg());
+
+    if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg)
+    {
+        r = emitInsBinary(ins, attr, regOp, rmOp, targetReg);
+    }
+    else
+    {
+        emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), /*canSkip*/ true);
+        r = emitInsBinary(ins, attr, treeNode, rmOp);
+    }
+
+    return r;
 }
 
 //----------------------------------------------------------------------------------------
@@ -15097,7 +15185,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         {
             case EA_1BYTE:
 #ifdef TARGET_AMD64
-                assert((ins != INS_lzcnt_evex) && (ins != INS_tzcnt_evex) && (ins != INS_popcnt_evex));
+                assert((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx));
 #endif // TARGET_AMD64
                 break;
 
@@ -15127,7 +15215,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
                     }
-                    if ((ins != INS_lzcnt_evex) && (ins != INS_tzcnt_evex) && (ins != INS_popcnt_evex))
+                    if ((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx))
                     // These instructions do not support 1-byte inputs and the opcode is exact.
                     {
                         code |= 0x01;
@@ -16265,7 +16353,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
              (ins == INS_tzcnt)
 #ifdef TARGET_AMD64
-             || (ins == INS_lzcnt_evex) || (ins == INS_tzcnt_evex) || (ins == INS_popcnt_evex)
+             || (ins == INS_lzcnt_apx) || (ins == INS_tzcnt_apx) || (ins == INS_popcnt_apx)
 #endif // TARGET_AMD64
     )
     {
@@ -19786,9 +19874,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_inc:
-        case INS_inc_no_evex:
         case INS_dec:
-        case INS_dec_no_evex:
         case INS_neg:
         case INS_not:
             if (memFmt == IF_NONE)
@@ -19873,13 +19959,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_add:
-        case INS_add_no_evex:
         case INS_sub:
         case INS_sub_hide:
         case INS_and:
-        case INS_and_no_evex:
         case INS_or:
-        case INS_or_no_evex:
         case INS_xor:
             if (memFmt == IF_NONE)
             {
@@ -20093,7 +20176,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (insFmt)
             {
                 case IF_RRW_SHF:
-                // TODO-XArch-APX: to be verified if this data is correct for NDD form.
                 case IF_RWR_RRD_SHF:
                     // ins   reg, cns
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -21066,9 +21148,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vshufi32x4:
         case INS_vshufi64x2:
 #ifdef TARGET_AMD64
-        case INS_popcnt_evex:
-        case INS_lzcnt_evex:
-        case INS_tzcnt_evex:
+        case INS_popcnt_apx:
+        case INS_lzcnt_apx:
+        case INS_tzcnt_apx:
 #endif // TARGET_AMD64
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
