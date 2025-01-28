@@ -87,7 +87,7 @@
 #ifdef FEATURE_EMULATED_TLS
     GETTHREAD_ETLS_2
 #else
-    INLINE_GETTHREAD a2
+    INLINE_GETTHREAD a2, t2
 #endif
 
     // Fix the stack by restoring the original return address

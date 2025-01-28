@@ -96,8 +96,8 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-    addi  sp, sp, -\ssize
-    //.cfi_adjust_cfa_offset  \ssize
+    addi  sp, sp, \ssize
+    .cfi_adjust_cfa_offset  -\ssize
     .cfi_def_cfa  sp, \ssize
 
     sd  \reg1, 0(sp)
@@ -145,7 +145,7 @@ C_FUNC(\Name):
 .endm
 
 .macro EPILOG_RETURN
-        jalr x0, ra
+        ret
 .endm
 
 .macro EMIT_BREAKPOINT
@@ -156,32 +156,29 @@ C_FUNC(\Name):
         jalr \reg
 .endm
 
-// Loads the address of a thread-local variable into the target register,
-// which cannot be x0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var
-    .ifc \target, x0
-        .error "target cannot be x0"
+// Loads the address of a thread-local variable into the target register.
+// The target register cannot be a0. Preserves all other registers.
+.macro INLINE_GET_TLS_VAR target, var, trashReg
+    .ifc \target, a0
+        .error "target cannot be a0"
     .endif
 
-    sd    x0, -16(sp)
-    sd    ra, -8(sp)
-    
-    // RISC-V does not have a direct equivalent to Apple's or GNU's TLS
-    // handling, so we'll use an indirect approach and inline assembly 
-    // if needed.
-    lui   t0, %hi(\var)
-    addi  t0, t0, %lo(\var)
-    ld    \target, 0(t0)
-    
-    // This sequence is a placeholder; actual TLS handling may require
-    // platform-specific instructions or further customization.
-    
-    ld    ra, -8(sp)
-    ld    x0, -16(sp)
+    mv \trashReg, a0
+
+    // see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#tls-descriptors
+    auipc  a0, %tlsdesc_hi(\var)
+    lw     t0, %tlsdesc_load_lo(\var)(a0)
+    addi   a0, a0, %tlsdesc_add_lo(\var)
+    jalr  t0, 0(t0), %tlsdesc_call(\var)
+    add    \target, tp, a0
+
+    mv a0, \trashReg
+
 .endm
+
 // Inlined version of RhpGetThread. Target cannot be x0.
-.macro INLINE_GETTHREAD target
-    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+.macro INLINE_GETTHREAD target, trashReg
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread), \trashReg
 .endm
 
 // Do not use these ETLS macros in functions that already create a stack frame.
@@ -283,36 +280,36 @@ C_FUNC(\Name):
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -0x80      // Push down stack pointer and store FP and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, -128      // Push down stack pointer and store s0 (fp) and RA
 
-    // 0x10 bytes reserved for Thread* and flags
+    // 16 bytes reserved for Thread* and flags
 
     // Save callee saved registers
-    PROLOG_SAVE_REG_PAIR   x19, x20, 0x20
-    PROLOG_SAVE_REG_PAIR   x21, x22, 0x30
-    PROLOG_SAVE_REG_PAIR   x23, x24, 0x40
-    PROLOG_SAVE_REG_PAIR   x25, x26, 0x50
-    PROLOG_SAVE_REG_PAIR   x27, x28, 0x60
+    PROLOG_SAVE_REG_PAIR   s1, s2, 32
+    PROLOG_SAVE_REG_PAIR   s3, s4, 48
+    PROLOG_SAVE_REG_PAIR   s5, s6, 64
+    PROLOG_SAVE_REG_PAIR   s7, s8, 80
+    PROLOG_SAVE_REG_PAIR   s9, s10, 96
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
-    add \trashReg, sp, 0x80
-    sd \trashReg, 0x70(sp)
+    add \trashReg, sp, 128
+    sd \trashReg, 112(sp)
 
     // Record the bitmask of saved registers in the frame (slot #3)
     li \trashReg, DEFAULT_FRAME_SAVE_FLAGS
-    sd \trashReg, 0x18(sp)
+    sd \trashReg, 24(sp)
 
     mv \trashReg, sp
 .endm
 
 // Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
 .macro POP_COOP_PINVOKE_FRAME
-    EPILOG_RESTORE_REG_PAIR   x19, x20, 0x20
-    EPILOG_RESTORE_REG_PAIR   x21, x22, 0x30
-    EPILOG_RESTORE_REG_PAIR   x23, x24, 0x40
-    EPILOG_RESTORE_REG_PAIR   x25, x26, 0x50
-    EPILOG_RESTORE_REG_PAIR   x27, x28, 0x60
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 0x80
+    EPILOG_RESTORE_REG_PAIR   s1, s2, 32
+    EPILOG_RESTORE_REG_PAIR   s3, s4, 48
+    EPILOG_RESTORE_REG_PAIR   s5, s6, 64
+    EPILOG_RESTORE_REG_PAIR   s7, s8, 80
+    EPILOG_RESTORE_REG_PAIR   s9, s10, 96
+    EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
