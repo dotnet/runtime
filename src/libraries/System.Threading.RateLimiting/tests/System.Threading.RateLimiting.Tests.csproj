@@ -5,6 +5,7 @@
   <ItemGroup>
     <Compile Include="BaseRateLimiterTests.cs" />
     <Compile Include="ChainedLimiterTests.cs" />
+    <Compile Include="PartitionedChainedLimiterTests.cs" />
     <Compile Include="ConcurrencyLimiterTests.cs" />
     <Compile Include="PartitionedRateLimiterTests.cs" />
     <Compile Include="FixedWindowRateLimiterTests.cs" />
