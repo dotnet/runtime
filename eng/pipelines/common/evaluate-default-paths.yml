@@ -133,6 +133,17 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
 
+    - subset: mono_aot_llvm
+      include:
+        - src/mono/mono/mini/aot-*.*
+        - src/mono/mono/mini/llvm-*.*
+        - src/mono/mono/mini/mini-llvm-*.*
+        - src/mono/mono/mini/intrinsics.c
+        - src/mono/mono/mini/simd-*.*
+        - src/mono/mono/mini/decompose.c
+        - src/mono/mono/mini/method-to-ir.c
+        - src/mono/mono/mini/mini.c
+
     - subset: libraries
       exclude:
       - eng/Version.Details.xml
