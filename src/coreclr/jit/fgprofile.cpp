@@ -4210,10 +4210,7 @@ bool Compiler::fgIncorporateEdgeCounts()
 //
 PhaseStatus Compiler::fgComputeBlockWeights()
 {
-    const bool usingProfileWeights = fgIsUsingProfileWeights();
-    bool       madeChanges         = false;
-    fgModified                     = false;
-    fgCalledCount                  = BB_UNITY_WEIGHT;
+    fgModified = false;
 
 #if DEBUG
     if (verbose)
@@ -4223,40 +4220,38 @@ PhaseStatus Compiler::fgComputeBlockWeights()
     }
 #endif // DEBUG
 
-    weight_t returnWeight = BB_UNITY_WEIGHT;
-
-    madeChanges |= fgComputeMissingBlockWeights(&returnWeight);
-
-    if (usingProfileWeights)
+    if (fgIsUsingProfileWeights())
     {
-        madeChanges |= fgComputeCalledCount(returnWeight);
-    }
-    else
-    {
-        JITDUMP(" -- no profile data, so using default called count\n");
+        // Compute fgCalledCount by subtracting any non-entry flow into fgFirstBB from its weight
+        fgCalledCount = fgFirstBB->bbWeight;
+        for (FlowEdge* const predEdge : fgFirstBB->PredEdges())
+        {
+            fgCalledCount = max(BB_ZERO_WEIGHT, fgCalledCount - predEdge->getLikelyWeight());
+        }
+
+        JITDUMP("We are using the profile weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    JITDUMP(" -- no profile data, so using default called count\n");
+    fgCalledCount = BB_UNITY_WEIGHT;
+    return fgComputeMissingBlockWeights() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
 // fgComputeMissingBlockWeights: determine weights for blocks
 //   that were not profiled and do not yet have weights.
 //
-// Arguments
-//    returnWeight [out] - sum of weights for all return and throw blocks
-//
 // Returns:
 //    true if any changes made
 //
-bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
+bool Compiler::fgComputeMissingBlockWeights()
 {
     BasicBlock* bSrc;
     BasicBlock* bDst;
     unsigned    iterations = 0;
     bool        changed;
     bool        modified = false;
-    weight_t    weight;
 
     // If we have any blocks that did not have profile derived weight
     // we will try to fix their weight up here
@@ -4265,7 +4260,6 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
     do // while (changed)
     {
         changed = false;
-        weight  = 0;
         iterations++;
 
         for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->Next())
@@ -4376,14 +4370,6 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
                     bDst->bbSetRunRarely();
                 }
             }
-
-            // Sum up the weights of all of the return blocks and throw blocks
-            // This is used when we have a back-edge into block 1
-            //
-            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
-            {
-                weight += bDst->bbWeight;
-            }
         }
     }
     // Generally when we synthesize profile estimates we do it in a way where this algorithm will converge
@@ -4400,82 +4386,7 @@ bool Compiler::fgComputeMissingBlockWeights(weight_t* returnWeight)
     }
 #endif
 
-    *returnWeight = weight;
-
     return modified;
-}
-
-//-------------------------------------------------------------
-// fgComputeCalledCount: when profile information is in use,
-//   compute fgCalledCount
-//
-// Argument:
-//   returnWeight - sum of weights for all return and throw blocks
-//
-// Returns:
-//   true if any changes were made
-//
-bool Compiler::fgComputeCalledCount(weight_t returnWeight)
-{
-    // When we are not using profile data we have already setup fgCalledCount
-    // only set it here if we are using profile data
-    assert(fgIsUsingProfileWeights());
-    bool madeChanges = false;
-
-    BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
-
-    // OSR methods can have complex entry flow, and so
-    // for OSR we ensure fgFirstBB has plausible profile data.
-    //
-    if (!opts.IsOSR())
-    {
-        // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-        //
-        while (firstILBlock->HasFlag(BBF_INTERNAL))
-        {
-            firstILBlock = firstILBlock->Next();
-        }
-    }
-
-    // The 'firstILBlock' is now expected to have a profile-derived weight
-    assert(firstILBlock->hasProfileWeight());
-
-    // If the first block only has one ref then we use its weight for fgCalledCount.
-    // Otherwise we have backedges into the first block, so instead we use the sum
-    // of the return block weights for fgCalledCount.
-    //
-    // If the profile data has a 0 for the returnWeight
-    // (i.e. the function never returns because it always throws)
-    // then just use the first block weight rather than 0.
-    //
-    if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == BB_ZERO_WEIGHT))
-    {
-        fgCalledCount = firstILBlock->bbWeight;
-    }
-    else
-    {
-        fgCalledCount = returnWeight;
-    }
-
-    // If we allocated a scratch block as the first BB then we need
-    // to set its profile-derived weight to be fgCalledCount
-    if (fgFirstBB->HasFlag(BBF_INTERNAL))
-    {
-        fgFirstBB->setBBProfileWeight(fgCalledCount);
-        madeChanges = true;
-        JITDUMP("fgComputeCalledCount: Modified method entry weight. Data %s inconsistent.\n",
-                fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
-    }
-
-#if DEBUG
-    if (verbose)
-    {
-        printf("We are using the Profile Weights and fgCalledCount is " FMT_WT "\n", fgCalledCount);
-    }
-#endif
-
-    return madeChanges;
 }
 
 //------------------------------------------------------------------------

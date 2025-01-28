@@ -13533,7 +13533,7 @@ PhaseStatus Compiler::fgMorphBlocks()
             if (!fgProfileWeightsConsistent(incomingWeight, fgEntryBB->bbWeight))
             {
                 JITDUMP("OSR: Original method entry " FMT_BB " has inconsistent weight. Data %s inconsistent.\n",
-                        fgPgoConsistent ? "is now" : "was already");
+                        fgEntryBB->bbNum, fgPgoConsistent ? "is now" : "was already");
                 fgPgoConsistent = false;
             }
         }
