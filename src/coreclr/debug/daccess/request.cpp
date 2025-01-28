@@ -2909,6 +2909,24 @@ ClrDataAccess::GetGCHeapStaticData(struct DacpGcHeapDetails *detailsData)
 }
 
 HRESULT
+ClrDataAccess::GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
+{
+    SOSDacEnter();
+    if (IsDatasEnabled())
+    {
+        *pDynamicAdaptationMode = *g_gcDacGlobals->dynamic_adaptation_mode;
+        hr = S_OK;
+    }
+    else
+    {
+        *pDynamicAdaptationMode = -1;
+        hr = S_FALSE;
+    }    
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
 ClrDataAccess::GetHeapSegmentData(CLRDATA_ADDRESS seg, struct DacpHeapSegmentData *heapSegment)
 {
     if (seg == 0 || heapSegment == NULL)
