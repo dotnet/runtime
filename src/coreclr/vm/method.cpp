@@ -2292,32 +2292,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
 }
 
 //*******************************************************************************
-// convert an entry point into a method desc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
-{
-    CONTRACT(MethodDesc*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        POSTCONDITION(RETVAL->SanityCheck());
-    }
-    CONTRACT_END
-
-    MethodDesc* pMD = NonVirtualEntry2MethodDesc(entryPoint);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // We should never get here
-    _ASSERTE(!"Entry2MethodDesc failed");
-    RETURN (NULL);
-}
-
-//*******************************************************************************
 BOOL MethodDesc::IsPointingToPrestub()
 {
     CONTRACTL
