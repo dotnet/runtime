@@ -258,7 +258,7 @@ do {                                                                            
 #if !defined(DEBUGGER_STRIP_PAC)
 
 // NOTE: Pointer authentication is not used by .NET, so the implementation does nothing
-#define STRIP_PAC(Params, pointer)
+#define STRIP_PAC(pointer) *pointer & 0x0000FFFFFFFFFFFF
 
 #endif
 
@@ -2335,7 +2335,7 @@ ExecuteCodes:
         }
 
         //
-        // pac (11111100): function has pointer authentication 
+        // pac (11111100): function has pointer authentication
         //
 
         else if (CurCode == 0xfc) {
@@ -2343,7 +2343,7 @@ ExecuteCodes:
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
-            STRIP_PAC(UnwindParams, &ContextRecord->Lr);
+            STRIP_PAC(&ContextRecord->Lr);
 
             //
             // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
