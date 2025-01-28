@@ -612,51 +612,46 @@ private:
 
                 if (context != nullptr)
                 {
-                    bool isFirstExecutedEffect =
-                        m_compiler->gtSubTreeAndChildrenAreFirstExecutedEffects(m_curStmt->GetRootNode(), call, true);
-
-                    if (isFirstExecutedEffect)
+                    Statement* firstSplitStmt = m_compiler->gtSplitEffectsForSubTree(m_curStmt, call, true);
+                    if (m_firstNewStmt == nullptr && firstSplitStmt != nullptr)
                     {
-                        CORINFO_CALL_INFO callInfo = {};
-                        callInfo.hMethod           = method;
-                        callInfo.methodFlags       = methodFlags;
-                        m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
+                        m_firstNewStmt = firstSplitStmt;
+                    }
 
-                        if (call->IsInlineCandidate())
+                    CORINFO_CALL_INFO callInfo = {};
+                    callInfo.hMethod           = method;
+                    callInfo.methodFlags       = methodFlags;
+                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo);
+
+                    if (call->IsInlineCandidate())
+                    {
+                        // If the call is the root expression in a statement, and it returns void,
+                        // we can inline it directly without creating a RET_EXPR.
+                        if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            // If the call is the root expression in a statement, and it returns void,
-                            // we can inline it directly without creating a RET_EXPR.
-                            if (parent != nullptr || call->gtReturnType != TYP_VOID)
+                            Statement* stmt = m_compiler->gtNewStmt(call);
+                            m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
+                            if (m_firstNewStmt == nullptr)
                             {
-                                Statement* stmt = m_compiler->gtNewStmt(call);
-                                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
-                                if (m_firstNewStmt == nullptr)
-                                {
-                                    m_firstNewStmt = stmt;
-                                }
-
-                                GenTreeRetExpr* retExpr =
-                                    m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                               genActualType(call->TypeGet()));
-                                call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-
-                                JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
-                                DISPTREE(retExpr);
-
-                                *pTree = retExpr;
+                                m_firstNewStmt = stmt;
                             }
 
-                            call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
-                            INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+                            GenTreeRetExpr* retExpr =
+                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
+                                                                           genActualType(call->TypeGet()));
+                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
 
-                            JITDUMP("New inline candidate due to late devirtualization:\n");
-                            DISPTREE(call);
+                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
+                            DISPTREE(retExpr);
+
+                            *pTree = retExpr;
                         }
-                    }
-                    else
-                    {
-                        // TODO-CQ: Split the effects and enable inlining.
-                        JITDUMP("Give up inlining call [%06u] due to side effects\n", call->gtTreeID);
+
+                        call->GetSingleInlineCandidateInfo()->exactContextHandle = context;
+                        INDEBUG(call->GetSingleInlineCandidateInfo()->inlinersContext = call->gtInlineContext);
+
+                        JITDUMP("New inline candidate due to late devirtualization:\n");
+                        DISPTREE(call);
                     }
                 }
                 m_madeChanges = true;

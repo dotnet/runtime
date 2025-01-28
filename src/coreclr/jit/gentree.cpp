@@ -10214,19 +10214,22 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtSubTreeAndChildrenAreFirstExecutedEffects: Check whether the subtree is the first
-//                                              executed effect in a tree.
+// gtSplitEffectsForSubTree: Split any effect for a subtree to make sure the subtree
+//                           is the first executed effect in the statement.
 //
 // Arguments:
-//    tree - Tree to check the side effects on
+//    stmt - The statement to spilt the side effects for
 //    subTree - The subtree to be the first executed effect
 //    early - Whether the run is early, in which case we need to check lvHasLdAddrOp as
 //            we don't have valid GTF_GLOB_REF yet
 //
 // Returns:
-//    A boolean that indicates whether the subtree is the first executed effect in a tree.
+//    The first new statement that is inserted for the split effects.
 //
-bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTree* subTree, bool early)
+// Notes:
+//    This method requires compCurBB to be set to the block that contains the statement.
+//
+Statement* Compiler::gtSplitEffectsForSubTree(Statement* stmt, GenTree* subTree, bool early)
 {
     struct Visitor : GenTreeVisitor<Visitor>
     {
@@ -10237,9 +10240,10 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
             UseExecutionOrder = true,
         };
 
-        Visitor(Compiler* comp, GenTree* subTree, bool checkLocal)
+        Visitor(Compiler* comp, GenTree* subTree, Statement* stmt, bool checkLocal)
             : GenTreeVisitor(comp)
             , m_subTree(subTree)
+            , m_stmt(stmt)
             , m_checkLocal(checkLocal)
         {
         }
@@ -10248,7 +10252,6 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
         {
             if (*use == m_subTree)
             {
-                Result = true;
                 return WALK_ABORT;
             }
 
@@ -10259,29 +10262,66 @@ bool Compiler::gtSubTreeAndChildrenAreFirstExecutedEffects(GenTree* tree, GenTre
         {
             if (((*use)->gtFlags & GTF_ALL_EFFECT) != GTF_EMPTY)
             {
-                Result = false;
-                return WALK_ABORT;
+                SplitEffect(use);
+                return WALK_CONTINUE;
             }
 
             if (m_checkLocal && (*use)->OperIsAnyLocal() &&
                 m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->lvHasLdAddrOp)
             {
-                Result = false;
-                return WALK_ABORT;
+                SplitEffect(use);
+                return WALK_CONTINUE;
             }
 
             return WALK_CONTINUE;
         }
 
-        bool Result = false;
+        void SplitEffect(GenTree** pTree)
+        {
+            Statement* stmt;
+            GenTree*   tree = *pTree;
+            if (tree->IsCall() && tree->AsCall()->gtArgs.HasRetBuffer())
+            {
+                GenTreeCall* call = tree->AsCall();
+                assert(call->gtReturnType != TYP_VOID);
+                GenTree* retExpr = m_compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
+                stmt             = m_compiler->gtNewStmt(retExpr);
+                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_stmt, stmt);
+                *pTree = retExpr;
+            }
+            else
+            {
+                unsigned   temp  = m_compiler->lvaGrabTemp(true DEBUGARG("split effect"));
+                LclVarDsc* dsc   = m_compiler->lvaGetDesc(temp);
+                dsc->lvType      = tree->TypeGet();
+                dsc->lvSingleDef = 1;
+                if (tree->TypeIs(TYP_REF))
+                {
+                    bool                 isExact, isNonNull;
+                    CORINFO_CLASS_HANDLE clsHnd = m_compiler->gtGetClassHandle(tree, &isExact, &isNonNull);
+                    m_compiler->lvaSetClass(temp, clsHnd, isExact);
+                }
+                GenTree* store = m_compiler->gtNewStoreLclVarNode(temp, tree);
+                stmt           = m_compiler->gtNewStmt(store);
+                m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_stmt, stmt);
+                *pTree = m_compiler->gtNewLclVarNode(temp, tree->TypeGet());
+            }
+            if (FirstNewStmt == nullptr)
+            {
+                FirstNewStmt = stmt;
+            }
+        }
+
+        Statement* FirstNewStmt = nullptr;
     private:
-        GenTree* m_subTree;
-        bool     m_checkLocal;
+        GenTree*   m_subTree;
+        Statement* m_stmt;
+        bool       m_checkLocal;
     };
 
-    Visitor visitor(this, subTree, early);
-    visitor.WalkTree(&tree, nullptr);
-    return visitor.Result;
+    Visitor visitor(this, subTree, stmt, early);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    return visitor.FirstNewStmt;
 }
 
 bool GenTree::gtSetFlags() const
