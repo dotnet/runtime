@@ -40,12 +40,11 @@ extends:
       #
       # Localization build
       #
-
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/9.0') }}:
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
         - template: /eng/common/templates-official/job/onelocbuild.yml
           parameters:
             MirrorRepo: runtime
-            MirrorBranch: release/9.0
+            MirrorBranch: main
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
@@ -71,25 +70,30 @@ extends:
           - windows_x86
           - windows_arm64
           variables:
-          - name: PublishAllPackages
-            value: $[and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64'))]
+            - name: _SignDiagnosticFilesArgs
+              value: ''
+            - name: PublishAllPackages
+              value: $[and(eq(variables.osGroup, 'windows'), eq(variables.archType, 'x64'))]
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            preBuildSteps:
+            - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                certNames:
+                - 'dotnetesrp-diagnostics-aad-ssl-cert'
+                - 'dotnet-diagnostics-esrp-pki-onecert'
+                vaultName: 'clrdiag-esrp-id'
+                azureSubscription: 'diagnostics-esrp-kvcertuser'
+
+            buildArgs: -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true $(_SignDiagnosticFilesArgs) /p:PublishAllPackages=$(PublishAllPackages)
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+            - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
               parameters:
-                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
                 isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
-            # Now that we've signed the diagnostic files, do the rest of the build.
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true /p:PublishAllPackages=$(PublishAllPackages)
-                displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
 
       #
       # Build all runtime packs
@@ -197,10 +201,21 @@ extends:
                 artifactName: $(crossDacArtifactsContainer)
                 downloadPath: $(crossDacArtifactsBasePath)
                 checkDownloadedFiles: true
+            - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                certNames:
+                - 'dotnetesrp-diagnostics-aad-ssl-cert'
+                - 'dotnet-diagnostics-esrp-pki-onecert'
+                vaultName: 'clrdiag-esrp-id'
+                azureSubscription: 'diagnostics-esrp-kvcertuser'
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
+                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig) $(_SignDiagnosticFilesArgs)
                 archParameter: -arch x64,x86,arm,arm64
+            - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
             - task: CopyFiles@2
               displayName: Gather CrossDacs
               inputs:
@@ -209,11 +224,6 @@ extends:
                   **
                   !**\sharedFramework\**
                 TargetFolder: $(crossDacArtifactsPath)
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-              parameters:
-                basePath: $(crossDacArtifactsPath)
-                isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
             dependsOn:
             - build_linux_x64_release_AllRuntimes
             - build_linux_arm_release_AllRuntimes

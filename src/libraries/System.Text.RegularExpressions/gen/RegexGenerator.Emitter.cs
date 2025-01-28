@@ -2553,18 +2553,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine();
 
-                RegexNode child = node.Child(0);
-
-                if (uncapnum != -1)
-                {
-                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
-                    {
-                        Goto(doneLabel);
-                    }
-                    writer.WriteLine();
-                }
-
                 // Emit child node.
+                RegexNode child = node.Child(0);
                 string originalDoneLabel = doneLabel;
                 EmitNode(child, subsequent);
                 bool childBacktracks = doneLabel != originalDoneLabel;
@@ -2577,6 +2567,12 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
+                    using (EmitBlock(writer, $"if (!base.IsMatched({uncapnum}))"))
+                    {
+                        Goto(doneLabel);
+                    }
+
+                    writer.WriteLine();
                     writer.WriteLine($"base.TransferCapture({capnum}, {uncapnum}, {startingPos}, pos);");
                 }
 
