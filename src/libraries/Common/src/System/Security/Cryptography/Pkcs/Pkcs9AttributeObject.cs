@@ -6,7 +6,13 @@ using System.Diagnostics;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public class Pkcs9AttributeObject : AsnEncodedData
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    class Pkcs9AttributeObject : AsnEncodedData
     {
         //
         // Constructors.

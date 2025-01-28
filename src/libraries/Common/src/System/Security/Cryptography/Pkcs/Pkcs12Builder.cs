@@ -10,7 +10,13 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs12Builder
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs12Builder
     {
         private ReadOnlyMemory<byte> _sealedData;
         private List<ContentInfoAsn>? _contents;
