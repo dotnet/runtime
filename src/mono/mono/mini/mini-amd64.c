@@ -311,7 +311,8 @@ merge_argument_class_from_type (MonoType *type, ArgumentClass class1)
 		}
 		/* fall through */
 	case MONO_TYPE_VALUETYPE: {
-		MonoMarshalType *info = mono_marshal_load_type_info (m_type_data_get_klass (ptype));
+		// We have to use mono_class_from_mono_type_internal here due to the fallthrough from GENERICINST
+		MonoMarshalType *info = mono_marshal_load_type_info (mono_class_from_mono_type_internal (ptype));
 		for (guint32 i = 0; i < info->num_fields; ++i) {
 			class2 = class1;
 			class2 = merge_argument_class_from_type (info->fields [i].field->type, class2);
