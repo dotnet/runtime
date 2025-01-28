@@ -11,7 +11,7 @@ void CDacPlatformMetadata::Init()
     PrecodeMachineDescriptor::Init(&g_cdacPlatformMetadata.precode);
 #if defined(TARGET_ARM)
     g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
-#elif defined(TARGET_ARM64) && defined(TARGET_OSX)
+#elif defined(TARGET_ARM64) && defined(TARGET_APPLE)
     // TODO set HasArm64PtrAuth if arm64e
     g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::None;
 #else

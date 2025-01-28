@@ -30,6 +30,8 @@
 #include "thread.h"
 #include "threadstore.h"
 
+#include "nativecontext.h"
+
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #include <versionhelpers.h>
 #endif
@@ -504,7 +506,7 @@ PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS)
 #endif
 
-REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer)
+REDHAWK_PALEXPORT NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer)
 {
     CONTEXT* pOSContext = NULL;
 
@@ -615,12 +617,14 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
     *contextBuffer = NULL;
 #endif
 
-    return pOSContext;
+    return (NATIVE_CONTEXT*)pOSContext;
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
 {
-    _ASSERTE((pCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
+    CONTEXT* pOSContext = &pCtx->ctx;
+
+    _ASSERTE((pOSContext->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
 
 #if defined(TARGET_ARM64)
     if (pfnSetXStateFeaturesMask == NULL)
@@ -636,51 +640,51 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadCont
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX))
+    if (!SetXStateFeaturesMask(pOSContext, XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX))
     {
         _ASSERTE(!"Could not apply XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX");
         return FALSE;
     }
 #elif defined(TARGET_ARM64)
-    if ((pfnSetXStateFeaturesMask != NULL) && !pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE))
+    if ((pfnSetXStateFeaturesMask != NULL) && !pfnSetXStateFeaturesMask(pOSContext, XSTATE_MASK_ARM64_SVE))
     {
         _ASSERTE(!"Could not apply XSTATE_MASK_ARM64_SVE");
         return FALSE;
     }
 #endif
 
-    return GetThreadContext(hThread, pCtx);
+    return GetThreadContext(hThread, pOSContext);
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
 {
-    return SetThreadContext(hThread, pCtx);
+    return SetThreadContext(hThread, &pCtx->ctx);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx)
 {
+    CONTEXT* pOSContext = &pCtx->ctx;
+
     __asan_handle_no_return();
 #ifdef TARGET_X86
     _ASSERTE(pfnRtlRestoreContext != NULL);
-    pfnRtlRestoreContext(pCtx, NULL);
+    pfnRtlRestoreContext(pOSContext, NULL);
 #else
-    RtlRestoreContext(pCtx, NULL);
+    RtlRestoreContext(pOSContext, NULL);
 #endif //TARGET_X86
 }
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
 {
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
     CONTEXT ctx;
 
     RtlCaptureContext(&ctx);
 
     pContext->SegCs = ctx.SegCs;
     pContext->SegSs = ctx.SegSs;
-#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 }
-
-static PalHijackCallback g_pHijackCallback;
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
 // These declarations are for a new special user-mode APC feature introduced in Windows. These are not yet available in Windows
 // SDK headers, so some names below are prefixed with "CLONE_" to avoid conflicts in the future. Once the prefixed declarations
@@ -716,18 +720,10 @@ static void* g_returnAddressHijackTarget = NULL;
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
     CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
-    g_pHijackCallback(data->ContextRecord, NULL);
+    Thread::HijackCallback((NATIVE_CONTEXT*)data->ContextRecord, NULL);
 
     Thread* pThread = (Thread*)data->Parameter;
     pThread->SetActivationPending(false);
-}
-
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
-{
-    ASSERT(g_pHijackCallback == NULL);
-    g_pHijackCallback = callback;
-
-    return true;
 }
 
 void InitHijackingAPIs()
@@ -779,9 +775,15 @@ REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defa
     return g_returnAddressHijackTarget ? (HijackFunc*)g_returnAddressHijackTarget : defaultHijackTarget;
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(Thread* pThreadToHijack)
 {
-    _ASSERTE(hThread != INVALID_HANDLE_VALUE);
+    HANDLE hThread = pThreadToHijack->GetOSThreadHandle();
+
+    if (hThread == INVALID_HANDLE_VALUE)
+    {
+        // cannot proceed
+        return;
+    }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 
@@ -795,15 +797,13 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     if (g_pfnQueueUserAPC2Proc)
     {
-        Thread* pThread = (Thread*)pThreadToHijack;
-
         // An APC can be interrupted by another one, do not queue more if one is pending.
-        if (pThread->IsActivationPending())
+        if (pThreadToHijack->IsActivationPending())
         {
             return;
         }
 
-        pThread->SetActivationPending(true);
+        pThreadToHijack->SetActivationPending(true);
         BOOL success = g_pfnQueueUserAPC2Proc(
             &ActivationHandler,
             hThread,
@@ -816,7 +816,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         }
 
         // queuing an APC failed
-        pThread->SetActivationPending(false);
+        pThreadToHijack->SetActivationPending(false);
 
         DWORD lastError = GetLastError();
         if (lastError != ERROR_INVALID_PARAMETER && lastError != ERROR_NOT_SUPPORTED)
@@ -855,7 +855,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
             // at the same place twice in a row, we run the risk of reading a bogus CONTEXT when we redirect
             // the second time.  This leads to access violations on x86 machines.  To fix the problem, we
             // never redirect at the same instruction pointer that we redirected at on the previous GC.
-            if (((Thread*)pThreadToHijack)->CheckPendingRedirect(win32ctx.Eip))
+            if (pThreadToHijack->CheckPendingRedirect(win32ctx.Eip))
             {
                 isSafeToRedirect = false;
             }
@@ -880,7 +880,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
         if (isSafeToRedirect)
         {
-            g_pHijackCallback(&win32ctx, pThreadToHijack);
+            Thread::HijackCallback((NATIVE_CONTEXT*)&win32ctx, pThreadToHijack);
         }
     }
 
