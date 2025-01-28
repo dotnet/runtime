@@ -194,8 +194,9 @@ LEAF_END ThePreStubPatch, _TEXT
 LEAF_ENTRY JIT_UpdateWriteBarrierState, _TEXT
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -16
 
-    // x0-x7, x10 will contain intended new state
+    // x0-x7, x10-x11, x13-x14 will contain intended new state
     // x8 will preserve skipEphemeralCheck
+    // x9 will preserve writeableOffset
     // x12 will be used for pointers
 
     mov x8, x0
@@ -231,12 +232,21 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     PREPARE_EXTERNAL_VAR g_highest_address, x12
     ldr  x6, [x12]
 
-#ifdef WRITE_BARRIER_CHECK
-    PREPARE_EXTERNAL_VAR g_GCShadow, x12
+    PREPARE_EXTERNAL_VAR g_region_to_generation_table, x12
     ldr  x7, [x12]
 
+    PREPARE_EXTERNAL_VAR g_region_shr, x12
+    ldr  w10, [x12]
+
+    PREPARE_EXTERNAL_VAR g_region_use_bitwise_write_barrier, x12
+    ldr  w11, [x12]
+
+#ifdef WRITE_BARRIER_CHECK
+    PREPARE_EXTERNAL_VAR g_GCShadow, x12
+    ldr  x13, [x12]
+
     PREPARE_EXTERNAL_VAR g_GCShadowEnd, x12
-    ldr  x10, [x12]
+    ldr  x14, [x12]
 #endif
 
     // Update wbs state
@@ -247,11 +257,11 @@ LOCAL_LABEL(EphemeralCheckEnabled):
     stp  x0, x1, [x12], 16
     stp  x2, x3, [x12], 16
     stp  x4, x5, [x12], 16
-    str  x6, [x12], 8
+    stp  x6, x7, [x12], 16
+    stp  w10, w11, [x12], 8
 #ifdef WRITE_BARRIER_CHECK
-    stp  x7, x10, [x12], 16
+    stp  x13, x14, [x12], 16
 #endif
-
 
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 16
     EPILOG_RETURN
