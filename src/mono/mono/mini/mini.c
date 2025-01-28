@@ -353,8 +353,8 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return OP_STORER8_MEMBASE_REG;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
@@ -365,7 +365,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_STOREX_MEMBASE;
-		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:

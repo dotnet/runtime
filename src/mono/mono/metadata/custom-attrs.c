@@ -320,7 +320,7 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 	error_init (error);
 
 	if (type == MONO_TYPE_GENERICINST) {
-		MonoGenericClass * mgc = m_type_data_get_generic_class (t);
+		MonoGenericClass * mgc = m_type_data_get_generic_class_unchecked (t);
 		MonoClass * cc = mgc->container_class;
 		if (m_class_is_enumtype (cc)) {
 			tklass = m_class_get_element_class (cc);
@@ -332,6 +332,8 @@ load_cattr_value (MonoImage *image, MonoType *t, MonoObject **out_obj, const cha
 	}
 
 handle_enum:
+	// the _unchecked MonoType accessors are not used here because the gotos to handle_enum doesn't necessarily keep
+	//  type and t in sync so it's not guaranteed that accessing the union members is safe
 	switch (type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
@@ -657,6 +659,8 @@ load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const ch
 	result->type = type;
 
 handle_enum:
+	// the _unchecked MonoType accessors are not used here because the gotos to handle_enum doesn't necessarily keep
+	//  type and t in sync so it's not guaranteed that accessing the union members is safe
 	switch (type) {
 	case MONO_TYPE_U1:
 	case MONO_TYPE_I1:
