@@ -1371,7 +1371,29 @@ ep_buffer_manager_get_next_event (EventPipeBufferManager *buffer_manager)
 	// buffer at the same time.
 	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
 	buffer_manager_move_next_event_any_thread (buffer_manager, stop_timestamp);
+
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+		for (dn_list_it_t it = dn_list_begin (buffer_manager->thread_session_state_list); !dn_list_it_end (it); ) {
+			EventPipeThreadSessionState *session_state = *dn_list_it_data_t (it, EventPipeThreadSessionState *);
+
+			it = dn_list_it_next (it);
+			// if a session_state was exhausted during this sequence point, mark it for deletion
+			if (ep_thread_session_state_get_buffer_list (session_state)->head_buffer == NULL) {
+				// We don't hold the thread lock here, so it technically races with a thread getting unregistered. This is okay,
+				// because we will either not have passed the above if statement (there were events still in the buffers) or we
+				// will catch it at the next sequence point.
+				if (ep_rt_volatile_load_uint32_t_without_barrier (ep_thread_get_unregistered_ref (ep_thread_session_state_get_thread (session_state))) > 0) {
+					dn_list_remove (buffer_manager->thread_session_state_list, session_state);
+				}
+			}
+		}
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+
+ep_on_exit:
 	return buffer_manager->current_event;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 void
