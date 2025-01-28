@@ -143,7 +143,7 @@ namespace System.Net.Http
         private readonly string uri;
         private readonly CancellationToken _cancellationToken;
         private readonly HttpRequestMessage _request;
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
         public BrowserHttpController(HttpRequestMessage request, bool? allowAutoRedirect, CancellationToken cancellationToken)
         {
@@ -314,13 +314,7 @@ namespace System.Net.Http
                     responseMessage.SetReasonPhraseWithoutValidation(responseType);
                 }
 
-                bool streamingResponseEnabled = false;
-                if (BrowserHttpInterop.SupportsStreamingResponse())
-                {
-                    _request.Options.TryGetValue(EnableStreamingResponse, out streamingResponseEnabled);
-                }
-
-                responseMessage.Content = streamingResponseEnabled
+                responseMessage.Content = (_request.Options.TryGetValue(EnableStreamingResponse, out var streamingResponseEnabled) ? streamingResponseEnabled : true) && BrowserHttpInterop.SupportsStreamingResponse()
                     ? new StreamContent(new BrowserHttpReadStream(this))
                     : new BrowserHttpContent(this);
 
@@ -361,10 +355,10 @@ namespace System.Net.Http
     internal sealed class BrowserHttpWriteStream : Stream
     {
         private readonly BrowserHttpController _controller; // we don't own it, we don't dispose it from here
+
         public BrowserHttpWriteStream(BrowserHttpController controller)
         {
             ArgumentNullException.ThrowIfNull(controller);
-
             _controller = controller;
         }
 
@@ -392,7 +386,7 @@ namespace System.Net.Http
 
         public override bool CanRead => false;
         public override bool CanSeek => false;
-        public override bool CanWrite => true;
+        public override bool CanWrite => !_controller._isDisposed;
 
         protected override void Dispose(bool disposing)
         {
@@ -506,7 +500,7 @@ namespace System.Net.Http
 
     internal sealed class BrowserHttpReadStream : Stream
     {
-        private BrowserHttpController _controller; // we own the object and have to dispose it
+        private readonly BrowserHttpController _controller; // we own the object and have to dispose it
 
         public BrowserHttpReadStream(BrowserHttpController controller)
         {
@@ -540,7 +534,7 @@ namespace System.Net.Http
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override bool CanRead => true;
+        public override bool CanRead => !_controller._isDisposed;
         public override bool CanSeek => false;
         public override bool CanWrite => false;
 
