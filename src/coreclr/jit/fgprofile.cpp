@@ -4845,6 +4845,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         //
         if (assertOnFailure)
         {
+            fgDispBasicBlocks();
             assert(!"Inconsistent profile data");
         }
     }
