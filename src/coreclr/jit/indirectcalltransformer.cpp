@@ -151,6 +151,11 @@ private:
     bool ContainsGuardedDevirtualizationCandidate(Statement* stmt)
     {
         GenTree* candidate = stmt->GetRootNode();
+        if (candidate->OperIs(GT_STORE_LCL_VAR))
+        {
+            candidate = candidate->AsLclVar()->Data();
+        }
+
         return candidate->IsCall() && candidate->AsCall()->IsGuardedDevirtualizationCandidate();
     }
 
@@ -162,12 +167,13 @@ private:
             , currBlock(block)
             , stmt(stmt)
         {
-            remainderBlock = nullptr;
-            checkBlock     = nullptr;
-            thenBlock      = nullptr;
-            elseBlock      = nullptr;
-            origCall       = nullptr;
-            likelihood     = HIGH_PROBABILITY;
+            remainderBlock  = nullptr;
+            checkBlock      = nullptr;
+            thenBlock       = nullptr;
+            elseBlock       = nullptr;
+            likelihood      = HIGH_PROBABILITY;
+            doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
+            origCall        = GetCall(stmt);
         }
 
         //------------------------------------------------------------------------
@@ -181,7 +187,6 @@ private:
         void Transform()
         {
             JITDUMP("*** %s: transforming " FMT_STMT "\n", Name(), stmt->GetID());
-            FixupRetExpr();
             ClearFlag();
             CreateRemainder();
             assert(GetChecksCount() > 0);
@@ -199,8 +204,6 @@ private:
     protected:
         virtual const char*  Name()                       = 0;
         virtual void         ClearFlag()                  = 0;
-        virtual GenTreeCall* GetCall(Statement* callStmt) = 0;
-        virtual void         FixupRetExpr()               = 0;
 
         //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
@@ -310,37 +313,6 @@ private:
             }
         }
 
-        Compiler*    compiler;
-        BasicBlock*  currBlock;
-        BasicBlock*  remainderBlock;
-        BasicBlock*  checkBlock;
-        BasicBlock*  thenBlock;
-        BasicBlock*  elseBlock;
-        Statement*   stmt;
-        GenTreeCall* origCall;
-        unsigned     likelihood;
-
-        const int HIGH_PROBABILITY = 80;
-    };
-
-    class FatPointerCallTransformer final : public Transformer
-    {
-    public:
-        FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt)
-        {
-            doesReturnValue = stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR);
-            origCall        = GetCall(stmt);
-            fptrAddress     = origCall->gtCallAddr;
-            pointerType     = fptrAddress->TypeGet();
-        }
-
-    protected:
-        virtual const char* Name()
-        {
-            return "FatPointerCall";
-        }
-
         //------------------------------------------------------------------------
         // GetCall: find a call in a statement.
         //
@@ -349,7 +321,7 @@ private:
         //
         // Return Value:
         //    call tree node pointer.
-        virtual GenTreeCall* GetCall(Statement* callStmt)
+        GenTreeCall* GetCall(Statement* callStmt)
         {
             GenTree*     tree = callStmt->GetRootNode();
             GenTreeCall* call = nullptr;
@@ -365,17 +337,42 @@ private:
             return call;
         }
 
+        Compiler*    compiler;
+        BasicBlock*  currBlock;
+        BasicBlock*  remainderBlock;
+        BasicBlock*  checkBlock;
+        BasicBlock*  thenBlock;
+        BasicBlock*  elseBlock;
+        Statement*   stmt;
+        GenTreeCall* origCall;
+        unsigned     likelihood;
+        bool         doesReturnValue;
+
+        const int HIGH_PROBABILITY = 80;
+    };
+
+    class FatPointerCallTransformer final : public Transformer
+    {
+    public:
+        FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
+            : Transformer(compiler, block, stmt)
+        {
+            fptrAddress     = origCall->gtCallAddr;
+            pointerType     = fptrAddress->TypeGet();
+        }
+
+    protected:
+        virtual const char* Name()
+        {
+            return "FatPointerCall";
+        }
+
         //------------------------------------------------------------------------
         // ClearFlag: clear fat pointer candidate flag from the original call.
         //
         virtual void ClearFlag()
         {
             origCall->ClearFatPointerCandidate();
-        }
-
-        // FixupRetExpr: no action needed as we handle this in the importer.
-        virtual void FixupRetExpr()
-        {
         }
 
         //------------------------------------------------------------------------
@@ -474,7 +471,6 @@ private:
 
         GenTree*  fptrAddress;
         var_types pointerType;
-        bool      doesReturnValue;
     };
 
     class GuardedDevirtualizationTransformer final : public Transformer
@@ -482,7 +478,6 @@ private:
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
-            , returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -491,19 +486,10 @@ private:
         //
         virtual void Run()
         {
-            origCall = GetCall(stmt);
-
             JITDUMP("\n----------------\n\n*** %s contemplating [%06u] in " FMT_BB " \n", Name(),
                     compiler->dspTreeID(origCall), currBlock->bbNum);
 
-            // We currently need inline candidate info to guarded devirt.
-            //
-            if (!origCall->IsInlineCandidate())
-            {
-                JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
-                ClearFlag();
-                return;
-            }
+            assert(origCall->IsInlineCandidate());
 
             likelihood = origCall->GetGDVCandidateInfo(0)->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
@@ -550,22 +536,6 @@ private:
         virtual const char* Name()
         {
             return "GuardedDevirtualization";
-        }
-
-        //------------------------------------------------------------------------
-        // GetCall: find a call in a statement.
-        //
-        // Arguments:
-        //    callStmt - the statement with the call inside.
-        //
-        // Return Value:
-        //    call tree node pointer.
-        virtual GenTreeCall* GetCall(Statement* callStmt)
-        {
-            GenTree* tree = callStmt->GetRootNode();
-            assert(tree->IsCall());
-            GenTreeCall* call = tree->AsCall();
-            return call;
         }
 
         virtual void ClearFlag()
@@ -776,91 +746,6 @@ private:
         }
 
         //------------------------------------------------------------------------
-        // FixupRetExpr: set up to repair return value placeholder from call
-        //
-        virtual void FixupRetExpr()
-        {
-            //// If call returns a value, we need to copy it to a temp, and
-            //// bash the associated GT_RET_EXPR to refer to the temp instead
-            //// of the call.
-            ////
-            //// Note implicit by-ref returns should have already been converted
-            //// so any struct copy we induce here should be cheap.
-            //InlineCandidateInfo* const inlineInfo = origCall->GetGDVCandidateInfo(0);
-
-            //if (!origCall->TypeIs(TYP_VOID))
-            //{
-            //    // If there's a spill temp already associated with this inline candidate,
-            //    // use that instead of allocating a new temp.
-            //    //
-            //    returnTemp = inlineInfo->preexistingSpillTemp;
-
-            //    if (returnTemp != BAD_VAR_NUM)
-            //    {
-            //        JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", returnTemp);
-
-            //        // We will be introducing multiple defs for this temp, so make sure
-            //        // it is no longer marked as single def.
-            //        //
-            //        // Otherwise, we could make an incorrect type deduction. Say the
-            //        // original call site returns a B, but after we devirtualize along the
-            //        // GDV happy path we see that method returns a D. We can't then assume that
-            //        // the return temp is type D, because we don't know what type the fallback
-            //        // path returns. So we have to stick with the current type for B as the
-            //        // return type.
-            //        //
-            //        // Note local vars always live in the root method's symbol table. So we
-            //        // need to use the root compiler for lookup here.
-            //        //
-            //        LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(returnTemp);
-
-            //        if (returnTempLcl->lvSingleDef == 1)
-            //        {
-            //            // In this case it's ok if we already updated the type assuming single def,
-            //            // we just don't want any further updates.
-            //            //
-            //            JITDUMP("Return temp V%02u is no longer a single def temp\n", returnTemp);
-            //            returnTempLcl->lvSingleDef = 0;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
-            //        JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
-            //    }
-
-            //    if (varTypeIsStruct(origCall))
-            //    {
-            //        compiler->lvaSetStruct(returnTemp, origCall->gtRetClsHnd, false);
-            //    }
-
-            //    GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
-
-            //    JITDUMP("Linking GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(inlineInfo->retExpr),
-            //            returnTemp);
-
-            //    inlineInfo->retExpr->gtSubstExpr = tempTree;
-            //}
-            //else if (inlineInfo->retExpr != nullptr)
-            //{
-            //    // We still oddly produce GT_RET_EXPRs for some void
-            //    // returning calls. Just bash the ret expr to a NOP.
-            //    //
-            //    // Todo: consider bagging creation of these RET_EXPRs. The only possible
-            //    // benefit they provide is stitching back larger trees for failed inlines
-            //    // of void-returning methods. But then the calls likely sit in commas and
-            //    // the benefit of a larger tree is unclear.
-            //    JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
-            //            compiler->dspTreeID(inlineInfo->retExpr));
-            //    inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
-            //}
-            //else
-            //{
-            //    // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
-            //}
-        }
-
-        //------------------------------------------------------------------------
         // Devirtualize origCall using the given inline candidate
         //
         void DevirtualizeCall(BasicBlock* block, uint8_t candidateId)
@@ -986,6 +871,13 @@ private:
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
+            GenTree* node = call;
+            if (doesReturnValue)
+            {
+                assert(stmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR));
+                node = compiler->gtNewTempStore(stmt->GetRootNode()->AsLclVarCommon()->GetLclNum(), node);
+            }
+
             CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
             if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
             {
@@ -996,29 +888,25 @@ private:
 
                 call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
                 call->ClearInlineInfo();
-
-                if (returnTemp != BAD_VAR_NUM)
-                {
-                    GenTree* const store = compiler->gtNewTempStore(returnTemp, call);
-                    compiler->fgNewStmtAtEnd(block, store);
-                }
-                else
-                {
-                    compiler->fgNewStmtAtEnd(block, call, stmt->GetDebugInfo());
-                }
+                compiler->fgNewStmtAtEnd(block, node, stmt->GetDebugInfo());
             }
             else
             {
                 // Add the call.
                 //
-                compiler->fgNewStmtAtEnd(block, call, stmt->GetDebugInfo());
+                compiler->fgNewStmtAtEnd(block, node, stmt->GetDebugInfo());
 
                 // Re-establish this call as an inline candidate.
                 //
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHandle   = context;
-                inlineInfo->preexistingSpillTemp = returnTemp;
+                inlineInfo->preexistingSpillTemp = doesReturnValue ? stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
+            }
+
+            if (doesReturnValue)
+            {
+                compiler->lvaGetDesc(stmt->GetRootNode()->AsLclVarCommon())->lvSingleDef = false;
             }
         }
 
@@ -1143,9 +1031,9 @@ private:
 
             JITDUMP("Residual call [%06u] moved to block " FMT_BB "\n", compiler->dspTreeID(call), elseBlock->bbNum);
 
-            if (returnTemp != BAD_VAR_NUM)
+            if (doesReturnValue)
             {
-                GenTree* store = compiler->gtNewTempStore(returnTemp, call);
+                GenTree* store = compiler->gtNewTempStore(stmt->GetRootNode()->AsLclVarCommon()->GetLclNum(), call);
                 newStmt->SetRootNode(store);
             }
 
@@ -1402,7 +1290,6 @@ private:
         }
 
     private:
-        unsigned   returnTemp;
         Statement* lastStmt;
         bool       checkFallsThrough;
 

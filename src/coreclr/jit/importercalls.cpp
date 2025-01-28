@@ -1402,6 +1402,22 @@ DONE_CALL:
 
                 assert(opts.OptEnabled(CLFLG_INLINING));
                 assert(!isFatPointerCandidate); // We should not try to inline calli.
+
+                if (isGuardedDevirtualizationCandidate)
+                {
+                    unsigned lclNum = lvaGrabTemp(false DEBUGARG("GDV candidate result"));
+                    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+                    // Keep the information about small typedness to avoid
+                    // inserting unnecessary casts around normalization.
+                    if (call->IsCall() && varTypeIsSmall(call->AsCall()->gtReturnType))
+                    {
+                        assert(call->AsCall()->NormalizesSmallTypesOnReturn());
+                        varDsc->lvType = call->AsCall()->gtReturnType;
+                    }
+
+                    impStoreToTemp(lclNum, call, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
+                    call = gtNewLclvNode(lclNum, genActualType(callRetTyp));
+                }
             }
             else
             {
@@ -5933,7 +5949,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
+                    result        = gtNewIconNode((int32_t)BitOperations::RotateLeft(cns1, cns2), baseType);
                 }
                 break;
             }
@@ -5982,7 +5998,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
+                    result        = gtNewIconNode((int32_t)BitOperations::RotateRight(cns1, cns2), baseType);
                 }
                 break;
             }
@@ -6555,8 +6571,74 @@ void Compiler::impCheckForPInvokeCall(
 }
 
 //------------------------------------------------------------------------
+// SpillInlineCandidatesHelper: iterate through arguments tree and spill inline candidates to local variables.
+//
+class SpillInlineCandidatesHelper
+{
+public:
+    SpillInlineCandidatesHelper(Compiler* comp)
+        : comp(comp)
+    {
+    }
+
+    void StoreInlineCandidateResultsInArgs(GenTreeCall* call)
+    {
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            comp->fgWalkTreePre(&arg.EarlyNodeRef(), SpillInlineCandidateVisitor, this);
+        }
+    }
+
+private:
+    static Compiler::fgWalkResult SpillInlineCandidateVisitor(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
+    {
+        assert((pTree != nullptr) && (*pTree != nullptr));
+        GenTree* tree = *pTree;
+        if ((tree->gtFlags & GTF_CALL) == 0)
+        {
+            // Trees with ret_expr are marked as GTF_CALL.
+            return Compiler::WALK_SKIP_SUBTREES;
+        }
+        if (tree->IsCall() && tree->AsCall()->IsInlineCandidate())
+        {
+            SpillInlineCandidatesHelper* walker = static_cast<SpillInlineCandidatesHelper*>(fgWalkPre->pCallbackData);
+            walker->StoreInlineCandidateAsLocalVar(pTree);
+        }
+        return Compiler::WALK_CONTINUE;
+    }
+
+    void StoreInlineCandidateAsLocalVar(GenTree** pCall)
+    {
+        GenTreeCall* call = (*pCall)->AsCall();
+        assert(call->IsCall());
+        const unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling inline candidate"));
+        JITDUMP("Storing inline candidate [%06u] to a local var V%02u.\n", comp->dspTreeID(call), tmp);
+        comp->impStoreToTemp(tmp, call, Compiler::CHECK_SPILL_NONE);
+        *pCall = comp->gtNewLclvNode(tmp, call->TypeGet());
+
+        assert(comp->lvaTable[tmp].lvSingleDef == 0);
+        comp->lvaTable[tmp].lvSingleDef = 1;
+        JITDUMP("Marked V%02u as a single def temp\n", tmp);
+        if (call->TypeIs(TYP_REF))
+        {
+            bool                 isExact   = false;
+            bool                 isNonNull = false;
+            CORINFO_CLASS_HANDLE retClsHnd = comp->gtGetClassHandle(call, &isExact, &isNonNull);
+            if (retClsHnd != nullptr)
+            {
+                comp->lvaSetClass(tmp, retClsHnd, isExact);
+            }
+        }
+    }
+
+private:
+    Compiler* comp;
+};
+
+
+//------------------------------------------------------------------------
 // addFatPointerCandidate: mark the call and the method, that they have a fat pointer candidate.
-//                         Spill ret_expr in the call node, because they can't be cloned.
+//                         Spill inline candidates in the call node, because they shouldn't be cloned.
 //
 // Arguments:
 //    call - fat calli candidate
@@ -6566,6 +6648,8 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
     JITDUMP("Marking call [%06u] as fat pointer candidate\n", dspTreeID(call));
     setMethodHasFatPointer();
     call->SetFatPointerCandidate();
+    SpillInlineCandidatesHelper helper(this);
+    helper.StoreInlineCandidateResultsInArgs(call);
 }
 
 //------------------------------------------------------------------------
@@ -7287,6 +7371,12 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
             classHandle != NO_CLASS_HANDLE ? "class" : "method",
             classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle));
     setMethodHasGuardedDevirtualization();
+
+    // Spill off any inline candidate subtrees so we can clone the call.
+    //
+    SpillInlineCandidatesHelper helper(this);
+    helper.StoreInlineCandidateResultsInArgs(call);
+
 
     // Gather some information for later. Note we actually allocate InlineCandidateInfo
     // here, as the devirtualized half of this call will likely become an inline candidate.

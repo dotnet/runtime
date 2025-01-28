@@ -9771,7 +9771,7 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             // You must use gtCloneCandidateCall for these calls (and then do appropriate other fixup)
             if (tree->AsCall()->IsInlineCandidate() || tree->AsCall()->IsGuardedDevirtualizationCandidate())
             {
-                NO_WAY("Cloning of calls with associated GT_RET_EXPR nodes is not supported");
+                NO_WAY("Cloning of calls containing inline candidates is not supported");
             }
 
             copy = gtCloneExprCallHelper(tree->AsCall());
