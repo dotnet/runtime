@@ -658,10 +658,6 @@ private:
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);
                     }
-                    else
-                    {
-                        call->ClearInlineInfo();
-                    }
                 }
                 m_madeChanges = true;
             }
