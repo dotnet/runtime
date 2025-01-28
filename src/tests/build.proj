@@ -291,7 +291,7 @@
   </Target>
 
   <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" TaskFactory="TaskHostFactory" />
 
   <Target Name="BuildMonoiOSApp">
     <PropertyGroup>

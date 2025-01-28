@@ -3,12 +3,18 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Security.Cryptography.Pkcs.Asn1;
+using System.Security.Cryptography.Asn1.Pkcs12;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs12SecretBag : Pkcs12SafeBag
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs12SecretBag : Pkcs12SafeBag
     {
         private Oid? _secretTypeOid;
         private readonly SecretBagAsn _decoded;

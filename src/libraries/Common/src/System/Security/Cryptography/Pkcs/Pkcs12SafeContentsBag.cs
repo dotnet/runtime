@@ -6,7 +6,13 @@ using System.Formats.Asn1;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs12SafeContentsBag : Pkcs12SafeBag
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs12SafeContentsBag : Pkcs12SafeBag
     {
         public Pkcs12SafeContents? SafeContents { get; private set; }
 

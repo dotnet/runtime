@@ -3,7 +3,12 @@
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public enum Pkcs12ConfidentialityMode
+#if BUILDING_PKCS
+    public
+#else
+    internal
+#endif
+    enum Pkcs12ConfidentialityMode
     {
         Unknown = 0,
         None = 1,
