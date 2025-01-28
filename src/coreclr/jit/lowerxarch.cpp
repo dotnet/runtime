@@ -7109,9 +7109,9 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(blsrNode);
 
+    BlockRange().InsertBefore(andNode, blsrNode);
     use.ReplaceWith(blsrNode);
 
-    BlockRange().InsertBefore(andNode, blsrNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(op2);
     BlockRange().Remove(addOp1);
@@ -7194,9 +7194,9 @@ GenTree* Lowering::TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(blsiNode);
 
+    BlockRange().InsertBefore(andNode, blsiNode);
     use.ReplaceWith(blsiNode);
 
-    BlockRange().InsertBefore(andNode, blsiNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(negNode);
     BlockRange().Remove(negOp);
@@ -7281,9 +7281,9 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     JITDUMP("to:\n");
     DISPNODE(andnNode);
 
+    BlockRange().InsertBefore(andNode, andnNode);
     use.ReplaceWith(andnNode);
 
-    BlockRange().InsertBefore(andNode, andnNode);
     BlockRange().Remove(andNode);
     BlockRange().Remove(notNode);
 
@@ -7366,9 +7366,9 @@ GenTree* Lowering::TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode)
     JITDUMP("to:\n");
     DISPNODE(blsmskNode);
 
+    BlockRange().InsertBefore(xorNode, blsmskNode);
     use.ReplaceWith(blsmskNode);
 
-    BlockRange().InsertBefore(xorNode, blsmskNode);
     BlockRange().Remove(xorNode);
     BlockRange().Remove(op2);
     BlockRange().Remove(addOp1);
