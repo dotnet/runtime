@@ -4684,6 +4684,8 @@ protected:
 
     GenTree* impThrowIfNull(GenTreeCall* call);
 
+    void impImportDivision(bool isSigned);
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
