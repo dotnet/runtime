@@ -21,6 +21,12 @@ class ClassLayout
     // for cpblk/initblk.
     const unsigned m_size;
 
+    // Number of repeated elements + 1 (so, 0 for non-array layouts)
+    const unsigned m_elementCount;
+
+    // Index of element layout
+    const unsigned m_elementLayoutIndex;
+
     const unsigned m_isValueClass : 1;
     INDEBUG(unsigned m_gcPtrsInitialized : 1;)
     // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
@@ -51,6 +57,8 @@ class ClassLayout
     ClassLayout(unsigned size)
         : m_classHandle(NO_CLASS_HANDLE)
         , m_size(size)
+        , m_elementCount(0)
+        , m_elementLayoutIndex(TYP_UNKNOWN)
         , m_isValueClass(false)
 #ifdef DEBUG
         , m_gcPtrsInitialized(true)
@@ -73,6 +81,8 @@ class ClassLayout
                 var_types type       DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
         : m_classHandle(classHandle)
         , m_size(size)
+        , m_elementCount(0)
+        , m_elementLayoutIndex(TYP_UNKNOWN)
         , m_isValueClass(isValueClass)
 #ifdef DEBUG
         , m_gcPtrsInitialized(false)
@@ -88,6 +98,36 @@ class ClassLayout
         assert(size != 0);
     }
 
+    static ClassLayout* CreateArray(Compiler*            compiler,
+                                    CORINFO_CLASS_HANDLE classHandle,
+                                    var_types            elemType,
+                                    CORINFO_CLASS_HANDLE elemHandle,
+                                    unsigned             elementCount);
+
+    ClassLayout(CORINFO_CLASS_HANDLE     classHandle,
+                unsigned                 size,
+                unsigned                 elemCount,
+                unsigned elemLayoutIndex DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
+        : m_classHandle(classHandle)
+        , m_size(size)
+        , m_elementCount(elemCount)
+        , m_elementLayoutIndex(elemLayoutIndex)
+        , m_isValueClass(false)
+#ifdef DEBUG
+        , m_gcPtrsInitialized(false)
+#endif
+        , m_gcPtrCount(0)
+        , m_gcPtrs(nullptr)
+        , m_type(TYP_STRUCT)
+#ifdef DEBUG
+        , m_className(className)
+        , m_shortClassName(shortClassName)
+#endif
+    {
+        assert(size != 0);
+        assert(elemCount != 0);
+    }
+
     void InitializeGCPtrs(Compiler* compiler);
 
 public:
@@ -99,6 +139,20 @@ public:
     bool IsBlockLayout() const
     {
         return m_classHandle == NO_CLASS_HANDLE;
+    }
+
+    bool IsArrayLayout() const
+    {
+        return m_elementCount > 0;
+    }
+
+    unsigned GetElementCount() const
+    {
+        if (m_elementCount > 0)
+        {
+            return m_elementCount - 1;
+        }
+        return 0;
     }
 
 #ifdef DEBUG
@@ -138,6 +192,11 @@ public:
     //
     var_types GetRegisterType() const
     {
+        if (IsArrayLayout())
+        {
+            return TYP_UNDEF;
+        }
+
         if (HasGCPtr())
         {
             return (GetSlotCount() == 1) ? GetGCPtrType(0) : TYP_UNDEF;

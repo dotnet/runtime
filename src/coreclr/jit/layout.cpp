@@ -18,8 +18,38 @@ class ClassLayoutTable
     static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
     static constexpr unsigned FirstLayoutNum          = TYP_UNKNOWN + 2;
 
+    struct ArrKey
+    {
+        CORINFO_CLASS_HANDLE m_arrayType;
+        unsigned             m_arrayLen;
+
+        ArrKey()
+            : m_arrayType(NO_CLASS_HANDLE)
+            , m_arrayLen(0)
+        {
+        }
+
+        ArrKey(CORINFO_CLASS_HANDLE hnd, unsigned len)
+            : m_arrayType(hnd)
+            , m_arrayLen(len)
+        {
+        }
+
+        static bool Equals(const ArrKey& x, const ArrKey& y)
+        {
+            return (x.m_arrayType == y.m_arrayType) && (x.m_arrayLen == y.m_arrayLen);
+        }
+
+        static unsigned GetHashCode(const ArrKey& x)
+        {
+            unsigned typeHash = static_cast<unsigned>(reinterpret_cast<uintptr_t>(x.m_arrayType));
+            return x.m_arrayLen ^ typeHash;
+        }
+    };
+
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
+    typedef JitHashTable<ArrKey, ArrKey, unsigned>                                              ArrLayoutIndexMap;
 
     union
     {
@@ -32,6 +62,7 @@ class ClassLayoutTable
             ClassLayout**      m_layoutLargeArray;
             BlkLayoutIndexMap* m_blkLayoutMap;
             ObjLayoutIndexMap* m_objLayoutMap;
+            ArrLayoutIndexMap* m_arrLayoutMap;
         };
     };
     // The number of layout objects stored in this table.
@@ -107,6 +138,25 @@ public:
     unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
         return GetObjLayoutIndex(compiler, classHandle) + FirstLayoutNum;
+    }
+
+    // Get the layout for an on-stack known-length array
+    ClassLayout* GetArrayLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, unsigned length)
+    {
+        CORINFO_CLASS_HANDLE elementHandle  = NO_CLASS_HANDLE;
+        CorInfoType          elementCorType = compiler->info.compCompHnd->getChildType(classHandle, &elementHandle);
+        var_types            elementType    = JITtype2varType(elementCorType);
+
+        return GetLayoutByIndex(GetArrayLayoutIndex(compiler, classHandle, elementType, elementHandle, length));
+    }
+
+    unsigned GetArrayLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, unsigned length)
+    {
+        CORINFO_CLASS_HANDLE elementHandle  = NO_CLASS_HANDLE;
+        CorInfoType          elementCorType = compiler->info.compCompHnd->getChildType(classHandle, &elementHandle);
+        var_types            elementType    = JITtype2varType(elementCorType);
+
+        return GetArrayLayoutIndex(compiler, classHandle, elementType, elementHandle, length) + FirstLayoutNum;
     }
 
 private:
@@ -246,6 +296,62 @@ private:
         return index;
     }
 
+    ClassLayout* CreateArrayLayout(Compiler*            compiler,
+                                   CORINFO_CLASS_HANDLE classHandle,
+                                   var_types            elementType,
+                                   CORINFO_CLASS_HANDLE elementHandle,
+                                   unsigned             elementCount)
+    {
+        return ClassLayout::CreateArray(compiler, classHandle, elementType, elementHandle, elementCount);
+    }
+
+    unsigned GetArrayLayoutIndex(Compiler*            compiler,
+                                 CORINFO_CLASS_HANDLE classHandle,
+                                 var_types            elementType,
+                                 CORINFO_CLASS_HANDLE elementHandle,
+                                 unsigned             elementCount)
+    {
+        assert(classHandle != NO_CLASS_HANDLE);
+
+        if (HasSmallCapacity())
+        {
+            for (unsigned i = 0; i < m_layoutCount; i++)
+            {
+                if ((m_layoutArray[i]->GetClassHandle() == classHandle) &&
+                    (m_layoutArray[i]->GetElementCount() == elementCount))
+                {
+                    return i;
+                }
+            }
+        }
+        else
+        {
+            ArrKey   key(classHandle, elementCount);
+            unsigned index;
+            if (m_arrLayoutMap->Lookup(key, &index))
+            {
+                return index;
+            }
+        }
+
+        return AddArrayLayout(compiler,
+                              CreateArrayLayout(compiler, classHandle, elementType, elementHandle, elementCount));
+    }
+
+    unsigned AddArrayLayout(Compiler* compiler, ClassLayout* layout)
+    {
+        if (m_layoutCount < ArrLen(m_layoutArray))
+        {
+            m_layoutArray[m_layoutCount] = layout;
+            return m_layoutCount++;
+        }
+
+        unsigned index = AddLayoutLarge(compiler, layout);
+        ArrKey   key(layout->GetClassHandle(), layout->GetElementCount());
+        m_arrLayoutMap->Set(key, index);
+        return index;
+    }
+
     unsigned AddLayoutLarge(Compiler* compiler, ClassLayout* layout)
     {
         if (m_layoutCount >= m_layoutLargeCapacity)
@@ -258,6 +364,7 @@ private:
             {
                 BlkLayoutIndexMap* blkLayoutMap = new (alloc) BlkLayoutIndexMap(alloc);
                 ObjLayoutIndexMap* objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);
+                ArrLayoutIndexMap* arrLayoutMap = new (alloc) ArrLayoutIndexMap(alloc);
 
                 for (unsigned i = 0; i < m_layoutCount; i++)
                 {
@@ -268,6 +375,11 @@ private:
                     {
                         blkLayoutMap->Set(l->GetSize(), i);
                     }
+                    else if (l->IsArrayLayout())
+                    {
+                        ArrKey k(l->GetClassHandle(), l->GetElementCount());
+                        arrLayoutMap->Set(k, i);
+                    }
                     else
                     {
                         objLayoutMap->Set(l->GetClassHandle(), i);
@@ -276,6 +388,7 @@ private:
 
                 m_blkLayoutMap = blkLayoutMap;
                 m_objLayoutMap = objLayoutMap;
+                m_arrLayoutMap = arrLayoutMap;
             }
             else
             {
@@ -354,6 +467,125 @@ ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
     return typGetClassLayoutTable()->GetObjLayout(this, classHandle);
 }
 
+unsigned Compiler::typGetArrayLayoutNum(CORINFO_CLASS_HANDLE classHandle, unsigned length)
+{
+    return typGetClassLayoutTable()->GetArrayLayoutNum(this, classHandle, length);
+}
+
+ClassLayout* Compiler::typGetArrayLayout(CORINFO_CLASS_HANDLE classHandle, unsigned length)
+{
+    return typGetClassLayoutTable()->GetArrayLayout(this, classHandle, length);
+}
+
+ClassLayout* ClassLayout::CreateArray(Compiler*            compiler,
+                                      CORINFO_CLASS_HANDLE classHandle,
+                                      var_types            elemType,
+                                      CORINFO_CLASS_HANDLE elemHandle,
+                                      unsigned             elemCount)
+{
+    assert(elemCount <= CORINFO_Array_MaxLength);
+
+    unsigned     elemLayoutIndex = 0;
+    ClassLayout* elemLayout      = nullptr;
+    unsigned     elemSize        = 0;
+    unsigned     elemGCPtrCount  = 0;
+
+    if (elemType == TYP_STRUCT)
+    {
+        assert(elemHandle != NO_CLASS_HANDLE);
+        elemLayoutIndex = compiler->typGetObjLayoutNum(elemHandle);
+        elemLayout      = compiler->typGetLayoutByNum(elemLayoutIndex);
+        elemSize        = elemLayout->GetSize();
+        elemGCPtrCount  = elemLayout->GetGCPtrCount();
+    }
+    else
+    {
+        // No byref arrays (yet)
+        //
+        assert(elemType != TYP_BYREF);
+        elemSize = genTypeSize(elemType);
+        if (varTypeIsGC(elemType))
+        {
+            elemGCPtrCount = 1;
+        }
+    }
+
+    // compute size
+    //
+    ClrSafeInt<unsigned> totalSize(elemSize);
+    totalSize *= static_cast<unsigned>(elemCount);
+    totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
+
+    assert(!totalSize.IsOverflow());
+
+    INDEBUG(const char* className = compiler->eeGetClassName(classHandle));
+    INDEBUG(const char* shortClassName = compiler->eeGetShortClassName(classHandle));
+
+    // Note we bias elementCount up by 1 here, so that only layouts with nonzero element
+    // counts represent arrays.
+    //
+    ClassLayout* const layout =
+        new (compiler, CMK_ClassLayout) ClassLayout(classHandle, totalSize.Value(), elemCount + 1,
+                                                    elemLayoutIndex DEBUGARG(className) DEBUGARG(shortClassName));
+
+    unsigned const arrayGCPtrCount = elemGCPtrCount * elemCount;
+
+    if (arrayGCPtrCount > 0)
+    {
+        assert((elemType == TYP_REF) || (elemLayout != nullptr));
+
+        unsigned const elemSlotCount  = (elemLayout == nullptr) ? 1 : elemLayout->GetSlotCount();
+        unsigned const arraySlotCount = layout->GetSlotCount();
+        assert(arraySlotCount == 2 + elemSlotCount * elemCount);
+
+        BYTE* gcPtrs = nullptr;
+
+        if (arraySlotCount > sizeof(m_gcPtrsArray))
+        {
+            gcPtrs = layout->m_gcPtrs = new (compiler, CMK_ClassLayout) BYTE[arraySlotCount];
+        }
+        else
+        {
+            gcPtrs = layout->m_gcPtrsArray;
+        }
+
+        gcPtrs[0] = TYPE_GC_NONE;
+        gcPtrs[1] = TYPE_GC_NONE;
+
+        unsigned slot = 2;
+
+        for (unsigned i = 0; i < elemCount; i++)
+        {
+            for (unsigned j = 0; j < elemSlotCount; j++)
+            {
+                CorInfoGCType g = TYPE_GC_NONE;
+
+                if (elemLayout == nullptr)
+                {
+                    g = TYPE_GC_REF;
+                }
+                else
+                {
+                    g = elemLayout->GetGCPtr(j);
+                }
+
+                JITDUMP("Slot %u gc type %u\n", slot, g);
+                gcPtrs[slot++] = (BYTE)g;
+            }
+        }
+
+        assert(slot == arraySlotCount);
+    }
+
+    // Since class size is unsigned there's no way we could have more than 2^30 slots
+    // so it should be safe to fit this into a 30 bits bit field.
+    assert(arrayGCPtrCount < (1 << 30));
+    layout->m_gcPtrCount = arrayGCPtrCount;
+    INDEBUG(layout->m_gcPtrsInitialized = true);
+
+    return layout;
+}
+
 ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
 {
     bool     isValueClass = compiler->eeIsValueClass(classHandle);
@@ -375,6 +607,7 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
 
     ClassLayout* layout = new (compiler, CMK_ClassLayout)
         ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
+
     layout->InitializeGCPtrs(compiler);
 
     return layout;
@@ -384,6 +617,7 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 {
     assert(!m_gcPtrsInitialized);
     assert(!IsBlockLayout());
+    assert(!IsArrayLayout());
 
     if (m_size < TARGET_POINTER_SIZE)
     {
@@ -496,6 +730,8 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
 
     CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
     CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
+
+    // validate elemcount
 
     if ((clsHnd1 != NO_CLASS_HANDLE) && (clsHnd1 == clsHnd2))
     {
