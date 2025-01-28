@@ -25,18 +25,18 @@ JIT_WriteBarrier(Object **dst, Object *ref)
             if *ww_table_dst != 0:
                 *ww_table_dst =  0xff
 
-    // Return if the reference is not in the heap
-    if ref < g_ephemeral_low || reg >= g_ephemeral_high:
+    // Return if the reference is not in Gen 0
+    if ref < g_ephemeral_low || ref >= g_ephemeral_high:
         return
 
     // Region Checks
-    if g_wbs_region_to_generation_table != 0:
+    if g_region_to_generation_table != 0:
 
         // Calculate region locations
         char reg_loc_dst = *((dst >> g_region_shr) + g_region_to_generation_table)
         char reg_loc_ref = *((ref >> g_region_shr) + g_region_to_generation_table)
 
-        // Check whether the region we're storing into is gen 0 - nothing to do in this case
+        // Return if the region we're storing into is Gen 0
         if reg_loc_dst == 0:
             return
 
@@ -76,6 +76,20 @@ CardBundle:
             *card_bundle_dst = 0xff
 
 ````
+
+The Checked Write Barrier has additional checks:
+
+````
+JIT_CheckedWriteBarrier(Object **dst, Object *ref)
+
+    // Return if the destination is not on the heap
+    if ref < g_lowest_address || ref >= g_highest_address:
+        return
+
+    return JIT_WriteBarrier(dst, ref)
+````
+
+
 
 ## WritebarrierManager
 

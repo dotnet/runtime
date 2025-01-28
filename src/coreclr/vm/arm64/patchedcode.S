@@ -151,7 +151,7 @@ LOCAL_LABEL(ShadowUpdateEnd):
 #endif
 
 LOCAL_LABEL(CheckCardTableBounds):
-    // Branch to Exit if the reference is not in the heap
+    // Branch to Exit if the reference is not in the Gen0 heap
     ldr  x12, LOCAL_LABEL(wbs_ephemeral_low)
     ldr  x17, LOCAL_LABEL(wbs_ephemeral_high)
     cmp  x15, x12
