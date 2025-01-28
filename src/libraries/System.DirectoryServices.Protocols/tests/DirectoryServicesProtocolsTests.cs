@@ -706,14 +706,14 @@ namespace System.DirectoryServices.Protocols.Tests
 #if NET
         [ConditionalFact(nameof(LdapConfigurationExists))]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void StartNewTlsSessionContext_ThrowsLdapException()
+        public void StartNewTlsSessionContext()
         {
             using (var connection = new LdapConnection("server"))
             {
                 LdapSessionOptions options = connection.SessionOptions;
 
-                // To get this to not throw, we need to use TrustedCertificatesDirectory along with other valid options to connect.
-                Assert.Throws<LdapException>(() => options.StartNewTlsSessionContext());
+                // A complete test would be to use TrustedCertificatesDirectory along with other valid options to connect.
+                options.StartNewTlsSessionContext();
             }
         }
 
