@@ -109,26 +109,26 @@ namespace System.Collections.Frozen
                         throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                     }
 
+                    // Sort the values so that we can more easily check for contiguity but also so that
+                    // the keys/values returned from various properties/enumeration are in a predictable order.
                     Array.Sort(keys, values);
 
                     // Determine whether all of the keys are contiguous starting at 0.
                     bool isFull = true;
-                    if (isFull)
+                    for (i = 0; i < keys.Length; i++)
                     {
-                        for (i = 0; i < keys.Length; i++)
+                        if (int.CreateTruncating((TKeyUnderlying)(object)keys[i]) != i)
                         {
-                            if (int.CreateTruncating((TKeyUnderlying)(object)keys[i]) != i)
-                            {
-                                isFull = false;
-                                break;
-                            }
+                            isFull = false;
+                            break;
                         }
                     }
 
                     if (isFull)
                     {
                         // All of the keys are contiguous starting at 0, so we can use an implementation that
-                        // just stores all the values in an array indexed by key.
+                        // just stores all the values in an array indexed by key. This both provides faster access
+                        // and allows the single values array to be used for lookups and for ValuesCore.
                         result = new WithFullValues<TKey, TKeyUnderlying, TValue>(keys, values);
                     }
                     else
@@ -206,19 +206,14 @@ namespace System.Collections.Frozen
 
             private protected override ref readonly TValue GetValueRefOrNullRefCore(TKey key)
             {
-                int keyInt32 = int.CreateTruncating((TKeyUnderlying)(object)key);
-                int minInclusive = _minInclusive;
-                if (keyInt32 >= minInclusive)
+                int index = int.CreateTruncating((TKeyUnderlying)(object)key) - _minInclusive;
+                Optional<TValue>[] optionalValues = _optionalValues;
+                if ((uint)index < (uint)optionalValues.Length)
                 {
-                    int index = keyInt32 - minInclusive;
-                    Optional<TValue>[] optionalValues = _optionalValues;
-                    if ((uint)index < (uint)optionalValues.Length)
+                    ref Optional<TValue> value = ref optionalValues[index];
+                    if (value.HasValue)
                     {
-                        ref Optional<TValue> value = ref optionalValues[index];
-                        if (value.HasValue)
-                        {
-                            return ref value.Value;
-                        }
+                        return ref value.Value;
                     }
                 }
 
