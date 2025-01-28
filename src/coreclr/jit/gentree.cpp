@@ -24404,24 +24404,31 @@ GenTree* Compiler::gtNewSimdMaxNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
-        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
-        GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            return gtNewSimdMinMaxNode(type, op1, op2, 1, simdBaseJitType, simdSize);
+        }
+        else
+        {
+            GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+            GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+            GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
 
-        GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-        GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
-        GenTree* op2Dup3 = gtCloneExpr(op2Dup2);
+            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+            GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
+            GenTree* op2Dup3 = gtCloneExpr(op2Dup2);
 
-        GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
-        GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
-        GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
-        GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
+            GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+            GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
+            GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
+            GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
 
-        GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
-        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
-        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
+            GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
+            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
+            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
 
-        return gtNewSimdCndSelNode(type, mask, op1Dup3, op2Dup3, simdBaseJitType, simdSize);
+            return gtNewSimdCndSelNode(type, mask, op1Dup3, op2Dup3, simdBaseJitType, simdSize);
+        }
     }
 #endif // TARGET_XARCH
 
@@ -24663,29 +24670,57 @@ GenTree* Compiler::gtNewSimdMinNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
-        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
-        GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
-        GenTree* op1Dup4 = gtCloneExpr(op1Dup3);
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        {
+            return gtNewSimdMinMaxNode(type, op1, op2, 0, simdBaseJitType, simdSize);
+        }
+        else
+        {
+            GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+            GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+            GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
+            GenTree* op1Dup4 = gtCloneExpr(op1Dup3);
 
-        GenTree* op2Dup1 = fgMakeMultiUse(&op2);
-        GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
+            GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+            GenTree* op2Dup2 = gtCloneExpr(op2Dup1);
 
-        GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
-        GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
-        GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
-        GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
+            GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+            GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
+            GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
+            GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
 
-        GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
-        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
-        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
+            GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
+            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
+            mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
 
-        return gtNewSimdCndSelNode(type, mask, op1Dup4, op2Dup2, simdBaseJitType, simdSize);
+            return gtNewSimdCndSelNode(type, mask, op1Dup4, op2Dup2, simdBaseJitType, simdSize);
+        }
     }
 #endif // TARGET_XARCH
 
     return gtNewSimdMinNativeNode(type, op1, op2, simdBaseJitType, simdSize);
 }
+
+#if defined(TARGET_XARCH)
+GenTree* Compiler::gtNewSimdMinMaxNode(
+    var_types type, GenTree* op1, GenTree* op2, ssize_t ctrlByte, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v2)); // Support for new MinMax instructions for AVX10.2 required
+    assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(varTypeIsFloating(simdBaseType));
+    NamedIntrinsic minMaxIntrinsic = (simdSize == 64) ? NI_AVX10v2_V512_MinMax : NI_AVX10v2_MinMax;
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(ctrlByte), minMaxIntrinsic, simdBaseJitType, simdSize);
+}
+#endif // TARGET_XARCH
 
 GenTree* Compiler::gtNewSimdMinNativeNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
