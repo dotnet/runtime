@@ -48,7 +48,7 @@
                        $(ArtifactsPackagesDir)**\*.rpm;
                        $(ArtifactsPackagesDir)**\*.pkg;
                        $(ArtifactsPackagesDir)**\*.exe;
-                       $(ArtifactsPackagesDir)**\*.msi
+                       $(ArtifactsPackagesDir)**\*.msi;
                        $(ArtifactsDir)VSSetup\**\*.zip;"
               Exclude="$(ArtifactsPackagesDir)**\Symbols.runtime.tar.gz"
               IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))">
