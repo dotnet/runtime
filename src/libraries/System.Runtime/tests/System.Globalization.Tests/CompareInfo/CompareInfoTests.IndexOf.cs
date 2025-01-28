@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
 
-            // Empty string, non-invariant (s_germanCompare)
+            // Empty string, using non-invariant (s_germanCompare) CompareInfo to test the ICU path
             yield return new object[] { s_germanCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
             yield return new object[] { s_germanCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
             yield return new object[] { s_germanCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
