@@ -1945,8 +1945,8 @@ namespace System
                     foundItems = foundItems.Slice(0, foundItemsCount);
                     int length = GetMultipleEnumsFlagsFormatResultLength(resultLength, foundItemsCount);
 
-                    result = string.FastAllocateString(length);
-                    WriteMultipleFoundFlagsNames(names, foundItems, new Span<char>(ref result.GetRawStringData(), result.Length));
+                    result = string.AllocateInternal(length, out Span<char> resultSpan);
+                    WriteMultipleFoundFlagsNames(names, foundItems, resultSpan);
                 }
             }
 
