@@ -8,9 +8,9 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal partial class ExecutionManagerBase<T> : IExecutionManager
+internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
-    private class ReadyToRunJitManager : JitManager
+    private sealed class ReadyToRunJitManager : JitManager
     {
         private readonly uint _runtimeFunctionSize;
         private readonly PtrHashMapLookup _hashMap;

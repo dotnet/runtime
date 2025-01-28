@@ -12,7 +12,7 @@ public readonly struct TargetNUInt : IEquatable<TargetNUInt>
     public readonly ulong Value;
     public TargetNUInt(ulong value) => Value = value;
 
-    internal string Hex => $"0x{Value:x}";
+    public string Hex => $"0x{Value:x}";
 
     public override bool Equals(object? obj) => obj is TargetNUInt other && Equals(other);
 
