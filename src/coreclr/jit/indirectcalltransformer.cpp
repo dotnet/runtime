@@ -243,6 +243,35 @@ private:
             return block;
         }
 
+        //------------------------------------------------------------------------
+        // SpillOperandToEndOfCheckBlock: spill an edge to a temp at the end of the "check" block.
+        //
+        // Parameters
+        //   use - The use edge
+        //
+        void SpillOperandToEndOfCheckBlock(GenTree** use)
+        {
+            unsigned       tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("operand temp"));
+            GenTree* const argNode = *use;
+            GenTree*       store   = compiler->gtNewTempStore(tmpNum, argNode);
+
+            if (argNode->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
+            Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
+            compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
+
+            *use = compiler->gtNewLclVarNode(tmpNum);
+        }
+
         virtual void CreateThen(uint8_t checkIdx) = 0;
         virtual void CreateElse()                 = 0;
 
@@ -383,6 +412,33 @@ private:
             assert(checkIdx == 0);
 
             checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock);
+
+            GenTree** lastSpilledArg = nullptr;
+            for (GenTree** arg : origCall->UseEdges())
+            {
+                if (ContainsInlineCandidate(*arg))
+                {
+                    lastSpilledArg = arg;
+                }
+            }
+
+            if (lastSpilledArg != nullptr)
+            {
+                for (GenTree** arg : origCall->UseEdges())
+                {
+                    GenTree* argNode = *arg;
+                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || compiler->gtHasLocalsWithAddrOp(argNode))
+                    {
+                        SpillOperandToEndOfCheckBlock(arg);
+                    }
+
+                    if (arg == lastSpilledArg)
+                    {
+                        break;
+                    }
+                }
+            }
+
             GenTree*   fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTree*   fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
@@ -391,6 +447,45 @@ private:
             GenTree*   jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
             Statement* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+        }
+
+        bool ContainsInlineCandidate(GenTree* tree)
+        {
+            struct Visitor : GenTreeVisitor<Visitor>
+            {
+                enum
+                {
+                    DoPreOrder = true,
+                };
+
+                Visitor(Compiler* comp) : GenTreeVisitor(comp)
+                {
+                }
+
+                fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                {
+                    GenTree* tree = *use;
+                    if ((tree->gtFlags & GTF_CALL) == 0)
+                    {
+                        return fgWalkResult::WALK_SKIP_SUBTREES;
+                    }
+
+                    if (tree->IsCall() && tree->AsCall()->IsInlineCandidate())
+                    {
+                        return fgWalkResult::WALK_ABORT;
+                    }
+
+                    return fgWalkResult::WALK_CONTINUE;
+                }
+            };
+
+            if ((tree->gtFlags & GTF_CALL) == 0)
+            {
+                return false;
+            }
+
+            Visitor visitor(compiler);
+            return visitor.WalkTree(&tree, nullptr) == Compiler::WALK_ABORT;
         }
 
         //------------------------------------------------------------------------
@@ -621,7 +716,7 @@ private:
                     GenTree* argNode = arg.GetNode();
                     if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || compiler->gtHasLocalsWithAddrOp(argNode))
                     {
-                        SpillArgToTempBeforeGuard(&arg);
+                        SpillOperandToEndOfCheckBlock(&arg.NodeRef());
                     }
 
                     if (&arg == lastSideEffArg)
@@ -636,7 +731,7 @@ private:
             // is going to be used multiple times due to the guard.
             if (!thisArg->GetNode()->IsLocal())
             {
-                SpillArgToTempBeforeGuard(thisArg);
+                SpillOperandToEndOfCheckBlock(&thisArg->NodeRef());
             }
 
             GenTree* thisTree = compiler->gtCloneExpr(thisArg->GetNode());
@@ -714,35 +809,6 @@ private:
             GenTree*   jmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
             Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
-        //
-        // Parameters
-        //   arg - The arg to create a temp and local store for.
-        //
-        void SpillArgToTempBeforeGuard(CallArg* arg)
-        {
-            unsigned       tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree* const argNode = arg->GetNode();
-            GenTree*       store   = compiler->gtNewTempStore(tmpNum, argNode);
-
-            if (argNode->TypeIs(TYP_REF))
-            {
-                bool                 isExact   = false;
-                bool                 isNonNull = false;
-                CORINFO_CLASS_HANDLE cls       = compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
-                if (cls != NO_CLASS_HANDLE)
-                {
-                    compiler->lvaSetClass(tmpNum, cls, isExact);
-                }
-            }
-
-            Statement* storeStmt = compiler->fgNewStmtFromTree(store, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, storeStmt);
-
-            arg->SetEarlyNode(compiler->gtNewLclVarNode(tmpNum));
         }
 
         //------------------------------------------------------------------------
@@ -1240,27 +1306,6 @@ private:
             {
                 JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
 
-                // See if this is a guarded devirt candidate.
-                // These will be top-level trees.
-                //
-                GenTree* const root = nextStmt->GetRootNode();
-
-                if (root->IsCall())
-                {
-                    GenTreeCall* const call = root->AsCall();
-
-                    if (call->IsGuardedDevirtualizationCandidate() &&
-                        (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood))
-                    {
-                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
-                                compiler->dspTreeID(call), call->GetGDVCandidateInfo(0)->likelihood, gdvChainLikelihood,
-                                chainStatementDup, chainNodeDup);
-
-                        call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
-                        break;
-                    }
-                }
-
                 // Stop searching if we've accumulated too much dup cost.
                 // Consider: use node count instead.
                 //
@@ -1280,6 +1325,35 @@ private:
                     JITDUMP("  node [%06u] can't be cloned\n",
                             compiler->dspTreeID(clonabilityVisitor.m_unclonableNode));
                     break;
+                }
+
+                // See if this is a guarded devirt candidate.
+                // These will be top-level trees.
+                //
+                GenTree* const root = nextStmt->GetRootNode();
+
+                GenTreeCall* call = nullptr;
+                if (root->IsCall())
+                {
+                    call = root->AsCall();
+                }
+                else if (root->OperIs(GT_STORE_LCL_VAR) && root->AsLclVarCommon()->Data()->IsCall())
+                {
+                    call = root->AsLclVarCommon()->Data()->AsCall();
+                }
+
+                if (call != nullptr)
+                {
+                    if (call->IsGuardedDevirtualizationCandidate() &&
+                        (call->GetGDVCandidateInfo(0)->likelihood >= gdvChainLikelihood))
+                    {
+                        JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
+                                compiler->dspTreeID(call), call->GetGDVCandidateInfo(0)->likelihood, gdvChainLikelihood,
+                                chainStatementDup, chainNodeDup);
+
+                        call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
+                        break;
+                    }
                 }
 
                 // Looks like we can clone this, so keep scouting.

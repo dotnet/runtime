@@ -324,7 +324,7 @@ private:
         Statement* callStmt = m_compiler->fgMorphStmt;
         Statement* newStmt = nullptr;
         GenTree** use2 = nullptr;
-        m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false);
+        m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false, /* early */ true);
         assert(use2 == use);
 
         JITDUMP("After split:\n");
@@ -338,12 +338,33 @@ private:
 
         Statement* predStmt = callStmt == callBlock->firstStmt() ? nullptr : callStmt->GetPrevStmt();
 
-        inlineInfo.setupStatements.InsertIntoBlockBefore(m_compiler->compCurBB, m_compiler->fgMorphStmt);
-        *use = call->gtInlineCandidateInfo->result.substExpr;
+        inlineInfo.setupStatements.InsertIntoBlockBefore(callBlock, callStmt);
+
+        GenTree* substExpr = call->gtInlineCandidateInfo->result.substExpr;
+        if ((substExpr != nullptr) && substExpr->IsValue() && m_compiler->gtComplexityExceeds(substExpr, 16))
+        {
+            JITDUMP("Substitution expression is complex so spilling it to its own statement\n");
+            unsigned lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("Complex inlinee substitution expression"));
+            Statement* storeTemp = m_compiler->gtNewStmt(m_compiler->gtNewTempStore(lclNum, substExpr));
+            DISPSTMT(storeTemp);
+            inlineInfo.teardownStatements.Append(storeTemp);
+            *use = m_compiler->gtNewLclvNode(lclNum, genActualType(substExpr));
+        }
+        else
+        {
+            *use = substExpr;
+        }
 
         if (*use == nullptr)
         {
             *use = m_compiler->gtNewNothingNode();
+        }
+        else
+        {
+            if ((*use)->IsValue() && !(*use)->IsCall() && (use == callStmt->GetRootNodePointer()))
+            {
+                *use = m_compiler->gtUnusedValNode(*use);
+            }
         }
 
         if (call->gtInlineCandidateInfo->result.substBB != nullptr)
@@ -459,7 +480,20 @@ private:
             return false;
         }
 
+        if (use == m_statement->GetRootNodePointer())
+        {
+            // Leave this case up to the general handling.
+            return false;
+        }
+
+        GenTree* call = *use;
         *use = inlineInfo.inlineCandidateInfo->result.substExpr;
+
+        if (m_compiler->gtComplexityExceeds(m_statement->GetRootNode(), 16))
+        {
+            *use = call;
+            return false;
+        }
 
         if (*use == nullptr)
         {
@@ -820,18 +854,15 @@ PhaseStatus Compiler::fgInline()
                 continue;
             }
 
-            GenTree* expr = currentStmt->GetRootNode();
+            Statement* nextStmt = currentStmt->GetNextStmt();
 
-            // See if stmt is of the form GT_COMMA(call, nop)
-            // If yes, we can get rid of GT_COMMA.
-            if (expr->OperGet() == GT_COMMA && expr->AsOp()->gtOp1->OperGet() == GT_CALL &&
-                expr->AsOp()->gtOp2->OperGet() == GT_NOP)
+            if (currentStmt->GetRootNode()->IsNothingNode())
             {
+                fgRemoveStmt(currentBlock, currentStmt);
                 madeChanges = true;
-                currentStmt->SetRootNode(expr->AsOp()->gtOp1);
             }
 
-            currentStmt = currentStmt->GetNextStmt();
+            currentStmt = nextStmt;
         }
 
         currentBlock = currentBlock->Next();
@@ -1184,6 +1215,7 @@ void Compiler::fgInvokeInlineeCompiler(InlineInfo& inlineInfo, GenTreeCall* call
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
     inlineInfo.inlInstParamArgInfo    = nullptr;
+    inlineInfo.inlRetBufferArgInfo    = nullptr;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -1865,6 +1897,11 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     if (inlineInfo->inlInstParamArgInfo != nullptr)
     {
         fgInsertInlineeArgument(inlineInfo->setupStatements, *inlineInfo->inlInstParamArgInfo, callDI);
+    }
+
+    if (inlineInfo->inlRetBufferArgInfo != nullptr)
+    {
+        fgInsertInlineeArgument(inlineInfo->setupStatements, *inlineInfo->inlRetBufferArgInfo, callDI);
     }
 
     // Treat arguments that had to be assigned to temps

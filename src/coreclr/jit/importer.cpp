@@ -811,7 +811,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
-            if (destAddr->OperIs(GT_LCL_ADDR))
+            if (destAddr->OperIs(GT_LCL_ADDR) && !srcCall->IsInlineCandidate())
             {
                 lvaSetVarDoNotEnregister(destAddr->AsLclVarCommon()->GetLclNum()
                                              DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
@@ -11002,8 +11002,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 }
                 else // The struct was to be returned via a return buffer.
                 {
-                    assert(iciCall->gtArgs.HasRetBuffer());
-                    GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
+                    assert(iciCall->gtArgs.HasRetBuffer() && (impInlineInfo->inlRetBufferArgInfo != nullptr));
+                    InlLclVarInfo lclInfo = {};
+                    lclInfo.lclTypeInfo   = TYP_BYREF;
+                    GenTree* dest = impInlineFetchArg(*impInlineInfo->inlRetBufferArgInfo, lclInfo);
 
                     if (fgNeedReturnSpillTemp())
                     {
@@ -12811,8 +12813,9 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 #endif // FEATURE_SIMD
         }
 
-        // Spilling code relies on correct aliasability annotations.
-        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed());
+        // Spilling code relies on correct aliasability annotations, except for
+        // retbufs that are not actually exposed in IL.
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed() || (arg->GetWellKnownArg() == WellKnownArg::RetBuffer));
     }
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
@@ -12961,8 +12964,12 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 inlArgInfo[ilArgCnt].argIsThis = true;
                 break;
             case WellKnownArg::RetBuffer:
-                // This does not appear in the table of inline arg info; do not include them
+            {
+                InlArgInfo* retBufferInfo = new (this, CMK_Inlining) InlArgInfo{};
+                impInlineRecordArgInfo(pInlineInfo, retBufferInfo, &arg, inlineResult);
+                pInlineInfo->inlRetBufferArgInfo = retBufferInfo;
                 continue;
+            }
             case WellKnownArg::InstParam:
             {
                 InlArgInfo* ctxInfo  = new (this, CMK_Inlining) InlArgInfo{};

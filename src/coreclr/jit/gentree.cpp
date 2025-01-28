@@ -16946,7 +16946,7 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 //   True if any changes were made; false if nothing needed to be done to split the tree.
 //
 bool Compiler::gtSplitTree(
-    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse, bool includeOperands)
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse, bool includeOperands, bool early)
 {
     class Splitter final : public GenTreeVisitor<Splitter>
     {
@@ -16954,6 +16954,7 @@ bool Compiler::gtSplitTree(
         Statement*  m_splitStmt;
         GenTree*    m_splitNode;
         bool        m_includeOperands;
+        bool        m_early;
 
         struct UseInfo
         {
@@ -16970,12 +16971,13 @@ bool Compiler::gtSplitTree(
             UseExecutionOrder = true
         };
 
-        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool includeOperands)
+        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool includeOperands, bool early)
             : GenTreeVisitor(compiler)
             , m_bb(bb)
             , m_splitStmt(stmt)
             , m_splitNode(splitNode)
             , m_includeOperands(includeOperands)
+            , m_early(early)
             , m_useStack(compiler->getAllocator(CMK_ArrayStack))
         {
         }
@@ -17128,25 +17130,29 @@ bool Compiler::gtSplitTree(
                 return;
             }
 
-            if ((*use)->OperIs(GT_LCL_VAR) && !m_compiler->lvaGetDesc((*use)->AsLclVarCommon())->IsAddressExposed())
+            if ((*use)->OperIs(GT_LCL_VAR))
             {
-                // The splitting we do here should always guarantee that we
-                // only introduce locals for the tree edges that overlap the
-                // split point, so it should be ok to avoid creating statements
-                // for locals that aren't address exposed. Note that this
-                // relies on it being illegal IR to have a tree edge for a
-                // register candidate that overlaps with an interfering node.
-                //
-                // For example, this optimization would be problematic if IR
-                // like the following could occur:
-                //
-                // CALL
-                //   LCL_VAR V00
-                //   CALL
-                //     STORE_LCL_VAR<V00>(...) (setup)
-                //     LCL_VAR V00
-                //
-                return;
+                LclVarDsc* dsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
+                if (!dsc->IsAddressExposed() && (!m_early || !dsc->lvHasLdAddrOp))
+                {
+                    // The splitting we do here should always guarantee that we
+                    // only introduce locals for the tree edges that overlap the
+                    // split point, so it should be ok to avoid creating statements
+                    // for locals that aren't address exposed. Note that this
+                    // relies on it being illegal IR to have a tree edge for a
+                    // register candidate that overlaps with an interfering node.
+                    //
+                    // For example, this optimization would be problematic if IR
+                    // like the following could occur:
+                    //
+                    // CALL
+                    //   LCL_VAR V00
+                    //   CALL
+                    //     STORE_LCL_VAR<V00>(...) (setup)
+                    //     LCL_VAR V00
+                    //
+                    return;
+                }
             }
 
 #ifndef TARGET_64BIT
@@ -17211,7 +17217,7 @@ bool Compiler::gtSplitTree(
         }
     };
 
-    Splitter splitter(this, block, stmt, splitPoint, includeOperands);
+    Splitter splitter(this, block, stmt, splitPoint, includeOperands, early);
     splitter.WalkTree(stmt->GetRootNodePointer(), nullptr);
     *firstNewStmt = splitter.FirstStatement;
     *splitNodeUse = splitter.SplitNodeUse;
