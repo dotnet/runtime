@@ -143,7 +143,12 @@ namespace System
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
-        public static bool IsSizeOptimized => IsBrowser || IsWasi || IsAndroid || IsAppleMobile;
+        public static bool IsSizeOptimized => s_linqIsSizeOptimized.Value;
+        private static readonly Lazy<bool> s_linqIsSizeOptimized = new Lazy<bool>(IsLinqSizeOptimized);
+        private static bool IsLinqSizeOptimized()
+        {
+            return (bool)typeof(Enumerable).GetMethod("get_IsSizeOptimized", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object>());
+        }
 
         public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
