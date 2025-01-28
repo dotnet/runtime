@@ -352,8 +352,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
 
             bool isShuffleNative = intrinsicId == NI_Vector128_ShuffleNative;
 #if defined(TARGET_XARCH)
-            isShuffleNative =
-                isShuffleNative || intrinsicId == NI_Vector256_ShuffleNative || intrinsicId == NI_Vector512_ShuffleNative;
+            isShuffleNative = isShuffleNative || intrinsicId == NI_Vector256_ShuffleNative ||
+                              intrinsicId == NI_Vector512_ShuffleNative;
 #elif defined(TARGET_ARM64)
             isShuffleNative = isShuffleNative || intrinsicId == NI_Vector64_ShuffleNative;
 #endif
@@ -364,7 +364,8 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             }
             else
             {
-                result = comp->gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
+                result =
+                    comp->gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
             }
             break;
         }

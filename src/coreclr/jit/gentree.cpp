@@ -25733,7 +25733,7 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
                 GenTree* op1Dup1 = fgMakeMultiUse(&op1);
                 swap             = op1Dup1;
 
-                simd_t*  cnsPtr = &op1Dup1->AsVecCon()->gtSimdVal;
+                simd_t* cnsPtr = &op1Dup1->AsVecCon()->gtSimdVal;
                 std::swap(cnsPtr->u64[0], cnsPtr->u64[2]);
                 std::swap(cnsPtr->u64[1], cnsPtr->u64[3]);
             }
@@ -25757,8 +25757,8 @@ GenTree* Compiler::gtNewSimdShuffleNodeVariable(
             GenTree* indicesXord = gtNewSimdBinOpNode(GT_XOR, type, op2Dup2, cnsNode, simdBaseJitType, simdSize);
 
             // compare our modified indices to 0x0F (highest value not swapping lane), we get 0xFF when we are swapping
-            // lane and 0x00 otherwise. we will also get "swapping lane" also when index is more than 32 (but no high bit),
-            // but this is normalised later for Shuffle, and acceptable for ShuffleNative.
+            // lane and 0x00 otherwise. we will also get "swapping lane" also when index is more than 32
+            // (but no high bit), but this is normalised later for Shuffle, and acceptable for ShuffleNative.
             // V256<byte> selection = Avx2.CompareGreaterThan(indicesXord.AsSByte(), V256.Create((sbyte)0x0F)).AsByte();
             simd_t comparandCnd            = {};
             comparandCnd.u64[0]            = 0x0F0F0F0F0F0F0F0F;
@@ -26024,9 +26024,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     // We want ShuffleNative to be at least as good as Shuffle (at least in non out-of-range cases),
     // so if we have all values in range, then just treat it like Shuffle.
     // We may as well also track whether we have the identity shuffle and all out-of-range here.
-    bool gotInvalidIndex = false;
+    bool gotInvalidIndex    = false;
     bool hasIdentityShuffle = true;
-    bool allOutOfRange = true;
+    bool allOutOfRange      = true;
     for (size_t index = 0; index < elementCount; index++)
     {
         uint64_t value = op2->GetIntegralVectorConstElement(index, simdBaseType);

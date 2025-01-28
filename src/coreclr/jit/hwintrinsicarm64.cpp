@@ -2274,7 +2274,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             // All cases on arm64 are either valid or invalid, they cannot become valid later
-            assert (!canBecomeValidForShuffle);
+            assert(!canBecomeValidForShuffle);
 
             // If the indices might become constant later, then we don't emit for now, delay until later.
             if (!indices->IsCnsVec())
@@ -2306,7 +2306,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else
                 {
-                    retNode = gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
+                    retNode =
+                        gtNewSimdShuffleNodeVariable(retType, op1, op2, simdBaseJitType, simdSize, isShuffleNative);
                 }
             }
             break;
