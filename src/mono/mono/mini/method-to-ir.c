@@ -334,8 +334,8 @@ handle_enum:
 	case MONO_TYPE_R8:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
@@ -346,7 +346,7 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		if (mini_class_is_simd (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
-		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -826,8 +826,8 @@ handle_enum:
 		inst->type = STACK_R8;
 		return;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		} else {
 			inst->klass = klass;
@@ -839,7 +839,7 @@ handle_enum:
 		inst->type = STACK_VTYPE;
 		return;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (m_type_data_get_generic_class (type)->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto handle_enum;
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
@@ -2084,8 +2084,8 @@ handle_enum:
 				return TRUE;
 			continue;
 		case MONO_TYPE_VALUETYPE:
-			if (m_class_is_enumtype (m_type_data_get_klass (simple_type))) {
-				simple_type = mono_class_enum_basetype_internal (m_type_data_get_klass (simple_type));
+			if (m_class_is_enumtype (m_type_data_get_klass_unchecked (simple_type))) {
+				simple_type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (simple_type));
 				goto handle_enum;
 			}
 			if (args [i]->type != STACK_VTYPE)
@@ -2096,7 +2096,7 @@ handle_enum:
 				return TRUE;
 			continue;
 		case MONO_TYPE_GENERICINST:
-			simple_type = m_class_get_byval_arg (m_type_data_get_generic_class (simple_type)->container_class);
+			simple_type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (simple_type)->container_class);
 			goto handle_enum;
 		case MONO_TYPE_VAR:
 		case MONO_TYPE_MVAR:
@@ -5395,8 +5395,8 @@ handle_enum:
 	case MONO_TYPE_GENERICINST:
 		return 0;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (m_type_data_get_klass (type))) {
-			type = mono_class_enum_basetype_internal (m_type_data_get_klass (type));
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto handle_enum;
 		}
 		return 0;
