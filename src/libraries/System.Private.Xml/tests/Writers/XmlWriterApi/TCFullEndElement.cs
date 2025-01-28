@@ -7,13 +7,35 @@ using System.IO;
 using System.Text;
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Xml.XmlWriterApiTests
 {
     //[TestCase(Name = "WriteFullEndElement")]
-    public class TCFullEndElement
+    public class TCFullEndElement : IAsyncLifetime
     {
+        public async Task InitializeAsync()
+        {
+            // when running in browser, we only have 32bit address space
+            // and this unit test is allocating a lot of resources. Which often leads to OOM in CI
+            // yielding to the browser event loop will give the runtime ability to run finalizers
+            if (OperatingSystem.IsBrowser())
+            {
+                await Task.Yield();
+            }
+        }
+
+        public Task DisposeAsync()
+        {
+            if (OperatingSystem.IsBrowser())
+            {
+                GC.Collect();
+            }
+            return Task.CompletedTask;
+        }
+
         // Sanity test for WriteFullEndElement()
         [Theory]
         [XmlWriterInlineData]
