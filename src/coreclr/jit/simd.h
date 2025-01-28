@@ -705,7 +705,7 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 inline bool IsBinaryBitwiseOperation(genTreeOps oper)
 {
     return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_ROL) ||
-           (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR);
+           (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR) || (oper == GT_XOR_NOT);
 }
 
 template <typename TBase>
@@ -899,6 +899,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
         case GT_XOR:
         {
             return arg0 ^ arg1;
+        }
+
+        case GT_XOR_NOT:
+        {
+            return arg0 ^ ~arg1;
         }
 
         default:
