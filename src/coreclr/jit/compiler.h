@@ -5114,6 +5114,8 @@ private:
         SpillCliqueSucc
     };
 
+    friend class SubstitutePlaceholdersAndDevirtualizeWalker;
+
     // Abstract class for receiving a callback while walking a spill clique
     class SpillCliqueWalker
     {

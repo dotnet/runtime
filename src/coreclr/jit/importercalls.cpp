@@ -329,7 +329,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                            (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
-                    call = gtNewIndCallNode(stubAddr, callRetTyp);
+                    call = gtNewIndCallNode(stubAddr, callRetTyp, di);
 
                     call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
