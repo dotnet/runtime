@@ -5258,30 +5258,6 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(Compiler* comp, ValueNum vn)
                 return GetWriteBarrierForm(comp, funcApp.m_args[0]);
             }
         }
-        if (funcApp.m_func == VNF_InitVal)
-        {
-            unsigned lclNum = vnStore->CoercedConstantValue<unsigned>(funcApp.m_args[0]);
-            assert(lclNum != BAD_VAR_NUM);
-            CORINFO_CLASS_HANDLE srcCls = NO_CLASS_HANDLE;
-
-            if (comp->compMethodHasRetVal() && (lclNum == comp->info.compRetBuffArg))
-            {
-                // See if the address is in current method's return buffer
-                // while the return type is a byref-like type.
-                srcCls = comp->info.compMethodInfo->args.retTypeClass;
-            }
-            else if (lclNum == comp->info.compThisArg)
-            {
-                // Same for implicit "this" parameter
-                assert(!comp->info.compIsStatic);
-                srcCls = comp->info.compClassHnd;
-            }
-
-            if ((srcCls != NO_CLASS_HANDLE) && comp->eeIsByrefLike(srcCls))
-            {
-                return GCInfo::WriteBarrierForm::WBF_NoBarrier;
-            }
-        }
     }
     return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 }

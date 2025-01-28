@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">Mono</RuntimeFlavor>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
@@ -17,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeComponents Condition="'$(RuntimeFlavor)' == 'Mono' and '$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
@@ -52,4 +53,5 @@
     <Message Importance="High" Text="ApkBundlePath: $(ApkBundlePath)"/>
     <Message Importance="High" Text="TestArchiveTestsDir: $(TestArchiveTestsDir)"/>
   </Target>
+
 </Project>

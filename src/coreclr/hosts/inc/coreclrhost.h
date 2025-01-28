@@ -22,6 +22,12 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+#define CORECLR_HOSTING_API_LINKAGE extern "C"
+#else
+#define CORECLR_HOSTING_API_LINKAGE
+#endif
+
 // For each hosting API, we define a function prototype and a function pointer
 // The prototype is useful for implicit linking against the dynamic coreclr
 // library and the pointer for explicit dynamic loading (dlopen, LoadLibrary)
