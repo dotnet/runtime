@@ -962,7 +962,7 @@ AdjustContextForVirtualStub(
 
     bool isVirtualStubNullCheck = false;
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    if (VirtualCallStubManager::isCachedInterfaceDispatchStub(f_IP))
+    if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
     {
         isVirtualStubNullCheck = true; 
     }
