@@ -8677,30 +8677,28 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                if (pByValueMT->IsByRefLike() || pByValueMT->ContainsGCPointers())
+                BOOL hasGcPointers = pByValueMT->ContainsGCPointers();
+                if (hasGcPointers || pByValueMT->IsByRefLike())
                 {
-                    if ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
+                    if (hasGcPointers && ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0))
                     {
-                        // If we got here, then a ByRefLike valuetype or a valuetype containing an OREF was misaligned.
+                        // If we got here, then a valuetype containing an OREF was misaligned.
                         badOffset = pFD->GetOffset();
                         fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
                         break;
                     }
 
-                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()]);
+                    ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()], pFD->GetOffset());
                     fieldTrust.SetTrust(trust);
 
-                    if (trust != ExplicitFieldTrust::kNone)
-                    {
-                        continue;
-                    }
-                    else
+                    if (trust == ExplicitFieldTrust::kNone)
                     {
                         // If we got here, then an OREF/BYREF inside the valuetype illegally overlapped a non-OREF field. THROW.
                         badOffset = pFD->GetOffset();
                         break;
                     }
-                    break;
+
+                    continue;
                 }
                 // no pointers so fall through to do standard checking
                 fieldSize = pByValueMT->GetNumInstanceFieldBytes();
@@ -8855,13 +8853,13 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no object fields are overlapped incorrectly, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
 
     // ByRefLike types need to be checked for ByRef fields.
     if (pMT->IsByRefLike())
-        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout);
+        return CheckByRefLikeValueClassLayout(pMT, pFieldLayout, fieldBaseOffset);
 
     // Build a layout of the value class (vc). Don't know the sizes of all the fields easily, but
     // do know (a) vc is already consistent so don't need to check it's overlaps and
@@ -8947,7 +8945,7 @@ MethodTableBuilder::HandleExplicitLayout(
 
 //*******************************************************************************
 // make sure that no byref/object fields are overlapped, returns the trust level
-/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout)
+/*static*/ ExplicitFieldTrust::TrustLevel MethodTableBuilder::CheckByRefLikeValueClassLayout(MethodTable * pMT, bmtFieldLayoutTag *pFieldLayout, UINT fieldBaseOffset)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMT->IsByRefLike());
@@ -8964,17 +8962,21 @@ MethodTableBuilder::HandleExplicitLayout(
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable *pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
-            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex]);
+            trust = CheckValueClassLayout(pFieldMT, &pFieldLayout[fieldStartIndex], fieldBaseOffset + fieldStartIndex);
         }
         else if (pFD->IsObjRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, oref)
+                : ExplicitFieldTrust::kNone;
         }
         else if (pFD->IsByRef())
         {
-            _ASSERTE(fieldStartIndex % TARGET_POINTER_SIZE == 0);
-            trust = MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref);
+            UINT absOffset = fieldBaseOffset + fieldStartIndex;
+            trust = (absOffset % TARGET_POINTER_SIZE == 0)
+                ? MarkTagType(&pFieldLayout[fieldStartIndex], TARGET_POINTER_SIZE, byref)
+                : ExplicitFieldTrust::kNone;
         }
         else
         {

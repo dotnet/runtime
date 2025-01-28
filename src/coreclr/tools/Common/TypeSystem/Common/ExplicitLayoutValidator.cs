@@ -81,7 +81,7 @@ namespace Internal.TypeSystem
                     return false;
                 }
 
-                if (offset % PointerSize != 0)
+                if (!fieldType.IsByRefLike && offset % PointerSize != 0)
                 {
                     // Misaligned struct with GC pointers or ByRef
                     ThrowFieldLayoutError(offset);
