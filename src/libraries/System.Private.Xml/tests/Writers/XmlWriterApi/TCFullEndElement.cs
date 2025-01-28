@@ -18,6 +18,9 @@ namespace System.Xml.XmlWriterApiTests
     {
         public async Task InitializeAsync()
         {
+            // when running in browser, we only have 32bit address space
+            // and this unit test is allocating a lot of resources. Which often leads to OOM in CI
+            // yielding to the browser event loop will give the runtime ability to run finalizers
             if (OperatingSystem.IsBrowser())
             {
                 await Task.Yield();
