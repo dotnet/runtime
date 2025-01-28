@@ -2230,6 +2230,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     //
     bNewCond->inheritWeight(block);
 
+    const weight_t totalWeight = bTest->bbWeight;
+
     if (haveProfileWeights)
     {
         bTest->decreaseBBProfileWeight(block->bbWeight);
@@ -2288,6 +2290,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
                 assert(!"Unexpected bbKind for predecessor block");
                 break;
         }
+    }
+
+    const weight_t loopWeight    = bTest->bbWeight;
+    const weight_t nonLoopWeight = bNewCond->bbWeight;
+    if (haveProfileWeights && !fgProfileWeightsConsistent(totalWeight, loopWeight + nonLoopWeight))
+    {
+        JITDUMP("Redirecting flow from " FMT_BB " to " FMT_BB " introduced inconsistency. Data %s inconsistent.\n",
+                bTest->bbNum, bNewCond->bbNum, fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
 #ifdef DEBUG
