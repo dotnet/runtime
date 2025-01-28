@@ -612,10 +612,14 @@ private:
 
                 if (context != nullptr)
                 {
-                    Statement* firstSplitStmt = m_compiler->gtSplitEffectsForSubTree(m_curStmt, call, true);
-                    if (m_firstNewStmt == nullptr && firstSplitStmt != nullptr)
+                    Statement* newStmt = nullptr;
+                    GenTree**  callUse = nullptr;
+                    if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse))
                     {
-                        m_firstNewStmt = firstSplitStmt;
+                        if (m_firstNewStmt == nullptr)
+                        {
+                            m_firstNewStmt = newStmt;
+                        }
                     }
 
                     CORINFO_CALL_INFO callInfo = {};

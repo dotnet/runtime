@@ -3727,8 +3727,6 @@ public:
 
     void gtUpdateNodeOperSideEffects(GenTree* tree);
 
-    Statement* gtSplitEffectsForSubTree(Statement* stmt, GenTree* subTree, bool early = false);
-
     // Returns "true" iff the complexity (not formally defined, but first interpretation
     // is #of nodes in subtree) of "tree" is greater than "limit".
     // (This is somewhat redundant with the "GetCostEx()/GetCostSz()" fields, but can be used
