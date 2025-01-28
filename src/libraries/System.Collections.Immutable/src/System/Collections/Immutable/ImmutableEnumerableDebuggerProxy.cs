@@ -16,7 +16,11 @@ namespace System.Collections.Immutable
     /// This class should only be used with immutable dictionaries, since it
     /// caches the dictionary into an array for display in the debugger.
     /// </remarks>
-    internal sealed class ImmutableDictionaryDebuggerProxy<TKey, TValue> where TKey : notnull
+    internal
+#if !NET
+    sealed
+#endif
+    class ImmutableDictionaryDebuggerProxy<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// The dictionary to show to the debugger.
