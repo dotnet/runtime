@@ -681,19 +681,21 @@ bool Compiler::optRelopTryInferWithOneEqualOperand(const VNFuncApp&      domApp,
     // BB4:
     //   return;
 
-    // Check whether the dominating compare being "false" implies the dominated compare is known
+    // Check whether the dominating compare being "true" or false" implies the dominated compare is known
     // to be either "true" or "false".
-    RelopResult treeOperStatus = IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
-    if (treeOperStatus == RelopResult::Unknown)
+    RelopResult ifTrueStatus  = IsCmp2ImpliedByCmp1(domOper, domCns, treeOper, treeCns);
+    RelopResult ifFalseStatus = IsCmp2ImpliedByCmp1(GenTree::ReverseRelop(domOper), domCns, treeOper, treeCns);
+
+    if ((ifTrueStatus == RelopResult::Unknown) && (ifFalseStatus == RelopResult::Unknown))
     {
         return false;
     }
 
     rii->canInfer          = true;
     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
-    rii->canInferFromTrue  = false;
-    rii->canInferFromFalse = true;
-    rii->reverseSense      = treeOperStatus == RelopResult::AlwaysTrue;
+    rii->canInferFromTrue  = (ifTrueStatus != RelopResult::Unknown);
+    rii->canInferFromFalse = (ifFalseStatus != RelopResult::Unknown);
+    rii->reverseSense      = (ifFalseStatus == RelopResult::AlwaysTrue) || (ifTrueStatus == RelopResult::AlwaysFalse);
     return true;
 }
 
@@ -832,10 +834,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     //
                     if (domIsInferredRelop)
                     {
-                        // This inference should be one-sided
+                        // We used to assert rii.canInferFromTrue ^ rii.canInferFromFalse here.
                         //
-                        assert(rii.canInferFromTrue ^ rii.canInferFromFalse);
-                        JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has same VN operands but different relop\n",
+                        // But now we can find fully redundant compares with different relops,
+                        // eg LT x, 47 dominating LE x, 46. The second relop's value is equal to the first.
+                        //
+                        JITDUMP("\nDominator " FMT_BB " of " FMT_BB " can infer value of dominated relop\n",
                                 domBlock->bbNum, block->bbNum);
                     }
                     else
