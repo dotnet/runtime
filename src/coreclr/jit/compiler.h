@@ -3740,8 +3740,6 @@ public:
     bool gtHasLocalsWithAddrOp(GenTree* tree);
     bool gtHasAddressExposedLocals(GenTree* tree);
 
-    bool gtSubTreeAndChildrenAreFirstExecutedSideEffects(GenTree* tree, GenTree* subTree);
-
     unsigned gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCostEx, int* callCostSz);
     unsigned gtSetMultiOpOrder(GenTreeMultiOp* multiOp);
 

@@ -3178,54 +3178,6 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
     return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
 }
 
-bool Compiler::gtSubTreeAndChildrenAreFirstExecutedSideEffects(GenTree* tree, GenTree* subTree)
-{
-    struct Visitor : GenTreeVisitor<Visitor>
-    {
-        enum
-        {
-            DoPreOrder        = true,
-            DoPostOrder       = true,
-            UseExecutionOrder = true,
-        };
-
-        Visitor(Compiler* comp, GenTree* subTree)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if (*use == m_subTree)
-            {
-                Result = true;
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
-
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-        {
-            if (((*use)->gtFlags & GTF_ALL_EFFECT) != GTF_EMPTY)
-            {
-                Result = false;
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
-
-        bool Result = false;
-    private:
-        GenTree* m_subTree;
-    };
-
-    Visitor visitor(this, subTree);
-    visitor.WalkTree(&tree, nullptr);
-    return visitor.Result;
-}
-
 #ifdef DEBUG
 
 /*****************************************************************************
