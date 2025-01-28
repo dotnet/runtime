@@ -2964,21 +2964,6 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 }
 
 //------------------------------------------------------------------------
-// fgSetProfileWeight: set profile weight for a block
-//
-// Arguments:
-//   block -- block in question
-//   profileWeight -- raw profile weight (not accounting for inlining)
-//
-// Notes:
-//   Does inlinee scaling.
-//
-void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
-{
-    block->setBBProfileWeight(profileWeight);
-}
-
-//------------------------------------------------------------------------
 // fgIncorporateBlockCounts: read block count based profile data
 //   and set block weights
 //
@@ -3006,7 +2991,7 @@ bool Compiler::fgIncorporateBlockCounts()
 
         if (fgGetProfileWeightForBasicBlock(block->bbCodeOffs, &profileWeight))
         {
-            fgSetProfileWeight(block, profileWeight);
+            block->setBBProfileWeight(profileWeight);
         }
     }
 
@@ -3784,7 +3769,7 @@ void EfficientEdgeCountReconstructor::Propagate()
     {
         BlockInfo* const info = BlockToInfo(block);
         assert(info->m_weightKnown);
-        m_comp->fgSetProfileWeight(block, info->m_weight);
+        block->setBBProfileWeight(info->m_weight);
 
         const unsigned nSucc = block->NumSucc(m_comp);
         if (nSucc == 0)
@@ -4478,6 +4463,9 @@ bool Compiler::fgComputeCalledCount(weight_t returnWeight)
     {
         fgFirstBB->setBBProfileWeight(fgCalledCount);
         madeChanges = true;
+        JITDUMP("fgComputeCalledCount: Modified method entry weight. Data %s inconsistent.\n",
+                fgPgoConsistent ? "is now" : "was already");
+        fgPgoConsistent = false;
     }
 
 #if DEBUG
@@ -4583,6 +4571,12 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
     else if (hasFlag(checks, PhaseChecks::CHECK_PROFILE))
     {
         ProfileChecks profileChecks = ProfileChecks::CHECK_LIKELY | ProfileChecks::RAISE_ASSERT;
+
+        if (hasFlag(checks, PhaseChecks::CHECK_PROFILE_FLAGS))
+        {
+            profileChecks |= ProfileChecks::CHECK_FLAGS;
+        }
+
         fgDebugCheckProfileWeights(profileChecks);
     }
     else if (hasFlag(checks, PhaseChecks::CHECK_LIKELIHOODS))
@@ -4623,6 +4617,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     const bool verifyLikelyWeights = hasFlag(checks, ProfileChecks::CHECK_LIKELY);
     const bool verifyHasLikelihood = hasFlag(checks, ProfileChecks::CHECK_HASLIKELIHOOD);
     const bool verifyLikelihoodSum = hasFlag(checks, ProfileChecks::CHECK_LIKELIHOODSUM);
+    const bool checkProfileFlag    = hasFlag(checks, ProfileChecks::CHECK_FLAGS) && fgIsUsingProfileWeights();
     const bool assertOnFailure     = hasFlag(checks, ProfileChecks::RAISE_ASSERT) && fgPgoConsistent;
     const bool checkAllBlocks      = hasFlag(checks, ProfileChecks::CHECK_ALL_BLOCKS);
 
@@ -4645,6 +4640,7 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     unsigned problemBlocks    = 0;
     unsigned unprofiledBlocks = 0;
     unsigned profiledBlocks   = 0;
+    unsigned unflaggedBlocks  = 0;
     bool     entryProfiled    = false;
     bool     exitProfiled     = false;
     bool     hasTry           = false;
@@ -4655,10 +4651,20 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
     //
     for (BasicBlock* const block : Blocks())
     {
-        if (!block->hasProfileWeight() && !checkAllBlocks)
+        if (!block->hasProfileWeight())
         {
-            unprofiledBlocks++;
-            continue;
+            if (checkProfileFlag && (block->bbPreds != nullptr))
+            {
+                // Block has flow into it that isn't marked as profile-derived.
+                //
+                unflaggedBlocks++;
+            }
+
+            if (!checkAllBlocks)
+            {
+                unprofiledBlocks++;
+                continue;
+            }
         }
 
         // There is some profile data to check.
@@ -4841,6 +4847,12 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
         {
             assert(!"Inconsistent profile data");
         }
+    }
+
+    if (unflaggedBlocks > 0)
+    {
+        JITDUMP("%d blocks are missing BBF_PROF_WEIGHT flag.\n", unflaggedBlocks);
+        assert(!"Missing BBF_PROF_WEIGHT flag");
     }
 
     return (problemBlocks == 0);
@@ -5117,7 +5129,7 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
     if (target->hasProfileWeight())
     {
-        target->setBBProfileWeight(target->bbWeight + weight);
+        target->increaseBBProfileWeight(weight);
     }
     else
     {
@@ -5134,7 +5146,8 @@ void Compiler::fgRepairProfileCondToUncond(BasicBlock* block,
 
         // If profile weights are consistent, expect at worst a slight underflow.
         //
-        if (fgPgoConsistent && (alternateNewWeight < 0.0))
+        const bool checkProfileConsistency = hasFlag(activePhaseChecks, PhaseChecks::CHECK_PROFILE);
+        if (checkProfileConsistency && fgPgoConsistent && (alternateNewWeight < 0.0))
         {
             assert(fgProfileWeightsEqual(alternateNewWeight, 0.0));
         }

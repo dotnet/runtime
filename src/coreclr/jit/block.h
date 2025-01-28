@@ -1197,6 +1197,18 @@ public:
     // getBBWeight -- get the normalized weight of this block
     weight_t getBBWeight(Compiler* comp) const;
 
+    // computeIncomingWeight -- sum the weights of the flow edges into this block
+    weight_t computeIncomingWeight() const
+    {
+        weight_t incomingWeight = BB_ZERO_WEIGHT;
+        for (FlowEdge* const predEdge : PredEdges())
+        {
+            incomingWeight += predEdge->getLikelyWeight();
+        }
+
+        return incomingWeight;
+    }
+
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
     {
@@ -1218,6 +1230,22 @@ public:
         {
             this->RemoveFlags(BBF_RUN_RARELY);
         }
+    }
+
+    // increaseBBProfileWeight -- Increase the profile-derived weight for a basic block
+    // and update the run rarely flag as appropriate.
+    void increaseBBProfileWeight(weight_t weight)
+    {
+        assert(weight >= BB_ZERO_WEIGHT);
+        setBBProfileWeight(bbWeight + weight);
+    }
+
+    // decreaseBBProfileWeight -- Decrease the profile-derived weight for a basic block,
+    // ensuring it remains non-negative, and update the run rarely flag as appropriate.
+    void decreaseBBProfileWeight(weight_t weight)
+    {
+        assert(weight >= BB_ZERO_WEIGHT);
+        setBBProfileWeight(max(BB_ZERO_WEIGHT, bbWeight - weight));
     }
 
     // this block will inherit the same weight and relevant bbFlags as bSrc

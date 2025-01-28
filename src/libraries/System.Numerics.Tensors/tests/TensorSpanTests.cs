@@ -482,7 +482,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         public delegate T TensorPrimitivesTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
-        public delegate T TensorTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
+        public delegate T TensorTwoSpanInTOut<T>(in ReadOnlyTensorSpan<T> input, in ReadOnlyTensorSpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Distance, Tensor.Distance);
