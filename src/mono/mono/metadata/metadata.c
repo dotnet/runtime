@@ -3460,7 +3460,7 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 	for (i = 0; i < type_argc; ++i) {
 		MonoType *t = ginst->type_argv [i];
 		if (type_is_gtd (t)) {
-			ginst->type_argv [i] = mono_class_gtd_get_canonical_inst (m_type_data_get_klass (t));
+			ginst->type_argv [i] = mono_class_gtd_get_canonical_inst (m_type_data_get_klass_unchecked (t));
 		}
 	}
 
@@ -4119,24 +4119,24 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 		if (transient)
 			mono_metadata_free_type (etype);
 
-		g_assert (m_type_data_get_klass (type)); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
+		g_assert (m_type_data_get_klass_unchecked (type)); //This was previously a check for NULL, but mcfmt should never fail. It can return a borken MonoClass, but should return at least something.
 		break;
 	}
 	case MONO_TYPE_PTR: {
 		m_type_data_set_type_unchecked (type, mono_metadata_parse_type_checked (m, container, 0, transient, ptr, &ptr, error));
-		if (!m_type_data_get_type (type))
+		if (!m_type_data_get_type_unchecked (type))
 			return FALSE;
 		break;
 	}
 	case MONO_TYPE_FNPTR: {
 		m_type_data_set_method_unchecked (type, mono_metadata_parse_method_signature_full (m, container, 0, ptr, &ptr, error));
-		if (!m_type_data_get_method (type))
+		if (!m_type_data_get_method_unchecked (type))
 			return FALSE;
 		break;
 	}
 	case MONO_TYPE_ARRAY: {
 		m_type_data_set_array_unchecked (type, mono_metadata_parse_array_internal (m, container, transient, ptr, &ptr, error));
-		if (!m_type_data_get_array (type))
+		if (!m_type_data_get_array_unchecked (type))
 			return FALSE;
 		break;
 	}
@@ -4146,7 +4146,7 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 			return FALSE;
 
 		m_type_data_set_generic_param_unchecked (type, mono_metadata_parse_generic_param (m, container, type->type, ptr, &ptr, error));
-		if (!m_type_data_get_generic_param (type))
+		if (!m_type_data_get_generic_param_unchecked (type))
 			return FALSE;
 
 		break;
@@ -5319,8 +5319,6 @@ mono_type_set_alignment (MonoTypeEnum type, int align)
 int
 mono_type_size (MonoType *t, int *align)
 {
-	MonoTypeEnum simple_type;
-
 	if (!t) {
 		*align = 1;
 		return 0;
@@ -5330,9 +5328,7 @@ mono_type_size (MonoType *t, int *align)
 		return MONO_ABI_SIZEOF (gpointer);
 	}
 
-	simple_type = t->type;
- again:
-	switch (simple_type) {
+ 	switch (t->type) {
 	case MONO_TYPE_VOID:
 		*align = 1;
 		return 0;
@@ -5406,9 +5402,7 @@ mono_type_size (MonoType *t, int *align)
 			return MONO_ABI_SIZEOF (gpointer);
 		} else {
 			/* The gparam can only match types given by gshared_constraint */
-			return mono_type_size (m_type_data_get_generic_param (t)->gshared_constraint, align);
-			/* FIXME: why is this goto here? -kg */
-			goto again;
+			return mono_type_size (m_type_data_get_generic_param_unchecked (t)->gshared_constraint, align);
 		}
 	default:
 		g_error ("mono_type_size: type 0x%02x unknown", t->type);
@@ -6273,12 +6267,12 @@ static void
 deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o)
 {
 	if (o->type == MONO_TYPE_PTR) {
-		m_type_data_set_type (r, mono_metadata_type_dup (image, m_type_data_get_type (o)));
+		m_type_data_set_type (r, mono_metadata_type_dup (image, m_type_data_get_type_unchecked (o)));
 	} else if (o->type == MONO_TYPE_ARRAY) {
-		m_type_data_set_array (r, mono_dup_array_type (image, m_type_data_get_array (o)));
+		m_type_data_set_array (r, mono_dup_array_type (image, m_type_data_get_array_unchecked (o)));
 	} else if (o->type == MONO_TYPE_FNPTR) {
 		/*FIXME the dup'ed signature is leaked mono_metadata_free_type*/
-		m_type_data_set_method (r, mono_metadata_signature_deep_dup (image, m_type_data_get_method (o)));
+		m_type_data_set_method (r, mono_metadata_signature_deep_dup (image, m_type_data_get_method_unchecked (o)));
 	}
 }
 
@@ -7647,10 +7641,10 @@ mono_bool
 mono_type_is_struct (MonoType *type)
 {
 	return (!m_type_is_byref (type) && ((type->type == MONO_TYPE_VALUETYPE &&
-		!m_class_is_enumtype (m_type_data_get_klass (type))) || (type->type == MONO_TYPE_TYPEDBYREF) ||
+		!m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) || (type->type == MONO_TYPE_TYPEDBYREF) ||
 		((type->type == MONO_TYPE_GENERICINST) &&
-		mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class (type)) &&
-		!m_class_is_enumtype (m_type_data_get_generic_class (type)->container_class))));
+		mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class_unchecked (type)) &&
+		!m_class_is_enumtype (m_type_data_get_generic_class_unchecked (type)->container_class))));
 }
 
 /**
@@ -7696,7 +7690,7 @@ mono_type_is_reference (MonoType *type)
 		(type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
 		(type->type == MONO_TYPE_OBJECT) || (type->type == MONO_TYPE_ARRAY)) ||
 		((type->type == MONO_TYPE_GENERICINST) &&
-		!mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class (type)))));
+		!mono_metadata_generic_class_is_valuetype (m_type_data_get_generic_class_unchecked (type)))));
 }
 
 mono_bool
