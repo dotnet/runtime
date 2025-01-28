@@ -1444,8 +1444,6 @@ void Compiler::fgFinalizeInlineeStatements(InlineInfo* pInlineInfo)
 {
 #ifdef DEBUG
 
-    Statement* currentDumpStmt = nullptr;
-
     if (verbose)
     {
         printf("\n\n----------- Statements (and blocks) added due to the inlining of call ");
@@ -1464,7 +1462,6 @@ void Compiler::fgFinalizeInlineeStatements(InlineInfo* pInlineInfo)
 #ifdef DEBUG
     if (verbose)
     {
-        //currentDumpStmt = stmtAfter;
         printf("\nInlinee method body:");
     }
 #endif // DEBUG
@@ -1472,7 +1469,8 @@ void Compiler::fgFinalizeInlineeStatements(InlineInfo* pInlineInfo)
     fgInlineAppendStatements(pInlineInfo->teardownStatements, pInlineInfo);
 
     //
-    // At this point, we have successfully inserted inlinee's code.
+    // At this point we have the inlinee's code in in inlinee compiler and setup/teardown statements
+    // in the InlineInfo instance.
     //
 
     //

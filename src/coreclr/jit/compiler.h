@@ -6987,7 +6987,6 @@ private:
     bool TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max);
 
     void fgInvokeInlineeCompiler(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
-    void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
     void fgFinalizeInlineeStatements(InlineInfo* pInlineInfo);
     void fgInsertInlineeArgument(class StatementListBuilder& statements, const InlArgInfo& argInfo, const DebugInfo& callDI);
     void fgInlinePrependStatements(InlineInfo* inlineInfo);
