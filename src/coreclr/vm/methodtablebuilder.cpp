@@ -8677,17 +8677,8 @@ MethodTableBuilder::HandleExplicitLayout(
             else
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
-                BOOL hasGcPointers = pByValueMT->ContainsGCPointers();
-                if (hasGcPointers || pByValueMT->IsByRefLike())
+                if (pByValueMT->ContainsGCPointers() || pByValueMT->IsByRefLike())
                 {
-                    if (hasGcPointers && ((pFD->GetOffset() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0))
-                    {
-                        // If we got here, then a valuetype containing an OREF was misaligned.
-                        badOffset = pFD->GetOffset();
-                        fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
-                        break;
-                    }
-
                     ExplicitFieldTrust::TrustLevel trust = CheckValueClassLayout(pByValueMT, &pFieldLayout[pFD->GetOffset()], pFD->GetOffset());
                     fieldTrust.SetTrust(trust);
 
@@ -8871,10 +8862,10 @@ MethodTableBuilder::HandleExplicitLayout(
     bmtFieldLayoutTag *vcLayout = (bmtFieldLayoutTag*) qb.AllocThrows(fieldSize * sizeof(bmtFieldLayoutTag));
     memset((void*)vcLayout, nonoref, fieldSize);
 
-    // If the type contains pointers fill it out from the GC data
+    // If the type contains pointers fill it out from the GC data and validate OREF alignment.
     if (pMT->ContainsGCPointers())
     {
-        // use pointer series to locate the orefs
+        // Use pointer series to locate the OREFs
         CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
         CGCDescSeries *pSeries = map->GetLowestSeries();
 
@@ -8882,7 +8873,15 @@ MethodTableBuilder::HandleExplicitLayout(
         {
             CONSISTENCY_CHECK(pSeries <= map->GetHighestSeries());
 
-            memset((void*)&vcLayout[pSeries->GetSeriesOffset() - OBJECT_SIZE], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
+            // Get offset into the value class of the first pointer field (includes a +Object)
+            size_t offset = pSeries->GetSeriesOffset() - OBJECT_SIZE;
+            if ((fieldBaseOffset + offset) % TARGET_POINTER_SIZE != 0)
+            {
+                // If we got here, then an OREF is misaligned.
+                return ExplicitFieldTrust::kNone;
+            }
+
+            memset((void*)&vcLayout[offset], oref, pSeries->GetSeriesSize() + pMT->GetBaseSize());
             pSeries++;
         }
     }
