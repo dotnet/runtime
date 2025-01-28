@@ -1550,6 +1550,36 @@ void CodeGen::genExitCode(BasicBlock* block)
     genReserveEpilog(block);
 }
 
+//---------------------------------------------------------------------------------
+// genGetThrowHelper: Search for the throw helper for the exception kind `codeKind`
+BasicBlock* CodeGen::genGetThrowHelper(SpecialCodeKind codeKind)
+{
+    bool useThrowHlpBlk = compiler->fgUseThrowHelperBlocks();
+#if defined(UNIX_X86_ABI)
+    // TODO: Is this really UNIX_X86_ABI specific? Should we guard with compiler->UsesFunclets() instead?
+    // Inline exception-throwing code in funclet to make it possible to unwind funclet frames.
+    useThrowHlpBlk = useThrowHlpBlk && (compiler->funCurrentFunc()->funKind == FUNC_ROOT);
+#endif // UNIX_X86_ABI
+
+    BasicBlock* excpRaisingBlock = nullptr;
+    if (useThrowHlpBlk)
+    {
+        // For code with throw helper blocks, find and use the helper block for
+        // raising the exception. The block may be shared by other trees too.
+        Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
+        PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+        assert(add->acdUsed);
+        excpRaisingBlock = add->acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+        assert(add->acdStkLvlInit || isFramePointerUsed());
+#endif // !FEATURE_FIXED_OUT_ARGS
+
+        noway_assert(excpRaisingBlock != nullptr);
+    }
+
+    return excpRaisingBlock;
+}
+
 //------------------------------------------------------------------------
 // genJumpToThrowHlpBlk: Generate code for an out-of-line exception.
 //
