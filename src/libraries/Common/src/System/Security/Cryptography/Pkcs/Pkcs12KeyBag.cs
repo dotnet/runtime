@@ -3,7 +3,13 @@
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class Pkcs12KeyBag : Pkcs12SafeBag
+#if BUILDING_PKCS
+    public
+#else
+    #pragma warning disable CA1510, CA1512
+    internal
+#endif
+    sealed class Pkcs12KeyBag : Pkcs12SafeBag
     {
         public Pkcs12KeyBag(ReadOnlyMemory<byte> pkcs8PrivateKey, bool skipCopy = false)
             : base(Oids.Pkcs12KeyBag, pkcs8PrivateKey, skipCopy)
