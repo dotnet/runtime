@@ -698,7 +698,7 @@ simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 	MonoGenericInst *class_inst = mono_class_get_generic_class (klass)->context.class_inst;
 	MonoType *etype = class_inst->type_argv [0];
 	g_assert (etype->type == MONO_TYPE_GENERICINST);
-	MonoClass *eklass = m_type_data_get_generic_class (etype)->cached_class;
+	MonoClass *eklass = m_type_data_get_generic_class_unchecked (etype)->cached_class;
 	LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
 	return LLVMArrayType (ltype, class_inst->type_argc);
 }

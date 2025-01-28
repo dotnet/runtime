@@ -760,23 +760,23 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 		m_type_data_set_klass_unchecked (t, decode_klass_ref (module, p, &p, error));
-		if (!m_type_data_get_klass (t))
+		if (!m_type_data_get_klass_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_SZARRAY:
 		m_type_data_set_klass_unchecked (t, decode_klass_ref (module, p, &p, error));
 
-		if (!m_type_data_get_klass (t))
+		if (!m_type_data_get_klass_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_PTR:
 		m_type_data_set_type_unchecked (t, decode_type (module, p, &p, error));
-		if (!m_type_data_get_type (t))
+		if (!m_type_data_get_type_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_FNPTR:
 		m_type_data_set_method_unchecked (t, decode_signature (module, p, &p));
-		if (!m_type_data_get_method (t))
+		if (!m_type_data_get_method_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_GENERICINST: {
@@ -4598,7 +4598,7 @@ inst_is_private (MonoGenericInst *inst)
 	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
 		if ((t->type == MONO_TYPE_CLASS || t->type == MONO_TYPE_VALUETYPE)) {
-			int access_level = mono_class_get_flags (m_type_data_get_klass (t)) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+			int access_level = mono_class_get_flags (m_type_data_get_klass_unchecked (t)) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 			if (access_level == TYPE_ATTRIBUTE_NESTED_PRIVATE || access_level == TYPE_ATTRIBUTE_NOT_PUBLIC)
 				return TRUE;
 		}
