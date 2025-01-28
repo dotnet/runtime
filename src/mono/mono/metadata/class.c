@@ -1747,7 +1747,7 @@ mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
 	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
-		(!m_type_data_get_generic_param (type)->gshared_constraint || m_type_data_get_generic_param (type)->gshared_constraint->type == MONO_TYPE_OBJECT))
+		(!m_type_data_get_generic_param_unchecked (type)->gshared_constraint || m_type_data_get_generic_param_unchecked (type)->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return mono_get_object_type ();
 	return type;
 }
@@ -3706,7 +3706,7 @@ mono_gparam_is_reference_conversible (MonoClass *target, MonoClass *candidate, g
 	if (check_for_reference_conv &&
 		mono_type_is_generic_argument (m_class_get_byval_arg (target)) &&
 		mono_type_is_generic_argument (m_class_get_byval_arg (candidate))) {
-		MonoGenericParam *gparam = m_type_data_get_generic_param (m_class_get_byval_arg (candidate));
+		MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (m_class_get_byval_arg (candidate));
 		MonoGenericParamInfo *pinfo = mono_generic_param_info (gparam);
 
 		if (!pinfo || (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0)
@@ -4127,7 +4127,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 	 * In this case, Foo is assignable from T1.
 	 */
 	if (mono_type_is_generic_argument (oklass_byval_arg)) {
-		MonoGenericParam *gparam = m_type_data_get_generic_param (oklass_byval_arg);
+		MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (oklass_byval_arg);
 		MonoClass **constraints = mono_generic_container_get_param_info (gparam->owner, gparam->num)->constraints;
 		int i;
 
@@ -4295,7 +4295,7 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		if (MONO_CLASS_IS_INTERFACE_INTERNAL (eclass)) {
 			MonoType *eoclass_byval_arg = m_class_get_byval_arg (eoclass);
 			if (mono_type_is_generic_argument (eoclass_byval_arg)) {
-				MonoGenericParam *eoparam = m_type_data_get_generic_param (eoclass_byval_arg);
+				MonoGenericParam *eoparam = m_type_data_get_generic_param_unchecked (eoclass_byval_arg);
 				MonoGenericParamInfo *eoinfo = mono_generic_param_info (eoparam);
 				int eomask = eoinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK;
 				// check for class constraint
@@ -4642,7 +4642,7 @@ mono_generic_param_get_base_type (MonoClass *klass)
 	MonoType *type = m_class_get_byval_arg (klass);
 	g_assert (mono_type_is_generic_argument (type));
 
-	MonoGenericParam *gparam = m_type_data_get_generic_param (type);
+	MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (type);
 
 	g_assert (gparam->owner && !gparam->owner->is_anonymous);
 
@@ -4660,7 +4660,7 @@ mono_generic_param_get_base_type (MonoClass *klass)
 
 			MonoType *constraint_type = m_class_get_byval_arg (constraint);
 			if (mono_type_is_generic_argument (constraint_type)) {
-				MonoGenericParam *constraint_param = m_type_data_get_generic_param (constraint_type);
+				MonoGenericParam *constraint_param = m_type_data_get_generic_param_unchecked (constraint_type);
 				MonoGenericParamInfo *constraint_info = mono_generic_param_info (constraint_param);
 				if ((constraint_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0 &&
 				    (constraint_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) == 0)

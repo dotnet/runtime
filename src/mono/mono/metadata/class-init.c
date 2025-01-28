@@ -1938,7 +1938,7 @@ mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
 {
 	MonoType *type = m_class_get_byval_arg (klass);
 	g_assert (mono_type_is_generic_parameter (type));
-	MonoGenericParam *gparam = m_type_data_get_generic_param (type);
+	MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (type);
 	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) != 0)
 		return TRUE;
 	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) != 0)

@@ -483,8 +483,9 @@ array_set_value_impl (MonoArray *arr, MonoObjectHandle value_handle, guint32 pos
 
 	vsize = mono_class_value_size (vc, NULL);
 
-	et_isenum = et == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (m_class_get_byval_arg (ec)));
-	vt_isenum = vt == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (m_class_get_byval_arg (vc)));
+	// et/vt = m_class_get_byval_arg (ec/vc)->type so get_klass_unchecked is safe here
+	et_isenum = et == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (m_class_get_byval_arg (ec)));
+	vt_isenum = vt == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (m_class_get_byval_arg (vc)));
 
 	if (strict_enums && et_isenum && !vt_isenum) {
 		INVALID_CAST;
@@ -492,10 +493,10 @@ array_set_value_impl (MonoArray *arr, MonoObjectHandle value_handle, guint32 pos
 	}
 
 	if (et_isenum)
-		et = mono_class_enum_basetype_internal (m_type_data_get_klass (m_class_get_byval_arg (ec)))->type;
+		et = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (m_class_get_byval_arg (ec)))->type;
 
 	if (vt_isenum)
-		vt = mono_class_enum_basetype_internal (m_type_data_get_klass (m_class_get_byval_arg (vc)))->type;
+		vt = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (m_class_get_byval_arg (vc)))->type;
 
 	// Treat MONO_TYPE_U/I as MONO_TYPE_U8/I8/U4/I4
 #if SIZEOF_VOID_P == 8
@@ -2033,8 +2034,8 @@ static MonoType*
 get_generic_argument_type (MonoType* type, unsigned int generic_argument_position)
 {
 	g_assert (type->type == MONO_TYPE_GENERICINST);
-	g_assert (m_type_data_get_generic_class (type)->context.class_inst->type_argc > generic_argument_position);
-	return m_type_data_get_generic_class (type)->context.class_inst->type_argv [generic_argument_position];
+	g_assert (m_type_data_get_generic_class_unchecked (type)->context.class_inst->type_argc > generic_argument_position);
+	return m_type_data_get_generic_class_unchecked (type)->context.class_inst->type_argv [generic_argument_position];
 }
 
 MonoArrayHandle
@@ -2212,7 +2213,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 			isref = TRUE;
 			break;
 		case MONO_TYPE_GENERICINST: {
-			MonoGenericClass *gclass = m_type_data_get_generic_class (type);
+			MonoGenericClass *gclass = m_type_data_get_generic_class_unchecked (type);
 			g_assert (!gclass->context.class_inst->is_open);
 
 			isref = !m_class_is_valuetype (gclass->container_class);
@@ -2872,14 +2873,14 @@ ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCall
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
 	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
-	return GUINT_TO_INT8 (mono_method_signature_has_ext_callconv (m_type_data_get_method (type), MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION) ? MONO_CALL_UNMANAGED_MD : m_type_data_get_method (type)->call_convention);
+	return GUINT_TO_INT8 (mono_method_signature_has_ext_callconv (m_type_data_get_method_unchecked (type), MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION) ? MONO_CALL_UNMANAGED_MD : m_type_data_get_method_unchecked (type)->call_convention);
 }
 
 MonoBoolean
 ves_icall_RuntimeType_IsUnmanagedFunctionPointerInternal (MonoQCallTypeHandle type_handle)
 {
 	MonoType *type = type_handle.type;
-	return type->type == MONO_TYPE_FNPTR && m_type_data_get_method (type)->pinvoke;
+	return type->type == MONO_TYPE_FNPTR && m_type_data_get_method_unchecked (type)->pinvoke;
 }
 
 void
@@ -2888,7 +2889,7 @@ ves_icall_RuntimeTypeHandle_GetElementType (MonoQCallTypeHandle type_handle, Mon
 	MonoType *type = type_handle.type;
 
 	if (!m_type_is_byref (type) && type->type == MONO_TYPE_SZARRAY) {
-		HANDLE_ON_STACK_SET (res, mono_type_get_object_checked (m_class_get_byval_arg (m_type_data_get_klass (type)), error));
+		HANDLE_ON_STACK_SET (res, mono_type_get_object_checked (m_class_get_byval_arg (m_type_data_get_klass_unchecked (type)), error));
 		return;
 	}
 
@@ -2929,7 +2930,7 @@ ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle)
 	MonoType *type = type_handle.type;
 
 	// Enums in generic classes should still return VALUETYPE
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_data_get_generic_class (type)->container_class) && !m_type_is_byref (type))
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (m_type_data_get_generic_class_unchecked (type)->container_class) && !m_type_is_byref (type))
 		return MONO_TYPE_VALUETYPE;
 
 	if (m_type_is_byref (type))
@@ -2968,11 +2969,12 @@ ves_icall_RuntimeType_FunctionPointerReturnAndParameterTypes (MonoQCallTypeHandl
 
 	MonoType *type = type_handle.type;
 	GPtrArray *res_array = g_ptr_array_new ();
+	MonoMethodSignature *sig = m_type_data_get_method (type);
 
-	g_ptr_array_add (res_array, m_type_data_get_method (type)->ret);
+	g_ptr_array_add (res_array, sig->ret);
 
-	for (int i = 0; i < m_type_data_get_method (type)->param_count; ++i)
-		g_ptr_array_add (res_array, m_type_data_get_method (type)->params[i]);
+	for (int i = 0; i < sig->param_count; ++i)
+		g_ptr_array_add (res_array, sig->params[i]);
 
 	return res_array;
 }
@@ -2983,11 +2985,11 @@ ves_icall_RuntimeType_GetFunctionPointerTypeModifiers (MonoQCallTypeHandle type_
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
 	if (position == 0) {
-		return type_array_from_modifiers (m_type_data_get_method (type)->ret, optional, error);
+		return type_array_from_modifiers (m_type_data_get_method_unchecked (type)->ret, optional, error);
 	}
 	else {
-		g_assert (m_type_data_get_method (type)->param_count > position - 1);
-		return type_array_from_modifiers (m_type_data_get_method (type)->params[position - 1], optional, error);
+		g_assert (m_type_data_get_method_unchecked (type)->param_count > position - 1);
+		return type_array_from_modifiers (m_type_data_get_method_unchecked (type)->params[position - 1], optional, error);
 	}
 }
 
@@ -6578,7 +6580,7 @@ mono_type_from_blob_type (MonoType *type, MonoTypeEnum blob_type, MonoType *real
 	m_type_data_set_klass (type, NULL);
 	if (blob_type == MONO_TYPE_CLASS)
 		m_type_data_set_klass_unchecked (type, mono_defaults.object_class);
-	else if (real_type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (real_type))) {
+	else if (real_type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (real_type))) {
 		/* For enums, we need to use the base type */
 		type->type = MONO_TYPE_VALUETYPE;
 		m_type_data_set_klass_unchecked (type, mono_class_from_mono_type_internal (real_type));
