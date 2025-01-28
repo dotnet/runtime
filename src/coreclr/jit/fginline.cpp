@@ -610,18 +610,9 @@ private:
                 m_compiler->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &contextInput, &context,
                                                 isLateDevirtualization, explicitTailCall);
 
-                if (context != nullptr)
+                if (!call->IsVirtual())
                 {
-                    Statement* newStmt = nullptr;
-                    GenTree**  callUse = nullptr;
-                    if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse, true))
-                    {
-                        if (m_firstNewStmt == nullptr)
-                        {
-                            m_firstNewStmt = newStmt;
-                        }
-                    }
-
+                    assert(context != nullptr);
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
@@ -629,6 +620,16 @@ private:
 
                     if (call->IsInlineCandidate())
                     {
+                        Statement* newStmt = nullptr;
+                        GenTree**  callUse = nullptr;
+                        if (m_compiler->gtSplitTree(m_compiler->compCurBB, m_curStmt, call, &newStmt, &callUse, true))
+                        {
+                            if (m_firstNewStmt == nullptr)
+                            {
+                                m_firstNewStmt = newStmt;
+                            }
+                        }
+
                         // If the call is the root expression in a statement, and it returns void,
                         // we can inline it directly without creating a RET_EXPR.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
@@ -656,6 +657,10 @@ private:
 
                         JITDUMP("New inline candidate due to late devirtualization:\n");
                         DISPTREE(call);
+                    }
+                    else
+                    {
+                        call->ClearInlineInfo();
                     }
                 }
                 m_madeChanges = true;
