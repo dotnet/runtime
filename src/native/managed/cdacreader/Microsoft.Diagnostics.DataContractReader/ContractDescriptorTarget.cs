@@ -239,12 +239,12 @@ internal sealed unsafe class ContractDescriptorTarget : Target
         return hr;
     }
 
-    public override int GetPlatform(out int platform)
+    public override int GetPlatform(out CorDebugPlatform platform)
     {
         if (getTargetPlatform is null)
             throw new InvalidOperationException("GetTargetPlatform is not available");
-
-        int hr = getTargetPlatform(out platform);
+        int hr = getTargetPlatform(out int platformInt);
+        platform = (CorDebugPlatform)platformInt;
         return hr;
     }
 

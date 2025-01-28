@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// AMD64-specific thread context.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
-public struct AMD64Context : IContext
+internal struct AMD64Context : IContext
 {
     [Flags]
     public enum ContextFlagsValues : uint
@@ -32,8 +32,47 @@ public struct AMD64Context : IContext
     public static uint Size => 0x4d0;
     public static uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
-    public readonly TargetPointer StackPointer => new(Rsp);
-    public readonly TargetPointer InstructionPointer => new(Rip);
+    public TargetPointer StackPointer
+    {
+        readonly get => new(Rsp);
+        set => Rsp = value.Value;
+    }
+    public TargetPointer InstructionPointer
+    {
+        readonly get => new(Rip);
+        set => Rip = value.Value;
+    }
+    public TargetPointer FramePointer
+    {
+        readonly get => new(Rbp);
+        set => Rbp = value.Value;
+    }
+
+    public void Unwind(Target target)
+    {
+        Unwinder.AMD64Unwind(ref this, target);
+    }
+
+    public unsafe void ReadFromAddress(Target target, TargetPointer address)
+    {
+        Span<byte> buffer = new byte[Size];
+        target.ReadBuffer(address, buffer);
+        Span<AMD64Context> structSpan = MemoryMarshal.CreateSpan(ref this, sizeof(AMD64Context));
+        Span<byte> byteSpan = MemoryMarshal.Cast<AMD64Context, byte>(structSpan);
+        if (buffer.Length > sizeof(AMD64Context))
+        {
+            buffer.Slice(0, sizeof(AMD64Context)).CopyTo(byteSpan);
+        }
+        else
+        {
+            buffer.CopyTo(byteSpan);
+        }
+    }
+
+    public void Clear()
+    {
+        this = default;
+    }
 
     public override string ToString()
     {

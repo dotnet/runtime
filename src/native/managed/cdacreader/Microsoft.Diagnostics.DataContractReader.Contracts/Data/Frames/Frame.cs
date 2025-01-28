@@ -15,11 +15,11 @@ internal sealed class Frame : IData<Frame>
         DataType.HelperMethodFrame_2OBJ,
         DataType.HelperMethodFrame_3OBJ,
         DataType.HelperMethodFrame_PROTECTOBJ,
+        DataType.SoftwareExceptionFrame,
 
         DataType.ResumableFrame,
         DataType.RedirectedTHreadFrame,
         DataType.FaultingExceptionFrame,
-        DataType.SoftwareExceptionFrame,
         DataType.FuncEvalFrame,
         DataType.UnmanagedToManagedFrame,
         DataType.ComMethodFrame,

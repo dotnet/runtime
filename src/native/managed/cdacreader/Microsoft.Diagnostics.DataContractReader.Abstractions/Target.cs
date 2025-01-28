@@ -18,6 +18,24 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// </remarks>
 internal abstract class Target
 {
+    public enum CorDebugPlatform : int
+    {
+        CORDB_PLATFORM_WINDOWS_X86 = 0,
+        CORDB_PLATFORM_WINDOWS_AMD64 = 1,
+        CORDB_PLATFORM_WINDOWS_IA64 = 2,
+        CORDB_PLATFORM_MAC_PPC = 3,
+        CORDB_PLATFORM_MAC_X86 = 4,
+        CORDB_PLATFORM_WINDOWS_ARM = 5,
+        CORDB_PLATFORM_MAC_AMD64 = 6,
+        CORDB_PLATFORM_WINDOWS_ARM64 = 7,
+        CORDB_PLATFORM_POSIX_AMD64 = 8,
+        CORDB_PLATFORM_POSIX_X86 = 9,
+        CORDB_PLATFORM_POSIX_ARM = 10,
+        CORDB_PLATFORM_POSIX_ARM64 = 11,
+        CORDB_PLATFORM_POSIX_LOONGARCH64 = 12,
+        CORDB_PLATFORM_POSIX_RISCV64 = 12
+    }
+
     /// <summary>
     /// Pointer size of the target
     /// </summary>
@@ -28,7 +46,7 @@ internal abstract class Target
     public abstract bool IsLittleEndian { get; }
 
     public abstract int GetThreadContext(uint threadId, uint contextFlags, uint contextSize, Span<byte> bufferToFill);
-    public abstract int GetPlatform(out int platform);
+    public abstract int GetPlatform(out CorDebugPlatform platform);
 
     /// <summary>
     /// Reads a well-known global pointer value from the target process

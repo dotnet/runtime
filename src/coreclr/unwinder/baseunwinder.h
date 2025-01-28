@@ -52,6 +52,10 @@ protected:
           getStackWalkInfo(getStackWalkInfo)
     { }
 
+
+public:
+    // These functions are marked public because they are called using
+    // a global instance of OOPStackUnwinder in the ARM64 implementation.
     ReadCallback readCallback;
     GetAllocatedBuffer getAllocatedBuffer;
     GetStackWalkInfo getStackWalkInfo;

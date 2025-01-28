@@ -71,19 +71,26 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
                 throw new InvalidOperationException("Unable to get NumUnwindInfos");
             }
 
-            ulong imageBase = rangeSection.Data.RangeBegin;
-
-            for (ulong i = 0; i < numUnwindInfos; i++)
+            if (numUnwindInfos == 0)
             {
-                TargetPointer unwindInfoAddress = unwindInfos + (i * runtimeFunctionSize);
-                Data.RuntimeFunction runtimeFunction = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(unwindInfoAddress);
-                if (runtimeFunction.BeginAddress + imageBase <= jittedCodeAddress.Value && runtimeFunction.EndAddress + imageBase >= jittedCodeAddress.Value)
-                {
-                    return unwindInfoAddress;
-                }
+                return TargetPointer.Null;
             }
 
-            return TargetPointer.Null;
+            ulong imageBase = rangeSection.Data.RangeBegin;
+            TargetPointer prevUnwindInfoAddress = unwindInfos;
+            TargetPointer currUnwindInfoAddress;
+            for (ulong i = 1; i < numUnwindInfos; i++)
+            {
+                currUnwindInfoAddress = unwindInfos + (i * runtimeFunctionSize);
+                Data.RuntimeFunction nextRuntimeFunction = Target.ProcessedData.GetOrAdd<Data.RuntimeFunction>(currUnwindInfoAddress);
+                if (nextRuntimeFunction.BeginAddress + imageBase > jittedCodeAddress.Value)
+                {
+                    return prevUnwindInfoAddress;
+                }
+                prevUnwindInfoAddress = currUnwindInfoAddress;
+            }
+
+            return prevUnwindInfoAddress;
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)

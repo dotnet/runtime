@@ -174,13 +174,25 @@ typedef struct _ARM64_VFP_STATE
 // Macros for accessing memory. These can be overridden if other code
 // (in particular the debugger) needs to use them.
 
-#if !defined(DEBUGGER_UNWIND)
+#if !defined(DEBUGGER_UNWIND) && !defined(FEATURE_CDAC_UNWINDER)
 
 #define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
 #define MEMORY_READ_WORD(params, addr)      (*dac_cast<PTR_WORD>(addr))
 #define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
 #define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
+#elif defined(FEATURE_CDAC_UNWINDER)
+template<typename T>
+T cdacRead(uint64_t addr)
+{
+    T t;
+    g_pUnwinder->readCallback(addr, &t, sizeof(t));
+    return t;
+}
+#define MEMORY_READ_BYTE(params, addr) (cdacRead<BYTE>(addr))
+#define MEMORY_READ_WORD(params, addr) (cdacRead<WORD>(addr))
+#define MEMORY_READ_DWORD(params, addr) (cdacRead<DWORD>(addr))
+#define MEMORY_READ_QWORD(params, addr) (cdacRead<UINT64>(addr))
 #endif
 
 //
@@ -2788,14 +2800,16 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_CDAC_UNWINDER
+OOPStackUnwinderArm64* g_pUnwinder;
 BOOL arm64Unwind(void* pContext, ReadCallback readCallback, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo)
 {
     HRESULT hr = E_FAIL;
 
-    return (long)((T_CONTEXT*)pContext)->Pc;
-
     OOPStackUnwinderArm64 unwinder { readCallback, getAllocatedBuffer, getStackWalkInfo };
+    g_pUnwinder = &unwinder;
     hr = unwinder.Unwind((T_CONTEXT*) pContext);
+
+    g_pUnwinder = nullptr;
 
     return (hr == S_OK);
 }

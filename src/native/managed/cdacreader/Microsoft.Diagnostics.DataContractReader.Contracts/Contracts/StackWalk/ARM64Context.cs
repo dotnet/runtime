@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -10,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// ARM64-specific thread context.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Pack = 1)]
-public struct ARM64Context : IContext
+internal struct ARM64Context : IContext
 {
     [Flags]
     public enum ContextFlagsValues : uint
@@ -29,8 +31,71 @@ public struct ARM64Context : IContext
 
     public static uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
-    public readonly TargetPointer StackPointer => new(Sp);
-    public readonly TargetPointer InstructionPointer => new(Pc);
+    public TargetPointer StackPointer
+    {
+        readonly get => new(Sp);
+        set => Sp = value.Value;
+    }
+    public TargetPointer InstructionPointer
+    {
+        readonly get => new(Pc);
+        set => Pc = value.Value;
+    }
+    public TargetPointer FramePointer
+    {
+        readonly get => new(Fp);
+        set => Fp = value.Value;
+    }
+
+    public void Unwind(Target target)
+    {
+        Unwinder.ARM64Unwind(ref this, target);
+    }
+
+    public void Clear()
+    {
+        this = default;
+    }
+
+    public unsafe void ReadFromAddress(Target target, TargetPointer address)
+    {
+        Span<byte> buffer = new byte[Size];
+        target.ReadBuffer(address, buffer);
+        Span<ARM64Context> structSpan = MemoryMarshal.CreateSpan(ref this, sizeof(ARM64Context));
+        Span<byte> byteSpan = MemoryMarshal.Cast<ARM64Context, byte>(structSpan);
+        if (buffer.Length > sizeof(ARM64Context))
+        {
+            buffer.Slice(0, sizeof(ARM64Context)).CopyTo(byteSpan);
+        }
+        else
+        {
+            buffer.CopyTo(byteSpan);
+        }
+    }
+
+    public override string ToString()
+    {
+        StringBuilder sb = new();
+        foreach (FieldInfo fieldInfo in typeof(AMD64Context).GetFields())
+        {
+            switch (fieldInfo.GetValue(this))
+            {
+                case ulong v:
+                    sb.AppendLine($"{fieldInfo.Name} = {v:x16}");
+                    break;
+                case uint v:
+                    sb.AppendLine($"{fieldInfo.Name} = {v:x8}");
+                    break;
+                case ushort v:
+                    sb.AppendLine($"{fieldInfo.Name} = {v:x4}");
+                    break;
+                default:
+                    sb.AppendLine($"{fieldInfo.Name} = {fieldInfo.GetValue(this)}");
+                    continue;
+            }
+        }
+        return sb.ToString();
+    }
 
     // Control flags
 
