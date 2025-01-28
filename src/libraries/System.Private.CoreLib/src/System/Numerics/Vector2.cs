@@ -340,8 +340,10 @@ namespace System.Numerics
         {
             //return value1.X * value2.Y - value1.Y * value2.X;
 
-            Vector128<float> mul = value1.AsVector128Unsafe() *
+            Vector128<float> mul =
+                Vector128.Shuffle(value1.AsVector128Unsafe(), Vector128.Create(0, 1, 0, 1)) *
                 Vector128.Shuffle(value2.AsVector128Unsafe(), Vector128.Create(1, 0, 1, 0));
+
             return (mul - Vector128.Shuffle(mul, Vector128.Create(1, 0, 1, 0))).ToScalar();
         }
 
