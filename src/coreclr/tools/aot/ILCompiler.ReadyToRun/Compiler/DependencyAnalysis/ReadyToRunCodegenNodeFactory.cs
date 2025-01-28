@@ -58,6 +58,7 @@ namespace ILCompiler.DependencyAnalysis
         public TypeValidationRule TypeValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
+        public bool EnableCachedInterfaceDispatchSupport;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -867,7 +868,7 @@ namespace ILCompiler.DependencyAnalysis
                 "DispatchImports",
                 ReadyToRunImportSectionType.StubDispatch,
                 ReadyToRunImportSectionFlags.PCode,
-                (byte)Target.PointerSize,
+                this.OptimizationFlags.EnableCachedInterfaceDispatchSupport ? (byte)(2 * Target.PointerSize) : (byte)Target.PointerSize,
                 emitPrecode: false,
                 emitGCRefMap: true);
             ImportSectionsTable.AddEmbeddedObject(DispatchImports);

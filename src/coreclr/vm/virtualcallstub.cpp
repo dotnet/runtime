@@ -105,8 +105,6 @@ BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator,
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
-extern "C" void RhpInitialInterfaceDispatch();
-
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
     // Generate a dispatch stub and gather a slot.
@@ -4072,7 +4070,6 @@ extern "C" void RhpInterfaceDispatch32();
 extern "C" void RhpInterfaceDispatch64();
 
 extern "C" void RhpVTableOffsetDispatch();
-extern "C" void RhpInitialInterfaceDispatch();
 
 extern "C" void RhpInterfaceDispatchAVLocation1();
 extern "C" void RhpInterfaceDispatchAVLocation2();

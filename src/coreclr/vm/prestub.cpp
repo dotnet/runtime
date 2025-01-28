@@ -23,6 +23,8 @@
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 
+#include "CachedInterfaceDispatchPal.h"
+
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
@@ -3154,8 +3156,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
         _ASSERTE(pImportSection != NULL);
 
-        _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
-        COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
+        COUNT_T index;
+
+        index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
+        _ASSERTE((pImportSection->EntrySize == sizeof(TADDR)) || (pImportSection->EntrySize == 2*sizeof(TADDR)));
 
         PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
@@ -3306,6 +3310,36 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
+                if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
+                {
+                    // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
+                    // to speed up further uses of this interface dispatch slot
+                    DispatchToken token = VirtualCallStubManager::GetTokenFromFromOwnerAndSlot(pMT, slot);
+
+                    uintptr_t addr = (uintptr_t)RhpInitialInterfaceDispatch;
+                    uintptr_t pCache = (uintptr_t)DispatchToken::ToCachedInterfaceDispatchToken(token);
+#ifdef TARGET_64BIT
+                    int64_t rgComparand[2] = { *(volatile int64_t*)pIndirection , *(((volatile int64_t*)pIndirection) + 1) };
+                    // We need to only update if the indirection cell is still pointing to the initial R2R stub
+                    // But we don't have the address of the initial R2R stub, as that is part of the R2R image
+                    // However, we can rely on the detail that the cache value will never be 0 once it is updated
+                    // So we read the indirection cell data, and if the cache portion is 0, we attempt to update the complete cell
+                    if (rgComparand[1] == 0 && PalInterlockedCompareExchange128((int64_t*)pIndirection, rgComparand[1], rgComparand[0], rgComparand))
+                    {
+                        PalInterlockedCompareExchange128((int64_t*)pIndirection, pCache, addr, rgComparand);
+                    }
+#else
+                    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
+                    uint64_t oldValue = *(volatile uint64_t*)pIndirection;
+                    if ((oldValue >> 32) == 0)
+                    {
+                        // The cache portion is 0, so we attempt to update the complete cell
+                        int64_t iNewValue = (int64_t)((uint64_t)(uintptr_t)addr | ((uint64_t)(uintptr_t)pCache << 32));
+                        PalInterlockedCompareExchange64((int64_t*)pIndirection, iNewValue, oldValue);
+                    }
+#endif
+                }
+
                 // We don't yet have a proper implementation for cached interface stubs in R2R code, so instead of finding stubs, simply do the resolution in pure C++
                 // and skip updating the indirection cell
                 DispatchToken token;
@@ -3751,7 +3785,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
 
-    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / sizeof(TADDR);
+    COUNT_T index = (rva - pImportSection->Section.VirtualAddress) / pImportSection->EntrySize;
 
     PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(pNativeImage->GetRvaData(pImportSection->Signatures));
 
