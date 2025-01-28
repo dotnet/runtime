@@ -71,7 +71,7 @@ namespace System.Reflection
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
             Debug.Assert(alc != null);
 
-            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetValue(alc, static x => new ProxyAssembly(x));
+            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetOrAdd(alc, static x => new ProxyAssembly(x));
             GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
         }
