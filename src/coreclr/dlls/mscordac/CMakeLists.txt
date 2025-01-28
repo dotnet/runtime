@@ -194,6 +194,8 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
+esrp_sign(mscordaccore)
+
 # add the install targets
 install_clr(TARGETS mscordaccore DESTINATIONS . sharedFramework COMPONENT debug)
 

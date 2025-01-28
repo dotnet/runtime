@@ -88,6 +88,10 @@
       <_CoreClrBuildArg Condition="'$(Platform)' == 'x64'" Include="-DANDROID_ABI=x86_64" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(DotNetEsrpToolPath)' != ''">
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_CMAKE_ESRP_CLIENT=$(DotNetEsrpToolPath)&quot;" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
