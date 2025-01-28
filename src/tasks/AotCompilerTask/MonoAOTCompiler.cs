@@ -542,8 +542,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
             IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
-            if (be9 is not null)
-                allowedParallelism = be9.RequestCores(allowedParallelism);
+            try
+            {
+                if (be9 is not null)
+                    allowedParallelism = be9.RequestCores(allowedParallelism);
+            }
+            catch(NotImplementedException)
+            {
+                // RequestCores is not implemented in TaskHostFactory
+                be9 = null;
+            }
 
             /*
                 From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690

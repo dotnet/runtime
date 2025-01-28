@@ -612,6 +612,12 @@ static bool SwitchStackAndExecuteHandler(int code, siginfo_t *siginfo, void *con
 
 #endif // !HAVE_MACH_EXCEPTIONS
 
+// Temporary locals to debug issue https://github.com/dotnet/runtime/issues/110173
+static SIZE_T stackOverflowThreadId = -1;
+static const char StackOverflowOnTheSameThreadMessage[] = "Stack overflow occurred on the same thread again!\n";
+static const char StackOverflowHandlerReturnedMessage[] = "Stack overflow handler has returned!\n";
+//
+
 /*++
 Function :
     sigsegv_handler
@@ -644,14 +650,26 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
                     // We have only one stack for handling stack overflow preallocated. We let only the first thread that hits stack overflow to
                     // run the exception handling code on that stack (which ends up just dumping the stack trace and aborting the process).
                     // Other threads are held spinning and sleeping here until the process exits.
+
+                    // Temporary check to debug issue https://github.com/dotnet/runtime/issues/110173
+                    if (stackOverflowThreadId == THREADSilentGetCurrentThreadId())
+                    {
+                        (void)!write(STDERR_FILENO, StackOverflowOnTheSameThreadMessage, sizeof(StackOverflowOnTheSameThreadMessage) - 1);
+                    }
+
                     while (true)
                     {
                         sleep(1);
                     }
                 }
+                else
+                {
+                    stackOverflowThreadId = THREADSilentGetCurrentThreadId();
+                }
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
+                    (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
                     PROCAbort(SIGSEGV, siginfo);
                 }
             }
