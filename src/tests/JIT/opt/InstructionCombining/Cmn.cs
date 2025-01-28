@@ -25,6 +25,11 @@ namespace TestCompareNegative
                 fail = true;
             }
 
+            if (!CmnLSLSwap(-16, 4))
+            {
+                fail = true;
+            }
+
             if (!CmnLSR(0xFFFFFFFC, 0x10))
             {
                 fail = true;
@@ -68,6 +73,17 @@ namespace TestCompareNegative
         {
             //ARM64-FULL-LINE: cmn {{w[0-9]+}}, {{w[0-9]+}},  LSL #2
             if (a == -(b<<2))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CmnLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: cmn {{w[0-9]+}}, {{w[0-9]+}},  LSL #2
+            if (-(b<<2) == a)
             {
                 return true;
             }

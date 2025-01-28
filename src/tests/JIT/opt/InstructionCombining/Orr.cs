@@ -25,6 +25,11 @@ namespace TestOrr
                 fail = true;
             }
 
+            if (OrrLSLSwap(0x180, 5) != 0x1C0)
+            {
+                fail = true;
+            }
+
             if (OrrLSR(0x7, 0x1234) != 0x27)
             {
                 fail = true;
@@ -64,6 +69,13 @@ namespace TestOrr
         {
             //ARM64-FULL-LINE: orr {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #6
             return a | (b<<6);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int OrrLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: orr {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #6
+            return (b<<6) | a;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

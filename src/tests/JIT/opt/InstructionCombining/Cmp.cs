@@ -25,6 +25,11 @@ namespace TestCompare
                 fail = true;
             }
 
+            if (!CmpLSLSwap(12, 3))
+            {
+                fail = true;
+            }
+
             if (!CmpLSR(5, 0xa00))
             {
                 fail = true;
@@ -68,6 +73,17 @@ namespace TestCompare
         {
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
             if (a == (b<<2))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CmpLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
+            if ((b<<2) == a)
             {
                 return true;
             }

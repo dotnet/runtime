@@ -25,6 +25,11 @@ namespace TestAnd
                 fail = true;
             }
 
+            if (AndLSLSwap(255, 1) != 16)
+            {
+                fail = true;
+            }
+
             if (AndLSR(255, 0x10000000) != 8)
             {
                 fail = true;
@@ -51,6 +56,11 @@ namespace TestAnd
             }
 
             if (AndsLSL(8, 2) != 1)
+            {
+                fail = true;
+            }
+
+            if (AndsLSLSwap(8, 2) != 1)
             {
                 fail = true;
             }
@@ -97,6 +107,13 @@ namespace TestAnd
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AndLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: and {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
+            return (b<<4) & a;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static uint AndLSR(uint a, uint b)
         {
             //ARM64-FULL-LINE: and {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #25
@@ -139,6 +156,16 @@ namespace TestAnd
         {
             //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
             if ((a & (b<<2)) != 0) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AndsLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: tst {{w[0-9]+}}, {{w[0-9]+}}, LSL #2
+            if (((b<<2) & a) != 0) {
                 return 1;
             }
             return -1;

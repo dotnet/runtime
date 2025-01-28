@@ -25,6 +25,11 @@ namespace TestAdd
                 fail = true;
             }
 
+            if (AddLSLSwap(5, 5) != 85)
+            {
+                fail = true;
+            }
+
             if (AddLSR(1, 0x20000000) != 2)
             {
                 fail = true;
@@ -51,6 +56,11 @@ namespace TestAdd
             }
 
             if (AddsLSL(-0x78000, 0xF) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddsLSLSwap(-0x78000, 0xF) != 1)
             {
                 fail = true;
             }
@@ -97,6 +107,13 @@ namespace TestAdd
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
+            return (b<<4) + a;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static uint AddLSR(uint a, uint b)
         {
             //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSR #29
@@ -139,6 +156,16 @@ namespace TestAdd
         {
             //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #15
             if (a + (b<<15) == 0) {
+                return 1;
+            }
+            return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddsLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #15
+            if ((b<<15) + a == 0) {
                 return 1;
             }
             return -1;

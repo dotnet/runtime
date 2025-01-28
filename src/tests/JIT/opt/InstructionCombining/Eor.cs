@@ -25,6 +25,11 @@ namespace TestEor
                 fail = true;
             }
 
+            if (EorLSLSwap(32, 3) != 16)
+            {
+                fail = true;
+            }
+
             if (EorLSR(0xBA, 0xABCDE) != 0x11)
             {
                 fail = true;
@@ -64,6 +69,13 @@ namespace TestEor
         {
             //ARM64-FULL-LINE: eor {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
             return a ^ (b<<4);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int EorLSLSwap(int a, int b)
+        {
+            //ARM64-FULL-LINE: eor {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, LSL #4
+            return (b<<4) ^ a;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
