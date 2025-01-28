@@ -6,5 +6,29 @@
 </head>
 <body>
     <h1>PAL Tests WASM</h1>
+    <script>
+        const originalConsoleLog = console.log;
+        console.log = function(message) {
+            originalConsoleLog(message);
+            fetch('/log=paltests-log.txt', {
+                method: 'POST',
+                body: ('stdout: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+        };
+        const originalConsoleError = console.error;
+        console.error = function(message) {
+            originalConsoleError(message);
+            fetch('/log=paltests-log.txt', {
+                method: 'POST',
+                body: ('stderr: ' + message),
+                headers: {
+                    'Content-Type': 'text/plain'
+                }
+            });
+        };
+    </script>
     <script src="paltests.js"></script>
 </body>
