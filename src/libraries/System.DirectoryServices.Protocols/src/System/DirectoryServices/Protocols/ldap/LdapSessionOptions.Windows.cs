@@ -10,8 +10,12 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public string CertificateDirectory
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public string TrustedCertificatesDirectory
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
@@ -31,7 +35,11 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public void StartNewTlsSessionContext() => throw new PlatformNotSupportedException();
 
         public int ProtocolVersion

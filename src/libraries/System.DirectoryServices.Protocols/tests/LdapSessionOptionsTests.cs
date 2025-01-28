@@ -767,8 +767,10 @@ namespace System.DirectoryServices.Protocols.Tests
             using (var connection = new LdapConnection("server"))
             {
                 LdapSessionOptions options = connection.SessionOptions;
-                options.CertificateDirectory = "CertificateDirectory";
-                Assert.Equal("CertificateDirectory", options.CertificateDirectory);
+                Assert.Null(options.TrustedCertificatesDirectory);
+
+                options.TrustedCertificatesDirectory = "CertificateDirectory";
+                Assert.Equal("CertificateDirectory", options.TrustedCertificatesDirectory);
             }
         }
 
@@ -779,7 +781,7 @@ namespace System.DirectoryServices.Protocols.Tests
             using (var connection = new LdapConnection("server"))
             {
                 LdapSessionOptions options = connection.SessionOptions;
-                Assert.Throws<PlatformNotSupportedException>(() => options.CertificateDirectory = "CertificateDirectory");
+                Assert.Throws<PlatformNotSupportedException>(() => options.TrustedCertificatesDirectory = "CertificateDirectory");
             }
         }
 #endif

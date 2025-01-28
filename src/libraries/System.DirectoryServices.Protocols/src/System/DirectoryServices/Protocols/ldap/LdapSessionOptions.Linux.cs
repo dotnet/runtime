@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -12,10 +13,20 @@ namespace System.DirectoryServices.Protocols
         private bool _secureSocketLayer;
 
         /// <summary>
-        /// Specifies the path of the directory containing CA certificates.
+        /// Specifies the path of the directory containing CA certificates in the PEM format.
+        /// Multiple directories may be specified by separating with a semi-colon.
         /// </summary>
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public string CertificateDirectory
+        /// <remarks>
+        /// The certificate files are looked up by the CA subject name hash value where that hash can be
+        /// obtained by using, for example, <code>openssl x509 -hash -noout -in CA.crt</code>.
+        /// It is a common practice to have the file be a symbolic link to the actual certificate file.
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public string TrustedCertificatesDirectory
         {
             get => GetStringValueHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, releasePtr: true);
             set => SetStringOptionHelper(LdapOption.LDAP_OPT_X_TLS_CACERTDIR, value);
@@ -64,8 +75,13 @@ namespace System.DirectoryServices.Protocols
 
         /// <summary>
         /// Create a new TLS library context.
+        /// Calling this is necessary after setting TLS-based options, such as <c>TrustedCertificatesDirectory</c>.
         /// </summary>
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public void StartNewTlsSessionContext()
         {
             SetIntValueHelper(LdapOption.LDAP_OPT_X_TLS_NEWCTX, 0);

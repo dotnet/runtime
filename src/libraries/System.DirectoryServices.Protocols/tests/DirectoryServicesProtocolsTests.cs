@@ -712,7 +712,7 @@ namespace System.DirectoryServices.Protocols.Tests
             {
                 LdapSessionOptions options = connection.SessionOptions;
 
-                // To get this to not throw, we need to set CertificateDirectory and have a .crt file in that directory.
+                // To get this to not throw, we need to use TrustedCertificatesDirectory along with other valid options to connect.
                 Assert.Throws<LdapException>(() => options.StartNewTlsSessionContext());
             }
         }
