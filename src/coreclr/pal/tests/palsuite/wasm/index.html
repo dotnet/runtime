@@ -9,7 +9,7 @@
     <pre id="log">
     </pre>
     <script>
-        const nextRunDelay = 500;
+        const nextRunDelay = 100, reloadDelay = 100;
         nextRunTimeout = -1;
         nextTestName = location.hash.trim().substring(1);
         capturingTestCaseNames = nextTestName.length === 0;
@@ -29,7 +29,7 @@
                     capturingTestCaseNames = false;
                 }
 
-                var msg = "exited with code " + code;
+                var msg = "'" + Module.arguments[1] + "' exited with code " + code;
                 if (nextRunTimeout < 0)
                     msg += "; scheduling next test";
 
@@ -50,7 +50,7 @@
             console.log("We just ran " + Module.arguments[1] + " which is test index " + testIndex + "; next test is " + nextTestName);
 
             location.hash = "#" + nextTestName;
-            window.setTimeout(location.reload.bind(location), 500);
+            window.setTimeout(location.reload.bind(location), reloadDelay);
         }
 
         const originalConsoleLog = console.log;
