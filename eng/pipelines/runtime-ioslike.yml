@@ -12,7 +12,7 @@ extends:
   parameters:
 
     stages:
-    - ${{ if or(and(eq(parameters.isRollingBuild, false), eq(true, false)), eq(parameters.isiOSLikeOnlyBuild, true) }}:
+    - ${{ if or(and(eq(parameters.isRollingBuild, false), eq(true, false)), eq(parameters.isiOSLikeOnlyBuild, true)) }}:
       - stage: Build
         jobs:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
