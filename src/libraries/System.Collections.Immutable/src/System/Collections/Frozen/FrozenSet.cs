@@ -28,12 +28,26 @@ namespace System.Collections.Frozen
         /// <returns>A frozen set.</returns>
         public static FrozenSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, params ReadOnlySpan<T> source)
         {
+            bool isDefaultComparer = equalityComparer is null || ReferenceEquals(equalityComparer, FrozenSet<T>.Empty.Comparer);
+
             if (source.Length == 0)
             {
-                return equalityComparer is null || ReferenceEquals(equalityComparer, FrozenSet<T>.Empty.Comparer) ?
+                return isDefaultComparer ?
                     FrozenSet<T>.Empty :
-                    new EmptyFrozenSet<T>(equalityComparer);
+                    new EmptyFrozenSet<T>(equalityComparer!);
             }
+
+#if NET9_0_OR_GREATER
+            if (typeof(T) == typeof(byte) && isDefaultComparer)
+            {
+                return (FrozenSet<T>)(object)new ByteFrozenSet(Unsafe.BitCast<ReadOnlySpan<T>, ReadOnlySpan<byte>>(source));
+            }
+
+            if (typeof(T) == typeof(char) && isDefaultComparer)
+            {
+                return (FrozenSet<T>)(object)CreateFrozenSetForChars(Unsafe.BitCast<ReadOnlySpan<T>, ReadOnlySpan<char>>(source), null);
+            }
+#endif
 
             HashSet<T> set =
 #if NET
@@ -69,6 +83,31 @@ namespace System.Collections.Frozen
             {
                 newSet = null;
                 return fs;
+            }
+
+            if (typeof(T) == typeof(byte) && EqualityComparer<byte>.Default.Equals(comparer))
+            {
+                newSet = null;
+
+                if (source is not ICollection<byte> { Count: > 0 })
+                {
+                    newSet = new HashSet<T>(source);
+
+                    if (newSet.Count == 0)
+                    {
+                        return FrozenSet<T>.Empty;
+                    }
+
+                    source = newSet;
+                }
+
+                return (FrozenSet<T>)(object)new ByteFrozenSet((IEnumerable<byte>)source);
+            }
+
+            if (typeof(T) == typeof(char) && EqualityComparer<char>.Default.Equals(comparer))
+            {
+                newSet = null;
+                return (FrozenSet<T>)(object)CreateFrozenSetForChars(default, (IEnumerable<char>)source);
             }
 
             // Ensure we have a HashSet<> using the specified comparer such that all items
@@ -222,6 +261,63 @@ namespace System.Collections.Frozen
             // No special-cases apply. Use the default frozen set.
             return new DefaultFrozenSet<T>(source);
         }
+
+        private static FrozenSet<char> CreateFrozenSetForChars(ReadOnlySpan<char> span, IEnumerable<char>? enumerable)
+        {
+            Debug.Assert(span.IsEmpty || enumerable is not null);
+
+            // Extract the span from the enumerable. In most cases that should be free.
+            if (enumerable is not null)
+            {
+                if (enumerable is string s)
+                {
+                    span = s;
+                }
+                else if (enumerable is char[] array)
+                {
+                    span = array;
+                }
+                else
+                {
+                    if (enumerable is not List<char> list)
+                    {
+                        list = new List<char>(enumerable);
+                    }
+
+#if NET8_0_OR_GREATER
+                    span = CollectionsMarshal.AsSpan(list);
+#else
+                    span = list.ToArray();
+#endif
+                }
+            }
+
+            if (span.IsEmpty)
+            {
+                return FrozenSet<char>.Empty;
+            }
+
+#if NET8_0_OR_GREATER
+            bool allValuesLessThan256 = !span.ContainsAnyExceptInRange((char)0, (char)255);
+#else
+            bool allValuesLessThan256 = true;
+            foreach (char c in span)
+            {
+                if (c > 255)
+                {
+                    allValuesLessThan256 = false;
+                    break;
+                }
+            }
+#endif
+
+            if (allValuesLessThan256)
+            {
+                return new Latin1CharFrozenSet(span);
+            }
+
+            return new PerfectHashCharFrozenSet(span);
+        }
     }
 
     /// <summary>Provides an immutable, read-only set optimized for fast lookup and enumeration.</summary>
@@ -305,6 +401,10 @@ namespace System.Collections.Frozen
         /// <param name="item">The element to locate.</param>
         /// <returns><see langword="true"/> if the set contains the specified element; otherwise, <see langword="false"/>.</returns>
         public bool Contains(T item) =>
+            ContainsCore(item);
+
+        /// <inheritdoc cref="Contains(T)"/>
+        private protected virtual bool ContainsCore(T item) =>
             FindItemIndex(item) >= 0;
 
         /// <summary>Searches the set for a given value and returns the equal value it finds, if any.</summary>
