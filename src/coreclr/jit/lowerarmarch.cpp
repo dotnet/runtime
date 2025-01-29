@@ -304,7 +304,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
-        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_AND_NOT))
+        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_NOT, GT_AND_NOT))
         {
             return true;
         }
@@ -3287,6 +3287,31 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
              IsContainableUnaryOrBinaryOp(neg, childNode))
     {
         MakeSrcContained(neg, childNode);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckNot : determine whether the source of a not should be contained.
+//
+// Arguments:
+//    notOp - pointer to the node
+//
+void Lowering::ContainCheckNot(GenTreeOp* notOp)
+{
+    if (notOp->isContained())
+        return;
+
+    if (!varTypeIsIntegral(notOp))
+        return;
+
+    if ((notOp->gtFlags & GTF_SET_FLAGS))
+        return;
+
+    GenTree* childNode = notOp->gtGetOp1();
+    if (comp->opts.OptimizationEnabled() && childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) &&
+        IsContainableUnaryOrBinaryOp(notOp, childNode))
+    {
+        MakeSrcContained(notOp, childNode);
     }
 }
 
