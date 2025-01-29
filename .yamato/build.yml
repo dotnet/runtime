@@ -31,6 +31,9 @@ build_linux_x64_debug:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-linux-x64.7z
   labels:
@@ -52,6 +55,9 @@ build_linux_x64_release:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-linux-x64.7z
   labels:
@@ -73,6 +79,9 @@ build_osx_arm64_debug:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-osx-arm64.7z
   labels:
@@ -95,6 +104,9 @@ build_osx_arm64_release:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-osx-arm64.7z
   labels:
@@ -117,6 +129,9 @@ build_osx_x64_debug:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-osx-x64.7z
   labels:
@@ -139,6 +154,9 @@ build_osx_x64_release:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-osx-x64.7z
   labels:
@@ -161,6 +179,9 @@ build_windows_arm64_debug:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-windows-arm64.7z
   labels:
@@ -182,6 +203,9 @@ build_windows_arm64_release:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-windows-arm64.7z
   labels:
@@ -203,6 +227,9 @@ build_windows_x64_debug:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-windows-x64.7z
   labels:
@@ -224,6 +251,9 @@ build_windows_x64_release:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-windows-x64.7z
   labels:
@@ -245,6 +275,9 @@ build_windows_x86_debug:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-windows-x86.7z
   labels:
@@ -266,6 +299,9 @@ build_windows_x86_release:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   variables:
     ARTIFACT_FILENAME: dotnet-unity-windows-x86.7z
   labels:
@@ -287,6 +323,9 @@ generate_osx_x64_arm64:
     build:
       paths:
       - artifacts\bin\**
+    unity-build:
+      paths:
+      - artifacts\unity-bin\**
   dependencies:
   - path: .yamato/build.yml#build_osx_arm64_release
   - path: .yamato/build.yml#build_osx_x64_release
