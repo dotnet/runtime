@@ -3002,8 +3002,6 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 cloneTryIndex += indexShift;
             }
 
-            EHblkDsc* const originalEbd = ehGetDsc(originalTryIndex);
-            EHblkDsc* const clonedEbd   = ehGetDsc(cloneTryIndex);
             newBlock->setTryIndex(cloneTryIndex);
             updateBlockReferences(cloneTryIndex);
         }
@@ -3018,8 +3016,6 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
                 cloneHndIndex += indexShift;
             }
 
-            EHblkDsc* const originalEbd = ehGetDsc(originalHndIndex);
-            EHblkDsc* const clonedEbd   = ehGetDsc(cloneHndIndex);
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
 
