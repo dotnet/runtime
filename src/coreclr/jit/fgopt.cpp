@@ -324,10 +324,10 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
                                        impInlineInfo->retExprClassHndIsExact);
                     }
-                    else if (lookupNamedIntrinsic(info.compMethodHnd) == NI_System_SZArrayHelper_GetEnumerator)
+                    else if (lvaInlineeReturnSpillTempFreshlyCreated)
                     {
-                        // If we are inlining System.SZArrayHelper.GetEnumerator, update the type of the return spill
-                        // temp regardless of whether it is single def or not.
+                        // If the inlinee return spill temp was freshly created in fgFindBasicBlocks, we can update the
+                        // type regardless of whether it is single def or not.
                         returnSpillVarDsc->lvClassHnd     = retExprClassHnd;
                         returnSpillVarDsc->lvClassIsExact = impInlineInfo->retExprClassHndIsExact;
 #if DEBUG

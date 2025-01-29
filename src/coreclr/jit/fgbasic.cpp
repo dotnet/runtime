@@ -3563,7 +3563,7 @@ void Compiler::fgFindBasicBlocks()
                     }
                 }
 
-                impInlineInfo->inlineCandidateInfo->preexistingSpillTemp = lvaInlineeReturnSpillTemp;
+                lvaInlineeReturnSpillTempFreshlyCreated = true;
             }
         }
 
