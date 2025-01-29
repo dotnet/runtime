@@ -3631,8 +3631,9 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // We should already have a class
     assert(varDsc->lvClassHnd != NO_CLASS_HANDLE);
 
-    // We should only be updating classes for single-def locals.
-    assert(varDsc->lvSingleDef);
+    // We should only be updating classes for single-def locals,
+    // or for the inlinee return spill temp that is freshly created.
+    assert(varDsc->lvSingleDef || (lvaInlineeReturnSpillTempFreshlyCreated && varNum == lvaInlineeReturnSpillTemp));
 
     // Now see if we should update.
     //
@@ -3679,7 +3680,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
 }
 
 //------------------------------------------------------------------------
-// lvaUpdateClass: Uupdate class information for a local var from a tree
+// lvaUpdateClass: Update class information for a local var from a tree
 //  or stack type
 //
 // Arguments:
