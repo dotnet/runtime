@@ -6,14 +6,11 @@ trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-
+  - name: monoAotLlvmContainsChange
+    value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
-  parameters:
-    variables:
-      - name: monoAotLlvmContainsChange
-        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
-
+  parameters:      
     stages:
     - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['monoAotLlvmContainsChange'], true)) }}:
       - stage: Build
