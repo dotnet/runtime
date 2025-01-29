@@ -450,7 +450,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // No write barriers are needed on the stack.
             // If the layout is byref-like, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -477,7 +477,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
+            if (blkNode->IsAddressNotOnHeap(comp))
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = layout->GetSlotCount();
@@ -9602,10 +9602,6 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 {
     assert(!childNode->IsAllBitsSet());
     assert(!childNode->IsZero());
-    var_types   simdType            = parentNode->TypeGet();
-    var_types   simdBaseType        = parentNode->GetSimdBaseType();
-    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
-    bool        isCreatedFromScalar = true;
 
     if (!comp->canUseEmbeddedBroadcast())
     {
@@ -9613,10 +9609,16 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
         return;
     }
 
-    if (simdType == TYP_MASK)
-    {
-        simdType = Compiler::getSIMDTypeForSize(parentNode->GetSimdSize());
-    }
+    // We use the child node's size for the broadcast node, because the parent may consume more than its own size.
+    // The containment check has already validated that the child is sufficiently large.
+    //
+    // We use the parent node's base type, because we must ensure that the constant repeats correctly for that size,
+    // regardless of how the constant vector was created.
+
+    var_types   simdType            = childNode->TypeGet();
+    var_types   simdBaseType        = parentNode->GetSimdBaseType();
+    CorInfoType simdBaseJitType     = parentNode->GetSimdBaseJitType();
+    bool        isCreatedFromScalar = true;
 
     if (varTypeIsSmall(simdBaseType))
     {
@@ -10971,6 +10973,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX10v1_V512_InsertVector128:
                         case NI_AVX10v1_V512_InsertVector256:
                         case NI_AVX10v1_V512_Range:
+                        case NI_AVX10v2_MinMaxScalar:
+                        case NI_AVX10v2_MinMax:
+                        case NI_AVX10v2_V512_MinMax:
+                        case NI_AVX10v2_V512_MultipleSumAbsoluteDifferences:
                         case NI_GFNI_GaloisFieldAffineTransform:
                         case NI_GFNI_GaloisFieldAffineTransformInverse:
                         case NI_GFNI_V256_GaloisFieldAffineTransform:

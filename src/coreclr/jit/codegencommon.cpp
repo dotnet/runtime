@@ -255,6 +255,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #ifdef TARGET_ARM64
     genSaveFpLrWithAllCalleeSavedRegisters = false;
     genForceFuncletFrameType5              = false;
+    genReverseAndPairCalleeSavedRegisters  = false;
 #endif // TARGET_ARM64
 }
 
@@ -1831,15 +1832,26 @@ void CodeGen::genGenerateMachineCode()
 #if defined(TARGET_X86)
         if (compiler->canUseEvexEncoding())
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
                 {
-                    printf("X86 with AVX10/512");
+                    printf("X86 with AVX10.2/512");
                 }
                 else
                 {
-                    printf("X86 with AVX10/256");
+                    printf("X86 with AVX10.2/256");
+                }
+            }
+            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                {
+                    printf("X86 with AVX10.1/512");
+                }
+                else
+                {
+                    printf("X86 with AVX10.1/256");
                 }
             }
             else
@@ -1859,15 +1871,26 @@ void CodeGen::genGenerateMachineCode()
 #elif defined(TARGET_AMD64)
         if (compiler->canUseEvexEncoding())
         {
-            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
             {
-                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v2_V512))
                 {
-                    printf("X64 with AVX10/512");
+                    printf("X64 with AVX10.2/512");
                 }
                 else
                 {
-                    printf("X64 with AVX10/256");
+                    printf("X64 with AVX10.2/256");
+                }
+            }
+            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX10v1_V512))
+                {
+                    printf("X64 with AVX10.1/512");
+                }
+                else
+                {
+                    printf("X64 with AVX10.1/256");
                 }
             }
             else
@@ -4812,6 +4835,29 @@ void CodeGen::genFinalizeFrame()
     }
 #endif // TARGET_ARM
 
+#ifdef TARGET_ARM64
+    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsApplePlatform)
+    {
+        JITDUMP("Setting genReverseAndPairCalleeSavedRegisters = true");
+
+        genReverseAndPairCalleeSavedRegisters = true;
+
+        // Make sure we push the registers in pairs if possible. If we only allocate a contiguous
+        // block of registers this should add at most one integer and at most one floating point
+        // register to the list. The stack has to be 16-byte aligned, so in worst case it results
+        // in allocating 16 bytes more space on stack if odd number of integer and odd number of
+        // FP registers were occupied. Same number of instructions will be generated, just the
+        // STR instructions are replaced with STP (store pair).
+        regMaskTP maskModifiedRegs = regSet.rsGetModifiedRegsMask();
+        regMaskTP maskPairRegs     = ((maskModifiedRegs & (RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14)).getLow() << 1) |
+                                 ((maskModifiedRegs & (RBM_R19 | RBM_R21 | RBM_R23 | RBM_R25 | RBM_R27)).getLow() << 1);
+        if (maskPairRegs != RBM_NONE)
+        {
+            regSet.rsSetRegsModified(maskPairRegs);
+        }
+    }
+#endif
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -7097,9 +7143,8 @@ void CodeGen::genReturn(GenTree* treeNode)
             // consumed a reg for the operand. This is because the variable
             // is dead after return. But we are issuing more instructions
             // like "profiler leave callback" after this consumption. So
-            // if you are issuing more instructions after this point,
-            // remember to keep the variable live up until the new method
-            // exit point where it is actually dead.
+            // we update the liveness to be correct below, but keep in mind that
+            // instructions until emitted then should not rely on the outdated GC info.
             genConsumeReg(op1);
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -7147,19 +7192,22 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
-    const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+    if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
+    {
+        const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
 
-    if (compiler->compMethodReturnsRetBufAddr())
-    {
-        gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-    }
-    else
-    {
-        unsigned retRegCount = retTypeDesc.GetReturnRegCount();
-        for (unsigned i = 0; i < retRegCount; ++i)
+        if (compiler->compMethodReturnsRetBufAddr())
         {
-            gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                   retTypeDesc.GetReturnRegType(i));
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+        }
+        else
+        {
+            unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+            for (unsigned i = 0; i < retRegCount; ++i)
+            {
+                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                       retTypeDesc.GetReturnRegType(i));
+            }
         }
     }
 
