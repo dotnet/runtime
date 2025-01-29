@@ -10,8 +10,9 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+
     stages:
-    - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(true, false)) }}:
+    - ${{ if or(and(eq(parameters.isRollingBuild, false), eq(true, false)), eq(parameters.isiOSLikeOnlyBuild, true) }}:
       - stage: Build
         jobs:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
