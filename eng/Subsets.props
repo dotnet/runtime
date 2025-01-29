@@ -66,7 +66,6 @@
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
-    <DefaultSubsets Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">clr.nativeaotlibs+clr.nativeaotruntime+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">mono+packs</DefaultSubsets>
   </PropertyGroup>
 
@@ -85,7 +84,7 @@
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
     <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
   </PropertyGroup>
-  
+
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
     <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and ($(_subset.Contains('+clr.nativeaotlibs+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
