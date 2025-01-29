@@ -74,7 +74,7 @@ namespace Internal.TypeSystem
                 }
             }
 
-            protected override bool NeedsRecursiveLayout(int offset, TypeDesc fieldType)
+            protected override bool NeedsRecursiveLayout(TypeDesc fieldType)
             {
                 if (!fieldType.IsValueType)
                 {
