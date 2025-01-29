@@ -4367,6 +4367,64 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
+bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* phi)
+{
+    // enumerate phi's args
+    for (GenTreePhi::Use& use : phi->Uses())
+    {
+        if (!use.GetNode()->OperIs(GT_PHI_ARG))
+        {
+            return false;
+        }
+
+        GenTreePhiArg* arg  = use.GetNode()->AsPhiArg();
+        BasicBlock*    pred = arg->gtPredBB;
+
+        const ValueNum phiArgVN       = vnStore->VNConservativeNormalValue(arg->gtVNPair);
+        bool           isKnownNonNull = vnStore->IsKnownNonNull(phiArgVN);
+        if (!isKnownNonNull)
+        {
+            ASSERT_TP assertions = nullptr;
+            if (pred->KindIs(BBJ_COND) && pred->FalseTargetIs(defBlock))
+            {
+                assertions = pred->bbAssertionOut;
+            }
+            else if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(defBlock)) ||
+                     (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(defBlock)))
+            {
+                if (bbJtrueAssertionOut != nullptr)
+                {
+                    assertions = bbJtrueAssertionOut[pred->bbNum];
+                }
+            }
+
+            if (assertions == nullptr)
+            {
+                return false;
+            }
+
+            bool            found = false;
+            BitVecOps::Iter iter(apTraits, assertions);
+            unsigned        index = 0;
+            while (iter.NextElem(&index))
+            {
+                AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+                if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == phiArgVN)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -4461,6 +4519,26 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     if (!op1->OperIs(GT_LCL_VAR, GT_IND))
     {
         return nullptr;
+    }
+
+    if (!optLocalAssertionProp && op2->IsIntegralConst(0) && varTypeIsGC(op1) && op1->OperIs(GT_LCL_VAR) &&
+        newTree->OperIs(GT_EQ, GT_NE))
+    {
+        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+        unsigned ssaNum = op1->AsLclVarCommon()->GetSsaNum();
+
+        LclSsaVarDsc*        ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+        GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
+        if (node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
+        {
+            if (optAssertionPropPhiDefNotNull(ssaDef->GetBlock(), ssaDef->GetDefNode()->AsPhi()))
+            {
+                newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
+                newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+                DISPTREE(newTree);
+                return optAssertionProp_Update(newTree, tree, stmt);
+            }
+        }
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
