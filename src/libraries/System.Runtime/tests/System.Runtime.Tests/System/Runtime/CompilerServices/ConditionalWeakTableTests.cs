@@ -222,7 +222,10 @@ namespace System.Runtime.CompilerServices.Tests
         public static void Concurrent_GetOrAdd_Add_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+
+            // Here we use a lower threshold to reduce test time (same below).
+            // This applies to all the new 'GetOrAdd' tests in this file.
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -241,7 +244,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void Concurrent_GetOrAdd_Factory_Add_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -260,7 +263,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void Concurrent_GetOrAdd_Factory_WithArg_Add_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -297,7 +300,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void Concurrent_GetOrAdd_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -315,7 +318,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void Concurrent_GetOrAdd_Factory_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -333,7 +336,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void Concurrent_GetOrAdd_Factory_WithArg_Read_Remove_DifferentObjects()
         {
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -372,7 +375,7 @@ namespace System.Runtime.CompilerServices.Tests
             object value = new object();
 
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -390,7 +393,7 @@ namespace System.Runtime.CompilerServices.Tests
             object value = new object();
 
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
@@ -408,7 +411,7 @@ namespace System.Runtime.CompilerServices.Tests
             object value = new object();
 
             var cwt = new ConditionalWeakTable<object, object>();
-            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.25);
+            DateTime end = DateTime.UtcNow + TimeSpan.FromSeconds(0.10);
             Parallel.For(0, Environment.ProcessorCount, i =>
             {
                 while (DateTime.UtcNow < end)
