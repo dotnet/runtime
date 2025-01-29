@@ -51,7 +51,7 @@ struct CustomLayoutKey
             hash ^= 0xc4cfbb2a + (hash << 19) + (hash >> 13);
             for (unsigned i = 0; i < key.Size / TARGET_POINTER_SIZE; i++)
             {
-                hash ^= key.GCPtrTypes[i] + (hash << 19) + (hash >> 13);
+                hash ^= key.GCPtrTypes[i] + 0x9e3779b9 + (hash << 19) + (hash >> 13);
             }
         }
         else
