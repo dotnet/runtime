@@ -6,17 +6,15 @@ trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-  # - name: monoAotLlvmContainsChange
-  #   value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
+
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
-  parameters:      
-    # stages:
-    # # - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['monoAotLlvmContainsChange'], true)) }}:
-    # - stage: Build
-    #   jobs:
-    #   - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
-    #     parameters:
-    #       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-    #       isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
-    #       isRollingBuild: ${{ variables.isRollingBuild }}
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}

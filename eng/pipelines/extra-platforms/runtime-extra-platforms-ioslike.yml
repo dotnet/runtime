@@ -50,11 +50,11 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-      # Run the job when triggered via runtime-ioslike, runtime-extra-platforms, or when Mono AOT LLVM contains changes
+      # Run the job when triggered via runtime-ioslike, runtime-extra-platforms, or on PRs containing Mono AOT LLVM changes
       condition: >-
         or(
           or(eq(variables['isiOSLikeOnlyBuild'], true), eq(variables['isExtraPlatformsBuild'], true)),
-          eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true)
+          and(eq(variables['isRollingBuild'], false), eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true))
         )
 
 #
