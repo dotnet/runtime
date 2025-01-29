@@ -10,9 +10,12 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    variables:
+      - name: monoAotLlvmContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
 
     stages:
-    - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true)) }}:
+    - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['monoAotLlvmContainsChange'], true)) }}:
       - stage: Build
         jobs:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
