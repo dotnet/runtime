@@ -3048,7 +3048,7 @@ public:
 
     void fgSetHndEnd(EHblkDsc* handlerTab, BasicBlock* newHndLast);
 
-    void fgRebuildEHRegions();
+    void fgFindEHRegionEnds();
 
     void fgSkipRmvdBlocks(EHblkDsc* handlerTab);
 
@@ -6315,7 +6315,7 @@ public:
     bool fgReorderBlocks(bool useProfile);
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
-    void fgSearchImprovedLayout();
+    PhaseStatus fgSearchImprovedLayout();
 
     class ThreeOptLayout
     {
@@ -6341,11 +6341,11 @@ public:
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+        void RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
-        ThreeOptLayout(Compiler* comp);
-        void Run();
+        ThreeOptLayout(Compiler* comp, BasicBlock** hotBlocks, unsigned numHotBlocks);
+        bool Run();
     };
 
     template <bool hasEH>

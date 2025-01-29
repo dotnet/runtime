@@ -4454,6 +4454,7 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 template <bool hasEH>
 void Compiler::fgMoveHotJumps()
 {
+    return;
 #ifdef DEBUG
     if (verbose)
     {
@@ -4924,13 +4925,19 @@ void Compiler::fgMoveColdBlocks()
 //
 // Parameters:
 //   comp - The Compiler instance
+//   hotBlocks - An array of the blocks worth reordering
+//   numHotBlocks - The number of blocks in 'hotBlocks'
 //
-Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp)
+// Notes:
+//   To save an allocation, we will reuse the DFS tree's underlying array for 'tempOrder'.
+//   This means we will trash the DFS tree.
+//
+Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp, BasicBlock** hotBlocks, unsigned numHotBlocks)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , blockOrder(nullptr)
-    , tempOrder(nullptr)
-    , numCandidateBlocks(0)
+    , blockOrder(hotBlocks)
+    , tempOrder(comp->m_dfsTree->GetPostOrder())
+    , numCandidateBlocks(numHotBlocks)
     , currEHRegion(0)
 {
 }
@@ -5228,49 +5235,21 @@ void Compiler::ThreeOptLayout::AddNonFallthroughPreds(unsigned blockPos)
 // we're interested in reordering.
 // We skip reordering handler regions for now, as these are assumed to be cold.
 //
-void Compiler::ThreeOptLayout::Run()
+// Returns:
+//   True if any blocks were moved
+//
+bool Compiler::ThreeOptLayout::Run()
 {
-    // Since we moved all cold blocks to the end of the method already,
-    // we should have a span of hot blocks to consider reordering at the beginning of the method
-    // (unless none of the blocks are cold relative to the rest of the method,
-    // in which case we will reorder the whole main method body).
-    BasicBlock* const finalBlock = (compiler->fgFirstColdBlock != nullptr) ? compiler->fgFirstColdBlock->Prev()
-                                                                           : compiler->fgLastBBInMainFunction();
+    assert(numCandidateBlocks > 0);
 
-    // Reset cold section pointer, in case we decide to do hot/cold splitting later
-    compiler->fgFirstColdBlock = nullptr;
-
-    // We better have an end block for the hot section, and it better not be the start of a call-finally pair.
-    assert(finalBlock != nullptr);
-    assert(!finalBlock->isBBCallFinallyPair());
-
-    // For methods with fewer than three candidate blocks, we cannot partition anything
-    if (finalBlock->IsFirst() || finalBlock->Prev()->IsFirst())
+    // Initialize ordinals, and find EH region ends
+    for (unsigned i = 0; i < numCandidateBlocks; i++)
     {
-        JITDUMP("Not enough blocks to partition anything. Skipping 3-opt.\n");
-        return;
-    }
-
-    // Get an upper bound on the number of hot blocks without walking the whole block list.
-    // We will only consider blocks reachable via normal flow.
-    const unsigned numBlocksUpperBound = compiler->m_dfsTree->GetPostOrderCount();
-    assert(numBlocksUpperBound != 0);
-    blockOrder = new (compiler, CMK_BasicBlock) BasicBlock*[numBlocksUpperBound * 2];
-    tempOrder  = (blockOrder + numBlocksUpperBound);
-
-    // Initialize the current block order
-    for (BasicBlock* const block : compiler->Blocks(compiler->fgFirstBB, finalBlock))
-    {
-        if (!compiler->m_dfsTree->Contains(block))
-        {
-            continue;
-        }
-
-        assert(numCandidateBlocks < numBlocksUpperBound);
-        blockOrder[numCandidateBlocks] = tempOrder[numCandidateBlocks] = block;
+        BasicBlock* const block = blockOrder[i];
+        tempOrder[i]            = block;
 
         // Repurpose 'bbPostorderNum' for the block's ordinal
-        block->bbPostorderNum = numCandidateBlocks++;
+        block->bbPostorderNum = i;
 
         // While walking the span of blocks to reorder,
         // remember where each try region ends within this span.
@@ -5283,7 +5262,6 @@ void Compiler::ThreeOptLayout::Run()
     }
 
     // Reorder try regions first
-    bool modified = false;
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
         // If multiple region indices map to the same region,
@@ -5298,32 +5276,55 @@ void Compiler::ThreeOptLayout::Run()
         if ((tryBeg->bbPostorderNum < numCandidateBlocks) && (blockOrder[tryBeg->bbPostorderNum] == tryBeg))
         {
             JITDUMP("Running 3-opt for try region #%d\n", (currEHRegion - 1));
-            modified |= RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
+            RunThreeOptPass(tryBeg, HBtab->ebdTryLast);
         }
     }
 
     // Finally, reorder the main method body
     currEHRegion = 0;
     JITDUMP("Running 3-opt for main method body\n");
-    modified |= RunThreeOptPass(compiler->fgFirstBB, blockOrder[numCandidateBlocks - 1]);
+    RunThreeOptPass(blockOrder[0], blockOrder[numCandidateBlocks - 1]);
 
-    if (modified)
+    bool modified = false;
+    for (unsigned i = 1; i < numCandidateBlocks; i++)
     {
-        for (unsigned i = 1; i < numCandidateBlocks; i++)
-        {
-            BasicBlock* const block = blockOrder[i - 1];
-            BasicBlock* const next  = blockOrder[i];
+        BasicBlock* const block = blockOrder[i - 1];
+        BasicBlock* const next  = blockOrder[i];
 
-            // Only reorder within EH regions to maintain contiguity.
-            // TODO: Allow moving blocks in different regions when 'next' is the region entry.
-            // This would allow us to move entire regions up/down because of the contiguity requirement.
-            if (!block->NextIs(next) && BasicBlock::sameEHRegion(block, next))
-            {
-                compiler->fgUnlinkBlock(next);
-                compiler->fgInsertBBafter(block, next);
-            }
+        if (block->NextIs(next))
+        {
+            continue;
+        }
+
+        // Only reorder within EH regions to maintain contiguity.
+        if (!BasicBlock::sameEHRegion(block, next))
+        {
+            continue;
+        }
+
+        // Don't break up call-finally pairs
+        if (block->isBBCallFinallyPair() || next->isBBCallFinallyPairTail())
+        {
+            continue;
+        }
+
+        modified = true;
+
+        // Move call-finally pairs in tandem
+        if (next->isBBCallFinallyPair())
+        {
+            BasicBlock* const callFinallyTail = next->Next();
+            compiler->fgUnlinkRange(next, callFinallyTail);
+            compiler->fgMoveBlocksAfter(next, callFinallyTail, block);
+        }
+        else
+        {
+            compiler->fgUnlinkBlock(next);
+            compiler->fgInsertBBafter(block, next);
         }
     }
+
+    return modified;
 }
 
 //-----------------------------------------------------------------------------
@@ -5535,10 +5536,7 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
 //   startBlock - The first block of the range to reorder
 //   endBlock - The last block (inclusive) of the range to reorder
 //
-// Returns:
-//   True if we reordered anything, false otherwise
-//
-bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
+void Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock)
 {
     assert(startBlock != nullptr);
     assert(endBlock != nullptr);
@@ -5551,7 +5549,7 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     if (numBlocks < 3)
     {
         JITDUMP("Not enough blocks to partition anything. Skipping reordering.\n");
-        return false;
+        return;
     }
 
     JITDUMP("Initial layout cost: %f\n", GetLayoutCost(startPos, endPos));
@@ -5567,18 +5565,19 @@ bool Compiler::ThreeOptLayout::RunThreeOptPass(BasicBlock* startBlock, BasicBloc
     {
         JITDUMP("No changes made.\n");
     }
-
-    return modified;
 }
 
 //-----------------------------------------------------------------------------
-// fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
+// fgSearchImprovedLayout: Try to improve upon a RPO-based layout with the 3-opt method:
 //   - Identify a range of hot blocks to reorder within
 //   - Partition this set into three segments: S1 - S2 - S3
 //   - Evaluate cost of swapped layout: S1 - S3 - S2
 //   - If the cost improves, keep this layout
 //
-void Compiler::fgSearchImprovedLayout()
+// Returns:
+//   Suitable phase status
+//
+PhaseStatus Compiler::fgSearchImprovedLayout()
 {
 #ifdef DEBUG
     if (verbose)
@@ -5591,8 +5590,41 @@ void Compiler::fgSearchImprovedLayout()
     }
 #endif // DEBUG
 
-    ThreeOptLayout layoutRunner(this);
-    layoutRunner.Run();
+    // Before running 3-opt, compute a loop-aware RPO to get a sensible starting layout.
+    m_dfsTree                        = fgComputeDfs</* useProfile */ true>();
+    m_loops                          = FlowGraphNaturalLoops::Find(m_dfsTree);
+    BasicBlock** const initialLayout = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
+
+    // When walking the RPO-based layout, only add hot blocks to the initial layout.
+    // We don't want to waste time running 3-opt on cold blocks.
+    unsigned numHotBlocks  = 0;
+    auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
+        if (!block->isBBWeightCold(this))
+        {
+            initialLayout[numHotBlocks++] = block;
+        }
+    };
+
+    fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
+    bool modified = false;
+
+    if (numHotBlocks > 0)
+    {
+        ThreeOptLayout layoutRunner(this, initialLayout, numHotBlocks);
+        modified = layoutRunner.Run();
+
+        if (compHndBBtabCount > 0)
+        {
+            fgFindEHRegionEnds();
+        }
+    }
+    else
+    {
+        JITDUMP("No hot blocks found. Skipping block reordering.\n");
+    }
+
+    fgInvalidateDfsTree();
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
