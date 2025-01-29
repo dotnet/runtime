@@ -12,7 +12,7 @@ extends:
   parameters:
 
     stages:
-    - ${{ if or(and(eq(variables['Build.Reason'], 'PullRequest'), eq(true, false)), in(variables['Build.DefinitionName'], 'runtime-ioslike')) }}:
+    - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true)) }}:
       - stage: Build
         jobs:
         - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
