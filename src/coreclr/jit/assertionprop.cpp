@@ -4522,16 +4522,16 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     }
 
     if (!optLocalAssertionProp && op2->IsIntegralConst(0) && varTypeIsGC(op1) && op1->OperIs(GT_LCL_VAR) &&
-        newTree->OperIs(GT_EQ, GT_NE))
+        newTree->OperIs(GT_EQ, GT_NE) && op1->AsLclVarCommon()->HasSsaName())
     {
         unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
         unsigned ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
         LclSsaVarDsc*        ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
         GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
-        if (node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
+        if (node != nullptr && node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
         {
-            if (optAssertionPropPhiDefNotNull(ssaDef->GetBlock(), ssaDef->GetDefNode()->AsPhi()))
+            if (optAssertionPropPhiDefNotNull(ssaDef->GetBlock(), node->Data()->AsPhi()))
             {
                 newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
                 newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
