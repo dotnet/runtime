@@ -16,8 +16,8 @@ jobs:
     steps:
     - name: Check 'NO-MERGE' label
       run: |
-        echo "Merging permission is disabled when the `NO-MERGE` label is applied."
-        if [ "${{ contains(github.event.pull_request.labels.*.name, 'NO-MERGE') }}" = "true" ]; then
+        echo "Merging permission is disabled when the 'NO-MERGE' label is applied."
+        if [ "${{ contains(github.event.pull_request.labels.*.name, 'NO-MERGE') }}" = "false" ]; then
           exit 0
         else
           echo "::error:: The 'NO-MERGE' label was applied to the PR. Merging is disabled."
