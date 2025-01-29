@@ -144,8 +144,8 @@ namespace System
 
         public static bool IsLinqSpeedOptimized => !IsLinqSizeOptimized;
         public static bool IsLinqSizeOptimized => s_linqIsSizeOptimized.Value;
-        private static readonly Lazy<bool> s_linqIsSizeOptimized = new Lazy<bool>(IsLinqSizeOptimized);
-        private static bool IsLinqSizeOptimized()
+        private static readonly Lazy<bool> s_linqIsSizeOptimized = new Lazy<bool>(ComputeIsLinqSizeOptimized);
+        private static bool ComputeIsLinqSizeOptimized()
         {
 #if NET
             return (bool)typeof(Enumerable).GetMethod("get_IsSizeOptimized", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object>());
