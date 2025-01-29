@@ -4,8 +4,6 @@
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios15.0-macabi" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=x86_64-ios" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios15.0-macabi" />
-    <MonoAOTCompilerDefaultAotArguments Include="static" />
-    <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
     <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
     <!--<MonoAOTCompilerDefaultAotArguments Include="direct-pinvoke" />--> <!-- TODO: enable direct-pinvokes (to get rid of -force_loads)-->
   </ItemGroup>
@@ -15,12 +13,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'maccatalyst'">
     <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'android'">
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-linux-gnueabi" />
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mtriple=aarch64-linux-android" />
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i686-linux-android" />
-    <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64'" Include="mtriple=x86_64-linux-android" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
     <!-- Default trampolines run out for libraries tests -->
     <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
@@ -28,7 +20,9 @@
     <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
     <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
     <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=21000" />
+    <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=31000" />
+    <MonoAOTCompilerDefaultAotArguments Include="static" />
+    <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <MonoAOTCompilerDefaultAotArguments Include="no-opt" />
@@ -36,4 +30,14 @@
     <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
     <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
   </ItemGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'android'">
+    <_Triple Condition="'$(TargetArchitecture)' == 'arm'">armv7-linux-gnueabi</_Triple>
+    <_Triple Condition="'$(TargetArchitecture)' == 'arm64'">aarch64-linux-android</_Triple>
+    <_Triple Condition="'$(TargetArchitecture)' == 'x86'">i686-linux-android</_Triple>
+    <_Triple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-linux-android</_Triple>
+    <_AsOptions>-target $(_Triple) -c -x assembler</_AsOptions>
+    <_LdName>clang</_LdName>
+    <_LdOptions>-fuse-ld=lld</_LdOptions>
+    <_AsName>clang</_AsName>
+  </PropertyGroup>
 </Project>
