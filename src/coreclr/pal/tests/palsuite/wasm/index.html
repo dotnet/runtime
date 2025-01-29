@@ -11,10 +11,15 @@
     <script>
         const disabledTestNamePatterns = [
             "debug_api/", // blocks main thread; seems to depend on spawning child processes.
-            "file_io/GetFileAttributesExW", // blocks main thread
+            "file_io/GetFileAttributesEx", // blocks main thread
+            "file_io/GetSystemTime", // blocks main thread
+            "file_io/GetTempFileName./test2/paltest_gettempfilename._test2", // infinite loop
+            "file_io/WriteFile/test5/paltest_writefile_test5", // infinite loop
+            "filemapping_memmgt/MapViewOfFile/test1/paltest_mapviewoffile_test1", // infinite loop and then chrome crashes
+            "miscellaneous/GetTickCount", // blocks main thread
         ];
 
-        const nextRunDelay = 100, reloadDelay = 100;
+        const nextRunDelay = 50, reloadDelay = 50;
         nextRunTimeout = -1;
         nextTestName = location.hash.trim().substring(1);
         capturingTestCaseNames = nextTestName.length === 0;
