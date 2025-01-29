@@ -12,7 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="StressLogAnalyzer.Tests" />
     <ProjectReference Include="$(RepoRoot)/src/native/managed/cdacreader/Microsoft.Diagnostics.DataContractReader/Microsoft.Diagnostics.DataContractReader.csproj" />
     <ProjectReference Include="$(RepoRoot)/src/native/managed/cdacreader/Microsoft.Diagnostics.DataContractReader.Contracts/Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
   </ItemGroup>

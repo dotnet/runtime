@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Moq;
 using Xunit;
 
-namespace StressLogAnalyzer.Tests;
+namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class PrintfStressMessageFormatterTests
 {
