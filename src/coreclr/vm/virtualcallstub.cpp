@@ -98,6 +98,15 @@ extern size_t g_dispatch_cache_chain_success_counter;
 
 SPTR_IMPL_INIT(VirtualCallStubManagerManager, VirtualCallStubManagerManager, g_pManager, NULL);
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+struct CachedIndirectionCellBlockListNode
+{
+    CachedIndirectionCellBlockListNode *m_pNext;
+    TADDR m_pFiller; // Used to ensure that the Indirection Cells are double pointer aligned
+    InterfaceDispatchCell m_rgIndCells[0];
+};
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
+
 #ifndef DACCESS_COMPILE
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
@@ -793,6 +802,26 @@ VirtualCallStubManager::~VirtualCallStubManager()
     }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+    if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())
+    {
+        CachedIndirectionCellBlockListNode * pBlockNode = m_indirectionBlocks;
+        while (pBlockNode != NULL)
+        {
+            for (int i = 0; i < INDCELLS_PER_BLOCK; i++)
+            {
+                InterfaceDispatchCacheHeader* cache = pBlockNode->m_rgIndCells[i].GetCache();
+                if (cache != NULL)
+                {
+                    InterfaceDispatch_DiscardCacheHeader(cache);
+                }
+            }
+
+            pBlockNode = pBlockNode->m_pNext;
+        }
+    }
+#endif
+
     if (indcell_heap)     { delete indcell_heap;     indcell_heap     = NULL;}
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     if (lookup_heap)      { delete lookup_heap;      lookup_heap      = NULL;}
@@ -1243,7 +1272,26 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
         INTERFACE_DISPATCH_CACHED_OR_VSD(alignment = sizeof(TADDR) * 2, alignment = sizeof(TADDR));
 
         // Free list is empty, allocate a block of indcells from indcell_heap and insert it into the free list.
+        size_t cellsAllocationSize = cellsPerBlock * sizeOfIndCell;
+        size_t allocationSize = cellsAllocationSize;
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+        if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())
+        {
+            allocationSize += sizeof(CachedIndirectionCellBlockListNode);
+        }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
         BYTE ** pBlock = (BYTE **) (void *) indcell_heap->AllocAlignedMem(cellsPerBlock * sizeOfIndCell, alignment);
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+        if (m_loaderAllocator->IsCollectible() && UseCachedInterfaceDispatch())
+        {
+            CachedIndirectionCellBlockListNode * pBlockNode = (CachedIndirectionCellBlockListNode *)pBlock;
+            pBlockNode->m_pNext = m_indirectionBlocks;
+            m_indirectionBlocks = pBlockNode;
+            pBlock = (BYTE **)(&pBlockNode->m_rgIndCells[0]);
+        }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
         // return the first cell in the block and add the rest to the free list
         ret = (BYTE *)pBlock;

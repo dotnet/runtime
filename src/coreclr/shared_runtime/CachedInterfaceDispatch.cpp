@@ -314,7 +314,7 @@ static uintptr_t AllocateCache(uint32_t cCacheEntries, InterfaceDispatchCache * 
 
 // Discards a cache by adding it to a list of caches that may still be in use but will be made available for
 // re-allocation at the next GC.
-static void DiscardCache(InterfaceDispatchCache * pCache)
+void InterfaceDispatch_DiscardCache(InterfaceDispatchCache * pCache)
 {
     CID_COUNTER_INC(CacheDiscards);
 
@@ -479,7 +479,7 @@ PCODE InterfaceDispatch_UpdateDispatchCellCache(InterfaceDispatchCell * pCell, P
     // value or the cache we just allocated (another thread performed an update first).
     InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, newCacheValue);
     if (pDiscardedCache)
-        DiscardCache(pDiscardedCache);
+        InterfaceDispatch_DiscardCache(pDiscardedCache);
 
     return (PCODE)pTargetCode;
 }

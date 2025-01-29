@@ -49,6 +49,11 @@ struct InterfaceDispatchCache
 bool InterfaceDispatch_Initialize();
 PCODE InterfaceDispatch_UpdateDispatchCellCache(InterfaceDispatchCell * pCell, PCODE pTargetCode, MethodTable* pInstanceType, DispatchCellInfo *pNewCellInfo);
 void InterfaceDispatch_ReclaimUnusedInterfaceDispatchCaches();
+void InterfaceDispatch_DiscardCache(InterfaceDispatchCache * pCache);
+inline void InterfaceDispatch_DiscardCacheHeader(InterfaceDispatchCacheHeader * pCache)
+{
+    return InterfaceDispatch_DiscardCache((InterfaceDispatchCache*)pCache);
+}
 
 inline PCODE InterfaceDispatch_SearchDispatchCellCache(InterfaceDispatchCell * pCell, MethodTable* pInstanceType)
 {
