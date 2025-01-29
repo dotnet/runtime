@@ -10,7 +10,7 @@ using System.Numerics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class StressLogFactory : IContractFactory<IStressLog>
+public sealed class StressLogFactory : IContractFactory<IStressLog>
 {
     public IStressLog CreateContract(Target target, int version)
     {
