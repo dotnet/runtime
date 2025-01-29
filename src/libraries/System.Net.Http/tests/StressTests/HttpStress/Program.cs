@@ -42,7 +42,7 @@ namespace HttpStress
 
         private static bool TryParseCli(string[] args, [NotNullWhen(true)] out Configuration? config)
         {
-            var cmd = new RootCommand();
+            RootCommand cmd = new RootCommand();
             cmd.AddOption(new Option("-n", "Max number of requests to make concurrently.") { Argument = new Argument<int>("numWorkers", Environment.ProcessorCount) });
             cmd.AddOption(new Option("-serverUri", "Stress suite server uri.") { Argument = new Argument<string>("serverUri", "https://localhost:5001") });
             cmd.AddOption(new Option("-runMode", "Stress suite execution mode. Defaults to Both.") { Argument = new Argument<RunMode>("runMode", RunMode.both) });
