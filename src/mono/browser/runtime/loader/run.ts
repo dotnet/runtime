@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 
 import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback } from "../types";
-import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal } from "../types/internal";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagModuleExportsInternal } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
@@ -434,13 +434,15 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
 let jsModuleNativePromise: Promise<NativeModuleExportsInternal>;
+let jsModuleDiagPromise: Promise<DiagModuleExportsInternal>;
 
 // in the future we can use feature detection to load different flavors
 function importModules () {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
+    const jsModuleDiagAsset = resolve_single_asset_path("js-module-diag");
     if (jsModuleRuntimePromise && jsModuleNativePromise) {
-        return [jsModuleRuntimePromise, jsModuleNativePromise];
+        return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagPromise];
     }
 
     if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
@@ -456,14 +458,29 @@ function importModules () {
         mono_log_debug(() => `Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
-    return [jsModuleRuntimePromise, jsModuleNativePromise];
+
+    if (jsModuleDiagAsset) {
+        if (typeof jsModuleDiagAsset.moduleExports === "object") {
+            jsModuleDiagPromise = jsModuleDiagAsset.moduleExports;
+        } else {
+            mono_log_debug(() => `Attempting to import '${jsModuleDiagAsset.resolvedUrl}' for ${jsModuleDiagAsset.name}`);
+            jsModuleDiagPromise = import(/*! webpackIgnore: true */jsModuleDiagAsset.resolvedUrl!);
+        }
+    }
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagPromise];
 }
 
-async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagModuleExportsInternal?]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
+    const diagModule = es6Modules[2];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
+    if (diagModule) {
+        diagModule.setRuntimeGlobals(globalObjectsRoot);
+    }
+
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 

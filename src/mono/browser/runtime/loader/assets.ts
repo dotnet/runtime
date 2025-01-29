@@ -32,6 +32,7 @@ const jsRuntimeModulesAssetTypes: {
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
+    "js-module-diag": true,
 };
 
 const jsModulesAssetTypes: {
@@ -128,7 +129,7 @@ function get_single_asset (behavior: SingleAssetBehaviors): AssetEntryInternal {
 
 export function resolve_single_asset_path (behavior: SingleAssetBehaviors): AssetEntryInternal {
     const asset = get_single_asset(behavior);
-    if (!asset.resolvedUrl) {
+    if (asset && !asset.resolvedUrl) {
         asset.resolvedUrl = loaderHelpers.locateFile(asset.name);
 
         if (jsRuntimeModulesAssetTypes[asset.behavior]) {
@@ -303,6 +304,9 @@ export function prepareAssets () {
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
+        if (resources.jsModuleDiag) {
+            convert_single_asset(modulesAssets, resources.jsModuleDiag, "js-module-diag");
+        }
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
@@ -828,6 +832,7 @@ export async function streamingCompileWasm () {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
     }
 }
+
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");
