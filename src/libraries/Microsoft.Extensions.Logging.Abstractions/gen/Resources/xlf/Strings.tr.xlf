@@ -4,7 +4,7 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="needs-review-translation">'{0}' bağımsız değişkenine günlük iletisinden başvurulmuyor</target>
+        <target state="translated">'{0}' bağımsız değişkenine günlük iletisinden başvurulmuyor</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <target state="translated">'{0}' bağımsız değişkeni, desteklenmeyen dış parametre değiştiriciyi kullanıyor</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <target state="translated">Bağımsız değişken, desteklenmeyen dış parametre değiştiriciyi kullanıyor</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -69,22 +69,22 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Günlüğe kaydetme kaynak oluşturucusu C# {0} sürümünde kullanılamıyor. Lütfen dil sürümü {1} veya üstü bir sürümü kullanın.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">C# dil sürümü kaynak oluşturucu tarafından desteklenmiyor.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <target state="translated">'{0}' günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="new">Logging method contains malformed format strings</target>
+        <target state="translated">Günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
         <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
+        <target state="translated">'{0}' sınıfı, sınıf veya temel sınıf alanı tarafından gizlenen ve bu türün kullanımına engel olan Microsoft.Extensions.Logging.ILogger türünde birincil oluşturucu parametresine sahip</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
         <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
+        <target state="translated">Microsoft.Extensions.Logging.ILogger türündeki birincil oluşturucu parametresi bir alan tarafından gizleniyor</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
@@ -184,12 +184,12 @@
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
+        <target state="translated">Birden çok günlüğe kaydetme yöntemi {1} sınıfında {0} olay adını kullanıyor</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="new">Multiple logging methods should not use the same event name within a class</target>
+        <target state="translated">Birden çok günlüğe kaydetme yöntemi bir sınıf içinde aynı olay adını kullanmamalıdır</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

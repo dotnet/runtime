@@ -59,7 +59,7 @@ CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts
 CONFIG_INTEGER(JitCloneLoops, "JitCloneLoops", 1)         // If 0, don't clone. Otherwise clone loops for optimizations.
-CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 0) // If 0, don't clone loops containing EH regions
+CONFIG_INTEGER(JitCloneLoopsWithEH, "JitCloneLoopsWithEH", 1) // If 0, don't clone loops containing EH regions
 CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     // If 0, don't clone loops based on
                                                                               // invariant type/method address tests
 RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with no more
@@ -368,6 +368,11 @@ RELEASE_CONFIG_INTEGER(EnableMultiRegLocals, "EnableMultiRegLocals", 1)
 // Disables inlining of all methods
 RELEASE_CONFIG_INTEGER(JitNoInline, "JitNoInline", 0)
 
+#if defined(DEBUG)
+CONFIG_INTEGER(JitStressRex2Encoding, "JitStressRex2Encoding", 0) // Enable rex2 encoding for legacy instructions.
+CONFIG_INTEGER(JitBypassAPXCheck, "JitBypassAPXCheck", 0)         // Bypass APX CPUID check.
+#endif
+
 // clang-format off
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -663,6 +668,8 @@ CONFIG_STRING(JitObjectStackAllocationRange, "JitObjectStackAllocationRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocation, "JitObjectStackAllocation", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationRefClass, "JitObjectStackAllocationRefClass", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationBoxedValueClass, "JitObjectStackAllocationBoxedValueClass", 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 

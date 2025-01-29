@@ -480,7 +480,7 @@ public class MarshalSizeOf1
         try
         {
             Object obj = new Object();
-            int size = Marshal.SizeOf(obj);
+            int size = Marshal.SizeOf<object>(obj);
 
             TestLibrary.TestFramework.LogError("103.1", "ArgumentException is not thrown when the value is a reference type");
             retVal = false;
