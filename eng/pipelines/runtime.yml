@@ -1745,17 +1745,13 @@ extends:
       #
       # Run "runtime-extra-platforms-ioslike.yml" on PRs when Mono AOT LLVM changes
       #
-      # - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
-      #   parameters:
-      #     condition: >-
-      #       and(
-      #         eq(false, true),
-      #         eq(variables['Build.Reason'], 'PullRequest'))
-        # variables:
-        #   - name: triggeredAutomatically
-        #     value: true
-        #   - name: monoAotLlvmChange
-        #     value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+        parameters:
+          variables:
+          - name: triggeredAutomatically
+            value: true
+          - name: monoAotLlvmcontainsChange
+            value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
 
       # #
       # # Run "runtime-llvm.yml" on PRs when Mono AOT LLVM changes

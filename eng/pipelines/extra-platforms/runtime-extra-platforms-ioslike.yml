@@ -7,7 +7,6 @@ parameters:
   isExtraPlatformsBuild: false
   isiOSLikeOnlyBuild: false
   isRollingBuild: false
-  # triggeredAutomatically: false
   #     - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['monoAotLlvmContainsChange'], true), eq(variables['triggeredAutomatically'], true)) }}
 jobs:
 
@@ -51,6 +50,11 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      condition: >-
+        or(
+          eq(variables['triggeredAutomatically'], false),
+          and(eq(variables['triggeredAutomatically'], true), eq(variables['monoAotLlvmcontainsChange'], true))
+        )
 
 #
 # iOS/tvOS devices
