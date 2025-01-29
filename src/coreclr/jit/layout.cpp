@@ -15,8 +15,7 @@ class ClassLayoutTable
     // Each layout is assigned a number, starting with TYP_UNKNOWN + 1. This way one could use a single
     // unsigned value to represent the notion of type - values below TYP_UNKNOWN are var_types and values
     // above it are struct layouts.
-    static constexpr unsigned ZeroSizedBlockLayoutNum = TYP_UNKNOWN + 1;
-    static constexpr unsigned FirstLayoutNum          = TYP_UNKNOWN + 2;
+    static constexpr unsigned FirstLayoutNum = TYP_UNKNOWN + 1;
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
@@ -38,39 +37,27 @@ class ClassLayoutTable
     unsigned m_layoutCount;
     // The capacity of m_layoutLargeArray (when more than 3 layouts are stored).
     unsigned m_layoutLargeCapacity;
-    // We furthermore fast-path the 0-sized block layout which is used for
-    // block locals that may grow (e.g. the outgoing arg area in every non-x86
-    // compilation).
-    ClassLayout m_zeroSizedBlockLayout;
+
+    // Associated layout builder
+    ClassLayoutBuilder* m_layoutBuilder;
 
 public:
-    ClassLayoutTable()
+    ClassLayoutTable(ClassLayoutBuilder* builder)
         : m_layoutCount(0)
         , m_layoutLargeCapacity(0)
-        , m_zeroSizedBlockLayout(0)
+        , m_layoutBuilder(builder)
     {
     }
 
     // Get a number that uniquely identifies the specified layout.
     unsigned GetLayoutNum(ClassLayout* layout) const
     {
-        if (layout == &m_zeroSizedBlockLayout)
-        {
-            return ZeroSizedBlockLayoutNum;
-        }
-
         return GetLayoutIndex(layout) + FirstLayoutNum;
     }
 
     // Get the layout that corresponds to the specified identifier number.
     ClassLayout* GetLayoutByNum(unsigned num) const
     {
-        if (num == ZeroSizedBlockLayoutNum)
-        {
-            // Fine to cast away const as ClassLayout is immutable
-            return const_cast<ClassLayout*>(&m_zeroSizedBlockLayout);
-        }
-
         assert(num >= FirstLayoutNum);
         return GetLayoutByIndex(num - FirstLayoutNum);
     }
@@ -78,22 +65,12 @@ public:
     // Get the layout having the specified size but no class handle.
     ClassLayout* GetBlkLayout(Compiler* compiler, unsigned blockSize)
     {
-        if (blockSize == 0)
-        {
-            return &m_zeroSizedBlockLayout;
-        }
-
         return GetLayoutByIndex(GetBlkLayoutIndex(compiler, blockSize));
     }
 
     // Get a number that uniquely identifies a layout having the specified size but no class handle.
     unsigned GetBlkLayoutNum(Compiler* compiler, unsigned blockSize)
     {
-        if (blockSize == 0)
-        {
-            return ZeroSizedBlockLayoutNum;
-        }
-
         return GetBlkLayoutIndex(compiler, blockSize) + FirstLayoutNum;
     }
 
@@ -132,7 +109,6 @@ private:
     unsigned GetLayoutIndex(ClassLayout* layout) const
     {
         assert(layout != nullptr);
-        assert(layout != &m_zeroSizedBlockLayout);
 
         if (HasSmallCapacity())
         {
@@ -159,9 +135,6 @@ private:
 
     unsigned GetBlkLayoutIndex(Compiler* compiler, unsigned blockSize)
     {
-        // The 0-sized block layout has its own fast path.
-        assert(blockSize != 0);
-
         if (HasSmallCapacity())
         {
             for (unsigned i = 0; i < m_layoutCount; i++)
@@ -186,7 +159,7 @@ private:
 
     ClassLayout* CreateBlkLayout(Compiler* compiler, unsigned blockSize)
     {
-        return new (compiler, CMK_ClassLayout) ClassLayout(blockSize);
+        return m_layoutBuilder->NewBlock(blockSize);
     }
 
     unsigned AddBlkLayout(Compiler* compiler, ClassLayout* layout)
@@ -230,7 +203,7 @@ private:
 
     ClassLayout* CreateObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
-        return ClassLayout::Create(compiler, classHandle);
+        return m_layoutBuilder->New(classHandle);
     }
 
     unsigned AddObjLayout(Compiler* compiler, ClassLayout* layout)
@@ -291,99 +264,91 @@ private:
     }
 };
 
-ClassLayoutTable* Compiler::typCreateClassLayoutTable()
+//
+// --------------------- Compiler ----------------
+//
+
+ClassLayoutBuilder* Compiler::typGetClassLayoutBuilder()
 {
-    assert(m_classLayoutTable == nullptr);
+    Compiler* const rootCompiler = impInlineRoot();
 
-    if (compIsForInlining())
+    if (rootCompiler->m_classLayoutBuilder == nullptr)
     {
-        m_classLayoutTable = impInlineInfo->InlinerCompiler->m_classLayoutTable;
-
-        if (m_classLayoutTable == nullptr)
-        {
-            m_classLayoutTable = new (this, CMK_ClassLayout) ClassLayoutTable();
-
-            impInlineInfo->InlinerCompiler->m_classLayoutTable = m_classLayoutTable;
-        }
-    }
-    else
-    {
-        m_classLayoutTable = new (this, CMK_ClassLayout) ClassLayoutTable();
+        rootCompiler->m_classLayoutBuilder = new (this, CMK_ClassLayout) ClassLayoutBuilder(rootCompiler);
     }
 
-    return m_classLayoutTable;
-}
-
-ClassLayoutTable* Compiler::typGetClassLayoutTable()
-{
-    if (m_classLayoutTable == nullptr)
-    {
-        return typCreateClassLayoutTable();
-    }
-
-    return m_classLayoutTable;
-}
-
-ClassLayout* Compiler::typGetLayoutByNum(unsigned layoutNum)
-{
-    return typGetClassLayoutTable()->GetLayoutByNum(layoutNum);
-}
-
-unsigned Compiler::typGetLayoutNum(ClassLayout* layout)
-{
-    return typGetClassLayoutTable()->GetLayoutNum(layout);
-}
-
-unsigned Compiler::typGetBlkLayoutNum(unsigned blockSize)
-{
-    return typGetClassLayoutTable()->GetBlkLayoutNum(this, blockSize);
+    return rootCompiler->m_classLayoutBuilder;
 }
 
 ClassLayout* Compiler::typGetBlkLayout(unsigned blockSize)
 {
-    return typGetClassLayoutTable()->GetBlkLayout(this, blockSize);
+    return typGetClassLayoutBuilder()->CreateBlock(blockSize);
 }
 
-unsigned Compiler::typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle)
+ClassLayout* Compiler::typGetBoxLayout(ClassLayout* payloadLayout)
 {
-    return typGetClassLayoutTable()->GetObjLayoutNum(this, classHandle);
+    return typGetClassLayoutBuilder()->CreateBox(payloadLayout);
 }
 
 ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
 {
-    return typGetClassLayoutTable()->GetObjLayout(this, classHandle);
+    return typGetClassLayoutBuilder()->Create(classHandle);
 }
 
-ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
+ClassLayout* Compiler::typGetArrayLayout(ClassLayout* elementLayout, unsigned length)
 {
-    bool     isValueClass = compiler->eeIsValueClass(classHandle);
+    return typGetClassLayoutBuilder()->CreateArray(elementLayout, length);
+}
+
+//
+// --------------------- Class Layout Builder ----------------
+//
+
+ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler)
+    : m_compiler(compiler)
+    , m_layoutTable(nullptr)
+{
+    assert(!m_compiler->compIsForInlining());
+
+    m_layoutTable = new (m_compiler, CMK_ClassLayout) ClassLayoutTable(this);
+}
+
+ClassLayout* ClassLayoutBuilder::Create(CORINFO_CLASS_HANDLE classHandle)
+{
+    return m_layoutTable->GetObjLayout(m_compiler, classHandle);
+}
+
+ClassLayout* ClassLayoutBuilder::New(CORINFO_CLASS_HANDLE classHandle)
+{
+    bool     isValueClass = m_compiler->eeIsValueClass(classHandle);
     unsigned size;
 
     if (isValueClass)
     {
-        size = compiler->info.compCompHnd->getClassSize(classHandle);
+        size = m_compiler->info.compCompHnd->getClassSize(classHandle);
     }
     else
     {
-        size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
+        size = m_compiler->info.compCompHnd->getHeapClassSize(classHandle);
     }
 
-    var_types type = compiler->impNormStructType(classHandle);
+    var_types type = m_compiler->impNormStructType(classHandle);
 
-    INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
-    INDEBUG(const char* shortClassName = compiler->eeGetShortClassName(classHandle);)
+    INDEBUG(const char* className = m_compiler->eeGetClassName(classHandle);)
+    INDEBUG(const char* shortClassName = m_compiler->eeGetShortClassName(classHandle);)
 
-    ClassLayout* layout = new (compiler, CMK_ClassLayout)
+    ClassLayout* layout = new (m_compiler, CMK_ClassLayout)
         ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
-    layout->InitializeGCPtrs(compiler);
+
+    layout->InitializeGCPtrs(m_compiler);
+    layout->Finalize();
 
     return layout;
 }
 
 void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 {
-    assert(!m_gcPtrsInitialized);
-    assert(!IsBlockLayout());
+    assert(!m_finalized);
 
     if (m_size < TARGET_POINTER_SIZE)
     {
@@ -416,9 +381,54 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 
         m_gcPtrCount = gcPtrCount;
     }
-
-    INDEBUG(m_gcPtrsInitialized = true;)
 }
+
+ClassLayout* ClassLayoutBuilder::CreateBlock(unsigned blockSize)
+{
+    return m_layoutTable->GetBlkLayout(m_compiler, blockSize);
+}
+
+ClassLayout* ClassLayoutBuilder::NewBlock(unsigned blockSize)
+{
+    ClassLayout* layout = new (m_compiler, CMK_ClassLayout) ClassLayout(blockSize);
+    layout->Finalize();
+    return layout;
+}
+
+ClassLayout* ClassLayoutBuilder::CreateBox(ClassLayout* payloadLayout)
+{
+    return nullptr;
+}
+
+ClassLayout* ClassLayoutBuilder::CreateArray(ClassLayout* elementLayout, unsigned elementCount)
+{
+    return nullptr;
+}
+
+ClassLayout* ClassLayoutBuilder::CreateCustom(unsigned length)
+{
+    return nullptr;
+}
+
+void ClassLayoutBuilder::AddRepeatingElements(ClassLayout* customLayout,
+                                              unsigned     offset,
+                                              ClassLayout* elementLayout,
+                                              unsigned     count)
+{
+}
+
+void ClassLayoutBuilder::AddGCFields(ClassLayout* customLayout, unsigned offset, unsigned count)
+{
+}
+
+void ClassLayoutBuilder::Finalize(ClassLayout* customLayout)
+{
+    customLayout->Finalize();
+}
+
+//
+// --------------------- Class Layout ----------------
+//
 
 //------------------------------------------------------------------------
 // IsStackOnly: does the layout represent a block that can never be on the heap?
@@ -496,6 +506,8 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
 
     CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
     CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
+
+    // validate elemcount
 
     if ((clsHnd1 != NO_CLASS_HANDLE) && (clsHnd1 == clsHnd2))
     {

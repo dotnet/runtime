@@ -6,26 +6,65 @@
 
 #include "jit.h"
 
+class ClassLayout;
+class ClassLayoutTable;
+
+// Builder for class layouts
+//
+class ClassLayoutBuilder
+{
+public:
+
+    // Create a class layout builder.
+    //
+    ClassLayoutBuilder(Compiler* compiler);
+
+    // Create a class layout for a ref class or value class
+    //
+    ClassLayout* Create(CORINFO_CLASS_HANDLE classHandle);
+
+    // Create a class layout for a boxed value class
+    //
+    ClassLayout* CreateBox(ClassLayout* payloadLayout);
+
+    // Create a class layout for a block of non-GC data
+    //
+    ClassLayout* CreateBlock(unsigned blockSize);
+
+    // Create a class layout for an array
+    //
+    ClassLayout* CreateArray(ClassLayout* elememtLayout, unsigned elementCount);
+
+    // Create a custom layout with GC fields.
+    // Use the Add methods to add gc fields, then Finalize when done.
+    //
+    ClassLayout* CreateCustom(unsigned length);
+
+    void AddRepeatingElements(ClassLayout* customLayout, unsigned offset, ClassLayout* elementLayout, unsigned count);
+    void AddGCFields(ClassLayout* customLayout, unsigned offset, unsigned count);
+    void Finalize(ClassLayout* customLayout);
+
+private:
+
+    friend class ClassLayoutTable;
+
+    ClassLayout* New(CORINFO_CLASS_HANDLE classHandle);
+    ClassLayout* NewBlock(unsigned blockSize);
+
+    Compiler*         m_compiler;
+    ClassLayoutTable* m_layoutTable;
+};
+
 // Encapsulates layout information about a class (typically a value class but this can also be
 // be used for reference classes when they are stack allocated). The class handle is optional,
-// allowing the creation of "block" layout objects having a specific size but lacking any other
-// layout information. The JIT uses such layout objects in cases where a class handle is not
-// available (cpblk/initblk operations) or not necessary (classes that do not contain GC pointers).
+// allowing the creation of custom layout objects having a specific size where the offsets of
+// GC fields can be specified during creation.
 class ClassLayout
 {
-    // Class handle or NO_CLASS_HANDLE for "block" layouts.
+private:
+
+    // Class handle or NO_CLASS_HANDLE for custom layouts.
     const CORINFO_CLASS_HANDLE m_classHandle;
-
-    // Size of the layout in bytes (as reported by ICorJitInfo::getClassSize/getHeapClassSize
-    // for non "block" layouts). For "block" layouts this may be 0 due to 0 being a valid size
-    // for cpblk/initblk.
-    const unsigned m_size;
-
-    const unsigned m_isValueClass : 1;
-    INDEBUG(unsigned m_gcPtrsInitialized : 1;)
-    // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
-    // can fit in at most 30 bits.
-    unsigned m_gcPtrCount : 30;
 
     // Array of CorInfoGCType (as BYTE) that describes the GC layout of the class.
     // For small classes the array is stored inline, avoiding an extra allocation
@@ -36,8 +75,23 @@ class ClassLayout
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
 
+    // Size of the layout in bytes (as reported by ICorJitInfo::getClassSize/getHeapClassSize
+    // for non-custom layouts). For custom layouts this may be 0 due to 0 being a valid size
+    // for cpblk/initblk.
+    const unsigned m_size;
+
+    // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
+    // can fit in at most 30 bits.
+    unsigned m_gcPtrCount : 30;
+
     // The normalized type to use in IR for block nodes with this layout.
     const var_types m_type;
+
+    // True if offset 0 is not a method table pointer
+    const unsigned m_isValueClass : 1;
+
+    // Once a layout is finalized it can not longer be altered
+    INDEBUG(unsigned m_finalized : 1);
 
     // Class name as reported by ICorJitInfo::getClassName
     INDEBUG(const char* m_className;)
@@ -45,42 +99,36 @@ class ClassLayout
     // Shortened class name as constructed by Compiler::eeGetShortClassName()
     INDEBUG(const char* m_shortClassName;)
 
-    // ClassLayout instances should only be obtained via ClassLayoutTable.
-    friend class ClassLayoutTable;
+    // ClassLayout instances can only be obtained via ClassLayoutBuilder
+    friend class ClassLayoutBuilder;
 
     ClassLayout(unsigned size)
         : m_classHandle(NO_CLASS_HANDLE)
+        , m_gcPtrs(nullptr)
         , m_size(size)
+        , m_gcPtrCount(0)
+        , m_type(TYP_STRUCT)
         , m_isValueClass(false)
 #ifdef DEBUG
-        , m_gcPtrsInitialized(true)
-#endif
-        , m_gcPtrCount(0)
-        , m_gcPtrs(nullptr)
-        , m_type(TYP_STRUCT)
-#ifdef DEBUG
+        , m_finalized(false)
         , m_className("block")
         , m_shortClassName("block")
 #endif
     {
     }
 
-    static ClassLayout* Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle);
-
     ClassLayout(CORINFO_CLASS_HANDLE classHandle,
                 bool                 isValueClass,
                 unsigned             size,
                 var_types type       DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
         : m_classHandle(classHandle)
+        , m_gcPtrs(nullptr)
         , m_size(size)
+        , m_gcPtrCount(0)
+        , m_type(type)
         , m_isValueClass(isValueClass)
 #ifdef DEBUG
-        , m_gcPtrsInitialized(false)
-#endif
-        , m_gcPtrCount(0)
-        , m_gcPtrs(nullptr)
-        , m_type(type)
-#ifdef DEBUG
+        , m_finalized(false)
         , m_className(className)
         , m_shortClassName(shortClassName)
 #endif
@@ -89,16 +137,26 @@ class ClassLayout
     }
 
     void InitializeGCPtrs(Compiler* compiler);
+    void Finalize()
+    {
+        INDEBUG(m_finalized = true);
+    }
 
 public:
+
     CORINFO_CLASS_HANDLE GetClassHandle() const
     {
         return m_classHandle;
     }
 
+    bool IsCustomLayout() const
+    {
+        return (m_classHandle == NO_CLASS_HANDLE);
+    }
+
     bool IsBlockLayout() const
     {
-        return m_classHandle == NO_CLASS_HANDLE;
+        return IsCustomLayout() && !HasGCPtr();
     }
 
 #ifdef DEBUG
@@ -134,7 +192,7 @@ public:
     // GetRegisterType: Determine register type for the layout.
     //
     // Return Value:
-    //    TYP_UNDEF if the layout is enregistrable, register type otherwise.
+    //    TYP_UNDEF if the layout is not enregistrable, register type otherwise.
     //
     var_types GetRegisterType() const
     {
@@ -173,14 +231,14 @@ public:
 
     unsigned GetGCPtrCount() const
     {
-        assert(m_gcPtrsInitialized);
+        assert(m_finalized);
 
         return m_gcPtrCount;
     }
 
     bool HasGCPtr() const
     {
-        assert(m_gcPtrsInitialized);
+        assert(m_finalized);
 
         return m_gcPtrCount != 0;
     }
@@ -224,7 +282,7 @@ public:
 private:
     const BYTE* GetGCPtrs() const
     {
-        assert(m_gcPtrsInitialized);
+        assert(m_finalized);
         assert(!IsBlockLayout());
 
         return (GetSlotCount() > sizeof(m_gcPtrsArray)) ? m_gcPtrs : m_gcPtrsArray;
@@ -232,7 +290,7 @@ private:
 
     CorInfoGCType GetGCPtr(unsigned slot) const
     {
-        assert(m_gcPtrsInitialized);
+        assert(m_finalized);
         assert(slot < GetSlotCount());
 
         if (m_gcPtrCount == 0)

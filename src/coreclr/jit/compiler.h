@@ -11041,24 +11041,18 @@ public:
 #endif // DEBUG
 
 private:
-    class ClassLayoutTable* m_classLayoutTable = nullptr;
-
-    class ClassLayoutTable* typCreateClassLayoutTable();
-    class ClassLayoutTable* typGetClassLayoutTable();
+    class ClassLayoutBuilder* m_classLayoutBuilder = nullptr;
+    class ClassLayoutBuilder* typGetClassLayoutBuilder();
 
 public:
-    // Get the layout having the specified layout number.
-    ClassLayout* typGetLayoutByNum(unsigned layoutNum);
-    // Get the layout number of the specified layout.
-    unsigned typGetLayoutNum(ClassLayout* layout);
     // Get the layout having the specified size but no class handle.
     ClassLayout* typGetBlkLayout(unsigned blockSize);
-    // Get the number of a layout having the specified size but no class handle.
-    unsigned typGetBlkLayoutNum(unsigned blockSize);
     // Get the layout for the specified class handle.
     ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
-    // Get the number of a layout for the specified class handle.
-    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+    // Get the layout for a boxed instance
+    ClassLayout* typGetBoxLayout(ClassLayout* payloadLayout);
+    // Get the layout for the specified array of known length
+    ClassLayout* typGetArrayLayout(ClassLayout* elementLayout, unsigned length);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
