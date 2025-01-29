@@ -176,19 +176,21 @@ public class Program
                     CoreCLR.Build(gConfig, bTargets, keepSymbols);
 
                 // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
-                NPath artifacts = Artifacts.ConsolidateArtifacts(gConfig);
-
-                NPath zipExe = new("7z");
-                if (zipTask != null)
-                {
-                    zipTask.Wait();
-                    zipExe = zipTask.Result;
-                    if (zipTask.Exception != null)
-                        throw zipTask.Exception;
-                }
-
                 if (context.ParseResult.GetValue(zipOption))
+                {
+                    NPath artifacts = Artifacts.ConsolidateArtifacts(gConfig);
+
+                    NPath zipExe = new("7z");
+                    if (zipTask != null)
+                    {
+                        zipTask.Wait();
+                        zipExe = zipTask.Result;
+                        if (zipTask.Exception != null)
+                            throw zipTask.Exception;
+                    }
+                
                     SevenZip.Zip(zipExe, artifacts, gConfig);
+                }
             }
 
             if (tTargets != TestTargets.None)

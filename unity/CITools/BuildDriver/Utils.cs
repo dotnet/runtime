@@ -16,6 +16,12 @@ public class Utils
             $"microsoft.netcore.app.runtime.{Paths.ShortPlatformNameInPaths}-{gConfig.Architecture}", gConfig.Configuration, "runtimes",
             $"{Paths.ShortPlatformNameInPaths}-{gConfig.Architecture}");
 
+    public static NPath UnityRuntimeArtifactDirectory(GlobalConfig gConfig)
+        => Paths.RepoRoot.Combine("artifacts", "unity-bin",
+            $"microsoft.netcore.app.runtime.{Paths.ShortPlatformNameInPaths}-{gConfig.Architecture}", gConfig.Configuration, "runtimes",
+            $"{Paths.ShortPlatformNameInPaths}-{gConfig.Architecture}");
+
+
     public static NPath UnityTestHostDotNetRoot(GlobalConfig gConfig)
         // Find the directory "net7.0-windows-Release-x64" without hard coding the tfm
         => Paths.RepoRoot.Combine("artifacts/bin/testhost")
