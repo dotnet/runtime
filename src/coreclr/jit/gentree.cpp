@@ -26414,7 +26414,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             // Normalize vecCns
             for (size_t i = 0; i < 64; i++)
             {
-                if (vecCns.u8[i] < 64) vecCns.u8[i] &= 15;
+                if (vecCns.u8[i] < 64)
+                    vecCns.u8[i] &= 15;
             }
 
             op2                        = gtNewVconNode(type);
