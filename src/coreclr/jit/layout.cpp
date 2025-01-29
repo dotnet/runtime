@@ -586,6 +586,15 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
         {
             return layout1 == layout2;
         }
+
+        // For class-based layouts they are definitely compatible for the same
+        // handle
+        if (clsHnd1 == clsHnd2)
+        {
+            return true;
+        }
+
+        // But they may still be compatible for different handles.
     }
 
     if (layout1->GetSize() != layout2->GetSize())
