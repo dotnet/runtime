@@ -988,49 +988,22 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 //
 void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 {
-    // Determine input weight for method entry
+    // Determine input weight for method entry.
+    // Ideally, we'd use fgCalledCount, but it may not be available yet.
     //
     BasicBlock* const entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-    weight_t          entryWeight = BB_UNITY_WEIGHT;
+    weight_t          entryWeight = entryBlock->bbWeight;
 
-    switch (option)
+    for (FlowEdge* const predEdge : entryBlock->PredEdges())
     {
-        case ProfileSynthesisOption::BlendLikelihoods:
-        case ProfileSynthesisOption::RepairLikelihoods:
-        {
-            // Try and retain entryBlock's weight.
-            // Easiest to do when the block has no preds.
-            //
-            if (entryBlock->hasProfileWeight())
-            {
-                weight_t currentEntryWeight = entryBlock->bbWeight;
+        entryWeight = max(BB_ZERO_WEIGHT, entryWeight - predEdge->getLikelyWeight());
+    }
 
-                if (!Compiler::fgProfileWeightsEqual(currentEntryWeight, 0.0, epsilon))
-                {
-                    if (entryBlock->bbPreds == nullptr)
-                    {
-                        entryWeight = currentEntryWeight;
-                    }
-                    else
-                    {
-                        // TODO: something similar to how we compute fgCalledCount;
-                        // try and sum return weights?
-                    }
-                }
-                else
-                {
-                    // Entry weight was zero or nearly zero, just use default
-                }
-            }
-            else
-            {
-                // Entry was unprofiled, just use default
-            }
-            break;
-        }
-
-        default:
-            break;
+    // Fall back to BB_UNITY_WEIGHT if we have zero entry weight
+    //
+    if (Compiler::fgProfileWeightsEqual(entryWeight, BB_ZERO_WEIGHT, epsilon))
+    {
+        entryWeight = BB_UNITY_WEIGHT;
     }
 
     // Reset existing weights
