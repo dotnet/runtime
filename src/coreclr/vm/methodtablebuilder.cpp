@@ -3709,6 +3709,11 @@ BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByV
 {
     STANDARD_VM_CONTRACT;
 
+    if(this->IsInterface())
+    {
+        return TRUE;
+    }
+
     if (dwByValueClassToken != this->GetCl())
     {
         return FALSE;
@@ -4042,7 +4047,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
 
-                if (this->IsValueClass() && (pTokenModule == GetModule()))
+                if ((this->IsValueClass() || this->IsInterface()) && (pTokenModule == GetModule()))
                 {
                     if (TypeFromToken(dwByValueClassToken) == mdtTypeRef)
                     {
@@ -4101,7 +4106,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BuildMethodTableThrowException(IDS_CLASSLOAD_VALUEINSTANCEFIELD, mdMethodDefNil);
                         }
 
-                        if (!IsValueClass())
+                        if (!IsValueClass() && !IsInterface())
                         {
                             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_MUST_BE_BYVAL, mdTokenNil);
                         }
