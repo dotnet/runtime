@@ -109,37 +109,10 @@ extends:
           - osx_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            buildArgs: -s -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
-            postBuildSteps:
-              - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-                - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
-                  parameters:
-                    filesToSign:
-                    - name: createdump
-                      path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                    - name: corerun
-                      path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                    - name: dotnet
-                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                    - name: apphost
-                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-
-              - task: CopyFiles@2
-                displayName: 'Copy signed createdump to sharedFramework'
-                inputs:
-                  contents: createdump
-                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                  targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
-                  overWrite: true
-
-              # Now that we've entitled and signed createdump, we can build the rest.
-              - template: /eng/pipelines/common/templates/global-build-step.yml
-                parameters:
-                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host.tools+host.pkg+packs -c $(_BuildConfig) -restore -build -sign -publish /p:DotNetBuildAllRuntimePacks=true
-                  displayName: Build managed CoreCLR and host components, Mono, all libraries, and packs
 
       #
       # Build all runtime packs for Linux and Linux musl

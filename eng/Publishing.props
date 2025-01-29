@@ -1,7 +1,4 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)OSArch.props" />
-  <Import Project="$(MSBuildThisFileDirectory)RuntimeIdentifier.props" />
-
   <PropertyGroup>
     <ProducesDotNetReleaseShippingAssets>true</ProducesDotNetReleaseShippingAssets>
     <!-- This avoids creating VS.*.symbols.nupkg packages that are identical to the original package. -->
