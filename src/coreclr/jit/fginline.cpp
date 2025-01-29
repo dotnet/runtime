@@ -1416,24 +1416,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // Let's insert it to inliner's basic block list.
     fgInsertInlineeBlocks(&inlineInfo);
 
-    // If we are inlining System.SZArrayHelper.GetEnumerator, mark the temp as single def to allow updating
-    // class. This can enable further devirtualization and inlining of MoveNext, get_Current and Dispose
-    // methods.
-    if (lookupNamedIntrinsic(inlineInfo.fncHandle) == NI_System_SZArrayHelper_GetEnumerator &&
-        inlineInfo.inlineCandidateInfo->preexistingSpillTemp != BAD_VAR_NUM)
-    {
-        lvaGetDesc(inlineInfo.inlineCandidateInfo->preexistingSpillTemp)->lvSingleDef = 1;
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf(
-                "\nInlinee is System.SZArrayHelper.GetEnumerator, mark the return spilling local V%02u as single def.\n",
-                inlineInfo.inlineCandidateInfo->preexistingSpillTemp);
-        }
-#endif // DEBUG
-    }
-
 #ifdef DEBUG
 
     if (verbose)

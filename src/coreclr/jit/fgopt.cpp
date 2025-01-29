@@ -317,9 +317,24 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
+                if ((returnSpillVarDsc->lvType == TYP_REF))
                 {
-                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                    if (returnSpillVarDsc->lvSingleDef)
+                    {
+                        lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
+                                       impInlineInfo->retExprClassHndIsExact);
+                    }
+                    else if (lookupNamedIntrinsic(info.compMethodHnd) == NI_System_SZArrayHelper_GetEnumerator)
+                    {
+                        // If we are inlining System.SZArrayHelper.GetEnumerator, update the type of the return spill
+                        // temp regardless of whether it is single def or not.
+                        returnSpillVarDsc->lvType = TYP_REF;
+                        returnSpillVarDsc->lvClassHnd = retExprClassHnd;
+                        returnSpillVarDsc->lvClassIsExact = impInlineInfo->retExprClassHndIsExact;
+#if DEBUG
+                        returnSpillVarDsc->lvClassInfoUpdated = true;
+#endif
+                    }
                 }
             }
         }
