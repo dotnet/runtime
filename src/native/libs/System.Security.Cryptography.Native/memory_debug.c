@@ -250,7 +250,7 @@ static void freeFunction(void *ptr, const char *file, int line)
     pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
-int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount)
+int32_t CryptoNative_GetMemoryUse(int32_t* totalUsed, int32_t* allocationCount)
 {
     if (totalUsed == NULL || allocationCount == NULL)
     {
@@ -297,7 +297,7 @@ PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable)
     pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
-PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int size, const char* file, int line, void* ctx), void* ctx)
+PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int32_t size, const char* file, int32_t line, void* ctx), void* ctx)
 {
     if (g_trackedMemory != NULL)
     {

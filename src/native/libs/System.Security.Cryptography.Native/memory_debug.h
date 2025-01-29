@@ -7,6 +7,6 @@ void InitializeMemoryDebug(void);
 
 PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable);
 
-PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int size, const char* file, int line, void* ctx), void* ctx);
+PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int32_t size, const char* file, int32_t line, void* ctx), void* ctx);
 
-PALEXPORT int32_t CryptoNative_GetMemoryUse(int* totalUsed, int* allocationCount);
+PALEXPORT int32_t CryptoNative_GetMemoryUse(int32_t* totalUsed, int32_t* allocationCount);

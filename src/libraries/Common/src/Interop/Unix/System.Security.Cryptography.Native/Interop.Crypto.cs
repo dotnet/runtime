@@ -169,9 +169,9 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
-        internal static partial int GetMemoryUse(ref int memoryUse, ref int allocationCount);
+        private static partial int GetMemoryUse(ref int memoryUse, ref int allocationCount);
 
-        public static int GetOpenSslAllocatedMemory()
+        internal static int GetOpenSslAllocatedMemory()
         {
             int used = 0;
             int count = 0;
@@ -179,7 +179,7 @@ internal static partial class Interop
             return used;
         }
 
-        public static int GetOpenSslAllocationCount()
+        internal static int GetOpenSslAllocationCount()
         {
             int used = 0;
             int count = 0;
@@ -188,7 +188,7 @@ internal static partial class Interop
         }
 
 #pragma warning disable CA1823
-        private static readonly bool MemoryDebug = GetMemoryDebug();
+        private static readonly bool s_memoryDebug = GetMemoryDebug();
 #pragma warning restore CA1823
 
         private static bool GetMemoryDebug()
@@ -213,34 +213,24 @@ internal static partial class Interop
         private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, int, char*, int, IntPtr, void> callback, IntPtr ctx);
 
 
-        public static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
+        internal static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
         {
-            GCHandle pCallback = GCHandle.Alloc(callback);
-            try
-            {
-                ForEachTrackedAllocation(&MemoryTrackingCallback, GCHandle.ToIntPtr(pCallback));
-            }
-            finally
-            {
-                pCallback.Free();
-            }
-
+            ForEachTrackedAllocation(&MemoryTrackingCallback, (IntPtr)(&callback));
         }
 
         [UnmanagedCallersOnly]
         private static unsafe void MemoryTrackingCallback(IntPtr ptr, int size, char* file, int line, IntPtr ctx)
         {
-            GCHandle handle = GCHandle.FromIntPtr((IntPtr)ctx);
-            Action<IntPtr, int, IntPtr, int> callback = (TrackedAllocationDelegate)handle.Target!;
+            TrackedAllocationDelegate callback = *(TrackedAllocationDelegate*)ctx;
             callback(ptr, size, (IntPtr)file, line);
         }
 
-        public static unsafe void EnableTracking()
+        internal static unsafe void EnableTracking()
         {
             EnableMemoryTracking(1);
         }
 
-        public static unsafe void DisableTracking()
+        internal static unsafe void DisableTracking()
         {
             EnableMemoryTracking(0);
         }
