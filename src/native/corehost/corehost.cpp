@@ -40,6 +40,24 @@
 #define EMBED_HASH_LO_PART_UTF8 "74e592c2fa383d4a3960714caef0c4f2"
 #define EMBED_HASH_FULL_UTF8    (EMBED_HASH_HI_PART_UTF8 EMBED_HASH_LO_PART_UTF8) // NUL terminated
 
+void to_non_volatile(volatile const char* cstr, char* output, size_t length)
+{
+    for (size_t i = 0; i < length; i++)
+    {
+        output[i] = cstr[i];
+    }
+}
+
+bool compare_memory_nooptimization(volatile const char* a, volatile const char* b, size_t length)
+{
+    for (size_t i = 0; i < length; i++)
+    {
+        if (*a++ != *b++)
+            return false;
+    }
+    return true;
+}
+
 bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 {
     constexpr int EMBED_SZ = sizeof(EMBED_HASH_FULL_UTF8) / sizeof(EMBED_HASH_FULL_UTF8[0]);
@@ -48,18 +66,21 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
     // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
     // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
-    static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
+    volatile static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
 
     static const char hi_part[] = EMBED_HASH_HI_PART_UTF8;
     static const char lo_part[] = EMBED_HASH_LO_PART_UTF8;
 
-    if (!pal::clr_palstring(embed, app_dll))
+    char working_copy_embed[EMBED_MAX];
+    to_non_volatile(embed, working_copy_embed, EMBED_MAX);
+
+    if (!pal::clr_palstring(&working_copy_embed[0], app_dll))
     {
         trace::error(_X("The managed DLL bound to this executable could not be retrieved from the executable image."));
         return false;
     }
 
-    std::string binding(&embed[0]);
+    std::string binding(&working_copy_embed[0]);
 
     // Check if the path exceeds the max allowed size
     if (binding.size() > EMBED_MAX - 1) // -1 for null terminator
@@ -74,8 +95,8 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
     size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
     if (binding.size() >= (hi_len + lo_len)
-        && binding.compare(0, hi_len, &hi_part[0]) == 0
-        && binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
+        && compare_memory_nooptimization(binding.c_str(), hi_part, hi_len)
+        && compare_memory_nooptimization(binding.substr(hi_len).c_str(), lo_part, lo_len))
     {
         trace::error(_X("This executable is not bound to a managed DLL to execute. The binding value is: '%s'"), app_dll->c_str());
         return false;
