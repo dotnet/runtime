@@ -24404,7 +24404,7 @@ GenTree* Compiler::gtNewSimdMaxNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2) || canUseAVX10v2())
         {
             return gtNewSimdMinMaxNode(type, op1, op2, 1, simdBaseJitType, simdSize);
         }
@@ -24670,9 +24670,9 @@ GenTree* Compiler::gtNewSimdMinNode(
 #if defined(TARGET_XARCH)
     if (varTypeIsFloating(simdBaseType))
     {
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2) || canUseAVX10v2())
         {
-            return gtNewSimdMinMaxNode(type, op1, op2, 0, simdBaseJitType, simdSize);
+            return gtNewSimdMinMaxNode(type, op1, op2, 0x04, simdBaseJitType, simdSize);
         }
         else
         {
@@ -24706,7 +24706,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(
     var_types type, GenTree* op1, GenTree* op2, ssize_t ctrlByte, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
-    assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v2)); // Support for new MinMax instructions for AVX10.2 required
+    assert(compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || canUseAVX10v2()); // Support for new MinMax instructions for AVX10.2 required
     assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);

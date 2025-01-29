@@ -9874,6 +9874,19 @@ private:
 #endif
     }
 
+#ifdef TARGET_XARCH
+    bool canUseAVX10v2() const
+    {
+#ifdef DEBUG
+        if (JitConfig.FakeEnableAVX10v2())
+        {
+            return true;
+        }
+#endif
+        return compOpportunisticallyDependsOn(InstructionSet_AVX10v2);
+    }
+#endif
+
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will match the target machine if the result is true.
     // If the result is false, then the target machine may have support for the instruction.
