@@ -1815,10 +1815,10 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             SyncBlock* psb = g_pSyncTable[(int)index].m_SyncBlock;
 
             _ASSERTE(psb->GetMonitor() != NULL);
-            Thread* pThread = psb->GetMonitor()->GetHoldingThread();
-            // If the lock is orphaned during sync block creation, pThread would be assigned -1.
-            // Otherwise pThread would point to the owning thread if there was one or NULL if there wasn't.
-            if (pThread == NULL || pThread == (Thread*) -1)
+            DWORD holdingThreadId = psb->GetMonitor()->GetHoldingThreadId();
+            // If the lock is orphaned during sync block creation, holdingThreadId would be assigned -1.
+            // Otherwise it would be the id of the holding thread if there is one or 0 if there isn't.
+            if (holdingThreadId == 0 || holdingThreadId == -1)
             {
                 *pThreadId = 0;
                 *pAcquisitionCount = 0;
@@ -1826,12 +1826,9 @@ BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisition
             }
             else
             {
-                // However, the lock might get orphaned after the sync block is created.
-                // Therefore accessing pThread is not safe and pThread->GetThreadId() shouldn't be used.
-                // The thread id can be obtained from the monitor, which would be the id of the thread that owned the lock.
-                // Notice this id now could have been reused for a different thread,
-                // but this way we avoid crashing the process and orphaned locks shouldn't be expected to work correctly anyway.
-                *pThreadId = psb->GetMonitor()->GetHoldingThreadId();
+                // Notice this id now could have been reused for a different thread (in case the lock was orphaned),
+                // but orphaned locks shouldn't be expected to work correctly anyway.
+                *pThreadId = holdingThreadId;
                 *pAcquisitionCount = psb->GetMonitor()->GetRecursionLevel();
                 return TRUE;
             }
@@ -2371,12 +2368,11 @@ void AwareLock::Enter()
 
     Thread *pCurThread = GetThread();
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThread != pCurThread)
+    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
     {
         if (m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
         {
             // We get here if we successfully acquired the mutex.
-            m_HoldingThread = pCurThread;
             m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
@@ -2433,14 +2429,13 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
     }
 
     LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThread != pCurThread)
+    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
     {
         if (timeOut == 0
                 ? m_lockState.InterlockedTryLock(state)
                 : m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
         {
             // We get here if we successfully acquired the mutex.
-            m_HoldingThread = pCurThread;
             m_HoldingThreadId = pCurThread->GetThreadId();
             m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
             m_Recursion = 1;
@@ -2720,7 +2715,6 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
         return false;
     }
 
-    m_HoldingThread = pCurThread;
     m_HoldingThreadId = pCurThread->GetThreadId();
     m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
     m_Recursion = 1;
@@ -2783,7 +2777,7 @@ LONG AwareLock::LeaveCompletely()
 BOOL AwareLock::OwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
-    return (GetThread() == m_HoldingThread);
+    return (GetThread()->GetThreadId() == m_HoldingThreadId);
 }
 
 // ***************************************************************************
