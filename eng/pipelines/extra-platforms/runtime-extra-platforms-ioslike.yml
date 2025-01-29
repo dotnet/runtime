@@ -52,7 +52,7 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
       condition: >-
         or(
-          eq(variables['triggeredAutomatically'], false),
+          or(eq(variables['isiOSLikeOnlyBuild'], true), eq(variables['isExtraPlatformsBuild'], true)),
           and(eq(variables['triggeredAutomatically'], true), eq(variables['monoAotLlvmcontainsChange'], true))
         )
 
