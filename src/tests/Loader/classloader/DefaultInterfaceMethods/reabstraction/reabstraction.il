@@ -146,7 +146,7 @@
   .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
         string('https://github.com/dotnet/runtime/issues/91923')
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('IsAppleMobile')
