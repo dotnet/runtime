@@ -8,7 +8,7 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal partial class ExecutionManagerBase<T> : IExecutionManager
+internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     where T : INibbleMap
 {
     internal readonly Target _target;
@@ -20,7 +20,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     private readonly EEJitManager _eeJitManager;
     private readonly ReadyToRunJitManager _r2rJitManager;
 
-    public ExecutionManagerBase(Target target, Data.RangeSectionMap topRangeSectionMap)
+    public ExecutionManagerCore(Target target, Data.RangeSectionMap topRangeSectionMap)
     {
         _target = target;
         _topRangeSectionMap = topRangeSectionMap;
@@ -31,7 +31,7 @@ internal partial class ExecutionManagerBase<T> : IExecutionManager
     }
 
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
-    private class CodeBlock
+    private sealed class CodeBlock
     {
         public TargetCodePointer StartAddress { get; }
         public TargetPointer MethodDescAddress { get; }
