@@ -17,7 +17,7 @@ using Xunit;
 public class Runtime_34587
 {
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/TODO", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     public static int TestEntryPoint()
     {
         TestLibrary.TestFramework.LogInformation("Supported x86 ISAs:");

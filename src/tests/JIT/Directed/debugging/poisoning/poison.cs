@@ -7,7 +7,7 @@ public class Program
 {
     [SkipLocalsInit]
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/TODO", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile))]
     public static unsafe int TestEntryPoint()
     {
 #pragma warning disable CS8500 // takes address of managed type
