@@ -3619,7 +3619,7 @@ Define_InterlockMethod(
 #endif
 
 #if defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
-FORCEINLINE uint8_t _InterlockedCompareExchange128(_Inout_ int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
+FORCEINLINE uint8_t _InterlockedCompareExchange128(int64_t volatile *pDst, int64_t iValueHigh, int64_t iValueLow, int64_t *pComparandAndResult)
 {
     __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (uint64_t)pComparandAndResult[0];
     // TODO-LOONGARCH64: for LoongArch64, it supports 128bits atomic from 3A6000-CPU which is ISA1.1's version.
