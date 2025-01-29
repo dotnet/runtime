@@ -9,7 +9,7 @@ OpenSSL by hooking the memory allocation routines via
 `CRYPTO_set_mem_functions`.
 
 The functionality is enabled by setting
-`DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG` to 1. This environment
+`DOTNET_OPENSSL_MEMORY_DEBUG` to 1. This environment
 variable must be set before launching the program (calling
 `Environment.SetEnvironmentVariable` at the start of the program is not
 sufficient). The diagnostic API is not officially exposed and needs to be
@@ -25,14 +25,14 @@ methods:
     - toggles tracking of individual live allocations via internal data
       structures. I.e. will keep track of live memory allocated since the start of
       tracking.
-- `void ForEachTrackedAllocation(Action<IntPtr, int, IntPtr, int> callback)`
+- `void ForEachTrackedAllocation(Action<IntPtr, ulong, IntPtr, int> callback)`
     - Accepts an callback and calls it for each allocation performed since the
       last `EnableMemoryTracking` call. The order of reported information does not
       correspond to the order of allocation. This method holds an internal lock
       which prevents other threads from allocating any memory from OpenSSL.
     - Callback parameters are
         - IntPtr - The pointer to the allocated object
-        - int - size of the allocation in bytes
+        - ulong - size of the allocation in bytes
         - IntPtr - Pointer to a null-terminated string (`const char*`) containing the name of the file from which the allocation was made.
         - int - line number within the file specified by the previous parameter where the allocation was called from.
 

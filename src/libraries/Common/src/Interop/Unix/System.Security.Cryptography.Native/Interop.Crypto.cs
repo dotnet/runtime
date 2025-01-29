@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
-using TrackedAllocationDelegate = System.Action<System.IntPtr, int, System.IntPtr, int>;
+using TrackedAllocationDelegate = System.Action<System.IntPtr, ulong, System.IntPtr, int>;
 
 internal static partial class Interop
 {
@@ -169,20 +169,20 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryUse")]
-        private static partial int GetMemoryUse(ref int memoryUse, ref int allocationCount);
+        private static partial int GetMemoryUse(ref long memoryUse, ref long allocationCount);
 
-        internal static int GetOpenSslAllocatedMemory()
+        internal static long GetOpenSslAllocatedMemory()
         {
-            int used = 0;
-            int count = 0;
+            long used = 0;
+            long count = 0;
             GetMemoryUse(ref used, ref count);
             return used;
         }
 
-        internal static int GetOpenSslAllocationCount()
+        internal static long GetOpenSslAllocationCount()
         {
-            int used = 0;
-            int count = 0;
+            long used = 0;
+            long count = 0;
             GetMemoryUse(ref used, ref count);
             return count;
         }
@@ -210,7 +210,7 @@ internal static partial class Interop
         internal static unsafe partial void EnableMemoryTracking(int enable);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ForEachTrackedAllocation")]
-        private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, int, char*, int, IntPtr, void> callback, IntPtr ctx);
+        private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, ulong, char*, int, IntPtr, void> callback, IntPtr ctx);
 
         internal static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
         {
@@ -218,7 +218,7 @@ internal static partial class Interop
         }
 
         [UnmanagedCallersOnly]
-        private static unsafe void MemoryTrackingCallback(IntPtr ptr, int size, char* file, int line, IntPtr ctx)
+        private static unsafe void MemoryTrackingCallback(IntPtr ptr, ulong size, char* file, int line, IntPtr ctx)
         {
             TrackedAllocationDelegate callback = *(TrackedAllocationDelegate*)ctx;
             callback(ptr, size, (IntPtr)file, line);

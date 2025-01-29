@@ -6,17 +6,6 @@
 #pragma once
 #include "pal_types.h"
 
-typedef void *(*CRYPTO_malloc_fn)(size_t num, const char *file, int line);
-typedef void *(*CRYPTO_realloc_fn)(void *addr, size_t num, const char *file, int line);
-typedef void (*CRYPTO_free_fn)(void *addr, const char *file, int line);
-
-#ifndef CRYPTO_RWLOCK
-typedef void CRYPTO_RWLOCK;
-#endif
-
-CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void);
-int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock);
-
 typedef struct evp_kdf_st EVP_KDF;
 typedef struct evp_kdf_ctx_st EVP_KDF_CTX;
 typedef struct evp_mac_st EVP_MAC;
@@ -27,5 +16,3 @@ int local_EVP_PKEY_CTX_set_rsa_oaep_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int local_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
 int local_EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int local_EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
-
-int CRYPTO_set_mem_functions11(CRYPTO_malloc_fn malloc_fn, CRYPTO_realloc_fn realloc_fn, CRYPTO_free_fn free_fn);

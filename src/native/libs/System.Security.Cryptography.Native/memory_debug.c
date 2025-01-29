@@ -7,6 +7,20 @@
 #include <containers/dn-list.h>
 #include <pthread.h>
 #include <assert.h>
+#include <stdatomic.h>
+
+static uint64_t atomic_add64(uint64_t* value, uint64_t addend, CRYPTO_RWLOCK* lock)
+{
+    if (API_EXISTS(CRYPTO_atomic_add64))
+    {
+        uint64_t result;
+        CRYPTO_atomic_add64(value, addend, &result, lock);
+        return result;
+    }
+
+    // TODO: test other compilers, solve for 32-bit platforms.
+    return __atomic_fetch_add(value, addend, __ATOMIC_SEQ_CST);
+}
 
 //
 // OpenSSL memory tracking/debugging facilities.
@@ -67,25 +81,25 @@ typedef struct header_t
     // link for the circular list
     struct link_t link;
 
+    // ordinal number of the allocation. Used to determine the target partition.
+    uint64_t index;
+
+    // size of the allocation (of the data field)
+    uint64_t size;
+
     // filename from where the allocation was made
     const char* file;
 
     // line number in the file where the allocation was made
     int32_t line;
 
-    // size of the allocation (of the data field)
-    int32_t size;
-
-    // ordinal number of the allocation. Used to determine the target partition.
-    uint32_t index;
-
-    // the actual allocated memory
+    // the start of actual allocated memory
     __attribute__((aligned(8))) uint8_t data[];
 } header_t;
 
 static CRYPTO_RWLOCK* g_allocLock = NULL;
-static int g_allocatedMemory;
-static int g_allocationCount;
+static uint64_t g_allocatedMemory;
+static uint64_t g_allocationCount;
 
 static void list_init(list_t* list)
 {
@@ -127,7 +141,7 @@ static void track_item(link_t* item)
     assert (res == 0);
 }
 
-static void list_unlik_item(link_t* item)
+static void list_unlink_item(link_t* item)
 {
     link_t* prev = item->prev;
     link_t* next = item->next;
@@ -143,7 +157,7 @@ static void untrack_item(link_t* item)
     int res = pthread_mutex_lock(&list->lock);
     assert (res == 0);
 
-    list_unlik_item(item);
+    list_unlink_item(item);
 
     res = pthread_mutex_unlock(&list->lock);
     assert (res == 0);
@@ -152,9 +166,9 @@ static void untrack_item(link_t* item)
     item->prev = item;
 }
 
-static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line, uint32_t index)
+static void init_memory_entry(header_t* entry, size_t size, const char* file, int32_t line, uint64_t index)
 {
-    entry->size = (int32_t)size;
+    entry->size = size;
     entry->line = line;
     entry->file = file;
     entry->link.next = &entry->link;
@@ -169,10 +183,9 @@ static void* mallocFunction(size_t size, const char *file, int line)
     header_t* entry = malloc(size + sizeof(header_t));
     if (entry != NULL)
     {
-        int newCount;
-        CRYPTO_atomic_add(&g_allocatedMemory, (int)size, &newCount, g_allocLock);
-        CRYPTO_atomic_add(&g_allocationCount, 1, &newCount, g_allocLock);
-        init_memory_entry(entry, size, file, line, (uint32_t)newCount);
+        atomic_add64(&g_allocatedMemory, size, g_allocLock);
+        uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
+        init_memory_entry(entry, size, file, line, newCount);
 
         if (should_be_tracked(entry))
         {
@@ -190,12 +203,11 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
     pthread_rwlock_rdlock(&g_trackedMemoryLock);
 
     struct header_t* entry = NULL;
-    int newCount;
 
     if (ptr != NULL)
     {
         entry = container_of(ptr, header_t, data);
-        CRYPTO_atomic_add(&g_allocatedMemory, (int)(-entry->size), &newCount, g_allocLock);
+        atomic_add64(&g_allocatedMemory, -entry->size, g_allocLock);
 
         // untrack the item as realloc will change ptrs and we will need to put it to correct bucket
         if (should_be_tracked(entry))
@@ -208,11 +220,11 @@ static void* reallocFunction (void *ptr, size_t size, const char *file, int line
     void* newPtr = realloc((void*)entry, size + sizeof(header_t));
     if (newPtr != NULL)
     {
-        CRYPTO_atomic_add(&g_allocatedMemory, (int)size, &newCount, g_allocLock);
-        CRYPTO_atomic_add(&g_allocationCount, 1, &newCount, g_allocLock);
+        atomic_add64(&g_allocatedMemory, size, g_allocLock);
+        uint64_t newCount = atomic_add64(&g_allocationCount, 1, g_allocLock);
 
         entry = (struct header_t*)newPtr;
-        init_memory_entry(entry, size, file, line, (uint32_t)newCount);
+        init_memory_entry(entry, size, file, line, newCount);
         toReturn = (void*)(&entry->data);
     }
 
@@ -235,9 +247,8 @@ static void freeFunction(void *ptr, const char *file, int line)
 
     if (ptr != NULL)
     {
-        int newCount;
         header_t* entry = container_of(ptr, header_t, data);
-        CRYPTO_atomic_add(&g_allocatedMemory, (int)-entry->size, &newCount, g_allocLock);
+        atomic_add64(&g_allocatedMemory, -entry->size, g_allocLock);
 
         if (should_be_tracked(entry))
         {
@@ -250,7 +261,7 @@ static void freeFunction(void *ptr, const char *file, int line)
     pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
-int32_t CryptoNative_GetMemoryUse(int32_t* totalUsed, int32_t* allocationCount)
+int32_t CryptoNative_GetMemoryUse(uint64_t* totalUsed, uint64_t* allocationCount)
 {
     if (totalUsed == NULL || allocationCount == NULL)
     {
@@ -277,16 +288,17 @@ void CryptoNative_EnableMemoryTracking(int32_t enable)
     }
     else
     {
-        // clear the lists by unlinking the list heads, any existing items
+        // Clear the lists by unlinking the list heads, any existing items
         // in the list will become orphaned in a "floating" circular list.
-        // That is fine, as the free callback will keep removing them from the list.
+        // We will not touch the links in those items during subsequent free
+        // calls due to setting g_trackingEnabledSince later in this function.
         for (uint32_t i = 0; i < kPartitionCount; i++)
         {
             list_t* list = &g_trackedMemory[i];
 
             pthread_mutex_lock(&list->lock);
 
-            list_unlik_item(&list->head);
+            list_unlink_item(&list->head);
 
             pthread_mutex_unlock(&list->lock);
         }
@@ -297,12 +309,10 @@ void CryptoNative_EnableMemoryTracking(int32_t enable)
     pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
-void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int32_t size, const char* file, int32_t line, void* ctx), void* ctx)
+void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, uint64_t size, const char* file, int32_t line, void* ctx), void* ctx)
 {
     if (g_trackedMemory != NULL)
     {
-        pthread_rwlock_wrlock(&g_trackedMemoryLock);
-
         for (uint32_t i = 0; i < kPartitionCount; i++)
         {
             list_t* list = &g_trackedMemory[i];
@@ -310,13 +320,11 @@ void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int32_t s
             pthread_mutex_lock(&list->lock);
             for (link_t* node = list->head.next; node != &list->head; node = node->next)
             {
-                header_t* entry = (header_t*)node;
+                header_t* entry = container_of(node, header_t, link);
                 callback(entry->data, entry->size, entry->file, entry->line, ctx);
             }
             pthread_mutex_unlock(&list->lock);
         }
-
-        pthread_rwlock_unlock(&g_trackedMemoryLock);
     }
 }
 
@@ -329,24 +337,16 @@ void InitializeMemoryDebug(void)
         if (API_EXISTS(CRYPTO_THREAD_lock_new))
         {
             // This should cover 1.1.1+
-            CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freeFunction);
+            CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
             g_allocLock = CRYPTO_THREAD_lock_new();
-
-            if (!API_EXISTS(SSL_state))
-            {
-                // CRYPTO_set_mem_functions exists in OpenSSL 1.0.1 as well but it has different prototype
-                // and that makes it difficult to use with managed callbacks.
-                // Since 1.0 is long time out of support we use it only on 1.1.1+
-                CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freeFunction);
-                g_allocLock = CRYPTO_THREAD_lock_new();
-            }
+            pthread_rwlock_init(&g_trackedMemoryLock, NULL);
         }
 #elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
         // OpenSSL 1.0 has different prototypes and it is out of support so we enable this only
         // on 1.1.1+
         CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);
         g_allocLock = CRYPTO_THREAD_lock_new();
-#endif
         pthread_rwlock_init(&g_trackedMemoryLock, NULL);
+#endif
     }
 }

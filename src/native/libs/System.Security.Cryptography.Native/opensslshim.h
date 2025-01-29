@@ -314,8 +314,8 @@ extern bool g_libSslUses32BitTime;
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
     LIGHTUP_FUNCTION(CRYPTO_THREAD_lock_new) \
-    LIGHTUP_FUNCTION(CRYPTO_atomic_add) \
-    RENAMED_FUNCTION(CRYPTO_set_mem_functions11, CRYPTO_set_mem_functions) \
+    LIGHTUP_FUNCTION(CRYPTO_atomic_add64) \
+    REQUIRED_FUNCTION(CRYPTO_set_mem_functions) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(d2i_PKCS12_fp) \
     REQUIRED_FUNCTION(d2i_PKCS7) \
@@ -865,8 +865,8 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
 #define CRYPTO_THREAD_lock_new CRYPTO_THREAD_lock_new_ptr
-#define CRYPTO_atomic_add CRYPTO_atomic_add_ptr
-#define CRYPTO_set_mem_functions11 CRYPTO_set_mem_functions11_ptr
+#define CRYPTO_atomic_add64 CRYPTO_atomic_add64_ptr
+#define CRYPTO_set_mem_functions CRYPTO_set_mem_functions_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
 #define d2i_PKCS12_fp d2i_PKCS12_fp_ptr
 #define d2i_PKCS7 d2i_PKCS7_ptr
