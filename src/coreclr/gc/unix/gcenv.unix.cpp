@@ -29,7 +29,11 @@
 #include <sys/swap.h>
 #endif
 
-#if HAVE_SYS_MEMBARRIER_H
+#ifdef __linux__
+#include <linux/membarrier.h>
+#include <sys/syscall.h>
+#define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#elif HAVE_SYS_MEMBARRIER_H
 #include <sys/membarrier.h>
 #endif
 
@@ -98,12 +102,6 @@ extern "C"
 #include <OS.h>
 #endif // __HAIKU__
 
-#ifdef __linux__
-// Helper membarrier function
-#include <sys/syscall.h>
-#define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
-#endif
-
 #if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
@@ -140,6 +138,8 @@ static uint32_t g_totalCpuCount = 0;
 
 bool CanFlushUsingMembarrier()
 {
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
+
 #ifdef TARGET_ANDROID
     // Avoid calling membarrier on older Android versions where membarrier
     // may be barred by seccomp causing the process to be killed.
@@ -150,7 +150,6 @@ bool CanFlushUsingMembarrier()
     }
 #endif
 
-#if HAVE_SYS_MEMBARRIER_H
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
 
@@ -409,7 +408,7 @@ bool GCToOSInterface::CanGetCurrentProcessorNumber()
 // Flush write buffers of processors that are executing threads of the current process
 void GCToOSInterface::FlushProcessWriteBuffers()
 {
-#if HAVE_SYS_MEMBARRIER_H
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
         int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);

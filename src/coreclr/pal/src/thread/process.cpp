@@ -63,14 +63,12 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <limits.h>
 #include <vector>
 
-#if HAVE_SYS_MEMBARRIER_H
-#include <sys/membarrier.h>
-#endif
-
 #ifdef __linux__
-// Helper membarrier function
+#include <linux/membarrier.h>
 #include <sys/syscall.h>
 #define membarrier(...) syscall(__NR_membarrier, __VA_ARGS__)
+#elif HAVE_SYS_MEMBARRIER_H
+#include <sys/membarrier.h>
 #endif
 
 #ifdef __APPLE__
@@ -2566,7 +2564,7 @@ InitializeFlushProcessWriteBuffers()
     _ASSERTE(s_helperPage == 0);
     _ASSERTE(s_flushUsingMemBarrier == 0);
 
-#if HAVE_SYS_MEMBARRIER_H
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     // Starting with Linux kernel 4.14, process memory barriers can be generated
     // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
     int mask = membarrier(MEMBARRIER_CMD_QUERY, 0, 0);
@@ -2636,7 +2634,7 @@ VOID
 PALAPI
 FlushProcessWriteBuffers()
 {
-#if HAVE_SYS_MEMBARRIER_H
+#if defined(__linux__) || HAVE_SYS_MEMBARRIER_H
     if (s_flushUsingMemBarrier)
     {
         int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0, 0);
