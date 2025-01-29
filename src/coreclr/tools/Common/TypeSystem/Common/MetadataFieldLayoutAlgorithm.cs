@@ -269,6 +269,24 @@ namespace Internal.TypeSystem
             return someFieldContainsPointers;
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            if (!type.IsByRefLike)
+                return false;
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsByRef)
+                    return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Called during static field layout to setup initial contents of statics blocks
         /// </summary>
@@ -335,6 +353,7 @@ namespace Internal.TypeSystem
                     (
                         fieldType.IsGCPointer
                         || (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
+                        || (fieldType.IsByRefLike && ((DefType)fieldType).ContainsByRefs)
                     );
                 if (needsToBeAligned)
                 {

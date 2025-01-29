@@ -97,7 +97,7 @@ namespace Internal.TypeSystem
                     if (field.IsStatic)
                         continue;
 
-                    int fieldOffset = offset + field.Offset.AsInt;
+                    int fieldOffset = field.Offset.AsInt;
                     AddToFieldLayout(nestedIntervals, fieldOffset, field.FieldType);
                 }
 
