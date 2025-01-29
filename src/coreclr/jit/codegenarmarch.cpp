@@ -216,6 +216,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_OR:
+        case GT_OR_NOT:
         case GT_XOR:
         case GT_XOR_NOT:
         case GT_AND:

@@ -304,7 +304,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             }
         }
 
-        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_AND_NOT, GT_XOR_NOT))
+        if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ) && parentNode->OperIs(GT_AND_NOT, GT_OR_NOT, GT_XOR_NOT))
         {
             return true;
         }
@@ -653,7 +653,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             }
         }
 
-        if (binOp->OperIs(GT_XOR))
+        if (binOp->OperIs(GT_OR, GT_XOR))
         {
             GenTree* opNode  = nullptr;
             GenTree* notNode = nullptr;
@@ -672,7 +672,14 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             {
                 binOp->gtOp1 = opNode;
                 binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-                binOp->ChangeOper(GT_XOR_NOT);
+                if (binOp->OperIs(GT_OR))
+                {
+                    binOp->ChangeOper(GT_OR_NOT);
+                }
+                else
+                {
+                    binOp->ChangeOper(GT_XOR_NOT);
+                }
                 BlockRange().Remove(notNode);
             }
         }
