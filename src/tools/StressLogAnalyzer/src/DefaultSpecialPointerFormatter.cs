@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer;
 
-internal sealed class DefaultSpecialPointerFormatter : ISpecialPointerFormatter
+internal sealed class DefaultSpecialPointerFormatter : PrintfStressMessageFormatter.ISpecialPointerFormatter
 {
     public string FormatMethodDesc(TargetPointer pointer) => $"(MethodDesc: {pointer.Value:X16})";
     public string FormatMethodTable(TargetPointer pointer) => $"(MethodTable: {pointer.Value:X16})";

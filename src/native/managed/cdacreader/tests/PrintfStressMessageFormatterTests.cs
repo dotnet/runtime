@@ -1,4 +1,9 @@
-﻿using System.Runtime.InteropServices;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -7,7 +12,7 @@ using Xunit;
 
 namespace StressLogAnalyzer.Tests;
 
-public unsafe class StressMessageFormatterTests
+public unsafe class PrintfStressMessageFormatterTests
 {
     private abstract record StressMessageArgument
     {
@@ -19,14 +24,14 @@ public unsafe class StressMessageFormatterTests
         public record UnsignedInteger(ulong Value) : StressMessageArgument;
     }
 
-    private readonly ISpecialPointerFormatter NoOpSpecialPointerFormatter = new Mock<ISpecialPointerFormatter>().Object;
+    private readonly PrintfStressMessageFormatter.ISpecialPointerFormatter NoOpSpecialPointerFormatter = new Mock<PrintfStressMessageFormatter.ISpecialPointerFormatter>().Object;
 
     [Fact]
     public void NoFormatSpecifier()
     {
         var (target, message) = CreateFixture("Hello, World!");
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal("Hello, World!", formatter.GetFormattedMessage(message));
     }
 
@@ -35,7 +40,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %ld", new StressMessageArgument.SignedInteger(42));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Throws<InvalidOperationException>(() => formatter.GetFormattedMessage(message));
     }
 
@@ -44,7 +49,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %e", new StressMessageArgument.SignedInteger(0));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Throws<InvalidOperationException>(() => formatter.GetFormattedMessage(message));
     }
 
@@ -85,7 +90,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.SignedInteger(value));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         string formattedValue = (width, paddingChar) switch
         {
             (null, _) => value.ToString(),
@@ -112,7 +117,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.UnsignedInteger(value));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal($"The answer is {value}", formatter.GetFormattedMessage(message));
     }
 
@@ -133,7 +138,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.UnsignedInteger(value));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         // Use the same case 'x' or 'X' as the specifier for the validation.
         Assert.Equal($"The answer is {value.ToString(specifier[^1..])}", formatter.GetFormattedMessage(message));
     }
@@ -155,7 +160,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.UnsignedInteger(value));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal($"The answer is 0x{value:x}", formatter.GetFormattedMessage(message));
     }
 
@@ -176,7 +181,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.UnsignedInteger(value));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal($"The answer is {value:X16}", formatter.GetFormattedMessage(message));
     }
 
@@ -187,7 +192,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %#010x", new StressMessageArgument.UnsignedInteger(0x50));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal("The answer is 0x00000050", formatter.GetFormattedMessage(message));
     }
 
@@ -216,7 +221,7 @@ public unsafe class StressMessageFormatterTests
             utf16 ? new StressMessageArgument.Utf16String(value)
             : new StressMessageArgument.Utf8String(value));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal($"The answer is '{value}'", formatter.GetFormattedMessage(message));
     }
 
@@ -225,7 +230,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is '%20s'", new StressMessageArgument.Utf8String("Hello, World!"));
 
-        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        PrintfStressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal("The answer is '       Hello, World!'", formatter.GetFormattedMessage(message));
     }
 
@@ -235,9 +240,9 @@ public unsafe class StressMessageFormatterTests
         ulong value = 0x123;
         var (target, message) = CreateFixture("We have a %pT", new StressMessageArgument.UnsignedInteger(value));
 
-        var specialPointerFormatter = new Mock<ISpecialPointerFormatter>();
+        var specialPointerFormatter = new Mock<PrintfStressMessageFormatter.ISpecialPointerFormatter>();
         specialPointerFormatter.Setup(f => f.FormatMethodTable(It.IsAny<TargetPointer>())).Returns((TargetPointer targetPointer) => $"MethodTable: 0x{targetPointer.Value:X}");
-        StressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
+        PrintfStressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
         Assert.Equal($"We have a MethodTable: 0x{value:X}", formatter.GetFormattedMessage(message));
     }
 
@@ -247,9 +252,9 @@ public unsafe class StressMessageFormatterTests
         ulong value = 0x123;
         var (target, message) = CreateFixture("We have a %pM", new StressMessageArgument.UnsignedInteger(value));
 
-        var specialPointerFormatter = new Mock<ISpecialPointerFormatter>();
+        var specialPointerFormatter = new Mock<PrintfStressMessageFormatter.ISpecialPointerFormatter>();
         specialPointerFormatter.Setup(f => f.FormatMethodDesc(It.IsAny<TargetPointer>())).Returns((TargetPointer targetPointer) => $"MethodDesc: 0x{targetPointer.Value:X}");
-        StressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
+        PrintfStressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
         Assert.Equal($"We have a MethodDesc: 0x{value:X}", formatter.GetFormattedMessage(message));
     }
 
@@ -259,9 +264,9 @@ public unsafe class StressMessageFormatterTests
         ulong value = 0x123;
         var (target, message) = CreateFixture("We have a %pV", new StressMessageArgument.UnsignedInteger(value));
 
-        var specialPointerFormatter = new Mock<ISpecialPointerFormatter>();
+        var specialPointerFormatter = new Mock<PrintfStressMessageFormatter.ISpecialPointerFormatter>();
         specialPointerFormatter.Setup(f => f.FormatVTable(It.IsAny<TargetPointer>())).Returns((TargetPointer targetPointer) => $"VTable: 0x{targetPointer.Value:X}");
-        StressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
+        PrintfStressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
         Assert.Equal($"We have a VTable: 0x{value:X}", formatter.GetFormattedMessage(message));
     }
 
@@ -271,9 +276,9 @@ public unsafe class StressMessageFormatterTests
         ulong value = 0x123;
         var (target, message) = CreateFixture("We have a %pK", new StressMessageArgument.UnsignedInteger(value));
 
-        var specialPointerFormatter = new Mock<ISpecialPointerFormatter>();
+        var specialPointerFormatter = new Mock<PrintfStressMessageFormatter.ISpecialPointerFormatter>();
         specialPointerFormatter.Setup(f => f.FormatStackTrace(It.IsAny<TargetPointer>())).Returns((TargetPointer targetPointer) => $"StackTrace: 0x{targetPointer.Value:X}");
-        StressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
+        PrintfStressMessageFormatter formatter = new(target, specialPointerFormatter.Object);
         Assert.Equal($"We have a StackTrace: 0x{value:X}", formatter.GetFormattedMessage(message));
     }
 
@@ -285,7 +290,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %f", new StressMessageArgument.FloatingPoint(value));
 
-        Assert.Equal($"The answer is {value:0.######}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+        Assert.Equal($"The answer is {value:0.######}", new PrintfStressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
     }
 
     [Theory]
@@ -296,7 +301,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %.6f", new StressMessageArgument.FloatingPoint(value));
 
-        Assert.Equal($"The answer is {expected}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+        Assert.Equal($"The answer is {expected}", new PrintfStressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
     }
 
     [Theory]
@@ -307,7 +312,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %10.6f", new StressMessageArgument.FloatingPoint(value));
 
-        Assert.Equal($"The answer is {expected.PadLeft(10)}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+        Assert.Equal($"The answer is {expected.PadLeft(10)}", new PrintfStressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
     }
 
     [Theory]
@@ -318,7 +323,7 @@ public unsafe class StressMessageFormatterTests
     {
         var (target, message) = CreateFixture("The answer is %08.3f", new StressMessageArgument.FloatingPoint(value));
 
-        Assert.Equal($"The answer is {expected}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+        Assert.Equal($"The answer is {expected}", new PrintfStressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
     }
 
     private static (Target target, StressMsgData Message) CreateFixture(string format, params StressMessageArgument[] args)

@@ -9,7 +9,7 @@ namespace StressLogAnalyzer.Output;
 
 internal sealed class StressMessageWriter(IThreadNameOutput threadOutput, TimeTracker timeTracker, Target target, bool writeFormatString, TextWriter output) : IStressMessageOutput
 {
-    private StressMessageFormatter formatter = new(target, new DefaultSpecialPointerFormatter());
+    private PrintfStressMessageFormatter formatter = new(target, new DefaultSpecialPointerFormatter());
 
     public async Task OutputLineAsync(string line) => await output.WriteLineAsync(line).ConfigureAwait(false);
 

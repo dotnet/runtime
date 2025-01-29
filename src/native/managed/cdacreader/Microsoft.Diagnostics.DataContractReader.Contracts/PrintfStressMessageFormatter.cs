@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
@@ -8,10 +10,19 @@ using System.Text;
 using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
-namespace StressLogAnalyzer;
+namespace Microsoft.Diagnostics.DataContractReader;
 
-public sealed class StressMessageFormatter
+public sealed class PrintfStressMessageFormatter
 {
+    public interface ISpecialPointerFormatter
+    {
+        string FormatMethodTable(TargetPointer pointer);
+        string FormatMethodDesc(TargetPointer pointer);
+        string FormatVTable(TargetPointer pointer);
+        string FormatStackTrace(TargetPointer pointer);
+    }
+
+
     private record struct PaddingFormat(int Width, char FormatChar, int Precision = 6);
 
     private readonly Target _target;
@@ -19,7 +30,7 @@ public sealed class StressMessageFormatter
     private readonly Dictionary<string, Action<TargetPointer, PaddingFormat, StringBuilder>> _formatActions;
     private readonly Dictionary<string, Action<TargetPointer, PaddingFormat, StringBuilder>> _alternateActions;
 
-    public StressMessageFormatter(Target target, ISpecialPointerFormatter pointerFormatter)
+    public PrintfStressMessageFormatter(Target target, ISpecialPointerFormatter pointerFormatter)
     {
         _target = target;
         _pointerFormatter = pointerFormatter;
