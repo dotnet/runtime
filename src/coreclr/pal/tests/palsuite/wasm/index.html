@@ -10,16 +10,21 @@
     </pre>
     <script>
         const nextRunDelay = 500;
-        const capturedTestCaseNames = [];
-        capturingTestCaseNames = true;
         nextRunTimeout = -1;
-        nextTestName = location.hash.trim();
+        nextTestName = location.hash.trim().substring(1);
+        capturingTestCaseNames = nextTestName.length === 0;
+        const capturedTestCaseNames = capturingTestCaseNames
+            ? []
+            : JSON.parse(localStorage.getItem("testCaseNames"));
 
         Module = {
-            arguments: ["PrintPalTests"],
+            arguments: capturingTestCaseNames
+                ? ["PrintPalTests"]
+                : [nextTestName],
             quit: function (code) {
                 if (capturingTestCaseNames) {
                     capturedTestCaseNames.sort();
+                    localStorage.setItem("testCaseNames", JSON.stringify(capturedTestCaseNames));
                     console.log("Captured " + capturedTestCaseNames.length + " test name(s). Starting test run.");
                     capturingTestCaseNames = false;
                 }
@@ -40,22 +45,12 @@
 
         function performNextRun () {
             nextRunTimeout = -1;
-            if (nextTestName === undefined) {
-                console.error("Reached end of test name list");
-            } else if (nextTestName.length === 0)
-                nextTestName = capturedTestCaseNames[0];
+            const testIndex = capturedTestCaseNames.indexOf(Module.arguments[1]);
+            const nextTestName = capturedTestCaseNames[testIndex + 1];
+            console.log("We just ran " + Module.arguments[1] + " which is test index " + testIndex + "; next test is " + nextTestName);
 
-            const testIndex = capturedTestCaseNames.indexOf(nextTestName);
-            if (testIndex < 0) {
-                console.error("No test named " + nextTestName + " in test list");
-                return;
-            }
-
-            const args = Module.arguments = [nextTestName];
-            console.log("Starting test " + nextTestName);
-
-            nextTestName = capturedTestCaseNames[testIndex + 1];
-            callMain(args);
+            location.hash = "#" + nextTestName;
+            window.setTimeout(location.reload.bind(location), 500);
         }
 
         const originalConsoleLog = console.log;
