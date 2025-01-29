@@ -7,7 +7,8 @@ parameters:
   isExtraPlatformsBuild: false
   isiOSLikeOnlyBuild: false
   isRollingBuild: false
-
+  # triggeredAutomatically: false
+  #     - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['monoAotLlvmContainsChange'], true), eq(variables['triggeredAutomatically'], true)) }}
 jobs:
 
 #
@@ -35,7 +36,7 @@ jobs:
         value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
+      nameSuffix: AllSubsets_Mono_FullLibraries
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       # Don't trim tests on rolling builds
       ${{ if eq(variables['isRollingBuild'], true) }}:
