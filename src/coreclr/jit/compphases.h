@@ -109,6 +109,7 @@ CompPhaseNameMacro(PHASE_EXPAND_RTLOOKUPS,           "Expand runtime lookups",  
 CompPhaseNameMacro(PHASE_EXPAND_STATIC_INIT,         "Expand static init",             false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_CASTS,               "Expand casts",                   false, -1, true)
 CompPhaseNameMacro(PHASE_EXPAND_TLS,                 "Expand TLS access",              false, -1, true)
+CompPhaseNameMacro(PHASE_EXPAND_STACK_ARR,           "Expand stack array allocation",  false, -1, true)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,            "Insert GC Polls",                false, -1, true)
 CompPhaseNameMacro(PHASE_CREATE_THROW_HELPERS,       "Create throw helper blocks",     false, -1, true)
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block",     false, -1, true)

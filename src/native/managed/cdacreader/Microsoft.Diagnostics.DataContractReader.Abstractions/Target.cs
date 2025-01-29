@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader;
 /// information. Like the contracts themselves in cdacreader, these are throwing APIs. Any callers at the boundaries
 /// (for example, unmanaged entry points, COM) should handle any exceptions.
 /// </remarks>
-internal abstract class Target
+public abstract class Target
 {
     /// <summary>
     /// Pointer size of the target

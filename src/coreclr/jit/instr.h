@@ -85,7 +85,7 @@ enum instruction : uint32_t
 };
 
 //------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// IsSimdInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
 // Technically, K instructions would be considered under the VEX encoding umbrella, but due to
 // the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
 //
@@ -95,10 +95,10 @@ enum instruction : uint32_t
 // Returns:
 //    `true` if it is a sse or avx or avx512 instruction.
 //
-inline bool IsAvx512OrPriorInstruction(instruction ins)
+inline bool IsSimdInstruction(instruction ins)
 {
 #if defined(TARGET_XARCH)
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX10v2_INSTRUCTION);
 #else
     return false;
 #endif // TARGET_XARCH
