@@ -102,6 +102,12 @@ jobs:
             testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      # Run the job when triggered via runtime-ioslike, runtime-extra-platforms, or on PRs containing Mono AOT LLVM changes
+      condition: >-
+        or(
+          or(eq(variables['isiOSLikeOnlyBuild'], true), eq(variables['isExtraPlatformsBuild'], true)),
+          and(eq(variables['isRollingBuild'], false), eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true))
+        )
 
 #
 # iOS/tvOS devices
@@ -136,6 +142,10 @@ jobs:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+      # Run the job when triggered via runtime-ioslike, runtime-extra-platforms
+      condition: or(eq(variables['isiOSLikeOnlyBuild'], true), eq(variables['isExtraPlatformsBuild'], true))
+        
+          
 
 #
 # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices
@@ -173,3 +183,5 @@ jobs:
             testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             buildAllTestsAsStandalone: true
+      # Run the job when triggered via runtime-ioslike, runtime-extra-platforms
+      condition: or(eq(variables['isiOSLikeOnlyBuild'], true), eq(variables['isExtraPlatformsBuild'], true))
