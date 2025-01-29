@@ -190,7 +190,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -sign -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:PublishAllPackages=true /p:AssetManifestFileName=CrossDac.xml
+            buildArgs: -s crossdacpack -c $(_BuildConfig) -restore -build -sign -publish /p:CrossDacArtifactsDir=$(crossDacArtifactsPath) /p:PublishAllPackages=true
             nameSuffix: CrossDac
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
@@ -291,7 +291,7 @@ extends:
           - browser_wasm
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /p:AssetManifestFileName=browser_wasm_Multithreaded.xml
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
@@ -310,7 +310,7 @@ extends:
           runtimeFlavor: mono
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish /p:AssetManifestFileName=$(_AssetManifestName).xml
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish
                         /p:MonoEnableLLVM=true /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             nameSuffix: Mono_LLVMAOT
             runtimeVariant: LLVMAOT
@@ -327,7 +327,7 @@ extends:
           - windows_x64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:PublishAllPackages=true /p:AssetManifestFileName=LibrariesPackages.xml
+            buildArgs: -s tools+libs -restore -build -pack -sign -publish -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true /p:PublishAllPackages=true
             nameSuffix: Libraries_WithPackages
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 95
@@ -357,7 +357,7 @@ extends:
           - linux_arm64
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true /p:AssetManifestFileName=$(_AssetManifestName).xml
+            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -restore -build -sign -publish -pgoinstrument /p:SkipLibrariesNativeRuntimePackages=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             nameSuffix: PGO
             timeoutInMinutes: 95
@@ -411,7 +411,7 @@ extends:
                   PackageArtifacts/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
                   PackageArtifacts/Microsoft.NET.Sdk.WebAssembly.Pack*.nupkg
 
-            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:PublishAllPackages=true /p:AssetManifestFileName=Workloads.xml
+            buildArgs: -s mono.workloads -c $(_BuildConfig) -restore -build -sign -publish /p:PackageSource=$(Build.SourcesDirectory)/artifacts/workloadPackages /p:WorkloadOutputPath=$(Build.SourcesDirectory)/artifacts/workloads /p:ShouldGenerateProductVersionFiles=true /p:PublishAllPackages=true
 
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120

@@ -57,10 +57,9 @@
 
     <Artifact Include="$(ArtifactsDir)VSSetup\**\*.zip"
               Condition="Exists('$(ArtifactsDir)VSSetup')"
-              IsShipping="false">
-      <ChecksumPath>%(FullPath).sha512</ChecksumPath>
-      <SubBlobFolder>workloads/</SubBlobFolder>
-    </Artifact>
+              IsShipping="false"
+              ChecksumPath="%(FullPath).sha512"
+              SubBlobFolder="workloads/" />
   </ItemGroup>
 
 </Project>
