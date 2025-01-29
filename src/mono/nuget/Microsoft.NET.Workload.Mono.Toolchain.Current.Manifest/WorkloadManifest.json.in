@@ -197,7 +197,10 @@
     },
     "Microsoft.NET.Runtime.WebAssembly.Templates.${NetVersion}": {
       "kind": "template",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "any": "Microsoft.NET.Runtime.WebAssembly.Templates"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.android-arm": {
       "kind": "framework",
