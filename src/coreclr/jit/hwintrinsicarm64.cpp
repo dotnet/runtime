@@ -2270,11 +2270,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             bool canBecomeValidForShuffle = false;
             if (!IsValidForShuffle(indices, simdSize, simdBaseType, &canBecomeValidForShuffle))
             {
+                // All cases on arm64 are either valid or invalid, they cannot become valid later
+                assert(!canBecomeValidForShuffle);
                 break;
             }
-
-            // All cases on arm64 are either valid or invalid, they cannot become valid later
-            assert(!canBecomeValidForShuffle);
 
             // If the indices might become constant later, then we don't emit for now, delay until later.
             if (!indices->IsCnsVec())
