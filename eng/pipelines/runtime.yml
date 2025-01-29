@@ -1751,7 +1751,7 @@ extends:
             - name: triggeredAutomatically
               value: true
             - name: monoAotLlvmChange
-              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'] ]
+              value: false
 
       # #
       # # Run "runtime-llvm.yml" on PRs when Mono AOT LLVM changes
