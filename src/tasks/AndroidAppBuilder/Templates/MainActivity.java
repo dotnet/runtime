@@ -47,6 +47,7 @@ public class MainActivity extends Activity
             public void run() {
                 int retcode = MonoRunner.executeEntryPoint(entryPointLibName, new String[0]);
                 textView.setText("Mono Runtime returned: " + retcode);
+                ctx.reportFullyDrawn();
             }
         }, 1000);
     }
