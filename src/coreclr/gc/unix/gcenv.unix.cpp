@@ -96,22 +96,6 @@ extern "C"
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
-// Ensure __NR_membarrier is defined for portable builds.
-# if !defined(__NR_membarrier)
-#  if defined(__amd64__)
-#   define __NR_membarrier  324
-#  elif defined(__i386__)
-#   define __NR_membarrier  375
-#  elif defined(__arm__)
-#   define __NR_membarrier  389
-#  elif defined(__aarch64__)
-#   define __NR_membarrier  283
-#  elif defined(__loongarch64)
-#   define __NR_membarrier  283
-#  else
-#   error Unknown architecture
-#  endif
-# endif
 #endif
 
 #if HAVE_PTHREAD_NP_H

@@ -498,6 +498,46 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector4 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector4();
 
+        /// <summary>
+        /// Computes the cross product of two vectors. For homogeneous coordinates,
+        /// the product of the weights is the new weight for the resulting product.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <returns>The cross product.</returns>
+        /// <remarks>
+        /// The proposed Cross function for <see cref="Vector4"/> is nearly the same as that for
+        /// <see cref="Vector3.Cross"/> with the addition of the fourth value which is
+        /// the product of the original two w's. This can be derived by symbolically performing
+        /// the cross product for <see cref="Vector3"/> with values [x_1/w_1, y_1/w_1, z_1/w_1]
+        /// and [x_2/w_2, y_2/w_2, z_2/w_2].
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 Cross(Vector4 vector1, Vector4 vector2)
+        {
+            //return new Vector4(
+            //    (vector1.Y * vector2.Z) - (vector1.Z * vector2.Y),
+            //    (vector1.Z * vector2.X) - (vector1.X * vector2.Z),
+            //    (vector1.X * vector2.Y) - (vector1.Y * vector2.X),
+            //    (vector1.W * vector2.W)
+            //);
+
+            // This implementation is based on the DirectX Math Library XMVector3Cross method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
+            Vector128<float> v1 = vector1.AsVector128();
+            Vector128<float> v2 = vector2.AsVector128();
+
+            Vector128<float> m2 = Vector128.Shuffle(v1, Vector128.Create(2, 0, 1, 3)) *
+                 Vector128.Shuffle(v2, Vector128.Create(1, 2, 0, 3));
+
+            return Vector128.MultiplyAddEstimate(
+                Vector128.Shuffle(v1, Vector128.Create(1, 2, 0, 3)),
+                Vector128.Shuffle(v2, Vector128.Create(2, 0, 1, 3)),
+                -m2.WithElement(3, 0)
+            ).AsVector4();
+        }
+
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
