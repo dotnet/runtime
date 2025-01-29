@@ -2761,14 +2761,20 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
     // this is cheaper than any other insertion point, as no existing regions get renumbered.
     //
     unsigned insertBeforeIndex = enclosingTryIndex;
-    if (insertBeforeIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+    if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) && (enclosingHndIndex == EHblkDsc::NO_ENCLOSING_INDEX))
     {
-        JITDUMP("Cloned EH clauses will go at the end of the EH table\n");
+        JITDUMP("No enclosing EH region; cloned EH clauses will go at the end of the EH table\n");
         insertBeforeIndex = compHndBBtabCount;
+    }
+    else if ((enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) || (enclosingHndIndex < enclosingTryIndex))
+    {
+        JITDUMP("Cloned EH clauses will go before enclosing handler region EH#%02u\n", enclosingHndIndex);
+        insertBeforeIndex = enclosingHndIndex;
     }
     else
     {
-        JITDUMP("Cloned EH clauses will go before enclosing region EH#%02u\n", enclosingTryIndex);
+        JITDUMP("Cloned EH clauses will go before enclosing try region EH#%02u\n", enclosingTryIndex);
+        assert(insertBeforeIndex == enclosingTryIndex);
     }
 
     // Once we call fgTryAddEHTableEntries with deferCloning = false,
@@ -2989,7 +2995,7 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
             const unsigned originalTryIndex = block->getTryIndex();
             unsigned       cloneTryIndex    = originalTryIndex;
 
-            if (originalTryIndex <= outermostTryIndex)
+            if (originalTryIndex < enclosingTryIndex)
             {
                 cloneTryIndex += indexShift;
             }
@@ -3003,11 +3009,15 @@ BasicBlock* Compiler::fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info,
         if (block->hasHndIndex())
         {
             const unsigned originalHndIndex = block->getHndIndex();
+            unsigned       cloneHndIndex    = originalHndIndex;
 
-            // if (originalHndIndex ==
-            const unsigned  cloneHndIndex = originalHndIndex + indexShift;
-            EHblkDsc* const originalEbd   = ehGetDsc(originalHndIndex);
-            EHblkDsc* const clonedEbd     = ehGetDsc(cloneHndIndex);
+            if (originalHndIndex < enclosingHndIndex)
+            {
+                cloneHndIndex += indexShift;
+            }
+
+            EHblkDsc* const originalEbd = ehGetDsc(originalHndIndex);
+            EHblkDsc* const clonedEbd   = ehGetDsc(cloneHndIndex);
             newBlock->setHndIndex(cloneHndIndex);
             updateBlockReferences(cloneHndIndex);
 
