@@ -17,6 +17,9 @@
             "file_io/WriteFile/test5/paltest_writefile_test5", // infinite loop
             "filemapping_memmgt/MapViewOfFile/test1/paltest_mapviewoffile_test1", // infinite loop and then chrome crashes
             "miscellaneous/GetTickCount", // blocks main thread
+            "miscellaneous/queryperformancecounter", // blocks main thread
+            "threading/", // we're single-threaded
+            // "threading/CriticalSectionFunctions/test8/paltest_criticalsectionfunctions_test8", // blocks main thread
         ];
 
         const nextRunDelay = 50, reloadDelay = 50;
@@ -54,6 +57,9 @@
         };
 
         function isDisabledTest (testName) {
+            if (typeof (testName) !== "string")
+                return false;
+
             for (let pattern of disabledTestNamePatterns) {
                 if (testName.match(pattern)) {
                     console.log("Test '" + testName + "' is disabled by regex pattern '" + pattern + "'");
