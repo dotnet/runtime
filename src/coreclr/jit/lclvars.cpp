@@ -3632,7 +3632,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     assert(varDsc->lvClassHnd != NO_CLASS_HANDLE);
 
     // We should only be updating classes for single-def locals,
-    // or for the inlinee return spill temp that is freshly created.
+    // or for the inlinee return spill temps that are freshly created.
     assert(varDsc->lvSingleDef || (lvaInlineeReturnSpillTempFreshlyCreated && varNum == lvaInlineeReturnSpillTemp));
 
     // Now see if we should update.
