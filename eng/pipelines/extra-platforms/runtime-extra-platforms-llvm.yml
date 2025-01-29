@@ -1,6 +1,15 @@
 # This contains only Mono LLVM AOT jobs
 # These are run as part of runtime-llvm by default.
-
+        # or(
+        #   and(
+        #     eq(variables['isLLVMOnlyBuild'], true),
+        #     or(
+        #       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+        #       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+        #       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true)
+        #     )
+        #   ),
+        #   eq(variables['isRollingBuild'], true))
 parameters:
   isLLVMOnlyBuild: false
   isRollingBuild: false
@@ -29,16 +38,7 @@ jobs:
           eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
-        # or(
-        #   and(
-        #     eq(variables['isLLVMOnlyBuild'], true),
-        #     or(
-        #       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-        #       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-        #       eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true)
-        #     )
-        #   ),
-        #   eq(variables['isRollingBuild'], true))
+
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
