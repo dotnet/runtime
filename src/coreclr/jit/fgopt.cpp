@@ -328,8 +328,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     {
                         // If we are inlining System.SZArrayHelper.GetEnumerator, update the type of the return spill
                         // temp regardless of whether it is single def or not.
-                        returnSpillVarDsc->lvType = TYP_REF;
-                        returnSpillVarDsc->lvClassHnd = retExprClassHnd;
+                        returnSpillVarDsc->lvClassHnd     = retExprClassHnd;
                         returnSpillVarDsc->lvClassIsExact = impInlineInfo->retExprClassHndIsExact;
 #if DEBUG
                         returnSpillVarDsc->lvClassInfoUpdated = true;
