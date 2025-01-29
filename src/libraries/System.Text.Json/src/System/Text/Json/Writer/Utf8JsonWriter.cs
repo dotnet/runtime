@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -34,24 +35,13 @@ namespace System.Text.Json
         private const int DefaultGrowthSize = 4096;
         private const int InitialGrowthSize = 256;
 
-        // A special value for JsonTokenType that lets the writer keep track of string segments.
-        private const JsonTokenType StringSegmentSentinel = (JsonTokenType)255;
-
-        // Masks and flags for the length and encoding of the partial string data.
-        private const byte PartialStringDataLengthMask =            0b000_000_11;
-        private const byte PartialStringDataEncodingMask =          0b000_111_00;
-
-        private const byte PartialStringDataUtf8EncodingFlag =      0b000_001_00;
-        private const byte PartialStringDataUtf16EncodingFlag =     0b000_010_00;
-        private const byte PartialStringDataBase64EncodingFlag =    0b000_100_00;
-
         private IBufferWriter<byte>? _output;
         private Stream? _stream;
         private ArrayBufferWriter<byte>? _arrayBufferWriter;
 
         private Memory<byte> _memory;
 
-        private bool _inObject;
+        private EnclosingContainerType _enclosingContainer;
         private bool _commentAfterNoneOrPropertyName;
         private JsonTokenType _tokenType;
         private BitStack _bitStack;
@@ -75,11 +65,9 @@ namespace System.Text.Json
 #endif
 
         /// <summary>
-        /// Stores the length and encoding of the partial string data. Outside of segment writes, this value is 0.
-        /// Across segment writes, this value is always non-zero even if the length is 0, to indicate the encoding of the segment.
-        /// This allows detection of encoding changes across segment writes.
+        /// Length of the partial string data.
         /// </summary>
-        private byte _partialStringDataFlags;
+        private byte _partialStringDataLength;
 
         // The highest order bit of _currentDepth is used to discern whether we are writing the first item in a list or not.
         // if (_currentDepth >> 31) == 1, add a list separator before writing the item
@@ -128,27 +116,18 @@ namespace System.Text.Json
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
 
         /// <summary>
-        /// Length of the partial string data.
-        /// </summary>
-        private byte PartialStringDataLength
-        {
-            get => (byte)(_partialStringDataFlags & PartialStringDataLengthMask);
-            set => _partialStringDataFlags = (byte)((_partialStringDataFlags & ~PartialStringDataLengthMask) | value);
-        }
-
-        /// <summary>
         /// The partial UTF-8 code point.
         /// </summary>
         private ReadOnlySpan<byte> PartialUtf8StringData
         {
             get
             {
-                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf8);
+                Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf8StringSequence);
 
                 ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
                 Debug.Assert(partialStringDataBytes.Length == 3);
 
-                byte length = PartialStringDataLength;
+                byte length = _partialStringDataLength;
                 Debug.Assert(length < 4);
 
                 return partialStringDataBytes.Slice(0, length);
@@ -161,7 +140,7 @@ namespace System.Text.Json
                 Span<byte> partialStringDataBytes = PartialStringDataRaw;
 
                 value.CopyTo(partialStringDataBytes);
-                PartialStringDataLength = (byte)value.Length;
+                _partialStringDataLength = (byte)value.Length;
             }
         }
 
@@ -172,12 +151,12 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Utf16);
+                Debug.Assert(_enclosingContainer == EnclosingContainerType.Utf16StringSequence);
 
                 ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
                 Debug.Assert(partialStringDataBytes.Length == 3);
 
-                byte length = PartialStringDataLength;
+                byte length = _partialStringDataLength;
                 Debug.Assert(length is 2 or 0);
 
                 return MemoryMarshal.Cast<byte, char>(partialStringDataBytes.Slice(0, length));
@@ -189,7 +168,7 @@ namespace System.Text.Json
                 Span<byte> partialStringDataBytes = PartialStringDataRaw;
 
                 value.CopyTo(MemoryMarshal.Cast<byte, char>(partialStringDataBytes));
-                PartialStringDataLength = (byte)(2 * value.Length);
+                _partialStringDataLength = (byte)(2 * value.Length);
             }
         }
 
@@ -200,12 +179,12 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(PreviousSegmentEncoding == SegmentEncoding.Base64);
+                Debug.Assert(_enclosingContainer == EnclosingContainerType.Base64StringSequence);
 
                 ReadOnlySpan<byte> partialStringDataBytes = PartialStringDataRaw;
                 Debug.Assert(partialStringDataBytes.Length == 3);
 
-                byte length = PartialStringDataLength;
+                byte length = _partialStringDataLength;
                 Debug.Assert(length < 3);
 
                 return partialStringDataBytes.Slice(0, length);
@@ -217,28 +196,8 @@ namespace System.Text.Json
                 Span<byte> partialStringDataBytes = PartialStringDataRaw;
 
                 value.CopyTo(partialStringDataBytes);
-                PartialStringDataLength = (byte)value.Length;
+                _partialStringDataLength = (byte)value.Length;
             }
-        }
-
-        /// <summary>
-        /// Encoding used for the previous string segment write.
-        /// </summary>
-        private SegmentEncoding PreviousSegmentEncoding
-        {
-            get => (SegmentEncoding)(_partialStringDataFlags & PartialStringDataEncodingMask);
-            set => _partialStringDataFlags = (byte)((_partialStringDataFlags & ~PartialStringDataEncodingMask) | (byte)value);
-        }
-
-        /// <summary>
-        /// Convenience enumeration to track the encoding of the partial string data. This must be kept in sync with the PartialStringData*Encoding flags.
-        /// </summary>
-        internal enum SegmentEncoding : byte
-        {
-            None = 0,
-            Utf8 = PartialStringDataUtf8EncodingFlag,
-            Utf16 = PartialStringDataUtf16EncodingFlag,
-            Base64 = PartialStringDataBase64EncodingFlag,
         }
 
         private Utf8JsonWriter()
@@ -412,7 +371,7 @@ namespace System.Text.Json
             BytesCommitted = default;
             _memory = default;
 
-            _inObject = default;
+            _enclosingContainer = default;
             _tokenType = default;
             _commentAfterNoneOrPropertyName = default;
             _currentDepth = default;
@@ -420,7 +379,7 @@ namespace System.Text.Json
             _bitStack = default;
 
             _partialStringData = default;
-            _partialStringDataFlags = default;
+            _partialStringDataLength = default;
         }
 
         private void CheckNotDisposed()
@@ -616,7 +575,9 @@ namespace System.Text.Json
         private void WriteStart(byte token)
         {
             if (CurrentDepth >= _options.MaxDepth)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, _options.MaxDepth, token: default, tokenType: default);
+            {
+                ThrowInvalidOperationException_DepthTooLarge();
+            }
 
             if (_options.IndentedOrNotSkipValidation)
             {
@@ -670,27 +631,37 @@ namespace System.Text.Json
 
         private void ValidateStart()
         {
-            // Make sure a new object or array is not attempted within an unfinalized string.
-            ValidateNotWithinUnfinalizedString();
-
-            if (_inObject)
+            // Note that Start[Array|Object] indicates the start of a value, so the same check can be used.
+            if (!CanWriteValue)
             {
-                if (_tokenType != JsonTokenType.PropertyName)
-                {
-                    Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
-                }
+                OnValidateStartFailed();
+            }
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void OnValidateStartFailed()
+        {
+            // Make sure a new object or array is not attempted within an unfinalized string.
+            if (IsWritingPartialString)
+            {
+                ThrowInvalidOperationException(ExceptionResource.CannotWriteWithinString);
+            }
+
+            Debug.Assert(!HasPartialStringData);
+
+            if (_enclosingContainer == EnclosingContainerType.Object)
+            {
+                Debug.Assert(_tokenType != JsonTokenType.PropertyName);
+                Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
+                ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty);
             }
             else
             {
                 Debug.Assert(_tokenType != JsonTokenType.PropertyName);
                 Debug.Assert(_tokenType != JsonTokenType.StartObject);
-
-                // It is more likely for CurrentDepth to not equal 0 when writing valid JSON, so check that first to rely on short-circuiting and return quickly.
-                if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
-                {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
-                }
+                Debug.Assert(CurrentDepth == 0 && _tokenType != JsonTokenType.None);
+                ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose);
             }
         }
 
@@ -1096,33 +1067,32 @@ namespace System.Text.Json
             }
         }
 
+        // Performance degrades significantly in some scenarios when inlining is allowed.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void ValidateEnd(byte token)
         {
-            // Make sure an object is not ended within an unfinalized string.
-            ValidateNotWithinUnfinalizedString();
-
-            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+            if (_tokenType == JsonTokenType.PropertyName)
+                ThrowInvalidOperationException_MismatchedObjectArray(token);
 
             if (token == JsonConstants.CloseBracket)
             {
-                if (_inObject)
+                if (_enclosingContainer != EnclosingContainerType.Array)
                 {
-                    Debug.Assert(_tokenType != JsonTokenType.None);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+                    ThrowInvalidOperationException_MismatchedObjectArray(token);
                 }
             }
             else
             {
                 Debug.Assert(token == JsonConstants.CloseBrace);
 
-                if (!_inObject)
+                if (_enclosingContainer != EnclosingContainerType.Object)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+                    ThrowInvalidOperationException_MismatchedObjectArray(token);
                 }
             }
 
-            _inObject = _bitStack.Pop();
+            EnclosingContainerType container = _bitStack.Pop() ? EnclosingContainerType.Object : EnclosingContainerType.Array;
+            _enclosingContainer = _bitStack.CurrentDepth == 0 ? EnclosingContainerType.None : container;
         }
 
         private void WriteEndIndented(byte token)
@@ -1188,13 +1158,13 @@ namespace System.Text.Json
             if (token == JsonConstants.OpenBracket)
             {
                 _bitStack.PushFalse();
-                _inObject = false;
+                _enclosingContainer = EnclosingContainerType.Array;
             }
             else
             {
                 Debug.Assert(token == JsonConstants.OpenBrace);
                 _bitStack.PushTrue();
-                _inObject = true;
+                _enclosingContainer = EnclosingContainerType.Object;
             }
         }
 
@@ -1270,7 +1240,72 @@ namespace System.Text.Json
             _currentDepth |= 1 << 31;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
+        private void ThrowInvalidOperationException(ExceptionResource resource)
+            => ThrowHelper.ThrowInvalidOperationException(resource, currentDepth: default, maxDepth: _options.MaxDepth, token: default, _tokenType);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
+        private void ThrowInvalidOperationException_MismatchedObjectArray(byte token)
+            => ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, maxDepth: _options.MaxDepth, token, _tokenType);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
+        private void ThrowInvalidOperationException_DepthTooLarge()
+            => ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, _options.MaxDepth, token: default, tokenType: default);
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"BytesCommitted = {BytesCommitted} BytesPending = {BytesPending} CurrentDepth = {CurrentDepth}";
+
+        /// <summary>
+        /// Indicates whether the writer is currently writing a partial string value.
+        /// </summary>
+        private bool IsWritingPartialString => _enclosingContainer >= EnclosingContainerType.Utf8StringSequence;
+
+        /// <summary>
+        /// The type of container that is enclosing the current position. The underlying values have been chosen
+        /// to allow <see cref="CanWriteValue"/> to be done using bitwise operations and must be kept in sync with <see cref="JsonTokenType"/>.
+        /// </summary>
+        internal enum EnclosingContainerType : byte
+        {
+            /// <summary>
+            /// Root level. The choice of <see cref="JsonTokenType.None"/> allows fast validation by equality comparison when writing values
+            /// since a value can be written at the root level only if there was no previous token.
+            /// </summary>
+            None = JsonTokenType.None,
+
+            /// <summary>
+            /// JSON object. The choice of <see cref="JsonTokenType.PropertyName"/> allows fast validation by equality comparison when writing values
+            /// since a value can be written inside a JSON object only if the previous token is a property name.
+            /// </summary>
+            Object = JsonTokenType.PropertyName,
+
+            /// <summary>
+            /// JSON array. Chosen so that its lower nibble is 0 to ensure it does not conflict with <see cref="JsonTokenType"/> numeric values that currently are less than 16.
+            /// </summary>
+            Array = 0x10,
+
+            /// <summary>
+            /// Partial UTF-8 string. This is a container if viewed as an array of "utf-8 string segment"-typed values. This array can only be one level deep
+            /// so <see cref="_bitStack"/> does not need to store its state.
+            /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
+            /// </summary>
+            Utf8StringSequence = 0x20,
+
+            /// <summary>
+            /// Partial UTF-16 string. This is a container if viewed as an array of "utf-16 string segment"-typed values. This array can only be one level deep
+            /// so <see cref="_bitStack"/> does not need to store its state.
+            /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
+            /// </summary>
+            Utf16StringSequence = 0x30,
+
+            /// <summary>
+            /// Partial Base64 string. This is a container if viewed as an array of "base64 string segment"-typed values. This array can only be one level deep
+            /// so <see cref="_bitStack"/> does not need to store its state.
+            /// <see cref="IsWritingPartialString"/> relies on the value of the partial string members being the largest values of this enum.
+            /// </summary>
+            Base64StringSequence = 0x40,
+        }
     }
 }

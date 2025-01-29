@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             }
             else
             {
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_JALR);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
                 EmitPC(Register.X29); // auipc x29, 0
                 EmitJALR(Register.X0, Register.X29, 0); // jalr x0, 0(x29)
             }
