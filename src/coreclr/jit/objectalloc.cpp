@@ -442,7 +442,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
         unsigned        lclNum = 0;
         while (iter.NextElem(&lclNum))
         {
-            JITDUMP(" V%02", lclNum);
+            JITDUMP(" V%02u", lclNum);
         }
         JITDUMP("\n");
     }

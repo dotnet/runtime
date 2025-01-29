@@ -602,7 +602,7 @@ G_M17657_IG03:  ;; offset=0x0040
 						;; size=24 bbWeight=513.74 PerfScore 4366.81
 G_M17657_IG04:  ;; offset=0x0058
        cmp      edx, eax
-       jb       SHORT G_M17657_IG033
+       jb       SHORT G_M17657_IG03
 ```
 
 It might be that with proper inversion, further cloning, etc, we could eliminate the bounds check, hoist out the fetch of the array, and strength reduce here.
@@ -632,6 +632,10 @@ It also turns out that if there are sequential `foreach` of the same local that 
 I haven't yet checked what happens if there are nested `foreach` with the same collection, presumably this can't share the enumerator var and ends up just like the nested case.
 
 Another area to explore are `Linq` methods that take two (or more) `IEnumerable<T>` as arguments, for instance `Zip` or `Union` or `Intersect`. Some of these (but not all) will look like nested cases.
+
+### GDV Chaining
+
+In some cases two enumerator methods are called back to back without any control flow. An optimization known as GDV chaining can alter what would be two adjacent diamonds into a slighly different flow shape, and when this happens the "slow path" call in the second GDV will no longer be dominated by its own check, appear to be reachable by both paths from the upper GDV check. Seems like we ought to either disable GDV chaining for these types of tests, or else enhance the flow logic to understand the shape produced by GDV chaining.
 
 ## Linq
 
@@ -727,7 +731,7 @@ G_M8017_IG06:  ;; offset=0x00C4
 
 Now let's briefly look at the `Linq` case ([link to source](https://github.com/dotnet/runtime/blob/4951e38fc5882ddf7df68c956acb6f5586ef47dd/src/libraries/System.Linq/src/System/Linq/Where.cs#L12)). Here things are similar but different. `Where` orchestrates handling for arrays and lists via special helper objects, and for other collection types relies on something like our `NaiveWhere`.
 
-For arrays the `ArrayWhereIterator` accesses the array directly rather than creating and using the standard array enumerator; this is presumably the reason for less allocation and faster iteration. The `MoveNext` does not contain EH and gets inlined, but again for the same reason as above `Current` is cold and so not inlined. (Footnote 18)
+For arrays the `ArrayWhereIterator` accesses the array directly rather than creating and using the standard array enumerator; this is presumably the reason for less allocation and faster iteration. The `MoveNext` does not contain EH and gets inlined, but again for the same reason as above `Current` is cold and so not inlined. (Footnote 19)
 
 The JIT also does GDV on the delegate invocation, so the inner "filter" loop is not too bad (given lack of promotion):
 ```asm
