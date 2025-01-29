@@ -59,7 +59,7 @@ typedef struct {
 	uint16_t id; // One of the SN_ constants
 	uint16_t default_op; // ins->opcode
 	uint16_t default_instc0; // ins->inst_c0
-	uint16_t unsigned_op;
+	uint16_t unsigned_op; //tes tchange
 	uint16_t unsigned_instc0;
 	uint16_t floating_op;
 	uint16_t floating_instc0;
