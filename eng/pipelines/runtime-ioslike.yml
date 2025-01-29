@@ -4,17 +4,18 @@
 
 trigger: none
 
-# variables:
-#   - template: /eng/pipelines/common/variables.yml
+variables:
+  - template: /eng/pipelines/common/variables.yml
 
-# extends:
-#   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
-#   parameters:
-#     stages:
-#     - stage: Build
-#       jobs:
-#       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
-#         parameters:
-#           isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-#           isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
-#           isRollingBuild: ${{ variables.isRollingBuild }}
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(true, false)) }}:
+      - stage: Build
+        jobs:
+        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+          parameters:
+            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+            isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+            isRollingBuild: ${{ variables.isRollingBuild }}
