@@ -3601,7 +3601,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //    varNum -- number of the variable
 //    clsHnd -- class handle to use in set or update
 //    isExact -- true if class is known exactly
-//    mustBeSingleDef -- true if we should only update single-def locals
+//    singleDefOnly -- true if we should only update single-def locals
 //
 // Notes:
 //
@@ -3619,7 +3619,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HANDLE 
 //    for shared code, so ensuring this is so is currently not
 //    possible.
 
-void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact DEBUGARG(bool mustBeSingleDef))
+void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact, bool singleDefOnly)
 {
     assert(varNum < lvaCount);
 
@@ -3633,7 +3633,11 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     assert(varDsc->lvClassHnd != NO_CLASS_HANDLE);
 
     // We should only be updating classes for single-def locals if requested
-    assert(!mustBeSingleDef || varDsc->lvSingleDef);
+    if (singleDefOnly && !varDsc->lvSingleDef)
+    {
+        assert(!"Updating class for multi-def local");
+        return;
+    }
 
     // Now see if we should update.
     //

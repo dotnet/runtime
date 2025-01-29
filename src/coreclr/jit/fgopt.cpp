@@ -320,8 +320,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 if (returnSpillVarDsc->lvType == TYP_REF &&
                     (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated))
                 {
-                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
-                                   impInlineInfo->retExprClassHndIsExact DEBUGARG(false));
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact,
+                                   false);
                 }
             }
         }
