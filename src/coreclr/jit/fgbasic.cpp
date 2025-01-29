@@ -3562,6 +3562,8 @@ void Compiler::fgFindBasicBlocks()
                         lvaSetClass(lvaInlineeReturnSpillTemp, retClassHnd);
                     }
                 }
+
+                impInlineInfo->inlineCandidateInfo->preexistingSpillTemp = lvaInlineeReturnSpillTemp;
             }
         }
 
