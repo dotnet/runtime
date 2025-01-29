@@ -6,7 +6,58 @@
 </head>
 <body>
     <h1>PAL Tests WASM</h1>
+    <pre id="log">
+    </pre>
     <script>
+        const nextRunDelay = 500;
+        const capturedTestCaseNames = [];
+        capturingTestCaseNames = true;
+        nextRunTimeout = -1;
+        nextTestName = location.hash.trim();
+
+        Module = {
+            arguments: ["PrintPalTests"],
+            quit: function (code) {
+                if (capturingTestCaseNames) {
+                    capturedTestCaseNames.sort();
+                    console.log("Captured " + capturedTestCaseNames.length + " test name(s). Starting test run.");
+                    capturingTestCaseNames = false;
+                }
+
+                var msg = "exited with code " + code;
+                if (nextRunTimeout < 0)
+                    msg += "; scheduling next test";
+
+                if (code != 0)
+                    console.error(msg);
+                else
+                    console.log(msg);
+
+                if (nextRunTimeout < 0)
+                    nextRunTimeout = window.setTimeout(performNextRun, nextRunDelay);
+            },
+        };
+
+        function performNextRun () {
+            nextRunTimeout = -1;
+            if (nextTestName === undefined) {
+                console.error("Reached end of test name list");
+            } else if (nextTestName.length === 0)
+                nextTestName = capturedTestCaseNames[0];
+
+            const testIndex = capturedTestCaseNames.indexOf(nextTestName);
+            if (testIndex < 0) {
+                console.error("No test named " + nextTestName + " in test list");
+                return;
+            }
+
+            const args = Module.arguments = [nextTestName];
+            console.log("Starting test " + nextTestName);
+
+            nextTestName = capturedTestCaseNames[testIndex + 1];
+            callMain(args);
+        }
+
         const originalConsoleLog = console.log;
         console.log = function(message) {
             originalConsoleLog(message);
@@ -17,6 +68,13 @@
                     'Content-Type': 'text/plain'
                 }
             });
+            if (capturingTestCaseNames) {
+                capturedTestCaseNames.push(message.trim());
+            } else {
+                const elt = document.createElement("span");
+                elt.textContent = message + "\n";
+                document.querySelector("#log").appendChild(elt);
+            }
         };
         const originalConsoleError = console.error;
         console.error = function(message) {
@@ -28,6 +86,10 @@
                     'Content-Type': 'text/plain'
                 }
             });
+            const elt = document.createElement("span");
+            elt.textContent = message + "\n";
+            elt.style.color = "red";
+            document.querySelector("#log").appendChild(elt);
         };
     </script>
     <script src="paltests.js"></script>
