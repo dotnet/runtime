@@ -9,6 +9,10 @@
     <pre id="log">
     </pre>
     <script>
+        const disabledTestNamePatterns = [
+            "debug_api/.*"
+        ];
+
         const nextRunDelay = 100, reloadDelay = 100;
         nextRunTimeout = -1;
         nextTestName = location.hash.trim().substring(1);
@@ -43,14 +47,39 @@
             },
         };
 
+        function isDisabledTest (testName) {
+            for (let pattern of disabledTestNamePatterns) {
+                if (testName.match(pattern)) {
+                    console.log("Test '" + testName + "' is disabled by regex pattern '" + pattern + "'");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function pickNextTest (testIndex) {
+            let result = undefined;
+            do {
+                testIndex++;
+                result = capturedTestCaseNames[testIndex];
+            } while (isDisabledTest(result));
+            return result;
+        }
+
         function performNextRun () {
             nextRunTimeout = -1;
             const testIndex = capturedTestCaseNames.indexOf(Module.arguments[1]);
-            const nextTestName = capturedTestCaseNames[testIndex + 1];
+            const nextTestName = pickNextTest(testIndex);
             console.log("We just ran " + Module.arguments[1] + " which is test index " + testIndex + "; next test is " + nextTestName);
 
-            location.hash = "#" + nextTestName;
-            window.setTimeout(location.reload.bind(location), reloadDelay);
+            if (nextTestName === undefined) {
+                location.hash = "";
+                console.error("Test run complete");
+            } else {
+                location.hash = "#" + nextTestName;
+                window.setTimeout(location.reload.bind(location), reloadDelay);
+            }
         }
 
         const originalConsoleLog = console.log;
