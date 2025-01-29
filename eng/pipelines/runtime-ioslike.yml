@@ -6,15 +6,17 @@ trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  triggeredAutomatically: false
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
-    # - stage: Build
-    #   jobs:
-    #   - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
-    #     parameters:
-    #       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
-    #       isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
-    #       isRollingBuild: ${{ variables.isRollingBuild }}
+    - stage: Build
+      jobs:
+      - ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['monoAotLlvmContainsChange'], true), eq(variables['triggeredAutomatically'], true)) }}
+        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+          parameters:
+            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+            isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+            isRollingBuild: ${{ variables.isRollingBuild }}
