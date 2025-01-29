@@ -391,7 +391,18 @@ namespace CoreclrTestLib
                 }
 
                 Console.WriteLine("=========================================");
+                string? userName = Environment.GetEnvironmentVariable("USER");
+                if (string.IsNullOrEmpty(userName))
+                {
+                    userName="helixbot";
+                }
+
                 if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
                 {
                     return false;
                 }

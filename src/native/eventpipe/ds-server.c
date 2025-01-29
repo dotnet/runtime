@@ -181,7 +181,7 @@ EP_RT_DEFINE_THREAD_FUNC (server_thread)
 	}
 
 #if defined(PERFTRACING_MULTI_THREADED)
-	while (server_loop_tick () == 1) { }
+	while (server_loop_tick () == 0) { }
 	return (ep_rt_thread_start_func_return_t)0;
 #else // !PERFTRACING_MULTI_THREADED
 	return (ep_rt_thread_start_func_return_t)server_loop_tick ();
