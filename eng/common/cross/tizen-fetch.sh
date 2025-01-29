@@ -174,7 +174,7 @@ if [ "$TIZEN_ARCH" != "riscv64" ]; then
     fetch_tizen_pkgs ${TIZEN_ARCH} lldb lldb-devel
 fi
 Inform "fetch corefx packages"
-fetch_tizen_pkgs ${TIZEN_ARCH} libcom_err libcom_err-devel zlib zlib-devel libopenssl11 libopenssl1.1-devel krb5 krb5-devel
+fetch_tizen_pkgs ${TIZEN_ARCH} libcom_err libcom_err-devel libopenssl11 libopenssl1.1-devel krb5 krb5-devel
 
 Inform "Initialize standard unified"
 fetch_tizen_pkgs_init standard $UNIFIED
