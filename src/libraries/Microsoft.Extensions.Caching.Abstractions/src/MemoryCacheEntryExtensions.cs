@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// Expire the cache entry if the given <see cref="IChangeToken"/> expires.
+        /// Expires the cache entry if the given <see cref="IChangeToken"/> expires.
         /// </summary>
         /// <param name="options">The <see cref="MemoryCacheEntryOptions"/>.</param>
         /// <param name="expirationToken">The <see cref="IChangeToken"/> that causes the cache entry to expire.</param>
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// The given callback will be fired after the cache entry is evicted from the cache.
+        /// Fires the given callback after the cache entry is evicted from the cache.
         /// </summary>
         /// <param name="options">The <see cref="MemoryCacheEntryOptions"/>.</param>
         /// <param name="callback">The callback to register for calling after an entry is evicted.</param>
@@ -119,7 +119,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         /// <summary>
-        /// The given callback will be fired after the cache entry is evicted from the cache.
+        /// Fires the given callback after the cache entry is evicted from the cache.
         /// </summary>
         /// <param name="options">The <see cref="MemoryCacheEntryOptions"/>.</param>
         /// <param name="callback">The callback to register for calling after an entry is evicted.</param>

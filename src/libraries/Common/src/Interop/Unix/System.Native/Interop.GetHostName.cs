@@ -14,6 +14,11 @@ internal static partial class Interop
 
         internal static unsafe string GetHostName()
         {
+            if (OperatingSystem.IsWasi())
+            {
+                return "localhost";
+            }
+
             const int HOST_NAME_MAX = 255;
             const int ArrLength = HOST_NAME_MAX + 1;
 

@@ -9,12 +9,12 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Extension methods for adding configuration related options services to the DI container.
+    /// Extension methods for adding configuration-related options services to the DI container.
     /// </summary>
     public static class OptionsConfigurationServiceCollectionExtensions
     {
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance that <typeparamref name="TOptions" /> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The type of options being configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
             => services.Configure<TOptions>(Options.Options.DefaultName, config);
 
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance that <typeparamref name="TOptions" /> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The type of options being configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection
             => services.Configure<TOptions>(name, config, _ => { });
 
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance that <typeparamref name="TOptions" /> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The type of options being configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
             => services.Configure<TOptions>(Options.Options.DefaultName, config, configureBinder);
 
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance that <typeparamref name="TOptions" /> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The type of options being configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>

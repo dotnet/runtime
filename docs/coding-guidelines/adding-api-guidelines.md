@@ -24,8 +24,8 @@ the implementation without compat concerns in future releases.
 
 ### Determine target framework
 
-`net9.0` is the target framework version currently under development and the new apis
-should be added to `net9.0`. [More Information on TargetFrameworks](https://learn.microsoft.com/dotnet/standard/frameworks)
+`net10.0` is the target framework version currently under development and the new apis
+should be added to `net10.0`. [More Information on TargetFrameworks](https://learn.microsoft.com/dotnet/standard/frameworks)
 
 ## Making the changes in repo
 

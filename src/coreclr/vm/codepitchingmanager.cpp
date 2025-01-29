@@ -36,7 +36,6 @@
 
 #if defined(FEATURE_JIT_PITCHING)
 
-#include "nibblemapmacros.h"
 #include "threadsuspend.h"
 
 static PtrHashMap* s_pPitchingCandidateMethods = nullptr;
@@ -386,11 +385,7 @@ void MethodDesc::PitchNativeCode()
     }
     else
     {
-#ifdef FEATURE_INTERPRETER
-        SetNativeCodeInterlocked(NULL, NULL, FALSE);
-#else
         SetNativeCodeInterlocked(NULL, NULL);
-#endif
     }
 
     _ASSERTE(!HasNativeCode());

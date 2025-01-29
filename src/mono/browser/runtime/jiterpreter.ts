@@ -3,8 +3,8 @@
 
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { getU16 } from "./memory";
+import { mono_assert, runtimeHelpers } from "./globals";
+import { free, getU16 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -851,18 +851,6 @@ function generate_wasm (
         // Get the exported trace function
         const fn = traceInstance.exports[traceName];
 
-        // FIXME: Before threading can be supported, we will need to ensure that
-        //  once we assign a function pointer index to a given trace, the trace is
-        //  broadcast to all the JS workers and compiled + installed at the appropriate
-        //  index in every worker's function pointer table. This also means that we
-        //  would need to fill empty slots with a dummy function when growing the table
-        //  so that any erroneous ENTERs will skip the opcode instead of crashing due
-        //  to calling a null function pointer.
-        // Table grow operations will need to be synchronized between workers somehow,
-        //  probably by storing the table size in a volatile global or something so that
-        //  we know the range of indexes available to us and can ensure that threads
-        //  independently jitting traces will not stomp on each other and all threads
-        //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
 
         let idx: number;
@@ -995,7 +983,6 @@ export function mono_interp_tier_prepare_jiterpreter (
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
-    // FIXME: We shouldn't need this check
     if (!mostRecentOptions.enableTraces)
         return JITERPRETER_NOT_JITTED;
     else if (mostRecentOptions.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated))
@@ -1017,7 +1004,7 @@ export function mono_interp_tier_prepare_jiterpreter (
     ) {
         const pMethodName = cwraps.mono_wasm_method_get_full_name(method);
         methodFullName = utf8ToString(pMethodName);
-        Module._free(<any>pMethodName);
+        free(<any>pMethodName);
     }
     const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
@@ -1161,7 +1148,7 @@ export function jiterpreter_dump_stats (concise?: boolean): void {
                 const pMethodName = cwraps.mono_wasm_method_get_full_name(<any>targetMethod);
                 const targetMethodName = utf8ToString(pMethodName);
                 const hitCount = callTargetCounts[<any>targetMethod];
-                Module._free(<any>pMethodName);
+                free(<any>pMethodName);
                 mono_log_info(`${targetMethodName} ${hitCount}`);
             }
         }

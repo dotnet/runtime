@@ -4,6 +4,7 @@
 // Runtime headers
 #include <coreclrhost.h>
 #include <corehost/host_runtime_contract.h>
+#include <minipal/debugger.h>
 
 #include "corerun.hpp"
 #include "dotenv.hpp"
@@ -73,21 +74,22 @@ namespace envvar
 
 static void wait_for_debugger()
 {
-    pal::debugger_state_t state = pal::is_debugger_attached();
-    if (state == pal::debugger_state_t::na)
+    if (!minipal_can_check_for_native_debugger())
     {
         pal::fprintf(stdout, W("Debugger attach is not available on this platform\n"));
         return;
     }
-    else if (state == pal::debugger_state_t::not_attached)
+
+    bool attached = minipal_is_native_debugger_present();
+    if (!attached)
     {
         uint32_t pid = pal::get_process_id();
         pal::fprintf(stdout, W("Waiting for the debugger to attach (PID: %u). Press any key to continue ...\n"), pid);
         (void)getchar();
-        state = pal::is_debugger_attached();
+        attached = minipal_is_native_debugger_present();
     }
 
-    if (state == pal::debugger_state_t::attached)
+    if (attached)
     {
         pal::fprintf(stdout, W("Debugger is attached.\n"));
     }
@@ -247,9 +249,9 @@ static int run(const configuration& config)
     // Check if debugger attach scenario was requested.
     if (config.wait_to_debug)
         wait_for_debugger();
-    
+
     config.dotenv_configuration.load_into_current_process();
-    
+
     string_t exe_path = pal::get_exe_path();
 
     // Determine the managed application's path.

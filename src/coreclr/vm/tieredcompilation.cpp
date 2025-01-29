@@ -408,7 +408,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
         _ASSERTE(newThread != nullptr);
         INDEBUG(s_backgroundWorkerThread = newThread);
     #ifdef FEATURE_COMINTEROP
-        newThread->SetApartment(Thread::AS_InMTA);
+        newThread->SetApartmentOfUnstartedThread(Thread::AS_InMTA);
     #endif
         newThread->SetBackground(true);
 
@@ -1065,9 +1065,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
         if (!methodDesc->IsEligibleForTieredCompilation())
         {
             _ASSERTE(nativeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
-        #ifdef FEATURE_INTERPRETER
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
-        #endif
             return flags;
         }
 
@@ -1105,9 +1102,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
         methodDesc->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(nativeCodeVersion);
         nativeCodeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-    #ifdef FEATURE_INTERPRETER
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
-    #endif
         return flags;
     }
 
@@ -1154,9 +1148,6 @@ CORJIT_FLAGS TieredCompilationManager::GetJitFlags(PrepareCodeConfig *config)
 
         case NativeCodeVersion::OptimizationTierOptimized:
         Optimized:
-#ifdef FEATURE_INTERPRETER
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
-#endif
             break;
 
         default:

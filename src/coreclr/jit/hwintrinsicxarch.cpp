@@ -38,28 +38,22 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX2_X64;
         case InstructionSet_AVX512BW:
             return InstructionSet_AVX512BW_X64;
-        case InstructionSet_AVX512BW_VL:
-            return InstructionSet_AVX512BW_VL_X64;
         case InstructionSet_AVX512CD:
             return InstructionSet_AVX512CD_X64;
-        case InstructionSet_AVX512CD_VL:
-            return InstructionSet_AVX512CD_VL_X64;
         case InstructionSet_AVX512DQ:
             return InstructionSet_AVX512DQ_X64;
-        case InstructionSet_AVX512DQ_VL:
-            return InstructionSet_AVX512DQ_VL_X64;
         case InstructionSet_AVX512F:
             return InstructionSet_AVX512F_X64;
-        case InstructionSet_AVX512F_VL:
-            return InstructionSet_AVX512F_VL_X64;
         case InstructionSet_AVX512VBMI:
             return InstructionSet_AVX512VBMI_X64;
-        case InstructionSet_AVX512VBMI_VL:
-            return InstructionSet_AVX512VBMI_VL_X64;
         case InstructionSet_AVX10v1:
             return InstructionSet_AVX10v1_X64;
         case InstructionSet_AVX10v1_V512:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_AVX10v2:
+            return InstructionSet_AVX10v2_X64;
+        case InstructionSet_AVX10v2_V512:
+            return InstructionSet_AVX10v2_V512_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -70,6 +64,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_BMI2_X64;
         case InstructionSet_FMA:
             return InstructionSet_FMA_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_X64;
         case InstructionSet_LZCNT:
             return InstructionSet_LZCNT_X64;
         case InstructionSet_PCLMULQDQ:
@@ -78,8 +74,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
-        case InstructionSet_EVEX:
-            return InstructionSet_EVEX_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -113,13 +107,34 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
 }
 
 //------------------------------------------------------------------------
-// V512VersionOfIsa: Gets the corresponding AVX10V512 only InstructionSet for a given InstructionSet
+// V256VersionOfIsa: Gets the corresponding V256 only InstructionSet for a given InstructionSet
 //
 // Arguments:
 //    isa -- The InstructionSet ID
 //
 // Return Value:
-//    The AVX10V512 only InstructionSet associated with isa
+//    The V256 only InstructionSet associated with isa
+static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_V256;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V256;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// V512VersionOfIsa: Gets the corresponding V512 only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The V512 only InstructionSet associated with isa
 static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
 {
     switch (isa)
@@ -128,6 +143,14 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX10v1_V512;
         case InstructionSet_AVX10v1_X64:
             return InstructionSet_AVX10v1_V512_X64;
+        case InstructionSet_AVX10v2:
+            return InstructionSet_AVX10v2_V512;
+        case InstructionSet_AVX10v2_X64:
+            return InstructionSet_AVX10v2_V512_X64;
+        case InstructionSet_GFNI:
+            return InstructionSet_GFNI_V512;
+        case InstructionSet_PCLMULQDQ:
+            return InstructionSet_PCLMULQDQ_V512;
         default:
             return InstructionSet_NONE;
     }
@@ -157,9 +180,16 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVX;
             }
-            else if (strcmp(className + 3, "10v1") == 0)
+            else if (strncmp(className + 3, "10v", 3) == 0)
             {
-                return InstructionSet_AVX10v1;
+                if (strcmp(className + 6, "1") == 0)
+                {
+                    return InstructionSet_AVX10v1;
+                }
+                else if (strcmp(className + 6, "2") == 0)
+                {
+                    return InstructionSet_AVX10v2;
+                }
             }
             else if (strcmp(className + 3, "2") == 0)
             {
@@ -213,6 +243,13 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Fma") == 0)
         {
             return InstructionSet_FMA;
+        }
+    }
+    else if (className[0] == 'G')
+    {
+        if (strcmp(className, "Gfni") == 0)
+        {
+            return InstructionSet_GFNI;
         }
     }
     else if (className[0] == 'L')
@@ -340,7 +377,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className,
 
     if (className[0] == 'V')
     {
-        if (strcmp(className, "V512") == 0)
+        if (strcmp(className, "V256") == 0)
+        {
+            return V256VersionOfIsa(enclosingIsa);
+        }
+        else if (strcmp(className, "V512") == 0)
         {
             return V512VersionOfIsa(enclosingIsa);
         }
@@ -386,6 +427,9 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_CompareScalar:
         case NI_AVX512F_Compare:
         case NI_EVEX_CompareMask:
+        case NI_AVX10v2_MinMaxScalar:
+        case NI_AVX10v2_MinMax:
+        case NI_AVX10v2_V512_MinMax:
         {
             assert(!HWIntrinsicInfo::HasFullRangeImm(id));
             return 31; // enum FloatComparisonMode has 32 values
@@ -832,23 +876,18 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX2_X64:
         case InstructionSet_AVX512F:
         case InstructionSet_AVX512F_VL:
-        case InstructionSet_AVX512F_VL_X64:
         case InstructionSet_AVX512F_X64:
         case InstructionSet_AVX512BW:
         case InstructionSet_AVX512BW_VL:
-        case InstructionSet_AVX512BW_VL_X64:
         case InstructionSet_AVX512BW_X64:
         case InstructionSet_AVX512CD:
         case InstructionSet_AVX512CD_VL:
-        case InstructionSet_AVX512CD_VL_X64:
         case InstructionSet_AVX512CD_X64:
         case InstructionSet_AVX512DQ:
         case InstructionSet_AVX512DQ_VL:
-        case InstructionSet_AVX512DQ_VL_X64:
         case InstructionSet_AVX512DQ_X64:
         case InstructionSet_AVX512VBMI:
         case InstructionSet_AVX512VBMI_VL:
-        case InstructionSet_AVX512VBMI_VL_X64:
         case InstructionSet_AVX512VBMI_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
@@ -862,6 +901,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_LZCNT_X64:
         case InstructionSet_PCLMULQDQ:
         case InstructionSet_PCLMULQDQ_X64:
+        case InstructionSet_PCLMULQDQ_V256:
+        case InstructionSet_PCLMULQDQ_V512:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
         case InstructionSet_SSE:
@@ -887,7 +928,15 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX10v1_X64:
         case InstructionSet_AVX10v1_V512:
         case InstructionSet_AVX10v1_V512_X64:
+        case InstructionSet_AVX10v2:
+        case InstructionSet_AVX10v2_X64:
+        case InstructionSet_AVX10v2_V512:
+        case InstructionSet_AVX10v2_V512_X64:
         case InstructionSet_EVEX:
+        case InstructionSet_GFNI:
+        case InstructionSet_GFNI_X64:
+        case InstructionSet_GFNI_V256:
+        case InstructionSet_GFNI_V512:
         {
             return true;
         }
@@ -1271,8 +1320,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         {
             // These intrinsics have overloads that take op2 in a simd register and just read the lowest 8-bits
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
@@ -1300,8 +1348,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
@@ -2360,8 +2407,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -2486,14 +2533,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_ExtractMostSignificantBits:
+        case NI_Vector256_ExtractMostSignificantBits:
         case NI_Vector512_ExtractMostSignificantBits:
         {
-#if defined(TARGET_X86)
-            // TODO-XARCH-CQ: It may be beneficial to decompose this operation
-            break;
-#endif // TARGET_X86
+            assert(sig->numArgs == 1);
 
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if ((simdSize == 64) || (varTypeIsShort(simdBaseType) && canUseEvexEncoding()))
             {
                 op1 = impSIMDPopStack();
 
@@ -2502,14 +2548,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
                 }
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
+                break;
             }
-            break;
-        }
-
-        case NI_Vector128_ExtractMostSignificantBits:
-        case NI_Vector256_ExtractMostSignificantBits:
-        {
-            assert(sig->numArgs == 1);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
                 compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -2782,8 +2822,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -2800,8 +2838,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -2835,8 +2871,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -2853,8 +2887,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -2863,13 +2895,77 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_IsEvenInteger:
+        case NI_Vector256_IsEvenInteger:
+        case NI_Vector512_IsEvenInteger:
+        {
+            assert(sig->numArgs == 1);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // The code for handling floating-point is decently complex but also expected
+                // to be rare, so we fallback to the managed implementation, which is accelerated
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsEvenIntegerNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_IsFinite:
+        case NI_Vector256_IsFinite:
+        case NI_Vector512_IsFinite:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsFiniteNode(retType, op1, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_IsInfinity:
+        case NI_Vector256_IsInfinity:
+        case NI_Vector512_IsInfinity:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsInfinityNode(retType, op1, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_IsInteger:
+        case NI_Vector256_IsInteger:
+        case NI_Vector512_IsInteger:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                break;
+            }
+            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsIntegerNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector128_IsNaN:
         case NI_Vector256_IsNaN:
         case NI_Vector512_IsNaN:
         {
             assert(sig->numArgs == 1);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsNaNNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -2883,10 +2979,55 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-                op1                = impSIMDPopStack();
-                retNode            = gtNewSimdIsNegativeNode(retType, op1, simdBaseJitType, simdSize);
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsNegativeNode(retType, op1, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector128_IsNegativeInfinity:
+        case NI_Vector256_IsNegativeInfinity:
+        case NI_Vector512_IsNegativeInfinity:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsNegativeInfinityNode(retType, op1, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_IsNormal:
+        case NI_Vector256_IsNormal:
+        case NI_Vector512_IsNormal:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsNormalNode(retType, op1, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_IsOddInteger:
+        case NI_Vector256_IsOddInteger:
+        case NI_Vector512_IsOddInteger:
+        {
+            assert(sig->numArgs == 1);
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                // The code for handling floating-point is decently complex but also expected
+                // to be rare, so we fallback to the managed implementation, which is accelerated
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdIsOddIntegerNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2898,9 +3039,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-                op1                = impSIMDPopStack();
-                retNode            = gtNewSimdIsPositiveNode(retType, op1, simdBaseJitType, simdSize);
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsPositiveNode(retType, op1, simdBaseJitType, simdSize);
             }
             break;
         }
@@ -2910,10 +3050,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_IsPositiveInfinity:
         {
             assert(sig->numArgs == 1);
-            var_types simdType = getSIMDTypeForSize(simdSize);
 
-            op1     = impSIMDPopStack();
-            retNode = gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseJitType, simdSize);
+            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsPositiveInfinityNode(retType, op1, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_IsSubnormal:
+        case NI_Vector256_IsSubnormal:
+        case NI_Vector512_IsSubnormal:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op1     = impSIMDPopStack();
+                retNode = gtNewSimdIsSubnormalNode(retType, op1, simdBaseJitType, simdSize);
+            }
             break;
         }
 
@@ -2922,8 +3078,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_IsZero:
         {
             assert(sig->numArgs == 1);
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdIsZeroNode(retType, op1, simdBaseJitType, simdSize);
             break;
@@ -2954,8 +3108,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -2972,8 +3124,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -3007,8 +3157,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -3025,8 +3173,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -3217,7 +3363,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
                 }
-                else
+                else if (simdSize != 64)
                 {
                     // Software fallback
                     break;
@@ -3248,6 +3394,38 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
                 break;
+            }
+
+            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                break;
+            }
+
+            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
+
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (TARGET_POINTER_SIZE == 4)
+                {
+                    // TODO-XARCH-CQ: 32bit support
+                    break;
+                }
+
+                if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
+                }
+                else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
+                }
+                else if (simdSize != 64)
+                {
+                    // Software fallback
+                    break;
+                }
             }
 
             op3 = impSIMDPopStack();
@@ -3318,8 +3496,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
                 compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -3334,8 +3510,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
@@ -3377,12 +3551,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType))
-            {
-                // byte and sbyte would require more work to support
-                break;
-            }
-
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
                 op2 = impPopStack().val;
@@ -3399,20 +3567,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType))
+#if defined(TARGET_X86)
+            if ((simdBaseType == TYP_LONG) || (simdBaseType == TYP_DOUBLE))
             {
-                // byte and sbyte would require more work to support
-                break;
-            }
-
-            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (!compOpportunisticallyDependsOn(InstructionSet_EVEX) && !impStackTop(0).val->IsCnsIntOrI())
                 {
-                    // long, ulong, and double would require more work to support
+                    // If vpsraq is available, we can use that. We can also trivially emulate arithmetic shift by const
+                    // amount. Otherwise, more work is required for long types, so we fall back to managed for now.
                     break;
                 }
             }
+#endif // TARGET_X86
 
             if ((simdSize != 32) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
@@ -3465,6 +3630,39 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdRoundNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_ShiftLeft:
+        case NI_Vector256_ShiftLeft:
+        case NI_Vector512_ShiftLeft:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!varTypeIsSIMD(impStackTop(0).val))
+            {
+                // We just want the inlining profitability boost for the helper intrinsics/
+                // that have operator alternatives like `simd << int`
+                break;
+            }
+
+            if ((simdSize != 16) || compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                if (simdSize == 64)
+                {
+                    intrinsic = NI_AVX512F_ShiftLeftLogicalVariable;
+                }
+                else
+                {
+                    assert((simdSize == 16) || (simdSize == 32));
+                    intrinsic = NI_AVX2_ShiftLeftLogicalVariable;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            }
             break;
         }
 
@@ -3530,8 +3728,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retType == TYP_VOID);
             assert(sig->numArgs == 2);
 
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
             op2 = impSIMDPopStack();
             op1 = impPopStack().val;
 
@@ -3550,12 +3746,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_StoreUnsafe:
         {
             assert(retType == TYP_VOID);
-            var_types simdType = getSIMDTypeForSize(simdSize);
 
             if (sig->numArgs == 3)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
                 op3 = impPopStack().val;
             }
@@ -3563,8 +3758,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 assert(sig->numArgs == 2);
 
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -3595,10 +3790,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
 
@@ -3621,10 +3813,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
 
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
 
@@ -3645,7 +3834,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_Sum:
         {
             assert(sig->numArgs == 1);
-            var_types simdType = getSIMDTypeForSize(simdSize);
 
             if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
             {
@@ -3987,8 +4175,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!supportsAvx)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2             = impSIMDPopStack();
@@ -4079,8 +4267,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!supportsAvx)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+                impSpillSideEffect(true,
+                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impSIMDPopStack();
@@ -4186,8 +4374,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             // swap the two operands
             GenTree* idxVector = impSIMDPopStack();
@@ -4442,13 +4629,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (spillOp1)
                     {
-                        impSpillSideEffect(true, verCurrentState.esStackDepth -
+                        impSpillSideEffect(true, stackState.esStackDepth -
                                                      3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
                     }
 
                     if (spillOp2)
                     {
-                        impSpillSideEffect(true, verCurrentState.esStackDepth -
+                        impSpillSideEffect(true, stackState.esStackDepth -
                                                      2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
                     }
 
@@ -5061,7 +5248,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 for ZeroHighBits"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 for ZeroHighBits"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
@@ -5080,7 +5267,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             assert(sig->numArgs == 2);
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 for BitFieldExtract"));
+            impSpillSideEffect(true, stackState.esStackDepth - 2 DEBUGARG("Spilling op1 for BitFieldExtract"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;

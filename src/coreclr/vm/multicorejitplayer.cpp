@@ -45,7 +45,7 @@ void MulticoreJitCodeStorage::Init()
     CONTRACTL
     {
         THROWS;
-        MODE_ANY;   // called from BaseDomain::Init which is MODE_ANY
+        MODE_ANY;   // called from SystemDomain::Attach which is MODE_ANY
     }
     CONTRACTL_END;
 
@@ -1132,7 +1132,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
         nSize,
-        GetAppDomain()->GetFriendlyNameForLogging()));
+        GetAppDomain()->GetFriendlyName()));
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {

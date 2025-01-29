@@ -562,12 +562,17 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 return true;
             }
 
-            if ((genericParameterConstraints != null) && (genericParameterConstraints.Length != partArity))
+            if ((genericParameterConstraints == null) || (genericParameterAttributes == null))
             {
                 return false;
             }
 
-            if ((genericParameterAttributes != null) && (genericParameterAttributes.Length != partArity))
+            if (genericParameterConstraints.Length != partArity)
+            {
+                return false;
+            }
+
+            if (genericParameterAttributes.Length != partArity)
             {
                 return false;
             }
@@ -576,8 +581,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 if (!GenericServices.CanSpecialize(
                     specialization[i],
-                    (genericParameterConstraints![i] as Type[]).CreateTypeSpecializations(specialization),
-                    genericParameterAttributes![i]))
+                    (genericParameterConstraints[i] as Type[]).CreateTypeSpecializations(specialization),
+                    genericParameterAttributes[i]))
                 {
                     return false;
                 }

@@ -57,6 +57,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ilc", "ilc", "{BC94A262-6D8
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler.Trimming.Tests", "..\..\coreclr\tools\aot\ILCompiler.Trimming.Tests\ILCompiler.Trimming.Tests.csproj", "{4604F088-6A78-4D8F-96AC-EE8F8301BA33}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILVerification", "..\..\coreclr\tools\ILVerification\ILVerification.csproj", "{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Checked|Any CPU = Checked|Any CPU
@@ -412,6 +414,24 @@ Global
 		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x64.Build.0 = Release|x64
 		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x86.ActiveCfg = Release|x86
 		{4604F088-6A78-4D8F-96AC-EE8F8301BA33}.Release|x86.Build.0 = Release|x86
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Checked|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Checked|Any CPU.Build.0 = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Checked|x64.ActiveCfg = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Checked|x64.Build.0 = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Checked|x86.ActiveCfg = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Checked|x86.Build.0 = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Debug|x64.Build.0 = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Debug|x86.Build.0 = Debug|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Release|x64.ActiveCfg = Release|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Release|x64.Build.0 = Release|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Release|x86.ActiveCfg = Release|Any CPU
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -438,6 +458,7 @@ Global
 		{FB237949-3F88-4E16-A770-8D13E48B84AF} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
 		{BC94A262-6D89-4432-AC11-22FE75FBC91F} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
 		{4604F088-6A78-4D8F-96AC-EE8F8301BA33} = {BC94A262-6D89-4432-AC11-22FE75FBC91F}
+		{4FCE2738-74C4-4E55-BF7C-4161DBFFF11D} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}

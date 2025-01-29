@@ -16,7 +16,7 @@
     <_UsePThreads />
     <_UsePThreads Condition="'$(WasmEnableThreads)' == 'true'"> usepthreads</_UsePThreads>
 
-    <_IcuDir Condition="'$(TargetsAppleMobile)' != 'true' and '$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != ''">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
     <_IcuDirArg Condition="'$(_IcuDir)' != ''"> icudir "$(_IcuDir)"</_IcuDirArg>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_IcuDirArg)$(_UsePThreads)</_BuildNativeArgs>
@@ -27,12 +27,12 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION24')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/WASI-SDK-VERSION-25.0')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
     <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
     <_BuildNativeEnvironmentVariables>$(_BuildNativeEnvironmentVariables);WASI_SDK_PATH=$(WASI_SDK_PATH)</_BuildNativeEnvironmentVariables>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -61,7 +61,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_IcuArtifacts Condition="'$(_IcuDir)' != '' and '$(TargetsAppleMobile)' != 'true'"
+      <_IcuArtifacts Condition="'$(_IcuDir)' != ''"
                      Include="$(_IcuDir)/lib/libicuuc.a;
                               $(_IcuDir)/lib/libicui18n.a;
                               $(_IcuDir)/lib/libicudata.a;

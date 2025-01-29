@@ -355,6 +355,36 @@ public class InvalidInputTests : ReadTests
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
+    public static IEnumerable<object[]> AllPrimitiveTypes()
+    {
+        foreach (PrimitiveType primitiveType in Enum.GetValues(typeof(PrimitiveType)))
+        {
+            yield return new object[] { (byte)primitiveType };
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(AllPrimitiveTypes))]
+    public void ThrowsForInvalidPrimitiveTypeForBinaryArrayRecords(byte primitiveType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)SerializationRecordType.BinaryArray);
+        writer.Write(1); // object Id
+        writer.Write((byte)BinaryArrayType.Jagged);
+        writer.Write(1); // rank!
+        writer.Write(1); // length
+        writer.Write((byte)BinaryType.Primitive); // A jagged array must consist of other arrays, not primitive values
+        writer.Write(primitiveType);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
+
     [Theory]
     [InlineData(SerializationRecordType.ClassWithMembersAndTypes)]
     [InlineData(SerializationRecordType.SystemClassWithMembersAndTypes)]
@@ -429,6 +459,7 @@ public class InvalidInputTests : ReadTests
                 yield return new object[] { recordType, binaryType, (byte)0 }; // value not used by the spec
                 yield return new object[] { recordType, binaryType, (byte)4 }; // value not used by the spec
                 yield return new object[] { recordType, binaryType, (byte)17 }; // used by the spec, but illegal in given context
+                yield return new object[] { recordType, binaryType, (byte)18 }; // used by the spec, but illegal in given context
                 yield return new object[] { recordType, binaryType, (byte)19 };
             }
         }
@@ -564,8 +595,10 @@ public class InvalidInputTests : ReadTests
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
-    [Fact]
-    public void SurrogateCharacter()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SurrogateCharacters(bool array)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -576,8 +609,22 @@ public class InvalidInputTests : ReadTests
         writer.Write("ClassWithCharField"); // type name
         writer.Write(1); // member count
         writer.Write("memberName");
-        writer.Write((byte)BinaryType.Primitive);
-        writer.Write((byte)PrimitiveType.Char);
+
+        if (array)
+        {
+            writer.Write((byte)BinaryType.PrimitiveArray);
+            writer.Write((byte)PrimitiveType.Char);
+            writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
+            writer.Write(2); // array record Id
+            writer.Write(1); // array length
+            writer.Write((byte)PrimitiveType.Char);
+        }
+        else
+        {
+            writer.Write((byte)BinaryType.Primitive);
+            writer.Write((byte)PrimitiveType.Char);
+        }
+
         writer.Write((byte)0xC0); // a surrogate character
         writer.Write((byte)SerializationRecordType.MessageEnd);
 

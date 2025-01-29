@@ -71,30 +71,6 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// BasicBlockBitSetTraits
-//
-// This class is customizes the bit set to represent sets of BasicBlocks.
-// The size of the bitset is determined by maximum assigned BasicBlock number
-// (Compiler::fgBBNumMax) (Note that fgBBcount is not equal to this during inlining,
-// when fgBBcount is the number of blocks in the inlined function, but the assigned
-// block numbers are higher than the inliner function. fgBBNumMax counts both.
-// Thus, if you only care about the inlinee, during inlining, this bit set will waste
-// the lower numbered block bits.) The Compiler* tracks the BasicBlock epochs.
-//
-class BasicBlockBitSetTraits : public CompAllocBitSetTraits
-{
-public:
-    static inline unsigned GetSize(Compiler* comp);
-
-    static inline unsigned GetArrSize(Compiler* comp);
-
-    static inline unsigned GetEpoch(class Compiler* comp);
-
-    static inline BitSetSupport::BitSetOpCounter* GetOpCounter(Compiler* comp);
-};
-
-///////////////////////////////////////////////////////////////////////////////
-//
 // BitVecTraits
 //
 // This class simplifies creation and usage of "ShortLong" bitsets.

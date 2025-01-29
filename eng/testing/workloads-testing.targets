@@ -8,17 +8,17 @@
     <BuiltNuGetsDir>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</BuiltNuGetsDir>
 
     <DotNetInstallArgumentsForWorkloadsTesting Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 9.0</DotNetInstallArgumentsForWorkloadsTesting>
+            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 10.0</DotNetInstallArgumentsForWorkloadsTesting>
     <DotNetInstallArgumentsForWorkloadsTesting Condition="$([MSBuild]::IsOSPlatform('windows'))"
-            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 9.0</DotNetInstallArgumentsForWorkloadsTesting>
+            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 10.0</DotNetInstallArgumentsForWorkloadsTesting>
 
     <VersionBandForManifestPackages>$(SdkBandVersionForWorkload_FromRuntimeVersions)</VersionBandForManifestPackages>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required for running apps built with 9.0 sdk, but the sdk does
-         not yet support *running* with 9.0 sdk -->
-    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 8.0 -Quality daily" />
+    <!-- Required for running apps built with 10.0 sdk, but the sdk does
+         not yet support *running* with 10.0 sdk -->
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 9.0 -Quality daily" />
 
     <DefaultPropertiesForNuGetBuild Include="TargetOS=$(TargetOSForWorkload)" />
     <DefaultPropertiesForNuGetBuild Include="TargetArchitecture=$(TargetArchitectureForWorkload)" />
@@ -38,10 +38,16 @@
     <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command="$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)" />
+    <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and !$([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command="$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime aspnetcore -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)" />
 
     <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime dotnet -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)"' />
+  <Exec Condition="'%(AdditionalSharedFrameworkToInstallArguments.Identity)' != '' and $([MSBuild]::IsOSPlatform('windows'))"
+          IgnoreStandardErrorWarningFormat="true"
+          Command='powershell -ExecutionPolicy ByPass -NoProfile -command "&amp; $(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Runtime aspnetcore -SkipNonVersionedFiles %(AdditionalSharedFrameworkToInstallArguments.Identity)"' />
   </Target>
 
   <Import Project="$(MonoProjectRoot)nuget\Microsoft.NET.Runtime.WorkloadTesting.Internal\Sdk\WorkloadTesting.Core.targets" />

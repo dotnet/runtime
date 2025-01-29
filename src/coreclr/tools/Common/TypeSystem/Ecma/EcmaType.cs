@@ -464,9 +464,9 @@ namespace Internal.TypeSystem.Ecma
 
                 foreach (var handle in _typeDefinition.GetFields())
                 {
-                    var field = _module.GetField(handle, this);
-                    if (!field.IsStatic)
-                        return field.FieldType;
+                    var fieldInfo = _module.GetField(handle, this);
+                    if (!fieldInfo.IsStatic)
+                        return fieldInfo.FieldType;
                 }
 
                 return base.UnderlyingType; // Use the base implementation to get consistent error behavior

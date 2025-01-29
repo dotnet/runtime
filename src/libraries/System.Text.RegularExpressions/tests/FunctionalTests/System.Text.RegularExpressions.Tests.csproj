@@ -81,6 +81,9 @@
     <PackageReference Include="Microsoft.VisualBasic" Version="$(CompilerPlatformTestingMicrosoftVisualBasicVersion)" />
     <PackageReference Include="Microsoft.VisualStudio.Composition" Version="$(CompilerPlatformTestingMicrosoftVisualStudioCompositionVersion)" />
 
+    <!-- Upgrade to a non-vulnerable version of Asn1 - which will be dropped by conflict resolution -->
+    <PackageReference Include="System.Formats.Asn1" Version="$(SystemFormatsAsn1Version)" ExcludeAssets="All" />
+
     <ProjectReference Include="..\..\gen\System.Text.RegularExpressions.Generator.csproj"
                       SetTargetFramework="TargetFramework=netstandard2.0"
                       OutputItemType="Analyzer"

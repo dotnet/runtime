@@ -1168,23 +1168,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_SPARSE_FOR_COMINTEROP;
     }
-    inline void SetMarshalingType(UINT32 mType)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(mType !=0);
-        _ASSERTE((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == 0);
-        switch(mType)
-        {
-        case 1: m_VMFlags |= VMFLAG_MARSHALINGTYPE_INHIBIT;
-            break;
-        case 2: m_VMFlags |= VMFLAG_MARSHALINGTYPE_FREETHREADED;
-            break;
-        case 3: m_VMFlags |= VMFLAG_MARSHALINGTYPE_STANDARD;
-            break;
-        default:
-            _ASSERTE(!"Invalid MarshalingBehaviorAttribute value");
-        }
-    }
 #endif // FEATURE_COMINTEROP
     inline void SetHasLayout()
     {
@@ -1258,26 +1241,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_SPARSE_FOR_COMINTEROP;
-    }
-    BOOL IsMarshalingTypeSet()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK);
-    }
-    BOOL IsMarshalingTypeFreeThreaded()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == VMFLAG_MARSHALINGTYPE_FREETHREADED);
-    }
-    BOOL IsMarshalingTypeInhibit()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == VMFLAG_MARSHALINGTYPE_INHIBIT);
-    }
-    BOOL IsMarshalingTypeStandard()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_VMFlags & VMFLAG_MARSHALINGTYPE_MASK) == VMFLAG_MARSHALINGTYPE_STANDARD);
     }
 #endif // FEATURE_COMINTEROP
     BOOL HasLayout()
@@ -1669,14 +1632,6 @@ public:
 
         // True if methoddesc on this class have any real (non-interface) methodimpls
         VMFLAG_CONTAINS_METHODIMPLS            = 0x20000000,
-
-#ifdef FEATURE_COMINTEROP
-        VMFLAG_MARSHALINGTYPE_MASK             = 0xc0000000,
-
-        VMFLAG_MARSHALINGTYPE_INHIBIT          = 0x40000000,
-        VMFLAG_MARSHALINGTYPE_FREETHREADED     = 0x80000000,
-        VMFLAG_MARSHALINGTYPE_STANDARD         = 0xc0000000,
-#endif
     };
 
 public:
@@ -1705,7 +1660,7 @@ private:
 #ifdef FEATURE_COMINTEROP
     union
     {
-        // For COM+ wrapper objects that extend an unmanaged class, this field
+        // For CLR wrapper objects that extend an unmanaged class, this field
         // may contain a delegate to be called to allocate the aggregated
         // unmanaged class (instead of using CoCreateInstance).
         OBJECTHANDLE    m_ohDelegate;
@@ -1798,7 +1753,7 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<EEClass>;
 };
 
 template<> struct cdac_data<EEClass>
@@ -1895,11 +1850,9 @@ public:
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
-    PTR_Stub                         m_pMultiCastInvokeStub;
-    PTR_Stub                         m_pWrapperDelegateInvokeStub;
+    PCODE                            m_pMultiCastInvokeStub;
+    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
-    PTR_MethodDesc                   m_pBeginInvokeMethod;
-    PTR_MethodDesc                   m_pEndInvokeMethod;
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
@@ -1909,16 +1862,6 @@ public:
     PTR_MethodDesc GetInvokeMethod()
     {
         return m_pInvokeMethod;
-    }
-
-    PTR_MethodDesc GetBeginInvokeMethod()
-    {
-        return m_pBeginInvokeMethod;
-    }
-
-    PTR_MethodDesc GetEndInvokeMethod()
-    {
-        return m_pEndInvokeMethod;
     }
 
 #ifndef DACCESS_COMPILE
@@ -1986,7 +1929,7 @@ public:
                                       BOOL fForStubAsIL
     );
 
-    template<typename T> friend struct ::cdac_data;
+    friend struct ::cdac_data<ArrayClass>;
 };
 
 template<> struct cdac_data<ArrayClass>

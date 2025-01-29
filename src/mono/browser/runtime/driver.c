@@ -180,9 +180,12 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+static int runtime_initialized = 0;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (int debug_level)
 {
+	runtime_initialized = 1;
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
@@ -219,12 +222,23 @@ mono_wasm_load_runtime (int debug_level)
 	monovm_initialize (2, appctx_keys, appctx_values);
 
 #ifndef INVARIANT_TIMEZONE
-	mono_register_timezones_bundle ();
+	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
+		mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 
 	bindings_initialize_internals();
+}
+
+int initialize_runtime()
+{
+    if (runtime_initialized == 1)
+		return 0;
+	mono_wasm_load_runtime (0);
+
+	return 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -426,6 +440,18 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_profiler_init_browser (const char *desc)
 {
 	mono_profiler_init_browser (desc);
+}
+
+#endif
+
+#ifdef ENABLE_LOG_PROFILER
+
+void mono_profiler_init_log (const char *desc);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_profiler_init_log (const char *desc)
+{
+	mono_profiler_init_log (desc);
 }
 
 #endif
