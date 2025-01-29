@@ -6346,6 +6346,10 @@ public:
     public:
         ThreeOptLayout(Compiler* comp);
         void Run();
+
+#ifdef DEBUG
+        void DumpToTSPFile();
+#endif // DEBUG
     };
 
     template <bool hasEH>
