@@ -319,20 +319,10 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
                 if ((returnSpillVarDsc->lvType == TYP_REF))
                 {
-                    if (returnSpillVarDsc->lvSingleDef)
+                    if (returnSpillVarDsc->lvSingleDef || lvaInlineeReturnSpillTempFreshlyCreated)
                     {
                         lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
                                        impInlineInfo->retExprClassHndIsExact);
-                    }
-                    else if (lvaInlineeReturnSpillTempFreshlyCreated)
-                    {
-                        // If the inlinee return spill temp was freshly created in fgFindBasicBlocks, we can update the
-                        // type regardless of whether it is single def or not.
-                        returnSpillVarDsc->lvClassHnd     = retExprClassHnd;
-                        returnSpillVarDsc->lvClassIsExact = impInlineInfo->retExprClassHndIsExact;
-#if DEBUG
-                        returnSpillVarDsc->lvClassInfoUpdated = true;
-#endif
                     }
                 }
             }
