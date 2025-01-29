@@ -40,6 +40,8 @@ variables:
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-maccatalyst') }}
 - name: isLinuxBionicOnlyBuild
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-linuxbionic') }}
+- name: isLLVMOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-llvm') }}
 - name: isRunSmokeTestsOnly
   value: ${{ notin(variables['Build.DefinitionName'], 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ioslike', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-maccatalyst', 'runtime-linuxbionic') }}
 - name: isNotSpecificPlatformOnlyBuild

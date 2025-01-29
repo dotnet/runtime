@@ -1743,12 +1743,13 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Run "runtime-extra-platforms-ioslike.yml" on PRs when Mono AOT LLVM changes
+      # Run "runtime-extra-platforms-ioslike.yml" and "runtime-extra-platforms-llvm.yml" on PRs when Mono AOT LLVM changes
       # Individual jobs are conditioned by: 
       # and(eq(variables['isRollingBuild'], false), 
       # eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true))
       #
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-llvm.yml
 
 
     - stage: SourceBuild
