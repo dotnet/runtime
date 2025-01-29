@@ -18,5 +18,6 @@ static class MiscModule
     public static IJobBuilder WithBuildArtifacts(this IJobBuilder builder)
         => builder
             .WithArtifact(new Artifact("7z-archives", "artifacts\\unity\\**"))
-            .WithArtifact(new Artifact("build", "artifacts\\bin\\**"));
+            .WithArtifact(new Artifact("build", "artifacts\\bin\\**"))
+            .WithArtifact(new Artifact("unity-build", "artifacts\\unity-bin\\**"));
 }
