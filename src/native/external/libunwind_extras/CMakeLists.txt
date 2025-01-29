@@ -165,6 +165,11 @@ if(CLR_CMAKE_HOST_WIN32)
     set_source_files_properties(${LIBUNWIND_SOURCES} PROPERTIES COMPILE_FLAGS /TC) # compile all files as C
 endif(CLR_CMAKE_HOST_WIN32)
 
+# TODO: https://github.com/dotnet/runtime/issues/111527
+if(CLR_CMAKE_TARGET_ANDROID)
+    add_compile_options(-Wno-error)
+endif()
+
 if(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_HOST_APPLE)
         add_library(libunwind_dac OBJECT ${LIBUNWIND_SOURCES})

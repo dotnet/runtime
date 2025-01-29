@@ -40,12 +40,11 @@ extends:
       #
       # Localization build
       #
-
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/9.0') }}:
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
         - template: /eng/common/templates-official/job/onelocbuild.yml
           parameters:
             MirrorRepo: runtime
-            MirrorBranch: release/9.0
+            MirrorBranch: main
             LclSource: lclFilesfromPackage
             LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
@@ -70,23 +69,29 @@ extends:
           - windows_x64
           - windows_x86
           - windows_arm64
+          variables:
+            - name: _SignDiagnosticFilesArgs
+              value: ''
           jobParameters:
             templatePath: 'templates-official'
-            buildArgs: -s clr.runtime+clr.alljits+clr.nativeaotruntime -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            preBuildSteps:
+            - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                certNames:
+                - 'dotnetesrp-diagnostics-aad-ssl-cert'
+                - 'dotnet-diagnostics-esrp-pki-onecert'
+                vaultName: 'clrdiag-esrp-id'
+                azureSubscription: 'diagnostics-esrp-kvcertuser'
+
+            buildArgs: -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true $(_SignDiagnosticFilesArgs)
             nameSuffix: AllRuntimes
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 120
             postBuildSteps:
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+            - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
               parameters:
-                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
                 isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
-            # Now that we've signed the diagnostic files, do the rest of the build.
-            - template: /eng/pipelines/common/templates/global-build-step.yml
-              parameters:
-                buildArgs: -s clr.corelib+clr.nativecorelib+clr.nativeaotlibs+clr.tools+clr.packages+mono+libs+host+packs -c $(_BuildConfig) /p:DotNetBuildAllRuntimePacks=true
-                displayName: Build managed CoreCLR components, Mono, all libraries, hosts, and packs
 
             # Upload the results.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -209,10 +214,21 @@ extends:
                 artifactName: $(crossDacArtifactsContainer)
                 downloadPath: $(crossDacArtifactsBasePath)
                 checkDownloadedFiles: true
+            - template: /eng/pipelines/coreclr/templates/install-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                certNames:
+                - 'dotnetesrp-diagnostics-aad-ssl-cert'
+                - 'dotnet-diagnostics-esrp-pki-onecert'
+                vaultName: 'clrdiag-esrp-id'
+                azureSubscription: 'diagnostics-esrp-kvcertuser'
             - template: /eng/pipelines/common/templates/global-build-step.yml
               parameters:
-                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig)
+                buildArgs: -s linuxdac+alpinedac -c $(_BuildConfig) $(_SignDiagnosticFilesArgs)
                 archParameter: -arch x64,x86,arm,arm64
+            - template: /eng/pipelines/coreclr/templates/remove-diagnostic-certs.yml
+              parameters:
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
             - task: CopyFiles@2
               displayName: Gather CrossDacs
               inputs:
@@ -221,11 +237,6 @@ extends:
                   **
                   !**\sharedFramework\**
                 TargetFolder: $(crossDacArtifactsPath)
-            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
-              parameters:
-                basePath: $(crossDacArtifactsPath)
-                isOfficialBuild: ${{ variables.isOfficialBuild }}
-                timeoutInMinutes: 30
             postBuildSteps:
             # Save packages using the prepare-signed-artifacts format.
             # CrossDac packages are expected to be in the windows_x64 folder.
