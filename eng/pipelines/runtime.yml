@@ -1747,11 +1747,10 @@ extends:
       #
       - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
         parameters:
-          jobParameters:
-            condition: >-
-              and(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_aot_llvm.containsChange'], true),
-                eq(variables['Build.Reason'], 'PullRequest'))
+          condition: >-
+            and(
+              eq(false, true),
+              eq(variables['Build.Reason'], 'PullRequest'))
         # variables:
         #   - name: triggeredAutomatically
         #     value: true
