@@ -262,7 +262,7 @@ int32_t CryptoNative_GetMemoryUse(int32_t* totalUsed, int32_t* allocationCount)
     return 1;
 }
 
-PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable)
+void CryptoNative_EnableMemoryTracking(int32_t enable)
 {
     pthread_rwlock_wrlock(&g_trackedMemoryLock);
 
@@ -297,7 +297,7 @@ PALEXPORT void CryptoNative_EnableMemoryTracking(int32_t enable)
     pthread_rwlock_unlock(&g_trackedMemoryLock);
 }
 
-PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int32_t size, const char* file, int32_t line, void* ctx), void* ctx)
+void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr, int32_t size, const char* file, int32_t line, void* ctx), void* ctx)
 {
     if (g_trackedMemory != NULL)
     {
@@ -322,16 +322,13 @@ PALEXPORT void CryptoNative_ForEachTrackedAllocation(void (*callback)(void* ptr,
 
 void InitializeMemoryDebug(void)
 {
-    const char* debug = getenv("DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG");
+    const char* debug = getenv("DOTNET_OPENSSL_MEMORY_DEBUG");
     if (debug != NULL && strcmp(debug, "1") == 0)
     {
-        // This needs to be done before any allocation is done e.g. EnsureOpenSsl* is called.
-        // And it also needs to be after the pointers are loaded for DISTRO_AGNOSTIC_SSL
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
         if (API_EXISTS(CRYPTO_THREAD_lock_new))
         {
             // This should cover 1.1.1+
-
             CRYPTO_set_mem_functions11(mallocFunction, reallocFunction, freeFunction);
             g_allocLock = CRYPTO_THREAD_lock_new();
 
@@ -344,7 +341,7 @@ void InitializeMemoryDebug(void)
                 g_allocLock = CRYPTO_THREAD_lock_new();
             }
         }
-#elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+#elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
         // OpenSSL 1.0 has different prototypes and it is out of support so we enable this only
         // on 1.1.1+
         CRYPTO_set_mem_functions(mallocFunction, reallocFunction, freeFunction);

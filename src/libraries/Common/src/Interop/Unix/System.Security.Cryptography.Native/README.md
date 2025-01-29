@@ -6,10 +6,7 @@ This folder contains C# bindings for native shim (libSystem.Security.Cryptograph
 
 One extra feature exposed by the native shim is tracking of memory used by
 OpenSSL by hooking the memory allocation routines via
-`CRYPTO_set_mem_functions`. This functionality is implemented in [native
-code](../../../../../../native/libs/System.Security.Cryptography.Native/memory_debug.c)
-because these memory callback can run in contexts where managed .NET code may
-not run (such as thread destructors).
+`CRYPTO_set_mem_functions`.
 
 The functionality is enabled by setting
 `DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG` to 1. This environment
@@ -24,13 +21,13 @@ methods:
     - Gets the total amount of memory allocated by OpenSSL
 - `int GetOpenSslAllocationCount()`
     - Gets the number of allocations made by OpenSSL
-- `void EnableTracking()`/`void DisableTracking()`
+- `void EnableMemoryTracking()`/`void DisableMemoryTracking()`
     - toggles tracking of individual live allocations via internal data
       structures. I.e. will keep track of live memory allocated since the start of
       tracking.
 - `void ForEachTrackedAllocation(Action<IntPtr, int, IntPtr, int> callback)`
     - Accepts an callback and calls it for each allocation performed since the
-      last `EnableTracking` call. The order of reported information does not
+      last `EnableMemoryTracking` call. The order of reported information does not
       correspond to the order of allocation. This method holds an internal lock
       which prevents other threads from allocating any memory from OpenSSL.
     - Callback parameters are
@@ -46,7 +43,7 @@ locks/synchronization during each allocation) and may cause performance penalty.
 
 ```cs
 var ci = typeof(SslStream).Assembly.GetTypes().First(t => t.Name == "Crypto");
-ci.InvokeMember("EnableTracking", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, null, null);
+ci.InvokeMember("EnableMemoryTracking", BindingFlags.InvokeMethod | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, null, null);
 
 // do something which uses OpenSSL
 HttpClient client = new HttpClient();

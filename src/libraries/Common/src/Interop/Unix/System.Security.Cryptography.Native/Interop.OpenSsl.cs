@@ -25,7 +25,6 @@ internal static partial class Interop
         // Special value of 0 means unlimited, -1 means the implementation (OpenSSL) default, which is currently 20 * 1024.
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
-        internal const string OpenSslDebugEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_OPENSSL_MEMORY_DEBUG";
         private const int DefaultTlsCacheSizeClient = 500; // since we keep only one TLS Session per hostname, 500 should be enough to cover most scenarios
         private const int DefaultTlsCacheSizeServer = -1; // use implementation default
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN

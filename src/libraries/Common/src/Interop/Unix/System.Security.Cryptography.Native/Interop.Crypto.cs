@@ -193,14 +193,14 @@ internal static partial class Interop
 
         private static bool GetMemoryDebug()
         {
-            string? value = Environment.GetEnvironmentVariable(Interop.OpenSsl.OpenSslDebugEnvironmentVariable);
+            string? value = Environment.GetEnvironmentVariable("DOTNET_OPENSSL_MEMORY_DEBUG");
             if (int.TryParse(value, CultureInfo.InvariantCulture, out int enabled) && enabled == 1)
             {
                 Interop.Crypto.GetOpenSslAllocationCount();
                 Interop.Crypto.GetOpenSslAllocatedMemory();
                 Interop.Crypto.ForEachTrackedAllocation((a, b, c, d) => { });
-                Interop.Crypto.EnableTracking();
-                Interop.Crypto.DisableTracking();
+                Interop.Crypto.EnableMemoryTracking();
+                Interop.Crypto.DisableMemoryTracking();
             }
 
             return enabled == 1;
@@ -211,7 +211,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ForEachTrackedAllocation")]
         private static unsafe partial void ForEachTrackedAllocation(delegate* unmanaged<IntPtr, int, char*, int, IntPtr, void> callback, IntPtr ctx);
-
 
         internal static unsafe void ForEachTrackedAllocation(TrackedAllocationDelegate callback)
         {
@@ -225,12 +224,12 @@ internal static partial class Interop
             callback(ptr, size, (IntPtr)file, line);
         }
 
-        internal static unsafe void EnableTracking()
+        internal static unsafe void EnableMemoryTracking()
         {
             EnableMemoryTracking(1);
         }
 
-        internal static unsafe void DisableTracking()
+        internal static unsafe void DisableMemoryTracking()
         {
             EnableMemoryTracking(0);
         }
