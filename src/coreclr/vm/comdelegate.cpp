@@ -1811,6 +1811,19 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     END_QCALL;
 }
 
+MethodDesc *COMDelegate::GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return (MethodDesc*)((DELEGATEREF)orDelegate)->GetInvocationCount();
+}
+
 MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 {
     CONTRACTL

@@ -5,6 +5,7 @@ include <AsmMacros.inc>
 include AsmConstants.inc
 
         extern  CID_ResolveWorker:proc
+        extern  CID_VirtualOpenDelegateDispatchWorker:proc
 
 ;; Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
@@ -50,5 +51,22 @@ NESTED_ENTRY RhpInterfaceDispatchSlow, _TEXT
         TAILJMP_RAX
 
 NESTED_END RhpInterfaceDispatchSlow, _TEXT
+
+;; On Input:
+;;    r11                    contains the address of the indirection cell (which is the MethodPtrAux field of the delegate)
+;;  [rsp+0] m_ReturnAddress: contains the return address of caller to stub
+NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea             rcx, [rsp + __PWTB_TransitionBlock]         ; pTransitionBlock
+        mov             rdx, r11                                    ; indirection cell
+
+        call            CID_VirtualOpenDelegateDispatchWorker
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+        TAILJMP_RAX
+
+NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
 
         end

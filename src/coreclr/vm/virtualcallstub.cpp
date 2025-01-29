@@ -1511,7 +1511,7 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
 }
 
 // Resolve a dispatch on a virtual open delegate without updating any pointers
-extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock)
+extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransitionBlock, PCODE* ppMethodPtrAuxField)
 {
     CONTRACTL {
         THROWS;
@@ -1521,6 +1521,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
+    OBJECTREF delegateObj = ObjectToOBJECTREF((Object*)(((BYTE*)ppMethodPtrAuxField) - DelegateObject::GetOffsetOfMethodPtrAux()));
     MAKE_CURRENT_THREAD_AVAILABLE();
 
 #ifdef _DEBUG
@@ -1547,7 +1548,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
         _ASSERTE(!"Throw returned");
     }
 
-    MethodDesc *pTargetMD = COMDelegate::GetMethodDesc(pObj);
+    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
     pSDFrame->SetFunction(pTargetMD);
 
     pSDFrame->Push(CURRENT_THREAD);

@@ -8,6 +8,7 @@
     TEXTAREA
 
     EXTERN CID_ResolveWorker
+    EXTERN CID_VirtualOpenDelegateDispatchWorker
 
 ;;
 ;; Stub dispatch routine for dispatch to a vtable slot
@@ -58,5 +59,21 @@
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG  x9
     NESTED_END RhpInterfaceDispatchSlow
+
+;; x11 contains the address of the indirection cell (which is the MethodPtrAux field of the delegate)
+    NESTED_ENTRY CID_VirtualOpenDelegateDispatch
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov         x1, x11                         ; indirection cell
+
+        bl          CID_VirtualOpenDelegateDispatchWorker
+
+        mov         x9, x0
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+        EPILOG_BRANCH_REG  x9
+    NESTED_END CID_VirtualOpenDelegateDispatch
 
     END
