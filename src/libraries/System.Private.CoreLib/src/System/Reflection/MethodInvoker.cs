@@ -343,14 +343,10 @@ namespace System.Reflection
         private unsafe object? InvokeWithSpanArgs(object? obj, Span<object?> arguments)
         {
             int argCount = _parameterTypes.Length;
-
-            Span<object?> copyOfArgs;
-            GCFrameRegistration regArgStorage;
-
             IntPtr* pArgStorage = stackalloc IntPtr[argCount];
             NativeMemory.Clear(pArgStorage, (nuint)argCount * (nuint)sizeof(IntPtr));
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), argCount);
-            regArgStorage = new((void**)pArgStorage, (uint)argCount, areByRefs: false);
+            Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), argCount);
+            GCFrameRegistration regArgStorage = new((void**)pArgStorage, (uint)argCount, areByRefs: false);
 
             try
             {
@@ -419,25 +415,22 @@ namespace System.Reflection
 #pragma warning restore CS9080
             }
 
-            object? ret = ((InvokeFunc_RefArgs)_invokeFunc!)(obj, _functionPointer, pByRefFixedStorage);
+            object? returnValue = ((InvokeFunc_RefArgs)_invokeFunc!)(obj, _functionPointer, pByRefFixedStorage);
             CopyBack(arguments, copyOfArgs, shouldCopyBack);
-            return ret;
+            return returnValue;
         }
 
         private unsafe object? InvokeWithRefArgsMany(object? obj, Span<object?> arguments)
         {
             int argCount = _parameterTypes.Length;
-            Span<object?> copyOfArgs;
-            GCFrameRegistration regArgStorage;
-
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), argCount);
+            Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), argCount);
+
+            Span<bool> shouldCopyBack = stackalloc bool[argCount];
 
             IntPtr* pByRefStorage = pStorage + argCount;
-            scoped Span<bool> shouldCopyBack = stackalloc bool[argCount];
-
-            regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
 
             try
@@ -455,9 +448,9 @@ namespace System.Reflection
                         ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
                 }
 
-                object? ret = ((InvokeFunc_RefArgs)_invokeFunc!)(obj, _functionPointer, pByRefStorage);
+                object? returnValue = ((InvokeFunc_RefArgs)_invokeFunc!)(obj, _functionPointer, pByRefStorage);
                 CopyBack(arguments, copyOfArgs, shouldCopyBack);
-                return ret;
+                return returnValue;
             }
             finally
             {

@@ -279,16 +279,12 @@ namespace System.Reflection
             Debug.Assert(_parameterTypes.Length > MaxStackAllocArgCount);
 
             int argCount = _parameterTypes.Length;
-            Span<object?> copyOfArgs;
-            object? ret;
-            GCFrameRegistration regArgStorage;
-            Span<bool> shouldCopyBack;
-
             IntPtr* pArgStorage = stackalloc IntPtr[argCount * 2];
             NativeMemory.Clear(pArgStorage, (nuint)argCount * (nuint)sizeof(IntPtr) * 2);
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), argCount);
-            regArgStorage = new((void**)pArgStorage, (uint)argCount, areByRefs: false);
-            shouldCopyBack = new Span<bool>(pArgStorage + argCount, argCount);
+            Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), argCount);
+            GCFrameRegistration regArgStorage = new((void**)pArgStorage, (uint)argCount, areByRefs: false);
+            Span<bool> shouldCopyBack = new Span<bool>(pArgStorage + argCount, argCount);
+            object? returnValue;
 
             try
             {
@@ -302,11 +298,11 @@ namespace System.Reflection
                         Debug.Assert(obj is null);
                         obj = CreateUninitializedObject();
                         ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
-                        ret = obj;
+                        returnValue = obj;
                     }
                     else
                     {
-                        ret = ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
+                        returnValue = ((InvokeFunc_ObjSpanArgs)_invokeFunc)(obj, _functionPointer, copyOfArgs);
                     }
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
@@ -315,7 +311,7 @@ namespace System.Reflection
                 }
 
                 CopyBack(arguments, copyOfArgs, shouldCopyBack);
-                return ret;
+                return returnValue;
             }
             finally
             {
@@ -363,7 +359,7 @@ namespace System.Reflection
                     ByReference.Create(ref Unsafe.AsRef<object?>(ref copyOfArgs[i]));
             }
 
-            object? ret;
+            object? returnValue;
             try
             {
                 if (ShouldAllocate)
@@ -371,11 +367,11 @@ namespace System.Reflection
                     Debug.Assert(obj is null);
                     obj = CreateUninitializedObject();
                     ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
-                    ret = obj;
+                    returnValue = obj;
                 }
                 else
                 {
-                    ret = ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
+                    returnValue = ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefFixedStorage);
                 }
             }
             catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
@@ -384,7 +380,7 @@ namespace System.Reflection
             }
 
             CopyBack(arguments!, copyOfArgs, shouldCopyBack);
-            return ret;
+            return returnValue;
         }
 
         internal object? InvokeWithManyRefArgs(
@@ -396,13 +392,15 @@ namespace System.Reflection
         {
             Debug.Assert(_parameterTypes.Length > MaxStackAllocArgCount);
 
-            object? ret;
+            object? returnValue;
             int argCount = _parameterTypes.Length;
 
             IntPtr* pStorage = stackalloc IntPtr[3 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(3 * argCount) * (nuint)sizeof(IntPtr));
-            IntPtr* pByRefStorage = pStorage + argCount;
+
             Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), argCount);
+
+            IntPtr* pByRefStorage = pStorage + argCount;
             GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
             Span<bool> shouldCopyBack = new Span<bool>(pStorage + argCount * 2, argCount);
@@ -428,11 +426,11 @@ namespace System.Reflection
                         Debug.Assert(obj is null);
                         obj = CreateUninitializedObject();
                         ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
-                        ret = obj;
+                        returnValue = obj;
                     }
                     else
                     {
-                        ret = ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
+                        returnValue = ((InvokeFunc_RefArgs)_invokeFunc)(obj, _functionPointer, pByRefStorage);
                     }
                 }
                 catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
@@ -448,7 +446,7 @@ namespace System.Reflection
                 GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
             }
 
-            return ret;
+            return returnValue;
         }
 
         // Copy modified values out. This is done with ByRef, Type.Missing and arguments changed by the Binder.

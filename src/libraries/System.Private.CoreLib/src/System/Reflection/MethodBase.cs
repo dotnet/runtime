@@ -194,12 +194,12 @@ namespace System.Reflection
             ObjSpan = 4,
 
             /// <summary>
-            /// Slower approach that handles copy back for 4 arguments or less.
+            /// Slower approach for the interpreted path case or to support copy back for 4 arguments or less.
             /// </summary>
             Ref4 = 5,
 
             /// <summary>
-            /// Slower approach that handles copy back for 5 or more arguments.
+            /// Slower approach for the interpreted path case or to support copy back for 5+ arguments.
             /// </summary>
             RefMany = 6,
         }

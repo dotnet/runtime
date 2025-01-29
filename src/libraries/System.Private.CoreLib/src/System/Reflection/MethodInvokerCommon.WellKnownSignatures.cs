@@ -10,6 +10,16 @@ namespace System.Reflection
 {
     internal static partial class MethodInvokerCommon
     {
+        /// <summary>
+        /// Tries to get the well-known invoke function for the specified method.
+        /// </summary>
+        // An alternative to hard-coding these types is to use a few shared function pointer signatures (at a minimum
+        // for property setters and getters on reference types) plus add an intrinsic to invoke the function pointer
+        // on an instance since currently function pointers only support calling statics.
+        //
+        // Another feature that would add extensibility is to add an API to specify the callback on MethodInfo\ConstructorInfo
+        // when Invoke is called. This assumes the caller knows the signature. This would tie into the existing design here
+        // without a perf impact to existing code since the callback would use the existing well-known signatures.
         private static bool TryGetWellKnownInvokeFunc(MethodBase method, out Delegate? invokeFunc, out InvokerStrategy strategy)
         {
             invokeFunc = null;
