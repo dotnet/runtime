@@ -10,7 +10,8 @@
     </pre>
     <script>
         const disabledTestNamePatterns = [
-            "debug_api/.*"
+            "debug_api/", // blocks main thread; seems to depend on spawning child processes.
+            "file_io/GetFileAttributesExW", // blocks main thread
         ];
 
         const nextRunDelay = 100, reloadDelay = 100;
