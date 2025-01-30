@@ -4368,11 +4368,11 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
 }
 
 //--------------------------------------------------------------------------------
-// optVisitReachingAssertions: given a tree, call the specified callback function on all
+// optVisitReachingAssertions: given a vn, call the specified callback function on all
 //    the assertions that reach it via PHI definitions if any.
 //
 // Arguments:
-//    GenTree    - The tree to visit all the reaching assertions for
+//    vn         - The vn to visit all the reaching assertions for
 //    argVisitor - The callback function to call on the vn and its reaching assertions
 //
 // Return Value:
@@ -4380,23 +4380,18 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
 //    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
 //
 template <typename TAssertVisitor>
-Compiler::AssertVisit Compiler::optVisitReachingAssertions(GenTree* tree, TAssertVisitor argVisitor)
+Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor)
 {
-    // It is better to rely only on VN and do what VNVisitReachingVNs does, but it is tricky
-    // to propagate BBs there. So, we do a simple walk here (no nested PHI nodes).
-    //
-    // We assume that the caller already checked aggregated assertions for the current block,
-    // so we're interested only in reaching assertions via PHI nodes.
-    //
-    if (!tree->OperIs(GT_LCL_VAR) || !tree->AsLclVar()->HasSsaName())
+    VNPhiDef phiDef;
+    if (!vnStore->GetPhiDef(vn, &phiDef))
     {
+        // We assume that the caller already checked assertions for the current block, so we're
+        // interested only in assertions for PHI definitions.
         return AssertVisit::Abort;
     }
 
-    GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
-    LclSsaVarDsc*        ssaDef = lvaGetDesc(lcl->GetLclNum())->GetPerSsaData(lcl->GetSsaNum());
-    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
-
+    LclSsaVarDsc* ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
+    GenTreeLclVarCommon* node = ssaDef->GetDefNode();
     if ((node == nullptr) || !node->OperIs(GT_STORE_LCL_VAR) || !node->Data()->OperIs(GT_PHI))
     {
         return AssertVisit::Abort;
@@ -4407,11 +4402,6 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(GenTree* tree, TAsser
         GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
         const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
         ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
-        if (BitVecOps::MayBeUninit(assertions))
-        {
-            return AssertVisit::Abort;
-        }
-
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.
@@ -4526,7 +4516,9 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
             return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
         };
-        if (optVisitReachingAssertions(op1, visitor) == AssertVisit::Continue)
+
+        ValueNum op1vn = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+        if (optVisitReachingAssertions(op1vn, visitor) == AssertVisit::Continue)
         {
             JITDUMP("... all of PHI's arguments are never null!\n");
             assert(newTree->OperIs(GT_EQ, GT_NE));
@@ -5883,20 +5875,20 @@ ASSERT_VALRET_TP Compiler::optGetVnMappedAssertions(ValueNum vn)
 //
 ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const BasicBlock* blockPred) const
 {
-    if (blockPred->KindIs(BBJ_COND) && blockPred->FalseTargetIs(block))
-    {
-        return blockPred->bbAssertionOut;
-    }
-
-    if ((blockPred->KindIs(BBJ_ALWAYS) && blockPred->TargetIs(block)) ||
-        (blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
+    if ((blockPred->KindIs(BBJ_COND) && blockPred->TrueTargetIs(block)))
     {
         if (bbJtrueAssertionOut != nullptr)
         {
             return bbJtrueAssertionOut[blockPred->bbNum];
         }
     }
-    return BitVecOps::UninitVal();
+
+    if (blockPred->KindIs(BBJ_ALWAYS, BBJ_COND))
+    {
+        return blockPred->bbAssertionOut;
+    }
+
+    return BitVecOps::MakeEmpty(apTraits);
 }
 
 /*****************************************************************************

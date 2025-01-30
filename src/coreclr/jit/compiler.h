@@ -8263,7 +8263,7 @@ public:
         Abort,
     };
     template <typename TAssertVisitor>
-    AssertVisit optVisitReachingAssertions(GenTree* tree, TAssertVisitor argVisitor);
+    AssertVisit optVisitReachingAssertions(ValueNum vn, TAssertVisitor argVisitor);
 
     void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
