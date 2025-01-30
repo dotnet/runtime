@@ -8278,6 +8278,8 @@ public:
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
 
+    ASSERT_VALRET_TP optGetEdgeAssertions(const BasicBlock* pred, const BasicBlock* block) const;
+
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
 
