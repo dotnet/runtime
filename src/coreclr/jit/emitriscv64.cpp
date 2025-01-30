@@ -141,10 +141,59 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
-    return (ins <= INS_remuw) && (ins >= INS_mov) && !(ins >= INS_jal && ins <= INS_bgeu && ins != INS_jalr) &&
-                   (CodeGenInterface::instInfo[ins] & ST) == 0
-               ? true
-               : false;
+    if (ins == INS_nop || ins == INS_j) // pseudos with 'zero' destination register
+        return false;
+
+    if (ins == INS_lea)
+        return true;
+
+    code_t code = emitInsCode(ins);
+    assert((code & 0b11) == 0b11); // 16-bit instructions unsupported
+    code_t majorOpcode = (code >> 2) & 0b11111;
+    assert((majorOpcode & 0b111) != 0b111); // 48-bit and larger instructions unsupported
+    switch (majorOpcode)
+    {
+        // Opcodes with no destination register or a floating-point destination register
+        case 0b00001: // LOAD-FP
+        case 0b01000: // STORE
+        case 0b01001: // STORE-FP
+        case 0b00011: // MISC-MEM
+        case 0b10000: // MADD
+        case 0b10001: // MSUB
+        case 0b10010: // NMSUB
+        case 0b10011: // NMADD
+        case 0b11000: // BRANCH
+        case 0b11100: // SYSTEM
+            return false;
+
+        case 0b10100: // OP-FP
+        {
+            // Lowest 2 bits of funct7 distinguish single, double, half, and quad floats; we don't care
+            code_t funct7 = code >> (25 + 2);
+            switch (funct7)
+            {
+                case 0b10100: // comparisons: feq, flt, fle
+                case 0b11100: // fmv to integer or fclass
+                case 0b11000: // fcvt to integer
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        case 0b00010: // custom-0
+        case 0b01010: // custom-1
+        case 0b10101: // OP-V
+        case 0b10110: // custom-2/rv128
+        case 0b11110: // custom-3/rv128
+        case 0b11010: // reserved
+        case 0b11101: // reserved
+            assert(!"unsupported major opcode");
+            FALLTHROUGH;
+
+        default: // all other opcodes write to a general purpose destination register
+            return true;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -200,9 +249,10 @@ inline emitter::code_t emitter::emitInsCode(instruction ins /*, insFormat fmt*/)
     };
     // clang-format on
 
+    assert(ins < ArrLen(insCode));
     code = insCode[ins];
 
-    assert((code != BAD_CODE));
+    assert(code != BAD_CODE);
 
     return code;
 }
@@ -1577,7 +1627,11 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         int reg2 = ((int)addr & 1) + 10;
         addr     = addr ^ 1;
 
-        assert(isValidSimm32(addr - (ssize_t)dst));
+        if (!emitComp->opts.compReloc)
+        {
+            assert(isValidSimm32(addr - (ssize_t)dst));
+        }
+
         assert((addr & 1) == 0);
 
         dst += 4;
@@ -3502,10 +3556,13 @@ void emitter::emitDispInsName(
     const BYTE* insAdr = addr - writeableOffset;
 
     unsigned int opcode = code & 0x7f;
-    assert((opcode & 0x3) == 0x3);
+    assert((opcode & 0x3) == 0x3); // only 32-bit encodings supported
 
     emitDispInsAddr(insAdr);
     emitDispInsOffs(insOffset, doffs);
+
+    if (emitComp->opts.disCodeBytes && !emitComp->opts.disDiffable)
+        printf("  %08X    ", code);
 
     printf("      ");
 
@@ -4497,33 +4554,6 @@ void emitter::emitDispInsName(
     NO_WAY("illegal ins within emitDisInsName!");
 }
 
-/*****************************************************************************
- *
- *  Display (optionally) the instruction encoding in hex
- */
-
-void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
-{
-    if (!emitComp->opts.disCodeBytes)
-    {
-        return;
-    }
-
-    // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable)
-    {
-        if (sz == 4)
-        {
-            printf("  %08X    ", (*((code_t*)code)));
-        }
-        else
-        {
-            assert(sz == 0);
-            printf("              ");
-        }
-    }
-}
-
 void emitter::emitDispInsInstrNum(const instrDesc* id) const
 {
 #ifdef DEBUG
@@ -5268,30 +5298,5 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
     return rn;
 }
 #endif
-
-//------------------------------------------------------------------------
-// IsMovInstruction: Determines whether a give instruction is a move instruction
-//
-// Arguments:
-//    ins       -- The instruction being checked
-//
-bool emitter::IsMovInstruction(instruction ins)
-{
-    switch (ins)
-    {
-        case INS_mov:
-        case INS_fsgnj_s:
-        case INS_fsgnj_d:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-    return false;
-}
 
 #endif // defined(TARGET_RISCV64)

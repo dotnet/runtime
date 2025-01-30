@@ -37,7 +37,7 @@
     <!-- NativeAOT builds are short -->
     <ShortStack Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">true</ShortStack>
     <!-- Mono LLVM builds are short -->
-    <ShortStack Condition="'$(MonoEnableLLVM)' == 'true' or '$(MonoAOTEnableLLVM)' == 'true'">true</ShortStack>
+    <ShortStack Condition="'$(DotNetBuildMonoEnableLLVM)' == 'true' or '$(DotNetBuildMonoAOTEnableLLVM)' == 'true'">true</ShortStack>
     <!-- Mono AOT cross compiler builds are short -->
     <ShortStack Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">true</ShortStack>
   </PropertyGroup>
@@ -52,12 +52,12 @@
       <!-- Enable regular Arcade signing and publishing in VMR build -->
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)restore $(FlagParameterPrefix)build $(FlagParameterPrefix)publish</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true' and '$(Sign)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)sign</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)pack</InnerBuildArgs>
 
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(CrossBuild)' == 'true' or ('$(TargetArch)' != '$(_hostArch)' and '$(ShortStack)' != 'true')">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
-      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)allconfigurations</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)warnAsError $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
@@ -77,6 +77,7 @@
       <InnerBuildArgs Condition="'$(DotNetBuildMonoAOTEnableLLVM)' != ''">$(InnerBuildArgs) /p:MonoAOTEnableLLVM=$(DotNetBuildMonoAOTEnableLLVM)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoBundleLLVMOptimizer)' != ''">$(InnerBuildArgs) /p:MonoBundleLLVMOptimizer=$(DotNetBuildMonoBundleLLVMOptimizer)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(DotNetBuildMonoCrossAOT)' != ''">$(InnerBuildArgs) /p:DotNetBuildMonoCrossAOT=$(DotNetBuildMonoCrossAOT)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildAllRuntimePacks)' != ''">$(InnerBuildArgs) /p:DotNetBuildAllRuntimePacks=$(DotNetBuildAllRuntimePacks)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PgoInstrument)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)pgoinstrument</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overridden above -->
@@ -87,6 +88,7 @@
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ForceDryRunSigning)' != ''">$(InnerBuildArgs) /p:ForceDryRunSigning=$(ForceDryRunSigning)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DefaultArtifactVisibility)' != ''">$(InnerBuildArgs) /p:DefaultArtifactVisibility=$(DefaultArtifactVisibility)</InnerBuildArgs>
 
       <!-- Pass locations for assets, packages and symbols -->
       <InnerBuildArgs Condition="'$(SourceBuiltAssetsDir)' != ''">$(InnerBuildArgs) /p:SourceBuiltAssetsDir=$(SourceBuiltAssetsDir)</InnerBuildArgs>
@@ -98,7 +100,7 @@
 
       <!-- Handle system libraries -->
       <UseSystemLibs Condition="'$(UseSystemLibs)' != ''">+$(UseSystemLibs)+</UseSystemLibs>
-      <InnerBuildArgs Condition="'$(PortableBuild)' != 'true'">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+brotli+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_BROTLI=true</InnerBuildArgs>
       <InnerBuildArgs Condition="$(UseSystemLibs.Contains('+libunwind+'))">$(InnerBuildArgs) --cmakeargs -DCLR_CMAKE_USE_SYSTEM_LIBUNWIND=true</InnerBuildArgs>
       <!-- TODO: llvm-libunwind -->
       <!-- TODO: LinuxTracepoints -->

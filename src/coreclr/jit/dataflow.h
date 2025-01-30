@@ -42,64 +42,34 @@ private:
 template <typename TCallback>
 void DataFlow::ForwardAnalysis(TCallback& callback)
 {
-    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(m_pCompiler->getAllocator()));
-
-    worklist.insert(worklist.begin(), m_pCompiler->fgFirstBB);
-    while (!worklist.empty())
+    if (m_pCompiler->m_dfsTree == nullptr)
     {
-        BasicBlock* block = *(worklist.begin());
-        worklist.erase(worklist.begin());
-
-        callback.StartMerge(block);
-        if (m_pCompiler->bbIsHandlerBeg(block))
-        {
-            EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(block);
-            callback.MergeHandler(block, ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
-        }
-        else
-        {
-            for (FlowEdge* pred : block->PredEdges())
-            {
-                callback.Merge(block, pred->getSourceBlock(), pred->getDupCount());
-            }
-        }
-
-        if (callback.EndMerge(block))
-        {
-            // The clients using DataFlow (CSE, assertion prop) currently do
-            // not need EH successors here:
-            //
-            // 1. CSE does not CSE into handlers, so it considers no
-            // expressions available at the beginning of handlers;
-            //
-            // 2. Facts in global assertion prop are VN-based and can only
-            // become false because of control flow, so it is sufficient to
-            // propagate facts available into the 'try' head block, since that
-            // block dominates all other blocks in the 'try'. That will happen
-            // as part of processing handlers below.
-            //
-            block->VisitRegularSuccs(m_pCompiler, [&worklist](BasicBlock* succ) {
-                worklist.insert(worklist.end(), succ);
-                return BasicBlockVisit::Continue;
-            });
-        }
-
-        if (m_pCompiler->bbIsTryBeg(block))
-        {
-            // Handlers of the try are reachable (and may require special
-            // handling compared to the normal "at-the-end" propagation above).
-            EHblkDsc* eh = m_pCompiler->ehGetDsc(block->getTryIndex());
-            do
-            {
-                worklist.insert(worklist.end(), eh->ExFlowBlock());
-
-                if (eh->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    break;
-                }
-
-                eh = m_pCompiler->ehGetDsc(eh->ebdEnclosingTryIndex);
-            } while (eh->ebdTryBeg == block);
-        }
+        m_pCompiler->m_dfsTree = m_pCompiler->fgComputeDfs();
     }
+
+    bool changed;
+    do
+    {
+        changed = false;
+        for (unsigned i = m_pCompiler->m_dfsTree->GetPostOrderCount(); i > 0; i--)
+        {
+            BasicBlock* block = m_pCompiler->m_dfsTree->GetPostOrder(i - 1);
+
+            callback.StartMerge(block);
+            if (m_pCompiler->bbIsHandlerBeg(block))
+            {
+                EHblkDsc* ehDsc = m_pCompiler->ehGetBlockHndDsc(block);
+                callback.MergeHandler(block, ehDsc->ebdTryBeg, ehDsc->ebdTryLast);
+            }
+            else
+            {
+                for (FlowEdge* pred : block->PredEdges())
+                {
+                    callback.Merge(block, pred->getSourceBlock(), pred->getDupCount());
+                }
+            }
+
+            changed |= callback.EndMerge(block);
+        }
+    } while (changed && m_pCompiler->m_dfsTree->HasCycle());
 }

@@ -2295,7 +2295,11 @@ void Compiler::compSetProcessor()
         if (canUseEvexEncoding())
         {
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
+        }
+        if (canUseApxEncoding())
+        {
+            codeGen->GetEmitter()->SetUseRex2Encoding(true);
+            codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
         }
     }
 #endif // TARGET_XARCH
@@ -3743,20 +3747,6 @@ void Compiler::compInitDebuggingInfo()
         compInitScopeLists();
     }
 
-    if (opts.compDbgCode && (info.compVarScopesCount > 0))
-    {
-        /* Create a new empty basic block. fgExtendDbgLifetimes() may add
-           initialization of variables which are in scope right from the
-           start of the (real) first BB (and therefore artificially marked
-           as alive) into this block.
-         */
-
-        fgEnsureFirstBBisScratch();
-
-        fgNewStmtAtEnd(fgFirstBB, gtNewNothingNode());
-
-        JITDUMP("Debuggable code - Add new %s to perform initialization of variables\n", fgFirstBB->dspToString());
-    }
     /*-------------------------------------------------------------------------
      *
      * Read the stmt-offsets table and the line-number table
@@ -4053,9 +4043,12 @@ _SetMinOpts:
         {
             codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
-    }
 
-    fgCanRelocateEHRegions = true;
+#ifdef DEBUG
+        const char* tieringName = compGetTieringName(true);
+        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
+#endif
+    }
 }
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
@@ -4231,6 +4224,65 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 #endif // TARGET_ARM
 }
 #endif // TARGET_ARMARCH || TARGET_RISCV64
+
+//------------------------------------------------------------------------
+// FindParameterRegisterLocalMappingByRegister:
+//   Try to find a mapping that maps a particular parameter register to an
+//   incoming defined local.
+//
+// Returns:
+//   The mapping, or nullptr if no mapping was found for this register.
+//
+const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMappingByRegister(regNumber reg)
+{
+    if (m_paramRegLocalMappings == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    {
+        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
+        if (mapping.RegisterSegment->GetRegister() == reg)
+        {
+            return &mapping;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// FindParameterRegisterLocalMappingByLocal:
+//   Try to find a mapping that maps a particular local from an incoming
+//   parameter register.
+//
+// Parameters:
+//   lclNum - The local to find a mapping for
+//   offset - The offset that the mapping maps to in the local
+//
+// Returns:
+//   The mapping, or nullptr if no mapping was found for this local.
+//
+const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMappingByLocal(unsigned lclNum,
+                                                                                        unsigned offset)
+{
+    if (m_paramRegLocalMappings == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    {
+        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
+        if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
+        {
+            return &mapping;
+        }
+    }
+
+    return nullptr;
+}
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4520,8 +4572,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Note: the importer is sensitive to block weights, so this has
     // to happen before importation.
     //
-    activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
+    activePhaseChecks |= PhaseChecks::CHECK_PROFILE | PhaseChecks::CHECK_PROFILE_FLAGS;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
+
+    activePhaseChecks |= PhaseChecks::CHECK_FG_INIT_BLOCK;
+    DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4637,9 +4692,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_SWIFT_ERROR_RET, &Compiler::fgAddSwiftErrorReturns);
 #endif // SWIFT_SUPPORT
 
-    // Remove empty try regions
+    // Remove empty try regions (try/finally)
     //
     DoPhase(this, PHASE_EMPTY_TRY, &Compiler::fgRemoveEmptyTry);
+
+    // Remove empty try regions (try/catch/fault)
+    //
+    DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
     // Remove empty finally regions
     //
@@ -4652,11 +4711,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Clone code in finallys to reduce overhead for non-exceptional paths
     //
     DoPhase(this, PHASE_CLONE_FINALLY, &Compiler::fgCloneFinally);
-
-    // Drop back to just checking profile likelihoods.
-    //
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
-    activePhaseChecks |= PhaseChecks::CHECK_LIKELIHOODS;
 
     // Do some flow-related optimizations
     //
@@ -4687,10 +4741,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
-        // Canonicalize entry to have unique entry BB to put IR in for the upcoming phases
-        //
-        DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
-
         // Build post-order and remove dead blocks
         //
         DoPhase(this, PHASE_DFS_BLOCKS2, &Compiler::fgDfsBlocksAndRemove);
@@ -4765,12 +4815,24 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
-    // Compute the block weights
-    //
-    DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
-
     if (opts.OptimizationEnabled())
     {
+        // Compute the block weights
+        //
+        DoPhase(this, PHASE_COMPUTE_BLOCK_WEIGHTS, &Compiler::fgComputeBlockWeights);
+
+        // Try again to remove empty try finally/fault clauses
+        //
+        DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
+
+        // Remove empty try regions (try/finally)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_2, &Compiler::fgRemoveEmptyTry);
+
+        // Remove empty try regions (try/catch/fault)
+        //
+        DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_2, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
         // Invert loops
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
@@ -4785,16 +4847,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(false);
         });
 
-        // Canonicalize entry to give a unique dominator tree root
-        //
-        DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
-
         // Compute DFS tree and remove all unreachable blocks.
         //
         DoPhase(this, PHASE_DFS_BLOCKS3, &Compiler::fgDfsBlocksAndRemove);
 
-        // Discover and classify natural loops (e.g. mark iterative loops as such). Also marks loop blocks
-        // and sets bbWeight to the loop nesting levels.
+        // Discover and classify natural loops (e.g. mark iterative loops as such).
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
@@ -5003,16 +5060,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             // Iterate if requested, resetting annotations first.
             if (opts.optRepeatIteration == opts.optRepeatCount)
             {
+                // If we're done optimizing, just remove the PHIs
+                //
+                fgResetForSsa(/* deepClean */ false);
                 break;
             }
 
             assert(opts.optRepeat);
-
-            // We may have optimized away the canonical entry BB that SSA
-            // depends on above, so if we are going for another iteration then
-            // make sure we still have a canonical entry.
-            //
-            DoPhase(this, PHASE_CANONICALIZE_ENTRY, &Compiler::fgCanonicalizeFirstBB);
 
             ResetOptAnnotations();
             RecomputeFlowGraphAnnotations();
@@ -5039,7 +5093,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif
 
     // Try again to remove empty try finally/fault clauses
-    DoPhase(this, PHASE_EMPTY_FINALLY_2, &Compiler::fgRemoveEmptyFinally);
+    //
+    DoPhase(this, PHASE_EMPTY_FINALLY_3, &Compiler::fgRemoveEmptyFinally);
+
+    // Remove empty try regions (try/finally)
+    //
+    DoPhase(this, PHASE_EMPTY_TRY_3, &Compiler::fgRemoveEmptyTry);
+
+    // Remove empty try regions (try/catch/fault)
+    //
+    DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
     if (UsesFunclets())
     {
@@ -5059,6 +5122,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+
+    // Expand stack allocated arrays
+    DoPhase(this, PHASE_EXPAND_STACK_ARR, &Compiler::fgExpandStackArrayAllocations);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5159,9 +5225,19 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         if (JitConfig.JitDoReversePostOrderLayout())
         {
             auto lateLayoutPhase = [this] {
-                fgDoReversePostOrderLayout();
-                fgMoveColdBlocks();
+                // Skip preliminary reordering passes to create more work for 3-opt layout
+                if (compStressCompile(STRESS_THREE_OPT_LAYOUT, 10))
+                {
+                    m_dfsTree = fgComputeDfs</* useProfile */ true>();
+                }
+                else
+                {
+                    fgDoReversePostOrderLayout();
+                    fgMoveColdBlocks();
+                }
+
                 fgSearchImprovedLayout();
+                fgInvalidateDfsTree();
 
                 if (compHndBBtabCount != 0)
                 {
@@ -5843,7 +5919,7 @@ void Compiler::ResetOptAnnotations()
 {
     assert(opts.optRepeat);
     assert(JitConfig.JitOptRepeatCount() > 0);
-    fgResetForSsa();
+    fgResetForSsa(/* deepClean */ true);
     vnStore                    = nullptr;
     m_blockToEHPreds           = nullptr;
     m_dominancePreds           = nullptr;
@@ -6017,8 +6093,22 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     // Note that it might be better to do this immediately when setting the JIT flags in CILJit::compileMethod()
     // (when JitFlags::SetFromFlags() is called), but this is close enough. (To move this logic to
     // CILJit::compileMethod() would require moving the info.compMatchedVM computation there as well.)
+    //
+    // We additionally want to do this for AltJit so that we can validate ISAs that the underlying CPU may
+    // not support directly. Doing this check later, after opts.altJit has been initialized might be better
+    // but it requires moving the whole set of logic down into compCompileHelper after compInitOptions has
+    // run and we're going to end up exiting early if JIT_FLAG_ALT_JIT and opts.altJit don't match anyways
 
-    if (!info.compMatchedVM)
+    bool enableAvailableIsas = !info.compMatchedVM;
+
+#ifdef DEBUG
+    if (compileFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT) && JitConfig.RunAltJitCode() == 0)
+    {
+        enableAvailableIsas = true;
+    }
+#endif // DEBUG
+
+    if (enableAvailableIsas)
     {
         CORINFO_InstructionSetFlags instructionSetFlags;
 
@@ -7112,13 +7202,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Disable JitDisasm for non-optimized code.
         opts.disAsm = false;
     }
-
-#ifdef DEBUG
-    {
-        const char* tieringName = compGetTieringName(true);
-        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
-    }
-#endif
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);

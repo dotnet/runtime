@@ -30,4 +30,5 @@
   </Target>
 
   <Target Name="Restore" />
+  <Target Name="Pack" />
 </Project>

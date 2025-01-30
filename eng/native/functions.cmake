@@ -489,7 +489,8 @@ endfunction()
 
 function(install_symbol_file symbol_file destination_path)
   if(CLR_CMAKE_TARGET_WIN32)
-      install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
+      cmake_path(SET DEST NORMALIZE "${destination_path}/PDB")
+      install(FILES ${symbol_file} DESTINATION ${DEST} ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
   endif()
@@ -676,4 +677,16 @@ function(adhoc_sign_with_entitlements targetName entitlementsFile)
         TARGET ${targetName}
         POST_BUILD
         COMMAND codesign -s - -f --entitlements ${entitlementsFile} $<TARGET_FILE:${targetName}>)
+endfunction()
+
+function(esrp_sign targetName)
+    if ("${CLR_CMAKE_ESRP_CLIENT}" STREQUAL "")
+        return()
+    endif()
+
+    add_custom_command(
+        TARGET ${targetName}
+        POST_BUILD
+        COMMAND powershell -ExecutionPolicy ByPass -NoProfile "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/sign-with-dac-certificate.ps1" -esrpClient ${CLR_CMAKE_ESRP_CLIENT} $<TARGET_FILE:${targetName}>
+    )
 endfunction()
