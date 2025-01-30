@@ -918,7 +918,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Updating lowGprRegs with final value
 #if defined(TARGET_XARCH)
 #if defined(TARGET_AMD64)
-    lowGprRegs =  (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+    lowGprRegs = (availableIntRegs & RBM_LOWINT.GetIntRegSet());
 #else
     lowGprRegs = availableIntRegs;
 #endif // TARGET_AMD64
