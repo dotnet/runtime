@@ -83,7 +83,7 @@ jobs:
       - linux_x64
       jobParameters:
         nameSuffix: mono
-        buildArgs: -s mono+clr.iltools+clr.hosts+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         isOfficialBuild: false
         postBuildSteps:
         - template: /eng/pipelines/common/upload-artifact-step.yml
