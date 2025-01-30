@@ -808,7 +808,7 @@ VirtualCallStubManager::~VirtualCallStubManager()
         CachedIndirectionCellBlockListNode * pBlockNode = m_indirectionBlocks;
         while (pBlockNode != NULL)
         {
-            for (int i = 0; i < INDCELLS_PER_BLOCK; i++)
+            for (UINT32 i = 0; i < INDCELLS_PER_BLOCK; i++)
             {
                 InterfaceDispatchCacheHeader* cache = pBlockNode->m_rgIndCells[i].GetCache();
                 if (cache != NULL)

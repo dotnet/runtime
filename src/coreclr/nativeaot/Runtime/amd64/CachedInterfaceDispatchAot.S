@@ -10,6 +10,7 @@
 
 // Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
+        int 3
         // UNIXTODO: Implement this function
     ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
         int 3
@@ -18,9 +19,8 @@ LEAF_END RhpVTableOffsetDispatch, _TEXT
 // Cache miss case, call the runtime to resolve the target and update the cache.
 // Use universal transition helper to allow an exception to flow out of resolution
 LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
-        // r10 contains indirection cell address, move to r11 where it will be passed by
+        // r11 contains indirection cell address already, so it will naturally be passed to RhpCidResolve
         // the universal transition thunk as an argument to RhpCidResolve
-        mov r11, r10
         mov r10, [rip + REL_C_FUNC(RhpCidResolve)]
         jmp qword ptr [rip + REL_C_FUNC(RhpUniversalTransition_DebugStepTailCall)]
 

@@ -55,7 +55,7 @@
     NESTED_END RhpInterfaceDispatchSlow, _TEXT
 
 // x11 contains the address of the indirection cell (which is the MethodPtrAux field of the delegate)
-    NESTED_ENTRY CID_VirtualOpenDelegateDispatch, NoHandler
+    NESTED_ENTRY CID_VirtualOpenDelegateDispatch, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK
 
@@ -68,4 +68,4 @@
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG  x9
-    NESTED_END CID_VirtualOpenDelegateDispatch
+    NESTED_END CID_VirtualOpenDelegateDispatch, _TEXT
