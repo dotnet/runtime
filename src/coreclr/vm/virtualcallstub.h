@@ -1650,13 +1650,15 @@ private:
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver);
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver);
 
-inline bool UseCachedInterfaceDispatch() { return true; }
 
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH) && defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+inline bool UseCachedInterfaceDispatch() { return true; }
 #define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) if (UseCachedInterfaceDispatch()) { cachedDispatch; } else { vsdDispath; }
 #elif defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+inline bool UseCachedInterfaceDispatch() { return true; }
 #define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) { cachedDispatch; }
 #elif defined(FEATURE_VIRTUAL_STUB_DISPATCH)
+inline bool UseCachedInterfaceDispatch() { return false; }
 #define INTERFACE_DISPATCH_CACHED_OR_VSD(cachedDispatch, vsdDispath) { vsdDispath; }
 #else
 #error "No dispatch mechanism defined"

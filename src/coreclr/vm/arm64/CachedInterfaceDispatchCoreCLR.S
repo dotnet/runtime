@@ -59,7 +59,7 @@
 
         PROLOG_WITH_TRANSITION_BLOCK
 
-        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        add         x0, sp, #__PWTB_TransitionBlock // pTransitionBlock
         mov         x1, x11                         // indirection cell
 
         bl          C_FUNC(CID_VirtualOpenDelegateDispatchWorker)

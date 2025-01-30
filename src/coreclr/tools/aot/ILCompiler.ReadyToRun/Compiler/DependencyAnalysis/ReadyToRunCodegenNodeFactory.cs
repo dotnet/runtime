@@ -308,7 +308,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new DelayLoadHelperMethodImport(
                     this,
-                    DispatchImports,
+                    HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper_Obj,
                     key.Method,
                     useVirtualCall: false,
