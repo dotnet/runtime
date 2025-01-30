@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
+    <!-- the custom feed is required for System.CommandLine -->
+    <RestoreSources>$(RestoreSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/index.json</RestoreSources>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\..\..\Common\tests\System\IO\Compression\CRC.cs" Link="Utils\CRC.cs" />
