@@ -82,7 +82,7 @@ namespace Internal.TypeSystem
                 }
 
                 // Valuetypes with GC references or byrefs need to be checked for overlaps and alignment
-                MetadataType mdType = ((MetadataType)fieldType);
+                MetadataType mdType = (MetadataType)fieldType;
                 return mdType.ContainsGCPointers || mdType.ContainsByRefs;
             }
 
