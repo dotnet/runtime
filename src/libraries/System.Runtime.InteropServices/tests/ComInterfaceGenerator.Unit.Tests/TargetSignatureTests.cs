@@ -390,6 +390,26 @@ namespace ComInterfaceGenerator.Unit.Tests
                     IOperation vtableSlotInitialization = vtableSlotDeclarator.Initializer!.Value;
 
                     Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(vtableSlotInitialization).Operand.ChildOperations.Last()).ConstantValue.Value);
+
+                    INamedTypeSymbol? userDefinedInterface = newComp.Assembly.GetTypeByMetadataName("IComInterface3");
+                    Assert.NotNull(userDefinedInterface);
+
+                    INamedTypeSymbol generatedInterfaceImplementation = new ComInterfaceImplementationLocator().FindImplementationInterface(newComp, userDefinedInterface);
+
+                    IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers("CreateManagedVirtualFunctionTable").OfType<IMethodSymbol>());
+
+                    SyntaxNode emittedImplementationSyntax = methodImplementation.DeclaringSyntaxReferences[0].GetSyntax();
+
+                    SemanticModel model = newComp.GetSemanticModel(emittedImplementationSyntax.SyntaxTree);
+
+                    IOperation body = model.GetOperation(emittedImplementationSyntax)!;
+
+                    var operation = body
+                        .ChildOperations.OfType<IBlockOperation>().Single()
+                        .ChildOperations.OfType<IVariableDeclarationGroupOperation>().First()
+                        .Descendants().OfType<IArgumentOperation>().Last()
+                        .Descendants().OfType<ILiteralOperation>().Single();
+                    Assert.Equal(5, operation.ConstantValue);
                 },
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning),
                 VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface3", "IComInterface").WithLocation(2).WithSeverity(DiagnosticSeverity.Warning));

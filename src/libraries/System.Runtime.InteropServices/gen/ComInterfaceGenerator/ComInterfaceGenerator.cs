@@ -541,7 +541,7 @@ namespace Microsoft.Interop
                                 BinaryExpression(
                                     SyntaxKind.MultiplyExpression,
                                     SizeOfExpression(TypeSyntaxes.VoidStar),
-                                    IntLiteral(3 + interfaceMethods.Methods.Length))))));
+                                    IntLiteral(1 + interfaceMethods.Methods.Max(m => m.GenerationContext.VtableIndexData.Index)))))));
 
             BlockSyntax fillBaseInterfaceSlots;
 
