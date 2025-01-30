@@ -1309,18 +1309,6 @@ PhaseStatus LinearScan::doLinearScan()
 
     compiler->compLSRADone = true;
 
-    // If edge resolution didn't create new blocks,
-    // cache the block sequence so it can be used as an initial layout during block reordering.
-    if (compiler->fgBBcount == bbSeqCount)
-    {
-        compiler->fgBBs = blockSequence;
-    }
-    else
-    {
-        assert(compiler->fgBBcount > bbSeqCount);
-        compiler->fgBBs = nullptr;
-    }
-
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
