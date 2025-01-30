@@ -386,6 +386,7 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             TargetOS=linux;
+                            BuildSubdirectory=$(CrossDacHostArch);
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
@@ -398,6 +399,7 @@
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             TargetOS=alpine;
+                            BuildSubdirectory=$(CrossDacHostArch);
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
