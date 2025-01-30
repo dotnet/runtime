@@ -85,10 +85,9 @@
       In non-VMR builds, we can skip publishing RID-agnostic packages entirely when we're not the lane that is supposed to publish them.
       In VMR builds, we need to publish them for upstack jobs to consume.
     -->
-    <Artifact Update="@(PackagesToSkipFromThisJob)" SkipPublish="true" Condition="'$(DotNetBuildOrchestrator)' != 'true'" />
+    <Artifact Remove="@(PackagesToSkipFromThisJob)" Condition="'$(DotNetBuildOrchestrator)' != 'true'" />
     <Artifact Update="@(PackagesToSkipFromThisJob)" Visibility="Vertical" Condition="'$(DotNetBuildOrchestrator)' == 'true'" />
   </ItemGroup>
-
 
   <Target Name="GetNonStableProductVersion">
     <!-- Retrieve the non-stable runtime pack product version.
@@ -108,8 +107,9 @@
     This ensures that we don't produce these files in the "Repo source build" builds,
     but we do produce them in both the VMR and the runtime official build.
   -->
-  <PropertyGroup>
-    <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildOrchestrator)' == 'true'">true</ShouldGenerateProductVersionFiles>
+  <PropertyGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+    <ShouldGenerateProductVersionFiles Condition="'$(PackageRID)' == 'win-x64' and ('$(DotNetBuildPass)' == '' or '$(DotNetBuildPass)' == '1')">true</ShouldGenerateProductVersionFiles>
+    <ShouldGenerateProductVersionFiles Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ShouldGenerateProductVersionFiles>
   </PropertyGroup>
 
   <Target Name="GenerateProductVersionFiles"
