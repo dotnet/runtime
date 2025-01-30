@@ -4367,6 +4367,60 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
+//--------------------------------------------------------------------------------
+// optVisitReachingAssertions: given a tree, call the specified callback function on all
+//    the assertions that reach it via PHI definitions if any.
+//
+// Arguments:
+//    GenTree    - The tree to visit all the reaching assertions for
+//    argVisitor - The callback function to call on the vn and its reaching assertions
+//
+// Return Value:
+//    AssertVisit::Aborted  - an argVisitor returned AssertVisit::Abort, we stop the walk and return
+//    AssertVisit::Continue - all argVisitor returned AssertVisit::Continue
+//
+template <typename TAssertVisitor>
+Compiler::AssertVisit Compiler::optVisitReachingAssertions(GenTree* tree, TAssertVisitor argVisitor)
+{
+    // It is better to rely only on VN and do what VNVisitReachingVNs does, but it is tricky
+    // to propagate BBs there. So, we do a simple walk here (no nested PHI nodes).
+    //
+    // We assume that the caller already checked aggregated assertions for the current block,
+    // so we're interested only in reaching assertions via PHI nodes.
+    //
+    if (!tree->OperIs(GT_LCL_VAR) || !tree->AsLclVar()->HasSsaName())
+    {
+        return AssertVisit::Abort;
+    }
+
+    GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
+    LclSsaVarDsc*        ssaDef = lvaGetDesc(lcl->GetLclNum())->GetPerSsaData(lcl->GetSsaNum());
+    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
+
+    if ((node == nullptr) || !node->OperIs(GT_STORE_LCL_VAR) || !node->Data()->OperIs(GT_PHI))
+    {
+        return AssertVisit::Abort;
+    }
+
+    for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
+    {
+        GenTreePhiArg* phiArg     = use.GetNode()->AsPhiArg();
+        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        if (BitVecOps::MayBeUninit(assertions))
+        {
+            return AssertVisit::Abort;
+        }
+
+        if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
+        {
+            // The visitor wants to abort the walk.
+            return AssertVisit::Abort;
+        }
+    }
+    return AssertVisit::Continue;
+}
+
 //------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
@@ -4467,34 +4521,17 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
     // See if we have "PHI ==/!= null" tree. If so, we iterate over all PHI's arguments,
     // and if all of them are known to be non-null, we can bash the comparison to true/false.
-    if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF) && op1->OperIs(GT_LCL_VAR) && op1->AsLclVar()->HasSsaName())
+    if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
     {
-        LclSsaVarDsc* ssaDef = lvaGetDesc(op1->AsLclVar()->GetLclNum())->GetPerSsaData(op1->AsLclVar()->GetSsaNum());
-        GenTreeLclVarCommon* node = ssaDef->GetDefNode();
-        if ((node != nullptr) && node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
+        auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+            return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
+        };
+        if (optVisitReachingAssertions(op1, visitor) == AssertVisit::Continue)
         {
-            JITDUMP("Checking if PHI [%06u] is non-null\n", node->Data()->gtTreeID);
-
-            bool nonNull = true;
-            for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
-            {
-                GenTreePhiArg* phiArg   = use.GetNode()->AsPhiArg();
-                const ValueNum phiArgVN = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-                if (!optAssertionVNIsNonNull(phiArgVN, optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB)))
-                {
-                    JITDUMP("... PHI's argument [%06u] is not known to be non-null - bail out.\n", phiArg->gtTreeID);
-                    nonNull = false;
-                    break;
-                }
-            }
-
-            if (nonNull)
-            {
-                JITDUMP("... all of PHI's arguments are never null!\n");
-                assert(newTree->OperIs(GT_EQ, GT_NE));
-                newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
-                return optAssertionProp_Update(newTree, tree, stmt);
-            }
+            JITDUMP("... all of PHI's arguments are never null!\n");
+            assert(newTree->OperIs(GT_EQ, GT_NE));
+            newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
+            return optAssertionProp_Update(newTree, tree, stmt);
         }
     }
 

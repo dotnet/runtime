@@ -8257,6 +8257,14 @@ public:
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
 
+    enum class AssertVisit
+    {
+        Continue,
+        Abort,
+    };
+    template <typename TAssertVisitor>
+    AssertVisit optVisitReachingAssertions(GenTree* tree, TAssertVisitor argVisitor);
+
     void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
                                           bool*            isKnownNonZero,
