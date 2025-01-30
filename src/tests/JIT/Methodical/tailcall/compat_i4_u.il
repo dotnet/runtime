@@ -9,7 +9,7 @@
 }
 .assembly ASSEMBLY_NAME { }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern xunit.core {}
 .namespace JitTest_compat_i4_u
 {
