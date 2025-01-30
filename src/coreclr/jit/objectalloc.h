@@ -22,6 +22,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class ObjectAllocator final : public Phase
 {
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
+    enum ObjectAllocationType
+    {
+        OAT_NONE,
+        OAT_NEWOBJ,
+        OAT_NEWARR
+    };
 
     //===============================================================================
     // Data members
@@ -35,6 +41,7 @@ class ObjectAllocator final : public Phase
     BitVec              m_DefinitelyStackPointingPointers;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
+    unsigned int        m_StackAllocMaxSize;
 
     //===============================================================================
     // Methods
@@ -47,7 +54,12 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
+    bool         CanAllocateLclVarOnStack(unsigned int         lclNum,
+                                          CORINFO_CLASS_HANDLE clsHnd,
+                                          ObjectAllocationType allocType,
+                                          ssize_t              length,
+                                          unsigned int*        blockSize,
+                                          const char**         reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -64,11 +76,15 @@ private:
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
+    unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
+                                               CORINFO_CLASS_HANDLE clsHnd,
+                                               unsigned int         length,
+                                               unsigned int         blockSize,
+                                               BasicBlock*          block,
+                                               Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
-
-    static const unsigned int s_StackAllocMaxSize = 0x2000U;
 };
 
 //===============================================================================
@@ -84,6 +100,8 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
     m_ConnGraphAdjacencyMatrix        = nullptr;
+
+    m_StackAllocMaxSize = (unsigned)JitConfig.JitObjectStackAllocationSize();
 }
 
 //------------------------------------------------------------------------
@@ -110,64 +128,119 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //                           allocated on the stack.
 //
 // Arguments:
-//    lclNum   - Local variable number
-//    clsHnd   - Class/struct handle of the variable class
-//    reason  - [out, required] if result is false, reason why
+//    lclNum    - Local variable number
+//    clsHnd    - Class/struct handle of the variable class
+//    allocType - Type of allocation (newobj or newarr)
+//    length    - Length of the array (for newarr)
+//    blockSize - [out, optional] exact size of the object
+//    reason    - [out, required] if result is false, reason why
 //
 // Return Value:
 //    Returns true iff local variable can be allocated on the stack.
 //
 inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                                                       CORINFO_CLASS_HANDLE clsHnd,
+                                                      ObjectAllocationType allocType,
+                                                      ssize_t              length,
+                                                      unsigned int*        blockSize,
                                                       const char**         reason)
 {
     assert(m_AnalysisDone);
 
     bool enableBoxedValueClasses = true;
     bool enableRefClasses        = true;
+    bool enableArrays            = true;
     *reason                      = "[ok]";
 
 #ifdef DEBUG
     enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
     enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
+    enableArrays            = (JitConfig.JitObjectStackAllocationArray() != 0);
 #endif
 
-    unsigned int classSize = 0;
+    unsigned classSize = 0;
 
-    if (comp->info.compCompHnd->isValueClass(clsHnd))
+    if (allocType == OAT_NEWARR)
     {
-        if (!enableBoxedValueClasses)
+        if (!enableArrays)
         {
             *reason = "[disabled by config]";
             return false;
         }
 
-        if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
+        if ((length < 0) || (length > CORINFO_Array_MaxLength))
         {
-            *reason = "[no boxed type available]";
+            *reason = "[invalid array length]";
             return false;
         }
 
-        classSize = comp->info.compCompHnd->getClassSize(clsHnd);
+        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+        CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+        var_types            type       = JITtype2varType(corType);
+        ClassLayout*         elemLayout = type == TYP_STRUCT ? comp->typGetObjLayout(elemClsHnd) : nullptr;
+
+        if (varTypeIsGC(type) || ((elemLayout != nullptr) && elemLayout->HasGCPtr()))
+        {
+            *reason = "[array contains gc refs]";
+            return false;
+        }
+
+        const unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
+
+        ClrSafeInt<unsigned> totalSize(elemSize);
+        totalSize *= static_cast<unsigned>(length);
+        totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
+
+        if (totalSize.IsOverflow())
+        {
+            *reason = "[overflow array length]";
+            return false;
+        }
+
+        classSize = totalSize.Value();
+    }
+    else if (allocType == OAT_NEWOBJ)
+    {
+        if (comp->info.compCompHnd->isValueClass(clsHnd))
+        {
+            if (!enableBoxedValueClasses)
+            {
+                *reason = "[disabled by config]";
+                return false;
+            }
+
+            if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
+            {
+                *reason = "[no boxed type available]";
+                return false;
+            }
+
+            classSize = comp->info.compCompHnd->getClassSize(clsHnd);
+        }
+        else
+        {
+            if (!enableRefClasses)
+            {
+                *reason = "[disabled by config]";
+                return false;
+            }
+
+            if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
+            {
+                *reason = "[runtime disallows]";
+                return false;
+            }
+
+            classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
+        }
     }
     else
     {
-        if (!enableRefClasses)
-        {
-            *reason = "[disabled by config]";
-            return false;
-        }
-
-        if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
-        {
-            *reason = "[runtime disallows]";
-            return false;
-        }
-
-        classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
+        assert(!"Unexpected allocation type");
+        return false;
     }
 
-    if (classSize > s_StackAllocMaxSize)
+    if (classSize > m_StackAllocMaxSize)
     {
         *reason = "[too large]";
         return false;
@@ -179,6 +252,11 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
     {
         *reason = "[escapes]";
         return false;
+    }
+
+    if (blockSize != nullptr)
+    {
+        *blockSize = classSize;
     }
 
     return true;

@@ -59,10 +59,10 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         public CryptographicAttributeObjectCollection SignedAttributes =>
-            _parsedSignedAttrs ??= MakeAttributeCollection(_signedAttributes);
+            _parsedSignedAttrs ??= PkcsHelpers.MakeAttributeCollection(_signedAttributes);
 
         public CryptographicAttributeObjectCollection UnsignedAttributes =>
-            _parsedUnsignedAttrs ??= MakeAttributeCollection(_unsignedAttributes);
+            _parsedUnsignedAttrs ??= PkcsHelpers.MakeAttributeCollection(_unsignedAttributes);
 
         internal ReadOnlyMemory<byte> GetSignatureMemory() => _signature;
 
@@ -623,7 +623,7 @@ namespace System.Security.Cryptography.Pkcs
 
                         if (attr.AttrType == Oids.MessageDigest)
                         {
-                            CryptographicAttributeObject obj = MakeAttribute(attr);
+                            CryptographicAttributeObject obj = PkcsHelpers.MakeAttribute(attr);
 
                             if (obj.Values.Count != 1)
                             {
@@ -798,34 +798,6 @@ namespace System.Security.Cryptography.Pkcs
         private HashAlgorithmName GetDigestAlgorithm()
         {
             return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value!, forVerification: true);
-        }
-
-        internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[]? attributes)
-        {
-            var coll = new CryptographicAttributeObjectCollection();
-
-            if (attributes == null)
-                return coll;
-
-            foreach (AttributeAsn attribute in attributes)
-            {
-                coll.AddWithoutMerge(MakeAttribute(attribute));
-            }
-
-            return coll;
-        }
-
-        private static CryptographicAttributeObject MakeAttribute(AttributeAsn attribute)
-        {
-            Oid type = new Oid(attribute.AttrType);
-            AsnEncodedDataCollection valueColl = new AsnEncodedDataCollection();
-
-            foreach (ReadOnlyMemory<byte> attrValue in attribute.AttrValues)
-            {
-                valueColl.Add(PkcsHelpers.CreateBestPkcs9AttributeObjectAvailable(type, attrValue.ToArray()));
-            }
-
-            return new CryptographicAttributeObject(type, valueColl);
         }
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)

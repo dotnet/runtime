@@ -224,5 +224,49 @@ namespace System.Text.Json.Serialization.Tests
             // otherwise objects would not be correctly identified when searching for them in the dictionary.
             Assert.Same(listCopy[0], listCopy[1]);
         }
+
+        [Fact]
+        public async Task Preserve_DerivedType_InArray()
+        {
+            var worker = new OfficeWorker
+            {
+                Office = new Office
+                {
+                    Dummy = new()
+                }
+            };
+
+            worker.Office.Staff = [worker, new RemoteWorker()];
+
+            string json = await Serializer.SerializeWrapper(worker, s_serializerOptionsPreserve);
+            Assert.Equal("""{"$id":"1","Office":{"$id":"2","Staff":[{"$ref":"1"},{"$id":"3","$type":"remote"}],"Dummy":{"$id":"4"}}}""", json);
+
+            worker.Office.Staff = [worker];
+
+            json = await Serializer.SerializeWrapper(worker, s_serializerOptionsPreserve);
+            Assert.Equal("""{"$id":"1","Office":{"$id":"2","Staff":[{"$ref":"1"}],"Dummy":{"$id":"3"}}}""", json);
+        }
+
+        [JsonDerivedType(typeof(OfficeWorker), "office")]
+        [JsonDerivedType(typeof(RemoteWorker), "remote")]
+        public abstract class EmployeeLocation
+        {
+        }
+
+        public class OfficeWorker : EmployeeLocation
+        {
+            public Office Office { get; set; }
+        }
+
+        public class RemoteWorker : EmployeeLocation
+        {
+        }
+
+        public class Office
+        {
+            public EmployeeLocation[] Staff { get; set; }
+
+            public EmptyClass Dummy { get; set; }
+        }
     }
 }
