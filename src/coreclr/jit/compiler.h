@@ -4014,7 +4014,7 @@ public:
 
     // false: we can add new tracked variables.
     // true: We cannot add new 'tracked' variable
-    bool     lvaTrackedFixed = false; 
+    bool     lvaTrackedFixed = false;
 
     unsigned lvaCount;        // total number of locals, which includes function arguments,
                               // special arguments, IL local variables, and JIT temporary variables
@@ -6326,7 +6326,6 @@ public:
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
-        unsigned currEHRegion;
 
 #ifdef DEBUG
         weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
@@ -6341,7 +6340,7 @@ public:
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+        bool RunThreeOptPass();
 
     public:
         ThreeOptLayout(Compiler* comp);
@@ -6924,7 +6923,7 @@ public:
     unsigned acdCount = 0;
 
     // Get the index to use as part of the AddCodeDsc key for sharing throw blocks
-    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg); 
+    unsigned bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg);
 
     struct AddCodeDscKey
     {
@@ -6932,7 +6931,7 @@ public:
         AddCodeDscKey(): acdKind(SCK_NONE), acdData(0) {}
         AddCodeDscKey(SpecialCodeKind kind, BasicBlock* block, Compiler* comp);
         AddCodeDscKey(AddCodeDsc* add);
-        
+
         static bool Equals(const AddCodeDscKey& x, const AddCodeDscKey& y)
         {
             return (x.acdData == y.acdData) && (x.acdKind == y.acdKind);
@@ -10023,10 +10022,10 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // canUseRex2Encoding - Answer the question: Is Rex2 encoding supported on this target.
+    // canUseApxEncoding - Answer the question: Are APX encodings supported on this target.
     //
     // Returns:
-    //    `true` if Rex2 encoding is supported, `false` if not.
+    //    `true` if APX encoding is supported, `false` if not.
     //
     bool canUseApxEncoding() const
     {
@@ -10078,7 +10077,7 @@ private:
     bool DoJitStressRex2Encoding() const
     {
 #ifdef DEBUG
-        if (JitConfig.JitStressRex2Encoding() && compOpportunisticallyDependsOn(InstructionSet_APX))
+        if (JitConfig.JitStressRex2Encoding())
         {
             // we should make sure EVEX is also stressed when REX2 is stressed, as we will need to guarantee EGPR
             // functionality is properly turned on for every instructions when REX2 is stress.
@@ -10093,12 +10092,29 @@ private:
     // JitStressEvexEncoding- Answer the question: Is Evex stress knob set
     //
     // Returns:
-    //    `true` if user requests REX2 encoding.
+    //    `true` if user requests EVEX encoding.
     //
     bool JitStressEvexEncoding() const
     {
 #ifdef DEBUG
         return JitConfig.JitStressEvexEncoding() || JitConfig.JitStressRex2Encoding();
+#endif // DEBUG
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    // DoJitStressPromotedEvexEncoding- Answer the question: Do we force promoted EVEX encoding.
+    //
+    // Returns:
+    //    `true` if user requests promoted EVEX encoding.
+    //
+    bool DoJitStressPromotedEvexEncoding() const
+    {
+#ifdef DEBUG
+        if (JitConfig.JitStressPromotedEvexEncoding())
+        {
+            return true;
+        }
 #endif // DEBUG
 
         return false;
