@@ -45,6 +45,7 @@
 #cmakedefine01 HAVE__LWP_SELF
 #cmakedefine01 HAVE_MACH_THREADS
 #cmakedefine01 HAVE_MACH_EXCEPTIONS
+#cmakedefine01 HAVE_SIGALTSTACK
 #cmakedefine01 HAVE_VM_ALLOCATE
 #cmakedefine01 HAVE_VM_READ
 #cmakedefine01 HAVE_DIRECTIO
