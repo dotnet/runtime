@@ -230,6 +230,7 @@ protected:
 
     void genExitCode(BasicBlock* block);
 
+#if defined(TARGET_ARM64)
     BasicBlock* genGetThrowHelper(SpecialCodeKind codeKind);
 
     // genEmitInlineThrow: Generate code for an inline exception.
@@ -282,6 +283,7 @@ protected:
             genDefineTempLabel(over);
         }
     }
+#endif
 
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
