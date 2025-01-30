@@ -1242,6 +1242,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.retExprClassHndIsExact = false;
     inlineInfo.inlineResult           = inlineResult;
     inlineInfo.inlInstParamArgInfo    = nullptr;
+    inlineInfo.inlRetBufferArgInfo    = nullptr;
 #ifdef FEATURE_SIMD
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
@@ -2045,21 +2046,36 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
     }
 
-    // Append the InstParam
-    if (inlineInfo->inlInstParamArgInfo != nullptr)
-    {
-        fgInsertInlineeArgument(*inlineInfo->inlInstParamArgInfo, block, &afterStmt, &newStmt, callDI);
-    }
-
-    // Treat arguments that had to be assigned to temps
-    if (inlineInfo->argCnt)
+#ifdef DEBUG
+    if (call->gtArgs.CountArgs() > 0)
     {
         JITDUMP("\nArguments setup:\n");
-        for (unsigned argNum = 0; argNum < inlineInfo->argCnt; argNum++)
-        {
-            fgInsertInlineeArgument(inlArgInfo[argNum], block, &afterStmt, &newStmt, callDI);
-        }
     }
+#endif
+
+    unsigned ilArgNum = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        InlArgInfo* argInfo = nullptr;
+        switch (arg.GetWellKnownArg())
+        {
+            case WellKnownArg::RetBuffer:
+                argInfo = inlineInfo->inlRetBufferArgInfo;
+                break;
+            case WellKnownArg::InstParam:
+                argInfo = inlineInfo->inlInstParamArgInfo;
+                break;
+            default:
+                assert(ilArgNum < inlineInfo->argCnt);
+                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
+                break;
+        }
+
+        assert(argInfo != nullptr);
+        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
+    }
+
+    assert(ilArgNum == inlineInfo->argCnt);
 
     // Add the CCTOR check if asked for.
     // Note: We no longer do the optimization that is done before by staticAccessedFirstUsingHelper in the old inliner.
