@@ -4390,8 +4390,8 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         return AssertVisit::Abort;
     }
 
-    LclSsaVarDsc* ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
-    GenTreeLclVarCommon* node = ssaDef->GetDefNode();
+    LclSsaVarDsc*        ssaDef = lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaDef);
+    GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
     if ((node == nullptr) || !node->OperIs(GT_STORE_LCL_VAR) || !node->Data()->OperIs(GT_PHI))
     {
         return AssertVisit::Abort;
