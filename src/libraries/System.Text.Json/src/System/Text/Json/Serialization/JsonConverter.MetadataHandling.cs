@@ -148,6 +148,13 @@ namespace System.Text.Json.Serialization
                     if (resolver.ContainsReferenceForCycleDetection(value))
                     {
                         writer.WriteNullValue();
+
+                        if (polymorphicConverter is not null)
+                        {
+                            // Clear out any polymorphic state.
+                            state.PolymorphicTypeDiscriminator = null;
+                            state.PolymorphicTypeResolver = null;
+                        }
                         return true;
                     }
 
