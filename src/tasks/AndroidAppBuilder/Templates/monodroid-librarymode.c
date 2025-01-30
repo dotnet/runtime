@@ -14,8 +14,12 @@
 void
 Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
 
+void
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, long current_local_time);
+
+// Signature for parity with monodroid.c (and monodroid-coreclr.c), entry point is not used
 int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time);
+Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
 
 /********* imported symbols *********/
 void SayHello ();
@@ -50,8 +54,8 @@ Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstrin
     (*env)->ReleaseStringUTFChars(env, j_value, val);
 }
 
-int
-Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time)
+void
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, long current_local_time)
 {
     char file_dir[2048];
     char cache_dir[2048];
@@ -67,6 +71,10 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
 
     //setenv ("MONO_LOG_LEVEL", "debug", true);
     //setenv ("MONO_LOG_MASK", "all", true);
+}
 
+int
+Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args)
+{
     return invoke_netlibrary_entrypoints ();
 }
