@@ -9647,6 +9647,66 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     GenTree* op2 = impImplicitR4orR8Cast(impStackTop().val, callType);
     GenTree* op1 = impImplicitR4orR8Cast(impStackTop(1).val, callType);
 
+#ifdef TARGET_XARCH
+    // If Avx10.2 is enabled, the min/max operations can be done using the 
+    // new minmax instructions which is faster than using the combination
+    // of instructions for lower ISAs. We can use the minmax instructions
+
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2) || canUseAVX10v2())
+    {
+        impPopStack();
+        impPopStack();
+        uint8_t ctrlByte;
+
+        if (isMax)
+        {
+            if (isMagnitude)
+            {
+                if (isNumber)
+                {
+                    ctrlByte = 0x17;
+                }
+                else
+                {
+                    ctrlByte = 0x07;
+                }
+            }
+            else if (isNumber)
+            {
+                ctrlByte = 0x15;
+            }
+            else
+            {
+                ctrlByte = 0x05;
+            }
+        }
+        else
+        {
+            if (isMagnitude)
+            {
+                if (isNumber)
+                {
+                    ctrlByte = 0x16;
+                }
+                else
+                {
+                    ctrlByte = 0x06;
+                }
+            }
+            else if (isNumber)
+            {
+                ctrlByte = 0x14;
+            }
+            else
+            {
+                ctrlByte = 0x04;
+            }
+        }
+        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ctrlByte), NI_AVX10v2_MinMaxScalar, callJitType, 16);
+        return gtNewSimdToScalarNode(genActualType(callType), retNode, callJitType, 16);
+    }
+#endif
+
     if (op2->IsCnsFltOrDbl())
     {
         cnsNode   = op2->AsDblCon();

@@ -24406,7 +24406,7 @@ GenTree* Compiler::gtNewSimdMaxNode(
     {
         if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2) || canUseAVX10v2())
         {
-            return gtNewSimdMinMaxNode(type, op1, op2, 1, simdBaseJitType, simdSize);
+            return gtNewSimdMinMaxNode(type, op1, op2, 5, simdBaseJitType, simdSize);
         }
         else
         {
