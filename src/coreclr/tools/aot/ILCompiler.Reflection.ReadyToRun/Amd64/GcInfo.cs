@@ -537,6 +537,9 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 }
             }
 
+            if (SlotTable.NumTracked == 0)
+                return new Dictionary<int, List<BaseGcTransition>>();
+
             int numChunks = (totalInterruptibleLength + _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / _gcInfoTypes.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
             int numBitsPerPointer = (int)NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset);
             if (numBitsPerPointer == 0)
