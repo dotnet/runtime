@@ -15,7 +15,7 @@
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 3
+#define EE_INTERFACE_MAJOR_VERSION 4
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -141,6 +141,7 @@ struct EtwGCSettingsInfo
     // If this is false, it means the hardlimit was set implicitly by the container.
     bool hard_limit_config_p;
     bool no_affinitize_p;
+    bool dynamic_heap_count_p;
 };
 
 // Opaque type for tracking object pointers
