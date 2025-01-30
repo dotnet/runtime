@@ -2299,6 +2299,7 @@ void Compiler::compSetProcessor()
         if (canUseApxEncoding())
         {
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
+            codeGen->GetEmitter()->SetUsePromotedEVEXEncoding(true);
         }
     }
 #endif // TARGET_XARCH
