@@ -4485,17 +4485,17 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 //
 // Parameters:
 //   comp - The Compiler instance
-//   hotBlocks - An array of the blocks worth reordering
-//   numHotBlocks - The number of blocks in 'hotBlocks'
+//   initialLayout - An array of the blocks to be reordered
+//   numHotBlocks - The number of hot blocks at the beginning of 'initialLayout'
 //
 // Notes:
 //   To save an allocation, we will reuse the DFS tree's underlying array for 'tempOrder'.
 //   This means we will trash the DFS tree.
 //
-Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp, BasicBlock** hotBlocks, unsigned numHotBlocks)
+Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks)
     : compiler(comp)
     , cutPoints(comp->getAllocator(CMK_FlowEdge), &ThreeOptLayout::EdgeCmp)
-    , blockOrder(hotBlocks)
+    , blockOrder(initialLayout)
     , tempOrder(comp->m_dfsTree->GetPostOrder())
     , numCandidateBlocks(numHotBlocks)
 {
@@ -4785,7 +4785,7 @@ bool Compiler::ThreeOptLayout::Run()
 {
     assert(numCandidateBlocks > 0);
 
-    // Initialize ordinals, and find EH region ends
+    // Initialize ordinals for the hot blocks
     for (unsigned i = 0; i < numCandidateBlocks; i++)
     {
         BasicBlock* const block = blockOrder[i];
@@ -4795,10 +4795,16 @@ bool Compiler::ThreeOptLayout::Run()
         block->bbPostorderNum = i;
     }
 
+    // Copy cold block layout over to 'tempOrder' so we don't lose it
+    const unsigned numColdBlocks = compiler->m_dfsTree->GetPostOrderCount() - numCandidateBlocks;
+    assert((numCandidateBlocks + numColdBlocks) == compiler->m_dfsTree->GetPostOrderCount());
+    memcpy(tempOrder + numCandidateBlocks, blockOrder + numCandidateBlocks, sizeof(BasicBlock*) * numColdBlocks);
+
     RunThreeOptPass(blockOrder[0], blockOrder[numCandidateBlocks - 1]);
 
+    // Reorder the block list
     bool modified = false;
-    for (unsigned i = 1; i < numCandidateBlocks; i++)
+    for (unsigned i = 1; i < compiler->m_dfsTree->GetPostOrderCount(); i++)
     {
         BasicBlock* const block = blockOrder[i - 1];
         BasicBlock* const next  = blockOrder[i];
@@ -5111,11 +5117,11 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     m_loops                          = FlowGraphNaturalLoops::Find(m_dfsTree);
     BasicBlock** const initialLayout = new (this, CMK_BasicBlock) BasicBlock*[m_dfsTree->GetPostOrderCount()];
 
-    // When walking the RPO-based layout, only add hot blocks to the initial layout.
+    // When walking the RPO-based layout, compact the hot blocks, and remember the end of the hot section.
     // We don't want to waste time running 3-opt on cold blocks.
     unsigned numHotBlocks  = 0;
     auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
-        if (!block->isBBWeightCold(this))
+        if (!block->isBBWeightCold(this) || block->IsFirst())
         {
             initialLayout[numHotBlocks++] = block;
         }
@@ -5132,6 +5138,18 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
     else
     {
         fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
+
+        // Add the cold blocks to the end of the initial layout in RPO.
+        unsigned nextColdIndex = numHotBlocks;
+        for (unsigned i = m_dfsTree->GetPostOrderCount(); nextColdIndex < m_dfsTree->GetPostOrderCount(); i--)
+        {
+            assert(i != 0);
+            BasicBlock* const block = m_dfsTree->GetPostOrder(i - 1);
+            if (block->isBBWeightCold(this) && !block->IsFirst())
+            {
+                initialLayout[nextColdIndex++] = block;
+            }
+        }
     }
 
     bool modified = false;

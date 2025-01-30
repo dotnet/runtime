@@ -6341,7 +6341,7 @@ public:
         void RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
 
     public:
-        ThreeOptLayout(Compiler* comp, BasicBlock** hotBlocks, unsigned numHotBlocks);
+        ThreeOptLayout(Compiler* comp, BasicBlock** initialLayout, unsigned numHotBlocks);
         bool Run();
     };
 
