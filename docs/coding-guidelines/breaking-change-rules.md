@@ -169,7 +169,7 @@ Breaking Change Rules
 
 * Changing a `struct` type to a `ref struct` type and vice versa
 
-* Adding a new `ref` field to a type
+* Adding a new `ref` field to a type that didn't have any `ref` field before (recursively)
 
 * Changing the underlying type of an enum
 
