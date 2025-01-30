@@ -67,6 +67,11 @@ namespace System.Runtime.InteropServices
             IntPtr ret;
 
             int loadWithAlteredPathFlags = LoadWithAlteredSearchPathFlag;
+            const int loadLibrarySearchFlags = (int)DllImportSearchPath.UseDllDirectoryForDependencies
+                | (int)DllImportSearchPath.ApplicationDirectory
+                | (int)DllImportSearchPath.UserDirectories
+                | (int)DllImportSearchPath.System32
+                | (int)DllImportSearchPath.SafeDirectories;
             bool libNameIsRelativePath = !Path.IsPathFullyQualified(libraryName);
 
             // P/Invokes are often declared with variations on the actual library name.
@@ -80,14 +85,8 @@ namespace System.Runtime.InteropServices
 
                 if (!libNameIsRelativePath)
                 {
-                    int flags = loadWithAlteredPathFlags;
-                    if ((dllImportSearchPathFlags & (int)DllImportSearchPath.UseDllDirectoryForDependencies) != 0)
-                    {
-                        // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR is the only flag affecting absolute path. Don't OR the flags
-                        // unconditionally as all absolute path P/Invokes could then lose LOAD_WITH_ALTERED_SEARCH_PATH.
-                        flags |= dllImportSearchPathFlags;
-                    }
-
+                    // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+                    int flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
                     ret = LoadLibraryHelper(currLibNameVariation, flags, ref errorTracker);
                     if (ret != IntPtr.Zero)
                     {
@@ -96,9 +95,12 @@ namespace System.Runtime.InteropServices
                 }
                 else if ((callingAssembly != null) && searchAssemblyDirectory)
                 {
+                    // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
+                    int flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
+
                     // Try to load the module alongside the assembly where the PInvoke was declared.
                     // For PInvokes where the DllImportSearchPath.AssemblyDirectory is specified, look next to the application.
-                    ret = LoadLibraryHelper(Path.Combine(AppContext.BaseDirectory, currLibNameVariation), loadWithAlteredPathFlags | dllImportSearchPathFlags, ref errorTracker);
+                    ret = LoadLibraryHelper(Path.Combine(AppContext.BaseDirectory, currLibNameVariation), flags, ref errorTracker);
                     if (ret != IntPtr.Zero)
                     {
                         return ret;
