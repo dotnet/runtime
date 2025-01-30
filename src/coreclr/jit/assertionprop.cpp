@@ -4367,9 +4367,12 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
-bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* phi)
+bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi)
 {
-    // enumerate phi's args
+    assert(phi != nullptr);
+    assert(block != nullptr);
+
+    // Enumerate phi's args
     for (GenTreePhi::Use& use : phi->Uses())
     {
         if (!use.GetNode()->OperIs(GT_PHI_ARG))
@@ -4377,20 +4380,21 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* p
             return false;
         }
 
-        GenTreePhiArg* arg  = use.GetNode()->AsPhiArg();
-        BasicBlock*    pred = arg->gtPredBB;
+        GenTreePhiArg* arg      = use.GetNode()->AsPhiArg();
+        BasicBlock*    pred     = arg->gtPredBB;
+        const ValueNum phiArgVN = vnStore->VNConservativeNormalValue(arg->gtVNPair);
 
-        const ValueNum phiArgVN       = vnStore->VNConservativeNormalValue(arg->gtVNPair);
-        bool           isKnownNonNull = vnStore->IsKnownNonNull(phiArgVN);
-        if (!isKnownNonNull)
+        // If this PhiArg is not known to be non-null, then maybe assertions can help.
+        if (!vnStore->IsKnownNonNull(phiArgVN))
         {
-            ASSERT_TP assertions = nullptr;
-            if (pred->KindIs(BBJ_COND) && pred->FalseTargetIs(defBlock))
+            // Find the outgoing assertion for the predecessor block that targets this block.
+            ASSERT_TP assertions = BitVecOps::UninitVal();
+            if (pred->KindIs(BBJ_COND) && pred->FalseTargetIs(block))
             {
                 assertions = pred->bbAssertionOut;
             }
-            else if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(defBlock)) ||
-                     (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(defBlock)))
+            else if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(block)) ||
+                     (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(block)))
             {
                 if (bbJtrueAssertionOut != nullptr)
                 {
@@ -4398,12 +4402,13 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* p
                 }
             }
 
-            if (assertions == nullptr)
+            if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
             {
                 return false;
             }
 
-            bool            found = false;
+            // Iterate over the assertions and check if there is a "phiArgVN != null" assertion.
+            bool            notNull = false;
             BitVecOps::Iter iter(apTraits, assertions);
             unsigned        index = 0;
             while (iter.NextElem(&index))
@@ -4411,13 +4416,14 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* p
                 AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
                 if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == phiArgVN)
                 {
-                    found = true;
+                    notNull = true;
                     break;
                 }
             }
 
-            if (!found)
+            if (!notNull)
             {
+                // We can't prove that the phiArg is non-null - bail out.
                 return false;
             }
         }
@@ -4438,6 +4444,8 @@ bool Compiler::optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* p
 //
 GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
+    assert(!optLocalAssertionProp);
+
     GenTree* newTree = tree;
     GenTree* op1     = tree->AsOp()->gtOp1;
     GenTree* op2     = tree->AsOp()->gtOp2;
@@ -4521,18 +4529,21 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    if (!optLocalAssertionProp && op2->IsIntegralConst(0) && varTypeIsGC(op1) && op1->OperIs(GT_LCL_VAR) &&
-        newTree->OperIs(GT_EQ, GT_NE) && op1->AsLclVarCommon()->HasSsaName())
+    // See if we have "PHI ==/!= null" tree. In that case, we can use optAssertionPropPhiDefNotNull
+    // to iterate over all the phi args and check if they are non-null. If all of them are non-null,
+    // then we can fold this tree to true/false.
+    if (op2->IsIntegralConst(0) && varTypeIsGC(op1) && op1->OperIs(GT_LCL_VAR) && op1->AsLclVarCommon()->HasSsaName())
     {
-        unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-        unsigned ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-
+        // Get the definition of the local variable via SSA, we're looking for a phi definition.
+        unsigned             lclNum = op1->AsLclVarCommon()->GetLclNum();
+        unsigned             ssaNum = op1->AsLclVarCommon()->GetSsaNum();
         LclSsaVarDsc*        ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
         GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
         if (node != nullptr && node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
         {
             if (optAssertionPropPhiDefNotNull(ssaDef->GetBlock(), node->Data()->AsPhi()))
             {
+                assert(newTree->OperIs(GT_EQ, GT_NE));
                 newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
                 newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
                 DISPTREE(newTree);

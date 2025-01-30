@@ -8257,7 +8257,7 @@ public:
     bool     optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool     optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
 
-    bool optAssertionPropPhiDefNotNull(BasicBlock* defBlock, GenTreePhi* phi);
+    bool optAssertionPropPhiDefNotNull(BasicBlock* block, GenTreePhi* phi);
 
     void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
