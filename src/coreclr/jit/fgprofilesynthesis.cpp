@@ -991,12 +991,15 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
     // Determine input weight for method entry.
     // Ideally, we'd use fgCalledCount, but it may not be available yet.
     //
-    BasicBlock* const entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
-    weight_t          entryWeight = entryBlock->bbWeight;
+    BasicBlock* const           entryBlock  = m_comp->opts.IsOSR() ? m_comp->fgEntryBB : m_comp->fgFirstBB;
+    weight_t                    entryWeight = entryBlock->bbWeight;
+    FlowGraphNaturalLoop* const loop        = m_loops->GetLoopByHeader(entryBlock);
 
-    for (FlowEdge* const predEdge : entryBlock->PredEdges())
+    if (loop != nullptr)
     {
-        entryWeight = max(BB_ZERO_WEIGHT, entryWeight - predEdge->getLikelyWeight());
+        const weight_t cyclicProbability = m_cyclicProbabilities[loop->GetIndex()];
+        assert(cyclicProbability != BB_ZERO_WEIGHT);
+        entryWeight *= (1.0 / cyclicProbability);
     }
 
     // Fall back to BB_UNITY_WEIGHT if we have zero entry weight
