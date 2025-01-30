@@ -771,7 +771,8 @@ private:
         LSRA_LIMIT_SMALL_SET = 0x3,
 #if defined(TARGET_AMD64)
         LSRA_LIMIT_UPPER_SIMD_SET = 0x2000,
-        LSRA_LIMIT_MASK           = 0x2003
+        LSRA_LIMIT_EXT_GPR_SET    = 0x4000,
+        LSRA_LIMIT_MASK           = 0x6003
 #else
         LSRA_LIMIT_MASK = 0x3
 #endif
@@ -1075,6 +1076,9 @@ private:
     SingleTypeRegSet allByteRegs();
     SingleTypeRegSet allSIMDRegs();
     SingleTypeRegSet lowSIMDRegs();
+#if defined(TARGET_XARCH)
+    SingleTypeRegSet getLowGprRegs();
+#endif
     SingleTypeRegSet internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
@@ -1934,8 +1938,11 @@ private:
     int          BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates = RBM_NONE);
     int          BuildCastUses(GenTreeCast* cast, SingleTypeRegSet candidates);
 #ifdef TARGET_XARCH
-    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates = RBM_NONE);
+    int BuildRMWUses(
+        GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
+    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree* tree, SingleTypeRegSet candidates, bool isGPR = false);
+    inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
     // This is the main entry point for building the RefPositions for a node.
@@ -2049,6 +2056,8 @@ private:
     regMaskTP rbmFltCalleeTrash;
     regMaskTP rbmAllInt;
     regMaskTP rbmIntCalleeTrash;
+    regNumber regIntLast;
+    bool      isApxSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2065,6 +2074,19 @@ private:
     FORCEINLINE regMaskTP get_RBM_INT_CALLEE_TRASH() const
     {
         return this->rbmIntCalleeTrash;
+    }
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return this->regIntLast;
+    }
+    FORCEINLINE bool getIsApxSupported() const
+    {
+        return this->isApxSupported;
+    }
+#else
+    FORCEINLINE regNumber get_REG_INT_LAST() const
+    {
+        return REG_INT_LAST;
     }
 #endif // TARGET_AMD64
 
