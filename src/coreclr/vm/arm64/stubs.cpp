@@ -1372,7 +1372,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::FPREGMASK));
 
 
-#if !defined(TARGET_OSX)
+#if !defined(TARGET_APPLE)
             EmitLoadStoreRegImm(eLOAD, IntReg(pEntry->dstofs & ShuffleEntry::OFSREGMASK), RegSp, pEntry->srcofs * sizeof(void*));
 #else
             int log2Size = (pEntry->srcofs >> 12);
@@ -1388,7 +1388,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             // dest must be on the stack
             _ASSERTE(!(pEntry->dstofs & ShuffleEntry::REGMASK));
 
-#if !defined(TARGET_OSX)
+#if !defined(TARGET_APPLE)
             EmitLoadStoreRegImm(eLOAD, IntReg(9), RegSp, pEntry->srcofs * sizeof(void*));
             EmitLoadStoreRegImm(eSTORE, IntReg(9), RegSp, pEntry->dstofs * sizeof(void*));
 #else
