@@ -65,6 +65,20 @@ public class DllImportSearchPathsTest
             Environment.CurrentDirectory = currentDirectory;
         }
     }
+
+    [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static void AssemblyDirectory_SearchFlags_WithDependency_Found()
+    {
+        // Library and its dependency should be found in the assembly directory.
+        var assembly = Assembly.LoadFile(Path.Combine(Subdirectory, $"{nameof(DllImportSearchPathsTest)}.dll"));
+        var type = assembly.GetType(nameof(NativeLibraryWithDependency));
+        var method = type.GetMethod(nameof(NativeLibraryWithDependency.Sum));
+
+        int sum = (int)method.Invoke(null, new object[] { 1, 2 });
+        Assert.Equal(3, sum);
+        Console.WriteLine("NativeLibraryWithDependency.Sum returned {0}", sum);
+    }
 }
 
 public class NativeLibraryPInvoke
@@ -92,4 +106,19 @@ public class NativeLibraryPInvokeAot
     [DllImport(NativeLibraryToLoad.Name + "-in-native")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
     static extern int NativeSum(int arg1, int arg2);
+}
+
+public class NativeLibraryWithDependency
+{
+    public static int Sum(int a, int b)
+    {
+        return CallDependencySum(a, b);
+    }
+
+    // For LoadLibrary on Windows, search flags, like that represented by System32, are incompatible with
+    // looking at a specific path (per AssemblyDirectory), so we specify both flags to validate that we do
+    // not incorrectly use both when looking in the assembly directory.
+    [DllImport(nameof(NativeLibraryWithDependency))]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
+    static extern int CallDependencySum(int a, int b);
 }
