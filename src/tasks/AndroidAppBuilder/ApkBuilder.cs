@@ -11,6 +11,12 @@ using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+public enum RuntimeFlavorEnum
+{
+    Mono,
+    CoreCLR
+}
+
 public partial class ApkBuilder
 {
     private const string DefaultMinApiLevel = "21";
@@ -41,6 +47,8 @@ public partial class ApkBuilder
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
     public ITaskItem[] ExtraLinkerArguments { get; set; } = Array.Empty<ITaskItem>();
     public string[] NativeDependencies { get; set; } = Array.Empty<string>();
+    public string RuntimeFlavor { get; set; } = nameof(RuntimeFlavorEnum.Mono);
+    private RuntimeFlavorEnum parsedRuntimeFlavor;
 
     private TaskLoggingHelper logger;
 
@@ -52,7 +60,7 @@ public partial class ApkBuilder
     public (string apk, string packageId) BuildApk(
         string runtimeIdentifier,
         string mainLibraryFileName,
-        string monoRuntimeHeaders)
+        string runtimeHeaders)
     {
         if (string.IsNullOrEmpty(AppDir) || !Directory.Exists(AppDir))
         {
@@ -138,6 +146,11 @@ public partial class ApkBuilder
         if (!Directory.Exists(buildToolsFolder))
         {
             throw new ArgumentException($"{buildToolsFolder} was not found.");
+        }
+
+        if (!Enum.TryParse(RuntimeFlavor, true, out parsedRuntimeFlavor))
+        {
+            throw new ArgumentException($"Unknown RuntimeFlavor value: {RuntimeFlavor}. '{nameof(RuntimeFlavor)}' must be one of: {string.Join(",", Enum.GetNames(typeof(RuntimeFlavorEnum)))}");
         }
 
         var assemblerFiles = new StringBuilder();
@@ -246,23 +259,32 @@ public partial class ApkBuilder
         }
         else
         {
-            string monoRuntimeLib = "";
-            if (StaticLinkedRuntime)
+            string runtimeLib = "";
+            if (parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR)
             {
-                monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+                if (StaticLinkedRuntime)
+                    throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
+                runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
             }
             else
             {
-                monoRuntimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
+                if (StaticLinkedRuntime)
+                {
+                    runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.a");
+                }
+                else
+                {
+                    runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
+                }
             }
 
-            if (!File.Exists(monoRuntimeLib))
+            if (!File.Exists(runtimeLib))
             {
-                throw new ArgumentException($"{monoRuntimeLib} was not found");
+                throw new ArgumentException($"{runtimeLib} was not found");
             }
             else
             {
-                nativeLibraries += $"{monoRuntimeLib}{Environment.NewLine}";
+                nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
             if (StaticLinkedRuntime)
@@ -297,7 +319,7 @@ public partial class ApkBuilder
                 // There's a circular dependency between static mono runtime lib and static component libraries.
                 // Adding mono runtime lib before and after component libs will resolve issues with undefined symbols
                 // due to circular dependency.
-                nativeLibraries += $"    {monoRuntimeLib}{Environment.NewLine}";
+                nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
         }
 
@@ -310,10 +332,11 @@ public partial class ApkBuilder
         nativeLibraries += assemblerFilesToLink.ToString();
 
         string aotSources = assemblerFiles.ToString();
-        string monodroidSource = (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
+        string monodroidSource = (parsedRuntimeFlavor == RuntimeFlavorEnum.CoreCLR) ?
+            "monodroid-coreclr.c" : (IsLibraryMode) ? "monodroid-librarymode.c" : "monodroid.c";
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists-android.txt")
-            .Replace("%MonoInclude%", monoRuntimeHeaders)
+            .Replace("%RuntimeInclude%", runtimeHeaders)
             .Replace("%NativeLibrariesToLink%", nativeLibraries)
             .Replace("%MONODROID_SOURCE%", monodroidSource)
             .Replace("%AotSources%", aotSources)
