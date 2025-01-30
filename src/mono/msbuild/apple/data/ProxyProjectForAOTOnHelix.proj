@@ -7,7 +7,7 @@
     <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
 
-    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_PublishNativeBinary;_AfterAppleBuildOnHelix</AppleBuildDependsOn>
+    <AppleBuildDependsOn>_PublishRuntimePack;_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
     <!-- Forced by ILLink targets -->
     <SelfContained>true</SelfContained>
     <PublishDir>$(OriginalPublishDir)</PublishDir>
@@ -106,17 +106,6 @@
 
     <Copy SourceFiles="@(_RuntimePackFiles)"
           DestinationFolder="$(OriginalPublishDir)" />
-  </Target>
-
-  <Target Name="_PublishNativeBinary">
-
-    <ItemGroup>
-      <_NativeBinaryFiles Include="@(IntermediateAssembly->'$(NativeOutputPath)%(Filename)$(NativeBinaryExt)')" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_NativeBinaryFiles)"
-          DestinationFolder="$(OriginalPublishDir)" />
-
   </Target>
 
   <!-- Move the app to where the xharness runner expects it. -->
