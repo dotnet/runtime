@@ -525,13 +525,15 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
             {
-                totalInterruptibleLength = CodeLength;
+                totalInterruptibleLength = _gcInfoTypes.NormalizeCodeLength(CodeLength);
             }
             else
             {
                 foreach (InterruptibleRange range in InterruptibleRanges)
                 {
-                    totalInterruptibleLength += (int)(range.StopOffset - range.StartOffset);
+                    uint normStart = _gcInfoTypes.NormalizeCodeOffset(range.StartOffset);
+                    uint normStop  = _gcInfoTypes.NormalizeCodeOffset(range.StopOffset);
+                    totalInterruptibleLength += (int)(normStop - normStart);
                 }
             }
 
@@ -629,6 +631,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     fSkip = !fSkip;
                     fReport = !fReport;
                 }
+                Debug.Assert(readSlots == numTracked);
             }
             else
             {
@@ -642,6 +645,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         numCouldBeLiveSlots++;
                 }
             }
+            Debug.Assert(numCouldBeLiveSlots > 0);
             return numCouldBeLiveSlots;
         }
 
