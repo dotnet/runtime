@@ -511,6 +511,11 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 #endif
         break;
+        case GT_NOT:
+#ifdef TARGET_ARM64
+            ContainCheckNot(node->AsOp());
+#endif
+            break;
         case GT_SELECT:
             return LowerSelect(node->AsConditional());
 

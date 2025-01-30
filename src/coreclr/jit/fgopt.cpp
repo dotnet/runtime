@@ -2213,27 +2213,6 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // At this point we know target is BBJ_COND.
     assert(target->KindIs(BBJ_COND));
 
-    // Bail out if OSR, as we can have unusual flow into loops. If one
-    // of target's successors is also a backedge target, this optimization
-    // may mess up loop recognition by creating too many non-loop preds.
-    //
-    if (opts.IsOSR())
-    {
-        if (target->GetFalseTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
-        {
-            JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetFalseTarget()->bbNum);
-            return false;
-        }
-
-        if (target->GetTrueTarget()->HasFlag(BBF_BACKWARD_JUMP_TARGET))
-        {
-            JITDUMP("Deferring: " FMT_BB " --> " FMT_BB "; latter looks like loop top\n", target->bbNum,
-                    target->GetTrueTarget()->bbNum);
-            return false;
-        }
-    }
-
     // See if this block assigns constant or other interesting tree to that same local.
     //
     if (!fgBlockEndFavorsTailDuplication(block, lclNum))
