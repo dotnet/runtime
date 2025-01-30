@@ -4368,80 +4368,6 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
 }
 
 //------------------------------------------------------------------------
-// optAssertionIsNonNullPhi: see if we can prove a GT_PHI will be non-null
-//   based on assertions
-//
-// Arguments:
-//   block - block containing the PHI
-//   phi   - PHI node to check
-//
-// Return Value:
-//   true if the tree's value will be non-null
-//
-bool Compiler::optAssertionIsNonNullPhi(const BasicBlock* block, GenTreePhi* phi)
-{
-    assert(phi != nullptr);
-    assert(block != nullptr);
-    assert(!optLocalAssertionProp); // PHI nodes are not present in local assertion prop.
-
-    // NOTE: We might want to use VNVisitReachingVNs instead here, but we need to
-    // extend it to propagate BasicBlock preds for phi args.
-    // For now, we will iterate over the physical PhiArgs on the Phi node.
-
-    JITDUMP("Checking if PHI [%06u] is non-null\n", phi->gtTreeID);
-
-    // Enumerate phi's args
-    for (GenTreePhi::Use& use : phi->Uses())
-    {
-        GenTreePhiArg* phiArg   = use.GetNode()->AsPhiArg();
-        const ValueNum phiArgVN = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-
-        // Fast path - if VN tells us this particular phiArg is non-null, then we go to the next phiArg.
-        if (vnStore->IsKnownNonNull(phiArgVN))
-        {
-            continue;
-        }
-
-        // If this PhiArg is not known to be non-null, then maybe assertions can help.
-        //
-        // Find the outgoing assertion for the predecessor block that targets this block.
-        ASSERT_TP assertions = optGetEdgeAssertions(block, phiArg->gtPredBB);
-        if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
-        {
-            JITDUMP("No assertions for pred " FMT_BB " ", phiArg->gtPredBB->bbNum);
-            return false;
-        }
-
-        JITDUMP("Looking at assertions from pred " FMT_BB " ", phiArg->gtPredBB->bbNum);
-        optDumpAssertionIndices(assertions, "\n");
-
-        // Iterate over the assertions and check if there is a "phiArgVN != null" assertion.
-        bool            notNull = false;
-        BitVecOps::Iter iter(apTraits, assertions);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
-        {
-            AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
-            if (curAssertion->CanPropNonNull() && (curAssertion->op1.vn == phiArgVN))
-            {
-                notNull = true;
-                break;
-            }
-        }
-
-        if (!notNull)
-        {
-            // We can't prove that the phiArg is non-null - bail out.
-            JITDUMP("PHI's argument [%06u] is not known to be non-null - bail out.\n", phiArg->gtTreeID);
-            return false;
-        }
-    }
-
-    JITDUMP("... all of PHI's arguments are never null!\n", phi->gtTreeID);
-    return true;
-}
-
-//------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
 // Arguments:
@@ -4539,21 +4465,32 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         return nullptr;
     }
 
-    // See if we have "PHI ==/!= null" tree. In that case, we can use optAssertionIsNonNullPhi
-    // to iterate over all the phi args and check if they are non-null. If all of them are non-null,
-    // then we can fold this tree to true/false.
-    if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF) && op1->OperIs(GT_LCL_VAR) &&
-        op1->AsLclVarCommon()->HasSsaName())
+    // See if we have "PHI ==/!= null" tree. If so, we iterate over all PHI's arguments,
+    // and if all of them are known to be non-null, we can bash the comparison to true/false.
+    if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF) && op1->OperIs(GT_LCL_VAR) && op1->AsLclVar()->HasSsaName())
     {
-        // Get the definition of the local variable via SSA, we're looking for a phi definition.
-        unsigned             lclNum = op1->AsLclVarCommon()->GetLclNum();
-        unsigned             ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-        LclSsaVarDsc*        ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
-        GenTreeLclVarCommon* node   = ssaDef->GetDefNode();
-        if (node != nullptr && node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
+        LclSsaVarDsc* ssaDef = lvaGetDesc(op1->AsLclVar()->GetLclNum())->GetPerSsaData(op1->AsLclVar()->GetSsaNum());
+        GenTreeLclVarCommon* node = ssaDef->GetDefNode();
+        if ((node != nullptr) && node->OperIs(GT_STORE_LCL_VAR) && node->Data()->OperIs(GT_PHI))
         {
-            if (optAssertionIsNonNullPhi(ssaDef->GetBlock(), node->Data()->AsPhi()))
+            JITDUMP("Checking if PHI [%06u] is non-null\n", node->Data()->gtTreeID);
+
+            bool nonNull = true;
+            for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
             {
+                GenTreePhiArg* phiArg   = use.GetNode()->AsPhiArg();
+                const ValueNum phiArgVN = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
+                if (!optAssertionVNIsNonNull(phiArgVN, optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB)))
+                {
+                    JITDUMP("... PHI's argument [%06u] is not known to be non-null - bail out.\n", phiArg->gtTreeID);
+                    nonNull = false;
+                    break;
+                }
+            }
+
+            if (nonNull)
+            {
+                JITDUMP("... all of PHI's arguments are never null!\n");
                 assert(newTree->OperIs(GT_EQ, GT_NE));
                 newTree = tree->OperIs(GT_EQ) ? gtNewIconNode(0) : gtNewIconNode(1);
                 return optAssertionProp_Update(newTree, tree, stmt);
@@ -5181,31 +5118,19 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
-    // Check each assertion to find if we have a vn != null assertion.
-    //
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
-        AssertionIndex assertionIndex = GetAssertionIndex(index);
-        if (assertionIndex > optAssertionCount)
+        BitVecOps::Iter iter(apTraits, assertions);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
         {
-            break;
+            AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+            if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == vn)
+            {
+                return true;
+            }
         }
-        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
-        if (!curAssertion->CanPropNonNull())
-        {
-            continue;
-        }
-
-        if (curAssertion->op1.vn != vn)
-        {
-            continue;
-        }
-
-        return true;
     }
-
     return false;
 }
 
