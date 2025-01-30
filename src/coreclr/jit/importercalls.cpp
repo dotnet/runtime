@@ -9656,6 +9656,23 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     {
         impPopStack();
         impPopStack();
+
+        /**
+         * ctrlByte   A control byte (imm8) that specifies the type of min/max operation and sign behavior:
+         *            - Bits [1:0] (Op-select): Determines the operation performed:
+         *              - 0b00: minimum - Returns x if x ≤ y, otherwise y; NaN handling applies.
+         *              - 0b01: maximum - Returns x if x ≥ y, otherwise y; NaN handling applies.
+         *              - 0b10: minimumMagnitude - Compares absolute values, returns the smaller magnitude.
+         *              - 0b11: maximumMagnitude - Compares absolute values, returns the larger magnitude.
+         *            - Bit  [4] (min/max mode): Determines whether the instruction follows IEEE-compliant NaN handling:
+         *              - 0: Standard min/max (propagates NaNs).
+         *              - 1: Number-preferential min/max (ignores signaling NaNs).
+         *            - Bits [3:2] (Sign control): Defines how the result’s sign is determined:
+         *              - 0b00: Select sign from the first operand (src1).
+         *              - 0b01: Select sign from the comparison result.
+         *              - 0b10: Force result sign to 0 (positive).
+         *              - 0b11: Force result sign to 1 (negative).
+         */
         uint8_t ctrlByte;
 
         if (isMax)
