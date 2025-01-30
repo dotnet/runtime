@@ -20,8 +20,9 @@ resources:
   repositories:
     - repository: performance
       type: github
-      name: dotnet/performance
+      name: caaavik-msft/performance # TODO: change back to dotnet/performance before merging
       endpoint: public
+      ref: caaavik/move-runtime-yaml-to-performance # TODO: remove before merge
 
 variables:
   - template: /eng/pipelines/common/variables.yml
