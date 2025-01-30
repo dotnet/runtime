@@ -8,36 +8,36 @@ namespace Microsoft.Win32.SafeHandles
 {
     public abstract partial class CriticalHandleMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
-        protected CriticalHandleMinusOneIsInvalid() : base (default(System.IntPtr)) { }
+        protected CriticalHandleMinusOneIsInvalid() : base(default(System.IntPtr)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public abstract partial class CriticalHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.CriticalHandle
     {
-        protected CriticalHandleZeroOrMinusOneIsInvalid() : base (default(System.IntPtr)) { }
+        protected CriticalHandleZeroOrMinusOneIsInvalid() : base(default(System.IntPtr)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public sealed partial class SafeFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeFileHandle() : base (default(bool)) { }
-        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base (default(bool)) { }
+        public SafeFileHandle() : base(default(bool)) { }
+        public SafeFileHandle(System.IntPtr preexistingHandle, bool ownsHandle) : base(default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
         public bool IsAsync { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SafeHandleMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
+        protected SafeHandleMinusOneIsInvalid(bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public abstract partial class SafeHandleZeroOrMinusOneIsInvalid : System.Runtime.InteropServices.SafeHandle
     {
-        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base (default(System.IntPtr), default(bool)) { }
+        protected SafeHandleZeroOrMinusOneIsInvalid(bool ownsHandle) : base(default(System.IntPtr), default(bool)) { }
         public override bool IsInvalid { get { throw null; } }
     }
     public sealed partial class SafeWaitHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        public SafeWaitHandle() : base (default(bool)) { }
-        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base (default(bool)) { }
+        public SafeWaitHandle() : base(default(bool)) { }
+        public SafeWaitHandle(System.IntPtr existingHandle, bool ownsHandle) : base(default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
     }
 }
@@ -47,7 +47,7 @@ namespace System
     {
         public AccessViolationException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected AccessViolationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AccessViolationException(string? message) { }
         public AccessViolationException(string? message, System.Exception? innerException) { }
@@ -241,7 +241,7 @@ namespace System
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes) { throw null; }
-        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>() where T : allows ref struct { throw null; }
+        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>() where T : allows ref struct { throw null; }
     }
     public partial class AggregateException : System.Exception
     {
@@ -249,7 +249,7 @@ namespace System
         public AggregateException(System.Collections.Generic.IEnumerable<System.Exception> innerExceptions) { }
         public AggregateException(params System.Exception[] innerExceptions) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected AggregateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AggregateException(string? message) { }
         public AggregateException(string? message, System.Collections.Generic.IEnumerable<System.Exception> innerExceptions) { }
@@ -260,7 +260,7 @@ namespace System
         public System.AggregateException Flatten() { throw null; }
         public override System.Exception GetBaseException() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Handle(System.Func<System.Exception, bool> predicate) { }
         public override string ToString() { throw null; }
@@ -289,7 +289,7 @@ namespace System
         public static long MonitoringSurvivedProcessMemorySize { get { throw null; } }
         public long MonitoringTotalAllocatedMemorySize { get { throw null; } }
         public System.TimeSpan MonitoringTotalProcessorTime { get { throw null; } }
-        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Security.PermissionSet PermissionSet { get { throw null; } }
         public string? RelativeSearchPath { get { throw null; } }
         public System.AppDomainSetup SetupInformation { get { throw null; } }
@@ -310,7 +310,7 @@ namespace System
         public void ClearPrivatePath() { }
         [System.ObsoleteAttribute("AppDomain.ClearShadowCopyPath has been deprecated and is not supported.")]
         public void ClearShadowCopyPath() { }
-        [System.ObsoleteAttribute("Creating and unloading AppDomains is not supported and throws an exception.", DiagnosticId="SYSLIB0024", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Creating and unloading AppDomains is not supported and throws an exception.", DiagnosticId = "SYSLIB0024", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.AppDomain CreateDomain(string friendlyName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public System.Runtime.Remoting.ObjectHandle? CreateInstance(string assemblyName, string typeName) { throw null; }
@@ -341,7 +341,7 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public int ExecuteAssembly(string assemblyFile, string?[]? args) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
-        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public int ExecuteAssembly(string assemblyFile, string?[]? args, byte[]? hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         public int ExecuteAssemblyByName(System.Reflection.AssemblyName assemblyName, params string?[]? args) { throw null; }
         public int ExecuteAssemblyByName(string assemblyName) { throw null; }
@@ -372,7 +372,7 @@ namespace System
         public void SetShadowCopyPath(string? path) { }
         public void SetThreadPrincipal(System.Security.Principal.IPrincipal principal) { }
         public override string ToString() { throw null; }
-        [System.ObsoleteAttribute("Creating and unloading AppDomains is not supported and throws an exception.", DiagnosticId="SYSLIB0024", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Creating and unloading AppDomains is not supported and throws an exception.", DiagnosticId = "SYSLIB0024", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void Unload(System.AppDomain domain) { }
     }
     public sealed partial class AppDomainSetup
@@ -385,7 +385,7 @@ namespace System
     {
         public AppDomainUnloadedException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected AppDomainUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public AppDomainUnloadedException(string? message) { }
         public AppDomainUnloadedException(string? message, System.Exception? innerException) { }
@@ -394,7 +394,7 @@ namespace System
     {
         public ApplicationException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ApplicationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ApplicationException(string? message) { }
         public ApplicationException(string? message, System.Exception? innerException) { }
@@ -432,7 +432,7 @@ namespace System
     {
         public ArgumentException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ArgumentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ArgumentException(string? message) { }
         public ArgumentException(string? message, System.Exception? innerException) { }
@@ -441,7 +441,7 @@ namespace System
         public override string Message { get { throw null; } }
         public virtual string? ParamName { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
         public static void ThrowIfNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
@@ -450,7 +450,7 @@ namespace System
     {
         public ArgumentNullException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ArgumentNullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ArgumentNullException(string? paramName) { }
         public ArgumentNullException(string? message, System.Exception? innerException) { }
@@ -463,7 +463,7 @@ namespace System
     {
         public ArgumentOutOfRangeException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ArgumentOutOfRangeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ArgumentOutOfRangeException(string? paramName) { }
         public ArgumentOutOfRangeException(string? message, System.Exception? innerException) { }
@@ -472,7 +472,7 @@ namespace System
         public virtual object? ActualValue { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void ThrowIfEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IEquatable<T>? { }
         public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("value")] string? paramName = null) where T : System.IComparable<T> { }
@@ -488,7 +488,7 @@ namespace System
     {
         public ArithmeticException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ArithmeticException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ArithmeticException(string? message) { }
         public ArithmeticException(string? message, System.Exception? innerException) { }
@@ -644,7 +644,7 @@ namespace System
         public System.ArraySegment<T>.Enumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.ArraySegment<T> a, System.ArraySegment<T> b) { throw null; }
-        public static implicit operator System.ArraySegment<T> (T[] array) { throw null; }
+        public static implicit operator System.ArraySegment<T>(T[] array) { throw null; }
         public static bool operator !=(System.ArraySegment<T> a, System.ArraySegment<T> b) { throw null; }
         public System.ArraySegment<T> Slice(int index) { throw null; }
         public System.ArraySegment<T> Slice(int index, int count) { throw null; }
@@ -674,7 +674,7 @@ namespace System
     {
         public ArrayTypeMismatchException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ArrayTypeMismatchException(string? message) { }
         public ArrayTypeMismatchException(string? message, System.Exception? innerException) { }
@@ -686,7 +686,7 @@ namespace System
     }
     public delegate void AssemblyLoadEventHandler(object? sender, System.AssemblyLoadEventArgs args);
     public delegate void AsyncCallback(System.IAsyncResult ar);
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = true, AllowMultiple = false)]
     public abstract partial class Attribute
     {
         protected Attribute() { }
@@ -748,7 +748,7 @@ namespace System
         GenericParameter = 16384,
         All = 32767,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = true)]
     public sealed partial class AttributeUsageAttribute : System.Attribute
     {
         public AttributeUsageAttribute(System.AttributeTargets validOn) { }
@@ -760,7 +760,7 @@ namespace System
     {
         public BadImageFormatException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected BadImageFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public BadImageFormatException(string? message) { }
         public BadImageFormatException(string? message, System.Exception? inner) { }
@@ -770,7 +770,7 @@ namespace System
         public string? FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -927,11 +927,11 @@ namespace System
         private readonly byte _dummyPrimitive;
         public const byte MaxValue = (byte)255;
         public const byte MinValue = (byte)0;
-        static byte System.Numerics.IAdditiveIdentity<System.Byte,System.Byte>.AdditiveIdentity { get { throw null; } }
+        static byte System.Numerics.IAdditiveIdentity<System.Byte, System.Byte>.AdditiveIdentity { get { throw null; } }
         static byte System.Numerics.IBinaryNumber<System.Byte>.AllBitsSet { get { throw null; } }
         static byte System.Numerics.IMinMaxValue<System.Byte>.MaxValue { get { throw null; } }
         static byte System.Numerics.IMinMaxValue<System.Byte>.MinValue { get { throw null; } }
-        static byte System.Numerics.IMultiplicativeIdentity<System.Byte,System.Byte>.MultiplicativeIdentity { get { throw null; } }
+        static byte System.Numerics.IMultiplicativeIdentity<System.Byte, System.Byte>.MultiplicativeIdentity { get { throw null; } }
         static byte System.Numerics.INumberBase<System.Byte>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Byte>.Radix { get { throw null; } }
         static byte System.Numerics.INumberBase<System.Byte>.Zero { get { throw null; } }
@@ -1065,7 +1065,7 @@ namespace System
     {
         public CannotUnloadAppDomainException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected CannotUnloadAppDomainException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CannotUnloadAppDomainException(string? message) { }
         public CannotUnloadAppDomainException(string? message, System.Exception? innerException) { }
@@ -1075,11 +1075,11 @@ namespace System
         private readonly char _dummyPrimitive;
         public const char MaxValue = '\uFFFF';
         public const char MinValue = '\0';
-        static char System.Numerics.IAdditiveIdentity<System.Char,System.Char>.AdditiveIdentity { get { throw null; } }
+        static char System.Numerics.IAdditiveIdentity<System.Char, System.Char>.AdditiveIdentity { get { throw null; } }
         static char System.Numerics.IBinaryNumber<System.Char>.AllBitsSet { get { throw null; } }
         static char System.Numerics.IMinMaxValue<System.Char>.MaxValue { get { throw null; } }
         static char System.Numerics.IMinMaxValue<System.Char>.MinValue { get { throw null; } }
-        static char System.Numerics.IMultiplicativeIdentity<System.Char,System.Char>.MultiplicativeIdentity { get { throw null; } }
+        static char System.Numerics.IMultiplicativeIdentity<System.Char, System.Char>.MultiplicativeIdentity { get { throw null; } }
         static char System.Numerics.INumberBase<System.Char>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Char>.Radix { get { throw null; } }
         static char System.Numerics.INumberBase<System.Char>.Zero { get { throw null; } }
@@ -1254,7 +1254,7 @@ namespace System
         public bool MoveNext() { throw null; }
         public void Reset() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = true, AllowMultiple = false)]
     public sealed partial class CLSCompliantAttribute : System.Attribute
     {
         public CLSCompliantAttribute(bool isCompliant) { }
@@ -1269,12 +1269,12 @@ namespace System
     {
         public ContextMarshalException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ContextMarshalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ContextMarshalException(string? message) { }
         public ContextMarshalException(string? message, System.Exception? inner) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     public partial class ContextStaticAttribute : System.Attribute
     {
         public ContextStaticAttribute() { }
@@ -2016,7 +2016,7 @@ namespace System
         public static bool operator ==(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator >(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator >=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        public static implicit operator System.DateTimeOffset (System.DateTime dateTime) { throw null; }
+        public static implicit operator System.DateTimeOffset(System.DateTime dateTime) { throw null; }
         public static bool operator !=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
         public static bool operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
@@ -2075,7 +2075,7 @@ namespace System
         internal DBNull() { }
         public static readonly System.DBNull Value;
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
@@ -2121,13 +2121,13 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public Decimal(ulong value) { throw null; }
         public byte Scale { get { throw null; } }
-        static decimal System.Numerics.IAdditiveIdentity<System.Decimal,System.Decimal>.AdditiveIdentity { get { throw null; } }
+        static decimal System.Numerics.IAdditiveIdentity<System.Decimal, System.Decimal>.AdditiveIdentity { get { throw null; } }
         static decimal System.Numerics.IFloatingPointConstants<System.Decimal>.E { get { throw null; } }
         static decimal System.Numerics.IFloatingPointConstants<System.Decimal>.Pi { get { throw null; } }
         static decimal System.Numerics.IFloatingPointConstants<System.Decimal>.Tau { get { throw null; } }
         static decimal System.Numerics.IMinMaxValue<System.Decimal>.MaxValue { get { throw null; } }
         static decimal System.Numerics.IMinMaxValue<System.Decimal>.MinValue { get { throw null; } }
-        static decimal System.Numerics.IMultiplicativeIdentity<System.Decimal,System.Decimal>.MultiplicativeIdentity { get { throw null; } }
+        static decimal System.Numerics.IMultiplicativeIdentity<System.Decimal, System.Decimal>.MultiplicativeIdentity { get { throw null; } }
         static decimal System.Numerics.INumberBase<System.Decimal>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Decimal>.Radix { get { throw null; } }
         static decimal System.Numerics.INumberBase<System.Decimal>.Zero { get { throw null; } }
@@ -2171,38 +2171,38 @@ namespace System
         public static decimal operator --(decimal d) { throw null; }
         public static decimal operator /(decimal d1, decimal d2) { throw null; }
         public static bool operator ==(decimal d1, decimal d2) { throw null; }
-        public static explicit operator byte (decimal value) { throw null; }
-        public static explicit operator char (decimal value) { throw null; }
-        public static explicit operator double (decimal value) { throw null; }
-        public static explicit operator short (decimal value) { throw null; }
-        public static explicit operator int (decimal value) { throw null; }
-        public static explicit operator long (decimal value) { throw null; }
+        public static explicit operator byte(decimal value) { throw null; }
+        public static explicit operator char(decimal value) { throw null; }
+        public static explicit operator double(decimal value) { throw null; }
+        public static explicit operator short(decimal value) { throw null; }
+        public static explicit operator int(decimal value) { throw null; }
+        public static explicit operator long(decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (decimal value) { throw null; }
-        public static explicit operator float (decimal value) { throw null; }
+        public static explicit operator sbyte(decimal value) { throw null; }
+        public static explicit operator float(decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (decimal value) { throw null; }
+        public static explicit operator ushort(decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (decimal value) { throw null; }
+        public static explicit operator uint(decimal value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (decimal value) { throw null; }
-        public static explicit operator decimal (double value) { throw null; }
-        public static explicit operator decimal (float value) { throw null; }
+        public static explicit operator ulong(decimal value) { throw null; }
+        public static explicit operator decimal(double value) { throw null; }
+        public static explicit operator decimal(float value) { throw null; }
         public static bool operator >(decimal d1, decimal d2) { throw null; }
         public static bool operator >=(decimal d1, decimal d2) { throw null; }
-        public static implicit operator decimal (byte value) { throw null; }
-        public static implicit operator decimal (char value) { throw null; }
-        public static implicit operator decimal (short value) { throw null; }
-        public static implicit operator decimal (int value) { throw null; }
-        public static implicit operator decimal (long value) { throw null; }
+        public static implicit operator decimal(byte value) { throw null; }
+        public static implicit operator decimal(char value) { throw null; }
+        public static implicit operator decimal(short value) { throw null; }
+        public static implicit operator decimal(int value) { throw null; }
+        public static implicit operator decimal(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator decimal (sbyte value) { throw null; }
+        public static implicit operator decimal(sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator decimal (ushort value) { throw null; }
+        public static implicit operator decimal(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator decimal (uint value) { throw null; }
+        public static implicit operator decimal(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator decimal (ulong value) { throw null; }
+        public static implicit operator decimal(ulong value) { throw null; }
         public static decimal operator ++(decimal d) { throw null; }
         public static bool operator !=(decimal d1, decimal d2) { throw null; }
         public static bool operator <(decimal d1, decimal d2) { throw null; }
@@ -2343,7 +2343,7 @@ namespace System
         public virtual System.Delegate[] GetInvocationList() { throw null; }
         protected virtual System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.Delegate? d1, System.Delegate? d2) { throw null; }
         public static bool operator !=(System.Delegate? d1, System.Delegate? d2) { throw null; }
@@ -2362,7 +2362,7 @@ namespace System
     {
         public DivideByZeroException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected DivideByZeroException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DivideByZeroException(string? message) { }
         public DivideByZeroException(string? message, System.Exception? innerException) { }
@@ -2380,7 +2380,7 @@ namespace System
         public const double Pi = 3.141592653589793;
         public const double PositiveInfinity = 1.0 / 0.0;
         public const double Tau = 6.283185307179586;
-        static double System.Numerics.IAdditiveIdentity<System.Double,System.Double>.AdditiveIdentity { get { throw null; } }
+        static double System.Numerics.IAdditiveIdentity<System.Double, System.Double>.AdditiveIdentity { get { throw null; } }
         static double System.Numerics.IBinaryNumber<System.Double>.AllBitsSet { get { throw null; } }
         static double System.Numerics.IFloatingPointConstants<System.Double>.E { get { throw null; } }
         static double System.Numerics.IFloatingPointConstants<System.Double>.Pi { get { throw null; } }
@@ -2392,7 +2392,7 @@ namespace System
         static double System.Numerics.IFloatingPointIeee754<System.Double>.PositiveInfinity { get { throw null; } }
         static double System.Numerics.IMinMaxValue<System.Double>.MaxValue { get { throw null; } }
         static double System.Numerics.IMinMaxValue<System.Double>.MinValue { get { throw null; } }
-        static double System.Numerics.IMultiplicativeIdentity<System.Double,System.Double>.MultiplicativeIdentity { get { throw null; } }
+        static double System.Numerics.IMultiplicativeIdentity<System.Double, System.Double>.MultiplicativeIdentity { get { throw null; } }
         static double System.Numerics.INumberBase<System.Double>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Double>.Radix { get { throw null; } }
         static double System.Numerics.INumberBase<System.Double>.Zero { get { throw null; } }
@@ -2576,7 +2576,7 @@ namespace System
     {
         public DuplicateWaitObjectException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected DuplicateWaitObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DuplicateWaitObjectException(string? parameterName) { }
         public DuplicateWaitObjectException(string? message, System.Exception? innerException) { }
@@ -2586,7 +2586,7 @@ namespace System
     {
         public EntryPointNotFoundException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected EntryPointNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public EntryPointNotFoundException(string? message) { }
         public EntryPointNotFoundException(string? message, System.Exception? inner) { }
@@ -2794,7 +2794,7 @@ namespace System
     {
         public Exception() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected Exception(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public Exception(string? message) { }
         public Exception(string? message, System.Exception? innerException) { }
@@ -2806,11 +2806,11 @@ namespace System
         public virtual string? Source { get { throw null; } set { } }
         public virtual string? StackTrace { get { throw null; } }
         public System.Reflection.MethodBase? TargetSite { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")] get { throw null; } }
-        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId="SYSLIB0011", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>? SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public new System.Type GetType() { throw null; }
         public override string ToString() { throw null; }
@@ -2826,12 +2826,12 @@ namespace System
     {
         public FieldAccessException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected FieldAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public FieldAccessException(string? message) { }
         public FieldAccessException(string? message, System.Exception? inner) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Enum, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Enum, Inherited = false)]
     public partial class FlagsAttribute : System.Attribute
     {
         public FlagsAttribute() { }
@@ -2840,7 +2840,7 @@ namespace System
     {
         public FormatException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected FormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public FormatException(string? message) { }
         public FormatException(string? message, System.Exception? innerException) { }
@@ -3207,7 +3207,7 @@ namespace System
         public static System.Half One { get { throw null; } }
         public static System.Half Pi { get { throw null; } }
         public static System.Half PositiveInfinity { get { throw null; } }
-        static System.Half System.Numerics.IAdditiveIdentity<System.Half,System.Half>.AdditiveIdentity { get { throw null; } }
+        static System.Half System.Numerics.IAdditiveIdentity<System.Half, System.Half>.AdditiveIdentity { get { throw null; } }
         static System.Half System.Numerics.IBinaryNumber<System.Half>.AllBitsSet { get { throw null; } }
         static int System.Numerics.INumberBase<System.Half>.Radix { get { throw null; } }
         public static System.Half Tau { get { throw null; } }
@@ -3290,71 +3290,71 @@ namespace System
         public static System.Half MinNumber(System.Half x, System.Half y) { throw null; }
         public static System.Half MultiplyAddEstimate(System.Half left, System.Half right, System.Half addend) { throw null; }
         public static System.Half operator +(System.Half left, System.Half right) { throw null; }
-        public static explicit operator checked byte (System.Half value) { throw null; }
-        public static explicit operator checked char (System.Half value) { throw null; }
-        public static explicit operator checked short (System.Half value) { throw null; }
-        public static explicit operator checked int (System.Half value) { throw null; }
-        public static explicit operator checked long (System.Half value) { throw null; }
-        public static explicit operator checked System.Int128 (System.Half value) { throw null; }
-        public static explicit operator checked nint (System.Half value) { throw null; }
+        public static explicit operator checked byte(System.Half value) { throw null; }
+        public static explicit operator checked char(System.Half value) { throw null; }
+        public static explicit operator checked short(System.Half value) { throw null; }
+        public static explicit operator checked int(System.Half value) { throw null; }
+        public static explicit operator checked long(System.Half value) { throw null; }
+        public static explicit operator checked System.Int128(System.Half value) { throw null; }
+        public static explicit operator checked nint(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked sbyte (System.Half value) { throw null; }
+        public static explicit operator checked sbyte(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ushort (System.Half value) { throw null; }
+        public static explicit operator checked ushort(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked uint (System.Half value) { throw null; }
+        public static explicit operator checked uint(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ulong (System.Half value) { throw null; }
+        public static explicit operator checked ulong(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked System.UInt128 (System.Half value) { throw null; }
+        public static explicit operator checked System.UInt128(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked nuint (System.Half value) { throw null; }
+        public static explicit operator checked nuint(System.Half value) { throw null; }
         public static System.Half operator --(System.Half value) { throw null; }
         public static System.Half operator /(System.Half left, System.Half right) { throw null; }
         public static bool operator ==(System.Half left, System.Half right) { throw null; }
-        public static explicit operator System.Half (char value) { throw null; }
-        public static explicit operator System.Half (decimal value) { throw null; }
-        public static explicit operator System.Half (double value) { throw null; }
-        public static explicit operator byte (System.Half value) { throw null; }
-        public static explicit operator char (System.Half value) { throw null; }
-        public static explicit operator decimal (System.Half value) { throw null; }
-        public static explicit operator double (System.Half value) { throw null; }
-        public static explicit operator System.Int128 (System.Half value) { throw null; }
-        public static explicit operator short (System.Half value) { throw null; }
-        public static explicit operator int (System.Half value) { throw null; }
-        public static explicit operator long (System.Half value) { throw null; }
-        public static explicit operator nint (System.Half value) { throw null; }
+        public static explicit operator System.Half(char value) { throw null; }
+        public static explicit operator System.Half(decimal value) { throw null; }
+        public static explicit operator System.Half(double value) { throw null; }
+        public static explicit operator byte(System.Half value) { throw null; }
+        public static explicit operator char(System.Half value) { throw null; }
+        public static explicit operator decimal(System.Half value) { throw null; }
+        public static explicit operator double(System.Half value) { throw null; }
+        public static explicit operator System.Int128(System.Half value) { throw null; }
+        public static explicit operator short(System.Half value) { throw null; }
+        public static explicit operator int(System.Half value) { throw null; }
+        public static explicit operator long(System.Half value) { throw null; }
+        public static explicit operator nint(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (System.Half value) { throw null; }
-        public static explicit operator float (System.Half value) { throw null; }
+        public static explicit operator sbyte(System.Half value) { throw null; }
+        public static explicit operator float(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.UInt128 (System.Half value) { throw null; }
+        public static explicit operator System.UInt128(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (System.Half value) { throw null; }
+        public static explicit operator ushort(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (System.Half value) { throw null; }
+        public static explicit operator uint(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (System.Half value) { throw null; }
+        public static explicit operator ulong(System.Half value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator nuint (System.Half value) { throw null; }
-        public static explicit operator System.Half (short value) { throw null; }
-        public static explicit operator System.Half (int value) { throw null; }
-        public static explicit operator System.Half (long value) { throw null; }
-        public static explicit operator System.Half (nint value) { throw null; }
-        public static explicit operator System.Half (float value) { throw null; }
+        public static explicit operator nuint(System.Half value) { throw null; }
+        public static explicit operator System.Half(short value) { throw null; }
+        public static explicit operator System.Half(int value) { throw null; }
+        public static explicit operator System.Half(long value) { throw null; }
+        public static explicit operator System.Half(nint value) { throw null; }
+        public static explicit operator System.Half(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Half (ushort value) { throw null; }
+        public static explicit operator System.Half(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Half (uint value) { throw null; }
+        public static explicit operator System.Half(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Half (ulong value) { throw null; }
+        public static explicit operator System.Half(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Half (nuint value) { throw null; }
+        public static explicit operator System.Half(nuint value) { throw null; }
         public static bool operator >(System.Half left, System.Half right) { throw null; }
         public static bool operator >=(System.Half left, System.Half right) { throw null; }
-        public static implicit operator System.Half (byte value) { throw null; }
+        public static implicit operator System.Half(byte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Half (sbyte value) { throw null; }
+        public static implicit operator System.Half(sbyte value) { throw null; }
         public static System.Half operator ++(System.Half value) { throw null; }
         public static bool operator !=(System.Half left, System.Half right) { throw null; }
         public static bool operator <(System.Half left, System.Half right) { throw null; }
@@ -3531,7 +3531,7 @@ namespace System
         public static System.Index FromStart(int value) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetOffset(int length) { throw null; }
-        public static implicit operator System.Index (int value) { throw null; }
+        public static implicit operator System.Index(int value) { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed partial class IndexOutOfRangeException : System.SystemException
@@ -3561,9 +3561,9 @@ namespace System
         public static System.Int128 MinValue { get { throw null; } }
         public static System.Int128 NegativeOne { get { throw null; } }
         public static System.Int128 One { get { throw null; } }
-        static System.Int128 System.Numerics.IAdditiveIdentity<System.Int128,System.Int128>.AdditiveIdentity { get { throw null; } }
+        static System.Int128 System.Numerics.IAdditiveIdentity<System.Int128, System.Int128>.AdditiveIdentity { get { throw null; } }
         static System.Int128 System.Numerics.IBinaryNumber<System.Int128>.AllBitsSet { get { throw null; } }
-        static System.Int128 System.Numerics.IMultiplicativeIdentity<System.Int128,System.Int128>.MultiplicativeIdentity { get { throw null; } }
+        static System.Int128 System.Numerics.IMultiplicativeIdentity<System.Int128, System.Int128>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int128>.Radix { get { throw null; } }
         public static System.Int128 Zero { get { throw null; } }
         public static System.Int128 Abs(System.Int128 value) { throw null; }
@@ -3595,26 +3595,26 @@ namespace System
         public static System.Int128 operator checked +(System.Int128 left, System.Int128 right) { throw null; }
         public static System.Int128 operator checked --(System.Int128 value) { throw null; }
         public static System.Int128 operator checked /(System.Int128 left, System.Int128 right) { throw null; }
-        public static explicit operator checked System.Int128 (double value) { throw null; }
-        public static explicit operator checked byte (System.Int128 value) { throw null; }
-        public static explicit operator checked char (System.Int128 value) { throw null; }
-        public static explicit operator checked short (System.Int128 value) { throw null; }
-        public static explicit operator checked int (System.Int128 value) { throw null; }
-        public static explicit operator checked long (System.Int128 value) { throw null; }
-        public static explicit operator checked nint (System.Int128 value) { throw null; }
+        public static explicit operator checked System.Int128(double value) { throw null; }
+        public static explicit operator checked byte(System.Int128 value) { throw null; }
+        public static explicit operator checked char(System.Int128 value) { throw null; }
+        public static explicit operator checked short(System.Int128 value) { throw null; }
+        public static explicit operator checked int(System.Int128 value) { throw null; }
+        public static explicit operator checked long(System.Int128 value) { throw null; }
+        public static explicit operator checked nint(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked sbyte (System.Int128 value) { throw null; }
+        public static explicit operator checked sbyte(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ushort (System.Int128 value) { throw null; }
+        public static explicit operator checked ushort(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked uint (System.Int128 value) { throw null; }
+        public static explicit operator checked uint(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ulong (System.Int128 value) { throw null; }
+        public static explicit operator checked ulong(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked System.UInt128 (System.Int128 value) { throw null; }
+        public static explicit operator checked System.UInt128(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked nuint (System.Int128 value) { throw null; }
-        public static explicit operator checked System.Int128 (float value) { throw null; }
+        public static explicit operator checked nuint(System.Int128 value) { throw null; }
+        public static explicit operator checked System.Int128(float value) { throw null; }
         public static System.Int128 operator checked ++(System.Int128 value) { throw null; }
         public static System.Int128 operator checked *(System.Int128 left, System.Int128 right) { throw null; }
         public static System.Int128 operator checked -(System.Int128 left, System.Int128 right) { throw null; }
@@ -3623,49 +3623,49 @@ namespace System
         public static System.Int128 operator /(System.Int128 left, System.Int128 right) { throw null; }
         public static bool operator ==(System.Int128 left, System.Int128 right) { throw null; }
         public static System.Int128 operator ^(System.Int128 left, System.Int128 right) { throw null; }
-        public static explicit operator System.Int128 (decimal value) { throw null; }
-        public static explicit operator System.Int128 (double value) { throw null; }
-        public static explicit operator byte (System.Int128 value) { throw null; }
-        public static explicit operator char (System.Int128 value) { throw null; }
-        public static explicit operator decimal (System.Int128 value) { throw null; }
-        public static explicit operator double (System.Int128 value) { throw null; }
-        public static explicit operator System.Half (System.Int128 value) { throw null; }
-        public static explicit operator short (System.Int128 value) { throw null; }
-        public static explicit operator int (System.Int128 value) { throw null; }
-        public static explicit operator long (System.Int128 value) { throw null; }
-        public static explicit operator nint (System.Int128 value) { throw null; }
+        public static explicit operator System.Int128(decimal value) { throw null; }
+        public static explicit operator System.Int128(double value) { throw null; }
+        public static explicit operator byte(System.Int128 value) { throw null; }
+        public static explicit operator char(System.Int128 value) { throw null; }
+        public static explicit operator decimal(System.Int128 value) { throw null; }
+        public static explicit operator double(System.Int128 value) { throw null; }
+        public static explicit operator System.Half(System.Int128 value) { throw null; }
+        public static explicit operator short(System.Int128 value) { throw null; }
+        public static explicit operator int(System.Int128 value) { throw null; }
+        public static explicit operator long(System.Int128 value) { throw null; }
+        public static explicit operator nint(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (System.Int128 value) { throw null; }
-        public static explicit operator float (System.Int128 value) { throw null; }
+        public static explicit operator sbyte(System.Int128 value) { throw null; }
+        public static explicit operator float(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.UInt128 (System.Int128 value) { throw null; }
+        public static explicit operator System.UInt128(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (System.Int128 value) { throw null; }
+        public static explicit operator ushort(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (System.Int128 value) { throw null; }
+        public static explicit operator uint(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (System.Int128 value) { throw null; }
+        public static explicit operator ulong(System.Int128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator nuint (System.Int128 value) { throw null; }
-        public static explicit operator System.Int128 (float value) { throw null; }
+        public static explicit operator nuint(System.Int128 value) { throw null; }
+        public static explicit operator System.Int128(float value) { throw null; }
         public static bool operator >(System.Int128 left, System.Int128 right) { throw null; }
         public static bool operator >=(System.Int128 left, System.Int128 right) { throw null; }
-        public static implicit operator System.Int128 (byte value) { throw null; }
-        public static implicit operator System.Int128 (char value) { throw null; }
-        public static implicit operator System.Int128 (short value) { throw null; }
-        public static implicit operator System.Int128 (int value) { throw null; }
-        public static implicit operator System.Int128 (long value) { throw null; }
-        public static implicit operator System.Int128 (nint value) { throw null; }
+        public static implicit operator System.Int128(byte value) { throw null; }
+        public static implicit operator System.Int128(char value) { throw null; }
+        public static implicit operator System.Int128(short value) { throw null; }
+        public static implicit operator System.Int128(int value) { throw null; }
+        public static implicit operator System.Int128(long value) { throw null; }
+        public static implicit operator System.Int128(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Int128 (sbyte value) { throw null; }
+        public static implicit operator System.Int128(sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Int128 (ushort value) { throw null; }
+        public static implicit operator System.Int128(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Int128 (uint value) { throw null; }
+        public static implicit operator System.Int128(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Int128 (ulong value) { throw null; }
+        public static implicit operator System.Int128(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.Int128 (nuint value) { throw null; }
+        public static implicit operator System.Int128(nuint value) { throw null; }
         public static System.Int128 operator ++(System.Int128 value) { throw null; }
         public static bool operator !=(System.Int128 left, System.Int128 right) { throw null; }
         public static System.Int128 operator <<(System.Int128 value, int shiftAmount) { throw null; }
@@ -3743,11 +3743,11 @@ namespace System
         private readonly short _dummyPrimitive;
         public const short MaxValue = (short)32767;
         public const short MinValue = (short)-32768;
-        static short System.Numerics.IAdditiveIdentity<System.Int16,System.Int16>.AdditiveIdentity { get { throw null; } }
+        static short System.Numerics.IAdditiveIdentity<System.Int16, System.Int16>.AdditiveIdentity { get { throw null; } }
         static short System.Numerics.IBinaryNumber<System.Int16>.AllBitsSet { get { throw null; } }
         static short System.Numerics.IMinMaxValue<System.Int16>.MaxValue { get { throw null; } }
         static short System.Numerics.IMinMaxValue<System.Int16>.MinValue { get { throw null; } }
-        static short System.Numerics.IMultiplicativeIdentity<System.Int16,System.Int16>.MultiplicativeIdentity { get { throw null; } }
+        static short System.Numerics.IMultiplicativeIdentity<System.Int16, System.Int16>.MultiplicativeIdentity { get { throw null; } }
         static short System.Numerics.INumberBase<System.Int16>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int16>.Radix { get { throw null; } }
         static short System.Numerics.INumberBase<System.Int16>.Zero { get { throw null; } }
@@ -3883,11 +3883,11 @@ namespace System
         private readonly int _dummyPrimitive;
         public const int MaxValue = 2147483647;
         public const int MinValue = -2147483648;
-        static int System.Numerics.IAdditiveIdentity<System.Int32,System.Int32>.AdditiveIdentity { get { throw null; } }
+        static int System.Numerics.IAdditiveIdentity<System.Int32, System.Int32>.AdditiveIdentity { get { throw null; } }
         static int System.Numerics.IBinaryNumber<System.Int32>.AllBitsSet { get { throw null; } }
         static int System.Numerics.IMinMaxValue<System.Int32>.MaxValue { get { throw null; } }
         static int System.Numerics.IMinMaxValue<System.Int32>.MinValue { get { throw null; } }
-        static int System.Numerics.IMultiplicativeIdentity<System.Int32,System.Int32>.MultiplicativeIdentity { get { throw null; } }
+        static int System.Numerics.IMultiplicativeIdentity<System.Int32, System.Int32>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int32>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int32>.Radix { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int32>.Zero { get { throw null; } }
@@ -4024,11 +4024,11 @@ namespace System
         private readonly long _dummyPrimitive;
         public const long MaxValue = (long)9223372036854775807;
         public const long MinValue = (long)-9223372036854775808;
-        static long System.Numerics.IAdditiveIdentity<System.Int64,System.Int64>.AdditiveIdentity { get { throw null; } }
+        static long System.Numerics.IAdditiveIdentity<System.Int64, System.Int64>.AdditiveIdentity { get { throw null; } }
         static long System.Numerics.IBinaryNumber<System.Int64>.AllBitsSet { get { throw null; } }
         static long System.Numerics.IMinMaxValue<System.Int64>.MaxValue { get { throw null; } }
         static long System.Numerics.IMinMaxValue<System.Int64>.MinValue { get { throw null; } }
-        static long System.Numerics.IMultiplicativeIdentity<System.Int64,System.Int64>.MultiplicativeIdentity { get { throw null; } }
+        static long System.Numerics.IMultiplicativeIdentity<System.Int64, System.Int64>.MultiplicativeIdentity { get { throw null; } }
         static long System.Numerics.INumberBase<System.Int64>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Int64>.Radix { get { throw null; } }
         static long System.Numerics.INumberBase<System.Int64>.Zero { get { throw null; } }
@@ -4171,11 +4171,11 @@ namespace System
         public static nint MaxValue { get { throw null; } }
         public static nint MinValue { get { throw null; } }
         public static int Size { get { throw null; } }
-        static nint System.Numerics.IAdditiveIdentity<nint,nint>.AdditiveIdentity { get { throw null; } }
+        static nint System.Numerics.IAdditiveIdentity<nint, nint>.AdditiveIdentity { get { throw null; } }
         static nint System.Numerics.IBinaryNumber<nint>.AllBitsSet { get { throw null; } }
         static nint System.Numerics.IMinMaxValue<nint>.MaxValue { get { throw null; } }
         static nint System.Numerics.IMinMaxValue<nint>.MinValue { get { throw null; } }
-        static nint System.Numerics.IMultiplicativeIdentity<nint,nint>.MultiplicativeIdentity { get { throw null; } }
+        static nint System.Numerics.IMultiplicativeIdentity<nint, nint>.MultiplicativeIdentity { get { throw null; } }
         static nint System.Numerics.INumberBase<nint>.One { get { throw null; } }
         static int System.Numerics.INumberBase<nint>.Radix { get { throw null; } }
         static nint System.Numerics.INumberBase<nint>.Zero { get { throw null; } }
@@ -4206,14 +4206,14 @@ namespace System
         public static nint MinMagnitude(nint x, nint y) { throw null; }
         public static nint operator +(nint pointer, int offset) { throw null; }
         public static bool operator ==(nint value1, nint value2) { throw null; }
-        public static explicit operator nint (int value) { throw null; }
-        public static explicit operator nint (long value) { throw null; }
-        public static explicit operator int (nint value) { throw null; }
-        public static explicit operator long (nint value) { throw null; }
+        public static explicit operator nint(int value) { throw null; }
+        public static explicit operator nint(long value) { throw null; }
+        public static explicit operator int(nint value) { throw null; }
+        public static explicit operator long(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator void* (nint value) { throw null; }
+        public unsafe static explicit operator void*(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator nint (void* value) { throw null; }
+        public unsafe static explicit operator nint(void* value) { throw null; }
         public static bool operator !=(nint value1, nint value2) { throw null; }
         public static nint operator -(nint pointer, int offset) { throw null; }
         public static nint Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
@@ -4311,7 +4311,7 @@ namespace System
     {
         public InvalidCastException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected InvalidCastException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidCastException(string? message) { }
         public InvalidCastException(string? message, System.Exception? innerException) { }
@@ -4321,7 +4321,7 @@ namespace System
     {
         public InvalidOperationException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected InvalidOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidOperationException(string? message) { }
         public InvalidOperationException(string? message, System.Exception? innerException) { }
@@ -4336,7 +4336,7 @@ namespace System
     {
         public InvalidTimeZoneException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected InvalidTimeZoneException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidTimeZoneException(string? message) { }
         public InvalidTimeZoneException(string? message, System.Exception? innerException) { }
@@ -4378,7 +4378,7 @@ namespace System
         static abstract TSelf Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider);
         static abstract bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
     }
-    public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
+    public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
     {
         public Lazy() { }
         public Lazy(bool isThreadSafe) { }
@@ -4391,7 +4391,7 @@ namespace System
         public T Value { get { throw null; } }
         public override string? ToString() { throw null; }
     }
-    public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T, TMetadata> : System.Lazy<T>
+    public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T, TMetadata> : System.Lazy<T>
     {
         public Lazy(System.Func<T> valueFactory, TMetadata metadata) { }
         public Lazy(System.Func<T> valueFactory, TMetadata metadata, bool isThreadSafe) { }
@@ -4422,9 +4422,9 @@ namespace System
     public abstract partial class MarshalByRefObject
     {
         protected MarshalByRefObject() { }
-        [System.ObsoleteAttribute("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0010", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0010", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetLifetimeService() { throw null; }
-        [System.ObsoleteAttribute("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0010", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This Remoting API is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0010", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual object InitializeLifetimeService() { throw null; }
         protected System.MarshalByRefObject MemberwiseClone(bool cloneIdentity) { throw null; }
     }
@@ -4633,7 +4633,7 @@ namespace System
     {
         public MemberAccessException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MemberAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MemberAccessException(string? message) { }
         public MemberAccessException(string? message, System.Exception? inner) { }
@@ -4654,9 +4654,9 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
-        public static implicit operator System.Memory<T> (System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlyMemory<T> (System.Memory<T> memory) { throw null; }
-        public static implicit operator System.Memory<T> (T[]? array) { throw null; }
+        public static implicit operator System.Memory<T>(System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T>(System.Memory<T> memory) { throw null; }
+        public static implicit operator System.Memory<T>(T[]? array) { throw null; }
         public System.Buffers.MemoryHandle Pin() { throw null; }
         public System.Memory<T> Slice(int start) { throw null; }
         public System.Memory<T> Slice(int start, int length) { throw null; }
@@ -4668,7 +4668,7 @@ namespace System
     {
         public MethodAccessException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MethodAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MethodAccessException(string? message) { }
         public MethodAccessException(string? message, System.Exception? inner) { }
@@ -4685,7 +4685,7 @@ namespace System
     {
         public MissingFieldException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MissingFieldException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingFieldException(string? message) { }
         public MissingFieldException(string? message, System.Exception? inner) { }
@@ -4699,21 +4699,21 @@ namespace System
         protected byte[]? Signature;
         public MissingMemberException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MissingMemberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingMemberException(string? message) { }
         public MissingMemberException(string? message, System.Exception? inner) { }
         public MissingMemberException(string? className, string? memberName) { }
         public override string Message { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class MissingMethodException : System.MissingMemberException
     {
         public MissingMethodException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MissingMethodException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingMethodException(string? message) { }
         public MissingMethodException(string? message, System.Exception? inner) { }
@@ -4758,15 +4758,15 @@ namespace System
     public abstract partial class MulticastDelegate : System.Delegate
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
-        protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
-        protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) : base (default(object), default(string)) { }
+        protected MulticastDelegate(object target, string method) : base(default(object), default(string)) { }
+        protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) : base(default(object), default(string)) { }
         protected sealed override System.Delegate CombineImpl(System.Delegate? follow) { throw null; }
         public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public sealed override int GetHashCode() { throw null; }
         public sealed override System.Delegate[] GetInvocationList() { throw null; }
         protected override System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
         public static bool operator !=(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
@@ -4778,7 +4778,7 @@ namespace System
         public MulticastNotSupportedException(string? message) { }
         public MulticastNotSupportedException(string? message, System.Exception? inner) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NonSerializedAttribute : System.Attribute
     {
@@ -4789,7 +4789,7 @@ namespace System
         public NotFiniteNumberException() { }
         public NotFiniteNumberException(double offendingNumber) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected NotFiniteNumberException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public NotFiniteNumberException(string? message) { }
         public NotFiniteNumberException(string? message, double offendingNumber) { }
@@ -4797,14 +4797,14 @@ namespace System
         public NotFiniteNumberException(string? message, System.Exception? innerException) { }
         public double OffendingNumber { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class NotImplementedException : System.SystemException
     {
         public NotImplementedException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected NotImplementedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public NotImplementedException(string? message) { }
         public NotImplementedException(string? message, System.Exception? inner) { }
@@ -4813,7 +4813,7 @@ namespace System
     {
         public NotSupportedException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected NotSupportedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public NotSupportedException(string? message) { }
         public NotSupportedException(string? message, System.Exception? innerException) { }
@@ -4836,15 +4836,15 @@ namespace System
         public override int GetHashCode() { throw null; }
         public readonly T GetValueOrDefault() { throw null; }
         public readonly T GetValueOrDefault(T defaultValue) { throw null; }
-        public static explicit operator T (T? value) { throw null; }
-        public static implicit operator T? (T value) { throw null; }
+        public static explicit operator T(T? value) { throw null; }
+        public static implicit operator T?(T value) { throw null; }
         public override string? ToString() { throw null; }
     }
     public partial class NullReferenceException : System.SystemException
     {
         public NullReferenceException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected NullReferenceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public NullReferenceException(string? message) { }
         public NullReferenceException(string? message, System.Exception? innerException) { }
@@ -4864,7 +4864,7 @@ namespace System
     public partial class ObjectDisposedException : System.InvalidOperationException
     {
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ObjectDisposedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ObjectDisposedException(string? objectName) { }
         public ObjectDisposedException(string? message, System.Exception? innerException) { }
@@ -4872,12 +4872,12 @@ namespace System
         public override string Message { get { throw null; } }
         public string ObjectName { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) => throw null;
         public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) => throw null;
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class ObsoleteAttribute : System.Attribute
     {
         public ObsoleteAttribute() { }
@@ -4897,7 +4897,7 @@ namespace System
         public string VersionString { get { throw null; } }
         public object Clone() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
@@ -4928,7 +4928,7 @@ namespace System
     {
         public OperationCanceledException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public OperationCanceledException(string? message) { }
         public OperationCanceledException(string? message, System.Exception? innerException) { }
@@ -4941,7 +4941,7 @@ namespace System
     {
         public OutOfMemoryException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected OutOfMemoryException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public OutOfMemoryException(string? message) { }
         public OutOfMemoryException(string? message, System.Exception? innerException) { }
@@ -4950,12 +4950,12 @@ namespace System
     {
         public OverflowException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected OverflowException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public OverflowException(string? message) { }
         public OverflowException(string? message, System.Exception? innerException) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=true, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
     public sealed partial class ParamArrayAttribute : System.Attribute
     {
         public ParamArrayAttribute() { }
@@ -4980,7 +4980,7 @@ namespace System
     {
         public PlatformNotSupportedException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected PlatformNotSupportedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public PlatformNotSupportedException(string? message) { }
         public PlatformNotSupportedException(string? message, System.Exception? inner) { }
@@ -5035,7 +5035,7 @@ namespace System
     {
         public RankException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected RankException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public RankException(string? message) { }
         public RankException(string? message, System.Exception? innerException) { }
@@ -5056,8 +5056,8 @@ namespace System
         public bool Equals(System.ReadOnlyMemory<T> other) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
-        public static implicit operator System.ReadOnlyMemory<T> (System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlyMemory<T> (T[]? array) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T>(System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlyMemory<T>(T[]? array) { throw null; }
         public System.Buffers.MemoryHandle Pin() { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start) { throw null; }
         public System.ReadOnlyMemory<T> Slice(int start, int length) { throw null; }
@@ -5091,8 +5091,8 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref readonly T GetPinnableReference() { throw null; }
         public static bool operator ==(System.ReadOnlySpan<T> left, System.ReadOnlySpan<T> right) { throw null; }
-        public static implicit operator System.ReadOnlySpan<T> (System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlySpan<T> (T[]? array) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T>(System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T>(T[]? array) { throw null; }
         public static bool operator !=(System.ReadOnlySpan<T> left, System.ReadOnlySpan<T> right) { throw null; }
         public System.ReadOnlySpan<T> Slice(int start) { throw null; }
         public System.ReadOnlySpan<T> Slice(int start, int length) { throw null; }
@@ -5129,7 +5129,7 @@ namespace System
         public static System.RuntimeFieldHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
@@ -5146,7 +5146,7 @@ namespace System
         public System.IntPtr GetFunctionPointer() { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
@@ -5163,7 +5163,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.ModuleHandle GetModuleHandle() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(object? left, System.RuntimeTypeHandle right) { throw null; }
         public static bool operator ==(System.RuntimeTypeHandle left, object? right) { throw null; }
@@ -5177,11 +5177,11 @@ namespace System
         private readonly sbyte _dummyPrimitive;
         public const sbyte MaxValue = (sbyte)127;
         public const sbyte MinValue = (sbyte)-128;
-        static sbyte System.Numerics.IAdditiveIdentity<System.SByte,System.SByte>.AdditiveIdentity { get { throw null; } }
+        static sbyte System.Numerics.IAdditiveIdentity<System.SByte, System.SByte>.AdditiveIdentity { get { throw null; } }
         static sbyte System.Numerics.IBinaryNumber<System.SByte>.AllBitsSet { get { throw null; } }
         static sbyte System.Numerics.IMinMaxValue<System.SByte>.MaxValue { get { throw null; } }
         static sbyte System.Numerics.IMinMaxValue<System.SByte>.MinValue { get { throw null; } }
-        static sbyte System.Numerics.IMultiplicativeIdentity<System.SByte,System.SByte>.MultiplicativeIdentity { get { throw null; } }
+        static sbyte System.Numerics.IMultiplicativeIdentity<System.SByte, System.SByte>.MultiplicativeIdentity { get { throw null; } }
         static sbyte System.Numerics.INumberBase<System.SByte>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.SByte>.Radix { get { throw null; } }
         static sbyte System.Numerics.INumberBase<System.SByte>.Zero { get { throw null; } }
@@ -5312,7 +5312,7 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out sbyte result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out sbyte result) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Struct, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SerializableAttribute : System.Attribute
     {
@@ -5331,7 +5331,7 @@ namespace System
         public const float Pi = 3.1415927f;
         public const float PositiveInfinity = 1.0f / 0.0f;
         public const float Tau = 6.2831855f;
-        static float System.Numerics.IAdditiveIdentity<System.Single,System.Single>.AdditiveIdentity { get { throw null; } }
+        static float System.Numerics.IAdditiveIdentity<System.Single, System.Single>.AdditiveIdentity { get { throw null; } }
         static float System.Numerics.IBinaryNumber<System.Single>.AllBitsSet { get { throw null; } }
         static float System.Numerics.IFloatingPointConstants<System.Single>.E { get { throw null; } }
         static float System.Numerics.IFloatingPointConstants<System.Single>.Pi { get { throw null; } }
@@ -5343,7 +5343,7 @@ namespace System
         static float System.Numerics.IFloatingPointIeee754<System.Single>.PositiveInfinity { get { throw null; } }
         static float System.Numerics.IMinMaxValue<System.Single>.MaxValue { get { throw null; } }
         static float System.Numerics.IMinMaxValue<System.Single>.MinValue { get { throw null; } }
-        static float System.Numerics.IMultiplicativeIdentity<System.Single,System.Single>.MultiplicativeIdentity { get { throw null; } }
+        static float System.Numerics.IMultiplicativeIdentity<System.Single, System.Single>.MultiplicativeIdentity { get { throw null; } }
         static float System.Numerics.INumberBase<System.Single>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.Single>.Radix { get { throw null; } }
         static float System.Numerics.INumberBase<System.Single>.Zero { get { throw null; } }
@@ -5550,9 +5550,9 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T GetPinnableReference() { throw null; }
         public static bool operator ==(System.Span<T> left, System.Span<T> right) { throw null; }
-        public static implicit operator System.Span<T> (System.ArraySegment<T> segment) { throw null; }
-        public static implicit operator System.ReadOnlySpan<T> (System.Span<T> span) { throw null; }
-        public static implicit operator System.Span<T> (T[]? array) { throw null; }
+        public static implicit operator System.Span<T>(System.ArraySegment<T> segment) { throw null; }
+        public static implicit operator System.ReadOnlySpan<T>(System.Span<T> span) { throw null; }
+        public static implicit operator System.Span<T>(T[]? array) { throw null; }
         public static bool operator !=(System.Span<T> left, System.Span<T> right) { throw null; }
         public System.Span<T> Slice(int start) { throw null; }
         public System.Span<T> Slice(int start, int length) { throw null; }
@@ -5638,7 +5638,7 @@ namespace System
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(System.Span<char> destination) { }
         public static string Create(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("provider")] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
-        public static string Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "provider", "initialBuffer"})] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
+        public static string Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[] { "provider", "initialBuffer" })] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
         public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) where TState : allows ref struct { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(string value) { throw null; }
@@ -5721,7 +5721,7 @@ namespace System
         public string Normalize() { throw null; }
         public string Normalize(System.Text.NormalizationForm normalizationForm) { throw null; }
         public static bool operator ==(string? a, string? b) { throw null; }
-        public static implicit operator System.ReadOnlySpan<char> (string? value) { throw null; }
+        public static implicit operator System.ReadOnlySpan<char>(string? value) { throw null; }
         public static bool operator !=(string? a, string? b) { throw null; }
         public string PadLeft(int totalWidth) { throw null; }
         public string PadLeft(int totalWidth, char paddingChar) { throw null; }
@@ -5845,12 +5845,12 @@ namespace System
     {
         public SystemException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected SystemException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SystemException(string? message) { }
         public SystemException(string? message, System.Exception? innerException) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     public partial class ThreadStaticAttribute : System.Attribute
     {
         public ThreadStaticAttribute() { }
@@ -5941,7 +5941,7 @@ namespace System
     {
         public TimeoutException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TimeoutException(string? message) { }
         public TimeoutException(string? message, System.Exception? innerException) { }
@@ -6186,7 +6186,7 @@ namespace System
     {
         public TimeZoneNotFoundException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TimeZoneNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TimeZoneNotFoundException(string? message) { }
         public TimeZoneNotFoundException(string? message, System.Exception? innerException) { }
@@ -6490,7 +6490,7 @@ namespace System
         public virtual bool IsSecurityCritical { get { throw null; } }
         public virtual bool IsSecuritySafeCritical { get { throw null; } }
         public virtual bool IsSecurityTransparent { get { throw null; } }
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual bool IsSerializable { get { throw null; } }
         public virtual bool IsSignatureType { get { throw null; } }
         public bool IsSpecialName { get { throw null; } }
@@ -6713,7 +6713,7 @@ namespace System
         public virtual System.Type MakePointerType() { throw null; }
         public static bool operator ==(System.Type? left, System.Type? right) { throw null; }
         public static bool operator !=(System.Type? left, System.Type? right) { throw null; }
-        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0018", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw null; }
         public override string ToString() { throw null; }
     }
@@ -6721,7 +6721,7 @@ namespace System
     {
         public TypeAccessException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TypeAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TypeAccessException(string? message) { }
         public TypeAccessException(string? message, System.Exception? inner) { }
@@ -6765,28 +6765,28 @@ namespace System
         public TypeInitializationException(string? fullTypeName, System.Exception? innerException) { }
         public string TypeName { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class TypeLoadException : System.SystemException
     {
         public TypeLoadException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TypeLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TypeLoadException(string? message) { }
         public TypeLoadException(string? message, System.Exception? inner) { }
         public override string Message { get { throw null; } }
         public string TypeName { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class TypeUnloadedException : System.SystemException
     {
         public TypeUnloadedException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TypeUnloadedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TypeUnloadedException(string? message) { }
         public TypeUnloadedException(string? message, System.Exception? innerException) { }
@@ -6800,9 +6800,9 @@ namespace System
         public static System.UInt128 MaxValue { get { throw null; } }
         public static System.UInt128 MinValue { get { throw null; } }
         public static System.UInt128 One { get { throw null; } }
-        static System.UInt128 System.Numerics.IAdditiveIdentity<System.UInt128,System.UInt128>.AdditiveIdentity { get { throw null; } }
+        static System.UInt128 System.Numerics.IAdditiveIdentity<System.UInt128, System.UInt128>.AdditiveIdentity { get { throw null; } }
         static System.UInt128 System.Numerics.IBinaryNumber<System.UInt128>.AllBitsSet { get { throw null; } }
-        static System.UInt128 System.Numerics.IMultiplicativeIdentity<System.UInt128,System.UInt128>.MultiplicativeIdentity { get { throw null; } }
+        static System.UInt128 System.Numerics.IMultiplicativeIdentity<System.UInt128, System.UInt128>.MultiplicativeIdentity { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt128>.Radix { get { throw null; } }
         public static System.UInt128 Zero { get { throw null; } }
         public static System.UInt128 Clamp(System.UInt128 value, System.UInt128 min, System.UInt128 max) { throw null; }
@@ -6828,32 +6828,32 @@ namespace System
         public static System.UInt128 operator checked +(System.UInt128 left, System.UInt128 right) { throw null; }
         public static System.UInt128 operator checked --(System.UInt128 value) { throw null; }
         public static System.UInt128 operator checked /(System.UInt128 left, System.UInt128 right) { throw null; }
-        public static explicit operator checked System.UInt128 (double value) { throw null; }
-        public static explicit operator checked System.UInt128 (short value) { throw null; }
-        public static explicit operator checked System.UInt128 (int value) { throw null; }
-        public static explicit operator checked System.UInt128 (long value) { throw null; }
-        public static explicit operator checked System.UInt128 (nint value) { throw null; }
+        public static explicit operator checked System.UInt128(double value) { throw null; }
+        public static explicit operator checked System.UInt128(short value) { throw null; }
+        public static explicit operator checked System.UInt128(int value) { throw null; }
+        public static explicit operator checked System.UInt128(long value) { throw null; }
+        public static explicit operator checked System.UInt128(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked System.UInt128 (sbyte value) { throw null; }
-        public static explicit operator checked System.UInt128 (float value) { throw null; }
-        public static explicit operator checked byte (System.UInt128 value) { throw null; }
-        public static explicit operator checked char (System.UInt128 value) { throw null; }
-        public static explicit operator checked short (System.UInt128 value) { throw null; }
-        public static explicit operator checked int (System.UInt128 value) { throw null; }
-        public static explicit operator checked long (System.UInt128 value) { throw null; }
+        public static explicit operator checked System.UInt128(sbyte value) { throw null; }
+        public static explicit operator checked System.UInt128(float value) { throw null; }
+        public static explicit operator checked byte(System.UInt128 value) { throw null; }
+        public static explicit operator checked char(System.UInt128 value) { throw null; }
+        public static explicit operator checked short(System.UInt128 value) { throw null; }
+        public static explicit operator checked int(System.UInt128 value) { throw null; }
+        public static explicit operator checked long(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked System.Int128 (System.UInt128 value) { throw null; }
-        public static explicit operator checked nint (System.UInt128 value) { throw null; }
+        public static explicit operator checked System.Int128(System.UInt128 value) { throw null; }
+        public static explicit operator checked nint(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked sbyte (System.UInt128 value) { throw null; }
+        public static explicit operator checked sbyte(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ushort (System.UInt128 value) { throw null; }
+        public static explicit operator checked ushort(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked uint (System.UInt128 value) { throw null; }
+        public static explicit operator checked uint(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked ulong (System.UInt128 value) { throw null; }
+        public static explicit operator checked ulong(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator checked nuint (System.UInt128 value) { throw null; }
+        public static explicit operator checked nuint(System.UInt128 value) { throw null; }
         public static System.UInt128 operator checked ++(System.UInt128 value) { throw null; }
         public static System.UInt128 operator checked *(System.UInt128 left, System.UInt128 right) { throw null; }
         public static System.UInt128 operator checked -(System.UInt128 left, System.UInt128 right) { throw null; }
@@ -6862,49 +6862,49 @@ namespace System
         public static System.UInt128 operator /(System.UInt128 left, System.UInt128 right) { throw null; }
         public static bool operator ==(System.UInt128 left, System.UInt128 right) { throw null; }
         public static System.UInt128 operator ^(System.UInt128 left, System.UInt128 right) { throw null; }
-        public static explicit operator System.UInt128 (decimal value) { throw null; }
-        public static explicit operator System.UInt128 (double value) { throw null; }
-        public static explicit operator System.UInt128 (short value) { throw null; }
-        public static explicit operator System.UInt128 (int value) { throw null; }
-        public static explicit operator System.UInt128 (long value) { throw null; }
-        public static explicit operator System.UInt128 (nint value) { throw null; }
+        public static explicit operator System.UInt128(decimal value) { throw null; }
+        public static explicit operator System.UInt128(double value) { throw null; }
+        public static explicit operator System.UInt128(short value) { throw null; }
+        public static explicit operator System.UInt128(int value) { throw null; }
+        public static explicit operator System.UInt128(long value) { throw null; }
+        public static explicit operator System.UInt128(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.UInt128 (sbyte value) { throw null; }
-        public static explicit operator System.UInt128 (float value) { throw null; }
-        public static explicit operator byte (System.UInt128 value) { throw null; }
-        public static explicit operator char (System.UInt128 value) { throw null; }
-        public static explicit operator decimal (System.UInt128 value) { throw null; }
-        public static explicit operator double (System.UInt128 value) { throw null; }
-        public static explicit operator System.Half (System.UInt128 value) { throw null; }
+        public static explicit operator System.UInt128(sbyte value) { throw null; }
+        public static explicit operator System.UInt128(float value) { throw null; }
+        public static explicit operator byte(System.UInt128 value) { throw null; }
+        public static explicit operator char(System.UInt128 value) { throw null; }
+        public static explicit operator decimal(System.UInt128 value) { throw null; }
+        public static explicit operator double(System.UInt128 value) { throw null; }
+        public static explicit operator System.Half(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Int128 (System.UInt128 value) { throw null; }
-        public static explicit operator short (System.UInt128 value) { throw null; }
-        public static explicit operator int (System.UInt128 value) { throw null; }
-        public static explicit operator long (System.UInt128 value) { throw null; }
-        public static explicit operator nint (System.UInt128 value) { throw null; }
+        public static explicit operator System.Int128(System.UInt128 value) { throw null; }
+        public static explicit operator short(System.UInt128 value) { throw null; }
+        public static explicit operator int(System.UInt128 value) { throw null; }
+        public static explicit operator long(System.UInt128 value) { throw null; }
+        public static explicit operator nint(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator sbyte (System.UInt128 value) { throw null; }
-        public static explicit operator float (System.UInt128 value) { throw null; }
+        public static explicit operator sbyte(System.UInt128 value) { throw null; }
+        public static explicit operator float(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ushort (System.UInt128 value) { throw null; }
+        public static explicit operator ushort(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator uint (System.UInt128 value) { throw null; }
+        public static explicit operator uint(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator ulong (System.UInt128 value) { throw null; }
+        public static explicit operator ulong(System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator nuint (System.UInt128 value) { throw null; }
+        public static explicit operator nuint(System.UInt128 value) { throw null; }
         public static bool operator >(System.UInt128 left, System.UInt128 right) { throw null; }
         public static bool operator >=(System.UInt128 left, System.UInt128 right) { throw null; }
-        public static implicit operator System.UInt128 (byte value) { throw null; }
-        public static implicit operator System.UInt128 (char value) { throw null; }
+        public static implicit operator System.UInt128(byte value) { throw null; }
+        public static implicit operator System.UInt128(char value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.UInt128 (ushort value) { throw null; }
+        public static implicit operator System.UInt128(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.UInt128 (uint value) { throw null; }
+        public static implicit operator System.UInt128(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.UInt128 (ulong value) { throw null; }
+        public static implicit operator System.UInt128(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static implicit operator System.UInt128 (nuint value) { throw null; }
+        public static implicit operator System.UInt128(nuint value) { throw null; }
         public static System.UInt128 operator ++(System.UInt128 value) { throw null; }
         public static bool operator !=(System.UInt128 left, System.UInt128 right) { throw null; }
         public static System.UInt128 operator <<(System.UInt128 value, int shiftAmount) { throw null; }
@@ -6989,11 +6989,11 @@ namespace System
         private readonly ushort _dummyPrimitive;
         public const ushort MaxValue = (ushort)65535;
         public const ushort MinValue = (ushort)0;
-        static ushort System.Numerics.IAdditiveIdentity<System.UInt16,System.UInt16>.AdditiveIdentity { get { throw null; } }
+        static ushort System.Numerics.IAdditiveIdentity<System.UInt16, System.UInt16>.AdditiveIdentity { get { throw null; } }
         static ushort System.Numerics.IBinaryNumber<System.UInt16>.AllBitsSet { get { throw null; } }
         static ushort System.Numerics.IMinMaxValue<System.UInt16>.MaxValue { get { throw null; } }
         static ushort System.Numerics.IMinMaxValue<System.UInt16>.MinValue { get { throw null; } }
-        static ushort System.Numerics.IMultiplicativeIdentity<System.UInt16,System.UInt16>.MultiplicativeIdentity { get { throw null; } }
+        static ushort System.Numerics.IMultiplicativeIdentity<System.UInt16, System.UInt16>.MultiplicativeIdentity { get { throw null; } }
         static ushort System.Numerics.INumberBase<System.UInt16>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt16>.Radix { get { throw null; } }
         static ushort System.Numerics.INumberBase<System.UInt16>.Zero { get { throw null; } }
@@ -7129,11 +7129,11 @@ namespace System
         private readonly uint _dummyPrimitive;
         public const uint MaxValue = (uint)4294967295;
         public const uint MinValue = (uint)0;
-        static uint System.Numerics.IAdditiveIdentity<System.UInt32,System.UInt32>.AdditiveIdentity { get { throw null; } }
+        static uint System.Numerics.IAdditiveIdentity<System.UInt32, System.UInt32>.AdditiveIdentity { get { throw null; } }
         static uint System.Numerics.IBinaryNumber<System.UInt32>.AllBitsSet { get { throw null; } }
         static uint System.Numerics.IMinMaxValue<System.UInt32>.MaxValue { get { throw null; } }
         static uint System.Numerics.IMinMaxValue<System.UInt32>.MinValue { get { throw null; } }
-        static uint System.Numerics.IMultiplicativeIdentity<System.UInt32,System.UInt32>.MultiplicativeIdentity { get { throw null; } }
+        static uint System.Numerics.IMultiplicativeIdentity<System.UInt32, System.UInt32>.MultiplicativeIdentity { get { throw null; } }
         static uint System.Numerics.INumberBase<System.UInt32>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt32>.Radix { get { throw null; } }
         static uint System.Numerics.INumberBase<System.UInt32>.Zero { get { throw null; } }
@@ -7270,11 +7270,11 @@ namespace System
         private readonly ulong _dummyPrimitive;
         public const ulong MaxValue = (ulong)18446744073709551615;
         public const ulong MinValue = (ulong)0;
-        static ulong System.Numerics.IAdditiveIdentity<System.UInt64,System.UInt64>.AdditiveIdentity { get { throw null; } }
+        static ulong System.Numerics.IAdditiveIdentity<System.UInt64, System.UInt64>.AdditiveIdentity { get { throw null; } }
         static ulong System.Numerics.IBinaryNumber<System.UInt64>.AllBitsSet { get { throw null; } }
         static ulong System.Numerics.IMinMaxValue<System.UInt64>.MaxValue { get { throw null; } }
         static ulong System.Numerics.IMinMaxValue<System.UInt64>.MinValue { get { throw null; } }
-        static ulong System.Numerics.IMultiplicativeIdentity<System.UInt64,System.UInt64>.MultiplicativeIdentity { get { throw null; } }
+        static ulong System.Numerics.IMultiplicativeIdentity<System.UInt64, System.UInt64>.MultiplicativeIdentity { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt64>.Radix { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.Zero { get { throw null; } }
@@ -7416,11 +7416,11 @@ namespace System
         public static nuint MaxValue { get { throw null; } }
         public static nuint MinValue { get { throw null; } }
         public static int Size { get { throw null; } }
-        static nuint System.Numerics.IAdditiveIdentity<nuint,nuint>.AdditiveIdentity { get { throw null; } }
+        static nuint System.Numerics.IAdditiveIdentity<nuint, nuint>.AdditiveIdentity { get { throw null; } }
         static nuint System.Numerics.IBinaryNumber<nuint>.AllBitsSet { get { throw null; } }
         static nuint System.Numerics.IMinMaxValue<nuint>.MaxValue { get { throw null; } }
         static nuint System.Numerics.IMinMaxValue<nuint>.MinValue { get { throw null; } }
-        static nuint System.Numerics.IMultiplicativeIdentity<nuint,nuint>.MultiplicativeIdentity { get { throw null; } }
+        static nuint System.Numerics.IMultiplicativeIdentity<nuint, nuint>.MultiplicativeIdentity { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.One { get { throw null; } }
         static int System.Numerics.INumberBase<nuint>.Radix { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.Zero { get { throw null; } }
@@ -7444,12 +7444,12 @@ namespace System
         public static nuint Min(nuint x, nuint y) { throw null; }
         public static nuint operator +(nuint pointer, int offset) { throw null; }
         public static bool operator ==(nuint value1, nuint value2) { throw null; }
-        public static explicit operator nuint (uint value) { throw null; }
-        public static explicit operator nuint (ulong value) { throw null; }
-        public static explicit operator uint (nuint value) { throw null; }
-        public static explicit operator ulong (nuint value) { throw null; }
-        public unsafe static explicit operator void* (nuint value) { throw null; }
-        public unsafe static explicit operator nuint (void* value) { throw null; }
+        public static explicit operator nuint(uint value) { throw null; }
+        public static explicit operator nuint(ulong value) { throw null; }
+        public static explicit operator uint(nuint value) { throw null; }
+        public static explicit operator ulong(nuint value) { throw null; }
+        public unsafe static explicit operator void*(nuint value) { throw null; }
+        public unsafe static explicit operator nuint(void* value) { throw null; }
         public static bool operator !=(nuint value1, nuint value2) { throw null; }
         public static nuint operator -(nuint pointer, int offset) { throw null; }
         public static nuint Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
@@ -7552,7 +7552,7 @@ namespace System
     {
         public UnauthorizedAccessException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected UnauthorizedAccessException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public UnauthorizedAccessException(string? message) { }
         public UnauthorizedAccessException(string? message, System.Exception? inner) { }
@@ -7801,14 +7801,14 @@ namespace System
         public WeakReference(object? target) { }
         public WeakReference(object? target, bool trackResurrection) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected WeakReference(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool IsAlive { get { throw null; } }
         public virtual object? Target { get { throw null; } set { } }
         public virtual bool TrackResurrection { get { throw null; } }
         ~WeakReference() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class WeakReference<T> : System.Runtime.Serialization.ISerializable where T : class?
@@ -7817,7 +7817,7 @@ namespace System
         public WeakReference(T target, bool trackResurrection) { }
         ~WeakReference() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void SetTarget(T target) { }
         public bool TryGetTarget([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false), System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T target) { throw null; }
@@ -7933,7 +7933,7 @@ namespace System.Buffers.Text
 }
 namespace System.CodeDom.Compiler
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false, AllowMultiple = false)]
     public sealed partial class GeneratedCodeAttribute : System.Attribute
     {
         public GeneratedCodeAttribute(string? tool, string? version) { }
@@ -8068,7 +8068,7 @@ namespace System.Collections
         public Comparer(System.Globalization.CultureInfo culture) { }
         public int Compare(object? a, object? b) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial struct DictionaryEntry
@@ -8104,7 +8104,7 @@ namespace System.Collections
         [System.ObsoleteAttribute("This constructor has been deprecated. Use Hashtable(int, float, IEqualityComparer) instead.")]
         public Hashtable(int capacity, float loadFactor, System.Collections.IHashCodeProvider? hcp, System.Collections.IComparer? comparer) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected Hashtable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.ObsoleteAttribute("Hashtable.comparer has been deprecated. Use the KeyComparer properties instead.")]
         protected System.Collections.IComparer? comparer { get { throw null; } set { } }
@@ -8129,7 +8129,7 @@ namespace System.Collections
         public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
         protected virtual int GetHash(object key) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual bool KeyEquals(object? item, object key) { throw null; }
         public virtual void OnDeserialization(object? sender) { }
@@ -8317,7 +8317,7 @@ namespace System.Collections.Generic
     {
         public KeyNotFoundException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected KeyNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public KeyNotFoundException(string? message) { }
         public KeyNotFoundException(string? message, System.Exception? innerException) { }
@@ -8582,7 +8582,7 @@ namespace System.Configuration.Assemblies
 }
 namespace System.Diagnostics
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Method, AllowMultiple = true)]
     public sealed partial class ConditionalAttribute : System.Attribute
     {
         public ConditionalAttribute(string conditionString) { }
@@ -8703,7 +8703,7 @@ namespace System.Diagnostics
             public void AppendLiteral(string value) { }
         }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple = false)]
     public sealed partial class DebuggableAttribute : System.Attribute
     {
         public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
@@ -8732,7 +8732,7 @@ namespace System.Diagnostics
         public static void Log(int level, string? category, string? message) { }
         public static void NotifyOfCrossThreadDependency() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false)]
     public sealed partial class DebuggerBrowsableAttribute : System.Attribute
     {
         public DebuggerBrowsableAttribute(System.Diagnostics.DebuggerBrowsableState state) { }
@@ -8749,7 +8749,7 @@ namespace System.Diagnostics
     {
         public DebuggerDisableUserUnhandledExceptionsAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true)]
     public sealed partial class DebuggerDisplayAttribute : System.Attribute
     {
         public DebuggerDisplayAttribute(string? value) { }
@@ -8759,27 +8759,27 @@ namespace System.Diagnostics
         public string? Type { get { throw null; } set { } }
         public string Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
     public sealed partial class DebuggerHiddenAttribute : System.Attribute
     {
         public DebuggerHiddenAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DebuggerNonUserCodeAttribute : System.Attribute
     {
         public DebuggerNonUserCodeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class DebuggerStepperBoundaryAttribute : System.Attribute
     {
         public DebuggerStepperBoundaryAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DebuggerStepThroughAttribute : System.Attribute
     {
         public DebuggerStepThroughAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
     public sealed partial class DebuggerTypeProxyAttribute : System.Attribute
     {
         public DebuggerTypeProxyAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string typeName) { }
@@ -8789,7 +8789,7 @@ namespace System.Diagnostics
         public System.Type? Target { get { throw null; } set { } }
         public string? TargetTypeName { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
     public sealed partial class DebuggerVisualizerAttribute : System.Attribute
     {
         public DebuggerVisualizerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] string visualizerTypeName) { }
@@ -8806,7 +8806,7 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string VisualizerTypeName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class StackTraceHiddenAttribute : System.Attribute
     {
         public StackTraceHiddenAttribute() { }
@@ -8839,35 +8839,35 @@ namespace System.Diagnostics
 }
 namespace System.Diagnostics.CodeAnalysis
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited = false)]
     public sealed partial class AllowNullAttribute : System.Attribute
     {
         public AllowNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class ConstantExpectedAttribute : System.Attribute
     {
         public ConstantExpectedAttribute() { }
         public object? Max { get { throw null; } set { } }
         public object? Min { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited = false)]
     public sealed partial class DisallowNullAttribute : System.Attribute
     {
         public DisallowNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class DoesNotReturnAttribute : System.Attribute
     {
         public DoesNotReturnAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class DoesNotReturnIfAttribute : System.Attribute
     {
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -8907,7 +8907,7 @@ namespace System.Diagnostics.CodeAnalysis
         PublicNestedTypesWithInherited = 2097280,
         AllNestedTypes = 2228608,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     public sealed partial class DynamicDependencyAttribute : System.Attribute
     {
         public DynamicDependencyAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes, string typeName, string assemblyName) { }
@@ -8922,13 +8922,13 @@ namespace System.Diagnostics.CodeAnalysis
         public System.Type? Type { get { throw null; } }
         public string? TypeName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
     public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute
     {
         public ExcludeFromCodeCoverageAttribute() { }
         public string? Justification { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class ExperimentalAttribute : System.Attribute
     {
         public ExperimentalAttribute(string diagnosticId) { }
@@ -8936,37 +8936,37 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Message { get { throw null; } set { } }
         public string? UrlFormat { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     public sealed partial class FeatureGuardAttribute : System.Attribute
     {
         public FeatureGuardAttribute(System.Type featureType) { }
         public System.Type FeatureType { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = false)]
     public sealed partial class FeatureSwitchDefinitionAttribute : System.Attribute
     {
         public FeatureSwitchDefinitionAttribute(string switchName) { }
         public string SwitchName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
     {
         public MaybeNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class MaybeNullWhenAttribute : System.Attribute
     {
         public MaybeNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     public sealed partial class MemberNotNullAttribute : System.Attribute
     {
         public MemberNotNullAttribute(string member) { }
         public MemberNotNullAttribute(params string[] members) { }
         public string[] Members { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
     public sealed partial class MemberNotNullWhenAttribute : System.Attribute
     {
         public MemberNotNullWhenAttribute(bool returnValue, string member) { }
@@ -8974,24 +8974,24 @@ namespace System.Diagnostics.CodeAnalysis
         public string[] Members { get { throw null; } }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
     public sealed partial class NotNullAttribute : System.Attribute
     {
         public NotNullAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
     public sealed partial class NotNullIfNotNullAttribute : System.Attribute
     {
         public NotNullIfNotNullAttribute(string parameterName) { }
         public string ParameterName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class NotNullWhenAttribute : System.Attribute
     {
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
     public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute
     {
         public RequiresAssemblyFilesAttribute() { }
@@ -8999,26 +8999,26 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
     {
         public RequiresDynamicCodeAttribute(string message) { }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class RequiresUnreferencedCodeAttribute : System.Attribute
     {
         public RequiresUnreferencedCodeAttribute(string message) { }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public sealed partial class SetsRequiredMembersAttribute : System.Attribute
     {
         public SetsRequiredMembersAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class StringSyntaxAttribute : System.Attribute
     {
         public const string CompositeFormat = "CompositeFormat";
@@ -9038,7 +9038,7 @@ namespace System.Diagnostics.CodeAnalysis
         public object?[] Arguments { get { throw null; } }
         public string Syntax { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false, AllowMultiple = true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
     public sealed partial class SuppressMessageAttribute : System.Attribute
     {
@@ -9050,7 +9050,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Scope { get { throw null; } set { } }
         public string? Target { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false, AllowMultiple = true)]
     public sealed partial class UnconditionalSuppressMessageAttribute : System.Attribute
     {
         public UnconditionalSuppressMessageAttribute(string category, string checkId) { }
@@ -9061,7 +9061,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string? Scope { get { throw null; } set { } }
         public string? Target { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class UnscopedRefAttribute : System.Attribute
     {
         public UnscopedRefAttribute() { }
@@ -9291,7 +9291,7 @@ namespace System.Globalization
     {
         public CultureNotFoundException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected CultureNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CultureNotFoundException(string? message) { }
         public CultureNotFoundException(string? message, System.Exception? innerException) { }
@@ -9304,7 +9304,7 @@ namespace System.Globalization
         public virtual string? InvalidCultureName { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.FlagsAttribute]
@@ -10176,7 +10176,7 @@ namespace System.IO
     {
         public DirectoryNotFoundException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected DirectoryNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DirectoryNotFoundException(string? message) { }
         public DirectoryNotFoundException(string? message, System.Exception? innerException) { }
@@ -10185,7 +10185,7 @@ namespace System.IO
     {
         public EndOfStreamException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected EndOfStreamException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public EndOfStreamException(string? message) { }
         public EndOfStreamException(string? message, System.Exception? innerException) { }
@@ -10379,7 +10379,7 @@ namespace System.IO
     {
         public FileLoadException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected FileLoadException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public FileLoadException(string? message) { }
         public FileLoadException(string? message, System.Exception? inner) { }
@@ -10389,7 +10389,7 @@ namespace System.IO
         public string? FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -10406,7 +10406,7 @@ namespace System.IO
     {
         public FileNotFoundException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected FileNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public FileNotFoundException(string? message) { }
         public FileNotFoundException(string? message, System.Exception? innerException) { }
@@ -10416,7 +10416,7 @@ namespace System.IO
         public string? FusionLog { get { throw null; } }
         public override string Message { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -10527,7 +10527,7 @@ namespace System.IO
         protected string OriginalPath;
         protected FileSystemInfo() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected FileSystemInfo(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.IO.FileAttributes Attributes { get { throw null; } set { } }
         public System.DateTime CreationTime { get { throw null; } set { } }
@@ -10545,7 +10545,7 @@ namespace System.IO
         public void CreateAsSymbolicLink(string pathToTarget) { }
         public abstract void Delete();
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Refresh() { }
         public System.IO.FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget) { throw null; }
@@ -10566,7 +10566,7 @@ namespace System.IO
     {
         public IOException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected IOException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public IOException(string? message) { }
         public IOException(string? message, System.Exception? innerException) { }
@@ -10686,7 +10686,7 @@ namespace System.IO
     {
         public PathTooLongException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected PathTooLongException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public PathTooLongException(string? message) { }
         public PathTooLongException(string? message, System.Exception? innerException) { }
@@ -11399,15 +11399,18 @@ namespace System.Numerics
         static abstract TSelf Abs(TSelf value);
         static virtual TSelf CreateChecked<TOther>(TOther value)
 #nullable disable
-            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+            where TOther : System.Numerics.INumberBase<TOther>
+        { throw null; }
 #nullable restore
         static virtual TSelf CreateSaturating<TOther>(TOther value)
 #nullable disable
-            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+            where TOther : System.Numerics.INumberBase<TOther>
+        { throw null; }
 #nullable restore
         static virtual TSelf CreateTruncating<TOther>(TOther value)
 #nullable disable
-            where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+            where TOther : System.Numerics.INumberBase<TOther>
+        { throw null; }
 #nullable restore
         static abstract bool IsCanonical(TSelf value);
         static abstract bool IsComplexNumber(TSelf value);
@@ -11557,17 +11560,17 @@ namespace System.Reflection
     {
         protected Assembly() { }
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
-        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId="SYSLIB0012", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string? CodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.CustomAttributeData> CustomAttributes { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.TypeInfo> DefinedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual System.Reflection.MethodInfo? EntryPoint { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("This member throws an exception for assemblies embedded in a single-file app")]
-        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId="SYSLIB0012", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual string EscapedCodeBase { get { throw null; } }
         public virtual System.Collections.Generic.IEnumerable<System.Type> ExportedTypes { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed")] get { throw null; } }
         public virtual string? FullName { get { throw null; } }
-        [System.ObsoleteAttribute("The Global Assembly Cache is not supported.", DiagnosticId="SYSLIB0005", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual bool GlobalAssemblyCache { get { throw null; } }
         public virtual long HostContext { get { throw null; } }
         public virtual string ImageRuntimeVersion { get { throw null; } }
@@ -11618,7 +11621,7 @@ namespace System.Reflection
         public virtual System.Reflection.AssemblyName GetName() { throw null; }
         public virtual System.Reflection.AssemblyName GetName(bool copiedName) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Assembly references might be removed")]
         public virtual System.Reflection.AssemblyName[] GetReferencedAssemblies() { throw null; }
@@ -11655,20 +11658,20 @@ namespace System.Reflection
         public static bool operator ==(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
         public static bool operator !=(System.Reflection.Assembly? left, System.Reflection.Assembly? right) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
-        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0018", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly ReflectionOnlyLoad(byte[] rawAssembly) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
-        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0018", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly ReflectionOnlyLoad(string assemblyString) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
-        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0018", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0018", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw null; }
         public static void SetEntryAssembly(System.Reflection.Assembly? assembly) { }
         public override string ToString() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly UnsafeLoadFrom(string assemblyFile) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyAlgorithmIdAttribute : System.Attribute
     {
         public AssemblyAlgorithmIdAttribute(System.Configuration.Assemblies.AssemblyHashAlgorithm algorithmId) { }
@@ -11677,13 +11680,13 @@ namespace System.Reflection
         [System.CLSCompliantAttribute(false)]
         public uint AlgorithmId { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyCompanyAttribute : System.Attribute
     {
         public AssemblyCompanyAttribute(string company) { }
         public string Company { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyConfigurationAttribute : System.Attribute
     {
         public AssemblyConfigurationAttribute(string configuration) { }
@@ -11694,43 +11697,43 @@ namespace System.Reflection
         Default = 0,
         WindowsRuntime = 1,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyCopyrightAttribute : System.Attribute
     {
         public AssemblyCopyrightAttribute(string copyright) { }
         public string Copyright { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyCultureAttribute : System.Attribute
     {
         public AssemblyCultureAttribute(string culture) { }
         public string Culture { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyDefaultAliasAttribute : System.Attribute
     {
         public AssemblyDefaultAliasAttribute(string defaultAlias) { }
         public string DefaultAlias { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyDelaySignAttribute : System.Attribute
     {
         public AssemblyDelaySignAttribute(bool delaySign) { }
         public bool DelaySign { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyDescriptionAttribute : System.Attribute
     {
         public AssemblyDescriptionAttribute(string description) { }
         public string Description { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyFileVersionAttribute : System.Attribute
     {
         public AssemblyFileVersionAttribute(string version) { }
         public string Version { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyFlagsAttribute : System.Attribute
     {
         [System.ObsoleteAttribute("This constructor has been deprecated. Use AssemblyFlagsAttribute(AssemblyNameFlags) instead.")]
@@ -11744,25 +11747,25 @@ namespace System.Reflection
         [System.ObsoleteAttribute("AssemblyFlagsAttribute.Flags has been deprecated. Use AssemblyFlags instead.")]
         public uint Flags { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyInformationalVersionAttribute : System.Attribute
     {
         public AssemblyInformationalVersionAttribute(string informationalVersion) { }
         public string InformationalVersion { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyKeyFileAttribute : System.Attribute
     {
         public AssemblyKeyFileAttribute(string keyFile) { }
         public string KeyFile { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyKeyNameAttribute : System.Attribute
     {
         public AssemblyKeyNameAttribute(string keyName) { }
         public string KeyName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed partial class AssemblyMetadataAttribute : System.Attribute
     {
         public AssemblyMetadataAttribute(string key, string? value) { }
@@ -11773,30 +11776,30 @@ namespace System.Reflection
     {
         public AssemblyName() { }
         public AssemblyName(string assemblyName) { }
-        [System.ObsoleteAttribute("AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.", DiagnosticId="SYSLIB0044", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.", DiagnosticId = "SYSLIB0044", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public string? CodeBase { [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("The code will return an empty string for assemblies embedded in a single-file app")] get { throw null; } set { } }
         public System.Reflection.AssemblyContentType ContentType { get { throw null; } set { } }
         public System.Globalization.CultureInfo? CultureInfo { get { throw null; } set { } }
         public string? CultureName { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute("The code will return an empty string for assemblies embedded in a single-file app")]
-        [System.ObsoleteAttribute("AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.", DiagnosticId="SYSLIB0044", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.", DiagnosticId = "SYSLIB0044", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public string? EscapedCodeBase { get { throw null; } }
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
-        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId="SYSLIB0037", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0017", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0017", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.StrongNameKeyPair? KeyPair { get { throw null; } set { } }
         public string? Name { get { throw null; } set { } }
-        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId="SYSLIB0037", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
         public System.Version? Version { get { throw null; } set { } }
-        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId="SYSLIB0037", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Configuration.Assemblies.AssemblyVersionCompatibility VersionCompatibility { get { throw null; } set { } }
         public object Clone() { throw null; }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public byte[]? GetPublicKey() { throw null; }
         public byte[]? GetPublicKeyToken() { throw null; }
@@ -11820,32 +11823,32 @@ namespace System.Reflection
         public AssemblyNameProxy() { }
         public System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyProductAttribute : System.Attribute
     {
         public AssemblyProductAttribute(string product) { }
         public string Product { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
     public sealed partial class AssemblySignatureKeyAttribute : System.Attribute
     {
         public AssemblySignatureKeyAttribute(string publicKey, string countersignature) { }
         public string Countersignature { get { throw null; } }
         public string PublicKey { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyTitleAttribute : System.Attribute
     {
         public AssemblyTitleAttribute(string title) { }
         public string Title { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyTrademarkAttribute : System.Attribute
     {
         public AssemblyTrademarkAttribute(string trademark) { }
         public string Trademark { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyVersionAttribute : System.Attribute
     {
         public AssemblyVersionAttribute(string version) { }
@@ -11977,7 +11980,7 @@ namespace System.Reflection
     {
         public CustomAttributeFormatException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected CustomAttributeFormatException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CustomAttributeFormatException(string? message) { }
         public CustomAttributeFormatException(string? message, System.Exception? inner) { }
@@ -12088,7 +12091,7 @@ namespace System.Reflection
         Static = 16,
         InitOnly = 32,
         Literal = 64,
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         NotSerialized = 128,
         HasFieldRVA = 256,
         SpecialName = 512,
@@ -12110,7 +12113,7 @@ namespace System.Reflection
         public bool IsFamilyOrAssembly { get { throw null; } }
         public bool IsInitOnly { get { throw null; } }
         public bool IsLiteral { get { throw null; } }
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public bool IsNotSerialized { get { throw null; } }
         public bool IsPinvokeImpl { get { throw null; } }
         public bool IsPrivate { get { throw null; } }
@@ -12182,7 +12185,7 @@ namespace System.Reflection
     {
         public InvalidFilterCriteriaException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected InvalidFilterCriteriaException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidFilterCriteriaException(string? message) { }
         public InvalidFilterCriteriaException(string? message, System.Exception? inner) { }
@@ -12451,7 +12454,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Methods might be removed")]
         public virtual System.Reflection.MethodInfo[] GetMethods(System.Reflection.BindingFlags bindingFlags) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public virtual void GetPEKind(out System.Reflection.PortableExecutableKinds peKind, out System.Reflection.ImageFileMachine machine) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
@@ -12512,14 +12515,14 @@ namespace System.Reflection
         NotNull = 1,
         Nullable = 2,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed partial class ObfuscateAssemblyAttribute : System.Attribute
     {
         public ObfuscateAssemblyAttribute(bool assemblyIsPrivate) { }
         public bool AssemblyIsPrivate { get { throw null; } }
         public bool StripAfterObfuscation { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed partial class ObfuscationAttribute : System.Attribute
     {
         public ObfuscationAttribute() { }
@@ -12576,7 +12579,7 @@ namespace System.Reflection
         public virtual System.Type GetModifiedParameterType() { throw null; }
         public virtual System.Type[] GetOptionalCustomModifiers() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public object GetRealObject(System.Runtime.Serialization.StreamingContext context) { throw null; }
         public virtual System.Type[] GetRequiredCustomModifiers() { throw null; }
         public virtual bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
@@ -12679,7 +12682,7 @@ namespace System.Reflection
         public override string Message { get { throw null; } }
         public System.Type?[] Types { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
@@ -12722,13 +12725,13 @@ namespace System.Reflection
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.Reflection.PropertyInfo? GetRuntimeProperty([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] this System.Type type, string name) { throw null; }
     }
-    [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0017", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0017", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class StrongNameKeyPair : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         public StrongNameKeyPair(byte[] keyPairArray) { }
         public StrongNameKeyPair(System.IO.FileStream keyPairFile) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected StrongNameKeyPair(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public StrongNameKeyPair(string keyPairContainer) { }
         public byte[] PublicKey { get { throw null; } }
@@ -12739,7 +12742,7 @@ namespace System.Reflection
     {
         public TargetException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TargetException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TargetException(string? message) { }
         public TargetException(string? message, System.Exception? inner) { }
@@ -12780,7 +12783,7 @@ namespace System.Reflection
         SpecialName = 1024,
         RTSpecialName = 2048,
         Import = 4096,
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         Serializable = 8192,
         WindowsRuntime = 16384,
         UnicodeClass = 65536,
@@ -12916,7 +12919,7 @@ namespace System.Resources
     public partial class MissingManifestResourceException : System.SystemException
     {
         public MissingManifestResourceException() { }
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MissingManifestResourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingManifestResourceException(string? message) { }
         public MissingManifestResourceException(string? message, System.Exception? inner) { }
@@ -12925,14 +12928,14 @@ namespace System.Resources
     {
         public MissingSatelliteAssemblyException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected MissingSatelliteAssemblyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingSatelliteAssemblyException(string? message) { }
         public MissingSatelliteAssemblyException(string? message, System.Exception? inner) { }
         public MissingSatelliteAssemblyException(string? message, string? cultureName) { }
         public string? CultureName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NeutralResourcesLanguageAttribute : System.Attribute
     {
@@ -12998,7 +13001,7 @@ namespace System.Resources
         protected virtual void ReadResources() { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class SatelliteContractVersionAttribute : System.Attribute
     {
@@ -13019,7 +13022,7 @@ namespace System.Runtime
         public AmbiguousImplementationException(string? message) { }
         public AmbiguousImplementationException(string? message, System.Exception? innerException) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class AssemblyTargetedPatchBandAttribute : System.Attribute
     {
         public AssemblyTargetedPatchBandAttribute(string targetedPatchBand) { }
@@ -13027,7 +13030,7 @@ namespace System.Runtime
     }
     public static partial class ControlledExecution
     {
-        [System.ObsoleteAttribute("ControlledExecution.Run method may corrupt the process and should not be used in production code.", DiagnosticId="SYSLIB0046", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("ControlledExecution.Run method may corrupt the process and should not be used in production code.", DiagnosticId = "SYSLIB0046", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void Run(System.Action action, System.Threading.CancellationToken cancellationToken) { }
     }
     public partial struct DependentHandle : System.IDisposable
@@ -13077,7 +13080,7 @@ namespace System.Runtime
         public static void SetProfileRoot(string directoryPath) { }
         public static void StartProfile(string? profile) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed partial class TargetedPatchingOptOutAttribute : System.Attribute
     {
         public TargetedPatchingOptOutAttribute(string reason) { }
@@ -13102,21 +13105,21 @@ namespace System.Runtime.CompilerServices
         public static System.Runtime.CompilerServices.AsyncIteratorMethodBuilder Create() { throw null; }
         public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed partial class AsyncIteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
-        public AsyncIteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
+        public AsyncIteratorStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
     public sealed partial class AsyncMethodBuilderAttribute : System.Attribute
     {
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
         public System.Type BuilderType { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
-        public AsyncStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
+        public AsyncStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
     }
     public partial struct AsyncTaskMethodBuilder
     {
@@ -13211,28 +13214,28 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvThiscall() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
     public sealed partial class CallerArgumentExpressionAttribute : System.Attribute
     {
         public CallerArgumentExpressionAttribute(string parameterName) { }
         public string ParameterName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute
     {
         public CallerFilePathAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class CallerLineNumberAttribute : System.Attribute
     {
         public CallerLineNumberAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class CallerMemberNameAttribute : System.Attribute
     {
         public CallerMemberNameAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class CollectionBuilderAttribute : System.Attribute
     {
         public CollectionBuilderAttribute(System.Type builderType, string methodName) { }
@@ -13251,7 +13254,7 @@ namespace System.Runtime.CompilerServices
         public CompilationRelaxationsAttribute(System.Runtime.CompilerServices.CompilationRelaxations relaxations) { }
         public int CompilationRelaxations { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple = true, Inherited = false)]
     public sealed partial class CompilerFeatureRequiredAttribute : System.Attribute
     {
         public const string RefStructs = "RefStructs";
@@ -13260,7 +13263,7 @@ namespace System.Runtime.CompilerServices
         public string FeatureName { get { throw null; } }
         public bool IsOptional { get { throw null; } init { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = true)]
     public sealed partial class CompilerGeneratedAttribute : System.Attribute
     {
         public CompilerGeneratedAttribute() { }
@@ -13270,7 +13273,7 @@ namespace System.Runtime.CompilerServices
     {
         public CompilerGlobalScopeAttribute() { }
     }
-    public sealed partial class ConditionalWeakTable<TKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : class where TValue : class?
+    public sealed partial class ConditionalWeakTable<TKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : class where TValue : class?
     {
         public ConditionalWeakTable() { }
         public void Add(TKey key, TValue value) { }
@@ -13298,6 +13301,7 @@ namespace System.Runtime.CompilerServices
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
     }
     public readonly partial struct ConfiguredCancelableAsyncEnumerable<T>
+        where T : allows ref struct
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -13373,19 +13377,19 @@ namespace System.Runtime.CompilerServices
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited = false)]
     public abstract partial class CustomConstantAttribute : System.Attribute
     {
         protected CustomConstantAttribute() { }
         public abstract object? Value { get; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class DateTimeConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
     {
         public DateTimeConstantAttribute(long ticks) { }
         public override object Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class DecimalConstantAttribute : System.Attribute
     {
         public DecimalConstantAttribute(byte scale, byte sign, int hi, int mid, int low) { }
@@ -13420,20 +13424,20 @@ namespace System.Runtime.CompilerServices
         public override string ToString() { throw null; }
         public string ToStringAndClear() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed partial class DependencyAttribute : System.Attribute
     {
         public DependencyAttribute(string dependentAssemblyArgument, System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
         public string DependentAssembly { get { throw null; } }
         public System.Runtime.CompilerServices.LoadHint LoadHint { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
-    [System.ObsoleteAttribute("DisablePrivateReflectionAttribute has no effect in .NET 6.0+.", DiagnosticId="SYSLIB0015", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
+    [System.ObsoleteAttribute("DisablePrivateReflectionAttribute has no effect in .NET 6.0+.", DiagnosticId = "SYSLIB0015", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class DisablePrivateReflectionAttribute : System.Attribute
     {
         public DisablePrivateReflectionAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
     public sealed partial class DisableRuntimeMarshallingAttribute : System.Attribute
     {
         public DisableRuntimeMarshallingAttribute() { }
@@ -13443,7 +13447,7 @@ namespace System.Runtime.CompilerServices
     {
         public DiscardableAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class EnumeratorCancellationAttribute : System.Attribute
     {
         public EnumeratorCancellationAttribute() { }
@@ -13458,7 +13462,7 @@ namespace System.Runtime.CompilerServices
     {
         public FixedAddressValueTypeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     public sealed partial class FixedBufferAttribute : System.Attribute
     {
         public FixedBufferAttribute(System.Type elementType, int length) { }
@@ -13478,12 +13482,12 @@ namespace System.Runtime.CompilerServices
     {
         void UnsafeOnCompleted(System.Action continuation);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, Inherited = true)]
     public sealed partial class IndexerNameAttribute : System.Attribute
     {
         public IndexerNameAttribute(string indexerName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, AllowMultiple = false)]
     public sealed partial class InlineArrayAttribute : System.Attribute
     {
         public InlineArrayAttribute(int length) { }
@@ -13493,21 +13497,21 @@ namespace System.Runtime.CompilerServices
     {
         void OnCompleted(System.Action continuation);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed partial class InternalsVisibleToAttribute : System.Attribute
     {
         public InternalsVisibleToAttribute(string assemblyName) { }
         public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
     public sealed partial class InterpolatedStringHandlerArgumentAttribute : System.Attribute
     {
         public InterpolatedStringHandlerArgumentAttribute(string argument) { }
         public InterpolatedStringHandlerArgumentAttribute(params string[] arguments) { }
         public string[] Arguments { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     public sealed partial class InterpolatedStringHandlerAttribute : System.Attribute
     {
         public InterpolatedStringHandlerAttribute() { }
@@ -13525,7 +13529,7 @@ namespace System.Runtime.CompilerServices
     public static partial class IsExternalInit
     {
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IsReadOnlyAttribute : System.Attribute
     {
@@ -13544,10 +13548,10 @@ namespace System.Runtime.CompilerServices
     public static partial class IsVolatile
     {
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed partial class IteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
-        public IteratorStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
+        public IteratorStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
     }
     public partial interface ITuple
     {
@@ -13567,7 +13571,7 @@ namespace System.Runtime.CompilerServices
         OPTIL = 2,
         Runtime = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class MethodImplAttribute : System.Attribute
     {
         public System.Runtime.CompilerServices.MethodCodeType MethodCodeType;
@@ -13589,12 +13593,12 @@ namespace System.Runtime.CompilerServices
         AggressiveOptimization = 512,
         InternalCall = 4096,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class ModuleInitializerAttribute : System.Attribute
     {
         public ModuleInitializerAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NullableAttribute : System.Attribute
     {
@@ -13602,27 +13606,27 @@ namespace System.Runtime.CompilerServices
         public NullableAttribute(byte value) { }
         public NullableAttribute(byte[] value) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NullableContextAttribute : System.Attribute
     {
         public readonly byte Flag;
         public NullableContextAttribute(byte value) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NullablePublicOnlyAttribute : System.Attribute
     {
         public readonly bool IncludesInternals;
         public NullablePublicOnlyAttribute(bool value) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class OverloadResolutionPriorityAttribute : System.Attribute
     {
         public OverloadResolutionPriorityAttribute(int priority) { }
         public int Priority { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=true, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]
     public sealed partial class ParamCollectionAttribute : System.Attribute
     {
         public ParamCollectionAttribute() { }
@@ -13654,38 +13658,38 @@ namespace System.Runtime.CompilerServices
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
     {
         public PreserveBaseOverridesAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
     {
         public ReferenceAssemblyAttribute() { }
         public ReferenceAssemblyAttribute(string? description) { }
         public string? Description { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RefSafetyRulesAttribute : System.Attribute
     {
         public RefSafetyRulesAttribute(int version) { }
         public int Version { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RequiredMemberAttribute : System.Attribute
     {
         public RequiredMemberAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class RequiresLocationAttribute : System.Attribute
     {
         public RequiresLocationAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
     public sealed partial class RuntimeCompatibilityAttribute : System.Attribute
     {
         public RuntimeCompatibilityAttribute() { }
@@ -13716,7 +13720,7 @@ namespace System.Runtime.CompilerServices
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
-        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }
         public static int GetHashCode(object? o) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("obj")]
@@ -13724,17 +13728,17 @@ namespace System.Runtime.CompilerServices
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }
         public static object GetUninitializedObject([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
-        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct { throw null; }
-        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct { throw null; }
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareConstrainedRegions() { }
-        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareConstrainedRegionsNoOP() { }
-        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareContractedDelegate(System.Delegate d) { }
         public static void PrepareDelegate(System.Delegate d) { }
         public static void PrepareMethod(System.RuntimeMethodHandle method) { }
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[]? instantiation) { }
-        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ProbeForSufficientStack() { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(System.RuntimeTypeHandle type) { }
@@ -13749,16 +13753,16 @@ namespace System.Runtime.CompilerServices
         public RuntimeWrappedException(object thrownObject) { }
         public object WrappedException { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ScopedRefAttribute : System.Attribute
     {
         public ScopedRefAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class SkipLocalsInitAttribute : System.Attribute
     {
         public SkipLocalsInitAttribute() { }
@@ -13768,13 +13772,13 @@ namespace System.Runtime.CompilerServices
     {
         public SpecialNameAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute
     {
         public StateMachineAttribute(System.Type stateMachineType) { }
         public System.Type StateMachineType { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false)]
     public sealed partial class StringFreezingAttribute : System.Attribute
     {
         public StringFreezingAttribute() { }
@@ -13788,7 +13792,7 @@ namespace System.Runtime.CompilerServices
         object? System.Runtime.CompilerServices.IStrongBox.Value { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module)]
-    [System.ObsoleteAttribute("SuppressIldasmAttribute has no effect in .NET 6.0+.", DiagnosticId="SYSLIB0025", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("SuppressIldasmAttribute has no effect in .NET 6.0+.", DiagnosticId = "SYSLIB0025", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SuppressIldasmAttribute : System.Attribute
     {
         public SuppressIldasmAttribute() { }
@@ -13803,7 +13807,7 @@ namespace System.Runtime.CompilerServices
         public override string Message { get { throw null; } }
         public object? UnmatchedValue { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public readonly partial struct TaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
@@ -13831,13 +13835,13 @@ namespace System.Runtime.CompilerServices
         public TupleElementNamesAttribute(string?[] transformNames) { }
         public System.Collections.Generic.IList<string?> TransformNames { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
     public sealed partial class TypeForwardedFromAttribute : System.Attribute
     {
         public TypeForwardedFromAttribute(string assemblyFullName) { }
         public string AssemblyFullName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed partial class TypeForwardedToAttribute : System.Attribute
     {
         public TypeForwardedToAttribute(System.Type destination) { }
@@ -13912,7 +13916,7 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static void Write<T>(void* destination, T value) where T : allows ref struct { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public sealed partial class UnsafeAccessorAttribute : System.Attribute
     {
         public UnsafeAccessorAttribute(System.Runtime.CompilerServices.UnsafeAccessorKind kind) { }
@@ -13964,14 +13968,14 @@ namespace System.Runtime.CompilerServices
 }
 namespace System.Runtime.ConstrainedExecution
 {
-    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum Cer
     {
         None = 0,
         MayFail = 1,
         Success = 2,
     }
-    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum Consistency
     {
         MayCorruptProcess = 0,
@@ -13984,14 +13988,14 @@ namespace System.Runtime.ConstrainedExecution
         protected CriticalFinalizerObject() { }
         ~CriticalFinalizerObject() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
-    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited = false)]
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class PrePrepareMethodAttribute : System.Attribute
     {
         public PrePrepareMethodAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
-    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited = false)]
+    [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class ReliabilityContractAttribute : System.Attribute
     {
         public ReliabilityContractAttribute(System.Runtime.ConstrainedExecution.Consistency consistencyGuarantee, System.Runtime.ConstrainedExecution.Cer cer) { }
@@ -14015,15 +14019,15 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
-        public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
+        public static void SetUnhandledExceptionHandler(System.Func<System.Exception, bool> handler) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
         public FirstChanceExceptionEventArgs(System.Exception exception) { }
         public System.Exception Exception { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
-    [System.ObsoleteAttribute("Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.", DiagnosticId="SYSLIB0032", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [System.ObsoleteAttribute("Recovery from corrupted process state exceptions is not supported; HandleProcessCorruptedStateExceptionsAttribute is ignored.", DiagnosticId = "SYSLIB0032", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class HandleProcessCorruptedStateExceptionsAttribute : System.Attribute
     {
         public HandleProcessCorruptedStateExceptionsAttribute() { }
@@ -14051,7 +14055,7 @@ namespace System.Runtime.InteropServices
         Unicode = 3,
         Auto = 4,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class ComVisibleAttribute : System.Attribute
     {
         public ComVisibleAttribute(bool visibility) { }
@@ -14075,7 +14079,7 @@ namespace System.Runtime.InteropServices
     {
         public ExternalException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ExternalException(string? message) { }
         public ExternalException(string? message, System.Exception? inner) { }
@@ -14083,7 +14087,7 @@ namespace System.Runtime.InteropServices
         public virtual int ErrorCode { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     public sealed partial class FieldOffsetAttribute : System.Attribute
     {
         public FieldOffsetAttribute(int offset) { }
@@ -14103,8 +14107,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.GCHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override readonly int GetHashCode() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
-        public static explicit operator System.Runtime.InteropServices.GCHandle (System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr (System.Runtime.InteropServices.GCHandle value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.GCHandle(System.IntPtr value) { throw null; }
+        public static explicit operator System.IntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
         public static bool operator !=(System.Runtime.InteropServices.GCHandle a, System.Runtime.InteropServices.GCHandle b) { throw null; }
         public static System.IntPtr ToIntPtr(System.Runtime.InteropServices.GCHandle value) { throw null; }
     }
@@ -14115,7 +14119,7 @@ namespace System.Runtime.InteropServices
         Normal = 2,
         Pinned = 3,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class InAttribute : System.Attribute
     {
         public InAttribute() { }
@@ -14172,7 +14176,7 @@ namespace System.Runtime.InteropServices
         public static bool operator !=(System.Runtime.InteropServices.OSPlatform left, System.Runtime.InteropServices.OSPlatform right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }
@@ -14188,7 +14192,7 @@ namespace System.Runtime.InteropServices
     }
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected SafeBuffer(bool ownsHandle) : base (default(bool)) { }
+        protected SafeBuffer(bool ownsHandle) : base(default(bool)) { }
         [System.CLSCompliantAttribute(false)]
         public ulong ByteLength { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
@@ -14230,7 +14234,7 @@ namespace System.Runtime.InteropServices
         protected void SetHandle(System.IntPtr handle) { }
         public void SetHandleAsInvalid() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class StructLayoutAttribute : System.Attribute
     {
         public System.Runtime.InteropServices.CharSet CharSet;
@@ -14240,7 +14244,7 @@ namespace System.Runtime.InteropServices
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class SuppressGCTransitionAttribute : System.Attribute
     {
         public SuppressGCTransitionAttribute() { }
@@ -14308,7 +14312,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public ContiguousCollectionMarshallerAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = true)]
     public sealed partial class CustomMarshallerAttribute : System.Attribute
     {
         public CustomMarshallerAttribute(System.Type managedType, System.Runtime.InteropServices.Marshalling.MarshalMode marshalMode, System.Type marshallerType) { }
@@ -14461,7 +14465,7 @@ namespace System.Runtime.InteropServices.Swift
         public unsafe SwiftSelf(void* value) { throw null; }
         public unsafe void* Value { get { throw null; } }
     }
-    public readonly partial struct SwiftSelf<T> where T: unmanaged
+    public readonly partial struct SwiftSelf<T> where T : unmanaged
     {
         private readonly T _dummyPrimitive;
         public SwiftSelf(T value) { throw null; }
@@ -14483,7 +14487,7 @@ namespace System.Runtime.Serialization
         void OnDeserialization(object? sender);
     }
     [System.CLSCompliantAttribute(false)]
-    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IFormatterConverter
     {
         object Convert(object value, System.Type type);
@@ -14504,48 +14508,48 @@ namespace System.Runtime.Serialization
         uint ToUInt32(object value);
         ulong ToUInt64(object value);
     }
-    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IObjectReference
     {
         object GetRealObject(System.Runtime.Serialization.StreamingContext context);
     }
-    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ISafeSerializationData
     {
         void CompleteDeserialization(object deserialized);
     }
     public partial interface ISerializable
     {
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class OnDeserializedAttribute : System.Attribute
     {
         public OnDeserializedAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class OnDeserializingAttribute : System.Attribute
     {
         public OnDeserializingAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class OnSerializedAttribute : System.Attribute
     {
         public OnSerializedAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
     public sealed partial class OnSerializingAttribute : System.Attribute
     {
         public OnSerializingAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited = false)]
     public sealed partial class OptionalFieldAttribute : System.Attribute
     {
         public OptionalFieldAttribute() { }
         public int VersionAdded { get { throw null; } set { } }
     }
-    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SafeSerializationEventArgs : System.EventArgs
     {
         internal SafeSerializationEventArgs() { }
@@ -14564,7 +14568,7 @@ namespace System.Runtime.Serialization
     {
         public SerializationException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected SerializationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SerializationException(string? message) { }
         public SerializationException(string? message, System.Exception? innerException) { }
@@ -14572,10 +14576,10 @@ namespace System.Runtime.Serialization
     public sealed partial class SerializationInfo
     {
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public SerializationInfo(System.Type type, System.Runtime.Serialization.IFormatterConverter converter) { }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public SerializationInfo(System.Type type, System.Runtime.Serialization.IFormatterConverter converter, bool requireSameTokenInPartialTrust) { }
         public string AssemblyName { get { throw null; } set { } }
         public string FullTypeName { get { throw null; } set { } }
@@ -14641,18 +14645,18 @@ namespace System.Runtime.Serialization
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public StreamingContext(System.Runtime.Serialization.StreamingContextStates state) { throw null; }
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public StreamingContext(System.Runtime.Serialization.StreamingContextStates state, object? additional) { throw null; }
         public object? Context { get { throw null; } }
-        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Runtime.Serialization.StreamingContextStates State { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     [System.FlagsAttribute]
-    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId="SYSLIB0050", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum StreamingContextStates
     {
         CrossProcess = 1,
@@ -14668,7 +14672,7 @@ namespace System.Runtime.Serialization
 }
 namespace System.Runtime.Versioning
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     public sealed partial class ComponentGuaranteesAttribute : System.Attribute
     {
         public ComponentGuaranteesAttribute(System.Runtime.Versioning.ComponentGuaranteesOptions guarantees) { }
@@ -14698,7 +14702,7 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName? left, System.Runtime.Versioning.FrameworkName? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed partial class ObsoletedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public ObsoletedOSPlatformAttribute(string platformName) { }
@@ -14711,7 +14715,7 @@ namespace System.Runtime.Versioning
         internal OSPlatformAttribute() { }
         public string PlatformName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited = false)]
     public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
     {
         public RequiresPreviewFeaturesAttribute() { }
@@ -14719,7 +14723,7 @@ namespace System.Runtime.Versioning
         public string? Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceConsumptionAttribute : System.Attribute
     {
@@ -14728,7 +14732,7 @@ namespace System.Runtime.Versioning
         public System.Runtime.Versioning.ResourceScope ConsumptionScope { get { throw null; } }
         public System.Runtime.Versioning.ResourceScope ResourceScope { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false)]
     [System.Diagnostics.ConditionalAttribute("RESOURCE_ANNOTATION_WORK")]
     public sealed partial class ResourceExposureAttribute : System.Attribute
     {
@@ -14746,36 +14750,36 @@ namespace System.Runtime.Versioning
         Private = 16,
         Assembly = 32,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed partial class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public SupportedOSPlatformAttribute(string platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
     public sealed partial class SupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public SupportedOSPlatformGuardAttribute(string platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed partial class TargetFrameworkAttribute : System.Attribute
     {
         public TargetFrameworkAttribute(string frameworkName) { }
         public string? FrameworkDisplayName { get { throw null; } set { } }
         public string FrameworkName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed partial class TargetPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public TargetPlatformAttribute(string platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
     public sealed partial class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public UnsupportedOSPlatformAttribute(string platformName) { }
         public UnsupportedOSPlatformAttribute(string platformName, string? message) { }
         public string? Message { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
     public sealed partial class UnsupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public UnsupportedOSPlatformGuardAttribute(string platformName) { }
@@ -14788,13 +14792,13 @@ namespace System.Runtime.Versioning
 }
 namespace System.Security
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed partial class AllowPartiallyTrustedCallersAttribute : System.Attribute
     {
         public AllowPartiallyTrustedCallersAttribute() { }
         public System.Security.PartialTrustVisibilityLevel PartialTrustVisibilityLevel { get { throw null; } set { } }
     }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IPermission : System.Security.ISecurityEncodable
     {
         System.Security.IPermission Copy();
@@ -14808,7 +14812,7 @@ namespace System.Security
         void FromXml(System.Security.SecurityElement e);
         System.Security.SecurityElement? ToXml();
     }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IStackWalk
     {
         void Assert();
@@ -14821,7 +14825,7 @@ namespace System.Security
         VisibleToAllHosts = 0,
         NotVisibleByDefault = 1,
     }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Security.ISecurityEncodable, System.Security.IStackWalk
     {
         public PermissionSet(System.Security.Permissions.PermissionState state) { }
@@ -14863,7 +14867,7 @@ namespace System.Security
         public virtual System.Security.SecurityElement? ToXml() { throw null; }
         public System.Security.PermissionSet? Union(System.Security.PermissionSet? other) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     public sealed partial class SecurityCriticalAttribute : System.Attribute
     {
         public SecurityCriticalAttribute() { }
@@ -14905,7 +14909,7 @@ namespace System.Security
     {
         public SecurityException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected SecurityException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SecurityException(string? message) { }
         public SecurityException(string? message, System.Exception? inner) { }
@@ -14922,11 +14926,11 @@ namespace System.Security
         public string? RefusedSet { get { throw null; } set { } }
         public string? Url { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false)]
     public sealed partial class SecurityRulesAttribute : System.Attribute
     {
         public SecurityRulesAttribute(System.Security.SecurityRuleSet ruleSet) { }
@@ -14939,28 +14943,28 @@ namespace System.Security
         Level1 = (byte)1,
         Level2 = (byte)2,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     public sealed partial class SecuritySafeCriticalAttribute : System.Attribute
     {
         public SecuritySafeCriticalAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed partial class SecurityTransparentAttribute : System.Attribute
     {
         public SecurityTransparentAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     [System.ObsoleteAttribute("SecurityTreatAsSafe is only used for .NET 2.0 transparency compatibility. Use the SecuritySafeCriticalAttribute instead.")]
     public sealed partial class SecurityTreatAsSafeAttribute : System.Attribute
     {
         public SecurityTreatAsSafeAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Interface | System.AttributeTargets.Method, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Interface | System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     public sealed partial class SuppressUnmanagedCodeSecurityAttribute : System.Attribute
     {
         public SuppressUnmanagedCodeSecurityAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Module, AllowMultiple=true, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Module, AllowMultiple = true, Inherited = false)]
     public sealed partial class UnverifiableCodeAttribute : System.Attribute
     {
         public UnverifiableCodeAttribute() { }
@@ -14969,7 +14973,7 @@ namespace System.Security
     {
         public VerificationException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected VerificationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public VerificationException(string? message) { }
         public VerificationException(string? message, System.Exception? innerException) { }
@@ -14982,7 +14986,7 @@ namespace System.Security.Cryptography
         public CryptographicException() { }
         public CryptographicException(int hr) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected CryptographicException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public CryptographicException(string? message) { }
         public CryptographicException(string? message, System.Exception? inner) { }
@@ -14991,19 +14995,19 @@ namespace System.Security.Cryptography
 }
 namespace System.Security.Permissions
 {
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class CodeAccessSecurityAttribute : System.Security.Permissions.SecurityAttribute
     {
-        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
+        protected CodeAccessSecurityAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
     }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum PermissionState
     {
         None = 0,
         Unrestricted = 1,
     }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum SecurityAction
     {
         Demand = 2,
@@ -15016,8 +15020,8 @@ namespace System.Security.Permissions
         RequestOptional = 9,
         RequestRefuse = 10,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class SecurityAttribute : System.Attribute
     {
         protected SecurityAttribute(System.Security.Permissions.SecurityAction action) { }
@@ -15025,11 +15029,11 @@ namespace System.Security.Permissions
         public bool Unrestricted { get { throw null; } set { } }
         public abstract System.Security.IPermission? CreatePermission();
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SecurityPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
-        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
+        public SecurityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
         public bool Assertion { get { throw null; } set { } }
         public bool BindingRedirects { get { throw null; } set { } }
         public bool ControlAppDomain { get { throw null; } set { } }
@@ -15048,7 +15052,7 @@ namespace System.Security.Permissions
         public override System.Security.IPermission? CreatePermission() { throw null; }
     }
     [System.FlagsAttribute]
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId="SYSLIB0003", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum SecurityPermissionFlag
     {
         NoFlags = 0,
@@ -15332,7 +15336,7 @@ namespace System.Text
         public virtual System.ReadOnlySpan<byte> Preamble { get { throw null; } }
         public static System.Text.Encoding Unicode { get { throw null; } }
         public static System.Text.Encoding UTF32 { get { throw null; } }
-        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId="SYSLIB0001", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.", DiagnosticId = "SYSLIB0001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Text.Encoding UTF7 { get { throw null; } }
         public static System.Text.Encoding UTF8 { get { throw null; } }
         public virtual string WebName { get { throw null; } }
@@ -15462,10 +15466,10 @@ namespace System.Text
         public static bool IsValid(uint value) { throw null; }
         public static bool IsWhiteSpace(System.Text.Rune value) { throw null; }
         public static bool operator ==(System.Text.Rune left, System.Text.Rune right) { throw null; }
-        public static explicit operator System.Text.Rune (char ch) { throw null; }
-        public static explicit operator System.Text.Rune (int value) { throw null; }
+        public static explicit operator System.Text.Rune(char ch) { throw null; }
+        public static explicit operator System.Text.Rune(int value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static explicit operator System.Text.Rune (uint value) { throw null; }
+        public static explicit operator System.Text.Rune(uint value) { throw null; }
         public static bool operator >(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator >=(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator !=(System.Text.Rune left, System.Text.Rune right) { throw null; }
@@ -15512,7 +15516,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(char[]? value, int startIndex, int charCount) { throw null; }
         public System.Text.StringBuilder Append(decimal value) { throw null; }
         public System.Text.StringBuilder Append(double value) { throw null; }
-        public System.Text.StringBuilder Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "", "provider"})] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
+        public System.Text.StringBuilder Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[] { "", "provider" })] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder Append(short value) { throw null; }
         public System.Text.StringBuilder Append(int value) { throw null; }
         public System.Text.StringBuilder Append(long value) { throw null; }
@@ -15559,7 +15563,7 @@ namespace System.Text
         public System.Text.StringBuilder AppendJoin<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
-        public System.Text.StringBuilder AppendLine(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "", "provider"})] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
+        public System.Text.StringBuilder AppendLine(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[] { "", "provider" })] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder AppendLine(string? value) { throw null; }
         public System.Text.StringBuilder AppendLine([System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder Clear() { throw null; }
@@ -15652,7 +15656,7 @@ namespace System.Text.Unicode
         public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<byte> value) { throw null; }
         public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
-        public static bool TryWrite(System.Span<byte> destination, System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "destination", "provider"})] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }
+        public static bool TryWrite(System.Span<byte> destination, System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[] { "destination", "provider" })] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }
         public static bool TryWrite(System.Span<byte> destination, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination")] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
@@ -15983,16 +15987,16 @@ namespace System.Threading.Tasks
     public static partial class TaskAsyncEnumerableExtensions
     {
         public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) where T : allows ref struct { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static System.Collections.Generic.IEnumerable<T> ToBlockingEnumerable<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public static System.Collections.Generic.IEnumerable<T> ToBlockingEnumerable<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) where T : allows ref struct { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) where T : allows ref struct { throw null; }
     }
     public partial class TaskCanceledException : System.OperationCanceledException
     {
         public TaskCanceledException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TaskCanceledException(string? message) { }
         public TaskCanceledException(string? message, System.Exception? innerException) { }
@@ -16224,7 +16228,7 @@ namespace System.Threading.Tasks
         public TaskSchedulerException() { }
         public TaskSchedulerException(System.Exception? innerException) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TaskSchedulerException(string? message) { }
         public TaskSchedulerException(string? message, System.Exception? innerException) { }
@@ -16250,14 +16254,14 @@ namespace System.Threading.Tasks
     }
     public partial class Task<TResult> : System.Threading.Tasks.Task
     {
-        public Task(System.Func<object?, TResult> function, object? state) : base (default(System.Action)) { }
-        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken) : base (default(System.Action)) { }
-        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
-        public Task(System.Func<object?, TResult> function, object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
-        public Task(System.Func<TResult> function) : base (default(System.Action)) { }
-        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken) : base (default(System.Action)) { }
-        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
-        public Task(System.Func<TResult> function, System.Threading.Tasks.TaskCreationOptions creationOptions) : base (default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state) : base(default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken) : base(default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
+        public Task(System.Func<object?, TResult> function, object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
+        public Task(System.Func<TResult> function) : base(default(System.Action)) { }
+        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken) : base(default(System.Action)) { }
+        public Task(System.Func<TResult> function, System.Threading.CancellationToken cancellationToken, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
+        public Task(System.Func<TResult> function, System.Threading.Tasks.TaskCreationOptions creationOptions) : base(default(System.Action)) { }
         public static new System.Threading.Tasks.TaskFactory<TResult> Factory { get { throw null; } }
         public TResult Result { get { throw null; } }
         public new System.Runtime.CompilerServices.ConfiguredTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
