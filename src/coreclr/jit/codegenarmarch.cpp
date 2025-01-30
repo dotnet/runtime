@@ -1482,7 +1482,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
             genJumpToThrowHlpBlk(
                 bndsChk->gtThrowKind,
                 [&](BasicBlock* target, bool isInline) {
-                genCompareImmAndJump(isInline ? GenCondition::NE : GenCondition::EQ, arrLen->GetReg(), 0,
+                genCompareImmAndJump(isInline ? GenCondition::NE : GenCondition::EQ, arrLen->GetRegNum(), 0,
                                      emitActualTypeSize(arrLen), target);
             },
                 bndsChk->gtIndRngFailBB);
