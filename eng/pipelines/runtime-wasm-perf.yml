@@ -1,3 +1,5 @@
+# This file will be deleted in a follow-up PR once we have changed the pipeline in Azure Pipelines to point to /eng/pipelines/performance/runtime-wasm-perf.yml
+
 # This is a wrapper yml for `perf-wasm-jobs`, which has all the perf related
 # wasm jobs. This file is essentially so we can point the pipeline in azdo
 # UI to this, and thus avoid any scheduled triggers
@@ -10,10 +12,7 @@ pr:
     - main
   paths:
     include:
-    - eng/pipelines/runtime-wasm-perf.yml
-    - eng/pipelines/coreclr/perf*.yml
-    - eng/pipelines/coreclr/templates/perf-job.yml
-    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/performance/*
     - eng/testing/performance/*
     - eng/testing/BrowserVersions.props
 

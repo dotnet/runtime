@@ -1,3 +1,5 @@
+# This file will be deleted in a follow-up PR once we have changed the pipeline in Azure Pipelines to point to /eng/pipelines/performance/perf-slow.yml
+
 parameters:
 - name: runPrivateJobs
   type: boolean
