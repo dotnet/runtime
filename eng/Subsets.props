@@ -28,6 +28,10 @@
   <PropertyGroup>
     <!-- Determine if the CoreCLR runtime can build/run for the specified target. -->
     <_CoreCLRSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_CoreCLRSupportedOS>
+
+    <!-- Android 32-bit builds blocked by https://github.com/dotnet/runtime/issues/111665 -->
+    <_CoreCLRSupportedOS Condition="'$(TargetsAndroid)' == 'true' and '$(TargetArchitecture)' != 'arm' and '$(TargetArchitecture)' != 'x86'">true</_CoreCLRSupportedOS>
+
     <_CoreCLRSupportedArch Condition="'$(TargetArchitecture)' != 'armv6' and '$(TargetArchitecture)' != 'ppc64le' and '$(TargetArchitecture)' != 's390x'">true</_CoreCLRSupportedArch>
     <CoreCLRSupported Condition="'$(_CoreCLRSupportedOS)' == 'true' and '$(_CoreCLRSupportedArch)' == 'true'">true</CoreCLRSupported>
 
@@ -56,6 +60,7 @@
   <PropertyGroup>
     <DefaultSubsets>clr+mono+libs+tools+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsMobile)' == 'true'">mono+libs+packs</DefaultSubsets>
+    <DefaultSubsets Condition="'$(TargetsAndroid)' == 'true' and '$(CoreCLRSupported)' == 'true'">clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
@@ -80,10 +85,12 @@
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
     <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
   </PropertyGroup>
+  
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == ''">
-    <RuntimeFlavor Condition="'$(TargetsMobile)' == 'true' and !$(_subset.Contains('+clr.nativeaotlibs+'))">Mono</RuntimeFlavor>
-    <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and $(_subset.Contains('+clr.nativeaotlibs+'))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="('$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true') and ($(_subset.Contains('+clr.nativeaotlibs+')) or $(_subset.Contains('+clr.runtime+')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(TargetsAndroid)' == 'true' and ($(_subset.Contains('+clr+')) or $(_subset.Contains('+clr.')))">CoreCLR</RuntimeFlavor>
+    <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and '$(TargetsMobile)' == 'true'">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == '' and ($(_subset.Contains('+mono+')) or $(_subset.Contains('+mono.runtime+'))) and (!$(_subset.Contains('+clr+')) and !$(_subset.Contains('+clr.runtime+')) and !$(_subset.Contains('+clr.corelib+')))">Mono</RuntimeFlavor>
     <RuntimeFlavor Condition="'$(RuntimeFlavor)' == ''">$(PrimaryRuntimeFlavor)</RuntimeFlavor>
   </PropertyGroup>
@@ -92,7 +99,7 @@
     <DefaultCoreClrSubsets>clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(PackageRID)' == 'linux-armel'">clr.native+linuxdac+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
-    <DefaultCoreClrSubsets Condition="'$(PrimaryRuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
     <DefaultNativeAotSubsets>clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime</DefaultNativeAotSubsets>
 
@@ -310,7 +317,7 @@
     The cross tools are used as part of the build process with the downloaded build tools, so we need to build them for the host architecture and build them as unsanitized binaries.
     -->
   <PropertyGroup>
-    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
+    <_BuildAnyCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
     <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
