@@ -81,8 +81,9 @@ namespace Internal.TypeSystem
                     return false;
                 }
 
-                // Valuetypes with GC references and byref-like types need to be checked for overlaps and alignment
-                return ((MetadataType)fieldType).ContainsGCPointers || fieldType.IsByRefLike;
+                // Valuetypes with GC references or byrefs need to be checked for overlaps and alignment
+                var metadataType = ((MetadataType)fieldType);
+                return metadataType.ContainsGCPointers || metadataType.ContainsByRefs;
             }
 
             private void ThrowFieldLayoutError(int offset)

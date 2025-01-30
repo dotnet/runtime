@@ -281,7 +281,7 @@ namespace Internal.TypeSystem
 
                 TypeDesc fieldType = field.FieldType;
                 if (fieldType.IsByRef
-                    || ((fieldType is DefType df) && df.ContainsByRefs))
+                    || (fieldType.IsByRefLike && ((DefType)fieldType).ContainsByRefs))
                 {
                     return true;
                 }
