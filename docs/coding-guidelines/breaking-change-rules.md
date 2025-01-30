@@ -169,8 +169,6 @@ Breaking Change Rules
 
 * Changing a `struct` type to a `ref struct` type and vice versa
 
-* Adding a new `ref` field to a type that didn't have any `ref` field before (recursively)
-
 * Changing the underlying type of an enum
 
     This is a compile-time and behavioral breaking change as well as a binary breaking change which can make attribute arguments unparsable.
