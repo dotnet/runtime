@@ -1,15 +1,59 @@
-Cross Compilation for Android on Linux
-======================================
+# Experimental support of CoreCLR on Android
+
+This documentation outlines experimental support of CoreCLR on Android.
+It includes instructions on how to:
+- [Build CoreCLR for Android](./android.md#building-coreclr-for-android)
+- [Build and run a sample Android application with CoreCLR](./android.md#building-and-running-helloandroid-sample-app)
+- [Debug the sample app and the runtime](./android.md#debugging-the-sample-app)
+
+## Prerequisite
+
+Download and install `Android Studio` and the following:
+  - Android SDK (minimum supported API level is 21)
+  - Android NDK r27
+
+## Building CoreCLR for Android
+
+Supported host systems for building CoreCLR for Android:
+- [MacOS](./android.md#macos) ✔
+- [Linux](./android.md#linux) ✔
+- [Windows](./android.md#windows) ❌ (only through WSL)
+
+Supported target architectures:
+- x86 ❌
+- x64 ✔
+- arm ❌
+- arm64 ✔
+
+### MacOS
+
+#### Requirements
+
+Set the following environment variables:
+  - ANDROID_SDK_ROOT=`<full-path-to-android-sdk>` (example:`ANDROID_SDK_ROOT=/Users/<user>/Library/Android/sdk`)
+  - ANDROID_NDK_ROOT=`<full-path-to-android-ndk>` (example:`ANDROID_NDK_ROOT=/Users/<user>/Library/Android/sdk/ndk/27.2.12479018`)
+
+#### Building the runtime, libraries and tools
+
+To build CoreCLR runtime packages, libraries and tools, run the following command from `<repo-root>`:
+
+```
+./build.sh clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+packs -os android -arch <x64|arm64> -c <Debug|Release> -cross -bl
+```
+
+NOTE: The runtime packages will be located at: `<repo-root>/artifacts/packages/<configuration>/Shipping/`
+
+### Linux
+
+TODO: Bellow are the old notes which we need to reevaluate
 
 Through cross compilation, on Linux it is possible to build CoreCLR for arm64 Android.
 
-Requirements
-------------
+#### Requirements
 
 You'll need to generate a toolchain and a sysroot for Android. There's a script which takes care of the required steps.
 
-Generating the rootfs
----------------------
+#### Generating the rootfs
 
 To generate the rootfs, run the following command in the `coreclr` folder:
 
@@ -20,8 +64,8 @@ cross/init-android-rootfs.sh
 This will download the NDK and any packages required to compile Android on your system. It's over 1 GB of data, so it may take a while.
 
 
-Cross compiling CoreCLR
------------------------
+#### Cross compiling CoreCLR
+
 Once the rootfs has been generated, it will be possible to cross compile CoreCLR.
 
 When cross compiling, you need to set both the `CONFIG_DIR` and `ROOTFS_DIR` variables.
@@ -34,8 +78,7 @@ CONFIG_DIR=`realpath cross/android/arm64` ROOTFS_DIR=`realpath cross/android-roo
 
 The resulting binaries will be found in `artifacts/bin/coreclr/Linux.BuildArch.BuildType/`
 
-Running the PAL tests on Android
---------------------------------
+#### Running the PAL tests on Android
 
 You can run the PAL tests on an Android device. To run the tests, you first copy the PAL tests to your Android phone using
 `adb`, and then run them in an interactive Android shell using `adb shell`:
@@ -54,8 +97,7 @@ Then, use `adb shell` to launch a shell on Android. Inside that shell, you can l
 LD_LIBRARY_PATH=/data/local/tmp/coreclr/lib ./runpaltests.sh /data/local/tmp/coreclr/
 ```
 
-Debugging coreclr on Android
-----------------------------
+#### Debugging coreclr on Android
 
 You can debug coreclr on Android using a remote lldb server which you run on your Android device.
 
@@ -98,3 +140,64 @@ WorkingDir: /data/local/tmp
 (lldb) env LD_LIBRARY_PATH=/data/local/tmp/coreclr/lib
 (lldb) run
 ```
+
+### Windows
+
+Building on Windows is not directly supported yet. However it is possible to use WSL2 for this purpose.
+
+#### WSL2
+
+TODO:
+
+## Building and running HelloAndroid sample app
+
+To demonstrate building and running an Android sample application with CoreCLR, we will use the `HelloAndroid` sample located at: `src/mono/sample/Android/AndroidSampleApp.csproj`.
+A prerequisite of this step is to have CoreCLR successfully built for desired Android platform.
+
+### Building HelloAndroid sample
+
+To build `HelloAndroid`, run the following command from `<repo_root>`:
+
+```
+make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=false run -C src/mono/sample/Android
+```
+
+On successful execution, the command will output the `HelloAndroid.apk` at: xxx
+
+### Running HelloAndroid sample on an emulator
+
+To run the sample on an emulator, the emulator first needs to be up and running.
+Creating an emulator (ADV - Android Virtual Device) can be achieved through Android Studio - Device Manager: https://developer.android.com/studio/run/managing-avds
+After its creation, the emulator needs to be booted up and running, so that we can run the `HelloAndroid` sample on it via:
+```
+make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=true run -C src/mono/sample/Android
+```
+
+NOTE: Emulators can be also started from the terminal via: `$ANDROID_SDK_ROOT/emulator/emulator -avd <emulator-name>`
+
+### Useful make commands
+
+For convenience it is possible to run a single make command which builds all required dependencies, the app and runs it:
+```
+make BUILD_CONFIG=<Debug|Release> TARGET_ARCH=<x64|arm64> RUNTIME_FLAVOR=CoreCLR DEPLOY_AND_RUN=true all -C src/mono/sample/Android
+```
+
+## Debugging the runtime and the sample app
+
+Managed debugging is currently not supported, but we can debug:
+- Java portion of the sample app
+- Native code for the CoreCLR host and the runtime it self
+
+This can be achieved in `Android Studio` via `Profile or Debug APK`.
+
+### Steps
+
+1. Build the runtime and `HelloAndroid` sample app in `Debug` configuration.
+2. Rename the debug symbols file of the runtime library from `libcoreclr.so.dbg` into `libcoreclr.so.so`, the file is located at: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Debug/android-arm64/publish/libcoreclr.so.dbg`
+3. Open Android Studio and select `Profile or Debug APK` project.
+4. Find and select the desired `.apk` file (example: `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/Bundle/bin/HelloAndroid.apk`)
+5. In the project pane, expand `HelloAndroid->cpp->libcoreclr` and double-click `libcoreclr.so` (see: [pic1](./android-studio-coreclr-debug-symbols-adding.png))
+6. From the `Debug Symbols` pane on the right, select `Add`
+7. Navigate to the renamed file from step 2) and select it `<repo_root>/artifacts/bin/AndroidSampleApp/arm64/Debug/android-arm64/publish/libcoreclr.so.so`
+8. Once loaded it will show all the source files under `HelloAndroid->cpp->libcoreclr` (see: [pic2](./android-studio-coreclr-debug-symbols-added.png))
+9. Find the `exports.cpp` and set a breakpoint in `coreclr_initialize` function and launch the debug session (see: [pic3](./android-studio-coreclr-debugging.png))
