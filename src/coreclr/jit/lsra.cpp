@@ -275,24 +275,6 @@ SingleTypeRegSet LinearScan::lowSIMDRegs()
 #endif
 }
 
-#if defined(TARGET_XARCH)
-//------------------------------------------------------------------------
-// getLowGprRegs(): Return the set of GPR registers associated with non APX
-// encoding only, i.e., remove the eGPR registers from the available
-// set.
-//
-// Return Value:
-// Register mask of non APX GPR registers.
-SingleTypeRegSet LinearScan::getLowGprRegs()
-{
-#if defined(TARGET_AMD64)
-    return (availableIntRegs & RBM_LOWINT.GetIntRegSet());
-#else
-    return availableIntRegs;
-#endif // TARGET_AMD64
-}
-#endif // TARGET_XARCH
-
 void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition, RefPosition* nextKill)
 {
     LsraLocation nextLocation = nextRefPosition == nullptr ? MaxLocation : nextRefPosition->nodeLocation;
@@ -933,7 +915,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
-
+    // Updating lowGprRegs with final value
+#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    lowGprRegs =  (availableIntRegs & RBM_LOWINT.GetIntRegSet());
+#else
+    lowGprRegs = availableIntRegs;
+#endif // TARGET_AMD64
+#endif // TARGET_XARCH
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 

@@ -1076,9 +1076,6 @@ private:
     SingleTypeRegSet allByteRegs();
     SingleTypeRegSet allSIMDRegs();
     SingleTypeRegSet lowSIMDRegs();
-#if defined(TARGET_XARCH)
-    SingleTypeRegSet getLowGprRegs();
-#endif
     SingleTypeRegSet internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
@@ -2093,6 +2090,7 @@ private:
 #if defined(TARGET_XARCH)
     regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
+    SingleTypeRegSet lowGprRegs;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
@@ -2101,6 +2099,17 @@ private:
     FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
+    }
+    //------------------------------------------------------------------------
+    // getLowGprRegs(): Return the set of GPR registers associated with non APX
+    // encoding only, i.e., remove the eGPR registers from the available
+    // set.
+    //
+    // Return Value:
+    // Register mask of non APX GPR registers.
+    FORCEINLINE SingleTypeRegSet getLowGprRegs() const
+    {
+        return this->lowGprRegs;
     }
 #endif // TARGET_XARCH
 
