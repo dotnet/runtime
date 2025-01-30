@@ -4691,15 +4691,7 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     BasicBlock* const dstBlk = edge->getDestinationBlock();
 
     // Ignore cross-region branches
-    if (!BasicBlock::sameTryRegion(srcBlk, dstBlk))
-    {
-        return;
-    }
-
-    // Don't waste time reordering within handler regions.
-    // Note that if a finally region is sufficiently hot,
-    // we should have cloned it into the main method body already.
-    if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
+    if (!BasicBlock::sameEHRegion(srcBlk, dstBlk))
     {
         return;
     }
@@ -4825,6 +4817,12 @@ bool Compiler::ThreeOptLayout::Run()
 
         // Don't move the entry of an EH region.
         if (compiler->bbIsTryBeg(next) || compiler->bbIsHandlerBeg(next))
+        {
+            continue;
+        }
+
+        // Don't reorder filter regions.
+        if (block->hasHndIndex() && compiler->ehGetDsc(block->getHndIndex())->HasFilter())
         {
             continue;
         }
@@ -5123,9 +5121,20 @@ PhaseStatus Compiler::fgSearchImprovedLayout()
         }
     };
 
-    fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
-    bool modified = false;
+    // Stress 3-opt by giving it the post-order traversal as its initial layout,
+    // but keep the method entry block at the beginning.
+    if (compStressCompile(STRESS_THREE_OPT_LAYOUT, 10))
+    {
+        numHotBlocks = m_dfsTree->GetPostOrderCount();
+        memcpy(initialLayout, m_dfsTree->GetPostOrder(), sizeof(BasicBlock*) * numHotBlocks);
+        std::swap(initialLayout[0], initialLayout[numHotBlocks - 1]);
+    }
+    else
+    {
+        fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
+    }
 
+    bool modified = false;
     if (numHotBlocks > 0)
     {
         ThreeOptLayout layoutRunner(this, initialLayout, numHotBlocks);
