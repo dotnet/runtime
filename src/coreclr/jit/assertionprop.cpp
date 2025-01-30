@@ -5878,14 +5878,9 @@ ASSERT_VALRET_TP Compiler::optGetEdgeAssertions(const BasicBlock* block, const B
         {
             return bbJtrueAssertionOut[blockPred->bbNum];
         }
+        return BitVecOps::MakeEmpty(apTraits);
     }
-
-    if (blockPred->KindIs(BBJ_ALWAYS, BBJ_COND))
-    {
-        return blockPred->bbAssertionOut;
-    }
-
-    return BitVecOps::MakeEmpty(apTraits);
+    return blockPred->bbAssertionOut;
 }
 
 /*****************************************************************************
