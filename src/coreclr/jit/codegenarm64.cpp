@@ -3490,13 +3490,15 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     // The src must be a register.
-    if (tree->OperIs(GT_NEG) && operand->isContained())
+    if (tree->OperIs(GT_NEG, GT_NOT) && operand->isContained())
     {
         genTreeOps oper = operand->OperGet();
         switch (oper)
         {
             case GT_MUL:
             {
+                assert(tree->OperIs(GT_NEG));
+
                 ins          = INS_mneg;
                 GenTree* op1 = tree->gtGetOp1();
                 GenTree* a   = op1->gtGetOp1();
@@ -3510,7 +3512,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
             case GT_RSH:
             case GT_RSZ:
             {
-                assert(ins == INS_neg || ins == INS_negs);
+                assert(ins == INS_neg || ins == INS_negs || ins == INS_mvn);
                 assert(operand->gtGetOp2()->IsCnsIntOrI());
                 assert(operand->gtGetOp2()->isContained());
 
