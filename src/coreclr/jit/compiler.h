@@ -6313,8 +6313,6 @@ public:
     bool fgComputeMissingBlockWeights();
 
     bool fgReorderBlocks(bool useProfile);
-    void fgDoReversePostOrderLayout();
-    void fgMoveColdBlocks();
     PhaseStatus fgSearchImprovedLayout();
 
     class ThreeOptLayout
@@ -6346,9 +6344,6 @@ public:
         ThreeOptLayout(Compiler* comp, BasicBlock** hotBlocks, unsigned numHotBlocks);
         bool Run();
     };
-
-    template <bool hasEH>
-    void fgMoveHotJumps();
 
     bool fgFuncletsAreCold();
 
