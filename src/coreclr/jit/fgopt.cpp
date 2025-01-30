@@ -4937,7 +4937,6 @@ Compiler::ThreeOptLayout::ThreeOptLayout(Compiler* comp, BasicBlock** hotBlocks,
     , blockOrder(hotBlocks)
     , tempOrder(comp->m_dfsTree->GetPostOrder())
     , numCandidateBlocks(numHotBlocks)
-    , currEHRegion(0)
 {
 }
 
@@ -5140,14 +5139,6 @@ void Compiler::ThreeOptLayout::ConsiderEdge(FlowEdge* edge)
     // Note that if a finally region is sufficiently hot,
     // we should have cloned it into the main method body already.
     if (srcBlk->hasHndIndex() || dstBlk->hasHndIndex())
-    {
-        return;
-    }
-
-    // For backward jumps, we will consider partitioning before 'srcBlk'.
-    // If 'srcBlk' is a BBJ_CALLFINALLYRET, this partition will split up a call-finally pair.
-    // Thus, don't consider edges out of BBJ_CALLFINALLYRET blocks.
-    if (srcBlk->KindIs(BBJ_CALLFINALLYRET))
     {
         return;
     }
@@ -5438,18 +5429,6 @@ bool Compiler::ThreeOptLayout::RunGreedyThreeOptPass(unsigned startPos, unsigned
             {
                 BasicBlock* const s3Block     = blockOrder[position];
                 BasicBlock* const s3BlockPrev = blockOrder[position - 1];
-
-                // Don't consider any cut points that would break up call-finally pairs
-                if (s3Block->KindIs(BBJ_CALLFINALLYRET))
-                {
-                    continue;
-                }
-
-                // Don't consider any cut points that would disturb other EH regions
-                if (!BasicBlock::sameEHRegion(s2Block, s3Block))
-                {
-                    continue;
-                }
 
                 // Compute the cost delta of this partition
                 const weight_t currCost = currCostBase + GetCost(s3BlockPrev, s3Block);

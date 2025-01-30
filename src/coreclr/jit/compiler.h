@@ -6326,7 +6326,6 @@ public:
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
-        unsigned currEHRegion;
 
 #ifdef DEBUG
         weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
