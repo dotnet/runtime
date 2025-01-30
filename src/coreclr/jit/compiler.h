@@ -6326,7 +6326,6 @@ public:
         BasicBlock** blockOrder;
         BasicBlock** tempOrder;
         unsigned numCandidateBlocks;
-        unsigned currEHRegion;
 
 #ifdef DEBUG
         weight_t GetLayoutCost(unsigned startPos, unsigned endPos);
@@ -6341,7 +6340,7 @@ public:
         void AddNonFallthroughPreds(unsigned blockPos);
         bool RunGreedyThreeOptPass(unsigned startPos, unsigned endPos);
 
-        bool RunThreeOptPass(BasicBlock* startBlock, BasicBlock* endBlock);
+        bool RunThreeOptPass();
 
     public:
         ThreeOptLayout(Compiler* comp);
