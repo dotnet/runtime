@@ -11076,13 +11076,22 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                             impInlineInfo->retExprClassHnd        = returnClsHnd;
                             impInlineInfo->retExprClassHndIsExact = isExact;
                         }
-                        else if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                        else
                         {
-                            // This return site type differs from earlier seen sites,
-                            // so reset the info and we'll fall back to using the method's
-                            // declared return type for the return spill temp.
-                            impInlineInfo->retExprClassHnd        = nullptr;
-                            impInlineInfo->retExprClassHndIsExact = false;
+                            if (impInlineInfo->retExprClassHndIsExact != isExact)
+                            {
+                                // This return site type exactness differs from earlier seen sites,
+                                // so reset the exactness info.
+                                impInlineInfo->retExprClassHndIsExact = false;
+                            }
+                            if (impInlineInfo->retExprClassHnd != returnClsHnd)
+                            {
+                                // This return site type differs from earlier seen sites,
+                                // so reset the info and we'll fall back to using the method's
+                                // declared return type for the return spill temp.
+                                impInlineInfo->retExprClassHnd        = nullptr;
+                                impInlineInfo->retExprClassHndIsExact = false;
+                            }
                         }
                     }
 
